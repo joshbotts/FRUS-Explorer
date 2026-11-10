@@ -36,6 +36,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1051 B-7: initial implementation
+///   1.1 — L14 (plan of record decision 124): a document row's Index starts its pass through
+///          `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
 enum ClustersAxis {
 
     // MARK: Ordering and labels
@@ -916,7 +918,9 @@ struct ClusterDocumentsView: View {
                 } else {
                     Button {
                         if let pipeline = appState.indexingPipeline {
-                            Task { try? await pipeline.indexVolume(ref.volumeId) }
+                            // Counted while it runs, for a run of the background task to wait for (L14).
+                            let volumeId = ref.volumeId
+                            appState.indexWorkInFlight.start { try? await pipeline.indexVolume(volumeId) }
                         }
                     } label: {
                         Text(String(localized: "browser.clusters.index", defaultValue: "Index"))

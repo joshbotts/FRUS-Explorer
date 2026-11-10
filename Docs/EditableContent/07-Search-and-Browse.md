@@ -1991,7 +1991,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4253–4253, 4776–4776 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4325–4325, 4848–4848 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -2519,14 +2519,14 @@ every denominator and every "cannot appear here" must survive.*
 <!-- Placeholder note: keep `\(clusterCount)`, `\(unclusteredCount)` and `\(percentText)` intact.
      The unclustered disclosure is the load-bearing clause — those documents cannot be reached
      from this list at all, and hiding that would present the axis as exhaustive. -->
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 137–143 | key: browser.clusters.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 139–145 | key: browser.clusters.caption -->
 
 \(clusterCount) clusters computed from document text. Labels are the most distinctive sampled terms, not subject headings. \(unclusteredCount) documents (\(percentText)%) belong to no cluster and cannot be reached from this list. Era bars reflect each volume’s coverage era, not document dates.
 
 <!-- END SOURCE: browser.clusters.caption -->
 
 #### The drill-in footer
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 766–767 | key: browser.clusters.drill.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 768–769 | key: browser.clusters.drill.footer -->
 
 A cluster is a grouping detected by an AI model that the corpus fell into on its own. It is comprised of documents whose language reads alike to an AI model. It is detected mathematically by turning its text into numeric vectors and clustering documents measured as similar rather than chosen by an editor. Its label is automatically assigned from the most distinctive words in a sample of the cluster’s documents. It is not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date.
 
@@ -2628,7 +2628,7 @@ and does not need to — what they can act on is the button. Do not promise that
 and do not name a cause the app has not established.*
 
 ### Could not load this section's documents.
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 556–557 | key: browser.compilation.loadFailed -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 558–559 | key: browser.compilation.loadFailed -->
 
 Could not load this section’s documents.
 
@@ -2648,7 +2648,7 @@ FRUS Explorer could not read this section from its search index. Retry below; if
 <!-- A button label on the row above, beside a circular-arrow icon. Keep it a verb the reader can
      act on — it asks for the same section's documents again, and it is the only way out of the
      error row: this screen has no pull-to-refresh. -->
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 568–569 | key: browser.compilation.loadFailed.retry -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 570–571 | key: browser.compilation.loadFailed.retry -->
 
 Retry
 
@@ -2911,28 +2911,28 @@ Volumes citing %1$@ whose coverage falls inside %2$@. Counted from document sour
 <!-- END SOURCE: browser.archives.class.caption %@ %@ -->
 
 #### The cluster data and the semantic vectors come from…
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClustersIndexView.unavailableText | lines: 292–293 | key: browser.clusters.mismatch -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClustersIndexView.unavailableText | lines: 294–295 | key: browser.clusters.mismatch -->
 
 The cluster data and the semantic vectors come from different releases, so the list is not shown.
 
 <!-- END SOURCE: browser.clusters.mismatch -->
 
 #### Footer — Saved “\(…)” with the first \(…) of \(…) documents.
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClusterDocumentsView.actionsSection | lines: 804–805 | key: browser.clusters.saved.truncated -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClusterDocumentsView.actionsSection | lines: 806–807 | key: browser.clusters.saved.truncated -->
 
 Saved “\(savedCorpusName)” with the first \(savedCapture.documentKeys.count) of \(savedCapture.total) documents.
 
 <!-- END SOURCE: browser.clusters.saved.truncated -->
 
 #### Empty state — A working corpus is a fixed set of documents captured from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 216–217 | key: browser.corpora.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 218–219 | key: browser.corpora.empty.detail -->
 
 A working corpus is a fixed set of documents captured from a result set — use “Save as Working Corpus” on Search results or the semantic map’s lasso.
 
 <!-- END SOURCE: browser.corpora.empty.detail -->
 
 #### Footer — A corpus is captured from a result set — in Search results…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 226–227 | key: browser.corpora.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaIndexView.body | lines: 228–229 | key: browser.corpora.footer -->
 
 A corpus is captured from a result set — in Search results or with the semantic map’s lasso — and syncs via iCloud. There is nothing to create here.
 
@@ -3029,7 +3029,7 @@ The first three figures describe the whole series, including volumes you have no
 <!-- END SOURCE: subjects.detail.footer -->
 
 #### Tooltip — Filter volumes by research topic — select one or more tags…
-<!-- SOURCE: FRUSExplorer/Browser/SubseriesView.swift | SubseriesTagFilterBar.body | lines: 272–273 | key: browser.filter.addTag.help -->
+<!-- SOURCE: FRUSExplorer/Browser/SubseriesView.swift | SubseriesTagFilterBar.body | lines: 274–275 | key: browser.filter.addTag.help -->
 
 Filter volumes by research topic — select one or more tags to narrow the list to volumes covering those themes
 
