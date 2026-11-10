@@ -1462,6 +1462,48 @@ in both manuals from the bundled files (#1762).
     iPhones hold its library and Q1's build. Their pre-Q1 containers, the build, the raw and erased
     frames and the Mac's app and home are under `~/Library/Caches/FRUS-Explorer/q1/` until the owner
     says.
+- **T1 — run 2026-11-10 09:23 to 09:44; the 1.0 (1812) retakes, for #1884.** The owner asked for the build
+  number to go to 1.0 (1812) and for the screenshots #1884 made stale to be retaken: "bump build number to
+  1.0/1812 and retake affected screenshots" (plan of record decision 125). #1884 put the Editors'
+  Annotations door into the Browse by grid as *Annotations*, so every iPad frame whose left column shows the
+  Browse root was stale. Built from `ece83e57`, the tree #1884 merged as `efb8693e`, with the bump to 1812
+  applied: the `AppStore` configuration for the simulator under `Scripts/heavy.sh` (09:23:18 to 09:26:27),
+  with build 48's local-only banner patch, never committed and reverted as the build ended. Scripts: Q1's,
+  copied to `~/Library/Caches/FRUS-Explorer/t1/`.
+  - **The device**: S1's `3D2607D9` under iOS 27.0, restored from `q1/snapshot-A74`. `v2` still stores index
+    version 74, so nothing re-indexed. It was put in landscape by S2's rotator, given the demo status bar
+    (flags first, the 2020 ISO time last) and launched with `-hasCompletedOnboarding 1
+    -FRUSScreenshotHideSyncBanner YES`. The snapshot's last read was not the Long Telegram: *Continue
+    reading* named *122. Memorandum of Conversation*. So recipe 6 ran first, the Long Telegram opened
+    through `frusexplorer://document/frus1946v06/d475`.
+  - **Retaken (23)**, each at S1's route and Q1's framing, the left column now showing the new grid:
+    `browse-root`, `sidebar-landscape`, `browse-all-volumes`, `browse-administrations`,
+    `browse-administrations-truman`, `browse-editors`, `browse-annotations` (the open-door mark now on the
+    grid's tile), `browse-archives-provenance`, `-collections`, `-collection-detail`, `-collection-citing`,
+    `browse-archives`, `browse-clusters`, `browse-clusters-detail`, `topic-index`, `people-list`,
+    `people-detail`, `people-detail-records`, `browse-scopes`, `browse-scopes-editor`,
+    `browse-scopes-banner` (the filter cleared after), `browse-working-corpora` and `browse-corpus-drill`.
+    For the drill, `frus1948v01p2` was removed through Settings ▸ Volumes & Storage, then `snapshot-A74`
+    restored.
+  - **Compared pixel by pixel with the frames they replace**:
+    - In 19 frames nothing changed right of the list pane except the status bar's Wi-Fi glyph (a 1 px shift).
+    - Three were scrolled to within about 10 pt of Q1's framing: `browse-archives-collection-citing`,
+      `people-detail` and `people-detail-records`.
+    - In `browse-root`, the subseries list puts *1950* before *1950-55*, where Q1's had them the other way
+      round (*Found by T1*, below).
+  - **Read and left**: the 27 other `ipad/` frames (in `browse-clusters-map` the map takes the full width) and
+    the 8 `ios/` frames. Also the 38 store frames in `Planning/marketing-drafts/`, none of which shows the
+    Browse root, and the tour crops `people.jpg` and `annotations.jpg`, which are cut from retaken captures
+    but show only a sheet and the axis's matrix.
+  - **The tour**: `truman.jpg` (step 3) and `browse.jpg` (step 8) were re-cut from the new
+    `browse-administrations-truman` and `browse-working-corpora`. The box is the old crops' own, found by
+    matching each old crop against its old capture: full width from the top, 1,939 and 1,800 px tall,
+    scaled to 1,500 px wide. The encoding is progressive JPEG at quality 84, as their quantization tables
+    read.
+  - The time and date were erased by S1's script (SHA-256 `58d052de…`), every changed pixel inside the box.
+  - **Left**: no simulator is booted. `3D2607D9` holds `snapshot-A74` again, with T1's build, 1.0 (1812).
+    Its pre-T1 container, the build, the raw and erased frames and the old frames are under
+    `~/Library/Caches/FRUS-Explorer/t1/` until the owner says.
 
 ### Found by R1 — for the owner
 
@@ -1485,6 +1527,19 @@ rule).
    is older than #1823: `CollectionRow`'s stack has no full-width frame, so the row's content shape,
    and the tap gesture on it, cover only its text, as before #1831 rewrote the gesture. Seen twice,
    not tried on 1.0 (1776) or a device. *The app.*
+
+### Found by T1 — for the owner
+
+Seen in the sitting; not fixed and not filed. It goes to the plan of record's §5 (decision 82's
+rule).
+
+1. **The subseries list's order of two subseries that begin in the same year changes from launch to
+   launch.** Q1's `browse-root` lists *1950-55* before *1950*, and T1's lists *1950* first, on the same
+   device and library. In the code, `BrowserViewModel.allSubseriesGroups` builds the groups from a
+   `Dictionary`, whose order Swift varies with each process. It then sorts them by start year alone,
+   so a tie keeps whatever order the dictionary gave: *1950* and *1950-55*, and *1951* and *1951-54*.
+   A tie-break, the end year or the name, would fix the order. Seen once, between two launches. *The
+   app.*
 
 ### Found by S1 — for the new plan of record
 

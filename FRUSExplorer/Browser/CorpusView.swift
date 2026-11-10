@@ -451,11 +451,11 @@ struct CorpusView: View {
                                  defaultValue: "Volumes filed by the editors named on their title pages"))
 
                     // "Annotations", not the axis's own "Editors’ Annotations": a grid tile holds one
-                    // line, and in the iPad's 340 pt list pane a title has about 90 pt beside its icon
-                    // (measured on an iPad Pro 13-inch). The full name needs 114 even at the tile's 85%
-                    // minimum scale, and "Annotations" 80 at full size (Core Text, 14 pt medium);
-                    // "Administrations" already shows as "Administrati…" there. VoiceOver hears the
-                    // full name from the label, and the level the tile opens is titled in full.
+                    // line, and in the iPad's 340 pt list pane a title has 85 to 91 pt beside its icon
+                    // (iPad Pro 13-inch: 145 pt tiles beside the tab sidebar, 149 without it). The full
+                    // name needs 114 even at the tile's 85% minimum scale, and "Annotations" 80 at full
+                    // size (Core Text, 14 pt medium); "Administrations" already truncates there.
+                    // VoiceOver hears the full name from the label; the level it opens is titled in full.
                     BrowseAxisGridTile(
                         title: String(localized: "browser.corpus.tile.annotations",
                                       defaultValue: "Annotations"),

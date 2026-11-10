@@ -73,7 +73,7 @@ The app has five tabs. On iPad they sit in a tab strip at the top of the screen,
 | **Collections** | Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word |
 | **Settings** | Volumes and storage, display, projects and tags, connections to Zotero and the National Archives, iCloud sync, About |
 
-![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, the Editors’ Annotations door below them, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
+![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, Annotations among them, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
 
 *The Browse tab, with the Subseries list open. Saved searches and projects appear in the sidebar under the tabs once you have some.*
 

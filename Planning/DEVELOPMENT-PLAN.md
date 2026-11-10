@@ -10251,10 +10251,60 @@ FRUS Explorer Light's session for its row S23a, in a pull request of its own, th
 - **The root, by screenshot** after a launch on Browse: on the iPhone 17 the grid reads in the owner's three rows and *Annotations* fits on one line beside its icon. On the iPad Pro 13-inch in portrait, which is two-pane with the floating tab bar, the list pane's tiles measure 149 pt wide, and a title gets 88.5 to 91.5 pt beside its icon. *Annotations* ends 17.5 pt short of its tile's inner edge, and *Administrations* shows as "Administrati…", as it did before the change.
 - **`FRUSExplorerMac`**, Debug: BUILD SUCCEEDED, with `CorpusView.swift` compiled. The only warning lines were the `GeneratedSummary` residue (4). No code the Mac compiles constructs the view, and its Corpus Browser's sidebar item is untouched.
 
-**Not done.** No screenshot was retaken, by the owner's rule that the owner captures.
+**Not done.** No screenshot was retaken, by the owner's rule that the owner captures. *The owner asked for the retakes the same day, and R2c's sitting T1 took them (below).*
 - 18 of the 19 iPad Browse captures in `Docs/screenshots/ipad/` show the root's grid in the two-pane's left column as it was, with the door below it. Only `browse-clusters-map.png`, whose map takes the full width, does not.
 - `browse-root.png` is the capture whose subject is the root. The alt text that describes it, in the iOS manual §6, the iOS Quick Start and the website's quick start, is left as it is until the retake.
 - The website tour's step 3 is cut from `browse-administrations-truman.png`.
 - `TwoPaneDocumentTests`' list of the doors the root always draws has never held this door, before or after the change.
 
-**Opened as #1884** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `bbd1bcfb`; not merged, auto-merge off.
+**Opened as #1884** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `bbd1bcfb`; **merged as `efb8693e`** on 2026-11-10 at 09:16, auto-merge off. Recorded in R2c's pull request, below.
+
+## Session 2026-11-10 — R2c: the third TestFlight pass, 1.0 (1812): the bump, both TestFlight notes, and sitting T1's retakes of what #1884 changed (plan of record decision 125)
+
+**What was asked.** The owner's words, in #1884's session after that pull request opened: "bump build number to 1.0/1812 and retake affected screenshots. 1.0/1812 will be another testflight release". While the work ran, #1884 merged as `efb8693e` (09:16) and L11's merge record (#1885) followed it. So this change is cut from `v2` at `7cad0351`, with the work carried over uncommitted: the old branch's tree equalled `efb8693e`'s, and #1885 touched only two planning files this work had not yet edited. The request is recorded in the plan of record as decision 125 and R2c.
+
+**Changed.**
+- **The bump**: `CURRENT_PROJECT_VERSION` 1787 → **1812** in `project.yml`'s three targets and `project.pbxproj`'s nine occurrences, edited directly with no `xcodegen` run; `MARKETING_VERSION` stays 1.0.
+  - The README's *Current build* line and its whole-file mirror in `Docs/EditableContent/03-Repository-README.md` now read **1812** (version 1.0). The mirror still equals `README.md` (10,187 characters), and one Amendment-Log bullet records it.
+  - 1812 lies between 1787 and 1861, as decision 87 requires.
+- **Both TestFlight notes** (`Docs/TestFlight-Instructions-ios.md` and `-mac.md`): iOS **3,732** and Mac **3,784** characters by Python's `len()`. They use no character that `build-51`'s accepted notes lacked, so apostrophes and hyphens are straight: *Editors' Annotations*, *1932-1954*.
+  - The release-candidate flag names 1.0 (1812). *Tested 1.0 (1787)?* says the first launch re-indexes the library once (v71 to v74) and, for a 1776 library, also rebuilds People once.
+  - New since 1787, described in place:
+    - **Editors' Annotations**: a volume page's section; Browse's **Annotations** door on iOS and the Corpus Browser's **Editors' Annotations** item on the Mac, era by era; the matrix on iPad and Mac; and **Volumes with it** and **Volumes without it** (#1859–#1862, #1868, #1873, #1874, #1884).
+    - The classification markings: on Search's rows from the 1932–1954 volumes, and in **Sources** (iOS) and **Source Explorer** (Mac) (#1853, #1857).
+    - People's line saying how many volumes tag their people (#1862).
+    - **Quick Start** on the iOS Research tab, and Help ▸ **FRUS Explorer Quick Start** on the Mac (#1848).
+  - Every fix, among them the index's *See* links (#1875) and the iOS background task (L11 to L14), is in the one line *Fixed since 1.0 (1787): many things*, by the owner's rule for these notes.
+  - What to test:
+    - for 1787 testers, the re-index and the markings;
+    - Editors' Annotations;
+    - on iOS, a queue left to index while the app is away;
+    - reading, Search, the Graph and Analytics;
+    - on the Mac, the collections.
+  - Dropped for the room: the cross-references line, **Reading Width**, **Email Feedback File**, *Narrowed by*, Swap's close button, and 1776's what-to-test items for the offline launch and the People rebuild.
+  - Every control the notes name was checked against its string in source: `Annotations`, `Editors’ Annotations`, `Volumes with it`, `Volumes without it`, `Quick Start`, `FRUS Explorer Quick Start`, `Search Within Results`, `Manage Collections…`, `Learn`, and those 1787's notes named.
+- **Sitting T1**: 23 iPad captures retaken and two tour crops re-cut (`truman.jpg`, `browse.jpg`). The ledger's T1 entry in `Docs/screenshots/README.md` records the device, the routes, the pixel comparison and what was read and left.
+  - Alt text that described the old door now describes the new grid: in the iOS manual §6, in the iOS Quick Start, and in the Quick Start's website copy (regenerated by `Scripts/build_website_pages.py`; `--check` reports every page in step).
+  - The website drafts: `build_site.py`'s notes for steps 3 and 8, and the README's owed list.
+- **`CorpusView`'s comment** on the title's room, measured in T1's frames: tiles are 145 pt beside the tab sidebar and 149 pt without it, leaving a title 85 to 91 pt. It had said "about 90", from the portrait frame alone; the design's lane C note is corrected the same way. The comment is still six lines, so no EditableContent range moves.
+- **Records**: #1884's merge, in its session entry; the plan of record's decision 125, its R2c row and §4 line, and §5's T1 finding; this entry.
+
+**Checked**, each heavy job through `Scripts/heavy.sh`, Xcode 27.2 on macOS 27.2, from `v2` at `7cad0351` with this change:
+- **T1's build**, the AppStore configuration for the simulator from `ece83e57`'s tree with the bump, read `CFBundleVersion` 1812 before the sitting.
+- **`build-for-testing`** of the `FRUSExplorer` scheme, on iPhone 17 (`80CF0F18`, iOS 27.0) over this worktree's DerivedData: TEST BUILD SUCCEEDED. The `GeneratedSummary` residue was the only warning. The app's `Info.plist` reads `CFBundleShortVersionString` 1.0 and `CFBundleVersion` **1812**.
+- **The unit target**, from that build: TEST EXECUTE SUCCEEDED, 7,934 tests: 7,897 passed, none failed, 37 skipped. They include `readmeStatesCurrentBuild`, the plan-of-record suite and the EditableContent gate, all run after the plan's and the ledger's edits.
+- **`FRUSExplorerMac`**, Debug: BUILD SUCCEEDED, with the residue only. Its `Info.plist` reads 1.0 (1812).
+- `python3 Scripts/build_website_pages.py --check` reports every page in step.
+- No package input changed, so no `swift test` is owed.
+
+**Not done, and for the owner.**
+- **Opened as #1886** on the owner's word of 2026-11-10 ("Open a PR"), against `v2` at `7cad0351`, on `claude/testflight-1812-retakes`; not merged, auto-merge off.
+- **The owner's steps**, in the checkout the archive is cut from:
+  1. Bring `v2` to this pull request's merge commit.
+  2. Run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`. Neither was run here, so this worktree holds no cache or stamp for them. `CloudKitSchemaInventory.swift` is unchanged since `build-52`, whose check passed.
+  3. Archive and upload `FRUSExplorer` and `FRUSExplorerMac`, both in the AppStore configuration, each with its note as What to Test. About should read *Version 1.0 (1812)*.
+  4. Tag the commit. Decision 113 leaves the tag to the owner; `build-53` would follow `build-51` and `build-52`.
+  5. Make the device pass on a library that had 1787, so the one re-index at v74 is seen: the markings, Editors' Annotations, and on iOS indexing while the app is away.
+- **Not run:** the rest of the release checklist that R2 and R2b ran (the Mac check copy's walk, `swift test`, the window-fronting audit, the link check). The owner asked for the bump and the retakes, and no package input changed.
+- **Found, not fixed** (§5, *Found by T1*): the subseries list orders two subseries that begin in the same year differently from launch to launch.
+- **The simulators**: `3D2607D9` holds `snapshot-A74` with T1's build; `80CF0F18` was shut down after its runs.
