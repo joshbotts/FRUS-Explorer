@@ -26,8 +26,8 @@ import CSQLite
 /// `init(databaseURL:)` enables Write-Ahead Logging immediately after opening the connection.
 /// WAL allows readers and a single writer to proceed concurrently without
 /// blocking each other, which is important for the indexing pipeline that runs
-/// alongside live UI queries. `init(readingDatabaseAt:)` opens read-only and immutable and leaves
-/// the journal mode as the file has it.
+/// alongside live UI queries. `init(readingDatabaseAt:immutable:)` opens read-only, immutable or
+/// not, and leaves the journal mode as the file has it.
 ///
 /// ## Thread Safety
 /// FTS5Connection is not thread-safe. It is always accessed through `FTS5Store`,
@@ -39,6 +39,9 @@ import CSQLite
 ///          compiles there; Apple platforms still import `SQLite3`
 ///   1.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingDatabaseAt:)`, the read-only,
 ///          immutable open, which sets only the pragmas that shape reading
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S21d): `init(readingDatabaseAt:immutable:)`, whose
+///          `immutable: false` opens read-only but not immutable (`FTS5Store.readOnlyURI(for:)`), for an
+///          index its host writes on another connection; immutable by default, opened as before
 final class FTS5Connection {
 
     private(set) var db: OpaquePointer?
@@ -63,16 +66,19 @@ final class FTS5Connection {
         try enableWAL()
     }
 
-    /// Opens the database at `databaseURL` read-only and immutable (`FTS5Store.immutableURI(for:)`),
-    /// for an index another program wrote that nothing writes while it is open. SQLite takes no
-    /// lock, writes nothing beside the file and refuses every write. Only the pragmas that shape
-    /// reading are set: the journal mode is left as the file has it, and `synchronous`, a setting of
-    /// the connection that only writing reads, is not set.
-    init(readingDatabaseAt databaseURL: URL) throws {
+    /// Opens the database at `databaseURL` read-only. Immutable (`FTS5Store.immutableURI(for:)`), the
+    /// default, it is for an index another program wrote that nothing writes while it is open: SQLite
+    /// takes no lock, writes nothing beside the file and refuses every write. Not immutable
+    /// (`FTS5Store.readOnlyURI(for:)`), it is for an index its host writes on another connection while
+    /// it is read: SQLite takes the locks a reader takes and reads the write-ahead log, so each
+    /// statement reads what the writer last committed, and it refuses every write. Either way only the
+    /// pragmas that shape reading are set: the journal mode is left as the file has it, and
+    /// `synchronous`, a setting of the connection that only writing reads, is not set.
+    init(readingDatabaseAt databaseURL: URL, immutable: Bool = true) throws {
         self.databaseURL = databaseURL
         var handle: OpaquePointer?
         let rc = sqlite3_open_v2(
-            FTS5Store.immutableURI(for: databaseURL),
+            immutable ? FTS5Store.immutableURI(for: databaseURL) : FTS5Store.readOnlyURI(for: databaseURL),
             &handle,
             SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX,
             nil

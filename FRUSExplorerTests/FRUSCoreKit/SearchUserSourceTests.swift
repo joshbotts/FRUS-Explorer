@@ -46,6 +46,7 @@ import Crypto
 ///
 /// Version history:
 ///   1.0 — FRUS Explorer Light S17a: initial implementation
+///   1.1 — FRUS Explorer Light S21d: the live read-only open attaches the store as the immutable one does
 @Suite("FRUSCoreKit — a search's user half from an attached store")
 struct SearchUserSourceTests {
 
@@ -461,6 +462,36 @@ struct SearchUserSourceTests {
         await #expect(throws: IndexingError.self) {
             _ = try await service.search(parameters: Self.search("zanzibar", documents: false), limit: 10)
         }
+    }
+
+    @Test("Opened read-only but not immutable, the index attaches the store as the immutable open does: each reader's search, count and tag counts are the same")
+    func theLiveOpenAttachesTheStore() async throws {
+        let fixture = try await Self.makeFixture()
+        defer { fixture.close() }
+        let fts5 = try FTS5Store(readingLiveDatabaseAt: fixture.served)
+        let pipeline = try IndexingPipeline(readingLiveIndexAt: fixture.served, fts5Store: fts5, resources: .none,
+                                            volumesDirectory: fixture.dir.appendingPathComponent("volumes"),
+                                            userStore: fixture.store)
+        #expect(pipeline.attachedUserStoreAccessForTesting() == 1)
+        for user in [Self.reader, Self.other] {
+            let live = SearchService(fts5Store: fts5, pipeline: pipeline, userSource: .attachedStore(userId: user))
+            let immutable = fixture.service(user)
+            for parameters in [Self.search("zanzibar", documents: false), Self.search("telegram"), Self.search("=Zanzibar")] {
+                let liveKeys = Self.keys(try await live.search(parameters: parameters, limit: 50))
+                let immutableKeys = Self.keys(try await immutable.search(parameters: parameters, limit: 50))
+                #expect(liveKeys == immutableKeys, "\(user) \(parameters.keywords ?? "")")
+                let liveCount = try await live.searchCount(parameters: parameters)
+                let immutableCount = try await immutable.searchCount(parameters: parameters)
+                #expect(liveCount == immutableCount, "\(user) \(parameters.keywords ?? "")")
+            }
+            let liveTags = try await live.userTagCounts(parameters: Self.search("berlin"), tagIds: [Self.tagA, Self.tagB])
+            let immutableTags = try await immutable.userTagCounts(parameters: Self.search("berlin"), tagIds: [Self.tagA, Self.tagB])
+            #expect(liveTags == immutableTags, "\(user)")
+        }
+        // A reader's half found through the live open is theirs alone, as through the immutable one.
+        let reader = SearchService(fts5Store: fts5, pipeline: pipeline, userSource: .attachedStore(userId: Self.reader))
+        #expect(Set(Self.keys(try await reader.search(parameters: Self.search("zanzibar", documents: false), limit: 50)))
+                == Set(["d2", "d5", "d6"].map(Self.key)))
     }
 
     @Test("The store's rows are read once a statement, not once a matched row: its tag and exact-word sets are uncorrelated, and its tag counts are driven from the reader's assignments")
