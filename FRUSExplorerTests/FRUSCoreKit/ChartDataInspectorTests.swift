@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ChartDataInspectorTests
 
@@ -26,6 +32,7 @@ import Foundation
 ///         with notes, from chart rows that now hold a zero row for every other category
 struct ChartDataInspectorTests {
 
+    #if !SWIFT_PACKAGE // the adapters, their data and the bundled index they read are the app's (`ChartInspectorAdapters`)
     // MARK: - Fixtures
 
     /// Builds a manifest entry with just the fields the production/geography data
@@ -236,6 +243,7 @@ struct ChartDataInspectorTests {
         #expect(ChartInspectorAdapters.percent(1.0) == "100.0%")
         #expect(ChartInspectorAdapters.percent(0.0) == "0.0%")
     }
+    #endif
 
     // MARK: - CSV serialisation
 

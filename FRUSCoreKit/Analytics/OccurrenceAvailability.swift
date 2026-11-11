@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - OccurrenceAvailability
 
@@ -61,7 +64,8 @@ import Foundation
 ///   1.4 — #1297 round 4 (docs only): parser 6.6 compares marks by word, so one word marked in every alternative in two
 ///         spellings is exact-word; `exactWord`'s doc says a mark is ignored when only one alternative marks the word,
 ///         not "in one alternative", which D4 made false for a word every alternative marks
-enum OccurrenceAvailability: Equatable, Sendable {
+///   1.5 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public enum OccurrenceAvailability: Equatable, Sendable {
 
     /// Occurrences can be counted, for the single index term named.
     case available(stem: String)
@@ -70,7 +74,7 @@ enum OccurrenceAvailability: Equatable, Sendable {
     case unavailable(reason: Reason)
 
     /// Why a query cannot be counted by occurrence.
-    enum Reason: String, Equatable, Sendable, CaseIterable {
+    public enum Reason: String, Equatable, Sendable, CaseIterable {
         /// `=word`, applied as an exact-word filter — the index holds stems, so exact-word instances are not
         /// recoverable. A mark the parser ignores (when only one `OR` alternative marks the word, say) is not this
         /// reason.
@@ -85,7 +89,7 @@ enum OccurrenceAvailability: Equatable, Sendable {
         case noPositiveTerm
 
         /// One sentence, for the researcher. States what is true, not what might change.
-        var explanation: String {
+        public var explanation: String {
             switch self {
             case .exactWord:
                 return String(localized: "analytics.occurrences.unavailable.exact",
@@ -107,16 +111,16 @@ enum OccurrenceAvailability: Equatable, Sendable {
     }
 
     /// The stem to count, or `nil` when unavailable.
-    var stem: String? {
+    public var stem: String? {
         if case .available(let stem) = self { return stem }
         return nil
     }
 
     /// Whether occurrences can be counted.
-    var isAvailable: Bool { stem != nil }
+    public var isAvailable: Bool { stem != nil }
 
     /// The reason, or `nil` when available.
-    var reason: Reason? {
+    public var reason: Reason? {
         if case .unavailable(let reason) = self { return reason }
         return nil
     }
@@ -133,7 +137,7 @@ enum OccurrenceAvailability: Equatable, Sendable {
     ///   - term: the analytics term as typed.
     ///   - resolveStem: maps a word to its index term, or `nil` if it is not exactly one token.
     ///     Pass `FTS5Store.indexStem(of:)`.
-    static func classify(term: String, resolveStem: (String) -> String?) -> OccurrenceAvailability {
+    public static func classify(term: String, resolveStem: (String) -> String?) -> OccurrenceAvailability {
         let parsed = FTS5InlineQueryParser.parseDetailed(term)
 
         // Exact-word first: it is checked before operand shape because `=word` parses as an ordinary

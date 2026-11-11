@@ -42,22 +42,23 @@ import Foundation
 /// Version history:
 ///   1.0 — R-2 PR-C: initial implementation
 ///   1.1 — #1756 (docs only): the counts come from the hand-off search's keys, not the volume breakdown
-struct CorpusDispersion: Equatable {
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct CorpusDispersion: Equatable, Sendable {
 
     /// How many volumes contain at least one match.
-    let volumes: Int
+    public let volumes: Int
 
     /// How many volumes are indexed on this device.
     ///
     /// The denominator is deliberately the device's index, not the manifest's 553 published volumes:
     /// a share of the published series would be a claim about data this device does not have.
-    let indexedVolumeCount: Int
+    public let indexedVolumeCount: Int
 
     /// The share of all matches held by the three volumes with the most, in `0...1`.
-    let topThreeShare: Double
+    public let topThreeShare: Double
 
     /// `topThreeShare` as a whole percentage, for display.
-    var topThreePercent: Int { Int((topThreeShare * 100).rounded()) }
+    public var topThreePercent: Int { Int((topThreeShare * 100).rounded()) }
 
     /// Whether the concentration is worth saying out loud.
     ///
@@ -69,7 +70,7 @@ struct CorpusDispersion: Equatable {
     ///   would train the reader to ignore the line.
     /// - **more than three volumes** — with three or fewer, "the top 3 hold 100%" is arithmetic, not
     ///   a finding. The volume count already said it.
-    var showsConcentration: Bool { topThreeShare >= 0.25 && volumes > 3 }
+    public var showsConcentration: Bool { topThreeShare >= 0.25 && volumes > 3 }
 
     /// Builds a dispersion summary from a term's per-volume match counts.
     ///
@@ -80,7 +81,7 @@ struct CorpusDispersion: Equatable {
     ///   - indexedVolumeCount: volumes indexed on this device.
     /// - Returns: `nil` when there is nothing to describe — no volumes with matches, or no matches at
     ///   all. `nil` means "say nothing", never "spread across 0 volumes".
-    static func make(volumeCounts: [Int], indexedVolumeCount: Int) -> CorpusDispersion? {
+    public static func make(volumeCounts: [Int], indexedVolumeCount: Int) -> CorpusDispersion? {
         let positive = volumeCounts.filter { $0 > 0 }
         guard !positive.isEmpty else { return nil }
         let total = positive.reduce(0, +)

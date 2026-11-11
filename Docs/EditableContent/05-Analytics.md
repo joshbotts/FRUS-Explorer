@@ -470,7 +470,7 @@ Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences
 ### Corpus Analytics — Normalization Caption
 
 #### Share-of-corpus caveat (% of documents mode)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 2131–2132 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1937–1938 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
 
 Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series.
 
@@ -484,7 +484,7 @@ word never appears" — the opposite of the truth. The distinction it teaches (A
 stem, Search filters to the exact word) must survive editing.*
 
 #### Title
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1850–1851 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1698–1699 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
 
 Exact-Word Charting Isn’t Available
 
@@ -494,7 +494,7 @@ Exact-Word Charting Isn’t Available
 <!-- Placeholder note: the leading interpolation renders the refused terms as a list ("=containment
      and =détente"). Keep `\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and)))`
      intact exactly as written. -->
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1854–1855 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1702–1703 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
 
 \(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell "containment" from "container". Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.
 
@@ -507,14 +507,14 @@ Mac, each under its own key: one key with two default values collides. Both are 
 prose rule, and are carried because the Mac's is new and an editor should see the pair.*
 
 #### Detail (iPhone and iPad)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2970–2971 | key: analytics.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2776–2777 | key: analytics.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
 
 Type a keyword and tap Search to chart its frequency across the FRUS corpus.
 
 <!-- END SOURCE: analytics.prompt.detail -->
 
 #### Detail (macOS)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2967–2968 | key: analytics.prompt.detail.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2773–2774 | key: analytics.prompt.detail.mac | shared: macOS only -->
 
 Type a keyword and click Search to chart its frequency across the FRUS corpus.
 
@@ -668,7 +668,7 @@ Citations between the \(Self.matrixVolumeLimit) volumes with the most references
 
 #### Corpus attribution — closes every export
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusAttribution | lines: 176–177 | key: analytics.export.attribution | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusAttribution | lines: 234–235 | key: analytics.export.attribution | shared: iOS+macOS (single edit point) -->
 
 Foreign Relations of the United States corpus published by the Office of the Historian, U.S. Department of State (history.state.gov). The corpus is in the public domain.
 
@@ -676,7 +676,7 @@ Foreign Relations of the United States corpus published by the Office of the His
 
 #### Dating rule
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 209–210 | key: analytics.export.caveat.dating.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 267–268 | key: analytics.export.caveat.dating.v2 | shared: iOS+macOS (single edit point) -->
 
 Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
 
@@ -686,7 +686,7 @@ Note: replaces `analytics.export.caveat.dating` (#1306) — the first time this 
 
 #### Corpus-coverage caveat
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusCaveat | lines: 218–219 | key: analytics.export.caveat.corpus %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusCaveat | lines: 277–278 | key: analytics.export.caveat.corpus %@ | shared: iOS+macOS (single edit point) -->
 
 Corpus: counts cover only the %@ indexed on this device, not the entire FRUS series. *(Interpolated with the indexed volumes as a count and its noun — “12 volumes”, “1 volume” (#1374 review, round 1, where it read “1 volume(s)”).)*
 
@@ -694,7 +694,7 @@ Corpus: counts cover only the %@ indexed on this device, not the entire FRUS ser
 
 #### Value-mode caveat
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.valueModeCaveat | lines: 226–227 | key: analytics.export.caveat.values %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.valueModeCaveat | lines: 285–286 | key: analytics.export.caveat.values %@ | shared: iOS+macOS (single edit point) -->
 
 Values: %@. A share is that period’s matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term.
 
@@ -702,7 +702,7 @@ Values: %@. A share is that period’s matching documents divided by all indexed
 
 #### Year range — when the chart ignores it
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.yearRangeDescription | lines: 191–192 | key: analytics.export.range.notApplied | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.yearRangeDescription | lines: 249–250 | key: analytics.export.range.notApplied | shared: iOS+macOS (single edit point) -->
 
 Not applied — this breakdown covers the whole corpus span
 
@@ -715,7 +715,7 @@ Printed on every exported figure. It used to read "Full method, caveats, and the
 not merely omit the caveats, it asserted they had travelled with the image. It now says where the
 numbers can be got, which is true however the figure is published.
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateDataPointer | lines: 170–171 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateDataPointer | lines: 228–229 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
 
 The underlying numbers are available as a CSV export from FRUS Explorer, with the full method statement.
 
@@ -728,7 +728,7 @@ The credit an exported figure carries **on the image**. Before this existed a pl
 application for the U.S. government's documentary edition. This is the one-line form; the full
 sentence in the CSV preamble is `analytics.export.attribution`, and the two should agree.
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateAttribution | lines: 159–160 | key: analytics.export.plateAttribution | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateAttribution | lines: 217–218 | key: analytics.export.plateAttribution | shared: iOS+macOS (single edit point) -->
 
 Foreign Relations of the United States, published by the Office of the Historian, U.S. Department of State. Public domain.
 
@@ -1910,14 +1910,14 @@ Central file, not printed
 #### Tooltip — Switch to Search with this term — and, if you narrowed the…
 <!-- #1756: re-keyed from analytics.handoff.help.v2. The link now prints Search's own count of the
      search it opens, so the tooltip says how that count can differ from the chart's total. -->
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1514–1515 | key: analytics.handoff.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1362–1363 | key: analytics.handoff.help.v3 -->
 
 Switch to Search with this term — and, if you narrowed the years of a date-based view, those years — to see the matching documents. The count is Search’s: it takes in a document whose dates overlap the years, even one the chart places before them, and leaves out an undated one, which the chart places in its volume’s first year. Search opens over document text only, with your own notes and summaries left out.
 
 <!-- END SOURCE: analytics.handoff.help.v3 -->
 
 #### Tooltip — Plot raw matching-document counts, or each period’s matches…
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3219–3220 | key: analytics.normalize.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3025–3026 | key: analytics.normalize.help -->
 
 Plot raw matching-document counts, or each period’s matches as a share of the indexed documents in that period so a rising corpus size doesn’t masquerade as a rising term.
 

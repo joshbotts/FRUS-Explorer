@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - Result Types
 
@@ -18,10 +21,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 98: initial implementation
-struct YearFrequency: Sendable, Identifiable {
-    let year: Int
-    let count: Int
-    var id: Int { year }
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct YearFrequency: Sendable, Identifiable {
+    public let year: Int
+    public let count: Int
+    public var id: Int { year }
 }
 
 /// Document frequency for a single `(year, volumeId)` pair — the per-source breakdown
@@ -31,11 +35,12 @@ struct YearFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 165: source color-coding for the time-series analytics charts
-struct YearVolumeFrequency: Sendable, Identifiable {
-    let year: Int
-    let volumeId: String
-    let count: Int
-    var id: String { "\(year)/\(volumeId)" }
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct YearVolumeFrequency: Sendable, Identifiable {
+    public let year: Int
+    public let volumeId: String
+    public let count: Int
+    public var id: String { "\(year)/\(volumeId)" }
 }
 
 /// Document frequency broken down by FRUS subseries.
@@ -48,10 +53,11 @@ struct YearVolumeFrequency: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 98: initial implementation
 ///   1.1 — #208: subseries derived by the leading-year algorithm (Corpus Browser parity)
-struct SubseriesFrequency: Sendable, Identifiable {
-    let subseries: String
-    let count: Int
-    var id: String { subseries }
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct SubseriesFrequency: Sendable, Identifiable {
+    public let subseries: String
+    public let count: Int
+    public var id: String { subseries }
 }
 
 /// Document frequency broken down by individual FRUS volume.
@@ -63,10 +69,11 @@ struct SubseriesFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation (By-Volume analytics axis)
-struct VolumeFrequency: Sendable, Identifiable {
-    let volumeId: String
-    let count: Int
-    var id: String { volumeId }
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct VolumeFrequency: Sendable, Identifiable {
+    public let volumeId: String
+    public let count: Int
+    public var id: String { volumeId }
 }
 
 // `TermCount` moved to `WordCloudKit` in O-1 — the generator emits the same type.
@@ -79,11 +86,12 @@ struct VolumeFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 121: initial implementation
-struct DecadeFrequency: Sendable, Identifiable {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct DecadeFrequency: Sendable, Identifiable {
     /// The first calendar year of the ten-year bucket (e.g. `1960` for the 1960s).
-    let decadeStart: Int
-    let count: Int
-    var id: Int { decadeStart }
+    public let decadeStart: Int
+    public let count: Int
+    public var id: Int { decadeStart }
 }
 
 /// Document frequency aggregated per calendar month.
@@ -93,13 +101,14 @@ struct DecadeFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 121: initial implementation
-struct MonthFrequency: Sendable, Identifiable {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct MonthFrequency: Sendable, Identifiable {
     /// First day of the month, used for Swift Charts date-axis positioning.
-    let date: Date
+    public let date: Date
     /// Display label in `yyyy-MM` form (e.g. `"1969-02"`).
-    let label: String
-    let count: Int
-    var id: String { label }
+    public let label: String
+    public let count: Int
+    public var id: String { label }
 }
 
 /// Document frequency aggregated per calendar day.
@@ -113,25 +122,26 @@ struct MonthFrequency: Sendable, Identifiable {
 ///         `date` is now ONLY a plotting coordinate. Every consumer that wants to know
 ///         which day — or which year — a row belongs to reads the label, so no time zone
 ///         is consulted and none can disagree with another.
-struct DayFrequency: Sendable, Identifiable {
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct DayFrequency: Sendable, Identifiable {
     /// The day, used for Swift Charts date-axis positioning. Built in the device's
     /// calendar so that it matches the chart domain, which is built the same way.
     ///
     /// **Do not read a year or a day back out of this.** It is an instant, and which
     /// calendar day an instant falls on depends on the zone reading it. Use `label`.
-    let date: Date
+    public let date: Date
     /// Display label in `yyyy-MM-dd` form (e.g. `"1944-06-06"`): the day as `date_iso`
     /// stores it, carried through verbatim.
-    let label: String
-    let count: Int
-    var id: String { label }
+    public let label: String
+    public let count: Int
+    public var id: String { label }
 
     /// The calendar year this row belongs to, read off the stored day.
     ///
     /// The year-range filter reads this rather than `date` (#1327). A year taken from an instant
     /// is the year in whichever zone does the reading, which is how 793 corpus documents dated
     /// 1 January came to be filtered as the previous year's.
-    var year: Int? { Int(label.prefix(4)) }
+    public var year: Int? { Int(label.prefix(4)) }
 }
 
 /// Snapshot of an `AnalyticsView` query, used to hand a term and date window
@@ -167,35 +177,36 @@ struct DayFrequency: Sendable, Identifiable {
 ///   1.0 — Session 2026-06-07: introduced for Search ↔ Analytics integration
 ///   1.1 — Session 164: `scopeVolumeIds` / `scopeLabel` for the Word Cloud → Analytics
 ///          handoff (volume / subseries scope, with whole-corpus fallback)
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
 /// `Codable & Hashable` since CW-9b, so the same value can key the iOS
 /// `corpusAnalyticsScene` window: `openWindow(value:)` and `AppState.openAuxWindow` both require
 /// it. Every field is a `String`, `Int?` or `[String]?`, so both conformances are synthesised —
 /// which is what made this surface the second-cheapest analytics window after the map's.
-struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
+public struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
     /// The keyword term to chart. Required — `AnalyticsView.runSearch()` is a
     /// no-op for an empty term.
-    var term: String
+    public var term: String
 
     /// Optional lower bound for the chart's year-range filter. When `nil`,
     /// `AnalyticsView` keeps its default (1861).
-    var yearRangeStart: Int?
+    public var yearRangeStart: Int?
 
     /// Optional upper bound for the chart's year-range filter. When `nil`,
     /// `AnalyticsView` keeps its default (current calendar year).
-    var yearRangeEnd: Int?
+    public var yearRangeEnd: Int?
 
     /// Optional volume-ID scope. When non-empty, Corpus Analytics restricts every
     /// count to documents in these volumes (the Word Cloud → Analytics handoff for
     /// volume / subseries scopes). `nil` or empty means the whole indexed corpus.
-    var scopeVolumeIds: [String]?
+    public var scopeVolumeIds: [String]?
 
     /// Human-readable label for the active scope (e.g. a volume or subseries title),
     /// surfaced in the Analytics UI so the user knows the counts are scoped. `nil`
     /// for a corpus-wide query.
-    var scopeLabel: String?
+    public var scopeLabel: String?
 
     /// Creates a parameter snapshot to seed `AnalyticsView`.
-    init(term: String, yearRangeStart: Int? = nil, yearRangeEnd: Int? = nil,
+    public init(term: String, yearRangeStart: Int? = nil, yearRangeEnd: Int? = nil,
          scopeVolumeIds: [String]? = nil, scopeLabel: String? = nil) {
         self.term = term
         self.yearRangeStart = yearRangeStart
@@ -286,7 +297,8 @@ struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
 ///          `=Containment. OR =containment alliance`, one word marked in every alternative, is refused where 6.5 charted it
 ///   1.12 — #1299 (docs only): `makeQuery(from:)` names the Multiple words help text's current key,
 ///          `analytics.info.multiword.body.v3`
-actor CorpusAnalyticsService {
+///   1.13 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
 
@@ -322,7 +334,7 @@ actor CorpusAnalyticsService {
 
     // MARK: - Initialiser
 
-    init(fts5Store: FTS5Store, pipeline: IndexingPipeline) {
+    public init(fts5Store: FTS5Store, pipeline: IndexingPipeline) {
         self.fts5Store = fts5Store
         self.pipeline = pipeline
     }
@@ -333,7 +345,7 @@ actor CorpusAnalyticsService {
     ///
     /// Call after the FTS5 index has been modified (e.g. a volume was indexed
     /// or deleted) so stale analytics results are not served.
-    func invalidateCache() {
+    public func invalidateCache() {
         yearFrequencyCache.removeAll()
         yearVolumeFrequencyCache.removeAll()
         subseriesFrequencyCache.removeAll()
@@ -445,7 +457,7 @@ actor CorpusAnalyticsService {
     /// what an exact-word query with matches actually means.
     ///
     /// `nonisolated` and cheap: a parse, no I/O. Safe to call from a view body.
-    nonisolated static func unsupportedExactTerms(in term: String) -> [String] {
+    public nonisolated static func unsupportedExactTerms(in term: String) -> [String] {
         FTS5InlineQueryParser.parseDetailed(term).exactTerms
     }
 
@@ -500,7 +512,7 @@ actor CorpusAnalyticsService {
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted (the Word Cloud → Analytics handoff scope).
     /// - Returns: Array of `YearFrequency` sorted by `year` ascending.
-    func termFrequencyByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
+    public func termFrequencyByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = yearFrequencyCache[cacheKey] { return cached }
 
@@ -544,7 +556,7 @@ actor CorpusAnalyticsService {
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted.
     /// - Returns: Array of `YearVolumeFrequency`.
-    func termFrequencyByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [YearVolumeFrequency] {
+    public func termFrequencyByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [YearVolumeFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = yearVolumeFrequencyCache[cacheKey] { return cached }
 
@@ -588,7 +600,7 @@ actor CorpusAnalyticsService {
     ///     behaviour).
     ///   - volumeIds: Optional volume-ID scope, forwarded to `termFrequencyByYear`.
     /// - Returns: Array of `DecadeFrequency` sorted by `decadeStart` ascending.
-    func termFrequencyByDecade(term: String, volumeIds: Set<String>? = nil) async throws -> [DecadeFrequency] {
+    public func termFrequencyByDecade(term: String, volumeIds: Set<String>? = nil) async throws -> [DecadeFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = decadeFrequencyCache[cacheKey] { return cached }
 
@@ -620,7 +632,7 @@ actor CorpusAnalyticsService {
     ///   - term: One or more keywords (parsed identically to the other axes).
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted.
-    func termFrequencyByMonth(term: String, volumeIds: Set<String>? = nil) async throws -> [MonthFrequency] {
+    public func termFrequencyByMonth(term: String, volumeIds: Set<String>? = nil) async throws -> [MonthFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = monthFrequencyCache[cacheKey] { return cached }
 
@@ -672,7 +684,7 @@ actor CorpusAnalyticsService {
     ///   - term: One or more keywords (parsed identically to the other axes).
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted.
-    func termFrequencyByDay(term: String, volumeIds: Set<String>? = nil) async throws -> [DayFrequency] {
+    public func termFrequencyByDay(term: String, volumeIds: Set<String>? = nil) async throws -> [DayFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = dayFrequencyCache[cacheKey] { return cached }
 
@@ -727,7 +739,7 @@ actor CorpusAnalyticsService {
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted.
     /// - Returns: Array of `SubseriesFrequency` sorted by `subseries` ascending.
-    func termFrequencyBySubseries(term: String, volumeIds: Set<String>? = nil) async throws -> [SubseriesFrequency] {
+    public func termFrequencyBySubseries(term: String, volumeIds: Set<String>? = nil) async throws -> [SubseriesFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = subseriesFrequencyCache[cacheKey] { return cached }
 
@@ -764,7 +776,7 @@ actor CorpusAnalyticsService {
     ///   - volumeIds: Optional volume-ID scope; when non-empty, only documents in
     ///     these volumes are counted.
     /// - Returns: Array of `VolumeFrequency` sorted by `volumeId` ascending.
-    func termFrequencyByVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [VolumeFrequency] {
+    public func termFrequencyByVolume(term: String, volumeIds: Set<String>? = nil) async throws -> [VolumeFrequency] {
         let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
         if let cached = volumeFrequencyCache[cacheKey] { return cached }
 
@@ -807,7 +819,7 @@ actor CorpusAnalyticsService {
     ///   whose `volumeId` is in the set are counted, so the denominator matches a
     ///   scoped numerator's coverage.
     /// - Returns: A `[year: totalDocuments]` dictionary. Empty when the index is empty.
-    func documentTotalsByYear(volumeIds: Set<String>? = nil) async throws -> [Int: Int] {
+    public func documentTotalsByYear(volumeIds: Set<String>? = nil) async throws -> [Int: Int] {
         let cacheKey = scopedCacheKey(term: "", volumeIds: volumeIds)
         if let cached = documentTotalsByYearCache[cacheKey] { return cached }
 
@@ -845,7 +857,7 @@ actor CorpusAnalyticsService {
     /// - Parameter volumeIds: Optional volume-ID scope, forwarded to
     ///   `documentTotalsByYear`.
     /// - Returns: A `[decadeStart: totalDocuments]` dictionary.
-    func documentTotalsByDecade(volumeIds: Set<String>? = nil) async throws -> [Int: Int] {
+    public func documentTotalsByDecade(volumeIds: Set<String>? = nil) async throws -> [Int: Int] {
         let byYear = try await documentTotalsByYear(volumeIds: volumeIds)
         var totals: [Int: Int] = [:]
         for (year, count) in byYear {
@@ -875,7 +887,7 @@ actor CorpusAnalyticsService {
     /// Whether `term` can be counted by occurrence, resolved through SQLite's own tokenizer.
     ///
     /// Cheap: a parse plus one tokenizer probe, no index scan.
-    func occurrenceAvailability(for term: String) async -> OccurrenceAvailability {
+    public func occurrenceAvailability(for term: String) async -> OccurrenceAvailability {
         var resolved: [String: String?] = [:]
         // `classify` is synchronous, so the stem is pre-resolved for the one word it can ask about.
         let parsed = FTS5InlineQueryParser.parseDetailed(term)
@@ -908,7 +920,7 @@ actor CorpusAnalyticsService {
     /// - Returns: one entry per year with occurrences, ascending. Empty when the term is not
     ///   occurrence-countable or the index has never seen its stem — callers must distinguish those
     ///   two with `occurrenceAvailability(for:)` rather than reading emptiness as zero.
-    func termOccurrencesByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
+    public func termOccurrencesByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
         // DERIVED from the per-(year, volume) series rather than counted separately (#1305). The
         // chart's bar heights come from the segments and its footnote total from this series; two
         // accumulators could disagree, and one cannot.
@@ -940,7 +952,7 @@ actor CorpusAnalyticsService {
     /// The year rule is the document numerator's, byte for byte: `date_iso`'s first four characters,
     /// or the volume's start year for an undated document. Bucketing in SQL instead would silently
     /// drop every undated document's occurrences while its *document* stayed in the other series.
-    func termOccurrencesByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws
+    public func termOccurrencesByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws
         -> [YearVolumeFrequency] {
         guard let stem = await occurrenceAvailability(for: term).stem else { return [] }
         let cacheKey = scopedCacheKey(term: "occ:\(term)", volumeIds: volumeIds)
@@ -997,7 +1009,7 @@ actor CorpusAnalyticsService {
         return map
     }
 
-    nonisolated static func startYear(fromVolumeId volumeId: String) -> Int? {
+    public nonisolated static func startYear(fromVolumeId volumeId: String) -> Int? {
         guard volumeId.hasPrefix("frus") else { return nil }
         let afterFrus = volumeId.dropFirst(4)
         let digits = afterFrus.prefix(while: { $0.isNumber })
@@ -1021,7 +1033,7 @@ actor CorpusAnalyticsService {
     /// Vietnam extras, conference-only ids) and kept the area token for the rest.
     ///
     /// Returns `nil` only when the id does not begin with `"frus"` followed by a 4-digit year.
-    nonisolated static func subseries(fromVolumeId volumeId: String) -> String? {
+    public nonisolated static func subseries(fromVolumeId volumeId: String) -> String? {
         guard volumeId.hasPrefix("frus") else { return nil }
         let afterFrus = volumeId.dropFirst(4)
         guard let range = afterFrus.range(of: #"^\d{4}(-\d{2,4})?"#, options: .regularExpression) else {

@@ -20,6 +20,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — PV-1: initial implementation
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): the builders' scan reads FRUSCoreKit too, through
+///         `AppSourceTree`, since `SeriesAnalyticsExport`'s four builders moved there (`../FRUSCoreKit/…`)
 @Suite("Provenance statements in exports")
 struct ProvenanceStatementTests {
 
@@ -315,7 +317,7 @@ struct AnalyticsExportSourcesTests {
         "Analytics/PersonAnalyticsView.swift": ["[.frusText, .ohPeopleRegister]"],
         "Analytics/WordCloud/WordCloudView.swift": ["[.frusText, .appWordLists]"],
         "Semantic/Map/SemanticMapExport.swift": ["[.frusText, .appModel]"],
-        "SeriesAnalytics/SeriesAnalyticsExport.swift": [nil, "[.frusText, .ohSubjects]", nil, nil],
+        "../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift": [nil, "[.frusText, .ohSubjects]", nil, nil],
         "Analytics/ArchivalAnalyticsExport.swift": [
             "rankingSources(lens: lens, weight: weight, glossesWritten: glossesWritten)", nil, nil, nil, nil],
     ]
@@ -323,13 +325,14 @@ struct AnalyticsExportSourcesTests {
     @Test("Every analytics provenance builder in the app states the sources it drew on")
     func everyBuilderStatesItsSources() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let app = root.appendingPathComponent("FRUSExplorer")
-        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
         var found: [String: [String?]] = [:]
         var calls = 0
-        for case let url as URL in files where url.pathExtension == "swift" {
+        // Both trees the app compiles, a kit file named `../FRUSCoreKit/…` as the copy scans name it.
+        for url in AppSourceTree.swiftFiles(in: root) {
             let source = try String(contentsOf: url, encoding: .utf8)
-            let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
+            let relative = url.path.contains("/FRUSCoreKit/")
+                ? "../FRUSCoreKit/" + (url.path.components(separatedBy: "/FRUSCoreKit/").last ?? url.path)
+                : url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
             var searchStart = source.startIndex
             while let hit = source.range(of: "AnalyticsProvenance(", range: searchStart..<source.endIndex) {
                 searchStart = hit.upperBound

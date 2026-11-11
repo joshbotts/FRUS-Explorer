@@ -9,7 +9,13 @@
 import Foundation
 import Testing
 
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - AnalyticsValueUnitTests
 
@@ -78,21 +84,28 @@ struct AnalyticsValueUnitTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // the audit reads the app's sources, which the package does not compile
     // MARK: The audit that keeps it consolidated
 
     /// `FRUSExplorer/Analytics/` from this test file's location.
     private static let analyticsDirectory: URL = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()
         .deletingLastPathComponent()
+        .deletingLastPathComponent()
         .appendingPathComponent("FRUSExplorer/Analytics")
+    #endif
 
-    /// `FRUSCoreKit/Analytics/`, which took two of the app's analytics files when the kit was made:
-    /// the scan reads it too, so they stay inside the rule they were under (#1604).
+    /// `FRUSCoreKit/Analytics/`, which took two of the app's analytics files when the kit was made, and
+    /// Corpus Analytics' service, its value types and the method block, the owner among them, when
+    /// FRUS Explorer Light's S24a moved them: the scan reads it too, so they stay inside the rule they
+    /// were under (#1604).
     private static let kitAnalyticsDirectory: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
         .deletingLastPathComponent()
         .deletingLastPathComponent()
         .appendingPathComponent("FRUSCoreKit/Analytics")
 
+    #if !SWIFT_PACKAGE // the audit reads the app's sources, which the package does not compile
     @Test("The unit noun is written out in exactly one file")
     func unitNounIsNotHardcodedElsewhere() throws {
         // Both the localization key and the English default are checked: someone could reintroduce
@@ -111,7 +124,7 @@ struct AnalyticsValueUnitTests {
         // Anti-vacuity: if the scan path breaks, every needle is trivially absent and this passes
         // while auditing nothing.
         #expect(paths.count > 10, "Only \(paths.count) Swift files under Analytics/; the scan path is wrong")
-        #expect(paths.contains { $0.hasSuffix("AnalyticsValueUnit.swift") },
+        #expect(kitPaths.contains { $0 == "AnalyticsValueUnit.swift" },
                 "The file that is supposed to own these strings is not in the scan")
         #expect(!kitPaths.isEmpty, "No Swift files under FRUSCoreKit/Analytics/; the scan path is wrong")
 
@@ -121,9 +134,9 @@ struct AnalyticsValueUnitTests {
                               url: Self.kitAnalyticsDirectory.appendingPathComponent($0)) }
         for (path, url) in files {
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            // The app's own file, by its whole path under `FRUSExplorer/Analytics/`: a kit file's
-            // path here starts `FRUSCoreKit/`, so no file there is taken for the owner by its name.
-            let owns = path == "AnalyticsValueUnit.swift"
+            // The owner, by its whole path: the kit's since S24a, where an app file's path here is
+            // relative to `FRUSExplorer/Analytics/`, so no file there is taken for the owner by its name.
+            let owns = path == "FRUSCoreKit/Analytics/AnalyticsValueUnit.swift"
             for needle in needles where text.contains(needle) {
                 // Comments in other files may DISCUSS the strings; only code should carry them.
                 let inCodeOnly = text
@@ -147,10 +160,11 @@ struct AnalyticsValueUnitTests {
             something else — with no compile error and no test failure.
             """)
     }
+    #endif
 
     @Test("AnalyticsValueUnit owns each string exactly once")
     func ownerFileHasNoDuplicates() throws {
-        let url = Self.analyticsDirectory.appendingPathComponent("AnalyticsValueUnit.swift")
+        let url = Self.kitAnalyticsDirectory.appendingPathComponent("AnalyticsValueUnit.swift")
         let text = try String(contentsOf: url, encoding: .utf8)
         for needle in ["analytics.axis.documents", "analytics.export.column.matching"] {
             let occurrences = text.components(separatedBy: needle).count - 1
@@ -262,6 +276,7 @@ struct AnalyticsOccurrenceMeasureTests {
     }
 }
 
+#if !SWIFT_PACKAGE // `SavedAnalyticsQuery` is the app's
 // MARK: - SavedAnalyticsQueryUnitTests
 
 /// The counting unit travels with a saved query, because it changes what the query asks.
@@ -303,6 +318,7 @@ struct SavedAnalyticsQueryUnitTests {
         #expect(decoded.terms == ["treaty"])
     }
 }
+#endif
 
 // MARK: - HandOffCountUnitTests
 
@@ -350,6 +366,7 @@ struct HandOffCountUnitTests {
     }
 }
 
+#if !SWIFT_PACKAGE // `AnalyticsViewMode` and `AnalyticsView` are the app's
 // MARK: - AnalyticsDisplayedModeTests
 
 /// The display a Corpus Analytics comparison is drawn in (#1583).
@@ -380,7 +397,7 @@ struct AnalyticsDisplayedModeTests {
     @Test("AnalyticsView reads the display on screen at every gate, and the control's stored value nowhere else")
     func analyticsViewGatesReadTheDisplayedMode() throws {
         let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Analytics/AnalyticsView.swift"), encoding: .utf8)
         let code = source.split(separator: "\n", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -405,3 +422,4 @@ struct AnalyticsDisplayedModeTests {
         #expect(gates.count == 8, "\(gates.count) gates read the display on screen: \(gates)")
     }
 }
+#endif

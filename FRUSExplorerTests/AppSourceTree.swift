@@ -33,6 +33,10 @@ import Testing
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: initial implementation
 ///   1.1 — #1604: ``compiledDirectories``, and `AppSourceTreeTests`
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): `walksTheAppFolderAlone` names
+///          `AnalyticsValueUnitTests.swift` by its place in `FRUSCoreKit/`, where it moved, and drops
+///          `ProvenanceStatementTests.swift`, which reads both trees through this type since
+///          `AnalyticsProvenance` and `SeriesAnalyticsExport` moved into the kit
 enum AppSourceTree {
 
     /// The directories, relative to the repository root.
@@ -153,7 +157,7 @@ struct AppSourceTreeTests {
     /// with the reason: what its rule is about that a kit file cannot name, or how it reads the
     /// kit itself. An exact list, not permission: a scan added here is one somebody has read.
     static let walksTheAppFolderAlone: [String: String] = [
-        "AnalyticsValueUnitTests.swift": "reads the kit's Analytics folder beside the app's, by two paths of its own",
+        "FRUSCoreKit/AnalyticsValueUnitTests.swift": "reads the kit's Analytics folder beside the app's, by two paths of its own",
         "BackgroundTaskAppStateTests.swift": "the app's calls that start an index pass, held to AppState's count, which kit code cannot name; the kit's own calls run inside the pipeline methods those calls reach",
         "BrowseScopeTests.swift": "call sites of ScopeIndexView, a SwiftUI view",
         "BrowseTwoPaneMetricsTests.swift": "root selections on the browser's view model, an app type",
@@ -169,7 +173,6 @@ struct AppSourceTreeTests {
         "MacDocumentOpenRoutingTests.swift": "AppState's document-open channel",
         "MacWindowFrontingTests.swift": "calls of SwiftUI's openWindow",
         "MacWindowRoutingTests.swift": "SwiftUI window scenes",
-        "ProvenanceStatementTests.swift": "calls of AnalyticsProvenance, an app type",
         "ResearchDocumentAggregationTests.swift": "SwiftUI row backgrounds and the selected trait",
         "SceneAddressingTests.swift": "scene identities, SwiftUI's and AppState's",
         "SceneEnvironmentAuditTests.swift": "SwiftUI scenes and what each injects",

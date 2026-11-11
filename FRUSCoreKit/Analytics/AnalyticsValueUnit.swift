@@ -45,11 +45,12 @@ import Foundation
 /// Version history:
 ///   1.0 — R-2 PR-B: initial implementation, ahead of the occurrence unit (PR-D)
 ///   1.1 — 2026-09-25: #1374 review, round 1 — `fullCorpusTotal(_:)`, moved off `AnalyticsView`
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
 // `Codable` is synthesized from the `String` raw value, which is what makes it safe here: the
 // recursion trap recorded for this codebase is a *Codable struct* given a `rawValue` that re-encodes
 // `self` for `@AppStorage`. A raw-value enum has a real `rawValue` and needs no such shim, so it
 // works with `@AppStorage` and `JSONEncoder` alike.
-enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
+public enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
 
     /// Matching documents — one per document that matches, however many times it matches.
     case documents
@@ -61,7 +62,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     case occurrences
 
     /// The axis title and table-column noun, capitalised.
-    var axisLabel: String {
+    public var axisLabel: String {
         switch self {
         case .documents:
             return String(localized: "analytics.axis.documents", defaultValue: "Documents")
@@ -77,7 +78,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     ///
     /// Distinct from ``axisLabel`` because an export column has room to name the population and a
     /// chart axis does not.
-    var exportColumnHeader: String {
+    public var exportColumnHeader: String {
         switch self {
         case .documents:
             return String(localized: "analytics.export.column.matching",
@@ -97,7 +98,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     /// Through `CountCopy` since #1374, like `accessibilityPhrase(count:)`: both had carried the
     /// count through a `%lld`, which printed a count of 1,000 or more ungrouped beside the grouped
     /// figures elsewhere on the screen.
-    func matchedPhrase(count: Int) -> String {
+    public func matchedPhrase(count: Int) -> String {
         switch self {
         case .documents:
             return CountCopy.phrase(count,
@@ -111,7 +112,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     }
 
     /// VoiceOver phrasing for one raw value: "182 documents".
-    func accessibilityPhrase(count: Int) -> String {
+    public func accessibilityPhrase(count: Int) -> String {
         switch self {
         case .documents:
             return CountCopy.phrase(count,
@@ -133,7 +134,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     ///
     /// - Parameter total: The full-corpus total for the query.
     /// - Returns: The phrase.
-    static func fullCorpusTotal(_ total: Int) -> String {
+    public static func fullCorpusTotal(_ total: Int) -> String {
         String(format: String(localized: "analytics.total.all %@",
                               defaultValue: "%@ total in full corpus"),
                total.formatted())
@@ -150,7 +151,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     }
 
     /// Short label for the Measure picker.
-    var pickerLabel: String {
+    public var pickerLabel: String {
         switch self {
         case .documents:
             return String(localized: "analytics.measure.documents", defaultValue: "Documents")
@@ -168,7 +169,7 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     /// whatever the numerator counts, so "% of documents" stays accurate. Keeping that reasoning in
     /// one function is the point — spread across thirteen call sites it would be re-decided
     /// thirteen times.
-    static func axisLabel(unit: AnalyticsValueUnit, isNormalized: Bool) -> String {
+    public static func axisLabel(unit: AnalyticsValueUnit, isNormalized: Bool) -> String {
         guard isNormalized else { return unit.axisLabel }
         return String(localized: "analytics.axis.percentOfDocuments",
                       defaultValue: "% of documents")

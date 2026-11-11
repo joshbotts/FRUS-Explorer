@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // The three fixture helpers below are `internal`, not `private`: `OccurrenceCountTests` builds the
 // same real-index fixtures to assert the occurrence numerator against this file's document numerator,
@@ -124,7 +134,7 @@ struct CorpusAnalyticsServiceTests {
     @Test("subseries(fromVolumeId:) equals every bundled manifest entry's subseries (whole-corpus browser parity)")
     @MainActor
     func subseriesMatchesBundledManifest() throws {
-        let entries = ManifestStore().bundledEntries
+        let entries = try testManifestEntries()
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         for entry in entries {
             #expect(CorpusAnalyticsService.subseries(fromVolumeId: entry.volumeId) == entry.subseries,
@@ -132,6 +142,7 @@ struct CorpusAnalyticsServiceTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // `ChronologyViewModel`'s label, and the bundled manifest through the app's `ManifestStore`
     @Test("distilledVolumeLabel stays unique and unmangled with the leading-year subseries (#208)")
     func distilledLabelUniqueForConferenceVolumes() {
         // Conference / supplement volumes stay distinct from a plain annual of the same year —
@@ -206,6 +217,7 @@ struct CorpusAnalyticsServiceTests {
         // make two entries read alike, not merge their series.
         #expect(fullLabels.count == entries.count)
     }
+    #endif
 
     /// A term that appears in two of three indexed volumes must yield exactly those
     /// two `VolumeFrequency` rows (with correct per-volume counts), omit the volume
@@ -670,6 +682,7 @@ struct CorpusAnalyticsServiceTests {
         }
     }
 }
+#if !SWIFT_PACKAGE // the suite sets the process's time zone, which the package's parallel run shares with every other suite (on Linux it moved CollectionResolutionTests' dates), and Linux's Foundation does not follow it within a run
 // MARK: - ByDayTimeZoneTests (#1327)
 
 /// The By-Day series' dates read back as the day they were stored (#1327).
@@ -685,7 +698,9 @@ struct CorpusAnalyticsServiceTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-20: #1327
-@Suite("Corpus analytics — By Day is zone-consistent (#1327)")
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): serialized, since its tests set the process's zone,
+///          and each checks that the zone it pinned is the one in force; Xcode's alone, as before the move
+@Suite("Corpus analytics — By Day is zone-consistent (#1327)", .serialized)
 struct ByDayTimeZoneTests {
 
     /// Runs `body` with the process time zone pinned, then restores it.
@@ -693,6 +708,7 @@ struct ByDayTimeZoneTests {
         let original = getenv("TZ").map { String(cString: $0) }
         setenv("TZ", identifier, 1)
         NSTimeZone.resetSystemTimeZone()
+        #expect(TimeZone.current.identifier == identifier, "the process's zone did not follow TZ")
         defer {
             if let original { setenv("TZ", original, 1) } else { unsetenv("TZ") }
             NSTimeZone.resetSystemTimeZone()
@@ -833,3 +849,4 @@ struct ByDayTimeZoneTests {
         }
     }
 }
+#endif

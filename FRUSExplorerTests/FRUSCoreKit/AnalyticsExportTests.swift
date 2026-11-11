@@ -8,7 +8,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - AnalyticsProvenanceTests
 
@@ -61,6 +67,7 @@ struct AnalyticsProvenanceTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // the on-screen row is the app's `FeatureInfoButton`
     /// The test that would have caught the #1299 drift. The exported caveat and the on-screen row
     /// describe one rule, and for a release they did not: the row dropped `TEI <date>` and the
     /// caveat kept it. Pin the CLAIMS rather than the wording — the two are deliberately phrased
@@ -85,6 +92,7 @@ struct AnalyticsProvenanceTests {
                 """)
         }
     }
+    #endif
 
     /// The selective-corpus caveat names the actual indexed count and is emitted in raw mode too —
     /// on screen it only appears with the `%` caption.
@@ -319,6 +327,7 @@ struct AnalyticsChartTablesTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the two suites below test the app's `AnalyticsExportDelivery` and `PersonAnalyticsMath`
 // MARK: - AnalyticsExportDeliveryTests
 
 /// Tests the export filename stem (D3) — repeat exports of the same chart must be distinguishable
@@ -491,6 +500,7 @@ struct PersonTrajectoryExportPeriodTests {
         #expect(decade[0].value == 50)
     }
 }
+#endif
 
 // MARK: - AnalyticsWordCloudExportTests
 

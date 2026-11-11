@@ -1726,7 +1726,7 @@ Summarizing FRUS documents
 
 #### `analytics.export.column.occurrences`
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsValueUnit.swift | key: analytics.export.column.occurrences | ships at: AnalyticsValueUnit.swift:90 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/AnalyticsValueUnit.swift | key: analytics.export.column.occurrences | ships at: AnalyticsValueUnit.swift:91 -->
 
 Occurrences (index stems)
 
@@ -1734,7 +1734,7 @@ Occurrences (index stems)
 
 *Corpus Analytics’ CSV column. The Word Cloud CSV’s count column now has a key of its own, because it counts something else: NLTagger lemmas in document text, not index stems.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.wordcloud.occurrences | ships at: AnalyticsChartTables.swift:349 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.wordcloud.occurrences | ships at: AnalyticsChartTables.swift:442 -->
 
 Occurrences
 

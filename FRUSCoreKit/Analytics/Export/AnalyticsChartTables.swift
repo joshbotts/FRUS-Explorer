@@ -14,14 +14,23 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
-struct CorpusSeriesPoint: Sendable, Equatable {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public, with its
+///          memberwise initialiser spelt out so that a host builds the points it hands the table
+public struct CorpusSeriesPoint: Sendable, Equatable {
     /// The period as the chart labels it (`1969`, `1960s`, `February 1969`, `Berlin Crisis`…).
-    let periodLabel: String
+    public let periodLabel: String
     /// The key into the corpus-totals denominator (a year, or a decade's start year) — `nil` on the
     /// axes that have no per-period corpus total (By Month / By Day / the categorical breakdowns).
-    let denominatorKey: Int?
+    public let denominatorKey: Int?
     /// Documents matching the term in this period.
-    let count: Int
+    public let count: Int
+
+    /// Creates a point, as the memberwise initialiser did.
+    public init(periodLabel: String, denominatorKey: Int?, count: Int) {
+        self.periodLabel = periodLabel
+        self.denominatorKey = denominatorKey
+        self.count = count
+    }
 }
 
 // MARK: - AnalyticsChartTables
@@ -45,7 +54,8 @@ struct CorpusSeriesPoint: Sendable, Equatable {
 ///   1.3 — 2026-10-12: #1617 — the Most-Referenced Documents table states its graph too, each
 ///         bar under the name the chart's axis gives it, so two documents of one title are two
 ///         categories
-enum AnalyticsChartTables {
+///   1.4 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public enum AnalyticsChartTables {
 
     /// The Corpus Analytics series table: one row per (term, period).
     ///
@@ -71,7 +81,7 @@ enum AnalyticsChartTables {
     /// - Returns: The table backing this chart. It states the numbers the chart plots
     ///   (`ChartInspectorData.audioGraph`, #1616): one series a term, a point for each period the
     ///   chart draws, and none where a share has no denominator.
-    static func corpusSeriesTable(
+    public static func corpusSeriesTable(
         id: String,
         title: String,
         periodColumn: String,
@@ -143,7 +153,7 @@ enum AnalyticsChartTables {
     ///   - share: A percentage in `0...100`.
     ///   - locale: The locale that writes the decimal; the user's own unless a test passes one.
     /// - Returns: The formatted value, e.g. `12.4`.
-    static func formatShare(_ share: Double, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func formatShare(_ share: Double, locale: Locale = .autoupdatingCurrent) -> String {
         share.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
     }
 
@@ -161,7 +171,7 @@ enum AnalyticsChartTables {
     ///
     /// - Parameter share: A percentage in `0...100`.
     /// - Returns: The share rounded to one decimal.
-    static func shareValue(_ share: Double) -> Double {
+    public static func shareValue(_ share: Double) -> Double {
         (share * 10).rounded(.toNearestOrEven) / 10
     }
 
@@ -177,7 +187,7 @@ enum AnalyticsChartTables {
     ///   - title: The chart's title.
     ///   - rows: Each ranked person's rollup id, canonical name, chart axis label, and mention count.
     /// - Returns: The table backing the ranking chart.
-    static func personRankingTable(
+    public static func personRankingTable(
         title: String,
         rows: [(rollupId: Int, name: String, axisLabel: String, mentions: Int)]
     ) -> ChartInspectorData {
@@ -209,7 +219,7 @@ enum AnalyticsChartTables {
     /// - Returns: The table backing the trajectory chart. It states the numbers the chart plots
     ///   (`ChartInspectorData.audioGraph`, #1616): one series a person, under that person's name
     ///   when one person is charted as when several are.
-    static func personTrajectoryTable(
+    public static func personTrajectoryTable(
         title: String,
         periodColumn: String,
         series: [(rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)])],
@@ -262,7 +272,7 @@ enum AnalyticsChartTables {
     ///   - personB: The second compared person's name.
     ///   - points: Each period's co-mention document count.
     /// - Returns: The table backing the relationship chart.
-    static func personRelationshipTable(
+    public static func personRelationshipTable(
         title: String,
         periodColumn: String,
         personA: String,
@@ -296,7 +306,7 @@ enum AnalyticsChartTables {
     ///   - title: The chart's title.
     ///   - rows: Each ranked document's volume, document id, display label, and inbound count.
     /// - Returns: The table backing the ranking chart.
-    static func crossRefRankingTable(
+    public static func crossRefRankingTable(
         title: String,
         rows: [(volumeId: String, documentId: String, label: String, inDegree: Int)]
     ) -> ChartInspectorData {
@@ -329,7 +339,7 @@ enum AnalyticsChartTables {
     ///   - title: The chart's title.
     ///   - rows: Each degree bucket's label, inbound document count, and optional outbound count.
     /// - Returns: The table backing the histogram.
-    static func crossRefDistributionTable(
+    public static func crossRefDistributionTable(
         title: String,
         rows: [(bucket: String, inDegreeDocuments: Int, outDegreeDocuments: Int?)]
     ) -> ChartInspectorData {
@@ -360,7 +370,7 @@ enum AnalyticsChartTables {
     ///   - rows: Each cell's citing/cited volume (id, resolved title) and reference count.
     ///   - includingZeroes: When `false`, pairs with no references are omitted.
     /// - Returns: The table backing the heat matrix.
-    static func crossRefMatrixTable(
+    public static func crossRefMatrixTable(
         title: String,
         rows: [(sourceId: String, sourceTitle: String, targetId: String, targetTitle: String, count: Int)],
         includingZeroes: Bool = false
@@ -387,7 +397,7 @@ enum AnalyticsChartTables {
     ///   - title: The chart's title.
     ///   - rows: Each landmark's volume, document id, display label, and PageRank score.
     /// - Returns: The table backing the landmark chart.
-    static func crossRefLandmarkTable(
+    public static func crossRefLandmarkTable(
         title: String,
         rows: [(volumeId: String, documentId: String, label: String, score: Double)]
     ) -> ChartInspectorData {
@@ -421,7 +431,7 @@ enum AnalyticsChartTables {
     ///   - totalTokens: Every non-stopword token counted in the scope, the share's denominator, or
     ///     `0` when it is unknown (the share column is then omitted rather than divided by zero).
     /// - Returns: The table backing the cloud.
-    static func wordCloudTable(
+    public static func wordCloudTable(
         title: String,
         terms: [(term: String, count: Int)],
         totalTokens: Int
@@ -455,7 +465,7 @@ enum AnalyticsChartTables {
     ///
     /// Both raw counts travel with each row so a reader can recompute the statistic, and the effect
     /// size travels beside the significance because G² alone conflates effect with sample size.
-    static func wordCloudKeynessTable(
+    public static func wordCloudKeynessTable(
         title: String,
         scores: [(term: String, logLikelihood: Double, logRatio: Double,
                   scopeCount: Int, referenceCount: Int)]

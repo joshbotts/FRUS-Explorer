@@ -34,6 +34,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): reads `AnalyticsChartTables.swift` in FRUSCoreKit, where
+///         it moved
 @Suite("Keyness wiring audit")
 struct KeynessWiringAuditTests {
 
@@ -170,7 +172,7 @@ struct KeynessWiringAuditTests {
         #expect(!view.contains("axisLabel: measure == .keyness"))
         #expect(view.contains("measure == .keyness && ranking == nil"),
                 "export must be disabled when Distinctive is selected but no ranking exists")
-        let tables = try source("FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift")
+        let tables = try source("FRUSCoreKit/Analytics/Export/AnalyticsChartTables.swift")
         #expect(tables.contains("wordCloudKeynessTable"),
                 "the frequency table's Occurrences / Share columns would present a keyness ordering as frequency data")
     }
