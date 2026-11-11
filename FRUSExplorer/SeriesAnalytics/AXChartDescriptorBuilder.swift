@@ -12,24 +12,6 @@ import Accessibility
 #endif
 import SwiftUI
 
-// MARK: - AXChartPoint
-
-/// One plotted point, as VoiceOver's Audio Graph needs it (#268).
-///
-/// Numeric on purpose. `ChartInspectorData` — the table behind every "show the data" pop-up — holds
-/// **already-formatted, already-localised** strings, and reading an axis range back out of them
-/// means parsing "1,204" and "38%" in whatever locale rendered them. That silently yields a wrong
-/// range rather than an error, which on an audio graph is inaudible: the tones simply describe the
-/// wrong shape. So the builder takes numbers, and the bridge below refuses rather than guesses.
-struct AXChartPoint: Sendable, Hashable {
-    /// The x label as the chart shows it (a year, a decade, a category).
-    let label: String
-    /// The x value when the axis is numeric; `nil` for a categorical axis.
-    let x: Double?
-    /// The plotted value.
-    let y: Double
-}
-
 // MARK: - AXChartDescriptorBuilder
 
 /// Builds the `AXChartDescriptor` VoiceOver's Audio Graph reads (#268).
@@ -52,7 +34,10 @@ struct AXChartPoint: Sendable, Hashable {
 ///   1.3 — 2026-10-12: #1617 — a point on a categorical axis is given its category's name, where
 ///          both builders gave it its position in the list (``dataPoint(_:onNumericAxis:)``), and
 ///          a categorical axis lists each label once (``categories(of:)``)
-enum AXChartDescriptorBuilder {
+///   1.4 — 2026-11-11 (FRUS Explorer Light, S24a): `AXChartPoint` and `numeric(_:)`, which
+///          `AnalyticsChartTables` reads, moved into FRUSCoreKit (`AXChartPoint.swift`), where the
+///          builder's type is declared; the descriptors and the two readers of a table stay here
+extension AXChartDescriptorBuilder {
 
     #if canImport(Accessibility)
     /// Builds a descriptor from the numbers a chart's table carries (``ChartAudioGraph``, #1587).
@@ -345,30 +330,5 @@ enum AXChartDescriptorBuilder {
             points.append(AXChartPoint(label: label, x: numeric(label), y: y))
         }
         return points.isEmpty ? nil : points
-    }
-
-    /// Reads a formatted cell back to a number, or `nil`.
-    ///
-    /// Handles the three shapes the adapters emit — a plain count, a grouped count (`1,204`), and
-    /// a percentage (`38%`, read as 38). Anything else is a refusal, not a zero: a zero would put
-    /// a point on the graph that the chart does not plot.
-    ///
-    /// **It reads the comma as a thousands separator, so it must never be given a decimal written
-    /// for the reader's region** (#1616): `12,4`, which is 12.4 where decimals take a comma, reads
-    /// as 124. A table with such a cell states its numbers (`ChartInspectorData.audioGraph`), as
-    /// the Corpus Analytics series and the mention trajectories do, and is not read by column.
-    static func numeric(_ cell: String) -> Double? {
-        let trimmed = cell.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return nil }
-        let stripped = trimmed
-            .replacingOccurrences(of: "%", with: "")
-            .replacingOccurrences(of: ",", with: "")
-            .replacingOccurrences(of: "\u{00A0}", with: "")
-            .trimmingCharacters(in: .whitespaces)
-        guard !stripped.isEmpty else { return nil }
-        // Reject anything with a letter — "n/a", "—", a volume id — rather than letting a lenient
-        // parser pull a leading digit out of it.
-        guard !stripped.contains(where: { $0.isLetter }) else { return nil }
-        return Double(stripped)
     }
 }

@@ -48,6 +48,14 @@ import Foundation
 /// phrase this caveat had kept after #1299 removed it from the in-app row — so that marker was a
 /// drift artefact standing in for a rule.
 ///
+/// ## The host
+/// What this read from the app is passed in (``Host``): the version the credit line prints, which it read
+/// from `Bundle.main`, and the locale, calendar and time zone it wrote the export date and the volume count
+/// in, which were the reader's. Every rendering that reads one takes the host (`captionLines(for:)`,
+/// `csvPreambleLines(for:)`, `plateLines(for:)` and the rest); the app's own names, which pass its host,
+/// are in `AnalyticsProvenance+App.swift`, as `QueryMethodAppendix`'s are. A host that fixes the locale,
+/// calendar and time zone writes the same method block on any platform.
+///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
 ///   1.1 — #1299 (docs only): says the in-app dating row and `datingCaveat` no longer match word for word
@@ -57,21 +65,24 @@ import Foundation
 ///   1.3 — owner's 2026-09-30 wording: the caveat opens "each document sits at the editor-annotated
 ///         date", and the tests' marker for the default rule follows it
 ///   1.4 — PV-1 (the 2026-09-28 audit): documentation only — `sources` says what each builder now passes
-struct AnalyticsProvenance: Sendable, Equatable {
+///   1.5 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public, with its memberwise
+///          initialiser spelt out; the renderings that read the bundle's version or the reader's locale
+///          take a ``Host`` instead, and the app's names forward to them with its own
+public struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The figure's own title, e.g. `"sovereignty", "independence" — by Year`.
-    var figureTitle: String
+    public var figureTitle: String
     /// The searched term(s), in chip order. Empty for charts that are not term-driven
     /// (the Person and Cross-Reference rankings).
-    var terms: [String] = []
+    public var terms: [String] = []
     /// The active grouping, e.g. `By Year`.
-    var axisLabel: String
+    public var axisLabel: String
     /// The active volume scope's display label, or `nil` for the whole indexed corpus.
-    var scopeLabel: String?
+    public var scopeLabel: String?
     /// How many volumes are indexed on this device — the corpus the numbers actually cover.
-    var indexedVolumeCount: Int
+    public var indexedVolumeCount: Int
     /// The applied year range, or `nil` when the chart ignores it (the categorical breakdowns).
-    var yearRange: ClosedRange<Int>?
+    public var yearRange: ClosedRange<Int>?
     /// Whether this artifact places documents on a timeline at all.
     ///
     /// `true` for every chart in the three analytics dashboards, which is why the dating rule and the
@@ -80,16 +91,16 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// printing "each document is placed at its TEI `<date>`…" above its terms would be a methods
     /// statement about work the export did not do — worse than omitting one, because a reader has no
     /// way to tell a boilerplate caveat from a true one.
-    var appliesDocumentDating: Bool = true
+    public var appliesDocumentDating: Bool = true
     /// The value mode, e.g. `Raw count` / `% of documents`; `nil` where normalization never applies.
-    var valueMode: String?
+    public var valueMode: String?
     /// What the figure counts, e.g. `Documents` / `Occurrences (stems)`.
     ///
     /// Emitted **unconditionally** where supplied, unlike ``valueMode``, which is `nil` on the four
     /// axes normalisation never reaches. The unit is a fact about every figure: a reader of an
     /// occurrence chart who is told only "Raw count" has been told the one thing they could have
     /// guessed and not the one they could not.
-    var countingUnit: String?
+    public var countingUnit: String?
     /// A surface's own dating rule, replacing ``datingCaveat`` when set.
     ///
     /// The default sentence describes the corpus-analytics rule specifically — a TEI `<date>`
@@ -98,15 +109,15 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// all, and the fourth reads `frus:doc-dateTime-min/-max` with no fallback and has no
     /// month/day axes. Emitting the default there would state a method the export did not use,
     /// which is the exact failure the D3 preamble exists to prevent.
-    var datingRule: String?
+    public var datingRule: String?
     /// A surface's own corpus statement, replacing ``corpusCaveat`` when set.
     ///
     /// The default says counts "cover only the N volume(s) indexed on this device". For a surface
     /// reading a bundled corpus-wide aggregate that is not a caveat, it is an untruth: those
     /// figures cover the whole series and render with no index at all.
-    var corpusStatement: String?
+    public var corpusStatement: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
-    var extraCaveats: [String] = []
+    public var extraCaveats: [String] = []
 
     /// What this figure's numbers were drawn from (PV-1).
     ///
@@ -118,7 +129,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// (`ArchivalAnalyticsExport.rankingSources`). The rest of the archival family adds nothing: it
     /// reads authority clusters by identity, all FRUS-derived (see `BundledArtifactProvenance`).
     /// `AnalyticsExportSourcesTests.everyBuilderStatesItsSources` reads every call that builds one.
-    var sources: Set<ProvenanceSource> = [.frusText]
+    public var sources: Set<ProvenanceSource> = [.frusText]
     /// The caveats an exported *figure* prints on the image, when the full set is too much for a
     /// plate.
     ///
@@ -131,21 +142,68 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// `corpusCaveat`. Both are enforced by `plateCaveatLines` rather than by a test, so a plate
     /// cannot assert a qualification the accompanying method block never made, and cannot drop the
     /// one caveat every figure here needs.
-    var plateCaveats: [String]? = nil
+    public var plateCaveats: [String]? = nil
     /// When the export was produced.
-    var exportDate: Date = Date()
+    public var exportDate: Date = Date()
+
+    /// Creates a methods statement, as the memberwise initialiser did: every parameter in the order the
+    /// properties are declared, each with the default its property has, an optional one `nil`.
+    public init(figureTitle: String, terms: [String] = [], axisLabel: String, scopeLabel: String? = nil,
+                indexedVolumeCount: Int, yearRange: ClosedRange<Int>? = nil,
+                appliesDocumentDating: Bool = true, valueMode: String? = nil, countingUnit: String? = nil,
+                datingRule: String? = nil, corpusStatement: String? = nil, extraCaveats: [String] = [],
+                sources: Set<ProvenanceSource> = [.frusText], plateCaveats: [String]? = nil,
+                exportDate: Date = Date()) {
+        self.figureTitle = figureTitle
+        self.terms = terms
+        self.axisLabel = axisLabel
+        self.scopeLabel = scopeLabel
+        self.indexedVolumeCount = indexedVolumeCount
+        self.yearRange = yearRange
+        self.appliesDocumentDating = appliesDocumentDating
+        self.valueMode = valueMode
+        self.countingUnit = countingUnit
+        self.datingRule = datingRule
+        self.corpusStatement = corpusStatement
+        self.extraCaveats = extraCaveats
+        self.sources = sources
+        self.plateCaveats = plateCaveats
+        self.exportDate = exportDate
+    }
+
+    // MARK: - The host
+
+    /// What a rendering reads from its host: the version the credit line names, and the locale, calendar
+    /// and time zone the export date and the volume count are written in. The app's (`Host.app`) reads its
+    /// bundle's short version string and the reader's own locale, calendar and time zone, which is what
+    /// the renderings read themselves before they moved into the kit.
+    public struct Host: Sendable {
+        /// The version the credit line prints ("FRUS Explorer 1.0"), or `nil` to print `—` in its place.
+        public var appVersion: String?
+        /// The locale the export date and the volume count are written in.
+        public var locale: Locale
+        /// The calendar the export date is written in.
+        public var calendar: Calendar
+        /// The time zone the export date is written in.
+        public var timeZone: TimeZone
+
+        /// Creates a host.
+        public init(appVersion: String?, locale: Locale = .autoupdatingCurrent,
+                    calendar: Calendar = .autoupdatingCurrent, timeZone: TimeZone = .autoupdatingCurrent) {
+            self.appVersion = appVersion
+            self.locale = locale
+            self.calendar = calendar
+            self.timeZone = timeZone
+        }
+    }
 
     // MARK: - Fixed text
 
-    /// The app's marketing version, or `"—"` when unavailable.
-    static var appVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-    }
-
-    /// `FRUS Explorer 1.2` — the wordmark + version used on the figure and in the preamble.
-    static var appCredit: String {
+    /// `FRUS Explorer 1.2` — the wordmark + version used on the figure and in the preamble: the host's
+    /// version, or `"—"` when it has none.
+    public static func appCredit(for host: Host) -> String {
         String(format: String(localized: "analytics.export.credit %@",
-                              defaultValue: "FRUS Explorer %@"), appVersion)
+                              defaultValue: "FRUS Explorer %@"), host.appVersion ?? "—")
     }
 
     /// The publisher credit an exported figure carries on the image.
@@ -155,7 +213,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// published in an article credited a reading application for the U.S. government's documentary
     /// edition. `corpusAttribution` says the same thing at CSV length; this is the one-line form a
     /// caption can carry.
-    static var plateAttribution: String {
+    public static var plateAttribution: String {
         String(localized: "analytics.export.plateAttribution",
                defaultValue: "Foreign Relations of the United States, published by the Office of the Historian, U.S. Department of State. Public domain.")
     }
@@ -166,13 +224,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// in its CSV export", printed unconditionally by the canvas. Publish the PNG alone and that
     /// sentence does not merely omit the caveats — it asserts they travelled with the image. This
     /// states where the data can be got, which is true however the figure is published.
-    static var plateDataPointer: String {
+    public static var plateDataPointer: String {
         String(localized: "analytics.export.figure.seeData",
                defaultValue: "The underlying numbers are available as a CSV export from FRUS Explorer, with the full method statement.")
     }
 
     /// The corpus attribution, matching the app's own About/Settings wording.
-    static var corpusAttribution: String {
+    public static var corpusAttribution: String {
         String(localized: "analytics.export.attribution",
                defaultValue: "Foreign Relations of the United States corpus published by the Office of the Historian, U.S. Department of State (history.state.gov). The corpus is in the public domain.")
     }
@@ -180,13 +238,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     // MARK: - Derived text
 
     /// The scope line — the named scope, else the whole indexed corpus.
-    var scopeDescription: String {
+    public var scopeDescription: String {
         if let scopeLabel, !scopeLabel.isEmpty { return scopeLabel }
         return String(localized: "analytics.export.scope.wholeCorpus", defaultValue: "Whole corpus")
     }
 
     /// The year-range line, phrased explicitly when the axis ignores the range.
-    var yearRangeDescription: String {
+    public var yearRangeDescription: String {
         guard let yearRange else {
             return String(localized: "analytics.export.range.notApplied",
                           defaultValue: "Not applied — this breakdown covers the whole corpus span")
@@ -204,7 +262,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// no-month/no-day exclusion that #1306 measured and refuted. It is the worse of the two
     /// surfaces to leave wrong, because it travels — a CSV preamble or a figure caption is read
     /// outside the app, by someone who cannot check it against the chart.
-    var datingCaveat: String {
+    public var datingCaveat: String {
         if let datingRule { return datingRule }
         return String(localized: "analytics.export.caveat.dating.v2",
                defaultValue: "Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.")
@@ -212,25 +270,28 @@ struct AnalyticsProvenance: Sendable, Equatable {
 
     /// What corpus the figure covers — the surface's own statement where it supplied one, else
     /// the indexed-on-this-device caveat. The count goes through `CountCopy` (#1374 review,
-    /// round 1): the hedged "volume(s)" read "1 volume(s)" on a one-volume device.
-    var corpusCaveat: String {
+    /// round 1): the hedged "volume(s)" read "1 volume(s)" on a one-volume device. The count is grouped for
+    /// the host's locale.
+    public func corpusCaveat(for host: Host) -> String {
         if let corpusStatement { return corpusStatement }
         return String(format: String(localized: "analytics.export.caveat.corpus %@",
                               defaultValue: "Corpus: counts cover only the %@ indexed on this device, not the entire FRUS series."),
-               CountCopy.volumes(indexedVolumeCount))
+               CountCopy.volumes(indexedVolumeCount, locale: host.locale))
     }
 
     /// The value-mode caveat, spelled out for both modes rather than only for shares.
-    var valueModeCaveat: String? {
+    public var valueModeCaveat: String? {
         guard let valueMode else { return nil }
         return String(format: String(localized: "analytics.export.caveat.values %@",
                                      defaultValue: "Values: %@. A share is that period’s matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term."),
                       valueMode)
     }
 
-    /// The export timestamp, formatted for a reader (not for machines).
-    var formattedDate: String {
-        exportDate.formatted(date: .abbreviated, time: .shortened)
+    /// The export timestamp, formatted for a reader (not for machines), in the host's locale, calendar
+    /// and time zone: `formatted(date: .abbreviated, time: .shortened)`, which the app's host gives.
+    public func formattedDate(for host: Host) -> String {
+        Date.FormatStyle(date: .abbreviated, time: .shortened, locale: host.locale, calendar: host.calendar,
+                         timeZone: host.timeZone).format(exportDate)
     }
 
     // MARK: - Renderings
@@ -239,12 +300,12 @@ struct AnalyticsProvenance: Sendable, Equatable {
     ///
     /// Deliberately short — a journal retypesets captions, and a six-line block would consume the
     /// canvas. The complete method block lives in the accompanying CSV.
-    var captionLines: [String] {
+    public func captionLines(for host: Host) -> [String] {
         var facts: [String] = [scopeDescription]
         if yearRange != nil { facts.append(yearRangeDescription) }
         if let valueMode { facts.append(valueMode) }
-        facts.append(Self.appCredit)
-        facts.append(formattedDate)
+        facts.append(Self.appCredit(for: host))
+        facts.append(formattedDate(for: host))
         return [figureTitle, facts.joined(separator: " · ")]
     }
 
@@ -253,10 +314,10 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// One definition, two consumers: `csvPreambleLines` prints these below its header fields and
     /// `plateCaveatLines` prints them (or a designated subset) on the image, so a plate cannot
     /// disclose something its CSV does not.
-    var allCaveats: [String] {
+    public func allCaveats(for host: Host) -> [String] {
         var lines: [String] = []
         if appliesDocumentDating || datingRule != nil { lines.append(datingCaveat) }
-        lines.append(corpusCaveat)
+        lines.append(corpusCaveat(for: host))
         if let valueModeCaveat { lines.append(valueModeCaveat) }
         lines.append(contentsOf: extraCaveats)
         // PV-1: what the figure was drawn from, last, because it qualifies everything above it.
@@ -285,12 +346,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// sentence is the attribution, and a plate is the artifact most likely to be shared on its
     /// own, detached from the CSV that would otherwise carry it. A figure whose sources are
     /// unstated is the exact thing this wave exists to prevent, so a designation cannot drop them.
-    var plateCaveatLines: [String] {
-        guard let plateCaveats else { return allCaveats }
+    public func plateCaveatLines(for host: Host) -> [String] {
+        guard let plateCaveats else { return allCaveats(for: host) }
         let designated = Set(plateCaveats)
         let sourceLines = ProvenanceStatement.lines(for: sources)
-        let kept = allCaveats.filter { designated.contains($0) || sourceLines.contains($0) }
-        return kept.contains(corpusCaveat) ? kept : [corpusCaveat] + kept
+        let kept = allCaveats(for: host).filter { designated.contains($0) || sourceLines.contains($0) }
+        let corpus = corpusCaveat(for: host)
+        return kept.contains(corpus) ? kept : [corpus] + kept
     }
 
     /// Everything an exported plate prints beneath its chart, in order, each tagged with the role
@@ -298,11 +360,11 @@ struct AnalyticsProvenance: Sendable, Equatable {
     ///
     /// The canvas is a `ForEach` over this array and nothing else, so a test that drives this
     /// property is testing what the image actually says rather than a parallel copy of the rule.
-    var plateLines: [AnalyticsPlateLine] {
-        var lines = captionLines.enumerated().map { index, text in
+    public func plateLines(for host: Host) -> [AnalyticsPlateLine] {
+        var lines = captionLines(for: host).enumerated().map { index, text in
             AnalyticsPlateLine(role: index == 0 ? .title : .facts, text: text)
         }
-        lines += plateCaveatLines.map { AnalyticsPlateLine(role: .caveat, text: $0) }
+        lines += plateCaveatLines(for: host).map { AnalyticsPlateLine(role: .caveat, text: $0) }
         lines.append(AnalyticsPlateLine(role: .attribution, text: Self.plateAttribution))
         lines.append(AnalyticsPlateLine(role: .dataPointer, text: Self.plateDataPointer))
         return lines
@@ -310,7 +372,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The complete method block as `#`-prefixed CSV comment lines (header included), ready to be
     /// prepended to a table's CSV.
-    var csvPreambleLines: [String] {
+    public func csvPreambleLines(for host: Host) -> [String] {
         var lines: [String] = []
         lines.append(String(localized: "analytics.export.preamble.header",
                             defaultValue: "FRUS Explorer — analytics export"))
@@ -335,10 +397,10 @@ struct AnalyticsProvenance: Sendable, Equatable {
         if let valueMode {
             lines.append("\(String(localized: "analytics.export.field.values", defaultValue: "Values")): \(valueMode)")
         }
-        lines.append("\(String(localized: "analytics.export.field.exported", defaultValue: "Exported")): \(Self.appCredit), \(formattedDate)")
+        lines.append("\(String(localized: "analytics.export.field.exported", defaultValue: "Exported")): \(Self.appCredit(for: host)), \(formattedDate(for: host))")
         lines.append("")
         lines.append(String(localized: "analytics.export.preamble.method", defaultValue: "Method and caveats"))
-        lines.append(contentsOf: allCaveats)
+        lines.append(contentsOf: allCaveats(for: host))
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines.map { $0.isEmpty ? "#" : "# \($0)" }
@@ -351,10 +413,11 @@ struct AnalyticsProvenance: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Visual-marketing GATE C: the plate's caption band gains caveats and an attribution
-struct AnalyticsPlateLine: Sendable, Equatable {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public struct AnalyticsPlateLine: Sendable, Equatable {
 
     /// What a line is for, which is what decides its size and weight.
-    enum Role: Sendable, Equatable {
+    public enum Role: Sendable, Equatable {
         /// The figure title.
         case title
         /// The identifying facts — scope, range, credit, date.
@@ -368,9 +431,9 @@ struct AnalyticsPlateLine: Sendable, Equatable {
     }
 
     /// The role.
-    let role: Role
+    public let role: Role
     /// The text as printed.
-    let text: String
+    public let text: String
 }
 
 // MARK: - ChartInspectorData + provenance
@@ -383,9 +446,11 @@ extension ChartInspectorData {
     /// who wants only the numbers can skip the `#` lines (most parsers accept `comment='#'`), while
     /// a file that travels alone still carries its own method statement.
     ///
-    /// - Parameter provenance: The methods statement to stamp above the header row.
+    /// - Parameters:
+    ///   - provenance: The methods statement to stamp above the header row.
+    ///   - host: What the statement reads from its host (``AnalyticsProvenance/Host``).
     /// - Returns: The provenance-stamped CSV text, newline-terminated.
-    func provenancedCSV(_ provenance: AnalyticsProvenance) -> String {
-        (provenance.csvPreambleLines + [csv]).joined(separator: "\n").appending("\n")
+    public func provenancedCSV(_ provenance: AnalyticsProvenance, for host: AnalyticsProvenance.Host) -> String {
+        (provenance.csvPreambleLines(for: host) + [csv]).joined(separator: "\n").appending("\n")
     }
 }

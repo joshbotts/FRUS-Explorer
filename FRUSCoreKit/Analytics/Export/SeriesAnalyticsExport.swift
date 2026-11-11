@@ -30,14 +30,15 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #790
-enum SeriesAnalyticsExport {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public enum SeriesAnalyticsExport {
 
     /// Volumes in the shipped series — the denominator these dashboards actually cover.
     ///
     /// Passed as `indexedVolumeCount` so the figure caption's volume count is the corpus rather
     /// than the device, and countered by an explicit ``AnalyticsProvenance/corpusStatement`` so
     /// the wording cannot read as "indexed here".
-    static func corpusStatement(volumeCount: Int) -> String {
+    public static func corpusStatement(volumeCount: Int) -> String {
         String(format: String(
             localized: "series.export.caveat.corpus %lld",
             defaultValue: "Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything."),
@@ -46,7 +47,7 @@ enum SeriesAnalyticsExport {
 
     /// A scope narrowing, when one is active — the sentence that keeps a subset from reading as
     /// the whole series.
-    static func scopeCaveat(_ label: String?) -> String? {
+    public static func scopeCaveat(_ label: String?) -> String? {
         guard let label else { return nil }
         return String(format: String(
             localized: "series.export.caveat.scope %@",
@@ -57,7 +58,7 @@ enum SeriesAnalyticsExport {
     // MARK: - Production & timeliness (SA-1b)
 
     /// Publication timeliness. Nothing here reads a document.
-    static func production(figureTitle: String, axisLabel: String, scopeLabel: String?,
+    public static func production(figureTitle: String, axisLabel: String, scopeLabel: String?,
                            yearRange: ClosedRange<Int>, volumeCount: Int,
                            extra: [String] = []) -> AnalyticsProvenance {
         AnalyticsProvenance(
@@ -81,7 +82,7 @@ enum SeriesAnalyticsExport {
     // MARK: - Geographic emphasis (SA-2)
 
     /// Regional emphasis, counted over volumes and their subject tags.
-    static func geography(figureTitle: String, axisLabel: String, scopeLabel: String?,
+    public static func geography(figureTitle: String, axisLabel: String, scopeLabel: String?,
                           yearRange: ClosedRange<Int>?, volumeCount: Int,
                           extra: [String] = []) -> AnalyticsProvenance {
         AnalyticsProvenance(
@@ -112,7 +113,7 @@ enum SeriesAnalyticsExport {
     ///   every number here comes from one aggregate: two plates drawn from different generations
     ///   are different figures, and without this they carry identical captions. Empty is tolerated
     ///   and simply omits the line — an absent stamp is better than a fabricated one.
-    static func provenance(figureTitle: String, axisLabel: String, scopeLabel: String?,
+    public static func provenance(figureTitle: String, axisLabel: String, scopeLabel: String?,
                            yearRange: ClosedRange<Int>?, volumeCount: Int, noteCount: Int,
                            hiddenCategories: [String], generated: String = "",
                            extra: [String] = []) -> AnalyticsProvenance {
@@ -157,14 +158,14 @@ enum SeriesAnalyticsExport {
     /// Named rather than inlined so the test that requires it can match the sentence the builder
     /// really appends. A test quoting a fragment of it instead passes for the wrong reason the
     /// first time the wording changes.
-    static var adminYearsCaveat: String {
+    public static var adminYearsCaveat: String {
         String(localized: "series.export.caveat.adminYears",
                defaultValue: "Year range: this selects which administrations appear, by whether the president’s term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.")
     }
 
     /// What any-overlap attribution costs: the per-administration counts are not exclusive, so
     /// they sum past the corpus.
-    static var adminOverlapCaveat: String {
+    public static var adminOverlapCaveat: String {
         String(localized: "series.export.caveat.adminOverlap",
                defaultValue: "Attribution: a document counts toward every administration its date range overlaps. The counts therefore overlap each other and add up to more than the whole series. A term ends on the day the next president takes office. A document dated on a succession day therefore belongs to the incoming president. These counts measure whose foreign policy the documents cover, not when the volumes were published.")
     }
@@ -177,7 +178,7 @@ enum SeriesAnalyticsExport {
     ///   volumes-per-year chart in which volumes are held to cover an administration — so one
     ///   sentence is true of both. Until #791 it was not, and this builder carried a second
     ///   parameter to say so.
-    static func administration(figureTitle: String, axisLabel: String, scopeLabel: String?,
+    public static func administration(figureTitle: String, axisLabel: String, scopeLabel: String?,
                                yearRange: ClosedRange<Int>, volumeCount: Int,
                                includesEditorialNotes: Bool,
                                extra: [String] = []) -> AnalyticsProvenance {

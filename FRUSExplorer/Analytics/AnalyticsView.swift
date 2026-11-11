@@ -41,76 +41,6 @@ enum AnalyticsViewMode: String, CaseIterable {
     }
 }
 
-// MARK: - AnalyticsNormalizationMode
-
-/// How the date-based Corpus analytics charts express their y-values (CA-4).
-///
-/// - `raw`: absolute matching-document counts (the original, byte-for-byte behavior).
-/// - `percentOfDocuments`: each period's matches as a share of **all** indexed
-///   documents in that same period — reading the term as a proportion of the corpus,
-///   so "the term got more common" is not conflated with "the corpus got bigger."
-///
-/// Only meaningful for the date-based By-Year / By-Decade axes (a per-period corpus
-/// denominator); the categorical and sub-year axes ignore it.
-///
-/// Version history:
-///   1.0 — CA-4 (analytics CA-track): initial implementation
-enum AnalyticsNormalizationMode: String, CaseIterable {
-    case raw
-    case percentOfDocuments
-
-    /// `UserDefaults`/`@AppStorage` key for the persisted per-user choice.
-    static let storageKey = "frus.analytics.normalizationMode"
-
-    /// Short label for the segmented picker.
-    var pickerLabel: String {
-        switch self {
-        case .raw:
-            return String(localized: "analytics.normalize.raw", defaultValue: "Raw count")
-        case .percentOfDocuments:
-            return String(localized: "analytics.normalize.percent", defaultValue: "% of documents")
-        }
-    }
-}
-
-// MARK: - AnalyticsChartAxis
-
-/// Which dimension to plot in `AnalyticsView`.
-///
-/// Version history:
-///   1.0 — Session 99: initial implementation
-///   1.1 — Session 121: add `byDecade`, `byMonth`, and `byDay` granularity options
-///   1.2 — Session 163: add `byVolume` axis (per-individual-volume breakdown)
-///   1.3 — D1 Phase 3: `Codable` so it can persist inside a saved analytics query
-enum AnalyticsChartAxis: String, CaseIterable, Codable {
-    case byDecade, byYear, byMonth, byDay, bySubseries, byVolume
-
-    /// Short label for the toolbar picker.
-    var pickerLabel: String {
-        switch self {
-        case .byDecade:    return String(localized: "analytics.axis.byDecade",    defaultValue: "By Decade")
-        case .byYear:      return String(localized: "analytics.axis.byYear",      defaultValue: "By Year")
-        case .byMonth:     return String(localized: "analytics.axis.byMonth",     defaultValue: "By Month")
-        case .byDay:       return String(localized: "analytics.axis.byDay",       defaultValue: "By Day")
-        case .bySubseries: return String(localized: "analytics.axis.bySubseries", defaultValue: "By Subseries")
-        case .byVolume:    return String(localized: "analytics.axis.byVolume",    defaultValue: "By Volume")
-        }
-    }
-
-    /// `true` when this axis is date-based (uses `yearRangeStart`...`yearRangeEnd`
-    /// for filtering). The categorical Subseries and Volume views ignore the
-    /// year-range bar.
-    var isDateBased: Bool {
-        self != .bySubseries && self != .byVolume
-    }
-
-    /// `true` for the categorical axes (subseries / volume) whose rows and bars can
-    /// be tapped to open Search scoped to that subseries or volume.
-    var isCategorical: Bool {
-        self == .bySubseries || self == .byVolume
-    }
-}
-
 // MARK: - SavedAnalyticsQuery
 
 /// A persisted Corpus Analytics query (D1 Phase 3): the term(s), axis, year range, and volume scope,
@@ -174,91 +104,6 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
             return "\(joined) · \(axis.pickerLabel) · \(scope)"
         }
         return "\(joined) · \(axis.pickerLabel)"
-    }
-}
-
-// MARK: - AnalyticsSearchHandoff
-
-/// The search Corpus Analytics' "View N documents ↗" link opens, and the count the link shows
-/// (#1756).
-///
-/// ## One value, both counted and opened
-/// The link used to print the chart's own sum: the documents its bars place in the chosen years,
-/// each at the year it begins, with an undated document at its volume's first year. The search it
-/// opened read the same years by Search's rule — a document whose dates overlap them, and nothing
-/// undated — so the two parted wherever a document's dates crossed the range's edge or a volume
-/// held undated matches. Over a full index (553 volumes, index v71), *Berlin* over Eisenhower's
-/// years read **2,803** on the link, 2,775 documents beginning in 1953–1961 and 28 undated ones in
-/// volumes beginning then, and **2,833** in Search: the 2,775 and the 58 that begin before 1953
-/// and run into it.
-///
-/// So the link now prints Search's own count of the very parameters it opens, taken through
-/// ``SearchService/matchKeys(parameters:)``, the whole match the result count counts, and the
-/// dispersion line beside it is computed from the same keys, so it describes the documents the
-/// link opens. The chart's footnote still sums its bars, which can differ from the link by the
-/// documents the two rules place differently; the link's tooltip and the manuals say why.
-///
-/// ## Years only when the reader narrowed them
-/// The years go to Search only on a date-based axis whose range the reader moved off its default.
-/// At the default range the reader has narrowed nothing, and a date range would have dropped
-/// every undated match from the search: *Berlin* across the whole corpus counted 16,126 documents
-/// that way, of its 16,273.
-///
-/// A working corpus applied in Search still narrows the search it opens, under Search's banner
-/// (#1646): the link counts the parameters it hands over, which never carry one.
-enum AnalyticsSearchHandoff {
-
-    /// The search the link opens.
-    ///
-    /// - Parameters:
-    ///   - term: The committed term, Search's keywords.
-    ///   - axis: The chart's axis; only a date-based axis passes years.
-    ///   - startYear: The first year of the chart's range.
-    ///   - endYear: The last year of the chart's range.
-    ///   - yearsNarrowed: Whether the reader moved the range off its default.
-    ///   - scopeVolumeIds: The chart's volume scope, or `nil` for the whole corpus.
-    /// - Returns: The parameters, over document text only.
-    static func parameters(term: String, axis: AnalyticsChartAxis, startYear: Int, endYear: Int,
-                           yearsNarrowed: Bool, scopeVolumeIds: [String]?) -> SearchParameters {
-        let range: DateRange? = axis.isDateBased && yearsNarrowed
-            ? DateRange(earliest: String(format: "%04d-01-01", startYear),
-                        latest: String(format: "%04d-12-31", endYear))
-            : nil
-        // #1306: notes and summaries OFF. This link is the one place the app invites a reader to
-        // compare a chart's count against Search's, and Search's default scope unions
-        // `user_content` — the reader's own summaries and notes — while Analytics runs a bare
-        // `frus_documents MATCH`. The scope narrows for this search and stays narrowed, exactly as
-        // the date range and the volume scope on the same lines already do.
-        return SearchParameters(keywords: term, dateRange: range, volumeIds: scopeVolumeIds,
-                                includeSummaries: false, includeNotes: false)
-    }
-
-    /// Search's count of one hand-off search.
-    struct Match: Equatable {
-        /// The search counted.
-        let parameters: SearchParameters
-        /// How many documents it lists.
-        let count: Int
-        /// How many of them each volume holds, largest first: the dispersion line's input.
-        let volumeCounts: [Int]
-    }
-
-    /// Counts `parameters` as Search counts them.
-    ///
-    /// - Parameters:
-    ///   - parameters: The search the link opens.
-    ///   - service: The app's search service.
-    /// - Returns: The count, and the count in each volume.
-    /// - Throws: What ``SearchService/matchKeys(parameters:)`` throws: `CancellationError` when the
-    ///   task is cancelled, and `FTS5Error.emptyQuery` for a search Search would refuse.
-    static func match(for parameters: SearchParameters, in service: SearchService) async throws -> Match {
-        let keys = try await service.matchKeys(parameters: parameters)
-        var perVolume: [Substring: Int] = [:]
-        for key in keys {
-            perVolume[key.prefix { $0 != "/" }, default: 0] += 1
-        }
-        return Match(parameters: parameters, count: keys.count,
-                     volumeCounts: perVolume.values.sorted(by: >))
     }
 }
 
@@ -335,6 +180,9 @@ enum AnalyticsSearchHandoff {
 ///   1.14 — 2026-10-22: #1756 — "View N documents ↗" prints Search's count of the search it opens
 ///          (`AnalyticsSearchHandoff`, `handoffMatch`), which passes the years only when the reader
 ///          narrowed them, and the dispersion line beside it describes those documents
+///   1.15 — 2026-11-11 (FRUS Explorer Light, S24a): `AnalyticsNormalizationMode`, `AnalyticsChartAxis`,
+///          `AnalyticsSearchHandoff` and the volume folding (`sourceColoring`) moved into FRUSCoreKit;
+///          the folding's names forward to the kit's `AnalyticsSourceColoring`
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -1918,62 +1766,20 @@ struct AnalyticsView: View {
 
     // MARK: - Source Color-Coding (By Year / By Decade)
 
-    /// Series key for the folded long tail of volumes.
-    private static let otherSourceKey = "__other__"
+    /// Series key for the folded long tail of volumes (`AnalyticsSourceColoring`'s).
+    private static let otherSourceKey = AnalyticsSourceColoring.otherSourceKey
 
     /// A period-bucketed, source-colored chart segment (one stacked rectangle).
-    private struct SourceSegment: Identifiable {
-        let period: Int
-        let seriesKey: String
-        let count: Int
-        var id: String { "\(period)/\(seriesKey)" }
-    }
+    private typealias SourceSegment = AnalyticsSourceColoring.SourceSegment
 
     /// One legend entry: a source series key and its total over the rendered slice.
-    private struct SourceSeries: Identifiable {
-        let key: String
-        let total: Int
-        var id: String { key }
-    }
+    private typealias SourceSeries = AnalyticsSourceColoring.SourceSeries
 
-    /// Ranks the volumes in `raw` by total count over the slice, keeps the top
-    /// `seriesCount`, folds the rest into a single "Other" series, and returns the
-    /// stacked per-period segments plus the ranked series list. Ranking is computed over
-    /// the SAME slice that renders, so the color scale never drops or miscolors a segment.
+    /// The volume folding at this view's series count: FRUSCoreKit's
+    /// `AnalyticsSourceColoring.sourceColoring(_:seriesCount:)`, which was this view's own.
     private func sourceColoring(_ raw: [(period: Int, volumeId: String, count: Int)])
         -> (segments: [SourceSegment], series: [SourceSeries]) {
-        guard !raw.isEmpty else { return ([], []) }
-        var volumeTotals: [String: Int] = [:]
-        for r in raw { volumeTotals[r.volumeId, default: 0] += r.count }
-        let ranked = volumeTotals.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-        // Show up to `seriesCount` distinct colored volumes total: when more exist, keep
-        // the top (seriesCount - 1) and fold the rest into one "Other" series — matching
-        // the Chronology chart so neither over-colors nor wraps the palette.
-        let usesOther = ranked.count > seriesCount
-        let topRanked = usesOther ? Array(ranked.prefix(seriesCount - 1)) : ranked
-        let topKeys = Set(topRanked.map(\.key))
-
-        var segCounts: [String: Int] = [:]   // "period\u{1}seriesKey" → count
-        var seriesTotals: [String: Int] = [:]
-        for r in raw {
-            let sk = topKeys.contains(r.volumeId) ? r.volumeId : Self.otherSourceKey
-            segCounts["\(r.period)\u{1}\(sk)", default: 0] += r.count
-            seriesTotals[sk, default: 0] += r.count
-        }
-        let segments: [SourceSegment] = segCounts.compactMap { keyStr, count in
-            let parts = keyStr.split(separator: "\u{1}", maxSplits: 1)
-            guard parts.count == 2, let p = Int(parts[0]) else { return nil }
-            return SourceSegment(period: p, seriesKey: String(parts[1]), count: count)
-        }
-        .sorted { $0.period != $1.period ? $0.period < $1.period : $0.seriesKey < $1.seriesKey }
-
-        var series: [SourceSeries] = topRanked.compactMap { entry in
-            seriesTotals[entry.key].map { SourceSeries(key: entry.key, total: $0) }
-        }
-        if let otherTotal = seriesTotals[Self.otherSourceKey] {
-            series.append(SourceSeries(key: Self.otherSourceKey, total: otherTotal))
-        }
-        return (segments, series)
+        AnalyticsSourceColoring.sourceColoring(raw, seriesCount: seriesCount)
     }
 
     /// Color for a source series — palette by rank, gray for the folded "Other".

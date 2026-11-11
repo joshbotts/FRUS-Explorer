@@ -1186,7 +1186,7 @@ Unit: a source note is not a document. Only documents whose editors recorded whe
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 42–43 | key: series.export.caveat.corpus %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 43–44 | key: series.export.caveat.corpus %lld -->
 
 Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything.
 
@@ -1198,7 +1198,7 @@ Corpus: these figures come from a data file that ships with the app and covers a
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 52–53 | key: series.export.caveat.scope %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 53–54 | key: series.export.caveat.scope %@ -->
 
 Scoped to %@ — every figure below is recomputed from that subset’s volumes alone and is not comparable with a whole-series export.
 
@@ -1208,7 +1208,7 @@ Scoped to %@ — every figure below is recomputed from that subset’s volumes a
 
 #### Production & timeliness — dating rule
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 75–76 | key: series.export.dating.production -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 76–77 | key: series.export.dating.production -->
 
 Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume’s own documents.
 
@@ -1218,7 +1218,7 @@ Dating: no document date is read. A volume sits at its print year, taken from th
 
 #### Geographic emphasis — dating rule
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 96–97 | key: series.export.dating.geography -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 97–98 | key: series.export.dating.geography -->
 
 Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume’s own subject tags. So these figures count volumes concerned with a region, not documents about it.
 
@@ -1228,7 +1228,7 @@ Dating: no document date is read. A volume is placed by the coverage range decla
 
 #### Archival sourcing — dating rule
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 146–147 | key: series.export.dating.provenance -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 147–148 | key: series.export.dating.provenance -->
 
 Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume’s declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes.
 
@@ -1240,7 +1240,7 @@ Dating: no document date is read. Each source note sits in the coverage decade o
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 133–134 | key: series.export.caveat.provenanceNotes %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 134–135 | key: series.export.caveat.provenanceNotes %lld -->
 
 Unit: %lld parsed source notes. A source note is the citation naming where a document’s archival original was found. “Other / Unclassified” means a citation the parser could not classify, not a missing note.
 
@@ -1252,7 +1252,7 @@ Unit: %lld parsed source notes. A source note is the citation naming where a doc
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 128–129 | key: series.export.caveat.hiddenCategories %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 129–130 | key: series.export.caveat.hiddenCategories %@ -->
 
 Re-based: %@ are hidden, and every share in this table is a share of the categories shown rather than of all source notes. A decade with nothing in any shown category is zero here, not absent.
 
@@ -1262,7 +1262,7 @@ Re-based: %@ are hidden, and every share in this table is a share of the categor
 
 #### Administration profiles — dating rule
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 205–206 | key: series.export.dating.administration.v2 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 206–207 | key: series.export.dating.administration.v2 -->
 
 Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. Those attributes are instants normalised to −05:00, so where the document’s own dateline names the same instant its day is taken from the dateline instead — otherwise the day at −05:00 stands. There is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out.
 
@@ -1272,7 +1272,7 @@ Dating: each document is placed by its own editorial date bounds, the frus:doc-d
 
 #### Administration profiles — what the year range does
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 161–162 | key: series.export.caveat.adminYears -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 162–163 | key: series.export.caveat.adminYears -->
 
 Year range: this selects which administrations appear, by whether the president’s term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.
 
@@ -1282,7 +1282,7 @@ Year range: this selects which administrations appear, by whether the president�
 
 #### Administration profiles — why the counts overlap
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 168–169 | key: series.export.caveat.adminOverlap -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 169–170 | key: series.export.caveat.adminOverlap -->
 
 Attribution: a document counts toward every administration its date range overlaps. The counts therefore overlap each other and add up to more than the whole series. A term ends on the day the next president takes office. A document dated on a succession day therefore belongs to the incoming president. These counts measure whose foreign policy the documents cover, not when the volumes were published.
 
@@ -1294,7 +1294,7 @@ Attribution: a document counts toward every administration its date range overla
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 188–189 | key: series.export.caveat.adminNotes.v2 %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 189–190 | key: series.export.caveat.adminNotes.v2 %@ -->
 
 Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date; excluding them also withholds a volume whose only tie to an administration is such a note.
 
@@ -1748,7 +1748,7 @@ Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s wind
 <!-- END SOURCE: semanticMap.export.caveat.frame.labels %lld %lld -->
 
 #### Artifact: drawn from the bundled source-provenance…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 122–123 | key: series.export.caveat.artifact %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 123–124 | key: series.export.caveat.artifact %@ -->
 
 Artifact: drawn from the bundled source-provenance aggregate generated %@. Every figure on this surface reads that one file; a plate from a different generation is a different figure.
 

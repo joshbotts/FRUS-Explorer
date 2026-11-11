@@ -18,11 +18,12 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #306 (F-9)
-enum ChartScrubRange {
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+public enum ChartScrubRange {
 
     /// The corpus's first year — FRUS begins with the 1861 volume, and it is the lower bound the
     /// year-range control resets to.
-    static let corpusFirstYear = 1861
+    public static let corpusFirstYear = 1861
 
     /// Resolves a scrubber selection to the year range it should apply.
     ///
@@ -48,7 +49,7 @@ enum ChartScrubRange {
     ///
     /// A single-unit drag is honoured, not discarded: selecting one year is a legitimate
     /// narrowing, and it is what a tap-like drag produces.
-    static func resolve(
+    public static func resolve(
         selection: ClosedRange<Int>,
         decadeStride: Bool,
         corpusMaxYear: Int

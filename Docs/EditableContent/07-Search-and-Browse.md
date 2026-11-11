@@ -1058,33 +1058,33 @@ Every search you ran, in a Markdown table and a CSV. Each row gives the scope th
 
 ### 7.9 Occurrence counts — when they are refused, and why
 
-*Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
+*Source: `FRUSCoreKit/Analytics/OccurrenceAvailability.swift, FRUSExplorer/Analytics/AnalyticsView.swift`*
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3194–3195 | key: analytics.measure.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3000–3001 | key: analytics.measure.help -->
 
 Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
 
 <!-- END SOURCE: analytics.measure.help -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.exact -->
+<!-- SOURCE: FRUSCoreKit/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.exact -->
 
 Occurrence counts aren’t available for exact-word searches: the index stores word stems, so it cannot tell one exact spelling’s occurrences from another’s.
 
 <!-- END SOURCE: analytics.occurrences.unavailable.exact -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.multiTerm -->
+<!-- SOURCE: FRUSCoreKit/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.multiTerm -->
 
 Occurrence counts aren’t available for phrases, wildcards or proximity searches — those match several index terms, which have no single occurrence count.
 
 <!-- END SOURCE: analytics.occurrences.unavailable.multiTerm -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.composite -->
+<!-- SOURCE: FRUSCoreKit/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.composite -->
 
 Occurrence counts aren’t available for queries with more than one term: adding up occurrences of each would count two different things as one.
 
 <!-- END SOURCE: analytics.occurrences.unavailable.composite -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.notSingleToken -->
+<!-- SOURCE: FRUSCoreKit/Analytics/OccurrenceAvailability.swift | key: analytics.occurrences.unavailable.notSingleToken -->
 
 This term indexes as several separate words, so it has no single occurrence count.
 
