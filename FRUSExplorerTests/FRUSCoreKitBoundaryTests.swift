@@ -78,6 +78,8 @@ import Testing
 ///   1.5 — Session 2026-11-11 (FRUS Explorer Light, S22c): the kit may import FoundationNetworking
 ///         behind `canImport(FoundationNetworking)`, where Linux's `URLSession` lives, for the NARA and
 ///         Zotero clients
+///   1.6 — 2026-11-11 (FRUS Explorer Light, S24a): the suites' walk's sanity set names `measureCoverage`,
+///         since `makeAnalyticsPipeline` moved into the kit's suites with `CorpusAnalyticsServiceTests`
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -687,7 +689,7 @@ struct FRUSCoreKitBoundaryTests {
         // The walk is real: the app's view model and scheme handler, and a suite and a helper of the
         // test target's, so both its types and its free functions are read.
         #expect(absent.isSuperset(of: ["SearchViewModel", "FRUSURLSchemeHandler", "WindowTargetingTests",
-                                       "makeAnalyticsPipeline"]),
+                                       "measureCoverage"]),
                 "the declarations the package lacks were not read: \(absent.count) found")
         // What the package has of its own: the kit's names, and those the suites declare where the
         // package compiles them.

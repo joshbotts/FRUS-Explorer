@@ -46,6 +46,9 @@ import SwiftUI   // NavigationPath, for the tenth host's overload
 ///   1.0 — Session 2026-08-08: #750
 ///   1.1 — 2026-09-11: #1274 — the three iOS "Browse all topics…" doors, an iOS twin of the
 ///          macOS reachability analyser, and a sweep over every Topic-index hand-off
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S24a): the link's parameters are read in FRUSCoreKit's
+///          `AnalyticsSearchHandoff.swift`, where `AnalyticsSearchHandoff` moved out of `AnalyticsView.swift`,
+///          and `memberBody` stops at a `public` declaration, which the kit's files have
 @Suite("iOS hand-off visibility")
 struct HandoffVisibilityTests {
 
@@ -104,7 +107,7 @@ struct HandoffVisibilityTests {
             return ""
         }
         let openers = ["private func ", "private var ", "func ", "var ", "static ", "@ViewBuilder",
-                       "init(", "private init("]
+                       "init(", "private init(", "public "]
         let rest = code[(start + 1)...]
         let end = rest.firstIndex { line in openers.contains { line.hasPrefix($0) } } ?? code.endIndex
         return code[start..<end].joined(separator: "\n")
@@ -160,9 +163,10 @@ struct HandoffVisibilityTests {
     /// read for it; a tapped bar still builds its own.
     @Test("Both Corpus Analytics hand-offs open Search over document text only")
     func analyticsHandoffsNarrowTheScope() throws {
-        let source = try Self.source("Analytics/AnalyticsView.swift")
-        for member in ["static func parameters(term:",
-                       "private func openScopedDocumentsInSearch("] {
+        // The link's parameters are the kit's `AnalyticsSearchHandoff` (S24a); a tapped bar's are the view's.
+        for (file, member) in [("../FRUSCoreKit/Analytics/AnalyticsSearchHandoff.swift", "static func parameters(term:"),
+                               ("Analytics/AnalyticsView.swift", "private func openScopedDocumentsInSearch(")] {
+            let source = try Self.source(file)
             let body = try Self.memberBody(member, in: source)
             #expect(body.contains("includeSummaries: false"), """
                 \(member) opens Search at its default scope, which reads the reader's own summaries. \

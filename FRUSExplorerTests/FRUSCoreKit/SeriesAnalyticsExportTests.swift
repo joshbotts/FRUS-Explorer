@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - AnalyticsProvenanceOverrideTests
 
@@ -299,6 +305,7 @@ struct SeriesAnalyticsExportTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the four dashboards are the app's views, read from its sources
 // MARK: - SeriesExportWiringTests
 
 /// Every Series chart mounts its export (#790).
@@ -315,6 +322,7 @@ struct SeriesExportWiringTests {
 
     private static func source(_ name: String) throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/SeriesAnalytics/\(name).swift")
@@ -366,3 +374,4 @@ struct SeriesExportWiringTests {
         }
     }
 }
+#endif

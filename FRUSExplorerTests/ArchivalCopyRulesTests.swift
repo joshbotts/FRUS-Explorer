@@ -54,6 +54,8 @@ import Testing
 ///   1.7 — 2026-11-11: FRUS Explorer Light's S22c moved the scans' caveat and the Archival Neighbors basis
 ///         lines out of `SourceExplorerView.swift` with the panels' rules, into the kit's
 ///         `SourceExplorerPanels.swift`, so `sources` names it
+///   1.8 — 2026-11-11: FRUS Explorer Light's S24a moved `SeriesAnalyticsExport.swift` into FRUSCoreKit's
+///         `Analytics/Export/`, so `sources` names it there
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -94,7 +96,8 @@ struct ArchivalCopyRulesTests {
         "../FRUSCoreKit/Research/ResearchDocumentAggregation.swift",
         "Settings/WordCloudSettingsView.swift",
         "SeriesAnalytics/SourceProvenanceDashboard.swift",
-        "SeriesAnalytics/SeriesAnalyticsExport.swift",
+        // S24a: the About-the-Series dashboards' export statements moved into the kit; the guard follows them.
+        "../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift",
         "SeriesAnalytics/SeriesGeographyDashboard.swift",
         "SeriesAnalytics/SeriesProductionDashboard.swift",
         "SeriesAnalytics/TopCollectionsCard.swift",

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ChartScrubRangeTests
 
@@ -91,6 +97,7 @@ struct ChartScrubRangeTests {
 
 // MARK: - ChartScrubWiringTests
 
+#if !SWIFT_PACKAGE // the scrub handler is `AnalyticsView`'s, read from the app's sources
 /// That the chart hands `resolve` the axis it is actually drawing (#306).
 ///
 /// The rule itself is tested above by calling it. This is the one thing that cannot be: the
@@ -109,7 +116,7 @@ struct ChartScrubWiringTests {
     @Test("The chart forwards its own decadeStride, not a constant")
     func forwardsTheAxis() throws {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/Analytics/AnalyticsView.swift"),
             encoding: .utf8)
@@ -122,3 +129,4 @@ struct ChartScrubWiringTests {
         #expect(source.contains(".chartXSelection(range: $scrubSelection)"))
     }
 }
+#endif

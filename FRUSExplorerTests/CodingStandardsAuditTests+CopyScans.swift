@@ -125,6 +125,9 @@ import Foundation
 ///   1.18 — 2026-11-10: FRUS Explorer Light's S22b — one baseline entry re-pointed to the FRUSCoreKit file
 ///         its string moved to (the unprinted pointer's repeat note, now in `SourceExplorerResolution.swift`
 ///         with `UnprintedPointer`), so the ceiling is unchanged
+///   1.19 — 2026-11-11: FRUS Explorer Light's S24a — one baseline entry re-pointed to the FRUSCoreKit file its
+///         string moved to (the About-the-Series corpus caveat, with `SeriesAnalyticsExport.swift`), so the
+///         ceiling is unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -906,6 +909,7 @@ extension CodingStandardsAuditTests {
     /// Administrations drill's caption, re-keyed when the drill was put in the order of its own
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
+        #"../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | series.export.caveat.corpus %lld"#,
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterInbound %lld %@"#,
         #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterOutbound %lld %@"#,
@@ -1114,7 +1118,6 @@ extension CodingStandardsAuditTests {
         #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.caveats.body.v2 %lld"#,
         #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.docs.pointPlusRange"#,
         #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.volumes.docCount"#,
-        #"SeriesAnalytics/SeriesAnalyticsExport.swift | series.export.caveat.corpus %lld"#,
         #"SeriesAnalytics/SeriesGeographyDashboard.swift | series.geography.caveats.body.v2 %lld %lld"#,
         #"SeriesAnalytics/SeriesProductionDashboard.swift | series.caveats.body.v2 %lld"#,
         #"SeriesAnalytics/SeriesProductionDashboard.swift | series.chart.cumulative.caption.v2 %lld"#,
