@@ -145,23 +145,24 @@ struct ZoteroWriteResponse: Decodable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
-struct ZoteroKeyInfo: Decodable, Sendable {
-    let userID: Int
-    let username: String?
-    let access: Access
+///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, as a host's send reads it
+public struct ZoteroKeyInfo: Decodable, Sendable {
+    public let userID: Int
+    public let username: String?
+    public let access: Access
 
-    struct Access: Decodable, Sendable {
-        let user: UserAccess?
+    public struct Access: Decodable, Sendable {
+        public let user: UserAccess?
     }
 
-    struct UserAccess: Decodable, Sendable {
-        let library: Bool?
-        let write: Bool?
-        let notes: Bool?
+    public struct UserAccess: Decodable, Sendable {
+        public let library: Bool?
+        public let write: Bool?
+        public let notes: Bool?
     }
 
     /// Whether the key can write items and notes to the user's personal library.
-    var canWriteNotes: Bool {
+    public var canWriteNotes: Bool {
         (access.user?.write ?? false) && (access.user?.library ?? false)
     }
 }
@@ -172,7 +173,8 @@ struct ZoteroKeyInfo: Decodable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
-enum ZoteroAPIError: Error, LocalizedError, Sendable {
+///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, as a host's send reads it
+public enum ZoteroAPIError: Error, LocalizedError, Sendable {
     case missingCredentials
     case invalidKey
     case insufficientPermissions
@@ -181,7 +183,7 @@ enum ZoteroAPIError: Error, LocalizedError, Sendable {
     case decoding
     case rateLimited(retryAfter: TimeInterval)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .missingCredentials:
             return String(localized: "zotero.error.missingCredentials",
@@ -213,11 +215,12 @@ enum ZoteroAPIError: Error, LocalizedError, Sendable {
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
-struct ZoteroSendResult: Sendable {
-    let addedItems: Int
-    let failedItems: Int
-    let addedNotes: Int
-    let collectionKey: String?
+///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, as a host's send reads it
+public struct ZoteroSendResult: Sendable {
+    public let addedItems: Int
+    public let failedItems: Int
+    public let addedNotes: Int
+    public let collectionKey: String?
     /// Web URL of the destination collection/library, for a "View in Zotero" link.
-    let webURL: URL?
+    public let webURL: URL?
 }

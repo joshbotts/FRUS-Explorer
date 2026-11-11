@@ -75,6 +75,9 @@ import Testing
 ///         listing's diff
 ///   1.4 — Session 2026-11-08 (FRUS Explorer Light, S21a): the kit may import TEIHeaderKit behind
 ///         `canImport(TEIHeaderKit)`, as `LocalVolumeCatalog` does since it moved into the kit
+///   1.5 — Session 2026-11-11 (FRUS Explorer Light, S22c): the kit may import FoundationNetworking
+///         behind `canImport(FoundationNetworking)`, where Linux's `URLSession` lives, for the NARA and
+///         Zotero clients
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -107,9 +110,12 @@ struct FRUSCoreKitBoundaryTests {
     /// SQLite3, for which the web edition supplies `CSQLite` on Linux; and FTS5Store, a module of its
     /// own in a package and compiled into the app in Xcode, where `canImport(FTS5Store)` is false.
     /// TEIHeaderKit joined with the library's rules (FRUS Explorer Light's S21a), the same way as
-    /// FTS5Store: `LocalVolumeCatalog` reads a side-loaded volume's header with it.
+    /// FTS5Store: `LocalVolumeCatalog` reads a side-loaded volume's header with it. FoundationNetworking
+    /// joined with the NARA and Zotero clients (S22c): Linux's `URLSession` is there, and Darwin's in
+    /// Foundation, where `canImport(FoundationNetworking)` is false.
     static let permittedImports: [String: (condition: String, inElse: Bool)] = [
         "FoundationXML": ("canImport(FoundationXML)", false),
+        "FoundationNetworking": ("canImport(FoundationNetworking)", false),
         "CryptoKit": ("canImport(CryptoKit)", false),
         "Crypto": ("canImport(CryptoKit)", true),
         "SourceNoteKit": ("canImport(SourceNoteKit)", false),

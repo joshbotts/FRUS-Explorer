@@ -122,44 +122,44 @@ struct CuratedSeriesDefinition: Codable, Sendable, Equatable {
 /// `kind` discriminates the three outcomes; the fields each kind needs are optional at the
 /// storage layer and validated when `outcome` is built, so a malformed row yields `nil`
 /// rather than a half-rendered card.
-struct CuratedLotRecord: Codable, Sendable, Equatable {
+public struct CuratedLotRecord: Codable, Sendable, Equatable {
     /// Compact upper-cased lot key in `CentralFilesIndex.normalizeLot` form (`54D270`).
-    let lotNumber: String
+    public let lotNumber: String
     /// `"possible"`, `"candidates"`, or `"referral"`.
-    let kind: String
+    public let kind: String
     /// The collection's name as FRUS cites it (`Marshall Mission Files`), for display.
-    let displayName: String?
+    public let displayName: String?
     /// The record group the curation established — **authoritative over the parser's guess**,
     /// which defaults every non-`F` lot to RG 59 and so labels `M88` as RG 59 when it is RG 43.
-    let recordGroup: String?
+    public let recordGroup: String?
     /// Why this outcome, in one or two sentences. Rendered beneath the chip.
-    let rationale: String?
+    public let rationale: String?
 
     /// Key into the index's `series` map, when this row shares a series with others.
     /// A row's own inline fields win over the referenced definition.
-    let seriesRef: String?
+    public let seriesRef: String?
     /// Collection names that route to this row even when the citation carries no lot number
     /// (the `namedFileSeries` parse). Matched case- and punctuation-insensitively.
-    let seriesNames: [String]?
+    public let seriesNames: [String]?
 
     // `possible`
-    let naId: String?
-    let title: String?
-    let catalogURL: String?
-    let hmsMlrEntryNumbers: [String]?
-    let dateRange: String?
+    public let naId: String?
+    public let title: String?
+    public let catalogURL: String?
+    public let hmsMlrEntryNumbers: [String]?
+    public let dateRange: String?
 
     // `candidates`
-    let creatorName: String?
-    let creatorNaId: String?
-    let seeAllURL: String?
-    let candidates: [CuratedSeries]?
+    public let creatorName: String?
+    public let creatorNaId: String?
+    public let seeAllURL: String?
+    public let candidates: [CuratedSeries]?
 
     // `referral`
-    let guidance: String?
-    let seriesCount: Int?
-    let entryNumberRange: String?
-    let browseURL: String?
+    public let guidance: String?
+    public let seriesCount: Int?
+    public let entryNumberRange: String?
+    public let browseURL: String?
 
     /// The typed outcome, or `nil` when the row does not carry what its `kind` requires —
     /// resolving `seriesRef` against `series` and letting the row's own fields win.
@@ -234,6 +234,9 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
 ///          reads the app's bundle, stays in the app (`CuratedLotResolutionsStore.swift`)
 ///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `CuratedLotOutcome`, `CuratedSeries` and `CuratedReferral` public, since
 ///          the lot cards hold them
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S22c): `CuratedLotRecord` public, and the record, outcome and
+///          record-group lookups both Source Explorer views read while they draw, for a host that draws what
+///          they draw
 public struct CuratedLotResolutions: Codable, Sendable {
     /// Bumped when the row shape changes.
     let schemaVersion: Int
@@ -251,7 +254,7 @@ public struct CuratedLotResolutions: Codable, Sendable {
 
     /// The curated record for `raw`, matched on the same normalized key
     /// `CentralFilesIndex.lotFile(forRawLot:)` uses, or `nil` when the lot is not curated.
-    func record(forRawLot raw: String) -> CuratedLotRecord? {
+    public func record(forRawLot raw: String) -> CuratedLotRecord? {
         let key = CentralFilesIndex.normalizeLot(raw)
         return lots.first { $0.lotNumber == key }
     }
@@ -259,14 +262,14 @@ public struct CuratedLotResolutions: Codable, Sendable {
     /// The curated outcome for `raw`, or `nil` when the lot is not curated (or its row is
     /// malformed — a bad row is treated as absent, so the app falls back to today's honest
     /// "no matching record" rather than rendering half a card).
-    func outcome(forRawLot raw: String) -> CuratedLotOutcome? {
+    public func outcome(forRawLot raw: String) -> CuratedLotOutcome? {
         record(forRawLot: raw)?.outcome(resolving: seriesMap)
     }
 
     /// The record group curation established for `raw`, in the parser's `RG-59` form.
     /// Callers must prefer this over `SourceNoteParser`'s guess, which defaults every
     /// non-`F` lot to RG 59 and is wrong for at least one curated collection.
-    func recordGroup(forRawLot raw: String) -> String? {
+    public func recordGroup(forRawLot raw: String) -> String? {
         record(forRawLot: raw)?.effectiveRecordGroup(resolving: seriesMap)
     }
 
@@ -276,7 +279,7 @@ public struct CuratedLotResolutions: Codable, Sendable {
     /// "CFM Files" is cited both ways: 697 documents carry lot M-88 and a further 376 name
     /// the collection alone. The archival answer is the same for both, and before this
     /// lookup existed the second group saw nothing.
-    func record(forSeriesName name: String) -> CuratedLotRecord? {
+    public func record(forSeriesName name: String) -> CuratedLotRecord? {
         let key = CuratedLotResolutions.normalizeSeriesName(name)
         guard !key.isEmpty else { return nil }
         return lots.first { record in
@@ -285,12 +288,12 @@ public struct CuratedLotResolutions: Codable, Sendable {
     }
 
     /// The curated outcome for a named file series, or `nil` when it is not curated.
-    func outcome(forSeriesName name: String) -> CuratedLotOutcome? {
+    public func outcome(forSeriesName name: String) -> CuratedLotOutcome? {
         record(forSeriesName: name)?.outcome(resolving: seriesMap)
     }
 
     /// The record group curation established for a named file series.
-    func recordGroup(forSeriesName name: String) -> String? {
+    public func recordGroup(forSeriesName name: String) -> String? {
         record(forSeriesName: name)?.effectiveRecordGroup(resolving: seriesMap)
     }
 

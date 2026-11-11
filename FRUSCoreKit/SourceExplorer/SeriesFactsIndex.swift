@@ -27,6 +27,10 @@ import Foundation
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `SeriesFactsIndexStore`, which
 ///          reads the app's bundle, stays in the app (`SeriesFactsIndexStore.swift`),
 ///          with `facts(for:)` and `creatorName(for:)`, which read two of the app's stores
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): `Facts` public, and `facts(for:centralFiles:seriesFacts:)`
+///          and `creatorName(for:centralFiles:seriesFacts:)` the kit's, moved from the app's store file with
+///          the two indexes as parameters, the series facts read only once the guards pass; the app's one-
+///          argument forms pass its stores
 public struct SeriesFactsIndex: Codable, Sendable, Equatable {
 
     /// One series' creating bodies, as indices into `headings`.
@@ -85,26 +89,26 @@ public struct SeriesFactsIndex: Codable, Sendable, Equatable {
     /// Everything here is trip-planning information: whether the records can be read at all, why
     /// not, whether what you find can be published, how much of it there is, where it physically
     /// is, and whether NARA has a folder list. FRUS's own citation says none of it.
-    struct Facts: Sendable, Equatable {
+    public struct Facts: Sendable, Equatable {
         /// e.g. `Restricted - Partly`. Measured: 483 of 698 app-reachable series are restricted
         /// in some degree, so this is usually present and usually consequential.
-        var accessStatus: String?
+        public var accessStatus: String?
         /// e.g. `FOIA (b)(1) National Security` — 400 of 698.
-        var accessRestrictions: [String]
-        var useStatus: String?
+        public var accessRestrictions: [String]
+        public var useStatus: String?
         /// Chiefly `Copyright` — 227 of 698.
-        var useRestrictions: [String]
-        var extent: String?
-        var referenceUnit: String?
-        var findingAids: [String]
-        var years: String?
+        public var useRestrictions: [String]
+        public var extent: String?
+        public var referenceUnit: String?
+        public var findingAids: [String]
+        public var years: String?
 
         /// Whether NARA states any limit on reading the records.
-        var isAccessRestricted: Bool { (accessStatus ?? "").hasPrefix("Restricted") }
+        public var isAccessRestricted: Bool { (accessStatus ?? "").hasPrefix("Restricted") }
         /// Whether NARA states any limit on publishing them.
-        var isUseRestricted: Bool { (useStatus ?? "").hasPrefix("Restricted") }
+        public var isUseRestricted: Bool { (useStatus ?? "").hasPrefix("Restricted") }
         /// Nothing worth rendering.
-        var isEmpty: Bool {
+        public var isEmpty: Bool {
             accessStatus == nil && useStatus == nil && extent == nil
                 && referenceUnit == nil && findingAids.isEmpty && years == nil
         }
@@ -194,6 +198,45 @@ extension SeriesFactsIndex {
     static func shouldShow(isSeriesLevel: Bool, untrustworthyFlag: Bool?) -> Bool {
         guard isSeriesLevel else { return false }
         return untrustworthyFlag != true
+    }
+
+    /// NARA's catalogue facts for a bundled lot entry, under the same guards as the creator
+    /// (`creatorName(for:centralFiles:seriesFacts:)`).
+    ///
+    /// `centralFiles` answers guard 2, and `seriesFacts` is read only once the guards pass, so a store
+    /// the caller loads lazily loads where it did before this moved; the app's `facts(for:)` and
+    /// `creatorName(for:)` pass its two stores (`SeriesFactsIndexStore.swift`).
+    public static func facts(for entry: LotFileEntry, centralFiles: CentralFilesIndex?,
+                             seriesFacts: @autoclosure () -> SeriesFactsIndex?) -> Facts? {
+        guard shouldShow(isSeriesLevel: entry.isSeriesLevel,
+                         untrustworthyFlag: centralFiles?
+                             .isUntrustworthyNAID(entry.naId)) else { return nil }
+        return seriesFacts()?.facts(forNaId: entry.naId)
+    }
+
+    /// The creating body to show for a bundled lot entry, or `nil`.
+    ///
+    /// Three guards, each protecting against showing a true fact about the wrong record:
+    ///
+    /// 1. **Series level only.** `bundledLotSection` renders file-unit entries too, and a file
+    ///    unit borrows its series title from its parent (`displaySeriesTitle`). NARA puts
+    ///    `creators` on the series alone, so a creator found for a file-unit NAID would be either
+    ///    absent or — worse — the parent's, presented as the cited record's.
+    /// 2. **Not an untrustworthy NAID.** `#351` established that some bundled NAIDs point at the
+    ///    wrong collection entirely; `CentralFilesIndex.isUntrustworthyNAID` is the standing list.
+    ///    A creator attached to one of those would dress a known-bad resolution in new detail.
+    /// 3. **Not the record group.** A record-group node's creator is "Department of State" for
+    ///    three-quarters of the corpus — true, and useless. This index only holds series, so the
+    ///    guard is structural rather than a filter, but it is why the line stays absent on the
+    ///    decimal-file mass instead of repeating one label everywhere.
+    ///
+    /// `centralFiles` and `seriesFacts` as for `facts(for:centralFiles:seriesFacts:)`.
+    public static func creatorName(for entry: LotFileEntry, centralFiles: CentralFilesIndex?,
+                                   seriesFacts: @autoclosure () -> SeriesFactsIndex?) -> String? {
+        guard shouldShow(isSeriesLevel: entry.isSeriesLevel,
+                         untrustworthyFlag: centralFiles?
+                             .isUntrustworthyNAID(entry.naId)) else { return nil }
+        return seriesFacts()?.creator(forNaId: entry.naId)
     }
 }
 

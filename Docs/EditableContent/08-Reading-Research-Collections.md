@@ -1334,7 +1334,7 @@ Search is not ready yet. Try again in a moment.
 <!-- END SOURCE: export.smart.noSearchService.v2 -->
 
 #### Zotero is receiving too many requests right now. Try agai…
-<!-- SOURCE: FRUSExplorer/Zotero/ZoteroAPIModels.swift | lines: 206–207 | key: zotero.error.rateLimited.v2 -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIModels.swift | lines: 208–209 | key: zotero.error.rateLimited.v2 -->
 
 Zotero is receiving too many requests right now. Try again in a moment.
 
@@ -2896,7 +2896,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: packet.topic.placeholder -->
 
 #### This Zotero key lacks write access to your library. Create…
-<!-- SOURCE: FRUSExplorer/Zotero/ZoteroAPIModels.swift | ZoteroAPIError.errorDescription | lines: 193–194 | key: zotero.error.permissions -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIModels.swift | ZoteroAPIError.errorDescription | lines: 195–196 | key: zotero.error.permissions -->
 
 This Zotero key lacks write access to your library. Create a key with write and notes permission.
 

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - NARALookupAnalyzerTests
 
@@ -31,6 +37,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-20: #235
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S22c): moved into FRUSCoreKit's suites with the analyzer; the
+///          resolver-agreement test, which reads the app's one-argument resolver, is Xcode's alone
 @Suite("NARA lookup — candidate analysis")
 struct NARALookupAnalyzerTests {
 
@@ -195,6 +203,7 @@ struct NARALookupAnalyzerTests {
 
     // MARK: - Agreement with the rest of the app
 
+    #if !SWIFT_PACKAGE // the overloads over the app's bundled indexes are the app's
     /// The analyzer must not grow a second lookup. If it ever stops delegating, this fails — which
     /// is the only cheap way to notice, since a private copy would still return plausible NAIDs.
     @Test("The resolution is exactly what ArchivalResolver answers for the same lot")
@@ -205,6 +214,7 @@ struct NARALookupAnalyzerTests {
         #expect(top.resolution?.title == direct?.title)
         #expect(top.resolution?.catalogURL == direct?.catalogURL)
     }
+    #endif
 
     /// The window is asymmetric because a source note's archival clause normally PRECEDES the
     /// phrase a reader selects. A symmetric window would spend half its reach on text that

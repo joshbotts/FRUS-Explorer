@@ -7,6 +7,12 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - NARACatalogResult
 
@@ -96,13 +102,40 @@ public enum NARACatalogError: Error, LocalizedError {
     }
 }
 
+// MARK: - NARACatalogKeyProvider
+
+/// Where `NARACatalogClient` reads its NARA Catalog API key, and what it tells after each answer.
+///
+/// The client asks for the key on each call that needs one, so it is always current. The app's
+/// `KeychainStore` answers with the key the user stored in Settings → Connections and counts each
+/// answered call in `NARAAPIKeyStore`'s 30-day tally (`NARACatalogClient+App.swift`); a host with
+/// keys of its own answers with the key for the request, and may count the calls or not.
+///
+/// Version history:
+///   1.0 — FRUS Explorer Light's S22c: in place of the client's `KeychainStore` and its call to
+///          `NARAAPIKeyStore`, when the client moved into FRUSCoreKit
+public protocol NARACatalogKeyProvider: Sendable {
+    /// The stored key, or `nil` when there is none. A search treats an empty key as none and throws
+    /// `NARACatalogError.missingAPIKey`; `hasAPIKey()` answers whether this returns a key at all, empty
+    /// or not, as it answered for the Keychain, so a provider with no key returns `nil`.
+    func naraCatalogAPIKey() async throws -> String?
+    /// Called after each NARA Catalog API response with a 2xx status, before it is decoded.
+    func recordNARACatalogAPICall() async
+}
+
+extension NARACatalogKeyProvider {
+    /// Counts nothing: a provider that keeps no tally needs no method of its own.
+    public func recordNARACatalogAPICall() async {}
+}
+
 // MARK: - NARACatalogClient
 
 /// Actor that queries the NARA Catalog API (v2) and constructs static NARA URLs.
 ///
 /// ## Authentication
 /// The NARA Catalog API requires an `x-api-key` request header. The key is
-/// retrieved from `KeychainStore` on each call, so it is always current.
+/// read from the client's `NARACatalogKeyProvider` on each call, so it is always current;
+/// the app's is its `KeychainStore`.
 ///
 /// ## RG-59 Central Files (no API call)
 /// State Dept. central file identifiers are resolved by constructing a static
@@ -140,11 +173,16 @@ public enum NARACatalogError: Error, LocalizedError {
 ///          date objects and both date pairs, and is their union (`seriesDateRange(in:)`)
 ///   1.6 — FRUSCoreKit, part 2: `isDecimalFileNumber(_:)` forwards to
 ///          `DecimalFileSegment.isDecimalFileNumber(_:)`, in the kit
+///   1.7 — FRUS Explorer Light's S22c: in FRUSCoreKit, with `URLSession` from FoundationNetworking
+///          on Linux; the key read through a `NARACatalogKeyProvider` in place of `KeychainStore`,
+///          which each answered call is told to in place of `NARAAPIKeyStore`; the app's
+///          `init(keychainStore:urlSession:)` stays the app's, over this one; `searchCatalog(query:)`,
+///          which the Mac's manual search runs, public with the other queries
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
 
-    private let keychainStore: KeychainStore
+    private let keyProvider: any NARACatalogKeyProvider
     private let urlSession: URLSession
 
     // MARK: - Constants
@@ -162,12 +200,13 @@ public actor NARACatalogClient {
 
     // MARK: - Init
 
+    /// A client that reads its key from `keyProvider` on each call that needs one.
     public init(
-        keychainStore: KeychainStore = .shared,
+        keyProvider: any NARACatalogKeyProvider,
         urlSession: URLSession = .shared
     ) {
-        self.keychainStore = keychainStore
-        self.urlSession    = urlSession
+        self.keyProvider = keyProvider
+        self.urlSession  = urlSession
     }
 
     // MARK: - RG-59 Central Files (static URL — no API call)
@@ -708,7 +747,7 @@ public actor NARACatalogClient {
     ///
     /// Used when structured parameters are unavailable. Prefer the structured
     /// v2 methods (`searchByRecordGroup`, `searchByLotFile`) when possible.
-    func searchCatalog(query: String) async throws -> NARACatalogResult? {
+    public func searchCatalog(query: String) async throws -> NARACatalogResult? {
         let apiKey = try await fetchAPIKey()
         var components = URLComponents(string: "\(Self.apiV1Base)/search")!
         components.queryItems = [
@@ -749,7 +788,7 @@ public actor NARACatalogClient {
         }
 
         // Record successful API hit for 30-day usage tracking displayed in Settings.
-        await MainActor.run { NARAAPIKeyStore.shared.recordAPICall() }
+        await keyProvider.recordNARACatalogAPICall()
 
         return decodeResults(from: data)
     }
@@ -922,14 +961,14 @@ public actor NARACatalogClient {
     // MARK: - API Key
 
     private func fetchAPIKey() async throws -> String {
-        guard let key = try await keychainStore.getNARACatalogAPIKey(), !key.isEmpty else {
+        guard let key = try await keyProvider.naraCatalogAPIKey(), !key.isEmpty else {
             throw NARACatalogError.missingAPIKey
         }
         return key
     }
 
-    /// Returns `true` if an API key is currently stored in the keychain.
+    /// Returns `true` if the key provider currently holds an API key (in the app, the keychain).
     public func hasAPIKey() async -> Bool {
-        (try? await keychainStore.getNARACatalogAPIKey() != nil) ?? false
+        (try? await keyProvider.naraCatalogAPIKey() != nil) ?? false
     }
 }

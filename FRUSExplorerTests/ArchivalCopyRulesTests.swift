@@ -51,6 +51,9 @@ import Testing
 ///   1.6 — 2026-11-10: FRUS Explorer Light's S22b moved the classifier into FRUSCoreKit, and the unprinted
 ///         pointers' row and footer copy with `UnprintedPointer` out of `SourceExplorerView.swift` into the
 ///         kit's `SourceExplorerResolution.swift`, so `sources` names both kit files
+///   1.7 — 2026-11-11: FRUS Explorer Light's S22c moved the scans' caveat and the Archival Neighbors basis
+///         lines out of `SourceExplorerView.swift` with the panels' rules, into the kit's
+///         `SourceExplorerPanels.swift`, so `sources` names it
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -76,6 +79,9 @@ struct ArchivalCopyRulesTests {
         // S22b: the unprinted pointers' rows and footer moved out of SourceExplorerView.swift with
         // `UnprintedPointer`, into the value both views draw from; the guard follows the copy.
         "../FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift",
+        // S22c: the scans' caveat and the Archival Neighbors basis lines moved out of SourceExplorerView.swift
+        // with the rules the panels read while they draw; the guard follows the copy.
+        "../FRUSCoreKit/SourceExplorer/SourceExplorerPanels.swift",
         // #838 item 4: the archival popover copy lives here, not in the Analytics family, and the
         // rule is about artboard-derived strings wherever they ship. Its absence is why `centre`
         // shipped in `archival.info.method.title` while this suite stayed green — the guard was

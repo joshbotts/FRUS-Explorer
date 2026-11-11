@@ -97,11 +97,13 @@ struct SeriesFactsIndexTests {
 
 // MARK: - SeriesFactsGuardTests
 
-#if !SWIFT_PACKAGE // creatorName(for:), which these guards drive, reads the app's stores
 /// The three guards that keep a true fact off the wrong record (#405).
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #405 (F-6)
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S22c): runs in the package too, where the rule is the kit's
+///          (`creatorName(for:centralFiles:seriesFacts:)`) and `SourceExplorerTestSupport.swift` gives the
+///          app's one-argument form over the package's stores
 @Suite("Series creator guards (#405)")
 struct SeriesFactsGuardTests {
 
@@ -134,7 +136,6 @@ struct SeriesFactsGuardTests {
         #expect(SeriesFactsIndex.creatorName(for: entry(naId: "999999999", level: "series")) == nil)
     }
 }
-#endif
 
 // MARK: - SeriesFactsDecisionTests
 

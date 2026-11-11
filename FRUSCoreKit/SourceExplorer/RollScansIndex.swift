@@ -13,17 +13,17 @@ import Foundation
 /// One digitised microfilm roll, keyed by the NARA identifier the app already stores (#663).
 ///
 /// The app-side mirror of `DigitizedRangeIndexGeneratorCore.RollScan`; the JSON is the contract.
-struct RollScan: Codable, Sendable, Equatable {
-    let naId: String
-    let objectCount: Int
-    let objectUrl: String?
-    let objectFilename: String?
+public struct RollScan: Codable, Sendable, Equatable {
+    public let naId: String
+    public let objectCount: Int
+    public let objectUrl: String?
+    public let objectFilename: String?
 
     /// The direct scan link, **only when it is a whole-roll PDF** — the same rule
     /// `DigitizedRange` applies, for the same reason: a `.tif` object URL is the *first image*
     /// of the unit, and one frame of a thousand is worse than the viewer holding all of them.
     /// Measured, 1,235 of the 1,238 M862 rolls are PDFs, so this withholds almost nothing.
-    var rollPDFURL: URL? {
+    public var rollPDFURL: URL? {
         guard let objectUrl, let objectFilename,
               objectFilename.lowercased().hasSuffix(".pdf") else { return nil }
         return URL(string: objectUrl)
@@ -64,6 +64,9 @@ struct RollScan: Codable, Sendable, Equatable {
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `RollScansIndexStore`, which
 ///          reads the app's bundle, stays in the app (`RollScansIndexStore.swift`)
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): `RollScan` public, `scan(forNaId:)`, and
+///          `DigitizedScanPresentation` with its two initializers, now `Sendable` too, which both Source
+///          Explorer views draw from, for a host that draws what they draw
 public struct RollScansIndex: Codable, Sendable {
     let schemaVersion: Int
     let generated: String
@@ -87,7 +90,7 @@ public struct RollScansIndex: Codable, Sendable {
     }
 
     /// The scan for a roll, or `nil` when the harvest has none for it.
-    func scan(forNaId naId: String) -> RollScan? { byNaId[naId] }
+    public func scan(forNaId naId: String) -> RollScan? { byNaId[naId] }
 }
 
 // MARK: - DigitizedScanPresentation
@@ -111,20 +114,20 @@ public struct RollScansIndex: Codable, Sendable {
 /// - numerical: the roll genuinely holds the case — what it does not do is point at the page.
 ///
 /// Collapsing those into one line was the temptation this type exists to resist.
-struct DigitizedScanPresentation: Equatable {
+public struct DigitizedScanPresentation: Equatable, Sendable {
     /// NARA's own title for the scanned unit, shown verbatim.
-    let title: String
+    public let title: String
     /// The scan's image count.
-    let objectCount: Int
+    public let objectCount: Int
     /// The whole-roll PDF, when the unit publishes one.
-    let pdfURL: URL?
+    public let pdfURL: URL?
     /// The PDF's filename, which names the microfilm publication and roll.
-    let pdfFilename: String?
+    public let pdfFilename: String?
     /// The unit's catalog record — always present; it is the page with the viewer on it.
-    let catalogURL: URL?
+    public let catalogURL: URL?
 
     /// "1,172 scanned images", and "1 scanned image" (#1374 review, round 1).
-    var imageCountLabel: String {
+    public var imageCountLabel: String {
         CountCopy.phrase(objectCount,
                          one: String(localized: "source.explorer.scans.count.one",
                                      defaultValue: "%@ scanned image"),
@@ -133,14 +136,14 @@ struct DigitizedScanPresentation: Equatable {
     }
 
     /// "Open M862_Roll1.pdf".
-    var pdfLabel: String? {
+    public var pdfLabel: String? {
         pdfFilename.map {
             String(localized: "source.explorer.scans.openRoll", defaultValue: "Open \($0)")
         }
     }
 
     /// The presentation for a decimal-range scan (#663's first half).
-    init(_ range: DigitizedRange) {
+    public init(_ range: DigitizedRange) {
         title = range.title
         objectCount = range.objectCount
         pdfURL = range.rollPDFURL
@@ -153,7 +156,7 @@ struct DigitizedScanPresentation: Equatable {
     /// `scan` is `nil` for the 43 bundled rolls the harvest has no digitised record for; the row
     /// then shows the title and the catalog link and no PDF button, which is the honest state
     /// rather than a missing one.
-    init(roll: NumericalFileRoll, scan: RollScan?) {
+    public init(roll: NumericalFileRoll, scan: RollScan?) {
         title = roll.title
         objectCount = scan?.objectCount ?? 0
         pdfURL = scan?.rollPDFURL

@@ -95,12 +95,14 @@ import SourceNoteKit
 ///          offers NARA's Department of State records page for such a series
 ///          (`offersStateRecordsLink(seriesName:)`)
 ///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
-enum NamedFileSeriesRouting {
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S22c): public, with `Destination`, `Entry` and the nine members
+///          both Source Explorer views read while they draw, for a host that draws what they draw
+public enum NamedFileSeriesRouting {
 
     // MARK: - Destination
 
     /// Where a named series is held.
-    enum Destination: Sendable, Equatable {
+    public enum Destination: Sendable, Equatable {
         /// A repository outside the record-group system — a presidential library or a
         /// manuscript repository.
         case repository(name: String, url: URL?)
@@ -108,7 +110,7 @@ enum NamedFileSeriesRouting {
         case recordGroup(number: String, naId: String, title: String)
 
         /// The NARA Catalog record for a record-group destination.
-        var catalogURL: URL? {
+        public var catalogURL: URL? {
             if case .recordGroup(_, let naId, _) = self {
                 return URL(string: "https://catalog.archives.gov/id/\(naId)")
             }
@@ -119,12 +121,12 @@ enum NamedFileSeriesRouting {
     // MARK: - Entry
 
     /// One routed series name.
-    struct Entry: Sendable, Equatable {
+    public struct Entry: Sendable, Equatable {
         /// Where the records are.
-        let destination: Destination
+        public let destination: Destination
         /// The sentence a researcher can check the claim against — the FRUS editors' own
         /// description where one exists, otherwise what makes the record group the right one.
-        let evidence: String
+        public let evidence: String
         /// The spellings the corpus uses, folded through `CuratedLotResolutions`'
         /// series-name normalizer at lookup.
         let spellings: [String]
@@ -234,7 +236,7 @@ enum NamedFileSeriesRouting {
     ///
     /// Exact spellings are tried first; the Foreign Service post pattern is the fallback, so a
     /// listed name always beats the pattern.
-    static func routing(forSeriesName name: String) -> Entry? {
+    public static func routing(forSeriesName name: String) -> Entry? {
         let key = CuratedLotResolutions.normalizeSeriesName(name)
         guard !key.isEmpty else { return nil }
         if let hit = byKey[key] { return hit }
@@ -246,7 +248,7 @@ enum NamedFileSeriesRouting {
     // MARK: - Wording
 
     /// Section/box header.
-    static var sectionTitle: String {
+    public static var sectionTitle: String {
         String(localized: "source.explorer.namedSeriesRouting.header",
                defaultValue: "Where This Series Is Held")
     }
@@ -264,7 +266,7 @@ enum NamedFileSeriesRouting {
     }
 
     /// The destination's display name.
-    static func title(_ entry: Entry) -> String {
+    public static func title(_ entry: Entry) -> String {
         switch entry.destination {
         case .repository(let name, _):
             return name
@@ -274,7 +276,7 @@ enum NamedFileSeriesRouting {
     }
 
     /// The row label appropriate to the destination.
-    static func label(_ entry: Entry) -> String {
+    public static func label(_ entry: Entry) -> String {
         switch entry.destination {
         case .repository: return repositoryLabel
         case .recordGroup: return recordGroupLabel
@@ -282,7 +284,7 @@ enum NamedFileSeriesRouting {
     }
 
     /// The destination's link, whichever kind it is.
-    static func url(_ entry: Entry) -> URL? {
+    public static func url(_ entry: Entry) -> URL? {
         switch entry.destination {
         case .repository(_, let url): return url
         case .recordGroup: return entry.destination.catalogURL
@@ -290,7 +292,7 @@ enum NamedFileSeriesRouting {
     }
 
     /// The link's title, naming the destination so it can be judged before it is opened.
-    static func linkLabel(_ entry: Entry) -> String {
+    public static func linkLabel(_ entry: Entry) -> String {
         if case .recordGroup = entry.destination {
             return String(localized: "source.explorer.nara.viewRecord",
                           defaultValue: "View in NARA Catalog")
@@ -309,7 +311,7 @@ enum NamedFileSeriesRouting {
     /// agencies' since #353 (`National Security Council, Carter Intelligence Files`). Those name the
     /// holder (`SourceNoteParser.namedSeriesHolder(ofSeriesName:)`). In one place, because the two
     /// Source Explorer views are hand-maintained twins and both say it.
-    static func explainer(seriesName: String) -> String {
+    public static func explainer(seriesName: String) -> String {
         if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
             return String(localized: "source.explorer.namedSeries.explainer.held",
                           defaultValue: "A file series the citation places with the \(holder), cited without a lot number.")
@@ -319,7 +321,7 @@ enum NamedFileSeriesRouting {
     }
 
     /// The Mac's version of ``explainer(seriesName:)``, which also says why no catalog query runs.
-    static func macNote(seriesName: String) -> String {
+    public static func macNote(seriesName: String) -> String {
         if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
             return String(localized: "source.explorer.namedSeries.note.held",
                           defaultValue: "A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
@@ -339,7 +341,7 @@ enum NamedFileSeriesRouting {
     /// Historical Files as "still under Department of State custody" — and does not say whether
     /// any was accessioned since; another agency's series (#353) are not State records at all. The
     /// explainer above names the holder instead. In one place, so the two views cannot disagree.
-    static func offersStateRecordsLink(seriesName: String) -> Bool {
+    public static func offersStateRecordsLink(seriesName: String) -> Bool {
         SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) == nil
     }
 }

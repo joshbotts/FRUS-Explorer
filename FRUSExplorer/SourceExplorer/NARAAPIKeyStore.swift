@@ -18,8 +18,8 @@ import Security
 /// the NARA key specifically.
 ///
 /// ## Call-count tracking
-/// Each time `NARACatalogClient` makes a successful API call it should call
-/// `recordAPICall()`. Timestamps are persisted in `UserDefaults` and pruned to the
+/// Each time `NARACatalogClient` makes a successful API call, its key provider is told, and the
+/// app's, `KeychainStore` (`NARACatalogClient+App.swift`), calls `recordAPICall()`. Timestamps are persisted in `UserDefaults` and pruned to the
 /// trailing 30-day window on each read. This is a best-effort count — it resets if the
 /// user reinstalls the app or clears `UserDefaults`.
 ///
@@ -29,6 +29,8 @@ import Security
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding (stub for `SettingsNARAPane`)
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S22c): the client's calls are recorded through its key provider,
+///          the app's `KeychainStore`, since the client moved into FRUSCoreKit
 @MainActor
 public final class NARAAPIKeyStore {
 
@@ -118,8 +120,8 @@ public final class NARAAPIKeyStore {
 
     /// Records a single NARA Catalog API call.
     ///
-    /// Call this from `NARACatalogClient` after each successful request so the Settings
-    /// usage counter stays accurate.
+    /// `KeychainStore`'s `recordNARACatalogAPICall()` calls this for `NARACatalogClient` after each
+    /// successful request, so the Settings usage counter stays accurate.
     public func recordAPICall() {
         var timestamps = pruneAndLoad()
         timestamps.append(Date())

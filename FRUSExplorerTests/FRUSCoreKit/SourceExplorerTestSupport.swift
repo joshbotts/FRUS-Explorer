@@ -29,6 +29,8 @@ import Foundation
 //         into FRUSCoreKit with the readers and resolvers
 //   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): the register's store, the roster the app reads from it,
 //         and the reader's AST cache, for the suites that moved with the classifier
+//   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): the app's two-argument lookup analyzer and one-argument
+//         series facts, over the stores here, for the suites that moved with the clients and the guards'
 
 /// The shipped copy of a JSON file bundled with the app: the app bundle's in Xcode, the repository's
 /// `FRUSExplorer/Resources` in the package, as `testManifestURL()` finds the manifest.
@@ -121,6 +123,29 @@ enum VolumeSourcesIndexStore {
 /// The app's `LotClaimantsIndexStore`: `lot-claimants-index.json`.
 enum LotClaimantsIndexStore {
     static let shared = decodedSourceExplorerResource(LotClaimantsIndex.self, "lot-claimants-index")
+}
+
+/// The app's one-argument `SeriesFactsIndex.facts(for:)` and `creatorName(for:)` (`SeriesFactsIndexStore.swift`),
+/// over the two stores above, so `SeriesFactsGuardTests` drives the kit's rule here as it does in Xcode.
+extension SeriesFactsIndex {
+    static func facts(for entry: LotFileEntry) -> Facts? {
+        facts(for: entry, centralFiles: CentralFilesIndexStore.shared, seriesFacts: SeriesFactsIndexStore.shared)
+    }
+
+    static func creatorName(for entry: LotFileEntry) -> String? {
+        creatorName(for: entry, centralFiles: CentralFilesIndexStore.shared, seriesFacts: SeriesFactsIndexStore.shared)
+    }
+}
+
+/// The app's two-argument `NARALookupAnalyzer.candidates` (`NARALookupAnalyzer+App.swift`), over the
+/// three stores above, so `NARALookupAnalyzerTests` calls the analyzer here as it does in Xcode.
+extension NARALookupAnalyzer {
+    static func candidates(selection: String, context: String?) -> [NARALookupCandidate] {
+        candidates(selection: selection, context: context,
+                   centralFiles: CentralFilesIndexStore.shared,
+                   volumeSources: VolumeSourcesIndexStore.shared,
+                   claimants: LotClaimantsIndexStore.shared)
+    }
 }
 
 /// The app's `DecimalClassLabelStore`: `decimal-class-labels.json`.

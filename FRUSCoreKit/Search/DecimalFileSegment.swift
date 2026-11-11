@@ -89,11 +89,14 @@ import Foundation
 ///   1.4 — FRUSCoreKit, part 2: moved into the kit, with `isDecimalFileNumber(_:)` from
 ///         `NARACatalogClient`, which forwards to it
 ///   1.5 — 2026-11-10 (FRUS Explorer Light, S22b): public, for `DocumentDay`, which `SourceExplorerResolution` holds
+///   1.6 — 2026-11-11 (FRUS Explorer Light, S22c): `location(from:)`,
+///          `filingYear(for:documentDay:documentYear:)` and both `segment` readings public, which both Source
+///          Explorer views read while they draw, for a host that draws what they draw
 public enum DecimalFileSegment {
 
     /// The decimal classification before the first `/` (`711.654/11-543` → `711.654`).
     /// Returns the trimmed whole string when there is no `/`.
-    static func location(from ref: String) -> String {
+    public static func location(from ref: String) -> String {
         let trimmed = ref.trimmingCharacters(in: .whitespaces)
         return trimmed.components(separatedBy: "/").first?
             .trimmingCharacters(in: .whitespaces) ?? trimmed
@@ -222,7 +225,7 @@ public enum DecimalFileSegment {
     /// basis line also did in effect while an en-dash item carried no year; once the basis line
     /// read the file's year, a 1945 document citing `023.1/9–1454` (frus1945Berlinv02/d843) would
     /// have shown "1950–1954" in one row and "1945–1949" in the next.
-    static func filingYear(for fileIdentifier: String?, documentDay: DocumentDay?,
+    public static func filingYear(for fileIdentifier: String?, documentDay: DocumentDay?,
                            documentYear: Int?) -> Int? {
         fileIdentifier.flatMap { fileYear(from: $0, documentDay: documentDay) } ?? documentYear
     }
@@ -249,7 +252,7 @@ public enum DecimalFileSegment {
     /// 1963, and a 1963 year reaching this function belongs to it only because the
     /// caller's ref was decimal-FORM (see `segment(for:fallbackYear:documentDay:)`) — a decimal
     /// number is a decimal filing by definition, whatever month it carries.
-    static func segment(forYear year: Int) -> String? {
+    public static func segment(forYear year: Int) -> String? {
         switch year {
         case 1910...1929: return "1910–1929"
         case 1930...1939: return "1930–1939"
@@ -285,7 +288,7 @@ public enum DecimalFileSegment {
     /// (`POL 27 VIET S`) is a Subject-Numeric filing and no decimal segment exists for
     /// it, whatever year rides along. Banding it would cluster it with filings from a
     /// system it was never part of.
-    static func segment(for ref: String, fallbackYear: Int?, documentDay: DocumentDay?) -> String? {
+    public static func segment(for ref: String, fallbackYear: Int?, documentDay: DocumentDay?) -> String? {
         guard isDecimalFileNumber(ref) else { return nil }
         let year = fileYear(from: ref, documentDay: documentDay) ?? fallbackYear
         return year.flatMap(segment(forYear:))

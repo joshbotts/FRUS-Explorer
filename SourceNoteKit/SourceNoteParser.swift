@@ -595,6 +595,8 @@ public struct ArchiveCitation: Sendable {
 ///          not declassified.") no longer hides the marking; sentence 2 is offered first, so no
 ///          marking read before changes. `secondSentenceClassificationMarking(fromSourceNote:)` is the
 ///          reading as it was, for the Archives Visit packet's test of where a citation ends
+///   1.20 — 2026-11-11 (FRUS Explorer Light, S22c): `lotFileRecordGroup(_:)` public, unchanged, for
+///          `NARALookupAnalyzer`, which moved into FRUSCoreKit, a module apart from this one
 public struct SourceNoteParser {
 
     public init() {}
@@ -2228,7 +2230,8 @@ public struct SourceNoteParser {
     /// Made `static` (and internal) for #784: `FootnoteCitationGrammar` needs the same
     /// designator→record-group rule without owning a `SourceNoteParser` instance, and the rule
     /// reads nothing off `self`. The three in-parser call sites are unchanged in behaviour.
-    static func lotFileRecordGroup(_ lotNumber: String) -> String {
+    /// Public since FRUS Explorer Light's S22c, for `NARALookupAnalyzer` in FRUSCoreKit, a module apart.
+    public static func lotFileRecordGroup(_ lotNumber: String) -> String {
         // Digits (or the string start, for letter-first designators) + optional
         // dash/space separators + F + optional separators + digits. En/em-dash
         // separators ("57–F103") are as common as spaces in the stored corpus.

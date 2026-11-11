@@ -23,17 +23,19 @@ import Foundation
 ///   1.0 — Session 2026-06-15: initial implementation
 ///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): in a file of its own, `CentralFilesIndexStore.swift`, since the
 ///          index it loads is FRUSCoreKit's and the kit never reads the app's bundle
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): the two catalogue links are `NumericalFileIndex`'s in the
+///          kit, where a host reads them; these forward
 enum CentralFilesIndexStore {
 
     /// The bundled Central Files index, or `nil` if unavailable. Loaded once.
     static let shared: CentralFilesIndex? = load()
 
-    /// NARA Catalog record for the Numerical File series (M862, NAID 654171).
-    static let numericalFileSeriesURL = URL(string: "https://catalog.archives.gov/id/654171")!
+    /// NARA Catalog record for the Numerical File series (M862, NAID 654171): FRUSCoreKit's.
+    static let numericalFileSeriesURL = NumericalFileIndex.numericalFileSeriesURL
 
     /// NARA Catalog record for the Card Index to the Numerical File (M1889, NAID 656824),
-    /// the finding aid that resolves names/subjects to case numbers.
-    static let cardIndexURL = URL(string: "https://catalog.archives.gov/id/656824")!
+    /// the finding aid that resolves names/subjects to case numbers: FRUSCoreKit's.
+    static let cardIndexURL = NumericalFileIndex.cardIndexURL
 
     private static func load() -> CentralFilesIndex? {
         guard let url = Bundle.main.url(forResource: "central-files-index", withExtension: "json") else {

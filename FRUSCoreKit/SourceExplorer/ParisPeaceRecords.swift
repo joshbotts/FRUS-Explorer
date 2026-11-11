@@ -66,24 +66,26 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 3, the Paris Peace Conference records
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
-enum ParisPeaceRecords {
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): public, with `CatalogRecord` and the ten members both Source
+///          Explorer views read while they draw, for a host that draws what they draw
+public enum ParisPeaceRecords {
 
     // MARK: - Record
 
     /// One NARA Catalog record this panel links to.
-    struct CatalogRecord: Identifiable, Sendable, Equatable {
+    public struct CatalogRecord: Identifiable, Sendable, Equatable {
         /// The NARA Archival Identifier, verified by hand (see the type's provenance note).
-        let naId: String
+        public let naId: String
         /// NARA's own title for the record — never the FRUS shorthand, so the researcher
         /// can confirm the destination rather than trust it.
-        let title: String
+        public let title: String
         /// The inclusive dates NARA states, when the record carries them.
-        let inclusiveDates: String?
+        public let inclusiveDates: String?
 
-        var id: String { naId }
+        public var id: String { naId }
 
         /// Canonical `catalog.archives.gov/id/<naId>` link.
-        var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
+        public var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
     }
 
     // MARK: - Applicability
@@ -95,7 +97,7 @@ enum ParisPeaceRecords {
     /// bare and spaced spellings are accepted too. Anything else — every RG-59 citation, the
     /// overwhelming majority — is refused, because this panel's identifiers are true only of
     /// RG 256.
-    static func applies(recordGroup: String) -> Bool {
+    public static func applies(recordGroup: String) -> Bool {
         let folded = recordGroup
             .replacingOccurrences(of: "RG-", with: "")
             .replacingOccurrences(of: "RG ", with: "")
@@ -106,7 +108,7 @@ enum ParisPeaceRecords {
     // MARK: - The records
 
     /// RG 256 itself.
-    static let recordGroup = CatalogRecord(
+    public static let recordGroup = CatalogRecord(
         naId: "583",
         title: "Records of the American Commission to Negotiate Peace",
         inclusiveDates: "1914–1931"
@@ -114,7 +116,7 @@ enum ParisPeaceRecords {
 
     /// The series holding the Paris Peace Conference decimal file — where every
     /// `Paris Peace Conf.` citation in the corpus lives.
-    static let series = CatalogRecord(
+    public static let series = CatalogRecord(
         naId: "638859",
         title: "General Records",
         inclusiveDates: "1918–1931"
@@ -143,31 +145,31 @@ enum ParisPeaceRecords {
 
     /// The three finding aids `series.findingAids` names, in the order a researcher needs
     /// them: what the number means, where to look it up, how to use what comes back.
-    static let findingAids: [CatalogRecord] = [classificationManual, indexSeries, keyToRecords]
+    public static let findingAids: [CatalogRecord] = [classificationManual, indexSeries, keyToRecords]
 
     // MARK: - Wording
 
     /// Section/box header.
-    static var sectionTitle: String {
+    public static var sectionTitle: String {
         String(localized: "source.explorer.parisPeace.header",
                defaultValue: "Paris Peace Conference Records")
     }
 
     /// Row label for `recordGroup`.
-    static var recordGroupLabel: String {
+    public static var recordGroupLabel: String {
         String(localized: "source.explorer.parisPeace.recordGroup",
                defaultValue: "Record Group")
     }
 
     /// Row label for `series`.
-    static var seriesLabel: String {
+    public static var seriesLabel: String {
         String(localized: "source.explorer.parisPeace.series",
                defaultValue: "Series")
     }
 
     /// Why this is not the State Department central file the citation superficially
     /// resembles — the distinction that makes the RG-59 finding aids the wrong answer.
-    static var provenanceNote: String {
+    public static var provenanceNote: String {
         String(localized: "source.explorer.parisPeace.provenance",
                defaultValue: """
                The American Commission to Negotiate Peace kept its own decimal file, separate \
@@ -182,7 +184,7 @@ enum ParisPeaceRecords {
     /// of the 538 file units are digitised roll PDFs, and which one holds a given decimal
     /// number is what the index resolves. Claiming a roll here is the failure this panel
     /// exists to avoid.
-    static var rollNote: String {
+    public static var rollNote: String {
         String(localized: "source.explorer.parisPeace.rolls",
                defaultValue: """
                Microfilm publication M820 reproduces the series. Most of its 538 file units \
@@ -193,7 +195,7 @@ enum ParisPeaceRecords {
     }
 
     /// Header for the finding-aid list.
-    static var findingAidsTitle: String {
+    public static var findingAidsTitle: String {
         String(localized: "source.explorer.parisPeace.findingAids",
                defaultValue: "Finding Aids")
     }

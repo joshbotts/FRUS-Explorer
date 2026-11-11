@@ -529,6 +529,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         has `indexVolume` stop after a batch of a volume's documents, and `finishIndexing` before its
 ///         next volume, when its task is cancelled, for a host that asks; the app does not, so its passes
 ///         run as before
+///  4.57 — 2026-11-11 (FRUS Explorer Light S22c): `classificationMarking(sourceNote:stored:)` is public,
+///         unchanged, since both Source Explorer views read it while they draw the source note's chip, for
+///         a host that draws it; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -13482,7 +13485,7 @@ public actor IndexingPipeline {
     ///   - sourceNote: The document's source note as the surface holds it, or `nil`.
     ///   - stored: The value the index stores for the document, or `nil`.
     /// - Returns: The marking ("Secret; Priority"), or `nil` when neither gives one.
-    nonisolated static func classificationMarking(sourceNote: String?, stored: String?) -> String? {
+    public nonisolated static func classificationMarking(sourceNote: String?, stored: String?) -> String? {
         if let sourceNote, let marking = SourceNoteParser.classificationMarking(fromSourceNote: sourceNote) {
             return marking
         }

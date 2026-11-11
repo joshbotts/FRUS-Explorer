@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Talks to the Zotero Web API v3 to push FRUS documents, tags, notes, and a
 /// destination collection directly into the user's library (which then syncs to
@@ -19,7 +22,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
-actor ZoteroAPIClient {
+///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, with `URLSession` from
+///          FoundationNetworking on Linux; the key was a parameter already
+public actor ZoteroAPIClient {
 
     private let session: URLSession
     private let base = URL(string: "https://api.zotero.org")!
@@ -28,7 +33,7 @@ actor ZoteroAPIClient {
 
     /// Creates a client.
     /// - Parameter session: URL session (injectable for testing).
-    init(session: URLSession = .shared) {
+    public init(session: URLSession = .shared) {
         self.session = session
     }
 
@@ -38,7 +43,7 @@ actor ZoteroAPIClient {
     ///
     /// - Throws: `.invalidKey` on 403/404, `.insufficientPermissions` if the key
     ///   can't write notes, or a network/decoding error.
-    func resolveAccount(key: String) async throws -> ZoteroKeyInfo {
+    public func resolveAccount(key: String) async throws -> ZoteroKeyInfo {
         var request = URLRequest(url: base.appendingPathComponent("keys/\(key)"))
         request.setValue("3", forHTTPHeaderField: "Zotero-API-Version")
         let (data, response) = try await perform(request)
@@ -64,7 +69,7 @@ actor ZoteroAPIClient {
     ///   - username: The username, used to build a "View in Zotero" web URL.
     ///   - status: Progress callback (human-readable).
     /// - Returns: A summary of what was created.
-    func send(
+    public func send(
         items: [ZoteroJSONExporter.Item],
         collectionName: String?,
         apiKey: String,
