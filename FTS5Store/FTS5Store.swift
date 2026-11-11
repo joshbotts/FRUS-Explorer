@@ -93,6 +93,10 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///   2.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingDatabaseAt:schema:)` opens an
 ///          existing index read-only and immutable, creating and migrating nothing, and
 ///          `immutableURI(for:)` builds the URI it opens
+///   2.3 — 2026-11-11 (FRUS Explorer Light, S21d): `init(readingLiveDatabaseAt:schema:)` opens an
+///          existing index read-only but not immutable, for an index its host writes on another
+///          connection while it is searched, and `readOnlyURI(for:)` builds the URI it opens; the
+///          immutable open is unchanged
 public actor FTS5Store {
 
     // Module-internal rather than private so `FTS5Vocabulary.swift`'s extension can
@@ -145,7 +149,31 @@ public actor FTS5Store {
     ///   - databaseURL: File URL of an existing index.
     ///   - schema: FTS5 table definition. Defaults to `FTS5Schema.frusDocuments`.
     public init(readingDatabaseAt databaseURL: URL, schema: FTS5Schema = .frusDocuments) throws {
-        let connection = try FTS5Connection(readingDatabaseAt: databaseURL)
+        try self.init(readingDatabaseAt: databaseURL, schema: schema, immutable: true)
+    }
+
+    /// Opens the index at `databaseURL` read-only but not immutable, to search an index its host
+    /// writes on another connection while it is searched: FRUS Explorer Light's Standalone server
+    /// opens the index its own indexing job writes this way. The app never calls it.
+    ///
+    /// The connection is opened with `?mode=ro` (`readOnlyURI(for:)`), so SQLite takes the locks a
+    /// reader takes and reads the write-ahead log: each statement reads the index as the writer last
+    /// committed it, and every write is refused. Otherwise it is `init(readingDatabaseAt:schema:)`:
+    /// it creates, migrates and marks nothing, sets only the pragmas that shape reading, and refuses
+    /// what that open refuses. A file in write-ahead-log mode is read through its `-wal` and `-shm`
+    /// files, which its writer makes beside it; a reader makes the `-shm` file when the folder lets
+    /// it and the writer has not.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: File URL of an existing index.
+    ///   - schema: FTS5 table definition. Defaults to `FTS5Schema.frusDocuments`.
+    public init(readingLiveDatabaseAt databaseURL: URL, schema: FTS5Schema = .frusDocuments) throws {
+        try self.init(readingDatabaseAt: databaseURL, schema: schema, immutable: false)
+    }
+
+    /// The read-only opens' shared body: the file opened read-only, immutable or not, and checked.
+    private init(readingDatabaseAt databaseURL: URL, schema: FTS5Schema, immutable: Bool) throws {
+        let connection = try FTS5Connection(readingDatabaseAt: databaseURL, immutable: immutable)
         let generation = connection.userVersion()
         guard generation == FTS5Connection.currentSchemaGeneration else {
             throw FTS5Error.openFailed(path: databaseURL.path, message: "schema generation \(generation); this build reads generation \(FTS5Connection.currentSchemaGeneration)")
@@ -157,13 +185,24 @@ public actor FTS5Store {
         self.connection = connection
         self.didRebuildSchema = false
 
-        logger.debug("Opened database read-only at \(databaseURL.path, privacy: .public)")
+        if immutable {
+            logger.debug("Opened database read-only at \(databaseURL.path, privacy: .public)")
+        } else {
+            logger.debug("Opened database read-only, not immutable, at \(databaseURL.path, privacy: .public)")
+        }
     }
 
     /// `databaseURL` as an SQLite URI that opens it read-only and immutable: its percent-encoded
     /// `file:` URL, then `?mode=ro&immutable=1`. Open it with `SQLITE_OPEN_URI`.
     public static func immutableURI(for databaseURL: URL) -> String {
         "\(databaseURL.standardizedFileURL.absoluteString)?mode=ro&immutable=1"
+    }
+
+    /// `databaseURL` as an SQLite URI that opens it read-only but not immutable, for a file another
+    /// connection writes: its percent-encoded `file:` URL, then `?mode=ro`. Open it with
+    /// `SQLITE_OPEN_URI`.
+    public static func readOnlyURI(for databaseURL: URL) -> String {
+        "\(databaseURL.standardizedFileURL.absoluteString)?mode=ro"
     }
 
     // MARK: - Insertion

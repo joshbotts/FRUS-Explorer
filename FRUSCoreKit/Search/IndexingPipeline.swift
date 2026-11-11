@@ -532,6 +532,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.57 — 2026-11-11 (FRUS Explorer Light S22c): `classificationMarking(sourceNote:stored:)` is public,
 ///         unchanged, since both Source Explorer views read it while they draw the source note's chip, for
 ///         a host that draws it; nothing the indexer stores or reads changes
+///  4.58 — 2026-11-11 (FRUS Explorer Light S21d): `init(readingLiveIndexAt:fts5Store:resources:
+///         volumesDirectory:userStore:)` opens an index read-only but not immutable, for a host that
+///         searches the index it writes on another connection; the immutable and read-write opens run
+///         as before, and nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -554,8 +558,9 @@ public actor IndexingPipeline {
     /// the host. `nonisolated` so the nonisolated parse step and the search service read it directly.
     nonisolated public let resources: IndexingResources
 
-    /// Whether the index was opened read-only and immutable (`init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`),
-    /// where every write fails with `SQLITE_READONLY`.
+    /// Whether the index was opened read-only, immutable (`init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`)
+    /// or not (`init(readingLiveIndexAt:fts5Store:resources:volumesDirectory:userStore:)`), where every
+    /// write fails with `SQLITE_READONLY`.
     nonisolated public let isReadOnly: Bool
 
     /// The name a store of users' notes, summaries and tags is attached under, read-only, by
@@ -2472,7 +2477,7 @@ public actor IndexingPipeline {
     ) throws {
         try self.init(fts5Store: fts5Store, databaseURL: databaseURL, volumesDirectory: volumesDirectory,
                       resources: resources, stateTracker: stateTracker, concurrencyLimit: concurrencyLimit,
-                      defaults: defaults, donor: donor, readOnly: false, userStore: nil)
+                      defaults: defaults, donor: donor, readOnly: false, immutable: false, userStore: nil)
     }
 
     /// Opens an index another program built, read-only and immutable, to search and browse it:
@@ -2514,11 +2519,50 @@ public actor IndexingPipeline {
         try self.init(fts5Store: fts5Store, databaseURL: databaseURL,
                       volumesDirectory: volumesDirectory ?? databaseURL.deletingLastPathComponent(),
                       resources: resources, stateTracker: nil, concurrencyLimit: 1,
-                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true, userStore: userStore)
+                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true, immutable: true,
+                      userStore: userStore)
+    }
+
+    /// Opens an index read-only but not immutable, to search and browse it while its host writes it
+    /// on another connection: FRUS Explorer Light's Standalone server opens the index its own
+    /// indexing job writes this way, beside the job's read-write pipeline. The app never calls it.
+    ///
+    /// It is `init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)` but for one thing:
+    /// the connection is opened with `?mode=ro` (`FTS5Store.readOnlyURI(for:)`), not immutable, so
+    /// SQLite takes a reader's locks and reads the write-ahead log, and each statement reads the index
+    /// as the writer last committed it. A volume another connection's `indexVolume(_:)` is storing
+    /// appears as each of its transactions commits: its documents first, its other tables after them
+    /// and its `volume_structures` row last, so `isStoreUnfinished(_:)` names it until its pass has
+    /// finished (#1566). Every write is refused with `SQLITE_READONLY`, as on the immutable open; the
+    /// schema set-up, its migrations and the journal-mode switch are skipped, so the file must be an
+    /// index of this build's generation, and it keeps the journal mode its writer gave it. The stamps
+    /// are kept in memory, `volumesDirectory` is read as on the immutable open, and `userStore`, when
+    /// given, is attached read-only and never immutable, as it is there.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: The index file, which must exist.
+    ///   - fts5Store: A store over the same file, opened with `FTS5Store(readingLiveDatabaseAt:)`.
+    ///   - resources: The bundled data files, which subject filters read (`IndexingResources`).
+    ///   - volumesDirectory: The folder of volume files, or `nil` for the index's own folder.
+    ///   - userStore: The host's store of users' notes, summaries and tags, which must exist and hold the
+    ///     tables `SearchUserSource.attachedStore(userId:)` names, or `nil` for none.
+    public init(
+        readingLiveIndexAt databaseURL: URL,
+        fts5Store: FTS5Store,
+        resources: IndexingResources,
+        volumesDirectory: URL? = nil,
+        userStore: URL? = nil
+    ) throws {
+        try self.init(fts5Store: fts5Store, databaseURL: databaseURL,
+                      volumesDirectory: volumesDirectory ?? databaseURL.deletingLastPathComponent(),
+                      resources: resources, stateTracker: nil, concurrencyLimit: 1,
+                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true, immutable: false,
+                      userStore: userStore)
     }
 
     /// The initialisers' shared body. Read-write, it opens or creates the file and sets up the schema;
-    /// read-only, it opens the file immutable and changes nothing in it, and attaches `userStore`, if any.
+    /// read-only, it opens the file immutable or not, as `immutable` says, changes nothing in it, and
+    /// attaches `userStore`, if any. `immutable` is read only for a read-only open.
     private init(
         fts5Store: FTS5Store,
         databaseURL: URL,
@@ -2529,6 +2573,7 @@ public actor IndexingPipeline {
         defaults: any IndexingStampStore,
         donor: (any IndexedDocumentDonor)?,
         readOnly: Bool,
+        immutable: Bool,
         userStore: URL?
     ) throws {
         self.isReadOnly = readOnly
@@ -2561,8 +2606,8 @@ public actor IndexingPipeline {
 
         var handle: OpaquePointer?
         let rc = readOnly
-            ? sqlite3_open_v2(FTS5Store.immutableURI(for: databaseURL), &handle,
-                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX, nil)
+            ? sqlite3_open_v2(immutable ? FTS5Store.immutableURI(for: databaseURL) : FTS5Store.readOnlyURI(for: databaseURL),
+                              &handle, SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX, nil)
             : sqlite3_open_v2(
                 databaseURL.path,
                 &handle,
@@ -2619,8 +2664,10 @@ public actor IndexingPipeline {
         }
         #endif
 
-        if readOnly {
+        if readOnly, immutable {
             logger.info("Initialised read-only. volumesDir=\(volumesDirectory.path, privacy: .public)")
+        } else if readOnly {
+            logger.info("Initialised read-only, not immutable. volumesDir=\(volumesDirectory.path, privacy: .public)")
         } else {
             logger.info("Initialised. volumesDir=\(volumesDirectory.path, privacy: .public)")
         }

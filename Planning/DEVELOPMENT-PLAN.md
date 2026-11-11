@@ -10628,3 +10628,25 @@ FRUS Explorer Light's session for its row S24a, in a pull request of its own, th
 **Owed by the owner:** Mac check 21, listed in the pull request, from a clone at a real path; then the merge. FRUS Explorer Light's pin move after its third batch (S24e) takes it.
 
 **Not done:** the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-11-11 — A host can search the index it writes on another connection: FTS5Store and IndexingPipeline open it read-only without immutable, with the user store attached
+
+FRUS Explorer Light's session for its row S21d, in a pull request of its own, outside its phase 3's batches. Its Standalone server indexes the volumes its library downloads into an index of its own, with the kit's read-write pipeline, one volume at a time, and its search should answer while a job writes. The kit's read-only opens of an index were immutable alone: an immutable reader of a file in write-ahead-log mode reads the main file with no lock and never the log, so it sees an index as it stood before the writer's last commits, and torn pages once a checkpoint runs. FRUS Explorer Light merged its indexing with search refused while a job writes, by its owner's choice of 11 November, and serves the index while it is written once its pin moves past this. Cut from `v2` at `9e6cc2af` and rebased onto `782127ff` (#1896) before it opened.
+
+**Changed:**
+- **`FTS5Store(readingLiveDatabaseAt:schema:)` (new):** opens an existing index `?mode=ro` without `immutable` (`FTS5Store.readOnlyURI(for:)`, new), so SQLite takes the locks a reader takes and reads the write-ahead log: each statement reads what the writer last committed, and every write is refused. Otherwise it is `init(readingDatabaseAt:schema:)`, with which it shares a private body: it creates, migrates and marks nothing, sets only the pragmas that shape reading, and refuses what that open refuses. `FTS5Connection.init(readingDatabaseAt:immutable:)` takes the choice, immutable by default.
+- **`IndexingPipeline(readingLiveIndexAt:fts5Store:resources:volumesDirectory:userStore:)` (new):** the pipeline over such a store, `isReadOnly`, opening its own connection the same way and attaching the user store read-only as the immutable open does (`attachedUserStoreSchema`); the private initialiser takes `immutable`.
+- **Unchanged:** the immutable opens, their URI, pragmas and checks, and the read-write opens. The app calls neither new open.
+- **Docs:** `CLAUDE.md`'s FRUSCoreKit entry; the five files' version lines.
+
+**Tests:** `IndexReadOnlyOpenTests` gains three. `aLiveOpenSeesWhatItsWriterCommits` opens an index live beside a writer that keeps the file open, and finds it answering as the writer does, seeing a volume indexed after it opened, and seeing that volume's documents while the kit's document-batch hook holds the pass before its other tables, without being opened again. `aLiveOpenRefusesWrites` finds every write refused and the file's journal mode the writer's; `aLiveOpenRefusesWhatItCannotRead` finds a missing file, another schema generation and a file without the FTS table refused, and none made. `SearchUserSourceTests.theLiveOpenAttachesTheStore` finds each reader's search, count and tag counts through the live open's attach the immutable open's.
+
+**Review:** FRUS Explorer Light's cold review of its row's server, given the diff and none of the session's conclusions, read these opens with the server that uses them; none of its findings was in them.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, Xcode 27.2 on macOS 27.2, clean and unsigned, on an iPhone 17e simulator (iOS 27.2), beside `v2` at `782127ff` built and run the same way, in one hold: both app builds, the full iOS unit target, `swift build --target FRUSCoreKit` and `swift test`, with the symbol diff of the Mac build. The pull request gives the figures at the head. Before the rebase, at `58751fc8`, the kit's suites on the Mac passed, `FRUSCoreKitTests` 2,049 tests in 261 suites and `FTS5StoreTests` 219.
+
+**Linux:** Docker Desktop, `swift:6.4-noble` on arm64: FRUS Explorer Light's `main` with this branch's tree over its submodule, built clean with PostgreSQL and every test run, beside `v2` alone over the same copy; and a scratch file in the server's module, without `@testable`, never committed, that opens an index with both new opens and searches it. The pull request gives the figures.
+
+**Owed by the owner:** Mac check 25, listed in the pull request, from a clone at a real path; then the merge. FRUS Explorer Light's pin move that takes it serves its Standalone index through these opens.
+
+**Not done:** the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
