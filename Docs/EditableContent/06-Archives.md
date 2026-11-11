@@ -1505,7 +1505,7 @@ Public Papers of the Presidents
 
 #### Intelligence records
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 821–822 | key: source.explorer.cia.note -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 827–828 | key: source.explorer.cia.note -->
 
 CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents, including released operational files and historical collections.
 
@@ -1517,7 +1517,7 @@ CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom
 
 *Mac. Since build 49 this wording and the next block's both live in `NamedFileSeriesRouting.swift`, shared by the two Source Explorer views; the next block shows instead when the series' name opens with the agency holding it.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 327–328 | key: source.explorer.namedSeries.note -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 329–330 | key: source.explorer.namedSeries.note -->
 
 A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.
 
@@ -1529,7 +1529,7 @@ A named file series cited without a lot number. The citation does not state the 
 
 *Mac. New in build 49 (#1514): a Department of State series that is not the central files (the INR/IL, INR–NIE, Bundy and USUN files) and another agency's own series (`National Security Council, Carter Intelligence Files`) name their holder, so "does not state the holding repository" was false for them. Interpolated with the agency — the Department of State, the National Security Council, the Department of Defense. Keep the `\(holder)` placeholder; the sentence supplies "the" before it. Beside this note the provenance column no longer offers the link "Department of State records at the National Archives" (review round 1): the citation places the Department's own series it names with the Department and does not say whether any was accessioned since, and another agency's are not State records.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 324–325 | key: source.explorer.namedSeries.note.held -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 326–327 | key: source.explorer.namedSeries.note.held -->
 
 A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.
 
@@ -1541,7 +1541,7 @@ A file series the citation places with the \(holder), cited without a lot number
 
 *iPhone and iPad.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 317–318 | key: source.explorer.namedSeries.explainer -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 319–320 | key: source.explorer.namedSeries.explainer -->
 
 A named file series cited without a lot number. The repository is not stated in the citation.
 
@@ -1553,7 +1553,7 @@ A named file series cited without a lot number. The repository is not stated in 
 
 *iPhone and iPad. New in build 49 (#1514), the twin of the Mac block above. Keep the `\(holder)` placeholder. Under it the panel no longer offers the link "Department of State records at the National Archives" (review round 1), as on the Mac.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 314–315 | key: source.explorer.namedSeries.explainer.held -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 316–317 | key: source.explorer.namedSeries.explainer.held -->
 
 A file series the citation places with the \(holder), cited without a lot number.
 
@@ -1649,7 +1649,7 @@ From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction.
 
 #### Why these are not RG 59
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 171–176 | key: source.explorer.parisPeace.provenance -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 173–178 | key: source.explorer.parisPeace.provenance -->
 
 The American Commission to Negotiate Peace kept its own decimal file, separate from the State Department’s. These records are Record Group 256, so the RG 59 central-file finding aids and filing manual do not describe them.
 
@@ -1659,7 +1659,7 @@ The American Commission to Negotiate Peace kept its own decimal file, separate f
 
 #### Why the panel will not name a roll
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 186–192 | key: source.explorer.parisPeace.rolls -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/ParisPeaceRecords.swift | lines: 188–194 | key: source.explorer.parisPeace.rolls -->
 
 Microfilm publication M820 reproduces the series. Most of its 538 file units are digitized, each covering a range of decimal numbers. This panel does not say which one holds this document. The ranges overlap and are not always continuous, so use the index below to find it.
 
@@ -1671,7 +1671,7 @@ Microfilm publication M820 reproduces the series. Most of its 538 file units are
 
 #### Only the class is known — iOS
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 991–996 | key: source.explorer.scans.classOnly -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 997–1002 | key: source.explorer.scans.classOnly -->
 
 NARA has scanned \(count) file ranges in decimal class \(cls), but none of them covers \(fileIdentifier). The scans for this file are partial.
 
@@ -1703,7 +1703,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 #### What a scan range does and does not tell you
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1009–1013 | key: source.explorer.scans.caveat -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerPanels.swift | lines: 33–37 | key: source.explorer.scans.caveat -->
 
 This is the scan of the file range the citation falls in, not of this document. The document is somewhere inside it.
 
@@ -1715,7 +1715,7 @@ This is the scan of the file range the citation falls in, not of this document. 
 
 #### Matched on the record group alone
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 160–165 | key: source.explorer.nara.candidates.recordGroupOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 162–167 | key: source.explorer.nara.candidates.recordGroupOnly -->
 
 Matched by keyword within record group \(recordGroup). The record group is the one cited; nothing here ties these records to the series cited. Check the series title and dates before citing.
 
@@ -1725,7 +1725,7 @@ Matched by keyword within record group \(recordGroup). The record group is the o
 
 #### Matched on the collection name alone
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 167–172 | key: source.explorer.nara.candidates.collectionNameOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 169–174 | key: source.explorer.nara.candidates.collectionNameOnly -->
 
 Searched on the repository and collection names only — no catalog identifier constrains these results to the collection cited. Treat them as leads, and prefer the finding aid above.
 
@@ -1745,7 +1745,7 @@ From a manual search. Not checked against the cited lot number or record group.
 
 #### What an export says about a manual search
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 133–137 | key: source.explorer.manualSearch.exportCaveat -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CatalogQueryEvidence.swift | lines: 135–139 | key: source.explorer.manualSearch.exportCaveat -->
 
 NOTE: Result of a manual free-text search. It has not been checked against the cited lot number or record group.
 
@@ -2611,21 +2611,21 @@ Same lot as the source note
 <!-- END SOURCE: source.explorer.unprinted.row.repeat %lld %lld -->
 
 #### Error message — A NARA Catalog API key is required to search for lot files…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogClient.swift | NARACatalogError.errorDescription | lines: 78–79 | key: nara.error.missingKey -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NARACatalogClient.swift | NARACatalogError.errorDescription | lines: 84–85 | key: nara.error.missingKey -->
 
 A NARA Catalog API key is required to search for lot files and Presidential Library records. Add your key in Settings → Connections.
 
 <!-- END SOURCE: nara.error.missingKey -->
 
 #### NARA Catalog API rate limit reached. Try again later, or…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogClient.swift | NARACatalogError.errorDescription | lines: 84–85 | key: nara.error.rateLimited -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/NARACatalogClient.swift | NARACatalogError.errorDescription | lines: 90–91 | key: nara.error.rateLimited -->
 
 NARA Catalog API rate limit reached. Try again later, or use the manual search link below.
 
 <!-- END SOURCE: nara.error.rateLimited -->
 
 #### Archival citations found in the selected text and around it —…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.candidateCitationsSection | lines: 274–275 | key: nara.lookup.detected.hint.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.candidateCitationsSection | lines: 276–277 | key: nara.lookup.detected.hint.v2 -->
 
 *Added by #1380, which changed “tap one” to “select one” (the Mac shows this too) and so took the sentence from 89 characters to 92, past this section's prose rule.*
 
@@ -2634,56 +2634,56 @@ Archival citations found in the selected text and around it — select one to fi
 <!-- END SOURCE: nara.lookup.detected.hint.v2 -->
 
 #### A NARA Catalog API key is required for this strategy. Add…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 374–375 | key: nara.lookup.noKey.warning -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 376–377 | key: nara.lookup.noKey.warning -->
 
 A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The “Central files identifier” strategy does not require a key.
 
 <!-- END SOURCE: nara.lookup.noKey.warning -->
 
 #### Select the filing period that matches the document date.…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 392–393 | key: nara.lookup.periodLinks.intro -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 394–395 | key: nara.lookup.periodLinks.intro -->
 
 Select the filing period that matches the document date. Each link goes directly to the NARA research page for that period — no API key required.
 
 <!-- END SOURCE: nara.lookup.periodLinks.intro -->
 
 #### Use for D-designator lot numbers (e.g. “63D135” or “68 D…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.lotFileRG59.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 88–89 | key: nara.lookup.strategy.lotFileRG59.hint -->
 
 Use for D-designator lot numbers (e.g. “63D135” or “68 D 277”). Queries State Dept. lot file series in RG 59.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG59.hint -->
 
 #### Use for F-designator lot numbers (e.g. “55F44” or “56 F…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.lotFileRG84.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 91–92 | key: nara.lookup.strategy.lotFileRG84.hint -->
 
 Use for F-designator lot numbers (e.g. “55F44” or “56 F 28”). Queries diplomatic post record lots in RG 84.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG84.hint -->
 
 #### Use for series names, collection descriptions, or partial…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keywordRG59.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 94–95 | key: nara.lookup.strategy.keywordRG59.hint -->
 
 Use for series names, collection descriptions, or partial citation text. Restricts results to RG 59 (State Dept.).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG59.hint -->
 
 #### Use for series names or collection descriptions. Restricts…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 579–580 | key: nara.lookup.strategy.keywordRG84.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 97–98 | key: nara.lookup.strategy.keywordRG84.hint -->
 
 Use for series names or collection descriptions. Restricts results to RG 84 (State Dept. post records).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG84.hint -->
 
 #### Use for decimal file identifiers (e.g. “862S.01/10-1646”)…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 582–583 | key: nara.lookup.strategy.centralURL.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 100–101 | key: nara.lookup.strategy.centralURL.hint -->
 
 Use for decimal file identifiers (e.g. “862S.01/10-1646”) or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.
 
 <!-- END SOURCE: nara.lookup.strategy.centralURL.hint -->
 
 #### General free-text search across all record groups in the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 585–586 | key: nara.lookup.strategy.keyword.hint -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LookupStrategy.swift | LookupStrategy.hint | lines: 103–104 | key: nara.lookup.strategy.keyword.hint -->
 
 General free-text search across all record groups in the NARA Catalog. Useful when the collection type is unclear.
 
