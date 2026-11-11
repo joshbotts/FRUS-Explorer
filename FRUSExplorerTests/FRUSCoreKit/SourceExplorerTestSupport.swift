@@ -27,6 +27,8 @@ import Foundation
 // Version history:
 //   1.0 — 2026-11-08 (FRUS Explorer Light, S22a): initial implementation, for the suites that moved
 //         into FRUSCoreKit with the readers and resolvers
+//   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): the register's store, the roster the app reads from it,
+//         and the reader's AST cache, for the suites that moved with the classifier
 
 /// The shipped copy of a JSON file bundled with the app: the app bundle's in Xcode, the repository's
 /// `FRUSExplorer/Resources` in the package, as `testManifestURL()` finds the manifest.
@@ -124,5 +126,29 @@ enum LotClaimantsIndexStore {
 /// The app's `DecimalClassLabelStore`: `decimal-class-labels.json`.
 enum DecimalClassLabelStore {
     static let shared = decodedSourceExplorerResource(DecimalClassLabelTable.self, "decimal-class-labels")
+}
+
+/// The app's `POCOMIndexStore`: `pocom-index.json`.
+enum POCOMIndexStore {
+    static let shared = try? POCOMIndex(contentsOf: sourceExplorerResource("pocom-index"))
+}
+
+extension ChiefsOfMissionRoster {
+    /// The app's `ChiefsOfMissionRoster.bundled`: the register its `POCOMIndexStore` reads.
+    static let bundled = ChiefsOfMissionRoster(index: POCOMIndexStore.shared)
+}
+
+/// The app's `DocumentASTCache`, as the suites use it: a source that keeps what it is given, by
+/// volume and document, with no limit.
+actor DocumentASTCache: DocumentASTSource {
+    private var documents: [String: FRUSDocumentAST] = [:]
+
+    func ast(volumeId: String, documentId: String) -> FRUSDocumentAST? {
+        documents["\(volumeId)/\(documentId)"]
+    }
+
+    func store(_ parsed: [FRUSDocumentAST], volumeId: String) {
+        for document in parsed { documents["\(volumeId)/\(document.documentId)"] = document }
+    }
 }
 #endif

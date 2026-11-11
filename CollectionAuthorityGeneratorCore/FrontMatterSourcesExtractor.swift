@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 import SourceNoteKit
 
 /// One row of a volume's front-matter Sources section, with the Phase-3 match keys.
@@ -66,7 +69,7 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         let delegate = FrontMatterSourcesExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.entries
     }
 

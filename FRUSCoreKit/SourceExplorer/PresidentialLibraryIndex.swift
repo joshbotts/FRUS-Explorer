@@ -34,6 +34,8 @@ import SourceNoteKit
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `PresidentialLibraryIndexStore`,
 ///          which reads the app's bundle, stays in the app (`PresidentialLibraryIndexStore.swift`)
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `Collection` and `Series` public with their fields, since a
+///          `PresidentialLibraryOutcome` holds them
 public struct PresidentialLibraryIndex: Codable, Sendable {
 
     let schemaVersion: Int
@@ -47,23 +49,23 @@ public struct PresidentialLibraryIndex: Codable, Sendable {
         let collections: [Collection]
     }
 
-    struct Collection: Codable, Sendable, Equatable {
-        let identifier: String
-        let title: String
-        let naId: Int
-        let statedSeriesCount: Int?
-        let series: [Series]
+    public struct Collection: Codable, Sendable, Equatable {
+        public let identifier: String
+        public let title: String
+        public let naId: Int
+        public let statedSeriesCount: Int?
+        public let series: [Series]
         /// The catalogue record for this collection.
-        var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
+        public var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
     }
 
-    struct Series: Codable, Sendable, Equatable, Identifiable {
-        let naId: Int
-        let title: String
-        let inclusiveDates: String?
-        var id: Int { naId }
+    public struct Series: Codable, Sendable, Equatable, Identifiable {
+        public let naId: Int
+        public let title: String
+        public let inclusiveDates: String?
+        public var id: Int { naId }
         /// The catalogue record for this series.
-        var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
+        public var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
     }
 
     /// What the index can say about a citation.

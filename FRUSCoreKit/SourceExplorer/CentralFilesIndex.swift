@@ -31,6 +31,8 @@ import Foundation
 ///          stays in the app (`CentralFilesIndexStore.swift`)
 ///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): `LotFileEntry` public, the lot a citation resolves to,
 ///          with `ArchivalResolver` and `ArchivalResolution`
+///   1.3 — 2026-11-10 (FRUS Explorer Light, S22b): `CentralFilesSeriesCategory` and `CountryRoll` public, since a country
+///          series' homes hold them
 public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
@@ -231,7 +233,7 @@ public struct LotFileEntry: Codable, Sendable, Equatable {
 
 /// The country-arranged diplomatic series (Phase 2) plus the consular series (Phase 3),
 /// mirroring the generator's categories.
-enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
+public enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     case despatches = "diplomaticDespatches"
     case instructions = "diplomaticInstructions"
     case notesFrom = "notesFromForeignMissions"
@@ -251,7 +253,7 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     /// `true` for a series NARA arranges by date alone (W-8). Its rolls carry NO geography,
     /// so a resolver must use `CountrySeriesIndex.rolls(containingDate:)` — the geo-keyed
     /// path's `geoKeys.contains` guard would refuse every volume.
-    var isChronologicalRun: Bool {
+    public var isChronologicalRun: Bool {
         switch self {
         case .consularInstructions, .notesToForeignConsuls, .notesFromForeignConsuls,
              .domesticLetters, .lettersReceived,
@@ -263,7 +265,7 @@ enum CentralFilesSeriesCategory: String, Sendable, CaseIterable {
     }
 
     /// Human-readable series name.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .despatches:   return String(localized: "centralFiles.series.despatches",
                                           defaultValue: "Diplomatic Despatches")
@@ -324,17 +326,17 @@ struct CountrySeriesIndex: Codable, Sendable, Equatable {
 // MARK: - CountryRoll
 
 /// One page-by-page resolution target in a country-arranged series.
-struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
-    var naId: String
-    var title: String
-    var geoKeys: [String]
-    var startISO: String?
-    var endISO: String?
-    var catalogURL: String
-    var fileUnitNaId: String?
-    var fileUnitTitle: String?
+public struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
+    public var naId: String
+    public var title: String
+    public var geoKeys: [String]
+    public var startISO: String?
+    public var endISO: String?
+    public var catalogURL: String
+    public var fileUnitNaId: String?
+    public var fileUnitTitle: String?
 
-    var id: String { naId }
+    public var id: String { naId }
 
     /// Returns `true` when `geoKey` is served and `dateISO` falls within the roll's range.
     /// A dateless roll is excluded from date-filtered queries; a nil query date matches any.

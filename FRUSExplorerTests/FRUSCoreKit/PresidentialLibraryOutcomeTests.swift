@@ -42,6 +42,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-06: #681, wiring the bundled catalogue into both Source Explorer views
+///   1.1 — 2026-11-10: FRUS Explorer Light's S22b — the catalogue is resolved by the sequence both views run,
+///         so the parity check wants the call there, and each view's read of its answer at the live
+///         query's gate and in the panels
 @Suite("Presidential library offline outcome")
 struct PresidentialLibraryOutcomeTests {
 
@@ -386,10 +389,17 @@ struct PresidentialLibraryOutcomeTests {
 
     @Test("Both views render the offline catalogue answer")
     func bothViewsRenderTheOfflineAnswer() throws {
+        let sequence = try Self.source("FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift")
+        #expect(sequence.contains("PresidentialLibraryOutcome.resolve("),
+                Comment(rawValue: "the sequence both views run never resolves the bundled library catalogue"))
         for path in Self.views {
             let text = try Self.source(path)
-            #expect(text.contains("PresidentialLibraryOutcome.resolve"),
-                    Comment(rawValue: "\(path) never resolves the bundled library catalogue"))
+            // The live query's gate reads the sequence's answer in `load()`, and the panels the value's.
+            #expect(text.contains("let libraryOutcome = resolved.presidentialLibrary"),
+                    Comment(rawValue: "\(path) gates the live query on something other than the sequence's answer"))
+            #expect(text.contains(
+                        "private var libraryOutcome: PresidentialLibraryOutcome { resolution?.presidentialLibrary ?? .none }"),
+                    Comment(rawValue: "\(path) draws a library answer other than the resolution's"))
             #expect(text.contains("libraryOutcome.isHit"),
                     Comment(rawValue: "\(path) never branches on an offline hit"))
             #expect(text.contains("outcome.verifiedCollection"),

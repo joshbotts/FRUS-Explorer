@@ -122,6 +122,9 @@ import Foundation
 ///   1.17 — 2026-11-10: FRUS Explorer Light's S23b — three baseline entries re-pointed to the FRUSCoreKit
 ///         file their strings moved to (the graph's cluster and date-cluster VoiceOver labels, now in
 ///         `CrossReferenceGraphDisplay.swift`), so the ceiling is unchanged
+///   1.18 — 2026-11-10: FRUS Explorer Light's S22b — one baseline entry re-pointed to the FRUSCoreKit file
+///         its string moved to (the unprinted pointer's repeat note, now in `SourceExplorerResolution.swift`
+///         with `UnprintedPointer`), so the ceiling is unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -919,6 +922,7 @@ extension CodingStandardsAuditTests {
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.excludedDocuments %lld"#,
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.subjectTags %lld"#,
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.volumes %lld"#,
+        #"../FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | source.explorer.unprinted.row.repeat %lld %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
@@ -1161,7 +1165,6 @@ extension CodingStandardsAuditTests {
         #"SourceExplorer/MacSourceExplorerView.swift | source.explorer.related.overflow"#,
         #"SourceExplorer/SourceExplorerView.swift | source.explorer.collection.cited %lld"#,
         #"SourceExplorer/SourceExplorerView.swift | source.explorer.related.overflow"#,
-        #"SourceExplorer/SourceExplorerView.swift | source.explorer.unprinted.row.repeat %lld %lld"#,
         #"Summarization/BackgroundSummarizationService.swift | background.summarizer.notification.body.succeeded"#,
         #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.allFailed"#,
         #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.unavailable"#,

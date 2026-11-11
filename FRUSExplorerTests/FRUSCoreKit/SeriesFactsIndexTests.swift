@@ -170,7 +170,6 @@ struct SeriesFactsDecisionTests {
         }
     }
 
-    #if !SWIFT_PACKAGE // LotClaimantsIndex.unanimousCreator(_:) is the app's (LotClaimantsIndexStore.swift)
     @Test("A divided lot names a creator only when every claimant agrees")
     func unanimityRule() {
         #expect(LotClaimantsIndex.unanimousCreator(["A.", "A.", "A."]) == "A.")
@@ -184,7 +183,6 @@ struct SeriesFactsDecisionTests {
         #expect(LotClaimantsIndex.unanimousCreator([]) == nil)
         #expect(LotClaimantsIndex.unanimousCreator(["A."]) == "A.")
     }
-    #endif
 }
 
 // MARK: - SeriesCatalogFactsTests

@@ -28,6 +28,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #680
+///   1.1 — 2026-11-10: FRUS Explorer Light's S22b — Refresh re-runs `load()` through the load key, so the
+///         test wants the key's bump and the keyed task's call
 @Suite("Refresh bypass")
 struct RefreshBypassAuditTests {
 
@@ -67,8 +69,13 @@ struct RefreshBypassAuditTests {
         let item = try Self.refreshItem(try Self.source)
         #expect(!item.contains("runManualSearch()"),
                 "Refresh routes back through the unguarded free-text query — the #680 bypass")
-        #expect(item.contains("await load()"),
+        // Through the load key since S22b: the bump re-runs the keyed task, which runs `load()`, and a change
+        // of document cancels it (`SourceExplorerReloadWiringAuditTests.refreshGoesThroughTheLoadKey` holds
+        // the key to `refreshGeneration`).
+        #expect(item.contains("refreshGeneration += 1"),
                 "Refresh does not re-run the acceptance-tested lookup")
+        #expect(Self.code(try Self.source).contains(".task(id: loadIdentity) { await load() }"),
+                "the load key's task does not run the acceptance-tested lookup")
     }
 
     @Test("Manual search still marks its results unverified")

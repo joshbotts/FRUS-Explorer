@@ -98,6 +98,12 @@ import AppKit
 ///           the note prints none, the one a 1932–1954 document prints in its opener, read in
 ///           `load()` through `SourceExplorerDocumentContext.storedClassification`. Mirrors
 ///           SourceExplorerView 1.18.
+///   1.18 — 2026-11-10 (FRUS Explorer Light, S22b): `load()` runs the sequence both twins share, FRUSCoreKit's
+///           `SourceExplorerResolution.resolved`, in place of its own steps, and the boxes draw from the one
+///           value it gives, step by step; a load of the document already shown keeps each part until its
+///           step replaces it (`resolvingAgain()`), a cancelled load writes nothing and asks NARA nothing, the
+///           key check and the lookup's evidence come ahead of the sequence, and Refresh re-runs the keyed
+///           task (`refreshGeneration`). Mirrors SourceExplorerView 1.19.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -129,7 +135,21 @@ struct MacSourceExplorerView: View {
 
     // MARK: - State
 
-    @State private var parsed: ParsedSourceNote? = nil
+    /// What `load()` resolves for this document before the NARA Catalog: the parse, the authority
+    /// record, the country series, the document's day, the marking the index stores, the unprinted
+    /// pointers, the related documents and the library catalogue's answer, as one value, which the iOS
+    /// twin and FRUS Explorer Light compute alike (`SourceExplorerResolution`). `nil` until `load()`
+    /// starts, and each step's value replaces it as the step completes; the properties below read it.
+    @State private var resolution: SourceExplorerResolution? = nil
+    /// The document `resolution` was resolved for (`MacSourceExplorerLoadIdentity.document`), so a load of
+    /// the same document keeps what is on screen.
+    @State private var resolvedDocument: String? = nil
+    /// Bumped by Refresh, so its re-run is a change of the load key: the keyed task runs it, and a change
+    /// of document cancels it, where an unstructured `Task` ran beside the keyed one and was never cancelled.
+    @State private var refreshGeneration = 0
+
+    /// The parsed note, `nil` until `load()` starts.
+    private var parsed: ParsedSourceNote? { resolution?.parsed }
     /// Up to five ranked NARA Catalog candidates for the current source note.
     /// Replaces the former single-result `catalogResult`, bringing macOS to parity
     /// with the iOS Source Explorer (which already shows a candidate list).
@@ -139,25 +159,25 @@ struct MacSourceExplorerView: View {
     @State private var hasAPIKey: Bool = false
     @State private var manualQuery: String = ""
     /// Same-collection document discovery results.
-    @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
+    private var relatedDocs: [IndexingPipeline.RelatedDocument] { resolution?.relatedDocuments.documents ?? [] }
     /// Total count of matches in the index (may exceed the displayed slice).
-    @State private var relatedTotalCount: Int = 0
+    private var relatedTotalCount: Int { resolution?.relatedDocuments.totalCount ?? 0 }
     /// True while the related-documents query is running.
-    @State private var relatedLoading: Bool = false
+    private var relatedLoading: Bool { resolution?.relatedDocuments.isSearching ?? false }
     /// What the pre-1906 box knows: loading, not checked (and why), no match, not applicable, or the
     /// homes found (Phase 2).
-    @State private var countrySeriesOutcome: CountrySeriesOutcome = .loading
+    private var countrySeriesOutcome: CountrySeriesOutcome { resolution?.countrySeries ?? .loading }
     /// The document with the route's gaps filled from the index — header, dateline, year, and the
     /// serial (#965) shown with the rolls it helps browse. `nil` until `load()` has read it.
-    @State private var documentContext: SourceExplorerDocumentContext? = nil
+    private var documentContext: SourceExplorerDocumentContext? { resolution?.documentContext }
     /// The document's own day from the index, which the Filing Period box checks a date-form file
     /// year against (#1407 review). `nil` until `load()` has read it, and for a document the index
     /// does not date to the day.
-    @State private var documentDay: DecimalFileSegment.DocumentDay? = nil
+    private var documentDay: DecimalFileSegment.DocumentDay? { resolution?.documentDay }
     /// The classification marking the index stores for the document, which the chip beside the note
     /// shows where the note prints none: the marking a document of the 1932–1954 volumes prints in
     /// its opener (index version 72). `nil` until `load()` has read it.
-    @State private var indexedClassification: String? = nil
+    private var indexedClassification: String? { resolution?.storedClassification }
     /// Where the rows in `catalogResults` came from (#680).
     ///
     /// The manual field is a free-text query against a different endpoint with no record-group
@@ -176,7 +196,7 @@ struct MacSourceExplorerView: View {
     /// What the bundled presidential-library catalogue says about this citation (#681).
     /// Resolved in `load()` rather than in `body` — it reads a 3.1 MB bundle and the box
     /// re-renders on every state change. Mirrors the iOS twin.
-    @State private var libraryOutcome: PresidentialLibraryOutcome = .none
+    private var libraryOutcome: PresidentialLibraryOutcome { resolution?.presidentialLibrary ?? .none }
 
     /// Whether the user has run a manual NARA search on this document (#681).
     ///
@@ -195,13 +215,14 @@ struct MacSourceExplorerView: View {
 
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
-    @State private var authorityRecord: AuthorityCollectionRecord? = nil
+    private var authorityRecord: AuthorityCollectionRecord? { resolution?.authorityRecord }
     /// When set, presents the shared Collection detail sheet.
     @State private var collectionDetailRecord: AuthorityCollectionRecord? = nil
     /// Where this document's own footnotes sent the reader, outside the printed record
-    /// (#829a; ported from iOS by Archive Visits Phase 1 — the type and its join are the
-    /// iOS view's own, so the two surfaces cannot resolve a pointer differently).
-    @State private var unprintedPointers: [SourceExplorerView.UnprintedPointer] = []
+    /// (#829a; ported from iOS by Archive Visits Phase 1 — the type and its join are FRUSCoreKit's,
+    /// `SourceExplorerResolution.UnprintedPointer`, built once for both twins, so the two surfaces
+    /// cannot resolve a pointer differently).
+    private var unprintedPointers: [SourceExplorerView.UnprintedPointer] { resolution?.unprintedPointers ?? [] }
     /// The Add-to-Archive-Visit picker (Phase 3) — presented from the toolbar's three-way menu.
     @State private var planPickerRequest: PlanPickerRequest?
 
@@ -241,8 +262,9 @@ struct MacSourceExplorerView: View {
                 // This used to call runManualSearch(), sending the pre-filled lot number
                 // through an unguarded free-text query — so one click on a button whose
                 // tooltip promises to repeat the current search replaced a correctly
-                // refused resolution with whatever the top hit happened to be.
-                Task { await load() }
+                // refused resolution with whatever the top hit happened to be. Through the load key
+                // (`refreshGeneration`), so the keyed task runs it and a change of document cancels it.
+                refreshGeneration += 1
             } label: {
                 Label(String(localized: "source.explorer.toolbar.refresh",
                              defaultValue: "Refresh"),
@@ -1682,25 +1704,6 @@ struct MacSourceExplorerView: View {
     /// hydrated year would change the moment hydration landed and reload the window.
     private var effectiveYear: Int? { documentContext?.year ?? documentYear }
 
-    /// Classifies a pre-1906 document (no source note) through the shared
-    /// `CentralFilesClassifier.evaluate` and stores what it found. Mirrors the iOS twin.
-    ///
-    /// The main-actor values the evaluation needs — the AST cache and the volume's file URL — are read
-    /// here and passed in, because `AppState` cannot be read from the nonisolated evaluation. The result
-    /// is written only when this load was not cancelled: this window stays alive across documents, and
-    /// a key change mid-evaluation would otherwise let one document's answer land on the next.
-    private func resolveCountrySeries() async {
-        let route = CountrySeriesRoute(header: documentHeader, dateline: documentDateline, year: documentYear,
-                                       volumeId: documentVolumeId, documentId: documentId)
-        let volumeURL = documentVolumeId.flatMap { appState.downloadManager?.volumeURL(for: $0) }
-        let result = await CentralFilesClassifier.evaluate(
-            route: route, pipeline: indexingPipeline, index: CentralFilesIndexStore.shared,
-            astCache: appState.documentASTCache, volumeURL: volumeURL)
-        guard !Task.isCancelled else { return }
-        documentContext = result.context
-        countrySeriesOutcome = result.outcome
-    }
-
     @ViewBuilder
     private var countrySeriesBox: some View {
         GroupBox(String(localized: "source.explorer.countrySeries.header.v2",
@@ -1884,35 +1887,14 @@ struct MacSourceExplorerView: View {
     /// Keyed on the raw note as well as the identifiers because some hosts pass no
     /// `documentId` at all, and two documents can share a note only if they really are the
     /// same source citation.
+    ///
+    /// Refresh's `refreshGeneration` follows the key, after the separator, so that a refresh re-runs the
+    /// keyed task.
     var loadIdentity: String {
         MacSourceExplorerLoadIdentity.make(volumeId: documentVolumeId, documentId: documentId,
                                            rawSourceNote: rawSourceNote, documentYear: documentYear,
                                            pipelineAvailable: indexingPipeline != nil)
-    }
-
-    /// Reads this document's footnote pointers and joins each to the authority — the iOS
-    /// twin's load, through the iOS view's own `resolve` so the join cannot drift.
-    ///
-    /// - Parameter sourceNote: The note this load parsed. Every pointer carries it (#1390), so a
-    ///   row's same-lot marker is decided against the note of the load that built the row.
-    private func loadUnprintedPointers(sourceNote: ParsedSourceNote) async {
-        guard let pipeline = indexingPipeline,
-              let volumeId = documentVolumeId, let docId = documentId else {
-            unprintedPointers = []
-            return
-        }
-        let rows = (try? await pipeline.externalCitations(volumeId: volumeId,
-                                                          documentId: docId)) ?? []
-        guard !rows.isEmpty else { unprintedPointers = []; return }
-        // The authority is a ~2 MB decode; join off the main thread, as the source note's
-        // own resolution above does. The iOS twin's builder, so the note and the repeat numbers
-        // are fixed by this load exactly as they are there.
-        unprintedPointers = await Task.detached(priority: .userInitiated) {
-            let authority = CollectionAuthorityStore.shared
-            return SourceExplorerView.UnprintedPointer.list(rows, sourceNote: sourceNote) { citation in
-                authority.flatMap { SourceExplorerView.resolve(citation, authority: $0) }
-            }
-        }.value
+            + "\u{1F}\(refreshGeneration)"
     }
 
     /// Presents the Add-to-Archive-Visit picker over this document (Phase 3).
@@ -1930,72 +1912,48 @@ struct MacSourceExplorerView: View {
         // Clear everything derived from the *previous* document first. Without this the
         // stale provenance stays on screen for the whole of the async work below — and, if
         // an early `return` is taken (no API key, or a strategy with no live route), forever.
-        parsed = nil
+        // A load of another document starts the resolution from the parse alone; a load of the
+        // document already shown (Refresh, or the index coming up under a restored window) keeps each
+        // part on screen until its step replaces it, but for the pre-1906 section and what reads the
+        // year (`SourceExplorerResolution.resolvingAgain()`).
+        let document = MacSourceExplorerLoadIdentity.document(
+            volumeId: documentVolumeId, documentId: documentId, rawSourceNote: rawSourceNote,
+            documentYear: documentYear)
+        let start = resolvedDocument == document
+            ? resolution?.resolvingAgain() ?? SourceExplorerResolution(rawSourceNote: rawSourceNote)
+            : SourceExplorerResolution(rawSourceNote: rawSourceNote)
+        resolution = start
+        resolvedDocument = document
         catalogResults = []
-        authorityRecord = nil
-        countrySeriesOutcome = .loading
-        documentContext = nil
-        documentDay = nil
-        indexedClassification = nil
-        relatedDocs = []
-        relatedTotalCount = 0
         loadError = nil
         manualQuery = ""
-        unprintedPointers = []
+        let note = start.parsed
 
-        let note = SourceNoteParser().parse(rawSourceNote)
-        parsed = note
-
-        // Phase 4: resolve the note against the bundled cross-volume authority.
-        // Warmed off the main thread (one ~2 MB decode, once per launch).
-        if hasSourceNote {
-            let raw = rawSourceNote
-            authorityRecord = await Task.detached(priority: .userInitiated) {
-                CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
-            }.value
-        }
-
-        // Pre-1906 country-series resolution (no source note; no API key). Runs before everything
-        // that reads the year — Related Documents and the filing period — because it is also what
-        // reads a year the route did not pass. After the authority record, which reads no year and
-        // should not wait on an enclosure parse.
-        await resolveCountrySeries()
-
-        // The day the Filing Period box checks a date-form year against, read through the same
-        // function as the iOS twin.
-        let day = await SourceExplorerDocumentContext.documentDay(
-            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
-        if !Task.isCancelled { documentDay = day }
-
-        // The marking the index stores (index version 72), for the chip beside the note: one read,
-        // through the same function as the iOS twin, after the other read of the document's row.
-        let stored = await SourceExplorerDocumentContext.storedClassification(
-            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
-        if !Task.isCancelled { indexedClassification = stored }
-
-        // #829a: the document's footnote pointers, joined to the authority — the same load
-        // the iOS twin runs, and like it, it runs whether or not the document has a source
-        // note (a document printed without a provenance can still point at unprinted files).
-        await loadUnprintedPointers(sourceNote: note)
-
+        // The key check and what the automatic lookup will be evidence of, ahead of the sequence below,
+        // which ran them between the pointers and the related documents: the NARA box settles first.
         hasAPIKey = await client.hasAPIKey()
+        guard !Task.isCancelled else { return }
         catalogEvidence = CatalogQueryEvidence.forNote(note, rawNote: rawSourceNote)
 
-        // Local related-documents query — runs unconditionally; no API key needed.
-        // Must be called before the per-case hasAPIKey guards that return early.
-        await loadRelatedDocuments(for: note)
-
-        // #681: the bundled library catalogue is resolved before the per-case `hasAPIKey`
-        // guards — it needs neither a key nor the network, and gating it on one would withhold
-        // the offline answer from exactly the users who have no other. Detached because it is a
-        // 3.1 MB decode the first time it is touched. Mirrors the iOS twin.
-        if case .presidentialLibrary(let library, let collection, _) = note {
-            let raw = rawSourceNote
-            libraryOutcome = await Task.detached(priority: .userInitiated) {
-                PresidentialLibraryOutcome.resolve(
-                    repository: library, collection: collection, note: raw)
-            }.value
-        }
+        // The sequence both twins run, once (`SourceExplorerResolution.resolved`): the authority record,
+        // the pre-1906 country series, which also reads a year the route did not pass, the document's
+        // day, the marking the index stores, the unprinted pointers, the related documents and the
+        // bundled library catalogue, in that order, none of which needs a key or the network. Each step's
+        // value is drawn as it lands, unless this load was cancelled: this window stays alive across
+        // documents, and a key change mid-load would otherwise let one document's answer land on the next.
+        let route = CountrySeriesRoute(header: documentHeader, dateline: documentDateline, year: documentYear,
+                                       volumeId: documentVolumeId, documentId: documentId)
+        let resolved = await start.resolved(
+            route: route, pipeline: indexingPipeline,
+            dependencies: .app(appState, volumeId: documentVolumeId)) { step in
+                guard !Task.isCancelled else { return }
+                resolution = step
+            }
+        // A load that was cancelled writes nothing more and asks NARA nothing: its live calls would land
+        // their results, or the cancellation's error, on the document that replaced it.
+        guard !Task.isCancelled else { return }
+        resolution = resolved
+        let libraryOutcome = resolved.presidentialLibrary
 
         // #1543: a Subject-Numeric citation runs no keyed search and pre-fills no manual query,
         // however it is worded. Mirrors iOS.
@@ -2048,39 +2006,6 @@ struct MacSourceExplorerView: View {
         default:
             break
         }
-    }
-
-    /// Routes through the widened, anchor-excluding `archivalNeighbors(forVolumeId:
-    /// documentId:)` entry point (the #217 "same set regardless of trigger" guarantee —
-    /// see the iOS `SourceExplorerView` twin). Inline stays at the all-indexed default;
-    /// the scope picker lives on the dedicated neighbors window.
-    private func loadRelatedDocuments(for note: ParsedSourceNote) async {
-        guard let pipeline = indexingPipeline else { return }
-        relatedLoading = true
-        do {
-            let result: (documents: [IndexingPipeline.RelatedDocument], totalCount: Int)
-            if let volId = documentVolumeId, let docId = documentId {
-                // Anchored to an indexed document → the widened, anchor-excluding entry
-                // point, identical to the dedicated neighbors surfaces (#217 parity).
-                let r = try await pipeline.archivalNeighbors(
-                    forVolumeId: volId, documentId: docId, documentYear: effectiveYear)
-                result = (r.documents, r.totalCount)
-            } else {
-                // A source note explored without an indexed-document anchor: the
-                // note-keyed query, nothing to exclude.
-                result = try await pipeline.relatedDocuments(
-                    for: note, limit: 30, documentYear: effectiveYear,
-                    // The class a central-files citation is matched on is read from the note.
-                    rawCitation: rawSourceNote)
-            }
-            relatedDocs       = result.documents
-            relatedTotalCount = result.totalCount
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] Related documents query failed: \(error)")
-            #endif
-        }
-        relatedLoading = false
     }
 
     /// Executes a NARA Catalog API operation and stores up to five ranked candidates

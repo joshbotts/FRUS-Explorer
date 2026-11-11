@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 import SourceNoteKit
 
 /// One row extracted from a volume's front-matter Sources section: a narrative prose
@@ -47,7 +50,7 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
         let delegate = VolumeSourcesExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.entries
     }
 

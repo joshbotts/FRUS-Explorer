@@ -15,7 +15,16 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if canImport(SourceNoteKit)
+@testable import SourceNoteKit // `SourceNoteParser.lotFileRecordGroup` is internal to it
+#endif
 
 // MARK: - SourceExplorerProvenanceTests
 
@@ -35,11 +44,7 @@ struct SourceExplorerProvenanceTests {
 
     /// The shipped curated artifact, decoded the way `CuratedLotResolutionsTests` decodes it.
     private func loadCurated() throws -> CuratedLotResolutions {
-        let url = try #require(
-            Bundle(for: SourceExplorerProvenanceBundleToken.self).url(forResource: "curated-lot-resolutions",
-                                              withExtension: "json")
-                ?? Bundle.main.url(forResource: "curated-lot-resolutions", withExtension: "json"),
-            "curated-lot-resolutions.json must be enrolled as a bundle resource")
+        let url = try sourceExplorerShippedFile("curated-lot-resolutions")
         return try JSONDecoder().decode(CuratedLotResolutions.self, from: Data(contentsOf: url))
     }
 
@@ -53,7 +58,7 @@ struct SourceExplorerProvenanceTests {
     /// A source file, read from the repository root.
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
         // Without this a truncated or empty read makes every negative assertion below pass.
         #expect(text.count > 5_000, "\(path) read back as \(text.count) characters — moved or truncated?")
@@ -182,10 +187,7 @@ struct SourceExplorerProvenanceTests {
     /// reader downloaded; the artifact is corpus-wide evidence and its counts are not the table's.
     @Test("Both unprinted-pointer branches are reachable in the shipped corpus")
     func bothUnprintedBranchesAreReachable() throws {
-        let url = try #require(
-            Bundle(for: SourceExplorerProvenanceBundleToken.self).url(forResource: "external-citation-index",
-                                              withExtension: "json")
-                ?? Bundle.main.url(forResource: "external-citation-index", withExtension: "json"))
+        let url = try sourceExplorerShippedFile("external-citation-index")
         let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
         let root = try #require(object as? [String: Any])
         let coverage = try #require(root["coverage"] as? [String: Any])
@@ -196,6 +198,7 @@ struct SourceExplorerProvenanceTests {
         #expect(decimal > 0, "no decimal references — the .stateDeptSchedule arm is unreachable")
     }
 
+    #if !SWIFT_PACKAGE // every scan of the twins' source is the app's (its CLAUDE.md)
     // MARK: Twin coverage
 
     /// Every mount, in both twins, attributed to the member it actually sits in.
@@ -346,11 +349,8 @@ struct SourceExplorerProvenanceTests {
         #expect(!text.contains("provenance: ProvenanceSource = "),
                 "a defaulted parameter would badge nothing at every existing call site")
     }
+    #endif
 }
-
-/// Locates the test bundle. `CuratedLotResolutionsTests` declares its own `private` token, which is
-/// file-scoped, so this suite needs one of its own rather than reaching for that.
-private final class SourceExplorerProvenanceBundleToken {}
 
 // MARK: - SourceExplorerLotCardsTests (#1589)
 
@@ -380,7 +380,8 @@ struct SourceExplorerLotCardsTests {
         let curated: CuratedLotResolutions = try #require(CuratedLotResolutionsStore.shared,
                                                           "curated-lot-resolutions.json must decode")
         return SourceExplorerProvenance.lotCards(for: parsed, note: note, claimants: claimants,
-                                                 centralFiles: centralFiles, curated: curated)
+                                                 centralFiles: centralFiles, curated: curated,
+                                                 seriesFacts: SeriesFactsIndexStore.shared)
     }
 
     /// The series titles of a divided lot's card.
@@ -497,9 +498,11 @@ struct SourceExplorerLotCardsTests {
         #expect(SourceExplorerProvenance.recordGroupNumber("RG-84") == "84")
     }
 
+    #if !SWIFT_PACKAGE // every scan of the twins' source is the app's (its CLAUDE.md)
     @Test("Both twins draw the lot cards through the shared rule, and neither reads the lot indexes itself")
     func bothTwinsUseTheSharedRule() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
             let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
@@ -512,4 +515,5 @@ struct SourceExplorerLotCardsTests {
             }
         }
     }
+    #endif
 }

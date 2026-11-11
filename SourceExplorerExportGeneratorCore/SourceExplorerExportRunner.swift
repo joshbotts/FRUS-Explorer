@@ -36,6 +36,8 @@ import VolumeSourcesIndexGeneratorCore
 ///
 /// Version history:
 ///   1.0 — #335: initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): `exportRecord` public, for check 8's comparator, and
+///         `createFile`'s unused result discarded with `_ =`, which Linux's Foundation warns of
 public enum SourceExplorerExportRunner {
 
     /// The export schema version.
@@ -88,7 +90,7 @@ public enum SourceExplorerExportRunner {
 
         try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
         let exportURL = outputDir.appendingPathComponent("source-explorer-export.json")
-        FileManager.default.createFile(atPath: exportURL.path, contents: nil)
+        _ = FileManager.default.createFile(atPath: exportURL.path, contents: nil)
         let handle = try FileHandle(forWritingTo: exportURL)
         defer { try? handle.close() }
 
@@ -166,12 +168,16 @@ public enum SourceExplorerExportRunner {
     // MARK: - Record construction
 
     /// Builds one export record: parse → strategy → derived keys → offline resolutions.
-    static func exportRecord(volumeId: String, documentId: String, rawNote: String,
-                             documentYear: Int?, parser: SourceNoteParser,
-                             lotResolver: BundledLotResolver,
-                             centralFiles: CentralFilesIndex,
-                             volumeSources: VolumeSourcesIndex,
-                             authority: AuthorityLookup) -> SourceExplorerExportRecord {
+    ///
+    /// Public for FRUS Explorer Light's check 8 (S22b), which holds the record its API builds for each
+    /// source note to this one, over the same bundled files: the generator's own reading, independent of
+    /// the app's `SourceExplorerResolution`, is the comparator.
+    public static func exportRecord(volumeId: String, documentId: String, rawNote: String,
+                                    documentYear: Int?, parser: SourceNoteParser,
+                                    lotResolver: BundledLotResolver,
+                                    centralFiles: CentralFilesIndex,
+                                    volumeSources: VolumeSourcesIndex,
+                                    authority: AuthorityLookup) -> SourceExplorerExportRecord {
         let parsed = parser.parse(rawNote)
         let strategy = ProvenanceCategory.from(parsed, note: rawNote).rawValue
         let derived = ExportClassification.derivedKeys(for: parsed, note: rawNote)

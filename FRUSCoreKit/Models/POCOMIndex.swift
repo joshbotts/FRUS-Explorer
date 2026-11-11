@@ -46,7 +46,11 @@ import Foundation
 ///   1.4 — 2026-09-23 (#1370): `POCOMCareer.lifespanText` removed. The person sheet prints one
 ///         lifespan, `PersonLifespan` in `PersonIndexView.swift`, which takes the name authority's
 ///         years first and POCOM's only for a gap
-struct POCOMIndex: Codable, Sendable {
+///   1.5 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit, public, and loaded from a URL
+///         the host gives (`init(contentsOf:)`), since `ChiefsOfMissionRoster`, which reads its chiefs,
+///         is the kit's; `POCOMIndexStore`, which reads the app's bundle, stays in the app
+///         (`FRUSExplorer/Models/POCOMIndexStore.swift`)
+public struct POCOMIndex: Codable, Sendable {
 
     /// Index schema version.
     let version: Int
@@ -66,7 +70,7 @@ struct POCOMIndex: Codable, Sendable {
 
     private enum CodingKeys: String, CodingKey { case version, generated, source, careers, chiefs, names, roles }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 1
         generated = try c.decodeIfPresent(String.self, forKey: .generated) ?? ""
@@ -162,24 +166,24 @@ struct POCOMPersonName: Codable, Sendable, Equatable {
 
 /// A resolved U.S. chief of mission: who, in what role, where, and the days the register lets us
 /// say they held the post.
-struct POCOMChiefOfMission: Sendable, Equatable {
+public struct POCOMChiefOfMission: Sendable, Equatable {
     /// POCOM slug.
-    let slug: String
+    public let slug: String
     /// Surname, for matching a letter's addressee.
-    let surname: String
+    public let surname: String
     /// Forename(s), for matching a letter's addressee.
-    let forename: String
+    public let forename: String
     /// The name to print.
-    let displayName: String
+    public let displayName: String
     /// Singular role label ("Envoy Extraordinary and Minister Plenipotentiary").
-    let roleLabel: String
+    public let roleLabel: String
     /// The POCOM territory id the row was keyed under.
-    let territoryId: String
+    public let territoryId: String
     /// First day of the tenure, `yyyy-MM-dd`, floored from a partial date.
-    let firstDayISO: String
+    public let firstDayISO: String
     /// Last day of the tenure, `yyyy-MM-dd`, ceiled from a partial date; `nil` when the register
     /// gives no end and the generator could derive none.
-    let lastDayISO: String?
+    public let lastDayISO: String?
 }
 
 // MARK: - POCOMPartialDate
@@ -290,35 +294,13 @@ struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
-// MARK: - POCOMIndexStore
+// MARK: - Loading
 
-/// Loads the bundled `pocom-index.json` once, lazily.
-///
-/// `nil` only when the resource is absent from the bundle or malformed — in which case the Career
-/// section does not appear and Source Explorer's addressee rule decides nothing. The unit tests are
-/// app-hosted (`TEST_HOST`), so the store loads there too.
-enum POCOMIndexStore {
-    static let shared: POCOMIndex? = load()
+extension POCOMIndex {
 
-    private static func load() -> POCOMIndex? {
-        guard let url = Bundle.main.url(forResource: "pocom-index", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            #if DEBUG
-            print("[POCOMIndex] pocom-index.json not found in bundle")
-            #endif
-            return nil
-        }
-        do {
-            let index = try JSONDecoder().decode(POCOMIndex.self, from: data)
-            #if DEBUG
-            print("[POCOMIndex] loaded \(index.careers.count) careers (generated \(index.generated))")
-            #endif
-            return index
-        } catch {
-            #if DEBUG
-            print("[POCOMIndex] decode failed: \(error)")
-            #endif
-            return nil
-        }
+    /// The index in the `pocom-index.json` at `url`, decoded as `POCOMIndexStore` decodes the copy bundled
+    /// with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(POCOMIndex.self, from: Data(contentsOf: url))
     }
 }

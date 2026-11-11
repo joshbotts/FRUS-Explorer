@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 /// Extracts every document's **body** footnotes from a volume's TEI XML, in reading order — the
 /// input the #784 footnote-citation harvest runs over.
@@ -51,6 +54,10 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
 ///   1.1 — #1421: note text joined as printed, through ``PrintedTextMirror``
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `XMLParser` from FoundationXML behind `canImport`,
+///         where Linux keeps it, and `parse()`'s unused result discarded with `_ =`, which Linux's
+///         Foundation warns of, so the web edition compiles this core for check 8's comparator;
+///         nothing changes on Apple platforms
 public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// One document's body footnotes, in reading order.
@@ -108,7 +115,7 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
         let delegate = DocumentFootnoteExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.documents
     }
 

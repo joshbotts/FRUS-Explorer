@@ -33,6 +33,10 @@ import Foundation
 ///         read both views make of the document's own day
 ///   1.3 — index version 72: `SourceExplorerDocumentContext.storedClassification`, the one read both
 ///         views make of the marking the index stores, for a document that prints it in its opener
+///   1.4 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit with the classifier, whose
+///         `documentYear(fromDateline:)` `hydrate` reads; `SourceExplorerDocumentContext` is public, since
+///         `SourceExplorerResolution` holds it; `document(volumeId:documentId:rawSourceNote:documentYear:)`, the
+///         key less the pipeline, for a view to tell a load of the document it shows from a load of another
 enum MacSourceExplorerLoadIdentity {
 
     /// A key that changes whenever anything `load()` reads changes.
@@ -52,6 +56,16 @@ enum MacSourceExplorerLoadIdentity {
          pipelineAvailable ? "pipeline" : ""]
             .joined(separator: "\u{1F}")
     }
+
+    /// The document a load explains: the key with the pipeline's availability left out, so a view can tell
+    /// a load of the document it already shows — shown again, refreshed, or reloaded as the index comes up —
+    /// from a load of another, and keep what is on screen until each step replaces it
+    /// (`SourceExplorerResolution.resolvingAgain()`).
+    static func document(volumeId: String?, documentId: String?, rawSourceNote: String,
+                         documentYear: Int?) -> String {
+        make(volumeId: volumeId, documentId: documentId, rawSourceNote: rawSourceNote,
+             documentYear: documentYear, pipelineAvailable: false)
+    }
 }
 
 // MARK: - SourceExplorerDocumentContext
@@ -64,15 +78,15 @@ enum MacSourceExplorerLoadIdentity {
 ///
 /// **Hydrated values stay out of the load key.** The key reads only what the host passed; hydration
 /// writes view state. Keying on a hydrated value would reload the view every time it hydrated.
-struct SourceExplorerDocumentContext: Sendable, Equatable {
+public struct SourceExplorerDocumentContext: Sendable, Equatable {
     /// The header the classifier reads.
-    let header: String
+    public let header: String
     /// The dateline the classifier reads, or `nil`.
-    let dateline: String?
+    public let dateline: String?
     /// The year every year-dependent section reads, or `nil`.
-    let year: Int?
+    public let year: Int?
     /// The serial FRUS prints above the document, from the index, or `nil`.
-    let despatchSerial: String?
+    public let despatchSerial: String?
 
     /// Fills in what the route did not supply. One rule per case:
     ///
@@ -112,11 +126,12 @@ struct SourceExplorerDocumentContext: Sendable, Equatable {
     /// The document's own day from the index (`IndexingPipeline.documentDay`), or `nil` when there
     /// is no pipeline, no document key, no day at day grain, or the read fails (#1407 review).
     ///
-    /// Both views read it in `load()` and hand it to `DecimalFileSegment` — the iOS view for its
-    /// Archival Neighbors basis line and Filing Period row, the Mac window for its Filing Period
-    /// box — so a date-form file number that misprints the document's own day under another year
-    /// (`740.0011 EW/8–2045` on a document of 20 August 1943) is banded by the document's year, as
-    /// the neighbours beside it are. One function, so the two views cannot read the day two ways.
+    /// Both views read it through `SourceExplorerResolution.resolved` and hand it to
+    /// `DecimalFileSegment` — the iOS view for its Archival Neighbors basis line and Filing Period row,
+    /// the Mac window for its Filing Period box — so a date-form file number that misprints the
+    /// document's own day under another year (`740.0011 EW/8–2045` on a document of 20 August 1943) is
+    /// banded by the document's year, as the neighbours beside it are. One function, so the two views
+    /// cannot read the day two ways.
     static func documentDay(pipeline: IndexingPipeline?, volumeId: String?,
                             documentId: String?) async -> DecimalFileSegment.DocumentDay? {
         guard let pipeline, let volumeId, let documentId else { return nil }
@@ -127,10 +142,11 @@ struct SourceExplorerDocumentContext: Sendable, Equatable {
     /// (`IndexingPipeline.storedClassification`), or `nil` when there is no pipeline, no document key,
     /// no stored marking, or the read fails.
     ///
-    /// Both views read it in `load()` and show `IndexingPipeline.classificationMarking(sourceNote:stored:)`
-    /// beside the note, so a document of the volumes covering 1932–1954, which prints its marking in
-    /// its opener rather than its note (index version 72), has its chip, as its search row does. One
-    /// function, so the two views cannot read it two ways.
+    /// Both views read it through `SourceExplorerResolution.resolved` and show
+    /// `IndexingPipeline.classificationMarking(sourceNote:stored:)` beside the note, so a document of the
+    /// volumes covering 1932–1954, which prints its marking in its opener rather than its note (index
+    /// version 72), has its chip, as its search row does. One function, so the two views cannot read it
+    /// two ways.
     static func storedClassification(pipeline: IndexingPipeline?, volumeId: String?,
                                      documentId: String?) async -> String? {
         guard let pipeline, let volumeId, let documentId else { return nil }

@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 /// Extracts each document's provenance source note from a volume's TEI XML, porting the
 /// app's `IndexingPipeline.extractSourceNote(from:)` locator chain (itself the
@@ -46,6 +49,10 @@ import Foundation
 /// Version history:
 ///   1.0 — Source Explorer Phase 4 (2026-07-03), with the parity rules of the 2026-07-04 review
 ///   1.1 — #1421: note text joined as printed, through ``PrintedTextMirror``
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `XMLParser` from FoundationXML behind `canImport`,
+///         where Linux keeps it, and `parse()`'s unused result discarded with `_ =`, which Linux's
+///         Foundation warns of, so the web edition compiles this core for check 8's comparator;
+///         nothing changes on Apple platforms
 public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// One extracted document source note.
@@ -61,7 +68,7 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
         let delegate = DocumentNoteExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.notes
     }
 

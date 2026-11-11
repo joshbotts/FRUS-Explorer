@@ -126,6 +126,13 @@ import SwiftUI
 ///           the note prints none, the one a 1932–1954 document prints in its opener, read in
 ///           `load()` through `SourceExplorerDocumentContext.storedClassification`. Mirrors
 ///           MacSourceExplorerView 1.17.
+///   1.19 — 2026-11-10 (FRUS Explorer Light, S22b): `load()` runs the sequence both twins share, FRUSCoreKit's
+///           `SourceExplorerResolution.resolved`, in place of its own steps (`resolveCountrySeries()`,
+///           `loadUnprintedPointers(sourceNote:)`, `loadRelatedDocuments(for:)`), and the sections draw from the
+///           one value it gives, step by step; a load of the document already shown keeps each part until its
+///           step replaces it (`resolvingAgain()`), and a cancelled load writes nothing and asks NARA nothing.
+///           `UnprintedPointer` and its join are the kit's, under the same name here. Mirrors
+///           MacSourceExplorerView 1.18.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -164,7 +171,18 @@ struct SourceExplorerView: View {
 
     // MARK: - State
 
-    @State private var parsed: ParsedSourceNote? = nil
+    /// What `load()` resolves for this document before the NARA Catalog: the parse, the authority
+    /// record, the country series, the document's day, the marking the index stores, the unprinted
+    /// pointers, the related documents and the library catalogue's answer, as one value, which the Mac
+    /// twin and FRUS Explorer Light compute alike (`SourceExplorerResolution`). `nil` until `load()`
+    /// starts, and each step's value replaces it as the step completes; the properties below read it.
+    @State private var resolution: SourceExplorerResolution? = nil
+    /// The document `resolution` was resolved for (`MacSourceExplorerLoadIdentity.document`), so a load of
+    /// the same document keeps what is on screen.
+    @State private var resolvedDocument: String? = nil
+
+    /// The parsed note, `nil` until `load()` starts.
+    private var parsed: ParsedSourceNote? { resolution?.parsed }
     /// Up to 5 NARA Catalog results; replaces the old single-result `catalogResult`.
     @State private var catalogResults: [NARACatalogResult] = []
     @State private var isLoading = false
@@ -175,39 +193,39 @@ struct SourceExplorerView: View {
     /// What the bundled presidential-library catalogue says about this citation (#681).
     /// Resolved in `load()` rather than in `body` — it reads a 3.1 MB bundle and the panel
     /// re-renders on every state change.
-    @State private var libraryOutcome: PresidentialLibraryOutcome = .none
+    private var libraryOutcome: PresidentialLibraryOutcome { resolution?.presidentialLibrary ?? .none }
     @State private var hasAPIKey: Bool = false
     /// Same-collection document discovery results.
-    @State private var relatedDocs: [IndexingPipeline.RelatedDocument] = []
+    private var relatedDocs: [IndexingPipeline.RelatedDocument] { resolution?.relatedDocuments.documents ?? [] }
     /// Total count of collection matches (may exceed the displayed slice).
-    @State private var relatedTotalCount: Int = 0
+    private var relatedTotalCount: Int { resolution?.relatedDocuments.totalCount ?? 0 }
     /// True while the related-documents query is running.
-    @State private var relatedLoading: Bool = false
+    private var relatedLoading: Bool { resolution?.relatedDocuments.isSearching ?? false }
 
     /// The document with the route's gaps filled from the index — header, dateline, year, and the
     /// serial (#965) shown with the rolls it helps browse. `nil` until `load()` has read it.
-    @State private var documentContext: SourceExplorerDocumentContext? = nil
+    private var documentContext: SourceExplorerDocumentContext? { resolution?.documentContext }
 
     /// The document's own day from the index, which the basis line and the Filing Period row check
     /// a date-form file year against (#1407 review). `nil` until `load()` has read it, and for a
     /// document the index does not date to the day.
-    @State private var documentDay: DecimalFileSegment.DocumentDay? = nil
+    private var documentDay: DecimalFileSegment.DocumentDay? { resolution?.documentDay }
 
     /// The classification marking the index stores for the document, which the chip beside the note
     /// shows where the note prints none: the marking a document of the 1932–1954 volumes prints in
     /// its opener (index version 72). `nil` until `load()` has read it.
-    @State private var indexedClassification: String? = nil
+    private var indexedClassification: String? { resolution?.storedClassification }
 
     /// What the pre-1906 section knows: loading, not checked (and why), no match, not applicable, or
     /// the homes found (Phase 2).
-    @State private var countrySeriesOutcome: CountrySeriesOutcome = .loading
+    private var countrySeriesOutcome: CountrySeriesOutcome { resolution?.countrySeries ?? .loading }
 
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
-    @State private var authorityRecord: AuthorityCollectionRecord? = nil
+    private var authorityRecord: AuthorityCollectionRecord? { resolution?.authorityRecord }
     /// This document's footnote pointers at material FRUS did not print, in reading order,
     /// each paired with the authority record it resolves to when it resolves to one.
-    @State private var unprintedPointers: [UnprintedPointer] = []
+    private var unprintedPointers: [UnprintedPointer] { resolution?.unprintedPointers ?? [] }
 
     /// Done's close, and the related-document row's: the presenting sheet's dismissal, or — at the
     /// root of the iPad Source Explorer window — the window's close, which brings a main window
@@ -360,244 +378,10 @@ struct SourceExplorerView: View {
 
     // MARK: - Unprinted Material (#829a)
 
-    /// One footnote pointer, with whatever the render-time join could make of it.
-    ///
-    /// **Declared once for both twins** — the Mac view builds and draws this same type — and, since
-    /// #1390, **it carries every fact `rowText` prints**, the lot the document's own source note
-    /// names and the row's place among rows worded alike included. Both are fixed by the load that
-    /// built the pointer rather than read from the view's state at draw time, so a pointer and the
-    /// note and list it is compared with always come from the same load, whichever twin draws it
-    /// and however the view is re-keyed.
-    struct UnprintedPointer: Identifiable, Equatable {
-        /// The stored citation.
-        let citation: ExternalCitation
-        /// The authority record it resolved to, when it did.
-        let record: AuthorityCollectionRecord?
-        /// The canonical lot key (`SourceNoteParser.lotFileNorm`) of the lot the document's own
-        /// source note names, or `nil` when the note names none.
-        let sourceNoteLotNorm: String?
-        /// Where this row stands among the document's rows that would otherwise print the same
-        /// thing, or `nil` when no other row does. Only `list(_:sourceNote:resolve:)` sets it,
-        /// because only the whole list can say which rows those are.
-        private(set) var repeatPosition: RepeatPosition?
-
-        /// Creates a pointer, outside any list — so with no `repeatPosition`.
-        ///
-        /// `sourceNote` has no default on purpose: a default of `nil` would compile at every
-        /// construction site and mark no row, which is indistinguishable on screen from a document
-        /// whose footnotes never cite its own lot. An explicit `nil` still compiles; the twins build
-        /// their rows through `list(_:sourceNote:resolve:)`, which a source scan pins.
-        ///
-        /// - Parameters:
-        ///   - citation: The stored citation.
-        ///   - record: The authority record it resolved to, when it did.
-        ///   - sourceNote: The document's parsed source note, from the same load.
-        init(citation: ExternalCitation, record: AuthorityCollectionRecord?,
-             sourceNote: ParsedSourceNote?) {
-            self.citation = citation
-            self.record = record
-            self.sourceNoteLotNorm = Self.lotNorm(ofSourceNote: sourceNote)
-            self.repeatPosition = nil
-        }
-
-        /// The citation's id, unique within the document since #1390 (see `ExternalCitation.id`).
-        ///
-        /// The rows are keyed on it. Before #1390 two citations of one lot in one note shared it,
-        /// which the Mac's `VStack` drew twice and the iOS `Form` may draw once.
-        var id: String { citation.id }
-
-        /// A row's place in a run of rows worded alike, in reading order.
-        struct RepeatPosition: Equatable, Sendable {
-            /// Which of them this row is, from one.
-            let ordinal: Int
-            /// How many rows print those words.
-            let count: Int
-        }
-
-        /// A document's Unprinted Material rows — the one way both twins build them (#1390).
-        ///
-        /// Every pointer carries the loaded source note, and every row that would print exactly
-        /// what another row of the list prints is numbered among them, in the order given — which
-        /// is reading order, since both index readers sort by `note_ordinal, citation_index`. The
-        /// printed footnote and the clause do not always tell rows apart: `frus1952-54v04` d90's
-        /// footnote 1 follows two different memoranda with the same "(S/S–OCB files, lot 62 D 430,
-        /// “Rio Conference”)", and `frus1913` d707 prints two footnotes "1" that both read "File
-        /// No. 311.651T15/12." Those rows say "1 of 2 citations worded alike" and "2 of 2", a
-        /// number the reader can check against the page. The number is never assigned to a row
-        /// nothing repeats: it would be noise on every other row of the list.
-        ///
-        /// - Parameters:
-        ///   - citations: The document's citations, in reading order.
-        ///   - sourceNote: The document's parsed source note, from the same load.
-        ///   - resolve: The render-time authority join, `nil` for a row that resolves to nothing.
-        /// - Returns: One pointer per citation, in the same order.
-        static func list(_ citations: [ExternalCitation], sourceNote: ParsedSourceNote?,
-                         resolve: (ExternalCitation) -> AuthorityCollectionRecord?) -> [UnprintedPointer] {
-            var pointers = citations.map {
-                UnprintedPointer(citation: $0, record: resolve($0), sourceNote: sourceNote)
-            }
-            let keys = pointers.map(\.printedKey)
-            var totals: [PrintedKey: Int] = [:]
-            for key in keys { totals[key, default: 0] += 1 }
-            var seen: [PrintedKey: Int] = [:]
-            for index in pointers.indices {
-                let key = keys[index]
-                guard let total = totals[key], total > 1 else { continue }
-                let ordinal = seen[key, default: 0] + 1
-                seen[key] = ordinal
-                pointers[index].repeatPosition = RepeatPosition(ordinal: ordinal, count: total)
-            }
-            return pointers
-        }
-
-        /// Everything a row prints apart from its repeat number: the words `rowText` supplies, and
-        /// the four things each twin still draws itself — the box or folder, the Ibid. label, the
-        /// provenance chip, and whether the row opens a collection. Two rows that differ in any of
-        /// them already read differently and are not numbered.
-        private struct PrintedKey: Hashable {
-            let title: String
-            let clause: String?
-            let sameLotNote: String?
-            let fileId: String?
-            let inherited: Bool
-            let provenance: ProvenanceSource
-            let opensCollection: Bool
-        }
-
-        /// This row's `PrintedKey`.
-        private var printedKey: PrintedKey {
-            let text = rowText
-            let fileId = citation.fileId.flatMap { $0.isEmpty ? nil : $0 }
-            return PrintedKey(title: text.title, clause: text.clause, sameLotNote: text.sameLotNote,
-                              fileId: fileId, inherited: citation.inherited,
-                              provenance: SourceExplorerProvenance.unprintedPointerSource(for: citation),
-                              opensCollection: record != nil)
-        }
-
-        /// The words of one Unprinted Material row that both twins take from `rowText` (#1390).
-        ///
-        /// Not the whole row: the box or folder, the Ibid. label, the provenance chip and the Mac's
-        /// View Collection button are still drawn by each twin from the citation and the record.
-        struct RowText: Equatable, Sendable {
-            /// The first line: the footnote the volume printed, then the unit — "fn 2 · Lot 66 D 95".
-            /// The unit alone when no printed number is recorded.
-            let title: String
-            /// `title` as VoiceOver says it — "Footnote 2, Lot 66 D 95" — because "fn" is read as
-            /// two letters.
-            let spokenTitle: String
-            /// The clause the citation was read from, trimmed; `nil` when it is empty or would only
-            /// repeat the unit.
-            let clause: String?
-            /// "Same lot as the source note" when the row's lot is the one the document's source
-            /// note names; `nil` otherwise.
-            let sameLotNote: String?
-            /// "1 of 2 citations worded alike" when another row of the list prints exactly what this
-            /// one prints; `nil` otherwise.
-            let repeatNote: String?
-        }
-
-        /// The words of this pointer's row — the one function both Source Explorer twins draw them
-        /// from (#1390).
-        ///
-        /// `frus1952-54v02p1` d41 printed five rows reading "Lot 66 D 95" twice and "Lot 63 D 351"
-        /// three times, and every one of them was right. Four facts tell such rows apart; d41 needs
-        /// the first three:
-        /// - **The printed footnote number** (`noteLabel`, #1322) separates footnotes 3, 4 and 5,
-        ///   whose clauses are word for word the same. It is never derived: `noteOrdinal + 1` is the
-        ///   wrong number for most notes. When `noteLabel` is nil — a row written before index v53,
-        ///   or one of the handful of notes a volume printed without a number — the title claims no
-        ///   number at all, the rule the packet's `TripPacketExporter.footnoteLine(for:)` follows.
-        /// - **The clause** separates two citations in one note when their words differ: footnote 2
-        ///   cites lot 66 D 95 once for its "Record of Actions" and once for its "NSC Record of
-        ///   Actions".
-        /// - **The same-lot marker** says what the old footer denied: that a footnote can point into
-        ///   the very lot the source note names. It marks the row and never hides it. The two stay
-        ///   separate claims (#783): a footnote pointing at memoranda FRUS did not print is still a
-        ///   pointer at unprinted material, whichever lot holds them. It covers **lots only**: a
-        ///   class row naming the source note's own central-file class, or a library row naming its
-        ///   collection, is not marked.
-        /// - **The repeat number**, for rows the first three leave identical — see
-        ///   `list(_:sourceNote:resolve:)`.
-        var rowText: RowText {
-            let unit = citation.displayLabel
-            let title: String
-            let spokenTitle: String
-            if let label = citation.noteLabel, !label.isEmpty {
-                title = String(format: String(
-                    localized: "source.explorer.unprinted.row.title %@ %@",
-                    defaultValue: "fn %1$@ · %2$@"), label, unit)
-                spokenTitle = String(format: String(
-                    localized: "source.explorer.unprinted.row.spokenTitle %@ %@",
-                    defaultValue: "Footnote %1$@, %2$@"), label, unit)
-            } else {
-                title = unit
-                spokenTitle = unit
-            }
-            let clause = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let repeatsUnit = clause == unit.trimmingCharacters(in: .whitespacesAndNewlines)
-            let sameLot: String?
-            if let sourceLot = sourceNoteLotNorm, citation.lotFileNorm == sourceLot {
-                sameLot = String(localized: "source.explorer.unprinted.row.sameLot",
-                                 defaultValue: "Same lot as the source note")
-            } else {
-                sameLot = nil
-            }
-            let repeatNote = repeatPosition.map {
-                String(format: String(
-                    localized: "source.explorer.unprinted.row.repeat %lld %lld",
-                    defaultValue: "%1$lld of %2$lld citations worded alike"),
-                       Int64($0.ordinal), Int64($0.count))
-            }
-            return RowText(title: title, spokenTitle: spokenTitle,
-                           clause: clause.isEmpty || repeatsUnit ? nil : clause,
-                           sameLotNote: sameLot, repeatNote: repeatNote)
-        }
-
-        /// The canonical lot key a parsed source note names.
-        ///
-        /// Read from exactly the cases `IndexingPipeline.baseDocumentSourceRow` writes
-        /// `document_sources.lot_file_norm` for — a lot file, and a National Archives citation that
-        /// names a lot — through the same `SourceNoteParser.lotFileNorm`, so the marker agrees with
-        /// the lot the index stores for the note. `nil` for every other note.
-        ///
-        /// Also `nil` when the lot normalises to nothing. `lotFileNorm` keeps only what precedes
-        /// the first `:`, `(` or `)`, so a lot printed as "(62 D 430)" has an empty key, and an
-        /// empty key names no lot: two lots that both normalise to "" are not the same lot. The
-        /// index stores that "" as it is, so this is the one case where the marker's key and the
-        /// stored one differ, deliberately. A citation WITHOUT a lot is not what this guards
-        /// against — its `lotFileNorm` is `nil`, which never equals a string — and no citation the
-        /// footnote grammar harvests today has an empty lot key, so the guard is defensive.
-        ///
-        /// - Parameter note: The document's parsed source note.
-        /// - Returns: The compact lot key (`63D351`), or `nil`.
-        static func lotNorm(ofSourceNote note: ParsedSourceNote?) -> String? {
-            let lot: String?
-            switch note {
-            case .lotFile(_, let number, _)?:
-                lot = number
-            case .naraCollection(_, _, let number?, _)?:
-                lot = number
-            default:
-                lot = nil
-            }
-            guard let lot else { return nil }
-            let norm = SourceNoteParser.lotFileNorm(lot)
-            return norm.isEmpty ? nil : norm
-        }
-
-        /// The Unprinted Material section's footer, declared once for both twins (#1390).
-        ///
-        /// It used to call the section "separate from the source note above" while listing the
-        /// source note's own lot — three of d41's five rows. The CLAIMS are separate: a footnote
-        /// pointing at a file is not the document having been drawn from it, and the two are never
-        /// added together (#783). The UNITS need not be. A row says so when the shared unit is a
-        /// lot; a class or library row naming the source note's own unit carries no marker, which
-        /// is why the footer states the rule for every row rather than leaving it to the marker.
-        static var sectionFooter: String {
-            String(localized: "source.explorer.unprinted.footer.v2",
-                   defaultValue: "Archival units this document’s footnotes cite for material FRUS did not print. Each is a separate claim from the source note above, which records where this document itself was drawn from, even when the two name the same unit.")
-        }
-    }
+    /// One footnote pointer, with whatever the render-time join could make of it: FRUSCoreKit's
+    /// `SourceExplorerResolution.UnprintedPointer` since FRUS Explorer Light's S22b, which builds the
+    /// pointers for both twins, under the name the twins and their suites use.
+    typealias UnprintedPointer = SourceExplorerResolution.UnprintedPointer
 
     /// Where this document's own footnotes sent the reader, outside the printed record.
     ///
@@ -700,31 +484,6 @@ struct SourceExplorerView: View {
             }
         }
         .padding(.vertical, 2)
-    }
-
-    /// Resolves one stored citation to an authority record.
-    ///
-    /// **The rows carry no authority id**, so this is the render-time join #829 specifies: the lot
-    /// key first, else the repository plus the collection's leading segment — composed exactly as
-    /// `ArchivalLibraryProfile.resolve` does, **including the #351 library→lot domain guard**, which
-    /// stops a presidential-library citation from matching a lot-file record that happens to share a
-    /// leading word.
-    ///
-    /// - Parameters:
-    ///   - citation: The stored row.
-    ///   - authority: The bundled authority.
-    /// - Returns: The record, or `nil` when nothing matches under the guard.
-    /// `nonisolated` because the caller runs it inside a detached task: `SourceExplorerView` is a
-    /// `View` and therefore implicitly `@MainActor`, so a plain `static func` here is main-actor
-    /// isolated and calling it off the main actor is a strict-concurrency warning. The body touches
-    /// only value types and the `Sendable` authority index, which is what makes the annotation
-    /// honest rather than a silencer.
-    nonisolated static func resolve(_ citation: ExternalCitation,
-                                    authority: CollectionAuthorityIndex) -> AuthorityCollectionRecord? {
-        ExternalCitationAuthorityJoin.record(lotFileNorm: citation.lotFileNorm,
-                                             collectionName: citation.collection,
-                                             repository: citation.repository,
-                                             authority: authority)
     }
 
     // MARK: - Raw Note Section
@@ -1372,25 +1131,6 @@ struct SourceExplorerView: View {
     /// `loadIdentity` deliberately keeps reading the host's `documentYear`: a key that read the
     /// hydrated year would change the moment hydration landed and reload the view.
     private var effectiveYear: Int? { documentContext?.year ?? documentYear }
-
-    /// Classifies a pre-1906 document (which carries no source note) through the shared
-    /// `CentralFilesClassifier.evaluate` and stores what it found.
-    ///
-    /// The main-actor values the evaluation needs — the AST cache and the volume's file URL — are read
-    /// here and passed in, because `AppState` cannot be read from the nonisolated evaluation. The result
-    /// is written only when this load was not cancelled: a key change mid-evaluation would otherwise
-    /// let the previous document's answer land on the next one.
-    private func resolveCountrySeries() async {
-        let route = CountrySeriesRoute(header: documentHeader, dateline: documentDateline, year: documentYear,
-                                       volumeId: documentVolumeId, documentId: documentId)
-        let volumeURL = documentVolumeId.flatMap { appState.downloadManager?.volumeURL(for: $0) }
-        let result = await CentralFilesClassifier.evaluate(
-            route: route, pipeline: indexingPipeline, index: CentralFilesIndexStore.shared,
-            astCache: appState.documentASTCache, volumeURL: volumeURL)
-        guard !Task.isCancelled else { return }
-        documentContext = result.context
-        countrySeriesOutcome = result.outcome
-    }
 
     @ViewBuilder
     private var countrySeriesSection: some View {
@@ -2690,90 +2430,43 @@ struct SourceExplorerView: View {
                                            pipelineAvailable: indexingPipeline != nil)
     }
 
-    /// Reads this document's footnote pointers and joins each to the authority.
-    ///
-    /// Runs regardless of whether the document has a source note: a document FRUS printed without
-    /// stating a provenance can still have footnotes pointing at unprinted files.
-    ///
-    /// - Parameter sourceNote: The note this load parsed. Every pointer carries it (#1390), so a
-    ///   row's same-lot marker is decided against the note of the load that built the row.
-    private func loadUnprintedPointers(sourceNote: ParsedSourceNote) async {
-        guard let pipeline = indexingPipeline,
-              let volumeId = documentVolumeId, let docId = documentId else {
-            unprintedPointers = []
-            return
-        }
-        let rows = (try? await pipeline.externalCitations(volumeId: volumeId,
-                                                          documentId: docId)) ?? []
-        guard !rows.isEmpty else { unprintedPointers = []; return }
-        // The authority is a ~2 MB decode; join off the main thread, as the source note's own
-        // resolution above does. `list` is the one builder both twins call, so the note and the
-        // repeat numbers are fixed here, by this load.
-        unprintedPointers = await Task.detached(priority: .userInitiated) {
-            let authority = CollectionAuthorityStore.shared
-            return UnprintedPointer.list(rows, sourceNote: sourceNote) { citation in
-                authority.flatMap { Self.resolve(citation, authority: $0) }
-            }
-        }.value
-    }
-
     private func load() async {
         // Reset before any `await`. The key changes in place — the pipeline appearing is one such
         // change — so without this the previous document's homes, serial and year stay on screen for
         // the whole of the load, and "not checked yet" would outlive the pipeline it was waiting for.
-        documentContext = nil
-        documentDay = nil
-        indexedClassification = nil
-        countrySeriesOutcome = .loading
+        // A load of another document starts from the parse alone; a load of the document already shown
+        // (the sheet shown again after a page pushed over it, or the index coming up under it) keeps
+        // each part on screen until its step replaces it, but for the pre-1906 section and what reads
+        // the year (`SourceExplorerResolution.resolvingAgain()`).
+        let document = MacSourceExplorerLoadIdentity.document(
+            volumeId: documentVolumeId, documentId: documentId, rawSourceNote: rawSourceNote,
+            documentYear: documentYear)
+        let start = resolvedDocument == document
+            ? resolution?.resolvingAgain() ?? SourceExplorerResolution(rawSourceNote: rawSourceNote)
+            : SourceExplorerResolution(rawSourceNote: rawSourceNote)
+        resolution = start
+        resolvedDocument = document
 
-        let note = SourceNoteParser().parse(rawSourceNote)
-        parsed = note
-
-        // Phase 4: resolve the note against the bundled cross-volume authority.
-        // Warmed off the main thread (one ~2 MB decode, once per launch).
-        if hasSourceNote {
-            let raw = rawSourceNote
-            authorityRecord = await Task.detached(priority: .userInitiated) {
-                CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
-            }.value
-        }
-
-        // Pre-1906 country-series resolution (no source note; no API key). Runs before everything
-        // that reads the year — Related Documents and the filing period — because it is also what
-        // reads a year the route did not pass. After the authority record, which reads no year and
-        // should not wait on an enclosure parse.
-        await resolveCountrySeries()
-
-        // The day the basis line and the Filing Period row check a date-form year against — read
-        // before the neighbours, so the line above them does not change band after they land.
-        let day = await SourceExplorerDocumentContext.documentDay(
-            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
-        if !Task.isCancelled { documentDay = day }
-
-        // The marking the index stores (index version 72), for the chip beside the note: one read,
-        // through the same function as the Mac twin, after the other read of the document's row.
-        let stored = await SourceExplorerDocumentContext.storedClassification(
-            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
-        if !Task.isCancelled { indexedClassification = stored }
-
-        await loadUnprintedPointers(sourceNote: note)
-
-        // Local related-documents query — runs unconditionally; no API key needed.
-        // Must be called before the hasAPIKey guard so it runs even for users
-        // who have not configured a NARA Catalog API key.
-        await loadRelatedDocuments(for: note)
-
-        // #681: the bundled library catalogue is resolved BEFORE the API-key guard — it needs
-        // neither a key nor the network, and gating it on one would withhold the offline answer
-        // from exactly the users who have no other. Detached for the same reason the authority
-        // record is: it is a 3.1 MB decode the first time it is touched.
-        if case .presidentialLibrary(let library, let collection, _) = note {
-            let raw = rawSourceNote
-            libraryOutcome = await Task.detached(priority: .userInitiated) {
-                PresidentialLibraryOutcome.resolve(
-                    repository: library, collection: collection, note: raw)
-            }.value
-        }
+        // The sequence both twins run, once (`SourceExplorerResolution.resolved`): the authority record,
+        // the pre-1906 country series, which also reads a year the route did not pass, the document's
+        // day, the marking the index stores, the unprinted pointers, the related documents and the
+        // bundled library catalogue, in that order, none of which needs a key or the network. Each step's
+        // value is drawn as it lands, unless this load was cancelled: a key change mid-load would
+        // otherwise let the previous document's answer land on the next one.
+        let route = CountrySeriesRoute(header: documentHeader, dateline: documentDateline, year: documentYear,
+                                       volumeId: documentVolumeId, documentId: documentId)
+        let resolved = await start.resolved(
+            route: route, pipeline: indexingPipeline,
+            dependencies: .app(appState, volumeId: documentVolumeId)) { step in
+                guard !Task.isCancelled else { return }
+                resolution = step
+            }
+        // A load that was cancelled writes nothing more and asks NARA nothing: its live calls would land
+        // their results, or the cancellation's error, on the load that replaced it.
+        guard !Task.isCancelled else { return }
+        resolution = resolved
+        let note = resolved.parsed
+        let libraryOutcome = resolved.presidentialLibrary
 
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
@@ -2826,43 +2519,6 @@ struct SourceExplorerView: View {
         default:
             break
         }
-    }
-
-    /// Queries the local index for documents from the same archival collection.
-    ///
-    /// Routes through the same widened, anchor-excluding `archivalNeighbors(forVolumeId:
-    /// documentId:)` entry point the dedicated Archival Neighbors surfaces use, so this
-    /// inline list shows the **identical** set of OTHER documents for the same document
-    /// — the #217 "same set regardless of trigger" guarantee. This inline section stays
-    /// at the all-indexed default scope; the scope picker lives on the dedicated
-    /// neighbors window/sheet.
-    private func loadRelatedDocuments(for note: ParsedSourceNote) async {
-        guard let pipeline = indexingPipeline else { return }
-        relatedLoading = true
-        do {
-            let result: (documents: [IndexingPipeline.RelatedDocument], totalCount: Int)
-            if let volId = documentVolumeId, let docId = documentId {
-                // Anchored to an indexed document → the widened, anchor-excluding entry
-                // point, identical to the dedicated neighbors surfaces (#217 parity).
-                let r = try await pipeline.archivalNeighbors(
-                    forVolumeId: volId, documentId: docId, documentYear: effectiveYear)
-                result = (r.documents, r.totalCount)
-            } else {
-                // A source note explored without an indexed-document anchor: the
-                // note-keyed query, nothing to exclude.
-                result = try await pipeline.relatedDocuments(
-                    for: note, limit: 30, documentYear: effectiveYear,
-                    // The class a central-files citation is matched on is read from the note.
-                    rawCitation: rawSourceNote)
-            }
-            relatedDocs       = result.documents
-            relatedTotalCount = result.totalCount
-        } catch {
-            #if DEBUG
-            print("[SourceExplorer] Related documents query failed: \(error)")
-            #endif
-        }
-        relatedLoading = false
     }
 
     /// Executes an API operation and stores the results (or an error message).

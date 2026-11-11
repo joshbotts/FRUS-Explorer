@@ -152,7 +152,6 @@ struct ExternalCitationTests {
             """)
     }
 
-    #if !SWIFT_PACKAGE // SourceExplorerView.resolve(_:authority:) is the app's
     /// The stored rows carry **no authority id**, so the document section joins them at render time.
     /// Two things can go wrong and both are silent: a lot citation matching nothing when the
     /// authority holds it, and a presidential-library citation matching a *lot* record that happens
@@ -172,7 +171,7 @@ struct ExternalCitationTests {
             anchor: "lotFile", repository: nil, collection: nil,
             lotFile: lotNorm, lotFileNorm: lotNorm, fileId: nil,
             inherited: false, rawText: "Lot \(lotNorm)", noteOrdinal: 0)
-        #expect(SourceExplorerView.resolve(lotCitation, authority: authority)?.id
+        #expect(SourceExplorerResolution.UnprintedPointer.resolve(lotCitation, authority: authority)?.id
                 == authority.record(forLotNorm: lotNorm)?.id)
 
         // **The guard.** A library citation whose leading segment happens to match a lot record must
@@ -183,7 +182,7 @@ struct ExternalCitationTests {
             collection: "Papers of Clark M. Clifford", lotFile: nil, lotFileNorm: nil,
             fileId: "Box 15", inherited: false,
             rawText: "Truman Library, Papers of Clark M. Clifford", noteOrdinal: 1)
-        let resolved = SourceExplorerView.resolve(libraryCitation, authority: authority)
+        let resolved = SourceExplorerResolution.UnprintedPointer.resolve(libraryCitation, authority: authority)
         #expect(resolved?.id.hasPrefix("lot:") != true,
                 "a presidential-library citation resolved to a lot record — the #351 guard is off")
 
@@ -191,11 +190,9 @@ struct ExternalCitationTests {
         let empty = ExternalCitation(
             anchor: "lotFile", repository: nil, collection: nil, lotFile: nil, lotFileNorm: nil,
             fileId: nil, inherited: true, rawText: "Ibid.", noteOrdinal: 2)
-        #expect(SourceExplorerView.resolve(empty, authority: authority) == nil)
+        #expect(SourceExplorerResolution.UnprintedPointer.resolve(empty, authority: authority) == nil)
     }
-    #endif
 
-    #if !SWIFT_PACKAGE // SourceExplorerView.resolve(_:authority:) is the app's
     /// The join uses the collection's **leading segment**, because that is the level the authority
     /// clusters on — passing the whole comma-joined series name matches nothing.
     @MainActor
@@ -213,12 +210,11 @@ struct ExternalCitationTests {
             lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
             rawText: "…", noteOrdinal: 0)
         // Either it resolves to that record, or the guard refused it — never to something else.
-        if let hit = SourceExplorerView.resolve(deeper, authority: authority) {
+        if let hit = SourceExplorerResolution.UnprintedPointer.resolve(deeper, authority: authority) {
             #expect(hit.id == record.id,
                     "the leading segment matched a different record than the one it names")
         }
     }
-    #endif
 
     // MARK: - #1322: the label the volume printed
 
@@ -2015,34 +2011,28 @@ struct UnprintedMaterialRowTests {
         #expect(swept == 2, "the row sweep ran over \(swept) twins")
     }
 
-    /// The marker and the repeat numbers are only as good as the list that fixes them. Each twin's
-    /// loader builds its rows through `UnprintedPointer.list` — once, from the rows it read and the
-    /// note its load parsed — and never through the pointer's own initializer, which would compile
-    /// with an explicit `nil` note and number nothing. Both loaders are handed `note`, and the
-    /// section footer is the one declared on the pointer type.
-    @Test("Both twins build every row through the shared list, with the loaded source note, and share the footer")
+    /// The marker and the repeat numbers are only as good as the list that fixes them. The rows are
+    /// built once, by the sequence both twins run (`SourceExplorerResolution.unprintedPointers`), through
+    /// `UnprintedPointer.list` with the note the resolution parsed, which `SourceExplorerResolutionTests`
+    /// drives at run time; so neither twin builds a pointer, through the list or the pointer's own
+    /// initializer, which would compile with an explicit `nil` note and number nothing. Each reads the
+    /// resolution's rows, and the section footer is the one declared on the pointer type.
+    @Test("Neither twin builds a row itself: both read the resolution's rows, and share the footer")
     func bothTwinsCarryTheSourceNote() throws {
-        var loaders = 0
+        var twins = 0
         for path in [Self.iOSTwin, Self.macTwin] {
             let code = Self.code(try Self.source(path))
-            let loads = Self.calls(of: "loadUnprintedPointers", in: code)
-            #expect(!loads.isEmpty && loads.allSatisfy { $0 == "(sourceNote: note)" },
-                    "\(path): loadUnprintedPointers must be handed the parsed note — got \(loads)")
-            // The iOS file also declares the shared type, whose `list` calls the initializer, so
-            // the build checks are scoped to the loader's own body.
-            let loader = try Self.declaration("private func loadUnprintedPointers(", in: code, file: path)
-            let lists = Self.calls(of: "UnprintedPointer.list", in: loader)
-            #expect(lists == ["(rows, sourceNote: sourceNote)"],
-                    "\(path): the loader must build its rows once through UnprintedPointer.list — got \(lists)")
-            let inits = Self.calls(of: "UnprintedPointer", in: loader)
-            #expect(inits.isEmpty,
-                    "\(path): the loader builds a pointer outside the shared list: \(inits)")
-            loaders += 1
+            #expect(Self.calls(of: "UnprintedPointer.list", in: code).isEmpty,
+                    "\(path) builds its rows through the list itself")
+            let inits = Self.calls(of: "UnprintedPointer", in: code)
+            #expect(inits.isEmpty, "\(path) builds a pointer outside the shared sequence: \(inits)")
+            #expect(!code.contains("loadUnprintedPointers"), "\(path) still has a pointer loader of its own")
+            #expect(code.contains("resolution?.unprintedPointers"), "\(path) does not read the resolution's rows")
+            twins += 1
         }
-        #expect(loaders == 2, "the loader sweep ran over \(loaders) twins")
+        #expect(twins == 2, "the row sweep ran over \(twins) twins")
 
-        // The footer, scoped to each twin's section: the iOS file also hosts the shared type, so a
-        // file-wide search would find the one declaration this asserts both twins read.
+        // The footer, scoped to each twin's section, so it is read where the section draws it.
         var sections = 0
         for (path, signature) in [(Self.iOSTwin, "private var unprintedPointersSection:"),
                                   (Self.macTwin, "private var unprintedBox:")] {

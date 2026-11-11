@@ -28,6 +28,8 @@ import Foundation
 /// Version history:
 ///   1.0 — PV-3: initial implementation
 ///   1.1 — FRUSCoreKit, part 1: `roleEraSubtitle` is read from `FRUSCoreKit/TEI/FRUSASTNode.swift`
+///   1.2 — 2026-11-10: FRUS Explorer Light's S22b — the shared per-row rules are read from
+///         `FRUSCoreKit/SourceExplorer/SourceExplorerProvenance.swift`, where they moved
 @Suite("Provenance chip mounts")
 struct ProvenanceMountTests {
 
@@ -333,7 +335,7 @@ struct ProvenanceMountTests {
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift",
                      // P-1's shared per-row rules decide a source from values in scope; they must
                      // not start resolving it from the artifact a value was read out of either.
-                     "FRUSExplorer/SourceExplorer/SourceExplorerProvenance.swift"] {
+                     "FRUSCoreKit/SourceExplorer/SourceExplorerProvenance.swift"] {
             let file = try code(path)
             #expect(!file.contains("source(ofArtifact:"),
                     Comment(rawValue: "\(path) resolves a chip's source by filename"))
