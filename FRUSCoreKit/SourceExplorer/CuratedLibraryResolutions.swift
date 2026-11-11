@@ -28,25 +28,25 @@ import SourceNoteKit
 /// itself publishes one — some subgroups do (the LBJ National Security File is NAID 567979,
 /// Carter's White House Central File Subject File is 246607128), which is worth keeping because
 /// it lets those rows reuse the NARA affordance the lot resolutions already have.
-struct CuratedLibraryResolution: Codable, Sendable, Equatable, Identifiable {
+public struct CuratedLibraryResolution: Codable, Sendable, Equatable, Identifiable {
     /// The finding aid's own title, as the repository prints it. Shown rather than the FRUS
     /// shorthand so the researcher can confirm they are looking at the right collection —
     /// "Matlock Files" is the citation, "Matlock, Jack F., JR.: Files, 1983-1986" is the aid.
-    let title: String
+    public let title: String
     /// The finding aid. Always present; this is the point of the record.
-    let url: String
+    public let url: String
     /// NARA catalogue identifier, where the repository publishes one.
-    let naId: String?
+    public let naId: String?
     /// Why this destination, in the curator's words — shown so a researcher can judge the
     /// claim rather than trust it.
-    let rationale: String?
+    public let rationale: String?
 
-    var id: String { url }
+    public var id: String { url }
 
     /// The finding aid's URL, parsed once for `Link`/`openURL`.
-    var findingAid: URL? { URL(string: url) }
+    public var findingAid: URL? { URL(string: url) }
     /// The NARA catalogue record, when the repository publishes an identifier.
-    var catalogURL: URL? { naId.flatMap { URL(string: "https://catalog.archives.gov/id/\($0)") } }
+    public var catalogURL: URL? { naId.flatMap { URL(string: "https://catalog.archives.gov/id/\($0)") } }
 }
 
 // MARK: - CuratedLibraryResolutions
@@ -81,6 +81,9 @@ struct CuratedLibraryResolution: Codable, Sendable, Equatable, Identifiable {
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `CuratedLibraryResolutionsStore`, which
 ///          reads the app's bundle, stays in the app (`CuratedLibraryResolutionsStore.swift`)
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): `CuratedLibraryResolution` public, and
+///          `resolution(repository:collection:subCollection:)` and `subCollection(inNote:afterCollection:)`,
+///          which both Source Explorer views read while they draw, for a host that draws what they draw
 public struct CuratedLibraryResolutions: Codable, Sendable {
     /// Bumped when the entry shape changes.
     let schemaVersion: Int
@@ -141,7 +144,7 @@ public struct CuratedLibraryResolutions: Codable, Sendable {
     /// deliberately resolves to nothing for an unrecognized sub-collection — the Library of
     /// Congress row has no honest whole-row answer, and inventing one would be the
     /// repository-level link this work exists to remove.
-    func resolution(repository: String?, collection: String,
+    public func resolution(repository: String?, collection: String,
                     subCollection: String?) -> CuratedLibraryResolution? {
         let candidates = byCollection[Self.collectionKey(repository, collection)] ?? []
         guard !candidates.isEmpty else { return nil }
@@ -233,7 +236,7 @@ extension CuratedLibraryResolutions {
     /// from the raw note instead. The recovery is deliberately narrow: it fires only on a
     /// candidate ending in an initial, and only when the raw note's segment *extends* the
     /// truncated one, so anything else degrades to the value it produced before.
-    static func subCollection(inNote note: String, afterCollection collection: String) -> String? {
+    public static func subCollection(inNote note: String, afterCollection collection: String) -> String? {
         guard let candidate = segment(after: collection,
                                       in: SourceNoteParser.firstSentence(of: note))
         else { return nil }

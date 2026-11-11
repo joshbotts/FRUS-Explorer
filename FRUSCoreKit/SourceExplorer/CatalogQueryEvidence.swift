@@ -46,7 +46,9 @@ import SourceNoteKit
 ///          citation takes no catalogue query in any wording; `offersManualSearch(for:rawNote:)`,
 ///          the Mac window's rule for its free-text field
 ///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
-enum CatalogQueryEvidence: Sendable, Equatable {
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S22c): public, with the six members both Source Explorer views read
+///          while they draw, for a host that draws what they draw
+public enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// Every result carries the control number that was asked for, checked by
     /// `LotResolutionAcceptance`. The only branch that may be presented as a resolution.
@@ -69,7 +71,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     /// search on its block's name — "Central Files 1970–73" — which cannot find a central file:
     /// the central files have no item-level catalogue record. Both views show it the
     /// Subject-Numeric panel instead.
-    static func forNote(_ note: ParsedSourceNote, rawNote: String) -> CatalogQueryEvidence? {
+    public static func forNote(_ note: ParsedSourceNote, rawNote: String) -> CatalogQueryEvidence? {
         if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawNote) { return nil }
         switch note {
         case .lotFile:
@@ -90,7 +92,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     ///
     /// Here rather than in `MacSourceExplorerView` so the rule is tested: the Mac view is not
     /// compiled into the test target's host.
-    static func offersManualSearch(for note: ParsedSourceNote?, rawNote: String) -> Bool {
+    public static func offersManualSearch(for note: ParsedSourceNote?, rawNote: String) -> Bool {
         guard let note else { return false }
         if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawNote) { return false }
         switch note {
@@ -100,7 +102,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     }
 
     /// Whether results may be headed and worded as the answer rather than as candidates.
-    var isVerified: Bool { self == .controlNumberVerified }
+    public var isVerified: Bool { self == .controlNumberVerified }
 
     /// The caveat a **durable copy** of a result must carry, or `nil` when the result was
     /// verified and needs none.
@@ -127,7 +129,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     ///     automatic lookup. Takes precedence — the manual query is the actual producer, and
     ///     naming the automatic query's constraint would describe a query these rows did not
     ///     come from.
-    static func exportCaveat(evidence: CatalogQueryEvidence?,
+    public static func exportCaveat(evidence: CatalogQueryEvidence?,
                              isManualSearch: Bool) -> String? {
         if isManualSearch {
             return String(localized: "source.explorer.manualSearch.exportCaveat",
@@ -143,7 +145,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// The section heading. Unverified results say "Candidate" in the heading itself, because
     /// a caveat below the rows is read after the rows and often not at all.
-    var sectionTitle: String {
+    public var sectionTitle: String {
         isVerified
             ? String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")
             : String(localized: "source.explorer.nara.candidates.header",
@@ -152,7 +154,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// What the query actually constrained, in the researcher's terms — stated so they can
     /// judge the rows rather than trust them. `nil` for the verified branch, which needs none.
-    var caveat: String? {
+    public var caveat: String? {
         switch self {
         case .controlNumberVerified:
             return nil

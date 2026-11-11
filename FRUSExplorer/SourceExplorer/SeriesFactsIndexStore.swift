@@ -20,6 +20,8 @@ import Foundation
 ///   1.0 — Session 2026-08-10: #405 (F-6)
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): in a file of its own, since the index it
 ///          loads is FRUSCoreKit's (`SeriesFactsIndex.swift`) and the kit never reads the app's bundle
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): `SeriesFactsIndex.facts(for:)` and `creatorName(for:)`
+///          pass the two stores to the kit's forms, which take the indexes; their rule moved there whole
 enum SeriesFactsIndexStore {
 
     /// The bundled index, or `nil` when the resource is missing or malformed.
@@ -49,33 +51,15 @@ enum SeriesFactsIndexStore {
 
 extension SeriesFactsIndex {
 
-    /// The creating body to show for a bundled lot entry, or `nil`.
-    ///
-    /// Three guards, each protecting against showing a true fact about the wrong record:
-    ///
-    /// 1. **Series level only.** `bundledLotSection` renders file-unit entries too, and a file
-    ///    unit borrows its series title from its parent (`displaySeriesTitle`). NARA puts
-    ///    `creators` on the series alone, so a creator found for a file-unit NAID would be either
-    ///    absent or — worse — the parent's, presented as the cited record's.
-    /// 2. **Not an untrustworthy NAID.** `#351` established that some bundled NAIDs point at the
-    ///    wrong collection entirely; `CentralFilesIndex.isUntrustworthyNAID` is the standing list.
-    ///    A creator attached to one of those would dress a known-bad resolution in new detail.
-    /// 3. **Not the record group.** A record-group node's creator is "Department of State" for
-    ///    three-quarters of the corpus — true, and useless. This index only holds series, so the
-    ///    guard is structural rather than a filter, but it is why the line stays absent on the
-    ///    decimal-file mass instead of repeating one label everywhere.
-    /// NARA's catalogue facts for a bundled lot entry, under the same guards as the creator.
+    /// ``facts(for:centralFiles:seriesFacts:)``, FRUSCoreKit's, over the app's bundled central-files and
+    /// series-facts indexes (`CentralFilesIndexStore`, `SeriesFactsIndexStore`); the second loads only
+    /// once the guards pass, as it did when this function read both stores itself.
     static func facts(for entry: LotFileEntry) -> Facts? {
-        guard shouldShow(isSeriesLevel: entry.isSeriesLevel,
-                         untrustworthyFlag: CentralFilesIndexStore.shared?
-                             .isUntrustworthyNAID(entry.naId)) else { return nil }
-        return SeriesFactsIndexStore.shared?.facts(forNaId: entry.naId)
+        facts(for: entry, centralFiles: CentralFilesIndexStore.shared, seriesFacts: SeriesFactsIndexStore.shared)
     }
 
+    /// ``creatorName(for:centralFiles:seriesFacts:)``, FRUSCoreKit's, over the same two stores.
     static func creatorName(for entry: LotFileEntry) -> String? {
-        guard shouldShow(isSeriesLevel: entry.isSeriesLevel,
-                         untrustworthyFlag: CentralFilesIndexStore.shared?
-                             .isUntrustworthyNAID(entry.naId)) else { return nil }
-        return SeriesFactsIndexStore.shared?.creator(forNaId: entry.naId)
+        creatorName(for: entry, centralFiles: CentralFilesIndexStore.shared, seriesFacts: SeriesFactsIndexStore.shared)
     }
 }

@@ -33,6 +33,10 @@ import Foundation
 ///          with `ArchivalResolver` and `ArchivalResolution`
 ///   1.3 — 2026-11-10 (FRUS Explorer Light, S22b): `CentralFilesSeriesCategory` and `CountryRoll` public, since a country
 ///          series' homes hold them
+///   1.4 — 2026-11-11 (FRUS Explorer Light, S22c): `numericalFile`, `NumericalFileIndex` with its rolls and
+///          `NumericalFileRoll` public, and the Numerical File's two catalogue links, `numericalFileSeriesURL`
+///          and `cardIndexURL`, `NumericalFileIndex`'s, moved from `CentralFilesIndexStore`, which forwards;
+///          both Source Explorer views read them while they draw, and a host draws what they draw
 public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
@@ -42,7 +46,7 @@ public struct CentralFilesIndex: Codable, Sendable, Equatable {
     var generated: String
 
     /// The 1906–1910 Numerical File component.
-    var numericalFile: NumericalFileIndex
+    public var numericalFile: NumericalFileIndex
 
     /// The country-arranged diplomatic series (Phase 2). Empty for a Phase 1-only index.
     var countrySeries: [CountrySeriesIndex]
@@ -390,16 +394,23 @@ public struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: initial implementation
-struct NumericalFileIndex: Codable, Sendable, Equatable {
+public struct NumericalFileIndex: Codable, Sendable, Equatable {
 
     /// NARA series NAID for the Numerical File (`654171`).
-    var seriesNaId: String
+    public var seriesNaId: String
 
     /// Microfilm publication number (`M862`).
-    var microfilm: String
+    public var microfilm: String
 
     /// All digitized rolls, ascending by `caseStart`.
-    var rolls: [NumericalFileRoll]
+    public var rolls: [NumericalFileRoll]
+
+    /// NARA Catalog record for the Numerical File series (M862, NAID 654171).
+    public static let numericalFileSeriesURL = URL(string: "https://catalog.archives.gov/id/654171")!
+
+    /// NARA Catalog record for the Card Index to the Numerical File (M1889, NAID 656824),
+    /// the finding aid that resolves names/subjects to case numbers.
+    public static let cardIndexURL = URL(string: "https://catalog.archives.gov/id/656824")!
 }
 
 // MARK: - NumericalFileRoll
@@ -408,28 +419,28 @@ struct NumericalFileIndex: Codable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: initial implementation
-struct NumericalFileRoll: Codable, Sendable, Equatable, Identifiable {
+public struct NumericalFileRoll: Codable, Sendable, Equatable, Identifiable {
 
     /// NARA item NAID for this roll (e.g. `19779414`).
-    var naId: String
+    public var naId: String
 
     /// Roll title exactly as shown in the catalog (e.g. `Numerical File: 7179-7187`).
-    var title: String
+    public var title: String
 
     /// First (lowest) case number on the roll, inclusive.
-    var caseStart: Int
+    public var caseStart: Int
 
     /// Last (highest) case number on the roll, inclusive.
-    var caseEnd: Int
+    public var caseEnd: Int
 
     /// Deep link to the roll's NARA Catalog record (page-by-page image/PDF viewer).
-    var catalogURL: String
+    public var catalogURL: String
 
     /// Stable identity for SwiftUI lists.
-    var id: String { naId }
+    public var id: String { naId }
 
     /// Returns `true` when `caseNumber` falls within `[caseStart, caseEnd]` inclusive.
-    func contains(caseNumber: Int) -> Bool {
+    public func contains(caseNumber: Int) -> Bool {
         caseNumber >= caseStart && caseNumber <= caseEnd
     }
 }
@@ -443,7 +454,7 @@ extension NumericalFileIndex {
     /// A single case is frequently split across two or three consecutive rolls (when its
     /// sub-documents overflow a roll), so the UI should surface all matching rolls as
     /// page-by-page targets. Empty means the case falls in a coverage gap.
-    func rolls(containingCaseNumber caseNumber: Int) -> [NumericalFileRoll] {
+    public func rolls(containingCaseNumber caseNumber: Int) -> [NumericalFileRoll] {
         rolls.filter { $0.contains(caseNumber: caseNumber) }
     }
 
@@ -452,7 +463,7 @@ extension NumericalFileIndex {
     /// Parses the leading integer case number and ignores any `/NN` sub-document suffix
     /// and trailing punctuation (`"697/43"` → case 697). Empty means no digit could be
     /// parsed or the case falls in a coverage gap.
-    func rolls(forFileNumber fileNumber: String) -> [NumericalFileRoll] {
+    public func rolls(forFileNumber fileNumber: String) -> [NumericalFileRoll] {
         guard let caseNumber = CentralFilesIndex.caseNumber(fromFileNumber: fileNumber) else {
             return []
         }

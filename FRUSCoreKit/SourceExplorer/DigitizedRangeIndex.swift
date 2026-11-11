@@ -14,29 +14,29 @@ import Foundation
 ///
 /// The app-side mirror of `DigitizedRangeIndexGeneratorCore.DigitizedRange`; the JSON is the
 /// contract between them.
-struct DigitizedRange: Codable, Sendable, Equatable, Identifiable {
+public struct DigitizedRange: Codable, Sendable, Equatable, Identifiable {
     /// The decimal class, lower-cased and dot-normalised (`763.72119`).
-    let decimalClass: String
+    public let decimalClass: String
     /// First and last document serial the file unit's title claims, inclusive.
-    let low: Int
-    let high: Int
+    public let low: Int
+    public let high: Int
     /// The file unit's NARA Archival Identifier.
-    let naId: String
+    public let naId: String
     /// How many scanned images the unit holds.
-    let objectCount: Int
+    public let objectCount: Int
     /// The scan's own URL on `catalog.archives.gov`, when the unit publishes one.
-    let objectUrl: String?
+    public let objectUrl: String?
     /// The scan's filename, which names the microfilm publication and roll
     /// (`M367_Roll20.pdf`) — often the most legible thing about the record.
-    let objectFilename: String?
+    public let objectFilename: String?
     /// NARA's own title for the range, shown verbatim rather than reconstructed.
-    let title: String
+    public let title: String
 
-    var id: String { naId }
+    public var id: String { naId }
 
     /// The file unit's catalog record — always offered, because it is the page with the image
     /// viewer on it.
-    var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
+    public var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
 
     /// The direct scan link, **only when it is a whole microfilm roll**.
     ///
@@ -45,14 +45,14 @@ struct DigitizedRange: Codable, Sendable, Equatable, Identifiable {
     /// unit, and sending a researcher to one frame of 802 is worse than sending them to the
     /// viewer that holds all of them. So the direct link is withheld there rather than made
     /// to look equivalent.
-    var rollPDFURL: URL? {
+    public var rollPDFURL: URL? {
         guard let objectUrl, let objectFilename,
               objectFilename.lowercased().hasSuffix(".pdf") else { return nil }
         return URL(string: objectUrl)
     }
 
     /// Whether `serial` falls inside this range.
-    func contains(serial: Int) -> Bool { serial >= low && serial <= high }
+    public func contains(serial: Int) -> Bool { serial >= low && serial <= high }
 }
 
 // MARK: - DigitizedRangeMatch
@@ -66,7 +66,7 @@ struct DigitizedRange: Codable, Sendable, Equatable, Identifiable {
 /// NARA's digitisation is layered, not because its titles disagree. A single file unit,
 /// `763.72/354-13348A`, spans 12,994 serials and overlaps every narrow roll in the class. So a
 /// multi-range answer lists them narrowest first and claims nothing about which is *the* one.
-enum DigitizedRangeMatch: Sendable, Equatable {
+public enum DigitizedRangeMatch: Sendable, Equatable {
     /// Exactly one digitised range claims this serial.
     case resolved(DigitizedRange)
     /// More than one claims it, **narrowest first**.
@@ -115,6 +115,9 @@ enum DigitizedRangeMatch: Sendable, Equatable {
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `DigitizedRangeIndexStore`, which
 ///          reads the app's bundle, stays in the app (`DigitizedRangeIndexStore.swift`)
+///   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): `DigitizedRange` and `DigitizedRangeMatch` public, and
+///          `match(decimalClass:serial:)` and `classAndSerial(fromFileIdentifier:)`, which both Source Explorer
+///          views read while they draw, for a host that draws what they draw
 public struct DigitizedRangeIndex: Codable, Sendable {
     let schemaVersion: Int
     let generated: String
@@ -145,7 +148,7 @@ public struct DigitizedRangeIndex: Codable, Sendable {
     /// - Parameters:
     ///   - decimalClass: The citation's class as `document_sources.decimal_class` stores it.
     ///   - serial: The document serial after the `/`.
-    func match(decimalClass: String, serial: Int) -> DigitizedRangeMatch {
+    public func match(decimalClass: String, serial: Int) -> DigitizedRangeMatch {
         let key = Self.canonicalClass(decimalClass)
         guard let candidates = byClass[key], !candidates.isEmpty else { return .none }
         let hits = candidates.filter { $0.contains(serial: serial) }
@@ -171,7 +174,7 @@ public struct DigitizedRangeIndex: Codable, Sendable {
     /// `763.72/1476` → `("763.72", 1476)`. A citation with no serial after the slash cannot be
     /// placed in a range, and gets `nil` rather than being matched on class alone — the class
     /// is not the document.
-    static func classAndSerial(fromFileIdentifier identifier: String) -> (String, Int)? {
+    public static func classAndSerial(fromFileIdentifier identifier: String) -> (String, Int)? {
         guard let match = citationRegex?.firstMatch(
             in: identifier, range: NSRange(identifier.startIndex..., in: identifier)),
               let classRange = Range(match.range(at: 1), in: identifier),

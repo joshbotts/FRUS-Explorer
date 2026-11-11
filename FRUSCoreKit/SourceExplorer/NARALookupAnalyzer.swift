@@ -8,21 +8,25 @@
 
 // `SourceNoteKit` is compiled INTO the app target through project.yml's source glob
 // (the FTS5Store/WordCloudKit pattern), so its types are already in this module — an
-// `import SourceNoteKit` here fails to resolve.
+// `import SourceNoteKit` there fails to resolve, and is guarded for the app's build. In the
+// package, FRUSCoreKit imports it as the module it is.
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - NARALookupCandidate
 
 /// One reading of the reader's selection: what to search for, where to search, and — when the
 /// bundled indexes can already answer — the NARA record itself.
-struct NARALookupCandidate: Identifiable, Sendable, Equatable {
+public struct NARALookupCandidate: Identifiable, Sendable, Equatable {
 
     /// Where in the reader's text this candidate was found.
     ///
     /// The distinction drives ranking, not display: a citation inside the selected characters is
     /// what the reader pointed at, while one recovered from the surrounding sentences is context
     /// the app volunteered. Both are offered; the first is offered first.
-    enum Origin: Sendable, Equatable {
+    public enum Origin: Sendable, Equatable {
         /// Found in the characters the reader actually selected.
         case selection
         /// Found in the passage around the selection.
@@ -31,22 +35,22 @@ struct NARALookupCandidate: Identifiable, Sendable, Equatable {
 
     /// Stable identity for `ForEach` — the query plus the strategy, since the same lot may be
     /// reachable under two strategies and both rows are meaningful.
-    var id: String { "\(strategy.rawValue)|\(query)" }
+    public var id: String { "\(strategy.rawValue)|\(query)" }
 
     /// What the reader sees on the row — the citation as printed, not a normalised key.
-    let label: String
+    public let label: String
     /// The text handed to the search field / catalog query.
-    let query: String
+    public let query: String
     /// Where this candidate should be looked up.
-    let strategy: LookupStrategy
+    public let strategy: LookupStrategy
     /// Whether this came from the selection or its surroundings.
-    let origin: Origin
+    public let origin: Origin
     /// The NARA record the bundled indexes already resolve for this candidate, when they do.
     ///
     /// This is the whole point of #235's "candidate resolutions": a lot the app has shipped an
     /// answer for since #372 should show that answer immediately, with no API key and no network,
     /// rather than sending the reader to a search field to find what the bundle already holds.
-    let resolution: ArchivalResolution?
+    public let resolution: ArchivalResolution?
 }
 
 // MARK: - NARALookupAnalyzer
@@ -80,7 +84,10 @@ struct NARALookupCandidate: Identifiable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-20: #235
-enum NARALookupAnalyzer {
+///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public; `candidates` takes the three
+///          indexes it was defaulted to, and the app's two-argument overload passes its stores
+///          (`NARALookupAnalyzer+App.swift`)
+public enum NARALookupAnalyzer {
 
     /// How far around the selection the caller should widen, in UTF-16 units.
     ///
@@ -89,9 +96,9 @@ enum NARALookupAnalyzer {
     /// window reaches further back than forward. It is a window and not a sentence scan because
     /// the flat text has no reliable sentence bound — `SourceNoteParser`'s own comment records
     /// that footnote prose defeats sentence bounding.
-    static let contextBefore = 320
+    public static let contextBefore = 320
     /// Forward reach, in UTF-16 units.
-    static let contextAfter = 160
+    public static let contextAfter = 160
 
     /// Ranked candidates for a selection and its surrounding passage.
     ///
@@ -99,17 +106,18 @@ enum NARALookupAnalyzer {
     ///   - selection: The characters the reader selected.
     ///   - context: The surrounding passage, when the caller could supply one.
     ///   - centralFiles: The bundled central-files index; injected so tests need no app bundle.
+    ///     The app's overload without the three indexes passes its stores.
     ///   - volumeSources: The bundled volume-sources index, for the same reason.
     ///   - claimants: The bundled divided-lot claimants index (#1205). Passed explicitly rather
     ///     than left to the resolver, because this surface uses the *injected* resolver overload,
     ///     whose `claimants` default is inert `nil` so no test silently couples to the bundle.
     /// - Returns: Candidates, best first. Empty when nothing in the text is recognisable, which is
     ///   when the sheet falls back to the manual field the issue asks to keep.
-    static func candidates(selection: String,
-                           context: String?,
-                           centralFiles: CentralFilesIndex? = CentralFilesIndexStore.shared,
-                           volumeSources: VolumeSourcesIndex? = VolumeSourcesIndexStore.shared,
-                           claimants: LotClaimantsIndex? = LotClaimantsIndexStore.shared)
+    public static func candidates(selection: String,
+                                  context: String?,
+                                  centralFiles: CentralFilesIndex?,
+                                  volumeSources: VolumeSourcesIndex?,
+                                  claimants: LotClaimantsIndex?)
         -> [NARALookupCandidate] {
         var out: [NARALookupCandidate] = []
         var seen = Set<String>()

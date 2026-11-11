@@ -106,7 +106,9 @@ import SourceNoteKit
 ///   1.0 — Session 2026-08-07: #354 item 4, repository-level finding-aid guidance
 ///   1.1 — Session 2026-08-23: three moved URLs re-pointed; `.redirectTarget` added
 ///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
-enum ManuscriptRepositoryGuidance {
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S22c): public, with `Entry` and the three members both Source
+///          Explorer views read while they draw, for a host that draws what they draw
+public enum ManuscriptRepositoryGuidance {
 
     // MARK: - Verification
 
@@ -142,22 +144,22 @@ enum ManuscriptRepositoryGuidance {
     // MARK: - Entry
 
     /// One repository the National Archives does not administer, and where its records are.
-    struct Entry: Sendable, Equatable, Identifiable {
+    public struct Entry: Sendable, Equatable, Identifiable {
         /// The repository's own name today.
-        let name: String
+        public let name: String
         /// What FRUS calls it, when that is no longer the institution's name. `nil` when the
         /// citation's spelling and the current name agree.
-        let formerName: String?
+        public let formerName: String?
         /// One line on what the repository holds and where — enough to decide whether to go.
-        let holdings: String
+        public let holdings: String
         /// The repository's finding-aid or archives page.
-        let url: URL?
+        public let url: URL?
         /// How `url` was confirmed.
         let verification: Verification
         /// The spellings the corpus uses, folded through the shared normalizers at lookup.
         let spellings: [String]
 
-        var id: String { name }
+        public var id: String { name }
     }
 
     // MARK: - The table
@@ -311,7 +313,7 @@ enum ManuscriptRepositoryGuidance {
     /// Callers must have established that the repository is **outside** NARA custody first
     /// (`NARACustody.mayQueryCatalog(forRepository:)`); this table says nothing about whether
     /// the National Archives holds the records, only where these particular repositories are.
-    static func guidance(forRepository repository: String?) -> Entry? {
+    public static func guidance(forRepository repository: String?) -> Entry? {
         guard let repository, !repository.trimmingCharacters(in: .whitespaces).isEmpty,
               let canonical = CollectionKeying.canonicalRepository(repository)
         else { return nil }
@@ -327,13 +329,13 @@ enum ManuscriptRepositoryGuidance {
     }
 
     /// Row label for a repository that has been renamed since the citation was written.
-    static var citedAsLabel: String {
+    public static var citedAsLabel: String {
         String(localized: "source.explorer.repositoryGuidance.citedAs",
                defaultValue: "Cited here as")
     }
 
     /// The link's title, naming the destination so it can be judged before it is opened.
-    static func linkLabel(_ entry: Entry) -> String {
+    public static func linkLabel(_ entry: Entry) -> String {
         String(localized: "source.explorer.repositoryGuidance.link",
                defaultValue: "Open \(entry.name)")
     }
