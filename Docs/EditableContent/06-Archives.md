@@ -995,7 +995,7 @@ A named collection is a body of records with a custodian. A central-file class i
 
 *Shown while the pre-1906 check runs, when it found no roll, and when it resolved. When the check did not run, or does not apply, the left column shows one of the two blocks below instead.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1852–1853 | key: source.explorer.noNote.body -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1855–1856 | key: source.explorer.noNote.body -->
 
 This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right.
 
@@ -1007,7 +1007,7 @@ This document has no archival source note. Its likely filing is predicted from i
 
 *Shown only in that one state. While the check runs, when it could not run, and for a document from 1906 on, the section shows the sentences in the blocks that follow instead — each of which would make this one false.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1821–1822 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1824–1825 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter.
 
@@ -1017,7 +1017,7 @@ This document carries no archival source note, and its exact filing couldn’t b
 
 #### No source note — the left column, when the check did not run (macOS)
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1846–1847 | key: source.explorer.noNote.body.notChecked -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1849–1850 | key: source.explorer.noNote.body.notChecked -->
 
 This document has no archival source note, and its likely filing has not been checked — the right column says why.
 
@@ -1027,7 +1027,7 @@ This document has no archival source note, and its likely filing has not been ch
 
 #### No source note — the left column, for a document from 1906 on (macOS)
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1849–1850 | key: source.explorer.noNote.body.notApplicable -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1852–1853 | key: source.explorer.noNote.body.notApplicable -->
 
 This document has no archival source note. Roll suggestions cover only documents from before 1906.
 
@@ -1037,7 +1037,7 @@ This document has no archival source note. Roll suggestions cover only documents
 
 #### Pre-1906 check — while it runs
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1211–1212 | key: source.explorer.countrySeries.state.loading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1212–1213 | key: source.explorer.countrySeries.state.loading | shared: iOS+macOS (single edit point) -->
 
 Checking the digitized pre-1906 records for this document…
 
@@ -1047,7 +1047,7 @@ Checking the digitized pre-1906 records for this document…
 
 #### Pre-1906 check — a document from 1906 on, where it does not apply
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1217–1218 | key: source.explorer.countrySeries.state.notApplicable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1218–1219 | key: source.explorer.countrySeries.state.notApplicable | shared: iOS+macOS (single edit point) -->
 
 This document carries no archival source note. Roll suggestions cover documents from before 1906, when the Department filed its correspondence by country, so none is offered for a later document.
 
@@ -1057,7 +1057,7 @@ This document carries no archival source note. Roll suggestions cover documents 
 
 #### Pre-1906 check not run — the search index is still starting
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1162–1163 | key: source.explorer.countrySeries.state.notChecked.indexStarting | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1163–1164 | key: source.explorer.countrySeries.state.notChecked.indexStarting | shared: iOS+macOS (single edit point) -->
 
 Not checked yet — the search index is still starting. This section fills in when it is ready.
 
@@ -1067,7 +1067,7 @@ Not checked yet — the search index is still starting. This section fills in wh
 
 #### Pre-1906 check not run — no document to look up
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1165–1166 | key: source.explorer.countrySeries.state.notChecked.noDocumentIdentity | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1166–1167 | key: source.explorer.countrySeries.state.notChecked.noDocumentIdentity | shared: iOS+macOS (single edit point) -->
 
 Not checked — Source Explorer was opened without a document to look up, so there is no dateline or FRUS chapter to read.
 
@@ -1077,7 +1077,7 @@ Not checked — Source Explorer was opened without a document to look up, so the
 
 #### Pre-1906 check not run — the search index could not be read
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1168–1169 | key: source.explorer.countrySeries.state.notChecked.indexReadFailed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1169–1170 | key: source.explorer.countrySeries.state.notChecked.indexReadFailed | shared: iOS+macOS (single edit point) -->
 
 Not checked — the search index could not be read. Close Source Explorer and open it again.
 
@@ -1087,7 +1087,7 @@ Not checked — the search index could not be read. Close Source Explorer and op
 
 #### Pre-1906 check not run — the document is not indexed
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1171–1172 | key: source.explorer.countrySeries.state.notChecked.documentNotIndexed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1172–1173 | key: source.explorer.countrySeries.state.notChecked.documentNotIndexed | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document is not in the search index on this device, so its dateline and FRUS chapter could not be read.
 
@@ -1097,7 +1097,7 @@ Not checked — this document is not in the search index on this device, so its 
 
 #### Pre-1906 check not run — no dateline
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1174–1175 | key: source.explorer.countrySeries.state.notChecked.noDateline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1175–1176 | key: source.explorer.countrySeries.state.notChecked.noDateline | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document prints no dateline, and the dateline is what places a pre-1906 document in a series.
 
@@ -1107,7 +1107,7 @@ Not checked — this document prints no dateline, and the dateline is what place
 
 #### Pre-1906 check not run — no year
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1177–1178 | key: source.explorer.countrySeries.state.notChecked.noYear | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1178–1179 | key: source.explorer.countrySeries.state.notChecked.noYear | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document’s dateline gives no year, so no roll’s dates can be compared.
 
@@ -1117,7 +1117,7 @@ Not checked — this document’s dateline gives no year, so no roll’s dates c
 
 #### Pre-1906 check not run — the roll list did not load
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1180–1181 | key: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1181–1182 | key: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing | shared: iOS+macOS (single edit point) -->
 
 Not checked — the app’s list of digitized rolls could not be loaded.
 
@@ -1127,7 +1127,7 @@ Not checked — the app’s list of digitized rolls could not be loaded.
 
 #### Pre-1906 check not run — no chapter structure
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1183–1184 | key: source.explorer.countrySeries.state.notChecked.noVolumeStructure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1184–1185 | key: source.explorer.countrySeries.state.notChecked.noVolumeStructure | shared: iOS+macOS (single edit point) -->
 
 Not checked — this volume’s chapters are not in the search index on this device, and the chapter is what names the country.
 
@@ -1137,7 +1137,7 @@ Not checked — this volume’s chapters are not in the search index on this dev
 
 #### Pre-1906 check not run — the document is not in its volume's chapters
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1186–1187 | key: source.explorer.countrySeries.state.notChecked.documentNotInStructure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1187–1188 | key: source.explorer.countrySeries.state.notChecked.documentNotInStructure | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document was not found among its volume’s chapters, so no chapter names its country.
 
@@ -1147,7 +1147,7 @@ Not checked — this document was not found among its volume’s chapters, so no
 
 #### No source note — the diplomatic series
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1863–1864 | key: source.explorer.noNote.series.diplomatic | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1866–1867 | key: source.explorer.noNote.series.diplomatic | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Documents of this era are held in the country-arranged diplomatic series (Despatches and Instructions) at the National Archives, Record Group 59.
 
@@ -1157,7 +1157,7 @@ Documents of this era are held in the country-arranged diplomatic series (Despat
 
 #### No source note — the numerical file
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1866–1867 | key: source.explorer.noNote.series.numerical | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1869–1870 | key: source.explorer.noNote.series.numerical | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Documents of this era are filed in the 1906–1910 Numerical File at the National Archives, Record Group 59, arranged by case number rather than by country or date.
 
@@ -1167,7 +1167,7 @@ Documents of this era are filed in the 1906–1910 Numerical File at the Nationa
 
 #### The note parsed, but carries no lookup key
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1620–1621 | key: source.explorer.noKey.explanation.mac | shared: macOS (a key of its own since #1483; the iOS text is the next block) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1642–1643 | key: source.explorer.noKey.explanation.mac | shared: macOS (a key of its own since #1483; the iOS text is the next block) -->
 
 A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings ▸ Connections.
 
@@ -1185,7 +1185,7 @@ A free NARA Catalog API key is required to search for lot file and Presidential 
 
 #### The citation form was not recognized
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1210–1211 | key: source.explorer.unrecognized.explanation | shared: iOS+macOS (one text in both views since #1483; SourceExplorerView.swift declares it too — the raw note sits under the Source Note heading in each) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1232–1233 | key: source.explorer.unrecognized.explanation | shared: iOS+macOS (one text in both views since #1483; SourceExplorerView.swift declares it too — the raw note sits under the Source Note heading in each) -->
 
 The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry.
 
@@ -1209,7 +1209,7 @@ Open a document with a source note, then click Sources in its Research rail. Or 
 
 #### Requesting a decimal-file record from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 738–739 | key: source.explorer.centralFiles.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 760–761 | key: source.explorer.centralFiles.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 To request the original record from NARA, give them the decimal file number above. Add any telegram serial number, the from/to information, and the document’s date from the source note. Archivists use these details to find the record within the file.
 
@@ -1219,7 +1219,7 @@ To request the original record from NARA, give them the decimal file number abov
 
 #### Which filing period a decimal number belongs to
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2235–2236 | key: source.explorer.decimalPeriod.hint | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2160–2161 | key: source.explorer.decimalPeriod.hint | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Purport indexes and the filing manual for this period are available on the linked NARA page. Box lists are available on-site at the National Archives at College Park.
 
@@ -1231,7 +1231,7 @@ Purport indexes and the filing manual for this period are available on the linke
 
 *#1543: a Subject-Numeric citation (February 1963–1973) has its own panel in every wording, through the Department or through the National Archives. Its rows are short labels with no block: “State Dept. Subject-Numeric File (February 1963–1973)”, “File Designation”, “File Years” and, for the Filing Period row, “February 1963–1973 (Subject-Numeric File)”.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 658–659 | key: source.explorer.subjectNumeric.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 680–681 | key: source.explorer.subjectNumeric.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 To request the original record from NARA, give them the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box.
 
@@ -1243,7 +1243,7 @@ To request the original record from NARA, give them the file designation above a
 
 *The second sentence is yours, from the decimal-file hint above.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 709–710 | key: source.explorer.subjectNumeric.hint | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 731–732 | key: source.explorer.subjectNumeric.hint | shared: iOS+macOS (the same key in both views — edit both) -->
 
 The filing handbooks are on the linked NARA page: the 1963 handbook for 1963 and the 1965 handbook for 1964–1973. Box lists are available on-site at the National Archives at College Park.
 
@@ -1253,7 +1253,7 @@ The filing handbooks are on the linked NARA page: the 1963 handbook for 1963 and
 
 #### The Central Foreign Policy File
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1185–1186 | key: source.explorer.cfpf.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1207–1208 | key: source.explorer.cfpf.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) printouts at NARA and as P-Reel index descriptions and electronic telegrams in the AAD database. No API key is required for either resource.
 
@@ -1263,7 +1263,7 @@ CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) printouts at
 
 #### Requesting a CFPF record from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 900–901 | key: source.explorer.cfpf.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 922–923 | key: source.explorer.cfpf.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 To request the original record from NARA, give them the file identifier above. Add any telegram channel and serial numbers, the from/to information, and the document’s date from the source note.
 
@@ -1273,7 +1273,7 @@ To request the original record from NARA, give them the file identifier above. A
 
 #### The 1906–1910 Numerical File — roll found
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2170–2171 | key: source.explorer.numericalFile.found | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2095–2096 | key: source.explorer.numericalFile.found | shared: iOS+macOS (the same key in both views — edit both) -->
 
 These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case.
 
@@ -1283,7 +1283,7 @@ These digitized rolls hold File No. \(fileIdentifier). Open one and review the i
 
 #### The 1906–1910 Numerical File — no roll covers it
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2149–2150 | key: source.explorer.numericalFile.gap | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2074–2075 | key: source.explorer.numericalFile.gap | shared: iOS+macOS (the same key in both views — edit both) -->
 
 No digitized roll directly covers this file number. Use the Card Index to confirm the case number, then browse the Numerical File series.
 
@@ -1295,7 +1295,7 @@ No digitized roll directly covers this file number. Use the Card Index to confir
 
 #### Requesting a lot file from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1420–1421 | key: source.explorer.lotFile.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1442–1443 | key: source.explorer.lotFile.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 When requesting the original records from NARA, cite the HMS/MLR entry number together with the lot number — it is the identifier archives staff use to locate the series.
 
@@ -1305,7 +1305,7 @@ When requesting the original records from NARA, cite the HMS/MLR entry number to
 
 #### Resolved from the bundled lot index
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1425–1426 | key: source.explorer.lotFile.bundled.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1447–1448 | key: source.explorer.lotFile.bundled.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page.
 
@@ -1315,7 +1315,7 @@ Resolved from the bundled index — no API key required. Records may be describe
 
 #### HMS / MLR entry numbers
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1406–1407 | key: source.explorer.lotFile.hmsMlr.series.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1428–1429 | key: source.explorer.lotFile.hmsMlr.series.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 These entry numbers identify the enclosing file series, not this specific file unit.
 
@@ -1325,7 +1325,7 @@ These entry numbers identify the enclosing file series, not this specific file u
 
 #### A possible match, not a confirmed one
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1501–1502 | key: source.explorer.curatedLot.possible.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1523–1524 | key: source.explorer.curatedLot.possible.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This match was made by collection name, not by a catalog control number. Confirm the lot number against the series before citing it.
 
@@ -1335,7 +1335,7 @@ This match was made by collection name, not by a catalog control number. Confirm
 
 #### Several candidate lots
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1553–1554 | key: source.explorer.curatedLot.candidates.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1575–1576 | key: source.explorer.curatedLot.candidates.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type and consult with NARA archivist staff.
 
@@ -1347,7 +1347,7 @@ NARA did not accession this lot as a single series, so no one record is the answ
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/LotClaimantsIndexStore.swift | lines: 64–65 | key: source.explorer.dividedLot.rationale %lld -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LotClaimantsIndex.swift | lines: 125–126 | key: source.explorer.dividedLot.rationale %lld -->
 
 NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one. Consult with NARA archivist staff for further assistance.
 
@@ -1373,7 +1373,7 @@ This line replaces the catalogue link and the `HMS/MLR Entry` caption on a Sourc
 
 #### Presidential library — provenance
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 216–220 | key: source.explorer.presLib.offline.provenance -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 218–222 | key: source.explorer.presLib.offline.provenance -->
 
 Matched against the National Archives’ own description of this library, from the bundled catalog — no API key or network required.
 
@@ -1383,7 +1383,7 @@ Matched against the National Archives’ own description of this library, from t
 
 #### Presidential library — collection only
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 186–191 | key: source.explorer.presLib.offline.collectionOnly -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 188–193 | key: source.explorer.presLib.offline.collectionOnly -->
 
 The collection is identified, but the citation does not name one of its \(c.series.count) series unambiguously. Open the collection record to find the series cited.
 
@@ -1395,7 +1395,7 @@ The collection is identified, but the citation does not name one of its \(c.seri
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 194–200 | key: source.explorer.presLib.offline.candidates -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 196–202 | key: source.explorer.presLib.offline.candidates -->
 
 The collection is identified. The series named in the citation matches \(candidates.count) of its records, and \(shown) of those are listed below. No single record is the answer on its own, so check the titles and dates and consider consulting archivist staff at the library before citing.
 
@@ -1407,7 +1407,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 844–851 | key: source.explorer.nara.outsideCustody | shared: macOS (SourceExplorerView.swift declares the same key and wording with its own placeholder — its iOS block follows) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 866–873 | key: source.explorer.nara.outsideCustody | shared: macOS (SourceExplorerView.swift declares the same key and wording with its own placeholder — its iOS block follows) -->
 
 \(library) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone can return results that look authoritative but are not. None are shown here.
 
@@ -1427,7 +1427,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 #### A foreign archive
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1152–1153 | key: source.explorer.foreignArchive.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1174–1175 | key: source.explorer.foreignArchive.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Foreign government archives are not indexed in the NARA Catalog. Consult the archive directly for access.
 
@@ -1505,7 +1505,7 @@ Public Papers of the Presidents
 
 #### Intelligence records
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1062–1063 | key: source.explorer.cia.note -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 821–822 | key: source.explorer.cia.note -->
 
 CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents, including released operational files and historical collections.
 
@@ -1563,7 +1563,7 @@ A file series the citation places with the \(holder), cited without a lot number
 
 #### A country series
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1709–1710 | key: source.explorer.countrySeries.intro | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1712–1713 | key: source.explorer.countrySeries.intro | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date.
 
@@ -1573,7 +1573,7 @@ This document predates the 1906 Numerical File. Based on its dateline and FRUS c
 
 #### A country series — the serial, on a despatch
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1104–1105 | key: source.explorer.countrySeries.serial %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1105–1106 | key: source.explorer.countrySeries.serial %@ | shared: iOS+macOS (single edit point) -->
 
 Despatch No. %@
 
@@ -1585,7 +1585,7 @@ Despatch No. %@
 
 #### A country series — the serial's caption, on a despatch
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1119–1120 | key: source.explorer.countrySeries.serial.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1120–1121 | key: source.explorer.countrySeries.serial.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1595,7 +1595,7 @@ FRUS prints this number above the document — the post’s own serial for it. T
 
 #### A country series — the serial, on an instruction
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1101–1102 | key: source.explorer.countrySeries.serial.instruction %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1102–1103 | key: source.explorer.countrySeries.serial.instruction %@ | shared: iOS+macOS (single edit point) -->
 
 Instruction No. %@
 
@@ -1605,7 +1605,7 @@ Instruction No. %@
 
 #### A country series — the serial's caption, on an instruction
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1116–1117 | key: source.explorer.countrySeries.serial.instruction.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1117–1118 | key: source.explorer.countrySeries.serial.instruction.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — the Department’s own number for its instruction to the post. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1615,7 +1615,7 @@ FRUS prints this number above the document — the Department’s own number for
 
 #### A country series — the serial, on a note or letter
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1107–1108 | key: source.explorer.countrySeries.serial.neutral %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1108–1109 | key: source.explorer.countrySeries.serial.neutral %@ | shared: iOS+macOS (single edit point) -->
 
 No. %@
 
@@ -1625,7 +1625,7 @@ No. %@
 
 #### A country series — the serial's caption, on a note or letter
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1122–1123 | key: source.explorer.countrySeries.serial.neutral.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1123–1124 | key: source.explorer.countrySeries.serial.neutral.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — its sender’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1635,7 +1635,7 @@ FRUS prints this number above the document — its sender’s own serial for it.
 
 #### A country series — why an instruction is Likely
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1382–1383 | key: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1392–1393 | key: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ | shared: iOS+macOS (single edit point) -->
 
 From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction.
 
@@ -1671,7 +1671,7 @@ Microfilm publication M820 reproduces the series. Most of its 538 file units are
 
 #### Only the class is known — iOS
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1232–1237 | key: source.explorer.scans.classOnly -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 991–996 | key: source.explorer.scans.classOnly -->
 
 NARA has scanned \(count) file ranges in decimal class \(cls), but none of them covers \(fileIdentifier). The scans for this file are partial.
 
@@ -1681,7 +1681,7 @@ NARA has scanned \(count) file ranges in decimal class \(cls), but none of them 
 
 #### Only the class is known — macOS
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2381–2386 | key: source.explorer.scans.classOnlyMac -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2306–2311 | key: source.explorer.scans.classOnlyMac -->
 
 NARA has scanned \(count) file ranges in this decimal class, but none of them covers \(fileIdentifier). The scans for this file are partial.
 
@@ -1693,7 +1693,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2369–2375 | key: source.explorer.scans.multiple | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2294–2300 | key: source.explorer.scans.multiple | shared: iOS+macOS (the same key in both views — edit both) -->
 
 \(ranges.count) scanned file ranges contain \(fileIdentifier). They are listed narrowest first. NARA digitized this file in overlapping sets, so the widest range is not wrong. The narrowest is simply the most specific.
 
@@ -1703,7 +1703,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 #### What a scan range does and does not tell you
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1250–1254 | key: source.explorer.scans.caveat -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1009–1013 | key: source.explorer.scans.caveat -->
 
 This is the scan of the file range the citation falls in, not of this document. The document is somewhere inside it.
 
@@ -1735,7 +1735,7 @@ Searched on the repository and collection names only — no catalog identifier c
 
 #### An unverified manual search
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1294–1295 | key: source.explorer.manualSearch.unverified.detail -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1316–1317 | key: source.explorer.manualSearch.unverified.detail -->
 
 From a manual search. Not checked against the cited lot number or record group.
 
@@ -1767,7 +1767,7 @@ These collections appear alongside this one in the same volumes’ source lists.
 
 #### No related collections
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2625–2626 | key: source.explorer.related.empty.noNeighbors | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2550–2551 | key: source.explorer.related.empty.noNeighbors | shared: iOS+macOS (the same key in both views — edit both) -->
 
 No other indexed documents cite this archival source. Index more volumes to surface related documents.
 
@@ -1777,7 +1777,7 @@ No other indexed documents cite this archival source. Index more volumes to surf
 
 #### This citation matched no collection
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2634–2635 | key: source.explorer.related.empty.unmatched | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2559–2560 | key: source.explorer.related.empty.unmatched | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.
 
@@ -1789,7 +1789,7 @@ This source note doesn’t cite a recognized lot file, central file, or presiden
 
 *Shown under the Subject-Numeric File panel when the Archival Neighbors list is empty and the citation's file (`POL 27 VIET S`) was searched for: a note worded through the Department whose designation the app stored, or one worded through the National Archives whose designation the app reads as a class.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2628–2629 | key: source.explorer.related.empty.subjectNumeric | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2553–2554 | key: source.explorer.related.empty.subjectNumeric | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This source note cites the Subject-Numeric File. No other indexed document was matched to the same file. Index more volumes to surface related documents.
 
@@ -1801,7 +1801,7 @@ This source note cites the Subject-Numeric File. No other indexed document was m
 
 *Shown under the same panel when there was nothing to search for: a designation the app does not read as a class (`POL FR-US`, `ORG 4–COMM`, `AID (US) S VIET`), a citation that gives only its block of years, or a note whose first sentence the app reads another way. Indexing more volumes does not change it.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2631–2632 | key: source.explorer.related.empty.subjectNumeric.unkeyed | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2556–2557 | key: source.explorer.related.empty.subjectNumeric.unkeyed | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This source note cites the Subject-Numeric File, but not in a form the app can match on, so documents from the same file can’t be matched.
 
@@ -2405,91 +2405,91 @@ No documents in this scope cite this archival source — switch to All volumes t
 <!-- END SOURCE: archivalNeighbors.empty.detail.scoped -->
 
 #### An enclosure was often filmed in its own series rather than…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesDocumentPart.enclosureNote | lines: 93–94 | key: centralFiles.part.enclosureNote.v2 -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesDocumentPart.enclosureNote | lines: 93–94 | key: centralFiles.part.enclosureNote.v2 -->
 
 An enclosure was often filmed in its own series rather than with the document that enclosed it. Each row below says which text its rolls hold; check both.
 
 <!-- END SOURCE: centralFiles.part.enclosureNote.v2 -->
 
 #### Department of State outbound to a special agent — an…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 241–242 | key: centralFiles.rationale.specialAgentInstruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 246–247 | key: centralFiles.rationale.specialAgentInstruction -->
 
 Department of State outbound to a special agent — an instruction in the Special Missions volumes. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.specialAgentInstruction -->
 
 #### From a special agent of the Department — filed with the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 246–247 | key: centralFiles.rationale.specialAgentDespatch -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 251–252 | key: centralFiles.rationale.specialAgentDespatch -->
 
 From a special agent of the Department — filed with the agent’s mission in Despatches from Special Agents. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.specialAgentDespatch -->
 
 #### Dateline is another executive department — a letter…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 259–260 | key: centralFiles.rationale.letterReceived -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 264–265 | key: centralFiles.rationale.letterReceived -->
 
 Dateline is another executive department — a letter received by the Department of State, filed chronologically. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.letterReceived -->
 
 #### Dateline is a foreign consulate in the United States — a…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 270–271 | key: centralFiles.rationale.noteFromConsul -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 275–276 | key: centralFiles.rationale.noteFromConsul -->
 
 Dateline is a foreign consulate in the United States — a note from the foreign consul to the Department. The series is a single chronological run, matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.noteFromConsul -->
 
 #### Department of State outbound, printed in FRUS’s…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 330–331 | key: centralFiles.rationale.legationNoteTo -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 335–336 | key: centralFiles.rationale.legationNoteTo -->
 
 Department of State outbound, printed in FRUS’s correspondence with the foreign legation in Washington — a note to the legation.
 
 <!-- END SOURCE: centralFiles.rationale.legationNoteTo -->
 
 #### Department of State outbound; if the addressee is the U.S.…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 335–336 | key: centralFiles.rationale.instruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 340–341 | key: centralFiles.rationale.instruction -->
 
 Department of State outbound; if the addressee is the U.S. minister abroad, it is an instruction.
 
 <!-- END SOURCE: centralFiles.rationale.instruction -->
 
 #### Department of State outbound; if the addressee is the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 339–340 | key: centralFiles.rationale.noteTo -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 344–345 | key: centralFiles.rationale.noteTo -->
 
 Department of State outbound; if the addressee is the foreign minister in Washington, it is a note to the legation.
 
 <!-- END SOURCE: centralFiles.rationale.noteTo -->
 
 #### Department of State outbound to a consul; if the addressee…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 345–346 | key: centralFiles.rationale.consularInstruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 350–351 | key: centralFiles.rationale.consularInstruction -->
 
 Department of State outbound to a consul; if the addressee is a U.S. consul abroad, it is a consular instruction. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.consularInstruction -->
 
 #### Department of State outbound to a consul; if the addressee…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 349–350 | key: centralFiles.rationale.noteToConsul -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 354–355 | key: centralFiles.rationale.noteToConsul -->
 
 Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.noteToConsul -->
 
 #### Department of State outbound to a domestic official — filed…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 359–360 | key: centralFiles.rationale.domesticLetter -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 364–365 | key: centralFiles.rationale.domesticLetter -->
 
 Department of State outbound to a domestic official — filed chronologically in Domestic Letters. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.domesticLetter -->
 
 #### Printed in FRUS’s correspondence with the foreign legation…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 386–387 | key: centralFiles.rationale.legationNoteFrom -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 391–392 | key: centralFiles.rationale.legationNoteFrom -->
 
 Printed in FRUS’s correspondence with the foreign legation in Washington, and not from the Department — a note from the legation.
 
 <!-- END SOURCE: centralFiles.rationale.legationNoteFrom -->
 
 #### Datelined abroad — likely a despatch from the U.S. mission…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 399–400 | key: centralFiles.rationale.despatchAbroad -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 404–405 | key: centralFiles.rationale.despatchAbroad -->
 
 Datelined abroad — likely a despatch from the U.S. mission (or an enclosure filed with it).
 
@@ -2566,7 +2566,7 @@ This collection enters the record with the %1$@ volumes, peaks across the %2$@ v
 <!-- END SOURCE: collection.detail.timeline.narrative.fade %@ %@ %@ -->
 
 #### Archival units this document’s footnotes cite for material FRUS…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.sectionFooter | lines: 597–598 | key: source.explorer.unprinted.footer.v2 | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | SourceExplorerResolution.UnprintedPointer.sectionFooter | lines: 582–583 | key: source.explorer.unprinted.footer.v2 | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
 Archival units this document’s footnotes cite for material FRUS did not print. Each is a separate claim from the source note above, which records where this document itself was drawn from, even when the two name the same unit.
 
@@ -2575,7 +2575,7 @@ Archival units this document’s footnotes cite for material FRUS did not print.
 <!-- END SOURCE: source.explorer.unprinted.footer.v2 -->
 
 #### fn %1$@ · %2$@
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 527–528 | key: source.explorer.unprinted.row.title %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | SourceExplorerResolution.UnprintedPointer.rowText | lines: 512–513 | key: source.explorer.unprinted.row.title %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
 fn %1$@ · %2$@
 
@@ -2584,7 +2584,7 @@ fn %1$@ · %2$@
 <!-- END SOURCE: source.explorer.unprinted.row.title %@ %@ -->
 
 #### Footnote %1$@, %2$@
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 530–531 | key: source.explorer.unprinted.row.spokenTitle %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | SourceExplorerResolution.UnprintedPointer.rowText | lines: 515–516 | key: source.explorer.unprinted.row.spokenTitle %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
 Footnote %1$@, %2$@
 
@@ -2593,7 +2593,7 @@ Footnote %1$@, %2$@
 <!-- END SOURCE: source.explorer.unprinted.row.spokenTitle %@ %@ -->
 
 #### Same lot as the source note
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 540–541 | key: source.explorer.unprinted.row.sameLot | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | SourceExplorerResolution.UnprintedPointer.rowText | lines: 525–526 | key: source.explorer.unprinted.row.sameLot | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
 Same lot as the source note
 
@@ -2602,7 +2602,7 @@ Same lot as the source note
 <!-- END SOURCE: source.explorer.unprinted.row.sameLot -->
 
 #### %1$lld of %2$lld citations worded alike
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 547–548 | key: source.explorer.unprinted.row.repeat %lld %lld | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | SourceExplorerResolution.UnprintedPointer.rowText | lines: 532–533 | key: source.explorer.unprinted.row.repeat %lld %lld | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
 %1$lld of %2$lld citations worded alike
 
