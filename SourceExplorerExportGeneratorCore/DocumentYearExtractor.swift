@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 // MARK: - DocumentYearExtractor
 
@@ -25,6 +28,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #335: initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): `XMLParser` from FoundationXML behind `canImport`,
+///         where Linux keeps it, and `parse()`'s unused result discarded with `_ =`, which Linux's
+///         Foundation warns of, so the web edition compiles this core for check 8's comparator;
+///         nothing changes on Apple platforms
 public final class DocumentYearExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Extracted `documentId → year` (documents with no id or no parseable year omitted).
@@ -37,7 +44,7 @@ public final class DocumentYearExtractor: NSObject, XMLParserDelegate, @unchecke
         let delegate = DocumentYearExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.years
     }
 

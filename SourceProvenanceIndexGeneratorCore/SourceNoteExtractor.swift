@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 /// Extracts every per-document source note from a FRUS volume's TEI XML.
 ///
@@ -25,6 +28,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — SA-3a (Session 2026-07-04): initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): `XMLParser` from FoundationXML behind `canImport`,
+///         where Linux keeps it, and `parse()`'s unused result discarded with `_ =`, which Linux's
+///         Foundation warns of, so the web edition compiles this core for check 8's comparator;
+///         nothing changes on Apple platforms
 public final class SourceNoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Extracts the whitespace-collapsed text of every `type="source"` element from a
@@ -36,7 +43,7 @@ public final class SourceNoteExtractor: NSObject, XMLParserDelegate, @unchecked 
         let delegate = SourceNoteExtractor()
         let parser = XMLParser(data: data)
         parser.delegate = delegate
-        parser.parse()
+        _ = parser.parse()
         return delegate.notes
     }
 
