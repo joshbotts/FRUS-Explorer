@@ -174,6 +174,7 @@ struct LotResolutionAcceptanceTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-04: #674 live-path acceptance test
+///   1.1 — 2026-11-11 (FRUS Explorer Light, S22c): reads the client in FRUSCoreKit, where it moved
 @Suite("Lot acceptance wiring")
 struct LotAcceptanceWiringAuditTests {
 
@@ -182,7 +183,7 @@ struct LotAcceptanceWiringAuditTests {
             let root = URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
             let text = try String(
-                contentsOf: root.appending(path: "FRUSExplorer/SourceExplorer/NARACatalogClient.swift"),
+                contentsOf: root.appending(path: "FRUSCoreKit/SourceExplorer/NARACatalogClient.swift"),
                 encoding: .utf8)
             #expect(text.count > 5_000, "NARACatalogClient.swift is implausibly small")
             return text

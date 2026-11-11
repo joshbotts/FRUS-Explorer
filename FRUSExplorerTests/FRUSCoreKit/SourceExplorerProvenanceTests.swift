@@ -23,7 +23,7 @@ import Testing
 @testable import FRUSExplorer
 #endif
 #if canImport(SourceNoteKit)
-@testable import SourceNoteKit // `SourceNoteParser.lotFileRecordGroup` is internal to it
+@testable import SourceNoteKit // for `SourceNoteParser.lotFileRecordGroup`, public since FRUS Explorer Light's S22c
 #endif
 
 // MARK: - SourceExplorerProvenanceTests

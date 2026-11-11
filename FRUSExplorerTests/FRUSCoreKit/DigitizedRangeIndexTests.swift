@@ -206,7 +206,7 @@ struct DigitizedRangeIndexTests {
     }
     #endif
 
-    #if !SWIFT_PACKAGE // the caveat is SourceExplorerView's, the app's
+    #if !SWIFT_PACKAGE // reads the caveat by SourceExplorerView's name, the app's; the kit's is SourceExplorerPanelsHostTests'
     /// The caveat's job is to refuse the claim the link invites. If it stops saying so, the
     /// panel starts implying the scan is of the document.
     @Test("The caveat declines to claim the document")
