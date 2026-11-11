@@ -56,7 +56,12 @@ import Foundation
 ///          `storedEdges` adds the section edges
 ///   1.2 — A18b: a page of another volume cites under rule C; `Coverage` reads
 ///          `crossVolumePageReferences` and `pageEdges`, which `storedEdges` adds
-struct ResolvedEdgeIndex: Decodable, Sendable {
+///   1.3 — 2026-11-10 (FRUS Explorer Light, S23b): moved into FRUSCoreKit with `CrossReferenceStore`,
+///          public with its decoder and `footnoteSourceCount`, and loaded from a URL the host gives
+///          (`init(contentsOf:)`);
+///          `ResolvedEdgeIndexStore`, which reads the app's bundle, stays in the app
+///          (`ResolvedEdgeIndexStore.swift`)
+public struct ResolvedEdgeIndex: Decodable, Sendable {
 
     /// One cited document and everything outside its own volume that cites it.
     struct TargetEdges: Decodable, Sendable {
@@ -150,7 +155,7 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
         case schemaVersion, generated, volumes, documents, targets, coverage
     }
 
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try c.decode(Int.self, forKey: .schemaVersion)
         generated = try c.decode(String.self, forKey: .generated)
@@ -194,7 +199,7 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
     ///
     /// 95.3% of document-to-document references in the corpus are footnotes, so a surface that
     /// presents these as the documents' own citations misdescribes almost all of them.
-    func footnoteSourceCount(volumeId: String, documentId: String) -> Int {
+    public func footnoteSourceCount(volumeId: String, documentId: String) -> Int {
         guard let position = rowByKey["\(volumeId)/\(documentId)"] else { return 0 }
         return targets[position].footnoteSources
     }
@@ -208,36 +213,13 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
     }
 }
 
-// MARK: - ResolvedEdgeIndexStore
+// MARK: - Loading
 
-/// Loads and caches the bundled `resolved-edge-index.json`.
-///
-/// `shared` is `nil` only when the resource is missing or cannot be decoded. Consumers must treat
-/// that as "corpus-wide citations are unavailable" and fall back to the local table — never as
-/// "nothing else cites this document".
-///
-/// Version history:
-///   1.0 — Session 2026-08-09: #262
-enum ResolvedEdgeIndexStore {
+extension ResolvedEdgeIndex {
 
-    /// The bundled index, or `nil` when unavailable.
-    static let shared: ResolvedEdgeIndex? = load()
-
-    private static func load() -> ResolvedEdgeIndex? {
-        guard let url = Bundle.main.url(forResource: "resolved-edge-index",
-                                        withExtension: "json") else {
-            #if DEBUG
-            print("[CrossReference] ResolvedEdgeIndexStore: resolved-edge-index.json not found.")
-            #endif
-            return nil
-        }
-        do {
-            return try JSONDecoder().decode(ResolvedEdgeIndex.self, from: try Data(contentsOf: url))
-        } catch {
-            #if DEBUG
-            print("[CrossReference] ResolvedEdgeIndexStore: decode failed — \(error)")
-            #endif
-            return nil
-        }
+    /// The index in the `resolved-edge-index.json` at `url`, decoded as `ResolvedEdgeIndexStore` decodes
+    /// the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(ResolvedEdgeIndex.self, from: Data(contentsOf: url))
     }
 }

@@ -31,6 +31,8 @@ import Testing
 ///   1.2 — A18b: every build builds its full index in a folder of its own (`build(_:generated:in:)`);
 ///          a page of another volume cites under rule C, the map the run writes, and the parity
 ///          of the run's pairs with the rows a device's index stores from the same map
+///   1.3 — 2026-11-10 (FRUS Explorer Light, S23b): the generator's `ResolvedEdgeIndex` is named by its
+///          module, since FRUSCoreKit, which this target imports, now has a public reader of that name
 @Suite("Resolved edge index — generator")
 struct ResolvedEdgeIndexRunnerTests {
 
@@ -65,7 +67,7 @@ struct ResolvedEdgeIndexRunnerTests {
     /// The run over `files`, building its full index in a folder of its own under `directory`
     /// (A18b): the edge index and the page map.
     private func build(_ files: [URL], generated: String,
-                       in directory: URL) async throws -> (edges: ResolvedEdgeIndex, pages: CitedPageMap) {
+                       in directory: URL) async throws -> (edges: ResolvedEdgeIndexGeneratorCore.ResolvedEdgeIndex, pages: CitedPageMap) {
         let index = directory.appendingPathComponent("index-\(UUID().uuidString)", isDirectory: true)
         return try await ResolvedEdgeIndexRunner.build(files: files, generated: generated,
                                                        index: .build(in: index))
@@ -86,7 +88,7 @@ struct ResolvedEdgeIndexRunnerTests {
 
     /// The citing endpoints of `volume/document`, as `"volume/document"` strings.
     private func sources(of volume: String, _ document: String,
-                         in index: ResolvedEdgeIndex) -> [String] {
+                         in index: ResolvedEdgeIndexGeneratorCore.ResolvedEdgeIndex) -> [String] {
         guard let v = index.volumes.firstIndex(of: volume),
               let d = index.documents[v].firstIndex(of: document),
               let row = index.targets.first(where: { $0.volume == v && $0.document == d })
@@ -381,7 +383,7 @@ struct ResolvedEdgeIndexRunnerTests {
             {"v":0,"d":0,"s":[0,1,2],"f":0}
             """
         #expect(throws: DecodingError.self) {
-            _ = try JSONDecoder().decode(ResolvedEdgeIndex.TargetEdges.self,
+            _ = try JSONDecoder().decode(ResolvedEdgeIndexGeneratorCore.ResolvedEdgeIndex.TargetEdges.self,
                                          from: Data(payload.utf8))
         }
     }

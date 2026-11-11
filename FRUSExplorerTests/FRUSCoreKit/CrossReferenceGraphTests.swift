@@ -8,8 +8,19 @@
 
 import Testing
 import Foundation
-import SQLite3
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - Fixture Helpers
 
@@ -79,8 +90,12 @@ private func makeTestGraph(
 @MainActor
 struct CrossReferenceGraphTests {
 
+    let canvasWidth = 800.0, canvasHeight = 600.0
+    #if !SWIFT_PACKAGE // the view model's canvas
     let canvasSize = CGSize(width: 800, height: 600)
+    #endif
 
+    #if !SWIFT_PACKAGE // the view model, which lays the graph out on its canvas and keeps the selection, is the app's
     // MARK: - StandardLayoutTest
 
     @Test("StandardLayoutTest: all 10 nodes within bounds with ≥60pt vertical separation")
@@ -175,6 +190,7 @@ struct CrossReferenceGraphTests {
         let pairCount = positions.count * (positions.count - 1) / 2
         #expect(overlapCount <= pairCount / 20, "Too many overlapping nodes: \(overlapCount)")
     }
+    #endif
 
     // MARK: - ClusteringTest
 
@@ -188,7 +204,7 @@ struct CrossReferenceGraphTests {
         )
         let centralKey = "vol1/d0"
 
-        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, edges) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -210,7 +226,7 @@ struct CrossReferenceGraphTests {
 
         // Expanding one cluster reveals its individual nodes
         let firstClusterKey = clusterNodes[0].id
-        let (expandedNodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (expandedNodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: [firstClusterKey],
@@ -219,6 +235,7 @@ struct CrossReferenceGraphTests {
         #expect(expandedNodes.count > 4, "Expanding cluster should add individual nodes")
     }
 
+    #if !SWIFT_PACKAGE // the view model, which lays the graph out on its canvas and keeps the selection, is the app's
     // MARK: - ReduceMotionTest
 
     @Test("ReduceMotionTest: layout completes synchronously when reduce motion is active")
@@ -274,6 +291,7 @@ struct CrossReferenceGraphTests {
         #expect(vm.history.count == 1,        "old centre should be pushed to history")
         #expect(vm.history.last?.documentId == prevDocId, "history entry should record old centre")
     }
+    #endif
 
     // MARK: - AccessibilityTest
 
@@ -285,7 +303,7 @@ struct CrossReferenceGraphTests {
         )
         let centralKey = "vol1/d0"
 
-        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -302,7 +320,7 @@ struct CrossReferenceGraphTests {
             inboundCount: 35, outboundCount: 0,
             inboundVolumeIds: ["vol-a", "vol-b", "vol-c"]
         )
-        let (clusterNodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (clusterNodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: largeGraph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -344,7 +362,7 @@ struct CrossReferenceGraphTests {
             fetchedDegree:     2
         )
 
-        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, edges) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: extendedGraph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -429,14 +447,14 @@ struct CrossReferenceGraphTests {
     func timelineLayoutOrdersByDate() throws {
         let graph = makeDatedGraph()
         let centralKey = "vol1/d0"
-        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
             expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
         )
-        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
-        let result = CrossReferenceGraphViewModel.timelineLayout(
+        let dateValues = CrossReferenceGraphDisplay.buildDateValues(for: nodes)
+        let result = CrossReferenceGraphDisplay.timelineLayout(
             nodes: nodes, dateValues: dateValues,
-            centralKey: centralKey, canvasSize: canvasSize
+            centralKey: centralKey, canvasWidth: canvasWidth, canvasHeight: canvasHeight
         )
 
         let xEarly   = try #require(result.positions["vol1/dEarly"]?.x)
@@ -454,13 +472,13 @@ struct CrossReferenceGraphTests {
 
         // All positions stay within the canvas and above the axis label area.
         for (_, pos) in result.positions {
-            #expect(pos.x >= 0 && pos.x <= canvasSize.width)
+            #expect(pos.x >= 0 && pos.x <= canvasWidth)
             #expect(pos.y >= 0 && pos.y <= result.axisY)
         }
 
         // The central document owns the middle lane of the usable vertical band.
         let yCentral = try #require(result.positions[centralKey]?.y)
-        let yTop: CGFloat = 64
+        let yTop = 64.0
         let yBottom = result.axisY - 60
         #expect(abs(yCentral - (yTop + yBottom) / 2) < 0.5,
                 "Central node must sit on the centre lane")
@@ -470,22 +488,22 @@ struct CrossReferenceGraphTests {
     func timelineBrushFiltersDomain() throws {
         let graph = makeDatedGraph()  // Mar 4 … Nov 2, 1962; one undated node
         let centralKey = "vol1/d0"
-        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
             expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
         )
-        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let dateValues = CrossReferenceGraphDisplay.buildDateValues(for: nodes)
         let calendar = Calendar(identifier: .gregorian)
         let domainStart = try #require(
-            CrossReferenceGraphViewModel.date(fromISO: "1962-05-01", calendar: calendar)
+            CrossReferenceGraphDisplay.date(fromISO: "1962-05-01", calendar: calendar)
         ).timeIntervalSinceReferenceDate
         let domainEnd = try #require(
-            CrossReferenceGraphViewModel.date(fromISO: "1962-08-01", calendar: calendar)
+            CrossReferenceGraphDisplay.date(fromISO: "1962-08-01", calendar: calendar)
         ).timeIntervalSinceReferenceDate
 
-        let result = CrossReferenceGraphViewModel.timelineLayout(
+        let result = CrossReferenceGraphDisplay.timelineLayout(
             nodes: nodes, dateValues: dateValues,
-            centralKey: centralKey, canvasSize: canvasSize,
+            centralKey: centralKey, canvasWidth: canvasWidth, canvasHeight: canvasHeight,
             domain: domainStart...domainEnd
         )
 
@@ -508,15 +526,15 @@ struct CrossReferenceGraphTests {
     func timelineLayoutRequiresDateSpan() throws {
         let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)  // no dateISO values
         let centralKey = "vol1/d0"
-        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
             expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
         )
-        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let dateValues = CrossReferenceGraphDisplay.buildDateValues(for: nodes)
         #expect(dateValues.isEmpty)
-        let result = CrossReferenceGraphViewModel.timelineLayout(
+        let result = CrossReferenceGraphDisplay.timelineLayout(
             nodes: nodes, dateValues: dateValues,
-            centralKey: centralKey, canvasSize: canvasSize
+            centralKey: centralKey, canvasWidth: canvasWidth, canvasHeight: canvasHeight
         )
         #expect(result.positions.isEmpty, "Undated graphs cannot be laid out chronologically")
         #expect(result.ticks.isEmpty)
@@ -525,10 +543,10 @@ struct CrossReferenceGraphTests {
     @Test("TimelineLayoutTest: lenient ISO parsing accepts year, year-month, and full dates")
     func dateParsingHandlesPartialISO() throws {
         let calendar = Calendar(identifier: .gregorian)
-        let full  = CrossReferenceGraphViewModel.date(fromISO: "1962-07-25", calendar: calendar)
-        let month = CrossReferenceGraphViewModel.date(fromISO: "1962-07", calendar: calendar)
-        let year  = CrossReferenceGraphViewModel.date(fromISO: "1962", calendar: calendar)
-        let bad   = CrossReferenceGraphViewModel.date(fromISO: "n.d.", calendar: calendar)
+        let full  = CrossReferenceGraphDisplay.date(fromISO: "1962-07-25", calendar: calendar)
+        let month = CrossReferenceGraphDisplay.date(fromISO: "1962-07", calendar: calendar)
+        let year  = CrossReferenceGraphDisplay.date(fromISO: "1962", calendar: calendar)
+        let bad   = CrossReferenceGraphDisplay.date(fromISO: "n.d.", calendar: calendar)
 
         let fullDate = try #require(full)
         let monthDate = try #require(month)
@@ -582,13 +600,13 @@ struct CrossReferenceGraphTests {
             inboundEdges: inbound, outboundEdges: outbound,
             hasUndownloadedSources: false, nodeMetadata: meta
         )
-        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, edges) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
             expandedClusterKeys: [], downloadedVolumeIds: ["vol1"]
         )
-        let dateValues = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let dateValues = CrossReferenceGraphDisplay.buildDateValues(for: nodes)
 
-        let clustered = CrossReferenceGraphViewModel.dateClusteredDisplay(
+        let clustered = CrossReferenceGraphDisplay.dateClusteredDisplay(
             nodes: nodes, edges: edges, dateValues: dateValues,
             canvasWidth: 800, expandedKeys: []
         )
@@ -617,7 +635,7 @@ struct CrossReferenceGraphTests {
                 "Edge IDs must stay unique after rerouting")
 
         // Expanding the cluster restores the original display.
-        let expanded = CrossReferenceGraphViewModel.dateClusteredDisplay(
+        let expanded = CrossReferenceGraphDisplay.dateClusteredDisplay(
             nodes: nodes, edges: edges, dateValues: dateValues,
             canvasWidth: 800, expandedKeys: [clusterNode.id]
         )
@@ -667,7 +685,7 @@ struct CrossReferenceGraphTests {
             hasUndownloadedSources: false, nodeMetadata: meta
         )
 
-        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, edges) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -702,12 +720,12 @@ struct CrossReferenceGraphTests {
         )
         let centralKey = "vol1/d0"
 
-        let first = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let first = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey,
             expandedClusterKeys: [], downloadedVolumeIds: []
         )
         for _ in 0..<5 {
-            let again = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+            let again = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
                 graph: graph, centralKey: centralKey,
                 expandedClusterKeys: [], downloadedVolumeIds: []
             )
@@ -725,7 +743,7 @@ struct CrossReferenceGraphTests {
         let graph = makeTestGraph(inboundCount: 3, outboundCount: 2)
         let centralKey = "vol1/d0"
 
-        let (nodes, edges) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, edges) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph,
             centralKey: centralKey,
             expandedClusterKeys: [],
@@ -750,6 +768,7 @@ struct CrossReferenceGraphTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // the view model's display, and the node's glyph, which the app's view draws
     // MARK: - #837: unprinted archival units on the canvas
 
     /// A unit node attaches to its citing document and carries an edge to it.
@@ -837,6 +856,7 @@ struct CrossReferenceGraphTests {
             """)
         #expect(unit.metadata == nil, "a unit stands for an archive, not a document")
     }
+    #endif
 
     /// The VoiceOver label is the only description a screen-reader user gets — the canvas is
     /// accessibilityHidden — so it must say both what the node is and what happens on tap.
@@ -934,6 +954,8 @@ struct CentralFileClassNodeTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the volume graph's view model, the graph's help, and the network layout, node sizes and
+// canvas labels, which stay with the app's view model and view (FRUSCoreKit has the display half alone)
 // MARK: - VolumeConnectionHoverSelectionTests (#1383)
 
 /// The volume connection graph's hover and click rules, driven through the view model methods the
@@ -1342,7 +1364,8 @@ struct VolumeConnectionGraphRecentreTests {
 
     /// The file at `relativePath` under the repository root.
     private static func source(_ relativePath: String) throws -> String {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
     }
 
@@ -1750,9 +1773,12 @@ struct NetworkLayoutCensus: CustomStringConvertible {
     }
 }
 
+#endif
+
 @Suite("The cross-reference network at three hops (#1764)")
 @MainActor
 struct NetworkAtThreeHopsTests {
+    #if !SWIFT_PACKAGE // the network layout, the node sizes and the canvas's labels are the app's view model's
 
     @Test("At three hops from d16 the network layout stacks no nodes and holds none in a corner")
     func theD16NetworkStacksNothing() {
@@ -1976,6 +2002,8 @@ struct NetworkAtThreeHopsTests {
 
     // MARK: The reference list's order
 
+    #endif
+
     @Test("A section lists its documents in catalogue order, by volume and printed number, and its page nodes after them")
     func aSectionListsDocumentsInCatalogueOrderAndPagesLast() {
         func node(_ id: String, number: String? = nil, kind: DisplayNode.Kind = .outbound) -> DisplayNode {
@@ -1990,7 +2018,7 @@ struct NetworkAtThreeHopsTests {
         // node first, and d41 before d5.
         let citedByD16 = [node("frus1948v01p2/pg_507"), node("frus1952-54v02p1/d11"),
                           node("frus1952-54v02p1/d41"), node("frus1952-54v02p1/d5")]
-        #expect(citedByD16.sorted(by: CrossReferenceGraphViewModel.precedesInReferenceList).map(\.id)
+        #expect(citedByD16.sorted(by: CrossReferenceGraphDisplay.precedesInReferenceList).map(\.id)
                 == ["frus1952-54v02p1/d5", "frus1952-54v02p1/d11", "frus1952-54v02p1/d41",
                     "frus1948v01p2/pg_507"])
 
@@ -2003,7 +2031,7 @@ struct NetworkAtThreeHopsTests {
                      node("frus1952-54v02p1/d3", number: "373"), node("frus1948v01p2/pg_507"),
                      node("cluster/outbound/frus1951v01", kind: .clusterOutbound(volumeId: "frus1951v01", count: 3)),
                      node("frus1952-54v02p2/d1", number: "1")]
-        #expect(mixed.sorted(by: CrossReferenceGraphViewModel.precedesInReferenceList).map(\.id)
+        #expect(mixed.sorted(by: CrossReferenceGraphDisplay.precedesInReferenceList).map(\.id)
                 == ["cluster/outbound/frus1951v01",
                     "frus1952-54v02p1/d3", "frus1952-54v02p1/d2", "frus1952-54v02p1/d1", "frus1952-54v02p1/d0",
                     "frus1952-54v02p2/d1", "frus1952-54v10/d1",

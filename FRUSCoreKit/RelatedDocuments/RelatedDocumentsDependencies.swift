@@ -56,7 +56,7 @@ public struct RelatedDocumentsDependencies: Sendable {
     /// `RelatedDocumentsResult.empty`.
     @MainActor public var indexingPipeline: IndexingPipeline? { indexingPipelineProvider() }
 
-    /// The cross-reference query the citation generator runs; the app's `CrossReferenceStore`.
+    /// The cross-reference query the citation generator runs; in the app, its `CrossReferenceStore`.
     @MainActor public var crossReferenceStore: (any RelatedCitationSource)? { crossReferenceStoreProvider() }
 
     /// The person store whose rollup the shared-people scorer reads.
@@ -121,7 +121,7 @@ public struct RelatedDocumentsDependencies: Sendable {
 // MARK: - RelatedCitationSource
 
 /// The cross-reference generator's query: the documents directly cited by, or citing, an anchor, with
-/// their citation counts. The app's `CrossReferenceStore` answers it with `relatedByCitation`.
+/// their citation counts. `CrossReferenceStore` answers it with `relatedByCitation`.
 ///
 /// Version history:
 ///   1.0 — 2026-11-08: FRUS Explorer Light's S23a

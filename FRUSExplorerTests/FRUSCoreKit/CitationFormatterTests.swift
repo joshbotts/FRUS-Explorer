@@ -654,7 +654,7 @@ struct CitableDocumentNumberTests {
     }
 }
 
-#if !SWIFT_PACKAGE // the two suites below need the app's ManifestStore, AppState, cross-reference store, trip packet, exporters and generated blocks
+#if !SWIFT_PACKAGE // the two suites below need the app's ManifestStore, AppState with its stores, trip packet, exporters and generated blocks
 // MARK: - PrintedDocumentNumberExportTests (#1406)
 
 /// The printed number reaches every export site, through the real index (#1406).

@@ -8,8 +8,23 @@
 
 import Testing
 import Foundation
-import SQLite3
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - Fixture Helpers
 
@@ -1136,7 +1151,7 @@ struct UndatedEndpointTests {
     /// The telegram's volume and 1943 vol. III, from the bundled catalogue.
     private var volumes: [VolumeManifestEntry] {
         get throws {
-            let entries = ManifestStore().bundledEntries.filter { ["frus1946v06", "frus1943v03"].contains($0.volumeId) }
+            let entries = try crossReferenceTestCatalogue().filter { ["frus1946v06", "frus1943v03"].contains($0.volumeId) }
             try #require(entries.count == 2, "the bundled catalogue must hold both fixture volumes")
             return entries
         }
@@ -1187,25 +1202,25 @@ struct UndatedEndpointTests {
         }
         // The whole catalogue, as the app passes it: the bundled edge index adds the telegram's
         // citations from volumes the fixture does not hold, and each is dated by its volume.
-        return (dir, try CrossReferenceStore(databaseURL: dbURL, volumes: ManifestStore().bundledEntries))
+        return (dir, try CrossReferenceStore(databaseURL: dbURL, volumes: crossReferenceTestCatalogue()))
     }
 
     /// The nodes the layout parked as Undated: those with no date to place.
     private func parked(_ nodes: [DisplayNode]) -> [String] {
-        let dated = CrossReferenceGraphViewModel.buildDateValues(for: nodes)
+        let dated = CrossReferenceGraphDisplay.buildDateValues(for: nodes)
         return nodes.map(\.id).filter { dated[$0] == nil }.sorted()
     }
 
     /// The graph's display nodes and their timeline layout, as the view model builds them.
     private func timeline(of graph: CrossReferenceGraph)
-        -> (nodes: [DisplayNode], layout: (positions: [String: CGPoint], ticks: [TimelineTick], axisY: CGFloat, hasParkedNodes: Bool)) {
+        -> (nodes: [DisplayNode], layout: (positions: [String: GraphPoint], ticks: [TimelineTick], axisY: Double, hasParkedNodes: Bool)) {
         let centralKey = "frus1946v06/d475"
-        let (nodes, _) = CrossReferenceGraphViewModel.buildDisplayNodesAndEdges(
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
             graph: graph, centralKey: centralKey, expandedClusterKeys: [],
             downloadedVolumeIds: ["frus1946v06", "frus1943v03"])
-        let layout = CrossReferenceGraphViewModel.timelineLayout(
-            nodes: nodes, dateValues: CrossReferenceGraphViewModel.buildDateValues(for: nodes),
-            centralKey: centralKey, canvasSize: CGSize(width: 800, height: 600))
+        let layout = CrossReferenceGraphDisplay.timelineLayout(
+            nodes: nodes, dateValues: CrossReferenceGraphDisplay.buildDateValues(for: nodes),
+            centralKey: centralKey, canvasWidth: 800, canvasHeight: 600)
         return (nodes, layout)
     }
 
@@ -1226,6 +1241,7 @@ struct UndatedEndpointTests {
         }
         let (nodes, layout) = timeline(of: graph)
         #expect(!layout.hasParkedNodes, "these park as Undated: \(parked(nodes))")
+        #expect(layout.positions.count == nodes.count, "the timeline placed \(layout.positions.count) of \(nodes.count) nodes")
         let central = try #require(layout.positions["frus1946v06/d475"]?.x)
         for (page, _) in pages {
             let x = try #require(layout.positions["frus1943v03/pg_\(page)"]?.x)
@@ -1249,8 +1265,10 @@ struct UndatedEndpointTests {
         }
         let (nodes, layout) = timeline(of: graph)
         #expect(!layout.hasParkedNodes, "these park as Undated: \(parked(nodes))")
+        #expect(layout.positions.count == nodes.count, "the timeline placed \(layout.positions.count) of \(nodes.count) nodes")
     }
 
+    #if !SWIFT_PACKAGE // `makeEntry(for:)`, the entry a node opens, is the app's view model's
     @Test("A page node opens nothing: its id names a page, not a document")
     func pageNodeHasNoEntry() async throws {
         let (dir, store) = try makeStore(withCitedVolume: true)
@@ -1262,6 +1280,7 @@ struct UndatedEndpointTests {
         #expect(vm.makeEntry(for: "frus1943v03/pg_531") == nil)
         #expect(vm.makeEntry(for: "frus1946v06/d710") != nil)
     }
+    #endif
 
     @Test("The page map dates a page by its documents' days and a document by its own; with neither, the volume")
     func pageMapAndVolumeFallbacks() throws {
@@ -1300,7 +1319,7 @@ struct UndatedEndpointTests {
 
     @Test("A page is cited as a footnote cites it, and a volume a citation's form would blur reads as its tag")
     func pageTitles() throws {
-        let catalogue = Dictionary(uniqueKeysWithValues: ManifestStore().bundledEntries.map { ($0.volumeId, $0.subseries) })
+        let catalogue = Dictionary(uniqueKeysWithValues: try crossReferenceTestCatalogue().map { ($0.volumeId, $0.subseries) })
         let expected = [
             "frus1943v03": "1943, vol. III",
             "frus1952-54v02p1": "1952–54, vol. II, pt. 1",
@@ -1328,7 +1347,7 @@ struct UndatedEndpointTests {
     func spanNodesSitAtTheirMiddle() throws {
         let calendar = Calendar(identifier: .gregorian)
         func t(_ iso: String) throws -> TimeInterval {
-            try #require(CrossReferenceGraphViewModel.date(fromISO: iso, calendar: calendar)).timeIntervalSinceReferenceDate
+            try #require(CrossReferenceGraphDisplay.date(fromISO: iso, calendar: calendar)).timeIntervalSinceReferenceDate
         }
         let spanned = DisplayNode(id: "volume", kind: .inbound,
                                   metadata: CrossReferenceNodeMetadata(documentId: "d591", volumeId: "v", documentNumber: nil,
@@ -1339,7 +1358,7 @@ struct UndatedEndpointTests {
                                   metadata: CrossReferenceNodeMetadata(documentId: "d710", volumeId: "v", documentNumber: "710",
                                                                        header: "Kennan", dateline: nil, dateISO: "1946-03-01"),
                                   isDownloaded: true)
-        let values = CrossReferenceGraphViewModel.buildDateValues(for: [spanned, indexed])
+        let values = CrossReferenceGraphDisplay.buildDateValues(for: [spanned, indexed])
         #expect(values["volume"] == (try t("1945-06-01") + t("1946-12-31")) / 2)
         #expect(values["indexed"] == (try t("1946-03-01")))
     }
@@ -1353,7 +1372,7 @@ struct UndatedEndpointTests {
                                                              dateISOMax: end, dating: dating),
                         isDownloaded: false)
         }
-        let labels = CrossReferenceGraphViewModel.buildDateLabels(for: [
+        let labels = CrossReferenceGraphDisplay.buildDateLabels(for: [
             node("page", "1943-05-19", "1943-05-23", .pageIndex),
             node("volume", "1942-05-30", "1944-03-24", .volume),
             node("day", "1943-06-11", nil, .pageMap),

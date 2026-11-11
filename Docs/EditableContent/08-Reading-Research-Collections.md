@@ -1836,7 +1836,7 @@ Document distribution over the selected dates, stacked by volume. Counts are lis
 
 *#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyViewModel.swift`, so the two are worded together.*
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 617–617 | key: chronology.spanning.header -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 603–603 | key: chronology.spanning.header -->
 
 Spans more than a year
 
@@ -1896,7 +1896,7 @@ These documents overlap your range but their dates are imprecise enough to reach
      `\(breakdown)` is the chip's non-zero parts joined by commas, each already singular or plural
      — "1 reaches past both ends", or "2 begin before, 24 reach past both ends" — the same words the
      screen shows between middle dots. This form is for ONE document, so keep it singular. -->
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 159–160 | key: chronology.overflow.chip.a11y.one -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 141–142 | key: chronology.overflow.chip.a11y.one -->
 
 1 document has an uncertain date that extends beyond this range: \(breakdown). Toggle to show it.
 
@@ -1905,7 +1905,7 @@ These documents overlap your range but their dates are imprecise enough to reach
 #### VoiceOver label — \(…) documents have uncertain dates that extend beyond…
 <!-- The same label for two or more documents. `\(grouped(total))` is their number, grouped for the
      reader's region ("12,072"); `\(breakdown)` is as above. -->
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 161–162 | key: chronology.overflow.chip.a11y.many -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 143–144 | key: chronology.overflow.chip.a11y.many -->
 
 \(grouped(total)) documents have uncertain dates that extend beyond this range: \(breakdown). Toggle to show them.
 
