@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 /// The app side of the POCOM career index and the schema-v2 authority fields (#736).
 ///
@@ -205,6 +211,7 @@ struct POCOMIndexTests {
 
     // MARK: - Year formatting
 
+    #if !SWIFT_PACKAGE // PersonLifespan, the line both tests drive, is the app's (PersonIndexView.swift)
     @Test("A lifespan never carries a thousands separator")
     func lifespanHasNoGroupingSeparator() throws {
         // The shipped bug: the Career footer read "1,893–1,971". `String(localized:)` interpolates
@@ -241,6 +248,7 @@ struct POCOMIndexTests {
         #expect(try line(nil, nil) == nil)
         #expect(try !(line(1893, nil) ?? "").contains(","))
     }
+    #endif
 
     @Test("A malformed or empty index decodes to no careers rather than throwing")
     func tolerantDecoding() throws {
@@ -459,6 +467,7 @@ struct POCOMIndexTests {
 
 // MARK: - PersonLifespanTests
 
+#if !SWIFT_PACKAGE // PersonLifespan (PersonIndexView.swift) and PersonAuthorityIndexStore are the app's
 /// The person sheet's one lifespan line (#1370).
 ///
 /// Life years used to reach the sheet twice and wrongly: the rollup wrote the name authority's
@@ -511,3 +520,4 @@ struct PersonLifespanTests {
         #expect(line(113770) == "1884–1972", "Truman has no POCOM career, and had no lifespan line")
     }
 }
+#endif

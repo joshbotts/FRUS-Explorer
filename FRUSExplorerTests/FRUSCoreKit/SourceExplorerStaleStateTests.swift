@@ -8,7 +8,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - SourceExplorerStaleStateTests
 
@@ -26,6 +32,8 @@ import Testing
 /// Version history:
 ///   1.0 — Session 2026-08-04: N-8 stale-state fix
 ///   1.1 — 2026-09-13: pipeline availability joins the key
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit's suites with the load identity;
+///         the scans of the twins' source run in Xcode alone
 @Suite("Source Explorer stale state")
 struct SourceExplorerStaleStateTests {
 
@@ -187,6 +195,7 @@ struct SourceExplorerHydrationTests {
             volumeId: "frus1863p2", documentId: "d573", rawSourceNote: "", documentYear: context.year,
             pipelineAvailable: true), "fixture guard: keying on the hydrated year WOULD change the key")
 
+        #if !SWIFT_PACKAGE // every scan of the twins' source is the app's (its CLAUDE.md)
         var swept = 0
         for path in SourceExplorerReloadWiringAuditTests.twins {
             let body = try SourceExplorerReloadWiringAuditTests.body(
@@ -197,10 +206,13 @@ struct SourceExplorerHydrationTests {
             swept += 1
         }
         #expect(swept == 2)
+        #endif
     }
 }
 
 // MARK: - SourceExplorerReloadWiringAuditTests
+
+#if !SWIFT_PACKAGE // every scan of the twins' source is the app's (its CLAUDE.md)
 
 /// That both Source Explorer views key their load task and clear stale state.
 ///
@@ -216,6 +228,13 @@ struct SourceExplorerHydrationTests {
 ///         body with comment lines stripped.
 ///   1.2 — 2026-09-24: the order scan reads the pointer load as `loadUnprintedPointers(sourceNote:
 ///         note)`, which now takes the note the load parsed (#1390)
+///   1.3 — 2026-11-10 (FRUS Explorer Light, S22b): the twins' `load()` runs the shared sequence
+///         (`SourceExplorerResolution.resolved`), so the scans read that each sets its starting value
+///         before its first await, runs the sequence once with the host's route, index and the app's
+///         dependencies, writes it only while its load is current and asks NARA nothing once cancelled,
+///         that neither runs a step of it itself, and that the Mac's Refresh goes through the load key.
+///         The order the steps run in is the kit's, which `SourceExplorerResolutionTests` drives at run
+///         time, so the order scan is gone
 @Suite("Source Explorer reload wiring")
 struct SourceExplorerReloadWiringAuditTests {
 
@@ -225,7 +244,7 @@ struct SourceExplorerReloadWiringAuditTests {
 
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
         #expect(text.count > 5_000, "\(path) is implausibly small — did it move?")
         return text
@@ -262,22 +281,24 @@ struct SourceExplorerReloadWiringAuditTests {
         }
     }
 
-    @Test("Both twins reset the pre-1906 state before their first await; macOS clears the rest too")
+    @Test("Both twins set their starting value before their first await; macOS clears its live results too")
     func loadClearsStaleState() throws {
         var swept = 0
         for path in Self.twins {
             let load = try Self.body(of: "private func load() async {", in: Self.code(path))
-            let head = String(load.prefix(700))
             let beforeAwait = String(load[..<(load.range(of: "await ")?.lowerBound ?? load.endIndex)])
-            // Without these the previous document's rolls, serial and year stay on screen for the
-            // whole of the async work — and the new key reloads a live view in place.
-            for cleared in ["countrySeriesOutcome = .loading", "documentContext = nil"] {
-                #expect(head.contains(cleared) && beforeAwait.contains(cleared),
-                        "\(path) load() does not reset `\(cleared)` before its first await")
-            }
+            // Without this the previous document's rolls, serial, year, pointers and neighbours stay on
+            // screen for the whole of the async work — and the new key reloads a live view in place. The
+            // resolution is one value, so one write sets every part of it: the parse alone for another
+            // document, and for the one already shown its parts with the pre-1906 section reset.
+            #expect(beforeAwait.contains("resolution = start") && beforeAwait.contains("resolvedDocument = document"),
+                    "\(path) load() does not set its starting value before its first await")
+            #expect(beforeAwait.contains("resolution?.resolvingAgain()")
+                        && beforeAwait.contains("SourceExplorerResolution(rawSourceNote: rawSourceNote)"),
+                    "\(path) load() does not choose its start by the document it shows")
             if path.contains("Mac") {
-                for cleared in ["parsed = nil", "catalogResults = []", "authorityRecord = nil", "relatedDocs = []"] {
-                    #expect(head.contains(cleared),
+                for cleared in ["catalogResults = []", "loadError = nil", "manualQuery = \"\""] {
+                    #expect(beforeAwait.contains(cleared),
                             "load() does not reset `\(cleared)` before fetching the new document")
                 }
             }
@@ -286,57 +307,65 @@ struct SourceExplorerReloadWiringAuditTests {
         #expect(swept == 2)
     }
 
-    @Test("Both twins run the shared evaluation, leave the roster to it, and neither re-implements it")
-    func bothTwinsCallEvaluate() throws {
+    @Test("Both twins run the shared sequence once, write it only while current, and run no step of it")
+    func bothTwinsRunTheSharedSequence() throws {
         var swept = 0
         for path in Self.twins {
             let text = try Self.code(path)
-            let resolve = try Self.body(of: "private func resolveCountrySeries() async {", in: text)
-            #expect(resolve.contains("CentralFilesClassifier.evaluate("), "\(path) does not call evaluate")
-            // `evaluate` reads the bundled roster itself, off the main actor and only once both gates pass;
-            // a twin passing `roster:` would decode pocom-index.json on the main actor on first open.
-            #expect(!resolve.contains("roster:"), "\(path) passes its own roster to evaluate")
-            // Order, not presence: the cancel check comes after the evaluation's await and before either write,
-            // or a load cancelled mid-evaluation writes its document's answer over the next one's reset.
-            let evaluated = try #require(resolve.range(of: "CentralFilesClassifier.evaluate("), "\(path)")
-            let cancelCheck = try #require(resolve.range(of: "guard !Task.isCancelled"), "\(path) has no cancel check")
-            let writeContext = try #require(resolve.range(of: "documentContext = result.context"), "\(path)")
-            let writeOutcome = try #require(resolve.range(of: "countrySeriesOutcome = result.outcome"), "\(path)")
-            #expect(evaluated.lowerBound < cancelCheck.lowerBound, "\(path) checks for a cancel before the evaluation")
-            #expect(cancelCheck.lowerBound < writeContext.lowerBound && cancelCheck.lowerBound < writeOutcome.lowerBound,
-                    "\(path) writes the outcome before checking for a cancel")
-            #expect(text.components(separatedBy: "CentralFilesClassifier.evaluate(").count - 1 == 1)
-            // The loop, the enclosure lookup and the serial read moved into the classifier; a copy left
-            // in a twin is the drift this refactor exists to end.
-            for moved in ["CentralFilesClassifier.classify(", "enclosureHomes(", ".despatchSerial(volumeId:"] {
-                #expect(!text.contains(moved), "\(path) still calls \(moved) itself")
+            let load = try Self.body(of: "private func load() async {", in: Self.code(path))
+            let flat = load.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            // The sequence's call, which `route:` opens; `.resolved(` also opens two `case` patterns in each
+            // view, the country series' outcome's and the digitized range's.
+            let sequenceCall = try Regex(#"\.resolved\(\s*route:"#)
+            #expect(text.matches(of: sequenceCall).count == 1,
+                    "\(path) runs the sequence more than once, or not at all")
+            // The host's own route, its index and the app's files: a route built with another year or
+            // without the document, or no index, would silently lose the day, the marking, the pointers
+            // and the neighbours, and every other test would still pass.
+            #expect(flat.contains("CountrySeriesRoute(header: documentHeader, dateline: documentDateline, "
+                                  + "year: documentYear, volumeId: documentVolumeId, documentId: documentId)"),
+                    "\(path) builds its route from something other than what the host passed")
+            #expect(flat.contains("await start.resolved( route: route, pipeline: indexingPipeline, "
+                                  + "dependencies: .app(appState, volumeId: documentVolumeId))"),
+                    "\(path) runs the sequence with another route, index or dependencies")
+            #expect(!load.contains("roster:"), "\(path) passes its own roster")
+            // Order, not presence: each step's value is written after the cancel check, the result only
+            // after another, and nothing after a cancel — no live call either, whose result or error would
+            // land on the load that replaced this one.
+            let call = try #require(load.firstMatch(of: sequenceCall)?.range, "\(path)")
+            let stepGuard = try #require(load.range(of: "guard !Task.isCancelled else { return }",
+                                                    range: call.upperBound..<load.endIndex), "\(path)")
+            let stepWrite = try #require(load.range(of: "resolution = step",
+                                                    range: stepGuard.upperBound..<load.endIndex), "\(path)")
+            let finalGuard = try #require(load.range(of: "guard !Task.isCancelled else { return }",
+                                                     range: stepWrite.upperBound..<load.endIndex),
+                                          "\(path) writes the result without checking for a cancel")
+            #expect(load.range(of: "resolution = resolved", range: finalGuard.upperBound..<load.endIndex) != nil,
+                    "\(path) does not write the result after its cancel check")
+            #expect(!load[call.lowerBound..<finalGuard.lowerBound].contains("client."),
+                    "\(path) asks NARA something between the sequence and its cancel check")
+            // Every step is the sequence's; a copy left in a twin is the drift this refactor exists to end.
+            for moved in ["CentralFilesClassifier.evaluate(", "CentralFilesClassifier.classify(", "enclosureHomes(",
+                          ".despatchSerial(volumeId:", "UnprintedPointer.list(", ".externalCitations(",
+                          ".archivalNeighbors(", "relatedDocuments(for:", "PresidentialLibraryOutcome.resolve(",
+                          "SourceExplorerDocumentContext.documentDay(", "SourceExplorerDocumentContext.storedClassification(",
+                          ".record(forParsed:", "resolveCountrySeries", "loadUnprintedPointers", "loadRelatedDocuments"] {
+                #expect(!text.contains(moved), "\(path) still runs \(moved) itself")
             }
             swept += 1
         }
         #expect(swept == 2)
     }
 
-    /// The evaluation can parse the document for its enclosures on an AST-cache miss, so whatever waits
-    /// behind it waits on that. The authority record reads no year and goes first; everything that reads
-    /// the year the evaluation may fill in comes after it.
-    @Test("Both twins evaluate after the authority record and before the pointers and related documents")
-    func evaluateRunsAfterTheAuthorityRecord() throws {
-        var swept = 0
-        for path in Self.twins {
-            let load = try Self.body(of: "private func load() async {", in: Self.code(path))
-            let authority = try #require(load.range(of: "authorityRecord = await"), "\(path)")
-            let evaluate = try #require(load.range(of: "await resolveCountrySeries()"), "\(path)")
-            // #1390: the loader takes the note this load parsed, so every pointer carries it.
-            let pointers = try #require(load.range(of: "await loadUnprintedPointers(sourceNote: note)"),
-                                        "\(path)")
-            let related = try #require(load.range(of: "await loadRelatedDocuments("), "\(path)")
-            #expect(authority.lowerBound < evaluate.lowerBound, "\(path) evaluates before the authority record")
-            #expect(evaluate.lowerBound < pointers.lowerBound, "\(path) evaluates after the pointers")
-            #expect(evaluate.lowerBound < related.lowerBound, "\(path) evaluates after Related Documents")
-            #expect(load.components(separatedBy: "await resolveCountrySeries()").count - 1 == 1)
-            swept += 1
-        }
-        #expect(swept == 2)
+    /// The Mac window is persistent and Refresh ran `load()` in an unstructured `Task`, which no change
+    /// of document cancels: its values would land on the next document. It bumps the load key instead.
+    @Test("The Mac's Refresh re-runs the keyed load, not a load of its own")
+    func refreshGoesThroughTheLoadKey() throws {
+        let text = try Self.code("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift")
+        #expect(!text.contains("Task { await load() }"), "Refresh runs a load no change of document cancels")
+        #expect(text.contains("refreshGeneration += 1"), "Refresh does not change the load key")
+        let key = try Self.body(of: "var loadIdentity: String {", in: text)
+        #expect(key.contains("refreshGeneration"), "the load key leaves Refresh out")
     }
 
     @Test("Both twins key their load on pipeline availability")
@@ -393,3 +422,4 @@ struct SourceExplorerReloadWiringAuditTests {
         #expect(swept == 2)
     }
 }
+#endif

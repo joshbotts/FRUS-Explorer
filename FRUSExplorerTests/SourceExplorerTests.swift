@@ -1148,6 +1148,8 @@ struct VolumeSourcesResolutionTests {
 ///   1.4 — index version 69: a note matched on its class has the file's own sentences whatever
 ///          series the parse stored; both twins name the match by the shared rule and hand the
 ///          neighbour query the note, scanned
+///   1.5 — 2026-11-10: FRUS Explorer Light's S22b — the neighbour query is the sequence both views run, so
+///          the scan wants it there, handed the note, and in neither twin
 @Suite("Source Explorer — the Subject-Numeric File (#1543)")
 @MainActor
 struct SubjectNumericExplorerTests {
@@ -1680,9 +1682,11 @@ struct SubjectNumericExplorerTests {
     }
 
     /// Both views name what the list was matched on by the shared rule, and hand the neighbour
-    /// query the note it reads a class from (index version 69). A source scan of each view, since
-    /// neither body can be run here; the rule and the query have their runtime tests
-    /// (`SubjectNumericClassKeyTests`, `VolumeSourceMatcherTests`).
+    /// query the note it reads a class from (index version 69), through the sequence both run. A
+    /// source scan of each view, since neither body can be run here, and of the sequence's two calls;
+    /// the rule and the query have their runtime tests (`SubjectNumericClassKeyTests`,
+    /// `VolumeSourceMatcherTests`), and the sequence handed a note with no document behind it has
+    /// `SourceExplorerResolutionTests`'.
     @Test("Both twins name the match by the shared rule and hand the neighbour query the note")
     func bothTwinsReadTheSharedMatchRule() throws {
         var read = 0
@@ -1695,13 +1699,20 @@ struct SubjectNumericExplorerTests {
             // No view reads the parse's own key any more: it names the record group for a note
             // matched on its class, and nothing for most notes worded through the National Archives.
             #expect(!code.contains("archivalNeighborKey"), "\(path) reads the parse's key itself")
-            // The query made without a document anchor is handed the note, which is where a
-            // central-files class is read from.
-            let queries = Self.callSites(of: "pipeline.relatedDocuments", in: code)
-            #expect(queries.count == 1, "\(path) calls relatedDocuments \(queries.count) times")
-            #expect(queries.allSatisfy { $0.contains("rawCitation: rawSourceNote") }, "\(path): \(queries)")
+            // The neighbour query is the sequence's since S22b, whatever the receiver; scanned below.
+            #expect(Self.callSites(of: ".relatedDocuments", in: code).isEmpty,
+                    "\(path) queries the neighbours itself")
         }
         #expect(read == 2)
+        // The query made without a document anchor is handed the note, which is where a
+        // central-files class is read from: the sequence hands its note to the step, and the step
+        // to the query.
+        let sequence = try Self.code("FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift")
+        let steps = Self.callSites(of: "Self.relatedDocuments", in: sequence)
+        #expect(steps.count == 1 && steps.allSatisfy { $0.contains("rawSourceNote: rawSourceNote") }, "\(steps)")
+        let queries = Self.callSites(of: "pipeline.relatedDocuments", in: sequence)
+        #expect(queries.count == 1, "the shared sequence calls relatedDocuments \(queries.count) times")
+        #expect(queries.allSatisfy { $0.contains("rawCitation: rawSourceNote") }, "\(queries)")
     }
 
     /// Each state with the key of the sentence a view prints for it.

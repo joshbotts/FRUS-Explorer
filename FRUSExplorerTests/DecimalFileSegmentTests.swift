@@ -685,25 +685,25 @@ struct FilingPeriodYearTests {
         #expect(bindingsRead == 2, "read \(bindingsRead) bindings across the two twins")
     }
 
-    /// The `documentDay` both period rows pass is the one `load()` reads (#1407 review): a twin
-    /// whose load never assigned it would pass `nil` for ever, and a misprinted year would stand
-    /// on that platform alone. The read itself is driven through a real index in
-    /// `DecimalFileYearNeighbourTests`; this checks each twin's `load()` calls it, with the
-    /// document's key, and stores what it returns.
-    @Test("Both Source Explorer twins' load() reads the document's day")
+    /// The `documentDay` both period rows pass is the one the load resolves (#1407 review): a twin
+    /// whose day was never assigned would pass `nil` for ever, and a misprinted year would stand on
+    /// that platform alone. The read is the shared sequence's (`SourceExplorerResolution.resolved`,
+    /// through `SourceExplorerDocumentContext.documentDay`), driven through a real index in
+    /// `DecimalFileYearNeighbourTests` and in `SourceExplorerResolutionTests`; this checks each twin's
+    /// `documentDay` is the resolution's (FRUS Explorer Light, S22b).
+    @Test("Both Source Explorer twins' document day is the one their load resolves")
     func twinsLoadTheDocumentDay() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let call = "SourceExplorerDocumentContext.documentDay( pipeline: indexingPipeline, "
-            + "volumeId: documentVolumeId, documentId: documentId)"
+        let declaration = "private var documentDay: DecimalFileSegment.DocumentDay? { resolution?.documentDay }"
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
             let source = try String(contentsOf: root.appending(path: path), encoding: .utf8)
-            let body = try Self.body(of: "load", in: source, file: path)
-                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-            #expect(body.contains("let day = await \(call)"),
-                    "\(path): load() does not read the document's day through \(call)")
-            #expect(body.contains("documentDay = day"),
-                    "\(path): load() reads the document's day but never stores it")
+            // Comment lines out, so a doc line naming the call cannot stand in for it.
+            let code = source.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+                .joined(separator: "\n").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            #expect(code.contains(declaration), "\(path): documentDay is not the resolution's")
+            #expect(code.contains("await start.resolved( route: route, pipeline: indexingPipeline,"),
+                    "\(path): load() does not run the sequence that reads the document's day")
         }
     }
 

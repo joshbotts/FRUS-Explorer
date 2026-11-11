@@ -8,8 +8,24 @@
 
 import Testing
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - CentralFilesClassifierTests
 
@@ -54,6 +70,7 @@ struct CentralFilesClassifierTests {
 
     // MARK: Dateline year extraction (issue #215 — the pre-1906 gate)
 
+    #if !SWIFT_PACKAGE // DocumentView and MacDocumentView, whose extractYear it reads, are the app's
     @Test("extractYear parses 18xx datelines so pre-1906 docs reach country-series resolution")
     @MainActor
     func extractYearCoversPre1906Datelines() {
@@ -91,6 +108,7 @@ struct CentralFilesClassifierTests {
         // wins, so this resolves to 1905, not the leading 1805 (issue #215 review hardening).
         #expect(year("Ref. telegram No. 1805. Tokyo, March 14, 1905.") == 1905)
     }
+    #endif
 
     @Test("Department of State outbound → ambiguous instruction / note-to candidates")
     func classifiesDeptOutbound() {
@@ -755,7 +773,8 @@ struct ChapterTitleFormTests {
         // Two copies exist because the app cannot import the SPM generator target, and they are kept
         // in sync by hand. The roll keys the generator writes and the chapter keys the app looks up
         // come out of these two files, so a drift between them silently empties a lookup.
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let app = try String(contentsOf: root.appendingPathComponent("FRUSCoreKit/SourceExplorer/GeoKeyNormalizer.swift"),
                              encoding: .utf8)
         let generator = try String(contentsOf: root.appendingPathComponent("CentralFilesIndexGeneratorCore/GeoKeyNormalizer.swift"),
@@ -1380,14 +1399,14 @@ struct SourceExplorerEvaluationTests {
         #expect(result.outcome == .resolved(homes, serialLabel: .instruction))
     }
 
-    @Test("evaluate with no roster reads the bundled register, which names Dayton for d573")
-    func evaluateDefaultsToTheBundledRoster() async throws {
+    @Test("evaluate with the bundled register, which the app passes, names Dayton for d573")
+    func evaluateReadsTheBundledRoster() async throws {
         let fixture = try await Self.indexedD573Volume()
         defer { try? FileManager.default.removeItem(at: fixture.dir) }
         let index = try #require(CentralFilesIndexStore.shared)
         let result = await CentralFilesClassifier.evaluate(
             route: Self.route(), pipeline: fixture.pipeline, index: index,
-            astCache: DocumentASTCache(), volumeURL: nil)
+            roster: .bundled, astCache: DocumentASTCache(), volumeURL: nil)
         let homes = result.outcome.homes
         #expect(homes.map(\.classification.category) == [.instructions], "\(result.outcome)")
         #expect(homes.first?.chiefOfMission?.slug == "dayton-william-lewis")
@@ -1459,6 +1478,7 @@ struct SourceExplorerEvaluationTests {
 
     // MARK: The year
 
+    #if !SWIFT_PACKAGE // DocumentView and MacDocumentView, whose extractYear it reads, are the app's
     @Test("documentYear(fromDateline:) agrees with the platform's extractYear")
     @MainActor
     func documentYearParity() {
@@ -1487,6 +1507,7 @@ struct SourceExplorerEvaluationTests {
         #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861,
                 "fixture guard: the loose scan must be exercised")
     }
+    #endif
 
     // MARK: The serial label
 

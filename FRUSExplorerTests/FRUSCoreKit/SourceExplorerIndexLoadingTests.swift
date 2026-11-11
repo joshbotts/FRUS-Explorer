@@ -18,8 +18,9 @@ import Foundation
 
 // MARK: - SourceExplorerIndexLoadingTests
 
-/// The loaders of Source Explorer's eleven bundled indexes (`init(contentsOf:)`), which a host outside the
-/// app calls with the file where it keeps it.
+/// The loaders of Source Explorer's twelve bundled indexes (`init(contentsOf:)`), which a host outside the
+/// app calls with the file where it keeps it: the eleven S22a moved, and the register S22b moved with the
+/// classifier.
 ///
 /// Each loader decodes what the app's store decodes, so this suite holds the two together: in Xcode it
 /// loads the app bundle's copy and compares the index with the store's, file by file; in the package,
@@ -29,6 +30,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-11-08 (FRUS Explorer Light, S22a): initial implementation
+///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): the register, `POCOMIndex`
 @Suite("FRUSCoreKit — Source Explorer's indexes, loaded from a URL")
 struct SourceExplorerIndexLoadingTests {
 
@@ -67,6 +69,9 @@ struct SourceExplorerIndexLoadingTests {
                         store: ProvenanceFlowIndexStore.shared) { ($0.generated, $0.schemaVersion, $0.collectionFlows.count) }
         try expectLoads("subject-numeric-labels", SubjectNumericLabelTable.init(contentsOf:),
                         store: SubjectNumericLabelStore.shared) { ($0.generated, $0.schemaVersion, $0.schedules.count) }
+        // The register, which the classifier's addressee rule reads through `ChiefsOfMissionRoster` (S22b).
+        try expectLoads("pocom-index", POCOMIndex.init(contentsOf:),
+                        store: POCOMIndexStore.shared) { ($0.generated, $0.version, $0.chiefTerritoryIds.count) }
     }
 
     @Test("A file that is not there throws, rather than loading as an empty index")
@@ -75,6 +80,7 @@ struct SourceExplorerIndexLoadingTests {
             .appendingPathComponent("no-such-index-\(UUID().uuidString).json")
         let loaders: [(String, (URL) throws -> Void)] = [
             ("CollectionAuthorityIndex", { _ = try CollectionAuthorityIndex(contentsOf: $0) }),
+            ("POCOMIndex", { _ = try POCOMIndex(contentsOf: $0) }),
             ("ExternalCitationIndex", { _ = try ExternalCitationIndex(contentsOf: $0) }),
             ("DigitizedRangeIndex", { _ = try DigitizedRangeIndex(contentsOf: $0) }),
             ("RollScansIndex", { _ = try RollScansIndex(contentsOf: $0) }),

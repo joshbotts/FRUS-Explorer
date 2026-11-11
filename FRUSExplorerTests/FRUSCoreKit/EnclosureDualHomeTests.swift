@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - EnclosureDualHomeTests
 
@@ -257,11 +263,11 @@ struct EnclosureDualHomeTests {
         let classification = CentralFilesClassification(
             category: .consularDespatches, geoKeys: ["havana"], confidence: .high,
             rationale: "test")
-        let document = SourceExplorerView.CountrySeriesResolution(
+        let document = CentralFilesResolution(
             classification: classification, rolls: [], part: .document)
-        let enclosure = SourceExplorerView.CountrySeriesResolution(
+        let enclosure = CentralFilesResolution(
             classification: classification, rolls: [], part: .enclosure(label: "1"))
-        let second = SourceExplorerView.CountrySeriesResolution(
+        let second = CentralFilesResolution(
             classification: classification, rolls: [], part: .enclosure(label: "2"))
         #expect(Set([document.id, enclosure.id, second.id]).count == 3,
                 "row ids collided: \(document.id), \(enclosure.id), \(second.id)")

@@ -195,6 +195,7 @@ private final class ClaimantsBundleToken {}
 ///   1.1 — Session 2026-10-09: #1589 — both views reach the index through
 ///          `SourceExplorerProvenance.lotCards`, so the first test follows it there and the second
 ///          asks that rule which card wins, where it compared the order of two calls in each view
+///   1.2 — 2026-11-10: FRUS Explorer Light's S22b — the shared rule is read from FRUSCoreKit, where it moved
 @Suite("Lot claimants wiring")
 struct LotClaimantsWiringAuditTests {
 
@@ -224,7 +225,7 @@ struct LotClaimantsWiringAuditTests {
             #expect(src.contains("claimants: LotClaimantsIndexStore.shared"),
                     "\(path) does not hand the rule the bundled claimants index")
         }
-        let rule = Self.code(try Self.source("FRUSExplorer/SourceExplorer/SourceExplorerProvenance.swift"))
+        let rule = Self.code(try Self.source("FRUSCoreKit/SourceExplorer/SourceExplorerProvenance.swift"))
         #expect(rule.contains("LotClaimantsIndex.candidatesOutcome("),
                 "the shared rule never asks whether NARA divided the lot")
     }
