@@ -11,7 +11,7 @@ import Foundation
 // MARK: - CentralFilesConfidence
 
 /// How confident the classifier is that a document belongs to a given series.
-enum CentralFilesConfidence: Sendable, CaseIterable {
+public enum CentralFilesConfidence: Sendable, CaseIterable {
     /// The dateline unambiguously identifies the series (e.g. a U.S. legation abroad), or — for a
     /// Department letter — the addressee rule matched the header's addressee to the one U.S. chief of
     /// mission the register places at that post on that date (1.4).
@@ -20,7 +20,7 @@ enum CentralFilesConfidence: Sendable, CaseIterable {
     /// outbound is either an Instruction or a Note to a foreign mission).
     case medium
 
-    var label: String {
+    public var label: String {
         switch self {
         case .high:   return String(localized: "centralFiles.confidence.high", defaultValue: "Likely")
         case .medium: return String(localized: "centralFiles.confidence.medium", defaultValue: "Possible")
@@ -43,7 +43,7 @@ enum CentralFilesConfidence: Sendable, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — B-5 (W-8 residue), Finding 4: initial implementation
-enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
+public enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
 
     /// The printed document itself — the despatch, instruction or note.
     case document
@@ -56,7 +56,7 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     /// Without it a document and its enclosure that both classify to, say, Consular Despatches
     /// collide in a `ForEach` keyed on the category alone — the shape the surfaces used before
     /// this existed, where SwiftUI would have shown one row and silently dropped the other.
-    var key: String {
+    public var key: String {
         switch self {
         case .document: return "document"
         case .enclosure(let label): return "enclosure:\(label ?? "")"
@@ -64,7 +64,7 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     }
 
     /// What the row is called on screen.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .document:
             return String(localized: "centralFiles.part.document", defaultValue: "This document")
@@ -79,7 +79,7 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     }
 
     /// Whether this part is an enclosure.
-    var isEnclosure: Bool {
+    public var isEnclosure: Bool {
         if case .enclosure = self { return true }
         return false
     }
@@ -89,7 +89,7 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     /// Said once for the section rather than per row: it is a fact about how the record was
     /// filed, not about any single roll, and repeating it per enclosure would train the reader
     /// to skip it — the argument `QueryMethodAppendix.caveats` already makes about its own.
-    static var enclosureNote: String {
+    public static var enclosureNote: String {
         String(localized: "centralFiles.part.enclosureNote.v2",
                defaultValue: "An enclosure was often filmed in its own series rather than with the document that enclosed it. Each row below says which text its rolls hold; check both.")
     }
@@ -152,14 +152,14 @@ extension CentralFilesClassifier {
 
 /// A candidate series + country for a pre-1906 document, derived from its dateline,
 /// heading, and FRUS chapter. The Source Explorer turns each into roll links.
-struct CentralFilesClassification: Sendable, Equatable {
-    let category: CentralFilesSeriesCategory
-    let geoKeys: [String]
-    let confidence: CentralFilesConfidence
+public struct CentralFilesClassification: Sendable, Equatable {
+    public let category: CentralFilesSeriesCategory
+    public let geoKeys: [String]
+    public let confidence: CentralFilesConfidence
     /// One-line explanation of the cue used, for display.
-    let rationale: String
+    public let rationale: String
 
-    static func == (l: CentralFilesClassification, r: CentralFilesClassification) -> Bool {
+    public static func == (l: CentralFilesClassification, r: CentralFilesClassification) -> Bool {
         l.category == r.category && l.geoKeys == r.geoKeys && l.rationale == r.rationale
     }
 }
@@ -220,6 +220,11 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///         he wrote it (`sittingSecretarySender`, his bare surname, never an initialled namesake),
 ///         where the despatch fallback read Seward at Auburn and Blaine at Bar Harbor as despatches
 ///         from abroad.
+///   1.6 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit, public, with the types beside
+///         it. `evaluate` takes the roster from its host, an autoclosure read after both gates, where it
+///         read `ChiefsOfMissionRoster.bundled`, which is the app's (`POCOMIndexStore.swift`), and the
+///         parsed documents through `DocumentASTSource`, which the app's `DocumentASTCache` answers;
+///         `SourceExplorerResolution.resolved` calls it for both Source Explorer views and for a host.
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -869,7 +874,7 @@ extension CentralFilesClassifier {
 /// Built from `POCOMIndex.chiefs(territoryId:)` and nothing else. A territory id's keys are
 /// `GeoKeyNormalizer.keys(from:)` of its words, plus `territoryKeyOverrides` for the places FRUS
 /// names by a historical title the normalizer does not reach from POCOM's modern id.
-struct ChiefsOfMissionRoster: Sendable {
+public struct ChiefsOfMissionRoster: Sendable {
 
     /// Chapter geo key → the chiefs whose territory reaches it, in territory then register order.
     let chiefsByGeoKey: [String: [POCOMChiefOfMission]]
@@ -900,12 +905,8 @@ struct ChiefsOfMissionRoster: Sendable {
         "el-salvador": ["central america"],
     ]
 
-    /// The roster read from the bundled `pocom-index.json`. Empty when the file is absent, or is a
-    /// version-1 file with no `chiefs` table — in which case the rule decides nothing.
-    static let bundled = ChiefsOfMissionRoster(index: POCOMIndexStore.shared)
-
     /// A roster with nobody in it: the rule decides nothing.
-    static let empty = ChiefsOfMissionRoster(chiefsByTerritory: [:])
+    public static let empty = ChiefsOfMissionRoster(chiefsByTerritory: [:])
 
     /// Keys a set of chiefs, grouped by POCOM territory id, under the chapter geo keys.
     init(chiefsByTerritory: [String: [POCOMChiefOfMission]]) {
@@ -920,7 +921,7 @@ struct ChiefsOfMissionRoster: Sendable {
     }
 
     /// The roster a POCOM index's `chiefs` table describes.
-    init(index: POCOMIndex?) {
+    public init(index: POCOMIndex?) {
         var byTerritory: [String: [POCOMChiefOfMission]] = [:]
         for territoryId in index?.chiefTerritoryIds ?? [] {
             byTerritory[territoryId] = index?.chiefs(territoryId: territoryId) ?? []
@@ -1031,19 +1032,19 @@ struct ChiefsOfMissionRoster: Sendable {
 ///
 /// Shared by both Source Explorer views (each keeps a `CountrySeriesResolution` typealias), because
 /// the two are hand-maintained twins and a type written twice is two places to drift.
-struct CentralFilesResolution: Identifiable, Sendable, Equatable {
+public struct CentralFilesResolution: Identifiable, Sendable, Equatable {
     /// The series and country the document placed in.
-    let classification: CentralFilesClassification
+    public let classification: CentralFilesClassification
     /// The digitized rolls that series resolves to for this document's date.
-    let rolls: [CountryRoll]
+    public let rolls: [CountryRoll]
     /// Whose dateline produced this home — the document's, or one enclosure's (B-5).
-    var part: CentralFilesDocumentPart = .document
+    public var part: CentralFilesDocumentPart = .document
     /// The chief of mission the addressee rule matched when it promoted this home to "Likely", or
     /// `nil`. A surface badges the promoted row with the register it came from.
-    var chiefOfMission: POCOMChiefOfMission? = nil
+    public var chiefOfMission: POCOMChiefOfMission? = nil
     /// Keyed on the part as well as the category: a document and its enclosure can resolve to the
     /// SAME series, and an id of the category alone silently drops one of the two rows.
-    var id: String { "\(part.key)|\(classification.category.rawValue)" }
+    public var id: String { "\(part.key)|\(classification.category.rawValue)" }
 }
 
 // MARK: - CentralFilesSerialLabel (fix 4)
@@ -1060,7 +1061,7 @@ struct CentralFilesResolution: Identifiable, Sendable, Equatable {
 /// `Mr. Olney to Baron Thielmann.` (frus1895p1/d458, No. 42) went to the German ambassador. The number is the
 /// Department's either way, so such a pair reads plain "No.", and "Instruction No." only once the rule names
 /// the U.S. chief of mission and drops the notes reel.
-enum CentralFilesSerialLabel: Sendable, Equatable {
+public enum CentralFilesSerialLabel: Sendable, Equatable {
     /// An instruction from the Department (Diplomatic, Consular or Special Agents Instructions).
     case instruction
     /// A despatch to the Department (Diplomatic, Consular or Special Agents Despatches).
@@ -1095,7 +1096,7 @@ enum CentralFilesSerialLabel: Sendable, Equatable {
     }
 
     /// The row's title: `Instruction No. 428`, `Despatch No. 74`, or `No. 12`.
-    func title(serial: String) -> String {
+    public func title(serial: String) -> String {
         switch self {
         case .instruction:
             return String(format: String(localized: "source.explorer.countrySeries.serial.instruction %@",
@@ -1110,7 +1111,7 @@ enum CentralFilesSerialLabel: Sendable, Equatable {
     }
 
     /// The caption under the title, saying whose number it is and that it is not a NARA identifier.
-    var caption: String {
+    public var caption: String {
         switch self {
         case .instruction:
             return String(localized: "source.explorer.countrySeries.serial.instruction.caption",
@@ -1132,10 +1133,10 @@ enum CentralFilesSerialLabel: Sendable, Equatable {
 /// Before this, an empty list of homes meant loading, not checked (for any of nine reasons), nothing
 /// found, and "this is not a pre-1906 document" all at once, and every one of them printed "couldn't be
 /// predicted from its dateline and FRUS chapter" — false in all but one.
-enum CountrySeriesOutcome: Sendable, Equatable {
+public enum CountrySeriesOutcome: Sendable, Equatable {
 
     /// Why the check did not run.
-    enum NotCheckedReason: Sendable, Equatable, CaseIterable {
+    public enum NotCheckedReason: Sendable, Equatable, CaseIterable {
         /// The search index has not been created yet.
         case indexStarting
         /// The host passed no volume or document id.
@@ -1156,7 +1157,7 @@ enum CountrySeriesOutcome: Sendable, Equatable {
         case documentNotInStructure
 
         /// The sentence the section shows for this reason.
-        var message: String {
+        public var message: String {
             switch self {
             case .indexStarting:
                 return String(localized: "source.explorer.countrySeries.state.notChecked.indexStarting",
@@ -1201,19 +1202,19 @@ enum CountrySeriesOutcome: Sendable, Equatable {
     case resolved([CentralFilesResolution], serialLabel: CentralFilesSerialLabel)
 
     /// The homes when resolved, otherwise none.
-    var homes: [CentralFilesResolution] {
+    public var homes: [CentralFilesResolution] {
         if case .resolved(let homes, _) = self { return homes }
         return []
     }
 
     /// The sentence shown while the check runs.
-    static var loadingMessage: String {
+    public static var loadingMessage: String {
         String(localized: "source.explorer.countrySeries.state.loading",
                defaultValue: "Checking the digitized pre-1906 records for this document…")
     }
 
     /// The sentence shown for a note-less document from 1906 or later, where nothing ran.
-    static var notApplicableMessage: String {
+    public static var notApplicableMessage: String {
         String(localized: "source.explorer.countrySeries.state.notApplicable",
                defaultValue: "This document carries no archival source note. Roll suggestions cover documents from before 1906, when the Department filed its correspondence by country, so none is offered for a later document.")
     }
@@ -1222,17 +1223,26 @@ enum CountrySeriesOutcome: Sendable, Equatable {
 // MARK: - The gate, the homes, and evaluate (fixes 1–5)
 
 /// What the opening route handed Source Explorer about the document.
-struct CountrySeriesRoute: Sendable, Equatable {
+public struct CountrySeriesRoute: Sendable, Equatable {
     /// The header the host passed; on several routes it is the xml:id, not the printed header.
-    let header: String?
+    public let header: String?
     /// The dateline the host passed, or `nil` (History, related-document taps, restored windows).
-    let dateline: String?
+    public let dateline: String?
     /// The year the host derived, or `nil`.
-    let year: Int?
+    public let year: Int?
     /// The document's volume id.
-    let volumeId: String?
+    public let volumeId: String?
     /// The document's xml:id.
-    let documentId: String?
+    public let documentId: String?
+
+    /// What the route passed: the memberwise initializer, public for a host outside the module.
+    public init(header: String?, dateline: String?, year: Int?, volumeId: String?, documentId: String?) {
+        self.header = header
+        self.dateline = dateline
+        self.year = year
+        self.volumeId = volumeId
+        self.documentId = documentId
+    }
 }
 
 /// What reading the document's row from the index produced.
@@ -1431,8 +1441,9 @@ extension CentralFilesClassifier {
     /// LRU that empties on an iOS memory warning, so an open document's AST is probably, not certainly,
     /// cached; without the parse an eviction or a restored scene would give two readers of the same
     /// document different answers. Takes the actor and a URL rather than `AppState`, which is
-    /// main-actor isolated and cannot be read from here.
-    static func enclosureOpeners(volumeId: String, documentId: String, astCache: DocumentASTCache,
+    /// main-actor isolated and cannot be read from here. The actor is the app's `DocumentASTCache`,
+    /// read through `DocumentASTSource`, the two calls made here, since the cache is the app's.
+    static func enclosureOpeners(volumeId: String, documentId: String, astCache: any DocumentASTSource,
                                  volumeURL: URL?) async -> [IndexingPipeline.EnclosureOpener] {
         var cached = await astCache.ast(volumeId: volumeId, documentId: documentId)
         if cached == nil, let volumeURL, FileManager.default.fileExists(atPath: volumeURL.path),
@@ -1449,15 +1460,16 @@ extension CentralFilesClassifier {
     /// A host year of 1906 or later is answered at once, reading nothing. Otherwise: reads the
     /// document's row, hydrates what the route left out, gates, reads the volume structure, gates
     /// again, then finds the document's homes (with the addressee rule) and its enclosures'.
-    /// Nonisolated: each view reads `DocumentASTCache` and the volume URL on the main actor, passes
-    /// them in, and writes the result only if its task was not cancelled.
+    /// Nonisolated: each view's load reads `DocumentASTCache` and the volume URL on the main actor
+    /// (`SourceExplorerResolution.Dependencies.app`), and `SourceExplorerResolution.resolved` passes them
+    /// in; the view writes the result only if its task was not cancelled.
     ///
-    /// - Parameter roster: The chiefs of mission the addressee rule reads, or `nil` for the bundled
-    ///   register. Resolved here, after both gates, rather than by the caller: `.bundled` decodes
-    ///   `pocom-index.json` on first use, and a view passing it would do that on the main actor — for
-    ///   a document the rule never reads, too.
+    /// - Parameter roster: The chiefs of mission the addressee rule reads; the app passes its bundled
+    ///   register (`ChiefsOfMissionRoster.bundled`). An autoclosure, read here, after both gates,
+    ///   rather than by the caller: `.bundled` decodes `pocom-index.json` on first use, and a view
+    ///   passing its value would do that on the main actor — for a document the rule never reads, too.
     static func evaluate(route: CountrySeriesRoute, pipeline: IndexingPipeline?, index: CentralFilesIndex?,
-                         roster: ChiefsOfMissionRoster? = nil, astCache: DocumentASTCache,
+                         roster: @autoclosure @Sendable () -> ChiefsOfMissionRoster, astCache: any DocumentASTSource,
                          volumeURL: URL?) async -> (context: SourceExplorerDocumentContext, outcome: CountrySeriesOutcome) {
         if let year = route.year, year >= 1906 {
             // The gate's first refusal, before the index read: awaiting the pipeline actor, which may be
@@ -1506,7 +1518,7 @@ extension CentralFilesClassifier {
         if let refused = gate(input) { return (context, refused) }
 
         let homes = documentHomes(header: context.header, dateline: dateline, sectionPath: path,
-                                  index: index, roster: roster ?? .bundled)
+                                  index: index, roster: roster())
         let openers = await enclosureOpeners(volumeId: volumeId, documentId: documentId,
                                              astCache: astCache, volumeURL: volumeURL)
         let all = homes + enclosureRolls(openers: openers, index: index)

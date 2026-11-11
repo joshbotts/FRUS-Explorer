@@ -14,6 +14,9 @@
 
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 /// The per-row provenance rules the two Source Explorer twins share (P-1).
 ///
@@ -42,7 +45,10 @@ import Foundation
 ///   1.1 — Session 2026-10-09: #1589 — `lotCards(for:note:claimants:centralFiles:curated:)`, the
 ///          keyless lot cards a note shows, read once for both twins. The exception to "not
 ///          lookups" above: it is handed the three bundled indexes as values, and reads no store
-enum SourceExplorerProvenance {
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit, public; `lotCards` is handed the
+///          series facts too, which name a divided lot's creator, and the app's overload without them passes
+///          its store (`SourceExplorerProvenance+App.swift`)
+public enum SourceExplorerProvenance {
 
     /// Which producer answered for a lot file's **Record Group** row.
     ///
@@ -65,7 +71,7 @@ enum SourceExplorerProvenance {
     ///   .recordGroup(forRawLot:)` returned — **the curated answer under its own name, not the
     ///   value after `??`**. Passing the merged value makes every lot read `.naraCatalog`.
     /// - Returns: `.naraCatalog` when curation answered, `.frusText` otherwise.
-    static func lotRecordGroupSource(curated: String?) -> ProvenanceSource {
+    public static func lotRecordGroupSource(curated: String?) -> ProvenanceSource {
         curated == nil ? .frusText : .naraCatalog
     }
 
@@ -90,7 +96,7 @@ enum SourceExplorerProvenance {
     ///
     /// - Parameter citation: the stored citation behind the row.
     /// - Returns: `.stateDeptSchedule` for a central-file-class pointer, `.frusText` otherwise.
-    static func unprintedPointerSource(for citation: ExternalCitation) -> ProvenanceSource {
+    public static func unprintedPointerSource(for citation: ExternalCitation) -> ProvenanceSource {
         citation.anchor == "centralFileClass" ? .stateDeptSchedule : .frusText
     }
 
@@ -98,10 +104,10 @@ enum SourceExplorerProvenance {
 
     /// The keyless lot cards one source note shows: what the bundled indexes answer for the lot
     /// it cites, with no NARA Catalog API key.
-    struct LotCards: Equatable {
+    public struct LotCards: Equatable, Sendable {
 
         /// What the bundle holds for the lot.
-        enum Bundled: Equatable {
+        public enum Bundled: Equatable, Sendable {
             /// NARA divided the lot across several series: all of them, as the `.candidates`
             /// outcome the twins already draw. It takes the place of the one-series card, which
             /// would assert a choice the data does not support (#675).
@@ -111,12 +117,12 @@ enum SourceExplorerProvenance {
         }
 
         /// The lot as the note prints it.
-        let rawLot: String
+        public let rawLot: String
         /// The bundle's answer, or `nil` when it holds none the note may show.
-        let bundled: Bundled?
+        public let bundled: Bundled?
         /// The hand-curated outcome for a lot NARA's catalogue does not resolve by control number
         /// (#375), drawn after `bundled`.
-        let curated: CuratedLotOutcome?
+        public let curated: CuratedLotOutcome?
     }
 
     /// The lot cards `parsed` shows, or `nil` when it shows none.
@@ -153,10 +159,14 @@ enum SourceExplorerProvenance {
     ///   - claimants: `LotClaimantsIndexStore.shared`.
     ///   - centralFiles: `CentralFilesIndexStore.shared`.
     ///   - curated: `CuratedLotResolutionsStore.shared`.
-    static func lotCards(for parsed: ParsedSourceNote?, note: String,
-                         claimants: LotClaimantsIndex?,
-                         centralFiles: CentralFilesIndex?,
-                         curated: CuratedLotResolutions?) -> LotCards? {
+    ///   - seriesFacts: `SeriesFactsIndexStore.shared`, which names a divided lot's creator, read only for
+    ///     a lot NARA divided. The app's overload without it passes the store
+    ///     (`SourceExplorerProvenance+App.swift`).
+    public static func lotCards(for parsed: ParsedSourceNote?, note: String,
+                                claimants: LotClaimantsIndex?,
+                                centralFiles: CentralFilesIndex?,
+                                curated: CuratedLotResolutions?,
+                                seriesFacts: @autoclosure () -> SeriesFactsIndex?) -> LotCards? {
         let lot: String
         // The record group a National Archives citation names, as its number; `nil` for a
         // lot-file citation, which is answered whatever the lot's record group.
@@ -182,7 +192,8 @@ enum SourceExplorerProvenance {
         let bundled: LotCards.Bundled?
         if let series = claimants?.claimants(forRawLot: lot),
            series.contains(where: { isCited($0.recordGroup) }),
-           let divided = LotClaimantsIndex.candidatesOutcome(forRawLot: lot, in: claimants) {
+           let divided = LotClaimantsIndex.candidatesOutcome(forRawLot: lot, in: claimants,
+                                                             seriesFacts: seriesFacts()) {
             bundled = .divided(divided)
         } else if let entry = centralFiles?.lotFile(forRawLot: lot), isCited(entry.recordGroup) {
             bundled = .single(entry)

@@ -88,7 +88,8 @@ import Foundation
 ///          day; `segment` and `filingYear` take the document's day
 ///   1.4 — FRUSCoreKit, part 2: moved into the kit, with `isDecimalFileNumber(_:)` from
 ///         `NARACatalogClient`, which forwards to it
-enum DecimalFileSegment {
+///   1.5 — 2026-11-10 (FRUS Explorer Light, S22b): public, for `DocumentDay`, which `SourceExplorerResolution` holds
+public enum DecimalFileSegment {
 
     /// The decimal classification before the first `/` (`711.654/11-543` → `711.654`).
     /// Returns the trimmed whole string when there is no `/`.
@@ -124,16 +125,16 @@ enum DecimalFileSegment {
 
     /// A document's own calendar day, as the index stores it — what
     /// ``fileYear(from:documentDay:)`` compares a date-form item with.
-    struct DocumentDay: Equatable, Sendable {
+    public struct DocumentDay: Equatable, Sendable {
         /// The document's year.
-        let year: Int
+        public let year: Int
         /// The document's month, 1–12.
-        let month: Int
+        public let month: Int
         /// The document's day of the month.
-        let day: Int
+        public let day: Int
 
         /// A day from its three parts.
-        init(year: Int, month: Int, day: Int) {
+        public init(year: Int, month: Int, day: Int) {
             self.year = year
             self.month = month
             self.day = day

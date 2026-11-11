@@ -29,28 +29,30 @@ import SourceNoteKit
 ///          from; `CollectionAuthorityIndex` is public with its decoder and loaded from a URL the host
 ///          gives (`init(contentsOf:)`), and `CollectionAuthorityStore`, which reads the app's bundle,
 ///          stays in the app (`CollectionAuthorityStore.swift`)
-struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `AuthorityCollectionRecord` and `AuthoritySubSeriesRecord` public, with the fields a host
+///          reads, since `SourceExplorerResolution` holds the record
+public struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
     /// Stable dedup key: `"lot:" + lotFileNorm` or `"txt:" + repoNorm + "|" + segmentNorm`.
-    let id: String
+    public let id: String
     /// Canonical display name (the most frequent raw form across the corpus).
-    let name: String
+    public let name: String
     /// Canonical repository keyword (`"Johnson Library"`), or `nil` when unattributed.
-    let repository: String?
+    public let repository: String?
     /// Record-group number (`"59"`) when known.
-    let recordGroup: String?
+    public let recordGroup: String?
     /// Canonical compact lot key (`"64D199"`) for lot-keyed records; matches
     /// `document_sources.lot_file_norm` / `volume_sources.lot_file_norm`.
-    let lotFileNorm: String?
+    public let lotFileNorm: String?
     /// Resolved NARA Catalog NAID (offline resolution only), when available.
-    let naId: String?
+    public let naId: String?
     /// NARA Catalog URL for `naId`.
-    let catalogURL: String?
+    public let catalogURL: String?
     /// Distinct raw variant forms merged into this record (sorted; capped).
-    let aliases: [String]
+    public let aliases: [String]
     /// Volumes whose front matter or document source notes cite this collection (sorted).
-    let volumeIds: [String]
+    public let volumeIds: [String]
     /// Sub-series (level 2) under this collection, sorted by class key / name.
-    let children: [AuthoritySubSeriesRecord]
+    public let children: [AuthoritySubSeriesRecord]
 
     /// Explicit keys (the generator omits empty arrays for size — see `init(from:)`).
     private enum CodingKeys: String, CodingKey {
@@ -59,7 +61,7 @@ struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
     }
 
     /// Decodes, tolerating the omitted empty arrays the generator writes.
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
         name = try c.decode(String.self, forKey: .name)
@@ -91,7 +93,7 @@ struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
     }
 
     /// The NARA Catalog record's URL, parsed once for `Link`/`openURL`.
-    var url: URL? { catalogURL.flatMap(URL.init(string:)) }
+    public var url: URL? { catalogURL.flatMap(URL.init(string:)) }
 }
 
 // MARK: - AuthoritySubSeriesRecord
@@ -99,18 +101,18 @@ struct AuthorityCollectionRecord: Decodable, Sendable, Equatable, Identifiable {
 /// One level-2 sub-series under an authority collection — the next leading citation
 /// segment (`"Country File"` under `"National Security File"`) or a decimal /
 /// subject-numeric class leaf under a Central Files collection.
-struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
+public struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
     /// Canonical display name (most frequent raw form).
-    let name: String
+    public let name: String
     /// The canonical class key (`SourceNoteParser.decimalClassKey` form) when the
     /// sub-series is a class leaf; matches `document_sources.decimal_class`.
-    let decimalClass: String?
+    public let decimalClass: String?
     /// Distinct raw variant forms merged into this sub-series (sorted; capped).
-    let aliases: [String]
+    public let aliases: [String]
     /// Volumes citing this sub-series (sorted). For class-keyed children the list
     /// covers front-matter citations only — citing *documents* are local
     /// `decimal_class` queries (S5).
-    let volumeIds: [String]
+    public let volumeIds: [String]
 
     /// Explicit keys (the generator omits empty arrays for size — see `init(from:)`).
     private enum CodingKeys: String, CodingKey {
@@ -118,7 +120,7 @@ struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable {
     }
 
     /// Decodes, tolerating the omitted empty arrays the generator writes.
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
         decimalClass = try c.decodeIfPresent(String.self, forKey: .decimalClass)

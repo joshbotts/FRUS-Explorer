@@ -20,7 +20,7 @@ import Foundation
 /// every reader that does not know it, and `nil` reads as "confident" everywhere in this
 /// codebase (`LotFileEntry.matchType` literally defaults to `"control"` on a missing key).
 /// A separate type makes the uncertainty impossible to drop by omission.
-enum CuratedLotOutcome: Sendable, Equatable {
+public enum CuratedLotOutcome: Sendable, Equatable {
 
     /// One NARA series, reached by collection name rather than by control number.
     /// Shown with a "Possible" confidence chip and the rationale that produced it.
@@ -45,42 +45,42 @@ enum CuratedLotOutcome: Sendable, Equatable {
 // MARK: - CuratedSeries
 
 /// One NARA series a curated lot may correspond to.
-struct CuratedSeries: Codable, Sendable, Equatable, Identifiable {
+public struct CuratedSeries: Codable, Sendable, Equatable, Identifiable {
     /// NARA unique identifier.
-    let naId: String
+    public let naId: String
     /// The series title as NARA describes it.
-    let title: String
+    public let title: String
     /// Deep link to the catalogue record.
-    let catalogURL: String
+    public let catalogURL: String
     /// HMS/MLR entry number (e.g. `A1-1096`) — the identifier NARA staff use to pull records.
-    let entryNumber: String?
+    public let entryNumber: String?
     /// Coverage span as NARA states it (e.g. `1946–1947`).
-    let dateRange: String?
+    public let dateRange: String?
 
-    var id: String { naId }
+    public var id: String { naId }
 
     /// `catalogURL` as a `URL`, or `nil` when the stored string is not one.
-    var url: URL? { URL(string: catalogURL) }
+    public var url: URL? { URL(string: catalogURL) }
 }
 
 // MARK: - CuratedReferral
 
 /// The archivist-referral outcome: what stands in the way, and what to ask NARA for.
-struct CuratedReferral: Codable, Sendable, Equatable {
+public struct CuratedReferral: Codable, Sendable, Equatable {
     /// Why no mapping exists — the archival fact, stated plainly.
-    let rationale: String
+    public let rationale: String
     /// What the researcher should do instead, including what to bring to a reference request.
-    let guidance: String
+    public let guidance: String
     /// How many series the collection was arranged into, when known — the number is the
     /// argument: a list of 170 is not a candidate list, it is a reason to ask for help.
-    let seriesCount: Int?
+    public let seriesCount: Int?
     /// The span of HMS/MLR entry numbers the collection occupies (e.g. `A1 310 – A1 675`).
-    let entryNumberRange: String?
+    public let entryNumberRange: String?
     /// A catalogue search that shows the collection's series, for orientation only.
-    let browseURL: String?
+    public let browseURL: String?
 
     /// `browseURL` as a `URL`, or `nil` when absent or malformed.
-    var url: URL? { browseURL.flatMap(URL.init(string:)) }
+    public var url: URL? { browseURL.flatMap(URL.init(string:)) }
 }
 
 // MARK: - CuratedSeriesDefinition
@@ -232,6 +232,8 @@ struct CuratedLotRecord: Codable, Sendable, Equatable {
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `CuratedLotResolutionsStore`, which
 ///          reads the app's bundle, stays in the app (`CuratedLotResolutionsStore.swift`)
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): `CuratedLotOutcome`, `CuratedSeries` and `CuratedReferral` public, since
+///          the lot cards hold them
 public struct CuratedLotResolutions: Codable, Sendable {
     /// Bumped when the row shape changes.
     let schemaVersion: Int

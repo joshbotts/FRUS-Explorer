@@ -44,7 +44,9 @@ import Foundation
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit;
 ///          `resolve(repository:collection:note:index:curated:)` takes both tables, and the app's
 ///          overload without them passes its two stores (`PresidentialLibraryOutcome+App.swift`)
-enum PresidentialLibraryOutcome: Sendable, Equatable {
+///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): public, with the properties both views' library panels read, since
+///          `SourceExplorerResolution` holds the outcome
+public enum PresidentialLibraryOutcome: Sendable, Equatable {
 
     /// One series inside one verified collection — safe to present as the resolution.
     case series(PresidentialLibraryIndex.Series,
@@ -64,7 +66,7 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     /// The most candidate series listed before the list stops being evidence and starts being an
     /// inventory. The caveat states the full count whenever it is larger, so nothing is dropped
     /// silently.
-    static let candidateDisplayLimit = 8
+    public static let candidateDisplayLimit = 8
 
     /// Resolves a presidential-library citation against the bundled catalogue.
     ///
@@ -127,15 +129,15 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     // MARK: - What the view needs
 
     /// Whether the bundled catalogue answered at all.
-    var isHit: Bool { self != .none }
+    public var isHit: Bool { self != .none }
 
     /// Whether the live catalogue query must be skipped for this citation (owner decision, see
     /// the type's discussion). True for every hit — the collection is verified in both branches,
     /// and unconstrained free-text rows beside it would be indistinguishable from it.
-    var suppressesLiveQuery: Bool { isHit }
+    public var suppressesLiveQuery: Bool { isHit }
 
     /// The verified collection, in both hit branches.
-    var verifiedCollection: PresidentialLibraryIndex.Collection? {
+    public var verifiedCollection: PresidentialLibraryIndex.Collection? {
         switch self {
         case .series(_, let inCollection): return inCollection
         case .collection(let c, _): return c
@@ -144,7 +146,7 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     }
 
     /// The resolved series, when the citation pinned one.
-    var resolvedSeries: PresidentialLibraryIndex.Series? {
+    public var resolvedSeries: PresidentialLibraryIndex.Series? {
         if case .series(let s, _) = self { return s }
         return nil
     }
@@ -155,7 +157,7 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     /// inventory rather than evidence about this citation, and the researcher is better served
     /// by the collection's own catalogue record — which the view links — than by the first eight
     /// of forty-eight series in NAID order.
-    var candidateSeries: [PresidentialLibraryIndex.Series]? {
+    public var candidateSeries: [PresidentialLibraryIndex.Series]? {
         guard case .collection(let c, let candidates) = self,
               !candidates.isEmpty,
               candidates.count < c.series.count else { return nil }
@@ -163,7 +165,7 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     }
 
     /// The full candidate count, which may exceed what ``candidateSeries`` lists.
-    var candidateTotal: Int {
+    public var candidateTotal: Int {
         guard case .collection(_, let candidates) = self else { return 0 }
         return candidates.count
     }
@@ -174,13 +176,13 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     /// collection. `CatalogQueryEvidence` puts the hedge in the *heading* on the reasoning that a
     /// caveat below the rows is read last; here the hedge attaches to the series rows, and the
     /// caveat is rendered **above** them, so it is read before the thing it qualifies.
-    var sectionTitle: String {
+    public var sectionTitle: String {
         String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")
     }
 
     /// What the reader must know before treating the rows as an answer, or `nil` when the
     /// citation resolved exactly.
-    var caveat: String? {
+    public var caveat: String? {
         guard case .collection(let c, let candidates) = self else { return nil }
         if candidates.count >= c.series.count {
             return String(localized: "source.explorer.presLib.offline.collectionOnly",
@@ -201,18 +203,18 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
     }
 
     /// The label for the verified collection row.
-    var collectionRowLabel: String {
+    public var collectionRowLabel: String {
         String(localized: "source.explorer.presLib.offline.collection",
                defaultValue: "Collection")
     }
 
     /// The label for the resolved series row.
-    var seriesRowLabel: String {
+    public var seriesRowLabel: String {
         String(localized: "source.explorer.presLib.offline.series", defaultValue: "Series")
     }
 
     /// The provenance line: this came out of the bundle, not the network.
-    var provenanceNote: String {
+    public var provenanceNote: String {
         String(localized: "source.explorer.presLib.offline.provenance",
                defaultValue: """
                Matched against the National Archives' own description of this library, from the \
