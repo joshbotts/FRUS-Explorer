@@ -409,6 +409,86 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("<li id=\"ix-in&lt;3&gt;&amp;&quot;\">Odd</li>"))
     }
 
+    /// A person link as an index entry or a list of participants names one.
+    private static func name(_ text: String) -> FRUSRenderNode {
+        .persNameLink(ref: "#p_1", children: [.plainText(text)], person: nil)
+    }
+
+    /// A page link as an index prints one, with a note's italic n if `note`.
+    private static func page(_ number: String, note: Bool = false) -> FRUSRenderNode {
+        .crossRefLink(target: "#pg_\(number)", volumeId: nil, broken: nil,
+                      children: [.plainText(number)] + (note ? [.italicText([.plainText("n")])] : []))
+    }
+
+    /// An item of links alone is `class="links-only"`, whose cross-reference and person links the
+    /// reader's stylesheet draws as boxes at least 24 px square for WCAG 2.2's 2.5.8: frus1961-63v06's
+    /// "Davis, Richard H., 18n 24n", whose TEI prints no comma between the pages. An item with text
+    /// beside its links, a comma included, is written as before.
+    @Test("An item of links alone is written links-only, after its id, and an item with text beside its links as before")
+    func anItemOfLinksAloneIsWrittenLinksOnly() {
+        let out = html([.listBlock(type: nil, heading: nil, items: [
+            ListItemEntry(children: [Self.name("Davis, Richard H.,"), .elementSpace, Self.page("18", note: true),
+                                     .elementSpace, Self.page("24", note: true)]),
+            ListItemEntry(children: [Self.name("Farley, Philip J.,"), .elementSpace, Self.page("18", note: true)],
+                          id: "in7"),
+            ListItemEntry(children: [Self.name("Brezhnev, Leonid I.,"), .elementSpace, Self.page("2"),
+                                     .plainText(", "), Self.page("3")]),
+        ], trailing: [])])
+        #expect(out.contains("<li class=\"links-only\"><a class=\"pers-name\" href=\"frusexplorer://person/p_1\">Davis, Richard H.,</a>"
+                             + "<span class=\"element-space\" data-skip=\"1\"> </span>"
+                             + "<a class=\"cross-ref\" href=\"frusexplorer://doc/%23pg_18\">18<em>n</em></a>"))
+        #expect(out.contains("<li id=\"ix-in7\" class=\"links-only\"><a class=\"pers-name\""))
+        #expect(out.contains("<li><a class=\"pers-name\" href=\"frusexplorer://person/p_1\">Brezhnev, Leonid I.,</a>"))
+        #expect(out.components(separatedBy: "links-only").count == 3, "two items are links-only: \(out)")
+    }
+
+    /// What `holdsLinksAlone(_:)` reads as text, which keeps an item's links inline: a word or a
+    /// comma, supplied text's brackets, a block other than a paragraph, and a link that holds
+    /// another link, which a browser splits. Formatting and a paragraph around a link, a label printed
+    /// beside the item (floated into the margin), a space between two elements, a page break and a
+    /// nested list are no text. What axe reads the same way: a widget whose block holds no other
+    /// text, a floated label being a block of its own.
+    @Test("An item holds links alone when nothing beside its links is text, and holds none without a link")
+    func whatHoldsLinksAlone() {
+        let holds = FRUSRenderNodeHTMLSerializer.holdsLinksAlone
+        let numeral = Self.page("III")
+        let nested = FRUSRenderNode.listBlock(type: nil, heading: nil,
+                                              items: [ListItemEntry(children: [.plainText("talks, "), Self.page("4")])],
+                                              trailing: [])
+        // A name alone, as in a list of participants, and with a label printed beside it; a contents
+        // line with its title in bold; a name and a page with no space between (frus1955-57v12's
+        // "Armour, Norman, Sr.,365"); a page break in the TEI, in the item and before it; a link
+        // before its sub-entries; a passthrough element; a link alone in a paragraph.
+        #expect(holds(ListItemEntry(children: [Self.name("William Porter")])))
+        #expect(holds(ListItemEntry(lead: [.label([.plainText("(c)")])], children: [Self.name("Phil Talbot")])))
+        #expect(holds(ListItemEntry(children: [.boldText([Self.page("Preface")]), .elementSpace, numeral])))
+        #expect(holds(ListItemEntry(children: [Self.name("Armour, Norman, Sr.,"), Self.page("365")])))
+        #expect(holds(ListItemEntry(children: [Self.page("12"), .pageBreak(pageNumber: .arabic(13)), .elementSpace,
+                                               Self.page("14")])))
+        #expect(holds(ListItemEntry(lead: [.other([.pageBreak(pageNumber: .arabic(316))])],
+                                    children: [Self.name("Davis, Richard H.,"), .elementSpace, numeral])))
+        #expect(holds(ListItemEntry(children: [Self.page("Geneva conference"), nested])))
+        #expect(holds(ListItemEntry(children: [.unknown(name: "seg", children: [numeral]), .plainText(" ")])))
+        #expect(holds(ListItemEntry(children: [.paragraph([numeral])])))
+        // Text beside a link.
+        #expect(!holds(ListItemEntry(children: [.plainText("Dean, Arthur H., "), Self.page("236")])))
+        #expect(!holds(ListItemEntry(children: [Self.name("Brezhnev, Leonid I.,"), .elementSpace, Self.page("2"),
+                                                .plainText(", "), Self.page("3")])))
+        #expect(!holds(ListItemEntry(children: [.italicText([.plainText("see also")]), .elementSpace, numeral])))
+        #expect(!holds(ListItemEntry(children: [.suppliedText([numeral])])))
+        #expect(!holds(ListItemEntry(children: [.paragraph([.plainText("Memorandum, "), numeral])])))
+        #expect(!holds(ListItemEntry(children: [.tableBlock(caption: nil, rows: [[TableCell(children: [numeral])]])])))
+        // A link that holds a link: frus1961-63v06's "List of Kennedy Administration Volumes", whose
+        // title names a person, which a browser would split into two links and loose text.
+        let title = FRUSRenderNode.crossRefLink(target: "#subseriesvols", volumeId: nil, broken: nil, children: [
+            .boldText([.plainText("List of "), Self.name("Kennedy"), .plainText(" Administration Volumes")]),
+        ])
+        #expect(!holds(ListItemEntry(children: [title, .elementSpace, Self.page("XXV")])))
+        // No link.
+        #expect(!holds(ListItemEntry(children: [])))
+        #expect(!holds(ListItemEntry(children: [.plainText(" "), .elementSpace])))
+    }
+
     @Test("Simple list emits ul.frus-list.simple")
     func simpleList() {
         let out = html([.listBlock(type: "simple", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])

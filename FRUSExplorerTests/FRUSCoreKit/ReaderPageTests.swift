@@ -46,6 +46,10 @@ import Crypto
 ///          `theMeasureIsTheHosts` says what it does
 ///   1.6 — 2026-11-08: the heads are re-pinned for the index entry's arrival wash (Lane 2 of the
 ///          editors' annotations follow-ups plan), and the wash is drawn in four places
+///   1.7 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): the heads are re-pinned for the
+///          rule that makes the links of a list item of links alone boxes at least 24 px square
+///          (WCAG 2.2's 2.5.8), which a test reads; `LinksAloneTargetRenderTests`, Xcode's alone,
+///          measures the boxes in WebKit
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -97,15 +101,24 @@ struct ReaderPageTests {
     ///   Motion, and the comment that says so. Each head grew by 707 bytes, all of them that block;
     ///   no variable and no other rule changed, and the wash is the footnote's, so
     ///   `everyTextColourMeetsAAOnTheArrivalWash` below now finds it drawn in four places.
+    /// - 2026-11-11 re-pinned them for WCAG 2.2's 2.5.8 (Target Size (Minimum)), which FRUS Explorer
+    ///   Light's axe check found frus1961-63v06's index failing where its page numbers stand a
+    ///   space apart with no comma between them: the stylesheet gains the rule that draws the
+    ///   cross-reference and person links of a list item of links alone (`li.links-only`, which the
+    ///   serializer writes) as boxes at least 24 px square on screen, with the comment that says why.
+    ///   Each head grew by 1,683 bytes, all of them that block; no variable and no other rule
+    ///   changed: with the block taken out, all eight heads were the 2026-11-08 pins byte for byte
+    ///   when these were taken. `theLinksOfAnItemOfLinksAloneAre24PxTargets` below says what the rule
+    ///   must be, and `LinksAloneTargetRenderTests` (Xcode's alone) what WebKit draws by it.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("1de47cd77607a5bab117b6d1a88db823b0651a5b6bb33c23991f8f8e28fd32eb", 20574),
-        "light medium": ("8d1ddbee25737d1f993b334b6aabfbaf98602b240c5b8fd4597c6c919bd33efd", 20575),
-        "light large": ("93203238ab5e2c7ed642bdf21eb9c85baebafb8f443200e04355b8f435eaa49c", 20575),
-        "light extraLarge": ("f4e46ecb3c8e09f08a73565bb2e941a2d29d781e7786fca0a4a5eaf37e9d7b2d", 20575),
-        "dark small": ("6fbac56a635df62a8b3443dadb23cb34d6701a4fa277144a5c88ad4af4f220ba", 20604),
-        "dark medium": ("c0a1e9276598ed32e348958dae1ada467ee2513da8a0a2c2623965dc05c6b485", 20605),
-        "dark large": ("8f08e7a160a45f9a6e83f9ac7269cf4923f230beddea5984d45cd7589f2d225a", 20605),
-        "dark extraLarge": ("bf63a58f74acffb01689c623796c4b722295b1ad5d209ce2091154f6c1d1dd05", 20605),
+        "light small": ("d889407f53cf670100548427839bfb5d054356c57f46de3da005b05495b141b7", 22257),
+        "light medium": ("78a8e9e5b5bf95462f6f56483dd3126573d75c49c761ad247df5ad044e599b1a", 22258),
+        "light large": ("04da0fbb0d051b17f5f2543d43a7978789c9c8ac02be704d518de33653ddfd00", 22258),
+        "light extraLarge": ("1d9a9326e0bbd4352b9f087949a497f43f159217f977a6a15f0fa200741b9fe9", 22258),
+        "dark small": ("9668ae7c034a7517cf5e8b4a822dce58d8d157efe033378c8db7c13e678ff45c", 22287),
+        "dark medium": ("355a218c7bc67c6f4d7e016e959ec5a04ea2f0e963e37f716b99daa35a5b2de9", 22288),
+        "dark large": ("84e9f312f5fb9578602b96e852037fccf2404bd8747f4bebce4bef81316229a7", 22288),
+        "dark extraLarge": ("3166bb2395ca24d0ec4eb8b1ccb88065d0d1a05a8a44e10d3743f7158d8cf240", 22288),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -547,6 +560,42 @@ struct ReaderPageTests {
                 "the rule after the reduced-motion block was not read as a top-level rule")
     }
 
+    // MARK: - WCAG 2.2's 2.5.8: the links of a list item of links alone
+
+    /// The selectors of the rule that draws the cross-reference and person links of a list item of
+    /// links alone as boxes at least 24 px square: `li.links-only`, which the serializer writes for
+    /// an item with no text beside its links (`FRUSRenderNodeHTMLSerializer.holdsLinksAlone(_:)`), as
+    /// an index entry whose page numbers the TEI prints with no comma between them (FRUS Explorer
+    /// Light's axe check, 2026-11-11). A link in formatting inside the item is one level down.
+    static let linksAloneSelectors = [
+        ".frus-list > li.links-only > a.cross-ref", ".frus-list > li.links-only > a.pers-name",
+        ".frus-list > li.links-only > * > a.cross-ref", ".frus-list > li.links-only > * > a.pers-name",
+    ]
+
+    /// Such an item holds no text but its links, so the inline exception of WCAG 2.2's 2.5.8 (Target
+    /// Size (Minimum)) does not reach them: each must be a target 24 px square, or stand 24 px clear
+    /// of the next. Drawn inline they were neither, as axe found on frus1961-63v06's index. On paper
+    /// there is nothing to follow, so the rule is the screen's alone, and its boxes sit at the top of
+    /// their line, where a list's bullet stays beside a long title's first line. What the boxes
+    /// measure in WebKit is `LinksAloneTargetRenderTests`' (Xcode's alone).
+    @Test("On screen the links of a list item of links alone are boxes at least 24 px square, and no other rule takes a link out of its line")
+    func theLinksOfAnItemOfLinksAloneAre24PxTargets() throws {
+        let rules = Self.rules(in: ReaderPage.documentCSS)
+        let matching = rules.filter { $0.selectors == Self.linksAloneSelectors }
+        #expect(matching.count == 1, "\(matching.count) rules for the links of an item of links alone")
+        let rule = try #require(matching.first)
+        #expect(rule.atRule == "@media screen", "the rule sits inside \(rule.atRule ?? "no at-rule")")
+        #expect(rule.declarations == ["display": "inline-block", "min-width": "24px", "min-height": "24px",
+                                      "vertical-align": "top"], "the rule is \(rule.declarations)")
+        // No colour or underline of its own: the links keep their rules', which the tests above read.
+        // And no other rule sets how a person or cross-reference link is displayed.
+        let others = rules.filter { other in
+            other.selectors != Self.linksAloneSelectors && other.declarations["display"] != nil
+                && other.selectors.contains { $0.contains("a.cross-ref") || $0.contains("a.pers-name") }
+        }
+        #expect(others.isEmpty, "other rules set a link's display: \(others.map(\.selectors))")
+    }
+
     #if !SWIFT_PACKAGE // HTMLTemplate and FRUSTheme are the app's
     @Test("The app's HTMLTemplate and FRUSTheme forward to the kit's page and variables")
     @MainActor
@@ -646,6 +695,162 @@ struct CollectionExportContrastTests {
         #expect(hex("#0066cc").map { [$0.red, $0.green, $0.blue] } == [0, 102, 204])
         #expect(hex("#fff").map { [$0.red, $0.green, $0.blue] } == [255, 255, 255])
         #expect(hex("rgb(0,0,0)") == nil && hex("#12") == nil && hex("#gggggg") == nil)
+    }
+}
+#endif
+
+#if !SWIFT_PACKAGE // HTMLTemplate and the WebKit harness are the app's
+// MARK: - LinksAloneTargetRenderTests
+
+/// Measures in the app's own web view what `ReaderPageTests.theLinksOfAnItemOfLinksAloneAre24PxTargets`
+/// can only read the rule for: the boxes of a list's links, drawn from the serializer's markup
+/// through the reader's real stylesheet (FRUS Explorer Light's axe check, 2026-11-11).
+///
+/// WCAG 2.2's 2.5.8 (Target Size (Minimum)) asks a target to be 24 CSS px square, or to stand 24 px
+/// clear of the next, unless it sits in a sentence or among text that sets its line. An index entry
+/// such as "Davis, Richard H., 18n 24n 131n" (frus1961-63v06, whose TEI prints no comma between the
+/// pages) holds no text but its links. Drawn inline they were 16 px tall at Medium and a space apart,
+/// and axe found seven such links on that index's page in Chromium, where a link holding a note's
+/// italic n is two boxes, the n's 8 px wide. Here, at every text size, in the reader's default
+/// column and in one narrow enough to wrap an entry: each link of an item of links alone is a box at
+/// least 24 px square; each link of an item with text beside its links, a comma included, is drawn
+/// inline as before; no two links' boxes overlap; and a link longer than its line wraps inside its
+/// box, with what follows it on the next line. Which entries are which is the fixture's, written out
+/// below, not the serializer's reading of them.
+///
+/// Version history:
+///   1.0 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): initial implementation
+@Suite("Reader lists — the links of an item of links alone are boxes at least 24 px square (WCAG 2.2, 2.5.8)")
+@MainActor
+struct LinksAloneTargetRenderTests {
+
+    /// One link's boxes as the page draws them, in viewport coordinates.
+    private struct MeasuredLink: Decodable {
+        /// The link's text, so a failure names what it measured.
+        let text: String
+        /// Which of the list's items holds it, from 0.
+        let entry: Int
+        /// Computed `display`.
+        let display: String
+        /// The border box's width.
+        let width: Double
+        /// The border box's height.
+        let height: Double
+        /// The border box's top edge.
+        let top: Double
+        /// `getClientRects()`, each `[left, top, width, height]`.
+        let rects: [[Double]]
+    }
+
+    /// Twelve entries, in two lists. Links and spaces alone, whose links are boxes: frus1961-63v06's
+    /// "Davis, Richard H.," with six pages, each a note's (0); two one-digit pages after a name (1); a
+    /// contents line with its title in bold, as frus1961-63v10-12mSupp prints its own (2); a contents
+    /// title too long for its line (3); a name and a page with no space between, as frus1955-57v12's
+    /// "Armour, Norman, Sr.,365" (4); a name alone, as a list of participants prints one (5); a link
+    /// alone in a paragraph (6); and, in a list of its own, a name beside its printed label, which
+    /// floats in the margin (11). Text beside the links, which stay inline: a contents title that
+    /// names a person, as frus1961-63v06's "List of Kennedy Administration Volumes", whose nested
+    /// link the browser splits into two links and loose text (7); frus1961-63v06's "Adzhubei,
+    /// Aleksei I.," whose pages run with and without commas (8); "Brezhnev, Leonid I., 2, 3" (9);
+    /// and an entry whose name is text (10).
+    static let index = """
+    <div type="document" subtype="historical-document" n="1" xml:id="d1">
+      <list>
+        <item><persName corresp="#p_DRH2">Davis, Richard H.,</persName>
+          <ref target="#pg_18">18<hi rend="italic">n</hi></ref>
+          <ref target="#pg_24">24<hi rend="italic">n</hi></ref>
+          <ref target="#pg_131">131<hi rend="italic">n</hi></ref>
+          <ref target="#pg_142">142<hi rend="italic">n</hi></ref>
+          <ref target="#pg_268">268<hi rend="italic">n</hi></ref>
+          <ref target="#pg_288">288<hi rend="italic">n</hi></ref></item>
+        <item><persName corresp="#p_FPJ1">Farley, Philip J.,</persName> <ref target="#pg_7">7</ref> <ref target="#pg_9">9</ref></item>
+        <item><hi rend="strong"><ref target="#preface">Preface</ref></hi> <ref target="#pg_III">III</ref></item>
+        <item><ref target="#ch1">The Foreign Ministers Meeting at Geneva and the Question of Berlin, May Through August 1959</ref> <ref target="#pg_1">1</ref></item>
+        <item><persName corresp="#p_ANS1">Armour, Norman, Sr.,</persName><ref target="#pg_365">365</ref></item>
+        <item><persName corresp="#p_PWJ1">William Porter</persName></item>
+        <item><p><ref target="#d5">Memorandum of Conversation</ref></p></item>
+        <item><ref target="#subseriesvols"><hi rend="strong">List of <persName corresp="#p_KJF1">Kennedy</persName> Administration Volumes</hi></ref> <ref target="#pg_XXV">XXV</ref></item>
+        <item><persName corresp="#p_AAI1">Adzhubei, Aleksei I.,</persName>
+          <ref target="#pg_26">26</ref>, <ref target="#pg_44">44<hi rend="italic">n</hi></ref>
+          <ref target="#pg_65">65</ref></item>
+        <item><persName corresp="#p_BLI1">Brezhnev, Leonid I.,</persName> <ref target="#pg_2">2</ref>, <ref target="#pg_3">3</ref></item>
+        <item>Dean, Arthur H., <ref target="#pg_236">236</ref>, <ref target="#pg_238">238</ref>–<ref target="#pg_239">239</ref></item>
+      </list>
+      <list>
+        <label>(c)</label>
+        <item><persName corresp="#p_TPH1">Phil Talbot</persName></item>
+      </list>
+    </div>
+    """
+
+    /// How many links each entry holds, and which entries hold links and spaces alone.
+    static let linksPerEntry = [7, 3, 2, 2, 2, 1, 1, 3, 4, 3, 3, 1]
+    static let linksAloneEntries: Set<Int> = [0, 1, 2, 3, 4, 5, 6, 11]
+
+    /// Measures the page's list links: the entry each is in, its computed display and its boxes.
+    private static let measuringScript = """
+    (() => {
+      const items = Array.from(document.querySelectorAll('.frus-list > li'));
+      return JSON.stringify(Array.from(document.querySelectorAll('.frus-list a')).map((a) => {
+        const box = a.getBoundingClientRect();
+        return {
+          text: a.textContent, entry: items.indexOf(a.closest('li')), display: getComputedStyle(a).display,
+          width: box.width, height: box.height, top: box.top,
+          rects: Array.from(a.getClientRects()).map((r) => [r.left, r.top, r.width, r.height]),
+        };
+      }));
+    })()
+    """
+
+    /// Whether two `[left, top, width, height]` rectangles share any area; edges that touch do not.
+    private static func overlap(_ a: [Double], _ b: [Double]) -> Bool {
+        a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3]
+    }
+
+    @Test("Each link of an item of links alone is a box at least 24 px square, a link beside text stays inline, and no two links overlap",
+          arguments: TextSizePreference.allCases)
+    func linksAloneAreBoxes24PxSquare(textSize: TextSizePreference) async throws {
+        let model = try await ListShapeFixtures.renderModel(Self.index)
+        let harness = OffsetEngineTestHarness()
+        // The reader's default column, and one of 30ch, narrow enough to wrap Davis's entry.
+        for measure in [ReaderMeasure.classic, ReaderMeasure(ch: 30)] {
+            let key = "\(textSize.rawValue), \(measure.css)"
+            let html = HTMLTemplate.build(model: model, colorScheme: .light, textSize: textSize, measure: measure)
+            #expect(html.components(separatedBy: "<li class=\"links-only\">").count == 9,
+                    "\(key): the serializer marks other items than the fixture's eight of links alone")
+            try await harness.load(html)
+            let raw = try #require(try await harness.evaluateString(Self.measuringScript),
+                                   "\(key): the measuring script returned nothing")
+            let links = try JSONDecoder().decode([MeasuredLink].self, from: Data(raw.utf8))
+            let counts = Self.linksPerEntry.indices.map { entry in links.filter { $0.entry == entry }.count }
+            #expect(counts == Self.linksPerEntry, "\(key): the entries hold \(counts) links")
+            for link in links {
+                if Self.linksAloneEntries.contains(link.entry) {
+                    #expect(link.display == "inline-block" && link.width >= 23.95 && link.height >= 23.95,
+                            "\(key): “\(link.text)” (entry \(link.entry)) is \(link.display), \(link.width) × \(link.height) px")
+                } else {
+                    #expect(link.display == "inline",
+                            "\(key): “\(link.text)” (entry \(link.entry)), beside text, is drawn \(link.display)")
+                }
+            }
+            // A target another overlaps is not its own size, and a tap there could land on either.
+            for (index, link) in links.enumerated() {
+                for other in links[(index + 1)...] {
+                    let overlapping = link.rects.contains { mine in other.rects.contains { Self.overlap(mine, $0) } }
+                    #expect(!overlapping, "\(key): “\(link.text)” and “\(other.text)” overlap")
+                }
+            }
+            // In the narrow column Davis's entry wraps, so its boxes stack as well as stand in a row,
+            // and the long contents title wraps inside its box, its page on the line after it.
+            if measure != .classic {
+                #expect(Set(links.filter { $0.entry == 0 }.map(\.top)).count > 1, "\(key): Davis's entry does not wrap")
+                let contents = links.filter { $0.entry == 3 }
+                if contents.count == 2 {
+                    #expect(contents[1].top >= contents[0].top + contents[0].height - 0.5,
+                            "\(key): the page \(contents[1].top) does not follow the title's box \(contents[0].top) + \(contents[0].height)")
+                }
+            }
+        }
     }
 }
 #endif

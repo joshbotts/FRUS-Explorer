@@ -294,6 +294,11 @@ enum CollectionRenderingFixtures {
 ///          (`CollectionItemHTMLRenderer.embeddedCSS`) and each grew by its 707 bytes, the block
 ///          `ReaderPageTests` names; the Word, BibTeX and RIS pins hold, and no fixture list item
 ///          carries an `xml:id`, so no `id="ix-…"` entered a page
+///   1.3 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): the three HTML pages re-pinned for
+///          the rule that boxes the links of a list item of links alone on screen (WCAG 2.2's 2.5.8):
+///          each grew by its 1,683 bytes, the block `ReaderPageTests` names; the Word, BibTeX and
+///          RIS pins hold, and no fixture list item holds links alone, so no `class="links-only"`
+///          entered a page
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -301,13 +306,13 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("977a41c4f70e9c109ee180e1beb4e7f4ba0fc7e96d9299261e22e12a23569f17", 44_634),
+        "everything.html": ("2c409fe6bf1686b11e9f838934b9618559b0f8775e362b15bb2bd4b1be06d73a", 46_317),
         "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
         "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
         "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
-        "plain.html": ("6c77a3987b0237693f8eddfc7e6cd4f3031007770a2c31be9cc19659dfe5b332", 28_973),
+        "plain.html": ("7bff0b9fe4d64ebf4f4880662141b037df14366fbc5da600e3e828aa85eb44e3", 30_656),
         "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
-        "preview.html": ("9fd0fc2e80b058258d4a3b991098ab08560bac612f684115889bd212dcc29dd7", 27_836),
+        "preview.html": ("10c83a023508cfe67dad8137a7b3d98c8cab4f118068a1e6fd928f901a8c0e3c", 29_519),
     ]
 
     static func expectPin(_ name: String, _ data: Data, sourceLocation: SourceLocation = #_sourceLocation) {

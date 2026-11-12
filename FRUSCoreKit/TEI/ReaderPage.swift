@@ -100,6 +100,12 @@ public struct ReaderMeasure: Hashable, Sendable {
 ///          document that names its people and terms on `@ana`. No colour is new
 ///   1.5 — #1665: the column's measure is `--reader-measure`, which the host sets
 ///          (`ReaderMeasure`), where it was a fixed 70ch; a host that sets none gets 70ch
+///   1.6 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): on screen, a cross-reference or
+///          person link in a list item of links alone (`li.links-only`, which the serializer writes),
+///          as an index entry whose page numbers the TEI prints with no comma, is a box at least
+///          24 px square, so it meets WCAG 2.2's 2.5.8 (Target Size (Minimum)), which FRUS Explorer
+///          Light's axe check found frus1961-63v06's index failing. No colour and no other rule is
+///          new, and the printed page is unchanged
 public enum ReaderPage {
 
     // MARK: - Page
@@ -570,6 +576,33 @@ public enum ReaderPage {
       cursor: pointer;
     }
     a.cross-ref:hover { text-decoration-thickness: 0.125em; }
+
+    /* A list item of links alone, which the serializer writes as `li.links-only`: a table of
+       contents' line ("Preface III"), a name alone in a list of participants, or an index entry
+       whose page numbers the TEI prints with no comma between them ("Davis, Richard H., 18n 24n
+       131n", frus1961-63v06). It holds no text but its links, so WCAG 2.2's inline exception does
+       not reach them: each must be a target 24 px square, or stand 24 px clear of the next (2.5.8,
+       Target Size (Minimum)). Drawn inline, one is as tall as its font, about 16 px at Medium, and
+       a space from the next, and at Small the items' lines stand 23.4 px apart; to axe in Chromium
+       a page number with a note's italic n is two boxes, the n's 8 px wide. So on screen each
+       cross-reference and person link of such an item, or in formatting around one, is a box at
+       least 24 px square, set at the top of its line so that a list's bullet stays beside a long
+       title's first line. A line holding one grows by about a pixel at Medium and four at Small, a
+       page number narrower than 24 px gains the room after it, a link longer than its line wraps
+       inside its box with what follows it on the next line, and the underline stays under the text.
+       On paper, where there is nothing to follow, the links print inline as before, as does a link
+       with a comma, a dash or a word beside it in its item. */
+    @media screen {
+      .frus-list > li.links-only > a.cross-ref,
+      .frus-list > li.links-only > a.pers-name,
+      .frus-list > li.links-only > * > a.cross-ref,
+      .frus-list > li.links-only > * > a.pers-name {
+        display: inline-block;
+        min-width: 24px;
+        min-height: 24px;
+        vertical-align: top;
+      }
+    }
 
     /* On paper there is nothing to follow, and an underline in a printed document reads as the
        writer's own emphasis, so the two links print without theirs. They keep their colour. */

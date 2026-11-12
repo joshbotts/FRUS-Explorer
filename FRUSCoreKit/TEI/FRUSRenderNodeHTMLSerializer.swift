@@ -139,6 +139,11 @@ import SourceNoteKit
 ///          is unchanged
 ///   1.14 — 2026-10-25 (FRUS Explorer Light, S18a): `serialize(_:includeFootnotes:highlights:)`, the
 ///          collection HTML export's call, is public, with the renderer that makes it
+///   1.15 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): a list item that holds links and no
+///          text beside them is `<li class="links-only">` (`holdsLinksAlone(_:)`), whose
+///          cross-reference and person links the reader's stylesheet draws on screen as targets
+///          24 px square for WCAG 2.2's 2.5.8. An attribute, so no flat text; every other item is
+///          written as before
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -793,10 +798,12 @@ public struct FRUSRenderNodeHTMLSerializer {
             }
             // No whitespace between <ul>/<ol> and <li> elements. An item with an `xml:id` keeps it
             // as `id="ix-…"`, the id an index's "See" reference lands on; the prefix keeps it apart
-            // from `fnote-`, `x-` and a document's own anchors.
+            // from `fnote-`, `x-` and a document's own anchors. An item of links alone is
+            // `class="links-only"`, which the reader's stylesheet draws as targets.
             let inner = items.map { entry in
                 let id = entry.id.map { " id=\"ix-\(escaped($0))\"" } ?? ""
-                return "<li\(id)>\(listLeadHTML(entry.lead))\(inline(entry.children))</li>"
+                let linksOnly = Self.holdsLinksAlone(entry) ? " class=\"links-only\"" : ""
+                return "<li\(id)\(linksOnly)>\(listLeadHTML(entry.lead))\(inline(entry.children))</li>"
             }.joined()
             html += "<\(tag) class=\"frus-list\(extraClass)\(labelled)\">\(inner)</\(tag)>"
             if !trailing.isEmpty {
@@ -944,6 +951,74 @@ public struct FRUSRenderNodeHTMLSerializer {
                 return "<span class=\"list-aside\" data-skip=\"1\">\(inline(children))</span>"
             }
         }.joined()
+    }
+
+    /// Whether a list item holds links and no text beside them: a table of contents' line
+    /// ("Preface III"), a name alone in a list of participants, or an index entry whose page numbers
+    /// the TEI prints with no comma between them ("Davis, Richard H., 18n 24n 131n",
+    /// frus1961-63v06). The serializer writes such an item as `<li class="links-only">`, and on
+    /// screen the reader's stylesheet (`ReaderPage.documentCSS`) draws its cross-reference and
+    /// person links as boxes at least 24 px square: with no text beside them, the inline exception
+    /// of WCAG 2.2's 2.5.8 (Target Size (Minimum)) does not reach them, and axe checks each.
+    ///
+    /// Text is any character but whitespace in the item's content. Supplied text's brackets, a block
+    /// inside the item other than a paragraph, and a link that holds another link count as text:
+    /// such a link is written as two nested `<a>` elements, which a browser's parser splits, leaving
+    /// the rest of the outer link's text outside it, so its item keeps its links inline. Formatting
+    /// and a paragraph around a link are looked into (`<strong><a>Preface</a></strong>`). A label
+    /// printed beside the item, which the stylesheet floats into the list's margin and axe reads as a
+    /// block of its own, a space between two inline elements, a page break, a line break, a footnote
+    /// marker and a nested list, whose items are blocks of their own, are no text. An item with no
+    /// link holds no links.
+    static func holdsLinksAlone(_ entry: ListItemEntry) -> Bool {
+        var links = 0
+        /// Counts the links in `nodes`, and returns `false` at the first text.
+        func holdsNoText(_ nodes: [FRUSRenderNode]) -> Bool {
+            for node in nodes {
+                switch node {
+                case .plainText(let text), .formulaText(let text):
+                    if text.contains(where: { !$0.isWhitespace }) { return false }
+                case .persNameLink(_, let children, _), .glossLink(_, let children, _),
+                     .crossRefLink(_, _, _, _, let children):
+                    if holdsLink(children) { return false }
+                    links += 1
+                case .boldText(let children), .italicText(let children), .smallCapsText(let children),
+                     .underlineText(let children), .termText(let children), .sicText(let children),
+                     .corrText(let children), .unknown(_, let children), .paragraph(let children):
+                    if !holdsNoText(children) { return false }
+                case .elementSpace, .pageBreak, .lineBreak, .footnoteMarker, .listBlock:
+                    continue
+                case .suppliedText, .heading, .dateline, .letterOpener, .letterCloser, .salutation,
+                     .footnoteBody, .tableBlock, .editorialNoteBlock, .figureBlock, .titlePageBlock,
+                     .attachmentBlock, .attachmentHeading:
+                    return false
+                }
+            }
+            return true
+        }
+        let leadHoldsNoText = entry.lead.allSatisfy { part in
+            switch part {
+            case .label: return true
+            case .other(let children): return holdsNoText(children)
+            }
+        }
+        return leadHoldsNoText && holdsNoText(entry.children) && links > 0
+    }
+
+    /// Whether `nodes` hold a link, inside formatting or a link at any depth.
+    private static func holdsLink(_ nodes: [FRUSRenderNode]) -> Bool {
+        nodes.contains { node in
+            switch node {
+            case .persNameLink, .glossLink, .crossRefLink:
+                return true
+            case .boldText(let children), .italicText(let children), .smallCapsText(let children),
+                 .underlineText(let children), .termText(let children), .sicText(let children),
+                 .corrText(let children), .suppliedText(let children), .unknown(_, let children):
+                return holdsLink(children)
+            default:
+                return false
+            }
+        }
     }
 
     // MARK: - Footnote Aside
