@@ -25,30 +25,33 @@ import Foundation
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
 ///   2.0 — Session 2026-08-08 (#267): mirrors artifact schema 2's `byVolume`
-struct SourceProvenanceIndex: Codable, Sendable {
+///   2.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public, with
+///          `init(contentsOf:)`, which decodes the aggregate at a URL as `SourceProvenanceStore`
+///          decodes the copy bundled with the app, for a host that keeps it elsewhere
+public struct SourceProvenanceIndex: Codable, Sendable {
     /// The artifact schema version (`2` since #267; `1` files still decode).
-    let schemaVersion: Int
+    public let schemaVersion: Int
     /// The generation date (`yyyy-MM-dd`), for provenance display.
-    let generated: String
+    public let generated: String
     /// Total parsed document source notes across every covered volume.
-    let totalSourceNotes: Int
+    public let totalSourceNotes: Int
     /// How many volumes contributed source notes.
-    let volumesCovered: Int
+    public let volumesCovered: Int
     /// The ordered raw category keys the generator emits (the
     /// `SourceProvenanceCategory` raw values, in artifact order).
-    let categories: [String]
+    public let categories: [String]
     /// Per-decade aggregates, ascending by decade.
-    let byDecade: [DecadeProvenance]
+    public let byDecade: [DecadeProvenance]
     /// Per-volume aggregates, ascending by volume id (schema 2, #267). **Optional on purpose:**
     /// a schema-1 artifact still decodes, and the dashboard withholds its scope control rather
     /// than scoping against data it does not have — which is the Session-3 decision, preserved as
     /// the fallback rather than replaced by an approximation.
-    let byVolume: [VolumeProvenance]?
+    public let byVolume: [VolumeProvenance]?
 
     /// Memberwise initializer with `byVolume` defaulted, so a schema-1 fixture stays a one-line
     /// construction. Written out rather than synthesized because the synthesized one would make
     /// the new field required at every existing call site.
-    init(schemaVersion: Int, generated: String, totalSourceNotes: Int, volumesCovered: Int,
+    public init(schemaVersion: Int, generated: String, totalSourceNotes: Int, volumesCovered: Int,
          categories: [String], byDecade: [DecadeProvenance],
          byVolume: [VolumeProvenance]? = nil) {
         self.schemaVersion = schemaVersion
@@ -71,18 +74,19 @@ struct SourceProvenanceIndex: Codable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08 (#267)
-struct VolumeProvenance: Codable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct VolumeProvenance: Codable, Sendable {
     /// The manifest volume id.
-    let volumeId: String
+    public let volumeId: String
     /// The volume's coverage decade.
-    let decade: Int
+    public let decade: Int
     /// Total source notes parsed in this volume.
-    let totalNotes: Int
+    public let totalNotes: Int
     /// Category-raw-key → note count. Zero-count categories are omitted.
-    let counts: [String: Int]
+    public let counts: [String: Int]
 
     /// The note count for a category, treating an omitted key as `0`.
-    func count(for category: SourceProvenanceCategory) -> Int {
+    public func count(for category: SourceProvenanceCategory) -> Int {
         counts[category.rawValue] ?? 0
     }
 }
@@ -97,23 +101,24 @@ struct VolumeProvenance: Codable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
-struct DecadeProvenance: Codable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct DecadeProvenance: Codable, Sendable {
     /// The coverage decade (e.g. `1940` for the 1940s).
-    let decade: Int
+    public let decade: Int
     /// Total source notes attributed to this decade (sum of all category counts,
     /// including categories omitted from `counts`).
-    let totalNotes: Int
+    public let totalNotes: Int
     /// How many volumes contributed to this decade.
-    let volumeCount: Int
+    public let volumeCount: Int
     /// Category-raw-key → note count. Zero-count categories are omitted.
-    let counts: [String: Int]
+    public let counts: [String: Int]
 
     /// The note count for a category, treating an omitted key as `0`.
     ///
     /// - Parameter category: The provenance category to look up.
     /// - Returns: The number of notes in this decade for that category (`0` if
     ///   the key is absent).
-    func count(for category: SourceProvenanceCategory) -> Int {
+    public func count(for category: SourceProvenanceCategory) -> Int {
         counts[category.rawValue] ?? 0
     }
 }
@@ -137,7 +142,8 @@ struct DecadeProvenance: Codable, Sendable {
 ///   1.0 — Analytics SA-3b: initial implementation
 ///   1.1 — 2026-10-02 (#1543): `subjectNumericFile`, the eleventh category and the stored form
 ///          `subject_numeric`
-enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     /// State Department central filing through January 1963: the decimal file from 1910 and,
     /// before it, the Numerical File of 1906–1910. Cited by a decimal file number.
     case centralDecimalFile
@@ -166,7 +172,7 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 
     /// The categories in stable display order (matches the artifact's
     /// `categories` array order).
-    static var ordered: [SourceProvenanceCategory] {
+    public static var ordered: [SourceProvenanceCategory] {
         [
             .centralDecimalFile, .subjectNumericFile, .centralForeignPolicyFile,
             .lotFile, .presidentialLibrary, .naraCollection, .intelligence,
@@ -176,7 +182,7 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     }
 
     /// Localised label for charts, legends, and the caveat glossary.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .centralDecimalFile:
             return String(localized: "series.provenance.cat.centralDecimalFile",
@@ -231,7 +237,7 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     /// An unknown form yields ``unrecognized`` — never `nil`. Every row in the table is a real
     /// source note the user's index holds, so dropping one would understate a total the Your
     /// Library card presents as complete.
-    static func from(citationEra: String, repository: String?) -> SourceProvenanceCategory {
+    public static func from(citationEra: String, repository: String?) -> SourceProvenanceCategory {
         switch citationEra {
         case "decimal": return .centralDecimalFile
         case "subject_numeric": return .subjectNumericFile
@@ -251,7 +257,7 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     }
 
     /// A short label for cramped legends (falls back to `displayName`).
-    var shortName: String {
+    public var shortName: String {
         switch self {
         case .centralDecimalFile:
             return String(localized: "series.provenance.short.centralDecimalFile",
@@ -303,51 +309,52 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///          of the stacked area starts and ends at zero instead of leaving a hole;
 ///          `listed(_:)` gives the rows a table and an export list, which are the rows as
 ///          they were
-struct SourceProvenanceData: Sendable {
+///   1.5 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
     /// retrospective-compilation floor and are excluded from every derivation.
-    static let trendStartDecade = 1900
+    public static let trendStartDecade = 1900
 
     // MARK: Point types
 
     /// One category's fractional share within one shown decade — a stacked-area
     /// datum. Shares within a decade sum to `1.0` across the categories. A category with no
     /// notes in the decade has a row too, with a share of `0` (see ``shareByDecade``).
-    struct CategoryDecadeShare: Identifiable, Sendable, Hashable {
+    public struct CategoryDecadeShare: Identifiable, Sendable, Hashable {
         /// The coverage decade (e.g. `1940` for the 1940s).
-        let decade: Int
+        public let decade: Int
         /// The provenance category this share is for.
-        let category: SourceProvenanceCategory
+        public let category: SourceProvenanceCategory
         /// The category's fractional share of the decade's notes, in `0.0...1.0`.
-        let share: Double
+        public let share: Double
 
-        var id: String { "\(decade)-\(category.rawValue)" }
+        public var id: String { "\(decade)-\(category.rawValue)" }
     }
 
     /// One category's overall composition across all shown decades — a bar datum.
-    struct CategoryComposition: Identifiable, Sendable, Hashable {
+    public struct CategoryComposition: Identifiable, Sendable, Hashable {
         /// The provenance category.
-        let category: SourceProvenanceCategory
+        public let category: SourceProvenanceCategory
         /// Total notes in this category across all shown decades.
-        let noteCount: Int
+        public let noteCount: Int
         /// The category's share of all shown notes, in `0.0...1.0`.
-        let share: Double
+        public let share: Double
 
-        var id: Int { SourceProvenanceCategory.ordered.firstIndex(of: category) ?? -1 }
+        public var id: Int { SourceProvenanceCategory.ordered.firstIndex(of: category) ?? -1 }
     }
 
     /// One decade's documentary density — a bar datum for the base-by-decade
     /// context chart.
-    struct DecadeDensity: Identifiable, Sendable, Hashable {
+    public struct DecadeDensity: Identifiable, Sendable, Hashable {
         /// The coverage decade (e.g. `1940`).
-        let decade: Int
+        public let decade: Int
         /// Total source notes attributed to the decade.
-        let totalNotes: Int
+        public let totalNotes: Int
         /// How many volumes contributed to the decade.
-        let volumeCount: Int
+        public let volumeCount: Int
 
-        var id: Int { decade }
+        public var id: Int { decade }
     }
 
     // MARK: Derived collections
@@ -368,45 +375,45 @@ struct SourceProvenanceData: Sendable {
     /// shipped. With a zero row the band's edge runs from zero and the stack is closed.
     ///
     /// A table lists ``listed(_:)`` of these rows, not the rows themselves.
-    let shareByDecade: [CategoryDecadeShare]
+    public let shareByDecade: [CategoryDecadeShare]
 
     /// Overall composition — total notes and share per category across all shown
     /// decades — in stable category display order (categories with zero notes are
     /// included so the legend stays stable).
-    let overallComposition: [CategoryComposition]
+    public let overallComposition: [CategoryComposition]
 
     /// Per-decade documentary density (total notes + volume count) for shown
     /// decades, ascending by decade.
-    let notesByDecade: [DecadeDensity]
+    public let notesByDecade: [DecadeDensity]
 
     // MARK: Stats
 
     /// The artifact's headline total (all decades, including the pre-1900 floor).
-    let totalSourceNotes: Int
+    public let totalSourceNotes: Int
     /// The artifact's covered-volume count.
-    let volumesCovered: Int
+    public let volumesCovered: Int
     /// The bundled artifact's generation date (`yyyy-MM-dd`), empty when no artifact loaded.
     ///
     /// Carried so an exported figure can name the artifact it was drawn from. Every number on this
     /// dashboard comes from one bundled aggregate; two plates made from different generations are
     /// different figures, and without this they would carry identical captions.
-    let generated: String
+    public let generated: String
     /// The earliest and latest shown decades, or `nil` when none is present.
-    let decadeRangeShown: ClosedRange<Int>?
+    public let decadeRangeShown: ClosedRange<Int>?
     /// Total notes floored out below `trendStartDecade` (the pre-1900 buckets).
-    let prewarExcludedNoteCount: Int
+    public let prewarExcludedNoteCount: Int
     /// Total notes across the shown decades (the denominator for `overallComposition`).
-    let shownNoteCount: Int
+    public let shownNoteCount: Int
 
     /// Retained raw per-decade, per-category note counts for the shown decades (zero
     /// counts omitted), so the category include/exclude filter can renormalize shares
     /// *exactly* from counts rather than rescaling the pre-divided shares (#236).
-    let shownDecadeCategoryCounts: [Int: [SourceProvenanceCategory: Int]]
+    public let shownDecadeCategoryCounts: [Int: [SourceProvenanceCategory: Int]]
 
     /// Whether the artifact carries the per-volume table a real subseries scope needs (#267).
     /// `false` for a schema-1 artifact, and the dashboard then shows no scope control at all —
     /// the Session-3 position, which was that an approximated scope is worse than none.
-    let supportsVolumeScope: Bool
+    public let supportsVolumeScope: Bool
 
     // MARK: Init
 
@@ -423,7 +430,7 @@ struct SourceProvenanceData: Sendable {
     ///     (#267). Honoured only when the artifact carries `byVolume`; a narrowing scope against a
     ///     schema-1 artifact would have to be approximated, so it is ignored and
     ///     ``supportsVolumeScope`` reports `false` so the caller can withhold the control.
-    init(index: SourceProvenanceIndex?, scopeVolumeIds: Set<String>? = nil) {
+    public init(index: SourceProvenanceIndex?, scopeVolumeIds: Set<String>? = nil) {
         guard let index else {
             shareByDecade = []
             overallComposition = []
@@ -535,7 +542,7 @@ struct SourceProvenanceData: Sendable {
     ///
     /// - Parameter volumes: The in-scope volume aggregates.
     /// - Returns: Decade aggregates, ascending by decade. Empty when `volumes` is empty.
-    static func rollUp(_ volumes: [VolumeProvenance]) -> [DecadeProvenance] {
+    public static func rollUp(_ volumes: [VolumeProvenance]) -> [DecadeProvenance] {
         var totals: [Int: (notes: Int, volumes: Int, counts: [String: Int])] = [:]
         for volume in volumes {
             var bucket = totals[volume.decade] ?? (0, 0, [:])
@@ -560,7 +567,7 @@ struct SourceProvenanceData: Sendable {
     /// - Parameter domain: The inclusive coverage-year range to keep decades within.
     /// - Returns: The in-range decade shares, order preserved: a row for every category in
     ///   every in-range decade.
-    func shareByDecade(in domain: ClosedRange<Int>) -> [CategoryDecadeShare] {
+    public func shareByDecade(in domain: ClosedRange<Int>) -> [CategoryDecadeShare] {
         shareByDecade.filter { domain.contains($0.decade) }
     }
 
@@ -580,7 +587,7 @@ struct SourceProvenanceData: Sendable {
     ///
     /// - Parameter shares: Rows from `shareByDecade(in:)` or `shareByDecade(in:excluding:)`.
     /// - Returns: The rows to list, order preserved.
-    static func listed(_ shares: [CategoryDecadeShare]) -> [CategoryDecadeShare] {
+    public static func listed(_ shares: [CategoryDecadeShare]) -> [CategoryDecadeShare] {
         let decadesWithNotes = Set(shares.lazy.filter { $0.share > 0 }.map(\.decade))
         return shares.filter { $0.share > 0 || !decadesWithNotes.contains($0.decade) }
     }
@@ -590,7 +597,7 @@ struct SourceProvenanceData: Sendable {
     ///
     /// - Parameter domain: The inclusive coverage-year range to keep decades within.
     /// - Returns: The in-range density points, order preserved.
-    func notesByDecade(in domain: ClosedRange<Int>) -> [DecadeDensity] {
+    public func notesByDecade(in domain: ClosedRange<Int>) -> [DecadeDensity] {
         notesByDecade.filter { domain.contains($0.decade) }
     }
 
@@ -618,7 +625,7 @@ struct SourceProvenanceData: Sendable {
     ///   - hidden: The categories to exclude.
     /// - Returns: The in-range, renormalized decade shares in decade then display order: a row
     ///   for every shown category in every in-range decade.
-    func shareByDecade(
+    public func shareByDecade(
         in domain: ClosedRange<Int>,
         excluding hidden: Set<SourceProvenanceCategory>
     ) -> [CategoryDecadeShare] {
@@ -649,7 +656,7 @@ struct SourceProvenanceData: Sendable {
     ///
     /// - Parameter hidden: The categories to exclude.
     /// - Returns: The renormalized composition rows for the shown categories.
-    func overallComposition(
+    public func overallComposition(
         excluding hidden: Set<SourceProvenanceCategory>
     ) -> [CategoryComposition] {
         guard !hidden.isEmpty else { return overallComposition }
@@ -667,5 +674,19 @@ struct SourceProvenanceData: Sendable {
                 let share = shownTotal > 0 ? Double(count) / Double(shownTotal) : 0
                 return CategoryComposition(category: category, noteCount: count, share: share)
             }
+    }
+}
+
+// MARK: - Loading
+
+extension SourceProvenanceIndex {
+
+    /// The aggregate in the `source-provenance-index.json` at `url`, decoded as `SourceProvenanceStore` decodes
+    /// the copy bundled with the app, for a host that keeps the file elsewhere.
+    ///
+    /// - Parameter url: The file's location.
+    /// - Throws: The read's or the decode's error; the app's store answers `nil` for either.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
     }
 }

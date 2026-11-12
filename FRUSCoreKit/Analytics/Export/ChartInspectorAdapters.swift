@@ -38,7 +38,8 @@ import Foundation
 ///          lag chart, and nothing at all for the five whose column 1 is a name
 ///   1.5 — 2026-10-12: #1617 — the two administration graphs name each bar by
 ///          `administrationGraphLabels(_:)`, which tells Grover Cleveland's two terms apart
-enum ChartInspectorAdapters {
+///   1.6 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public enum ChartInspectorAdapters {
 
     // MARK: Audio Graph
 
@@ -47,7 +48,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter share: The fractional share.
     /// - Returns: The share in percent, rounded to one decimal.
-    static func percentValue(_ share: Double) -> Double {
+    public static func percentValue(_ share: Double) -> Double {
         (share * 1000).rounded() / 10
     }
 
@@ -96,7 +97,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter value: The integer to format.
     /// - Returns: The grouping-free string (e.g. `"1950"`).
-    static func plain(_ value: Int) -> String {
+    public static func plain(_ value: Int) -> String {
         value.formatted(plainInt)
     }
 
@@ -105,7 +106,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter share: The fractional share.
     /// - Returns: The localised percent string.
-    static func percent(_ share: Double) -> String {
+    public static func percent(_ share: Double) -> String {
         share.formatted(
             FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(1))
         )
@@ -118,7 +119,7 @@ enum ChartInspectorAdapters {
     /// - Parameter points: The range-filtered lag points (`data.lagPoints(in:)`).
     /// - Returns: A `[Volume, Publication year, Latest document year, Lag (years),
     ///   Era]` table.
-    static func lagTable(_ points: [SeriesProductionData.LagPoint]) -> ChartInspectorData {
+    public static func lagTable(_ points: [SeriesProductionData.LagPoint]) -> ChartInspectorData {
         let title = String(localized: "series.chart.lag.title", defaultValue: "Publication lag over time")
         let columns = [
             String(localized: "series.inspector.col.volume", defaultValue: "Volume"),
@@ -159,7 +160,7 @@ enum ChartInspectorAdapters {
     /// - Parameter buckets: The range-filtered buckets
     ///   (`data.volumesPerPrintYearByEra(in:)`).
     /// - Returns: A `[Print year, Era, Volumes]` table.
-    static func perYearTable(_ buckets: [SeriesProductionData.PrintYearCount]) -> ChartInspectorData {
+    public static func perYearTable(_ buckets: [SeriesProductionData.PrintYearCount]) -> ChartInspectorData {
         let title = String(localized: "series.chart.peryear.title", defaultValue: "Volumes published per year")
         let columns = [
             String(localized: "series.chart.peryear.x", defaultValue: "Print year"),
@@ -186,7 +187,7 @@ enum ChartInspectorAdapters {
     /// - Parameter points: The range-filtered cumulative points
     ///   (`data.cumulativeByPrintYear(in:)`).
     /// - Returns: A `[Print year, Cumulative volumes]` table.
-    static func cumulativeTable(_ points: [SeriesProductionData.CumulativePoint]) -> ChartInspectorData {
+    public static func cumulativeTable(_ points: [SeriesProductionData.CumulativePoint]) -> ChartInspectorData {
         let title = String(localized: "series.chart.cumulative.title", defaultValue: "Cumulative volumes published")
         let columns = [
             String(localized: "series.chart.cumulative.x", defaultValue: "Print year"),
@@ -213,7 +214,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter shares: The range-filtered shares (`data.regionShareByDecade(in:)`).
     /// - Returns: A `[Decade, Region, Share]` table.
-    static func regionTrendTable(_ shares: [SeriesGeographyData.RegionDecadeShare]) -> ChartInspectorData {
+    public static func regionTrendTable(_ shares: [SeriesGeographyData.RegionDecadeShare]) -> ChartInspectorData {
         let columns = [
             String(localized: "series.geography.trend.x", defaultValue: "Coverage decade"),
             String(localized: "series.geography.region.legend", defaultValue: "Region"),
@@ -238,7 +239,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter totals: The region overlap totals (`data.regionTotals`).
     /// - Returns: A `[Region, Volumes]` table.
-    static func regionTotalsTable(_ totals: [SeriesGeographyData.RegionTotal]) -> ChartInspectorData {
+    public static func regionTotalsTable(_ totals: [SeriesGeographyData.RegionTotal]) -> ChartInspectorData {
         let title = String(localized: "series.geography.totals.title", defaultValue: "Overall regional emphasis")
         let columns = [
             String(localized: "series.geography.totals.x", defaultValue: "Region"),
@@ -265,7 +266,7 @@ enum ChartInspectorAdapters {
     ///   - countries: The top country counts (`data.topCountries`).
     ///   - displayName: Resolves a place-tag slug to its display name.
     /// - Returns: A `[Country, Volumes]` table.
-    static func topCountriesTable(
+    public static func topCountriesTable(
         _ countries: [SeriesGeographyData.CountryCount],
         displayName: (String) -> String
     ) -> ChartInspectorData {
@@ -294,7 +295,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter proportion: The fractional proportion.
     /// - Returns: The localised percent string.
-    static func wholePercent(_ proportion: Double) -> String {
+    public static func wholePercent(_ proportion: Double) -> String {
         proportion.formatted(
             FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))
         )
@@ -304,7 +305,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter value: The value to format.
     /// - Returns: The localised one-decimal string.
-    static func oneDecimal(_ value: Double) -> String {
+    public static func oneDecimal(_ value: Double) -> String {
         value.formatted(FloatingPointFormatStyle<Double>().precision(.fractionLength(1)))
     }
 
@@ -323,7 +324,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter profiles: The administrations the chart draws, in its order.
     /// - Returns: One name for each, in the same order.
-    static func administrationGraphLabels(_ profiles: [AdministrationProfilesData.Profile]) -> [String] {
+    public static func administrationGraphLabels(_ profiles: [AdministrationProfilesData.Profile]) -> [String] {
         var count: [String: Int] = [:]
         for profile in profiles { count[profile.president, default: 0] += 1 }
         return profiles.map { profile in
@@ -338,7 +339,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter profiles: The derived profiles (`data.profiles`).
     /// - Returns: A `[President, Party, Documents]` table.
-    static func administrationDocumentsTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
+    public static func administrationDocumentsTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
         let title = String(localized: "series.admin.docs.title", defaultValue: "Documents per administration")
         let columns = [
             String(localized: "series.admin.col.president", defaultValue: "President"),
@@ -366,7 +367,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter profiles: The derived profiles (`data.profiles`).
     /// - Returns: A `[President, Party, Volumes/term-year]` table.
-    static func administrationVolumesPerYearTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
+    public static func administrationVolumesPerYearTable(_ profiles: [AdministrationProfilesData.Profile]) -> ChartInspectorData {
         let title = String(localized: "series.admin.perYear.title", defaultValue: "Volumes per administration-year")
         let columns = [
             String(localized: "series.admin.col.president", defaultValue: "President"),
@@ -402,7 +403,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter shares: The chart's rows (`data.shareByDecade(in:excluding:)`).
     /// - Returns: A `[Decade, Provenance, Share]` table.
-    static func provenanceMixTable(_ shares: [SourceProvenanceData.CategoryDecadeShare]) -> ChartInspectorData {
+    public static func provenanceMixTable(_ shares: [SourceProvenanceData.CategoryDecadeShare]) -> ChartInspectorData {
         let columns = [
             String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
             String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
@@ -429,7 +430,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter composition: The overall composition (`data.overallComposition`).
     /// - Returns: A `[Provenance, Notes, Share]` table.
-    static func compositionTable(_ composition: [SourceProvenanceData.CategoryComposition]) -> ChartInspectorData {
+    public static func compositionTable(_ composition: [SourceProvenanceData.CategoryComposition]) -> ChartInspectorData {
         let title = String(localized: "series.provenance.composition.title", defaultValue: "Overall provenance composition")
         let columns = [
             String(localized: "series.provenance.composition.x", defaultValue: "Provenance"),
@@ -454,7 +455,7 @@ enum ChartInspectorAdapters {
     ///
     /// - Parameter density: The range-filtered density points (`data.notesByDecade(in:)`).
     /// - Returns: A `[Decade, Source notes, Volumes]` table.
-    static func densityTable(_ density: [SourceProvenanceData.DecadeDensity]) -> ChartInspectorData {
+    public static func densityTable(_ density: [SourceProvenanceData.DecadeDensity]) -> ChartInspectorData {
         let title = String(localized: "series.provenance.density.title", defaultValue: "The documentary base by decade")
         let columns = [
             String(localized: "series.provenance.density.x", defaultValue: "Coverage decade"),

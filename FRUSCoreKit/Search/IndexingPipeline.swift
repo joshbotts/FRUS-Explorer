@@ -536,6 +536,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         volumesDirectory:userStore:)` opens an index read-only but not immutable, for a host that
 ///         searches the index it writes on another connection; the immutable and read-write opens run
 ///         as before, and nothing the indexer stores or reads changes
+///  4.59 — 2026-11-12 (FRUS Explorer Light S24b): `documentsInDateRange(_:scopeVolumeIds:ascending:limit:)`
+///         and `dateBucketVolumeCounts(_:bucket:scopeVolumeIds:)` are public, unchanged, since the Chronology
+///         browser loads its rows and its capped chart's counts with them, for a host that does the same;
+///         nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -6011,7 +6015,7 @@ public actor IndexingPipeline {
     ///     searches the whole corpus.
     ///   - ascending: Sort oldest-first when `true`, newest-first when `false`.
     ///   - limit: Hard cap on rows returned.
-    func documentsInDateRange(
+    public func documentsInDateRange(
         _ range: DateRange,
         scopeVolumeIds: [String]?,
         ascending: Bool,
@@ -6132,7 +6136,7 @@ public actor IndexingPipeline {
     ///
     /// - Returns: `(bucketKey, volumeId, count)` tuples; the sum of counts is the bucketed
     ///   total used as the chart's headline count when the list is capped.
-    func dateBucketVolumeCounts(
+    public func dateBucketVolumeCounts(
         _ range: DateRange,
         bucket: DateBucket,
         scopeVolumeIds: [String]?

@@ -24,7 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2: initial implementation
-enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
     /// The Bureau of European and Eurasian Affairs (`"europe"`).
     case europe = 0
     /// The Bureau of Near Eastern Affairs (`"near-east"`).
@@ -49,7 +50,7 @@ enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
     /// - Parameter subcategory: The `TagTaxonomyEntry.subcategory` slug of a
     ///   place tag.
     /// - Returns: The matching region, or `.other`.
-    static func from(subcategory: String) -> GeographicRegion {
+    public static func from(subcategory: String) -> GeographicRegion {
         switch subcategory {
         case "europe":                  return .europe
         case "near-east":               return .nearEast
@@ -62,7 +63,7 @@ enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
     }
 
     /// Localised label for charts and legends.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .europe:
             return String(localized: "series.region.europe", defaultValue: "Europe")
@@ -82,7 +83,7 @@ enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
     }
 
     /// The regions in stable display order (matches the raw-value ordering).
-    static var ordered: [GeographicRegion] { allCases.sorted { $0.rawValue < $1.rawValue } }
+    public static var ordered: [GeographicRegion] { allCases.sorted { $0.rawValue < $1.rawValue } }
 }
 
 // MARK: - SeriesGeographyData
@@ -117,43 +118,44 @@ enum GeographicRegion: Int, CaseIterable, Sendable, Hashable {
 ///   1.0 — Analytics SA-2: initial implementation
 ///   1.1 — Analytics SA (x-axis bounds): `regionShareByDecade(in:)` year-range
 ///          filter for the editable dashboard year range
-struct SeriesGeographyData: Sendable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct SeriesGeographyData: Sendable {
 
     // MARK: Point types
 
     /// One region's fractional share within one coverage decade — a stacked-area
     /// datum. Shares within a decade sum to `1.0` across the ordered regions.
-    struct RegionDecadeShare: Identifiable, Sendable, Hashable {
+    public struct RegionDecadeShare: Identifiable, Sendable, Hashable {
         /// The coverage decade (e.g. `1940` for the 1940s).
-        let decade: Int
+        public let decade: Int
         /// The region this share is for.
-        let region: GeographicRegion
+        public let region: GeographicRegion
         /// The region's fractional share of the decade, in `0.0...1.0`.
-        let share: Double
+        public let share: Double
 
-        var id: String { "\(decade)-\(region.rawValue)" }
+        public var id: String { "\(decade)-\(region.rawValue)" }
     }
 
     /// One region's overall overlap count — a bar-chart datum.
-    struct RegionTotal: Identifiable, Sendable, Hashable {
+    public struct RegionTotal: Identifiable, Sendable, Hashable {
         /// The region.
-        let region: GeographicRegion
+        public let region: GeographicRegion
         /// How many volumes touch this region (a volume touching several
         /// regions is counted in each).
-        let volumeCount: Int
+        public let volumeCount: Int
 
-        var id: Int { region.rawValue }
+        public var id: Int { region.rawValue }
     }
 
     /// One place tag's volume count — a bar-chart datum for the most-covered
     /// countries.
-    struct CountryCount: Identifiable, Sendable, Hashable {
+    public struct CountryCount: Identifiable, Sendable, Hashable {
         /// The place-tag slug (stable id).
-        let slug: String
+        public let slug: String
         /// How many volumes carry this place tag.
-        let volumeCount: Int
+        public let volumeCount: Int
 
-        var id: String { slug }
+        public var id: String { slug }
     }
 
     // MARK: Derived collections
@@ -162,34 +164,34 @@ struct SeriesGeographyData: Sendable {
     /// ascending by decade, then by region display order. Within each decade the
     /// shares sum to `1.0` (subject to floating-point rounding); a region absent
     /// from a decade simply has no row.
-    let regionShareByDecade: [RegionDecadeShare]
+    public let regionShareByDecade: [RegionDecadeShare]
 
     /// Overall region overlap counts, in stable region display order (only
     /// regions with at least one volume are included).
-    let regionTotals: [RegionTotal]
+    public let regionTotals: [RegionTotal]
 
     /// Top place tags by volume count, descending, ties broken by slug for
     /// determinism. Length capped at `topCountryLimit`.
-    let topCountries: [CountryCount]
+    public let topCountries: [CountryCount]
 
     // MARK: Stats
 
     /// Total number of manifest entries considered.
-    let totalVolumes: Int
+    public let totalVolumes: Int
     /// How many entries touch at least one region.
-    let volumesWithAnyRegion: Int
+    public let volumesWithAnyRegion: Int
     /// How many entries carry place tags but no region (all `.other`/unmapped),
     /// or no place tags at all — excluded from the stacked shares.
-    let volumesWithoutRegion: Int
+    public let volumesWithoutRegion: Int
     /// Earliest coverage decade present, or `nil` when none is computable.
-    let earliestDecade: Int?
+    public let earliestDecade: Int?
     /// Latest coverage decade present, or `nil` when none is computable.
-    let latestDecade: Int?
+    public let latestDecade: Int?
 
     // MARK: Init
 
     /// The maximum number of entries kept in `topCountries`.
-    static let topCountryLimit = 15
+    public static let topCountryLimit = 15
 
     /// Computes every derived collection and statistic from manifest entries and
     /// a place-tag → region map.
@@ -202,7 +204,7 @@ struct SeriesGeographyData: Sendable {
     ///   - placeRegions: A map from place-tag slug to its `GeographicRegion`. A
     ///     tag slug absent from the map contributes no region; a slug mapped to
     ///     `.other` counts as `.other`.
-    init(entries: [VolumeManifestEntry], placeRegions: [String: GeographicRegion]) {
+    public init(entries: [VolumeManifestEntry], placeRegions: [String: GeographicRegion]) {
         totalVolumes = entries.count
 
         // Per-decade fractional contribution sums, and per-decade counts of
@@ -303,7 +305,7 @@ struct SeriesGeographyData: Sendable {
     ///
     /// - Parameter domain: The inclusive coverage-year range to keep decades within.
     /// - Returns: The in-range decade shares, order preserved.
-    func regionShareByDecade(in domain: ClosedRange<Int>) -> [RegionDecadeShare] {
+    public func regionShareByDecade(in domain: ClosedRange<Int>) -> [RegionDecadeShare] {
         regionShareByDecade.filter { domain.contains($0.decade) }
     }
 
@@ -316,7 +318,7 @@ struct SeriesGeographyData: Sendable {
     ///
     /// - Parameter entry: The volume manifest entry.
     /// - Returns: The coverage decade (e.g. `1940`), or `nil`.
-    static func coverageDecade(for entry: VolumeManifestEntry) -> Int? {
+    public static func coverageDecade(for entry: VolumeManifestEntry) -> Int? {
         let earliest = FRUSVolumeMetadata.firstYear(in: entry.dateRange.earliest)
         let latest = FRUSVolumeMetadata.firstYear(in: entry.dateRange.latest)
         // Fall back to whichever endpoint exists when only one parses.

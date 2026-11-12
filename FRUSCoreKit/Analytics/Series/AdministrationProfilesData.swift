@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftUI
 
 // MARK: - AdministrationProfilesIndex
 
@@ -28,25 +27,28 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
-struct AdministrationProfilesIndex: Codable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public, with
+///          `init(contentsOf:)`, which decodes the aggregate at a URL as `AdministrationProfilesStore`
+///          decodes the copy bundled with the app, for a host that keeps it elsewhere
+public struct AdministrationProfilesIndex: Codable, Sendable {
     /// The artifact schema version (currently `1`).
-    let schemaVersion: Int
+    public let schemaVersion: Int
     /// The generation date (`yyyy-MM-dd`), for provenance display.
-    let generated: String
+    public let generated: String
     /// Total point-dated documents attributed across all administrations.
-    let totalDocumentsPointDated: Int
+    public let totalDocumentsPointDated: Int
     /// Total range-dated (editorial-note) documents attributed.
-    let totalDocumentsRangeDated: Int
+    public let totalDocumentsRangeDated: Int
     /// Total documents that could not be dated at all.
-    let totalDocumentsUndated: Int
+    public let totalDocumentsUndated: Int
     /// How many volumes contributed documents.
-    let volumesCovered: Int
+    public let volumesCovered: Int
     /// Per-administration profiles, in the artifact's order (chronological by
     /// `number`).
-    let administrations: [AdministrationProfile]
+    public let administrations: [AdministrationProfile]
     /// Per-volume document totals, keyed by `volumeId` — the denominators for the
     /// per-administration volume-proportion breakdown.
-    let volumeTotals: [String: VolumeTotals]
+    public let volumeTotals: [String: VolumeTotals]
 
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, generated
@@ -59,7 +61,7 @@ struct AdministrationProfilesIndex: Codable, Sendable {
     /// written or older artifact still yields a usable — if empty — index.
     ///
     /// - Parameter decoder: The decoder to read from.
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = (try? container.decode(Int.self, forKey: .schemaVersion)) ?? 0
         generated = (try? container.decode(String.self, forKey: .generated)) ?? ""
@@ -75,7 +77,7 @@ struct AdministrationProfilesIndex: Codable, Sendable {
     /// index directly.
     ///
     /// - Parameters mirror the stored properties.
-    init(
+    public init(
         schemaVersion: Int,
         generated: String,
         totalDocumentsPointDated: Int,
@@ -107,34 +109,35 @@ struct AdministrationProfilesIndex: Codable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
-struct AdministrationProfile: Codable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct AdministrationProfile: Codable, Sendable, Hashable {
     /// A stable slug (e.g. `"nixon"`, `"cleveland-1"`).
-    let id: String
+    public let id: String
     /// The presidency number (16 = Lincoln … 47 = Trump's second term), the
     /// chronological sort key.
-    let number: Int
+    public let number: Int
     /// The president's display name.
-    let president: String
+    public let president: String
     /// The party label (`"Republican"` / `"Democratic"` / `"National Union"`).
-    let party: String
+    public let party: String
     /// The term's ISO start date (`yyyy-MM-dd`).
-    let start: String
+    public let start: String
     /// The term's ISO end date, or `nil` for the sitting administration.
-    let end: String?
+    public let end: String?
     /// Point-dated documents attributed to this administration (any-overlap).
-    let pointDocCount: Int
+    public let pointDocCount: Int
     /// Range-dated (editorial-note) documents attributed to this administration.
-    let rangeDocCount: Int
+    public let rangeDocCount: Int
     /// Volumes touching this administration (any-overlap, counting range docs).
-    let volumeCount: Int
+    public let volumeCount: Int
     /// Volumes touching this administration counting point-dated docs only.
-    let volumeCountPointOnly: Int
+    public let volumeCountPointOnly: Int
     /// The earliest coverage year attributed here, or `nil` when none.
-    let coverageEarliest: Int?
+    public let coverageEarliest: Int?
     /// The latest coverage year attributed here, or `nil` when none.
-    let coverageLatest: Int?
+    public let coverageLatest: Int?
     /// The per-volume breakdown, pre-sorted by `pointDocs` descending.
-    let volumes: [AdministrationVolume]
+    public let volumes: [AdministrationVolume]
 
     private enum CodingKeys: String, CodingKey {
         case id, number, president, party, start, end
@@ -146,7 +149,7 @@ struct AdministrationProfile: Codable, Sendable, Hashable {
     /// `volumes` to `[]`.
     ///
     /// - Parameter decoder: The decoder to read from.
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? container.decode(String.self, forKey: .id)) ?? ""
         number = (try? container.decode(Int.self, forKey: .number)) ?? 0
@@ -166,7 +169,7 @@ struct AdministrationProfile: Codable, Sendable, Hashable {
     /// Memberwise initializer for fixtures.
     ///
     /// - Parameters mirror the stored properties.
-    init(
+    public init(
         id: String, number: Int, president: String, party: String,
         start: String, end: String?, pointDocCount: Int, rangeDocCount: Int,
         volumeCount: Int, volumeCountPointOnly: Int,
@@ -195,13 +198,14 @@ struct AdministrationProfile: Codable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
-struct AdministrationVolume: Codable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct AdministrationVolume: Codable, Sendable, Hashable {
     /// The volume identifier (e.g. `"frus1969-76v01"`).
-    let volumeId: String
+    public let volumeId: String
     /// Point-dated documents from this volume attributed to the administration.
-    let pointDocs: Int
+    public let pointDocs: Int
     /// Range-dated documents from this volume attributed to the administration.
-    let rangeDocs: Int
+    public let rangeDocs: Int
 
     private enum CodingKeys: String, CodingKey {
         case volumeId, pointDocs, rangeDocs
@@ -210,7 +214,7 @@ struct AdministrationVolume: Codable, Sendable, Hashable {
     /// Tolerant decode.
     ///
     /// - Parameter decoder: The decoder to read from.
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         volumeId = (try? container.decode(String.self, forKey: .volumeId)) ?? ""
         pointDocs = (try? container.decode(Int.self, forKey: .pointDocs)) ?? 0
@@ -220,7 +224,7 @@ struct AdministrationVolume: Codable, Sendable, Hashable {
     /// Memberwise initializer for fixtures.
     ///
     /// - Parameters mirror the stored properties.
-    init(volumeId: String, pointDocs: Int, rangeDocs: Int) {
+    public init(volumeId: String, pointDocs: Int, rangeDocs: Int) {
         self.volumeId = volumeId
         self.pointDocs = pointDocs
         self.rangeDocs = rangeDocs
@@ -234,13 +238,14 @@ struct AdministrationVolume: Codable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
-struct VolumeTotals: Codable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct VolumeTotals: Codable, Sendable, Hashable {
     /// Point-dated documents in the volume.
-    let pointDocs: Int
+    public let pointDocs: Int
     /// Range-dated (editorial-note) documents in the volume.
-    let rangeDocs: Int
+    public let rangeDocs: Int
     /// Undated documents in the volume.
-    let undatedDocs: Int
+    public let undatedDocs: Int
 
     private enum CodingKeys: String, CodingKey {
         case pointDocs, rangeDocs, undatedDocs
@@ -249,7 +254,7 @@ struct VolumeTotals: Codable, Sendable, Hashable {
     /// Tolerant decode.
     ///
     /// - Parameter decoder: The decoder to read from.
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         pointDocs = (try? container.decode(Int.self, forKey: .pointDocs)) ?? 0
         rangeDocs = (try? container.decode(Int.self, forKey: .rangeDocs)) ?? 0
@@ -259,7 +264,7 @@ struct VolumeTotals: Codable, Sendable, Hashable {
     /// Memberwise initializer for fixtures.
     ///
     /// - Parameters mirror the stored properties.
-    init(pointDocs: Int, rangeDocs: Int, undatedDocs: Int) {
+    public init(pointDocs: Int, rangeDocs: Int, undatedDocs: Int) {
         self.pointDocs = pointDocs
         self.rangeDocs = rangeDocs
         self.undatedDocs = undatedDocs
@@ -269,7 +274,8 @@ struct VolumeTotals: Codable, Sendable, Hashable {
 // MARK: - PoliticalParty
 
 /// A stable mapping from the artifact's raw party string to a display label and a
-/// chart color.
+/// chart color. The color is the app's, `color` in `PoliticalParty+Color.swift`, since it is
+/// SwiftUI's `Color`; the kit carries the party and its label.
 ///
 /// The color is deliberately routed through this enum so the two overview charts
 /// share one party palette, and so the `chartForegroundStyleScale(domain:range:)`
@@ -279,7 +285,9 @@ struct VolumeTotals: Codable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Analytics SA-2b: initial implementation
-enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public, without `color`, a
+///          SwiftUI `Color`, which stays the app's (`FRUSExplorer/SeriesAnalytics/PoliticalParty+Color.swift`)
+public enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
     /// The Republican Party.
     case republican
     /// The Democratic Party.
@@ -293,7 +301,7 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
     ///
     /// - Parameter raw: The `party` field from the artifact.
     /// - Returns: The matching case, or `.other` when unrecognised.
-    static func from(raw: String) -> PoliticalParty {
+    public static func from(raw: String) -> PoliticalParty {
         switch raw.lowercased() {
         case "republican": return .republican
         case "democratic", "democrat": return .democratic
@@ -303,7 +311,7 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
     }
 
     /// The stable display label used on chart legends and profile cards.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .republican:
             return String(localized: "series.admin.party.republican", defaultValue: "Republican")
@@ -316,19 +324,8 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
         }
     }
 
-    /// The stable chart color for this party — the `range` half of the party
-    /// color scale.
-    var color: Color {
-        switch self {
-        case .republican: return .red
-        case .democratic: return .blue
-        case .nationalUnion: return .orange
-        case .other: return .gray
-        }
-    }
-
     /// The parties in stable legend order.
-    static var ordered: [PoliticalParty] {
+    public static var ordered: [PoliticalParty] {
         [.republican, .democratic, .nationalUnion, .other]
     }
 }
@@ -339,7 +336,7 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
 /// bundled `AdministrationProfilesIndex`, parameterised by the editorial-note
 /// toggle.
 ///
-/// This carries no SwiftUI beyond the party palette and depends only on the
+/// This carries no SwiftUI (the party palette is the app's) and depends only on the
 /// decoded aggregate, so it is fully unit-testable. Everything it derives measures
 /// **coverage** — which administration's foreign policy the published documents
 /// concern — not production (when volumes were printed). Because attribution is
@@ -355,79 +352,81 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
 ///   1.1 — Session 3 / #236: optional `scopeVolumeIds` recomputes every count and
 ///          proportion from each administration's per-volume breakdown; coverage spans
 ///          drop to `nil` under a scope (pre-aggregated scalars, not re-derivable)
-struct AdministrationProfilesData: Sendable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public; the party palette is
+///          the app's
+public struct AdministrationProfilesData: Sendable {
 
     // MARK: Point types
 
     /// One administration's derived profile — the row behind both overview charts
     /// and the detail card.
-    struct Profile: Identifiable, Sendable, Hashable {
+    public struct Profile: Identifiable, Sendable, Hashable {
         /// The administration slug (also the `Identifiable` id).
-        let id: String
+        public let id: String
         /// The presidency number, the chronological sort key.
-        let number: Int
+        public let number: Int
         /// The president's display name.
-        let president: String
+        public let president: String
         /// The mapped political party (drives chart color).
-        let party: PoliticalParty
+        public let party: PoliticalParty
         /// The ISO term start (`yyyy-MM-dd`).
-        let start: String
+        public let start: String
         /// The ISO term end, or `nil` for the sitting administration.
-        let end: String?
+        public let end: String?
         /// Point-dated documents attributed to this administration.
-        let pointDocCount: Int
+        public let pointDocCount: Int
         /// Range-dated documents attributed to this administration.
-        let rangeDocCount: Int
+        public let rangeDocCount: Int
         /// Documents counted under the current toggle (`pointDocCount` alone, or
         /// `+ rangeDocCount` when editorial notes are included).
-        let documentCount: Int
+        public let documentCount: Int
         /// Volumes touching this administration (any-overlap).
-        let volumeCount: Int
+        public let volumeCount: Int
         /// The term length in years, derived from the ISO dates (`0` when the end
         /// is `nil` or the span is non-positive).
-        let termYears: Double
+        public let termYears: Double
         /// `volumeCount / termYears`, or `0` when `termYears` is `0`.
-        let volumesPerAdministrationYear: Double
+        public let volumesPerAdministrationYear: Double
         /// The earliest attributed coverage year, or `nil`.
-        let coverageEarliest: Int?
+        public let coverageEarliest: Int?
         /// The latest attributed coverage year, or `nil`.
-        let coverageLatest: Int?
+        public let coverageLatest: Int?
     }
 
     /// One volume's proportion within one administration — a row of the detail
     /// card's volume list.
-    struct VolumeShare: Identifiable, Sendable, Hashable {
+    public struct VolumeShare: Identifiable, Sendable, Hashable {
         /// The volume identifier (also the `Identifiable` id).
-        let id: String
+        public let id: String
         /// Documents from this volume attributed to the administration, under the
         /// current toggle.
-        let documentCount: Int
+        public let documentCount: Int
         /// This administration's documents as a fraction of the *whole volume's*
         /// documents (under the same toggle), in `0.0...` — can exceed `1.0`
         /// summed across administrations under any-overlap, but never per row.
-        let proportion: Double
+        public let proportion: Double
     }
 
     // MARK: Derived collections
 
     /// The populated administrations (any document under the *point* count, so the
     /// set is stable across the toggle), chronological by `number`.
-    let profiles: [Profile]
+    public let profiles: [Profile]
 
     /// Per-administration volume breakdowns, keyed by administration id; each
     /// array is sorted by `documentCount` descending.
-    let volumeShares: [String: [VolumeShare]]
+    public let volumeShares: [String: [VolumeShare]]
 
     // MARK: Stats
 
     /// Total point-dated documents across the whole artifact.
-    let totalDocumentsPointDated: Int
+    public let totalDocumentsPointDated: Int
     /// Total range-dated documents across the whole artifact.
-    let totalDocumentsRangeDated: Int
+    public let totalDocumentsRangeDated: Int
     /// The artifact's covered-volume count.
-    let volumesCovered: Int
+    public let volumesCovered: Int
     /// Whether editorial-note (range-dated) documents are included in the counts.
-    let includesEditorialNotes: Bool
+    public let includesEditorialNotes: Bool
 
     // MARK: Init
 
@@ -449,7 +448,7 @@ struct AdministrationProfilesData: Sendable {
     ///     its per-volume breakdown (#236). Coverage spans are pre-aggregated scalars
     ///     that cannot be re-derived per scope, so `coverageEarliest`/`coverageLatest`
     ///     are dropped (`nil`) under a scope; the dashboard hides the span accordingly.
-    init(
+    public init(
         index: AdministrationProfilesIndex?,
         includeEditorialNotes: Bool,
         scopeVolumeIds: Set<String>? = nil
@@ -556,7 +555,7 @@ struct AdministrationProfilesData: Sendable {
 
     /// The default focus administration — the most-documented one under the
     /// current toggle, or `nil` when there are none.
-    var mostDocumentedProfile: Profile? {
+    public var mostDocumentedProfile: Profile? {
         profiles.max { $0.documentCount < $1.documentCount }
     }
 
@@ -564,7 +563,7 @@ struct AdministrationProfilesData: Sendable {
     ///
     /// - Parameter id: The administration slug.
     /// - Returns: Its volume breakdown, sorted by document count descending.
-    func volumeShares(for id: String) -> [VolumeShare] {
+    public func volumeShares(for id: String) -> [VolumeShare] {
         volumeShares[id] ?? []
     }
 
@@ -578,7 +577,7 @@ struct AdministrationProfilesData: Sendable {
     ///   - start: The ISO start date.
     ///   - end: The ISO end date, or `nil`.
     /// - Returns: The span in years (fractional), or `0`.
-    static func termYears(start: String, end: String?) -> Double {
+    public static func termYears(start: String, end: String?) -> Double {
         guard let end,
               let startDate = isoFormatter.date(from: start),
               let endDate = isoFormatter.date(from: end) else {
@@ -602,4 +601,19 @@ struct AdministrationProfilesData: Sendable {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+}
+
+// MARK: - Loading
+
+extension AdministrationProfilesIndex {
+
+    /// The aggregate in the `administration-profiles-index.json` at `url`, decoded as
+    /// `AdministrationProfilesStore` decodes the copy bundled with the app, for a host that keeps the
+    /// file elsewhere.
+    ///
+    /// - Parameter url: The file's location.
+    /// - Throws: The read's or the decode's error; the app's store answers `nil` for either.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(AdministrationProfilesIndex.self, from: Data(contentsOf: url))
+    }
 }

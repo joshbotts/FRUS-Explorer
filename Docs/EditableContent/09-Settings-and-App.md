@@ -1778,7 +1778,7 @@ Close details
 
 #### `series.geography.totals.title`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:160, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:243, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Overall regional emphasis
 
@@ -1788,7 +1788,7 @@ Overall regional emphasis
 
 #### `series.geography.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:144, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:221, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Share of volumes
 
@@ -1798,7 +1798,7 @@ Share of volumes
 
 #### `series.provenance.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:276, ChartInspectorAdapters.swift:296, SourceProvenanceDashboard.swift:438, SourceProvenanceDashboard.swift:468 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:410, ChartInspectorAdapters.swift:438, SourceProvenanceDashboard.swift:438, SourceProvenanceDashboard.swift:468 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
 
 Share of source notes
 

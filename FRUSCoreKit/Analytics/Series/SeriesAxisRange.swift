@@ -31,27 +31,29 @@ import Foundation
 ///   1.0 — Analytics SA (series x-axis bounds): initial implementation
 ///   1.1 — Session 3 / #236: shared `yearAxisFormat` (grouping-free integer years),
 ///          consolidated here from the four dashboards' per-file copies
-enum SeriesChartKind: Sendable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit with
+///          `effectiveDomain(userStart:userEnd:kind:)`, public
+public enum SeriesChartKind: Sendable {
     /// The x value is a document coverage year/decade (clamps at 1993).
     case coverage
     /// The x value is a print/publication year (runs to 2026).
     case production
 
     /// The lower bound shared by both kinds — the FRUS series' start year.
-    static let floorYear = 1861
+    public static let floorYear = 1861
 
     /// The upper bound a coverage axis is clamped to: there is no coverage data
     /// past roughly 1990, so the axis stops at 1993 even when the user range runs
     /// to the present.
-    static let coverageCeilingYear = 1993
+    public static let coverageCeilingYear = 1993
 
     /// The upper bound a production axis extends to — effectively "the present"
     /// for publication years.
-    static let productionCeilingYear = 2026
+    public static let productionCeilingYear = 2026
 
     /// This kind's fixed default x-domain (before any user range is applied):
     /// `1861...1993` for coverage, `1861...2026` for production.
-    var defaultDomain: ClosedRange<Int> {
+    public var defaultDomain: ClosedRange<Int> {
         switch self {
         case .coverage:   return Self.floorYear...Self.coverageCeilingYear
         case .production: return Self.floorYear...Self.productionCeilingYear
@@ -61,7 +63,7 @@ enum SeriesChartKind: Sendable {
     /// Format style for integer year/decade axis labels that suppresses comma
     /// grouping — years should display as `1950`, not `1,950`. Shared by all four
     /// "About the Series" dashboards (previously a `private static let` in each).
-    static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
+    public static let yearAxisFormat = IntegerFormatStyle<Int>.number.grouping(.never)
 }
 
 // MARK: - Effective domain
@@ -84,7 +86,7 @@ enum SeriesChartKind: Sendable {
 ///   - kind: Whether the chart's x-axis is coverage- or production-valued.
 /// - Returns: The `ClosedRange<Int>` to feed to `.chartXScale(domain:)` and to
 ///   filter the plotted data against.
-func effectiveDomain(
+public func effectiveDomain(
     userStart: Int,
     userEnd: Int,
     kind: SeriesChartKind

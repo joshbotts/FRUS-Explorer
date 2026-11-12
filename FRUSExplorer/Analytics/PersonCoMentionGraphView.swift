@@ -8,39 +8,6 @@
 
 import SwiftUI
 
-// MARK: - PersonCoMentionNode
-
-/// One node in the co-mention ego graph: the focus person or one of their partners (CA-8).
-///
-/// Version history:
-///   1.0 — CA-8 (analytics CA-track): initial implementation
-struct PersonCoMentionNode: Identifiable, Equatable {
-    /// The rollup id (the People-browser identity), unique within the graph.
-    let rollupId: Int
-    /// The person's canonical display name.
-    let name: String
-    /// Shared-document count with the focus person (`0` for the focus node itself).
-    let sharedWithFocus: Int
-
-    var id: Int { rollupId }
-}
-
-// MARK: - PersonCoMentionEdge
-
-/// One weighted edge in the co-mention ego graph: two rollups sharing `sharedDocuments`
-/// documents (CA-8). `a`/`b` are rollup ids; the pair is undirected.
-///
-/// Version history:
-///   1.0 — CA-8 (analytics CA-track): initial implementation
-struct PersonCoMentionEdge: Equatable {
-    /// One endpoint rollup id.
-    let a: Int
-    /// The other endpoint rollup id.
-    let b: Int
-    /// Distinct documents mentioning both endpoints (the edge weight).
-    let sharedDocuments: Int
-}
-
 // MARK: - GraphLabelRequest
 
 /// One node label waiting to be placed by `GraphNodeLabels.place(_:avoiding:settling:)` (#1384):
@@ -356,15 +323,19 @@ enum GraphNodeLabels {
 ///          disc radius the canvas draws and the placement keeps clear of
 ///   1.4 — #1433: owned by the host's `PersonNetworkFocus` rather than the graph view's `@State`
 ///   1.5 — #1434: `isLayoutSettling`, set while an animated layout runs and cleared by its last pass
+///   1.6 — 2026-11-12 (FRUS Explorer Light, S24b): the choice of nodes and edges — `partnerLimit`, what
+///          `load(from:volumeIds:)` reads from the store, `partners`, `capApplied` and `capDisclosure` —
+///          is FRUSCoreKit's `PersonCoMentionNetwork`, with `PersonCoMentionNode` and `PersonCoMentionEdge`;
+///          these names forward there, and the layout, labels and viewport stay here
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
 
     // MARK: - Configuration
 
-    /// The disclosed top-N partner cap (decision CA-8-1). Mirrors the volume graph's degree
-    /// limits — bounded so the physics and self-join stay fast and the canvas stays legible.
-    static let partnerLimit = 24
+    /// The disclosed top-N partner cap (decision CA-8-1): the kit's `PersonCoMentionNetwork.partnerLimit`,
+    /// under the name it had here.
+    static let partnerLimit = PersonCoMentionNetwork.partnerLimit
 
     // MARK: - Data
 
@@ -440,8 +411,7 @@ final class PersonCoMentionGraphViewModel {
     /// `totalPartnerCount` is the probe's lower bound, so here it always reads `partnerLimit + 1`
     /// and the "+" is the whole of what the view knows: that there are more.
     var capDisclosure: String {
-        String(localized: "personCoMention.cap.disclosed",
-               defaultValue: "Showing the top \(partners.count) co-mentioned people (of \(totalPartnerCount)+) by shared-document count.")
+        PersonCoMentionNetwork.capDisclosure(partnerCount: partners.count, totalPartnerCount: totalPartnerCount)
     }
 
     /// Pinch-to-zoom magnification applied to the canvas; `1.0` is neutral.
@@ -486,19 +456,19 @@ final class PersonCoMentionGraphViewModel {
 
     // MARK: - Derived
 
-    /// Partner nodes (everything but the focus), ordered by shared-document count desc.
+    /// Partner nodes (everything but the focus), ordered by shared-document count desc: the kit's
+    /// `PersonCoMentionNetwork.partners(of:focusRollupId:)`.
     var partners: [PersonCoMentionNode] {
-        nodes.filter { $0.rollupId != focusRollupId }
-            .sorted { $0.sharedWithFocus != $1.sharedWithFocus
-                ? $0.sharedWithFocus > $1.sharedWithFocus
-                : $0.name < $1.name }
+        PersonCoMentionNetwork.partners(of: nodes, focusRollupId: focusRollupId)
     }
 
     /// All rollup ids in the graph (focus first).
     var allRollupIds: [Int] { [focusRollupId] + partners.map(\.rollupId) }
 
     /// Whether the top-N cap actually elided partners (drives the disclosure text).
-    var capApplied: Bool { totalPartnerCount > partners.count }
+    var capApplied: Bool {
+        PersonCoMentionNetwork.capApplied(partnerCount: partners.count, totalPartnerCount: totalPartnerCount)
+    }
 
     /// The largest edge weight, for edge-thickness normalisation (never zero).
     var maxEdgeWeight: Int { edges.map(\.sharedDocuments).max() ?? 1 }
@@ -652,31 +622,13 @@ final class PersonCoMentionGraphViewModel {
         totalPartnerCount = 0
         resetViewport(animated: false)
         do {
-            // The disclosed top-N partners (bounded to the focus person's own documents),
-            // optionally restricted to the volume scope (#189-B).
-            let partnerRows = try await store.topCoMentionedPeople(
-                forRollupId: focusRollupId, limit: Self.partnerLimit, volumeIds: volumeIds)
-            // A cheap over-limit probe: fetch one more than the cap to know whether the cap
-            // actually elided anyone (so the disclosure is accurate), without an unbounded
-            // count query.
-            let probe = try await store.topCoMentionedPeople(
-                forRollupId: focusRollupId, limit: Self.partnerLimit + 1, volumeIds: volumeIds)
-            totalPartnerCount = probe.count
-
-            var built: [PersonCoMentionNode] = [
-                PersonCoMentionNode(rollupId: focusRollupId, name: focusName, sharedWithFocus: 0)
-            ]
-            for row in partnerRows {
-                built.append(PersonCoMentionNode(rollupId: row.rollupId,
-                                                 name: row.canonicalName,
-                                                 sharedWithFocus: row.sharedDocuments))
-            }
-            nodes = built
-
-            // Partner-partner edges + focus-partner edges, within the bounded ego set only.
-            let ids = built.map(\.rollupId)
-            let edgeRows = try await store.coMentionEdges(amongRollupIds: ids, volumeIds: volumeIds)
-            edges = edgeRows.map { PersonCoMentionEdge(a: $0.a, b: $0.b, sharedDocuments: $0.sharedDocuments) }
+            // The kit's choice of nodes and edges (`PersonCoMentionNetwork`), in its two halves, so a
+            // failed edge query leaves the nodes and the probe's count in place, as before.
+            let ego = try await PersonCoMentionNetwork.nodes(
+                focusRollupId: focusRollupId, focusName: focusName, store: store, volumeIds: volumeIds)
+            totalPartnerCount = ego.totalPartnerCount
+            nodes = ego.nodes
+            edges = try await PersonCoMentionNetwork.edges(among: ego.nodes, store: store, volumeIds: volumeIds)
         } catch {
             self.error = error.localizedDescription
         }
