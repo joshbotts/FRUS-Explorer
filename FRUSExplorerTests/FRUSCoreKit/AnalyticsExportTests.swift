@@ -327,7 +327,7 @@ struct AnalyticsChartTablesTests {
     }
 }
 
-#if !SWIFT_PACKAGE // the two suites below test the app's `AnalyticsExportDelivery` and `PersonAnalyticsMath`
+#if !SWIFT_PACKAGE // the suite below tests the app's `AnalyticsExportDelivery`
 // MARK: - AnalyticsExportDeliveryTests
 
 /// Tests the export filename stem (D3) — repeat exports of the same chart must be distinguishable
@@ -401,6 +401,7 @@ struct AnalyticsExportDeliveryTests {
         }
     }
 }
+#endif
 
 // MARK: - PersonTrajectoryExportPeriodTests
 
@@ -411,6 +412,9 @@ struct AnalyticsExportDeliveryTests {
 /// year's Mentions / Documents / Dated-documents next to a whole-decade Plotted value, so a reader
 /// could not recompute the plotted share from the file — which is the entire reason those columns
 /// are exported.
+///
+/// It runs in the package too since FRUS Explorer Light's S24b (2026-11-12), `PersonAnalyticsMath`
+/// being the kit's.
 struct PersonTrajectoryExportPeriodTests {
 
     @Test("Year mode maps a period to exactly its own year")
@@ -500,7 +504,6 @@ struct PersonTrajectoryExportPeriodTests {
         #expect(decade[0].value == 50)
     }
 }
-#endif
 
 // MARK: - AnalyticsWordCloudExportTests
 

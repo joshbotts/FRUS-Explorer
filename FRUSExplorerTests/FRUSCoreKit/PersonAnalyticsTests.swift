@@ -8,8 +8,22 @@
 
 import Testing
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - PersonAnalyticsQueryTests
 
@@ -422,6 +436,7 @@ struct PersonRelationshipMathTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the co-mention graph's view model, its layout, labels and viewport, and the host's focus are the app's (SwiftUI, CoreGraphics); the kit's choice of nodes and edges is `PersonCoMentionNetworkTests`'
 // MARK: - PersonCoMentionPhysicsTests (CA-8)
 
 /// Determinism + termination checks for the co-mention ego-graph physics.
@@ -950,7 +965,8 @@ struct PersonNetworkFocusTests {
 
     /// The file at `relativePath` under the repository root.
     private static func source(_ relativePath: String) throws -> String {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
     }
 
@@ -1820,6 +1836,7 @@ struct PersonCoMentionLabelTests {
         return (dir, try PersonMentionStore(databaseURL: dbURL))
     }
 }
+#endif
 
 // MARK: - PersonAnalyticsMathTests
 

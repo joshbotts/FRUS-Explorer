@@ -37,28 +37,29 @@ import Foundation
 ///   1.1 — Analytics SA (series chart refinements): step indexed by publication
 ///          year (exact) rather than coverage year; `StepPoint.coverageYear`
 ///          renamed to `year`
-enum PublicationLagTarget {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public enum PublicationLagTarget {
 
     // MARK: Breakpoints
 
     /// The publication year at/after which the first (15-year) target applies —
     /// the 1961 presidential directive. No target line is drawn before this.
-    static let firstTargetYear = 1961
+    public static let firstTargetYear = 1961
 
     /// The publication year at/after which the target rises to 20 years — the
     /// 1972 presidential directive.
-    static let secondTargetYear = 1972
+    public static let secondTargetYear = 1972
 
     /// The publication year at/after which the target rises to 30 years — the
     /// 1985 presidential directive, later codified by the 1991 statute.
-    static let thirdTargetYear = 1985
+    public static let thirdTargetYear = 1985
 
     /// The 1961 directive's target in years.
-    static let firstTargetYears = 15
+    public static let firstTargetYears = 15
     /// The 1972 directive's target in years.
-    static let secondTargetYears = 20
+    public static let secondTargetYears = 20
     /// The 1985 directive's / 1991 statute's target in years.
-    static let thirdTargetYears = 30
+    public static let thirdTargetYears = 30
 
     // MARK: Step evaluation
 
@@ -67,7 +68,7 @@ enum PublicationLagTarget {
     ///
     /// - Parameter year: A volume's publication (print) year.
     /// - Returns: The target lag in years, or `nil` if `year < 1961`.
-    static func targetYears(forYear year: Int) -> Int? {
+    public static func targetYears(forYear year: Int) -> Int? {
         switch year {
         case ..<firstTargetYear:                    return nil
         case firstTargetYear..<secondTargetYear:    return firstTargetYears
@@ -80,14 +81,14 @@ enum PublicationLagTarget {
 
     /// One point on the step target line: a publication year and the target lag
     /// in force from that year onward.
-    struct StepPoint: Identifiable, Sendable, Hashable {
+    public struct StepPoint: Identifiable, Sendable, Hashable {
         /// The publication year at which this target segment begins.
-        let year: Int
+        public let year: Int
         /// The target lag (in years) in force from `year` onward.
-        let targetYears: Int
+        public let targetYears: Int
 
         /// Stable identity (also the x-value): the publication year.
-        var id: Int { year }
+        public var id: Int { year }
     }
 
     /// The step-line points to plot over a given publication-year domain, drawn
@@ -106,7 +107,7 @@ enum PublicationLagTarget {
     /// - Parameter domain: The chart's effective publication-year domain.
     /// - Returns: Ascending, de-duplicated step points; empty when the domain lies
     ///   wholly before 1961.
-    static func stepPoints(in domain: ClosedRange<Int>) -> [StepPoint] {
+    public static func stepPoints(in domain: ClosedRange<Int>) -> [StepPoint] {
         // The target line only exists from the first directive year onward.
         let start = max(domain.lowerBound, firstTargetYear)
         let end = domain.upperBound

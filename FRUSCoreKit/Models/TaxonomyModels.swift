@@ -26,6 +26,8 @@ import Foundation
 ///   1.0 — Session 02: initial implementation
 ///   1.1 — Session 09: retired the document-level `SubjectTag` family (dropped for low
 ///         signal-to-noise); `VolumeLevelTag`, `TagCategory`, `TagTaxonomyEntry` remain
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, with `TagCategory` and
+///          `TagTaxonomyEntry`; `TagCategory.displayName` public
 public struct VolumeLevelTag: Identifiable, Sendable, Equatable {
     /// URL path segment slug. e.g. `"kissinger-henry-a"`. Stable primary key.
     public let slug: String
@@ -64,7 +66,7 @@ extension TagCategory {
     /// suite, while `ColorIndependenceTests` nominally guarded a *colour* mapping that had been
     /// deleted three months earlier — so nothing checked either channel. There is no
     /// category-to-colour mapping in the app any more; the name is the signal.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .people: return String(localized: "browser.tag.category.people", defaultValue: "People")
         case .places: return String(localized: "browser.tag.category.places", defaultValue: "Places")
@@ -82,6 +84,8 @@ extension TagCategory {
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, for a host that decodes
+///          `volume-tag-taxonomy.json`; `VolumeLevelTagStore`, which reads the bundled copy, stays the app's
 public struct TagTaxonomyEntry: Codable, Sendable, Equatable {
     public let slug: String
     public let displayName: String

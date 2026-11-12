@@ -20,7 +20,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA-1b: initial implementation
-enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
     /// Everything before 1900.
     case pre1900 = 0
     /// 1900 through 1944 (professionalization + the world wars).
@@ -34,7 +35,7 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
     ///
     /// - Parameter year: A four-digit calendar year.
     /// - Returns: The matching era bucket.
-    static func bucket(year: Int) -> CoverageEra {
+    public static func bucket(year: Int) -> CoverageEra {
         switch year {
         case ..<1900:        return .pre1900
         case 1900...1944:    return .earlyTwentieth
@@ -44,7 +45,7 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
     }
 
     /// Localised label for charts and legends.
-    var label: String {
+    public var label: String {
         switch self {
         case .pre1900:
             return String(localized: "series.era.pre1900", defaultValue: "Before 1900")
@@ -58,7 +59,7 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
     }
 
     /// The eras in stable display order (matches the raw-value ordering).
-    static var ordered: [CoverageEra] { allCases.sorted { $0.rawValue < $1.rawValue } }
+    public static var ordered: [CoverageEra] { allCases.sorted { $0.rawValue < $1.rawValue } }
 }
 
 // MARK: - SeriesProductionData
@@ -87,85 +88,86 @@ enum CoverageEra: Int, CaseIterable, Sendable, Hashable {
 ///          `coverageSpans(in:)` / `LagBucket` code
 ///   1.3 — Analytics SA (series chart refinements): `lagPoints(in:)` now filters
 ///          by publication (print) year, matching the lag chart's new x-axis
-struct SeriesProductionData: Sendable {
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S24b): moved into FRUSCoreKit, public
+public struct SeriesProductionData: Sendable {
 
     // MARK: Point types
 
     /// One volume's publication-lag observation, present only when both a print
     /// year and a coverage-end year could be parsed.
-    struct LagPoint: Identifiable, Sendable, Hashable {
+    public struct LagPoint: Identifiable, Sendable, Hashable {
         /// The volume's stable id (also the `Identifiable` id).
-        let volumeId: String
+        public let volumeId: String
         /// The volume's subseries identifier.
-        let subseries: String
+        public let subseries: String
         /// Year of the latest document in the volume (`dateRange.latest`).
-        let coverageEndYear: Int
+        public let coverageEndYear: Int
         /// The TEI print year (`publicationDate`).
-        let printYear: Int
+        public let printYear: Int
         /// `printYear − coverageEndYear`; may be small or negative for
         /// near-contemporaneous early volumes.
-        let lagYears: Int
+        public let lagYears: Int
         /// Era bucket of `coverageEndYear`, used to colour the scatter.
-        let coverageEra: CoverageEra
+        public let coverageEra: CoverageEra
 
-        var id: String { volumeId }
+        public var id: String { volumeId }
     }
 
     /// A count of volumes printed in a given year, optionally split by the era
     /// bucket of that print year (for the stacked bar chart).
-    struct PrintYearCount: Identifiable, Sendable, Hashable {
+    public struct PrintYearCount: Identifiable, Sendable, Hashable {
         /// The print year.
-        let printYear: Int
+        public let printYear: Int
         /// The era bucket of `printYear`.
-        let pubEra: CoverageEra
+        public let pubEra: CoverageEra
         /// How many volumes were printed in this (year, era) pair.
-        let count: Int
+        public let count: Int
 
-        var id: String { "\(printYear)-\(pubEra.rawValue)" }
+        public var id: String { "\(printYear)-\(pubEra.rawValue)" }
     }
 
     /// A running total of volumes published up to and including a print year.
-    struct CumulativePoint: Identifiable, Sendable, Hashable {
+    public struct CumulativePoint: Identifiable, Sendable, Hashable {
         /// The print year.
-        let printYear: Int
+        public let printYear: Int
         /// Total volumes published through this year (inclusive).
-        let cumulativeCount: Int
+        public let cumulativeCount: Int
 
-        var id: Int { printYear }
+        public var id: Int { printYear }
     }
 
     // MARK: Derived collections
 
     /// Per-volume lag observations (all kept, including small/negative lags).
-    let lagPoints: [LagPoint]
+    public let lagPoints: [LagPoint]
 
     /// Volumes printed per year, keyed by year in ascending order (summed
     /// across eras — the simple total for a single-colour bar chart).
-    let volumesPerPrintYear: [(printYear: Int, count: Int)]
+    public let volumesPerPrintYear: [(printYear: Int, count: Int)]
 
     /// Volumes printed per (year, era) pair, ascending by year then era —
     /// the breakdown for an era-coloured bar chart.
-    let volumesPerPrintYearByEra: [PrintYearCount]
+    public let volumesPerPrintYearByEra: [PrintYearCount]
 
     /// Cumulative published-volume totals by print year, ascending.
-    let cumulativeByPrintYear: [CumulativePoint]
+    public let cumulativeByPrintYear: [CumulativePoint]
 
     // MARK: Coverage stats
 
     /// Total number of manifest entries considered.
-    let total: Int
+    public let total: Int
     /// How many entries had a parseable print year.
-    let countWithPrintYear: Int
+    public let countWithPrintYear: Int
     /// How many entries had a parseable coverage span (earliest + latest).
-    let countWithCoverage: Int
+    public let countWithCoverage: Int
     /// How many entries had both a print year and a coverage-end year (lag).
-    let countLagComputable: Int
+    public let countLagComputable: Int
     /// Minimum lag across `lagPoints`, or `nil` when none exist.
-    let lagMin: Int?
+    public let lagMin: Int?
     /// Maximum lag across `lagPoints`, or `nil` when none exist.
-    let lagMax: Int?
+    public let lagMax: Int?
     /// Median lag across `lagPoints`, or `nil` when none exist.
-    let lagMedian: Int?
+    public let lagMedian: Int?
 
     // MARK: Init
 
@@ -175,7 +177,7 @@ struct SeriesProductionData: Sendable {
     /// statistics — never a crash or a divide-by-zero.
     ///
     /// - Parameter entries: The volume manifest entries to summarise.
-    init(entries: [VolumeManifestEntry]) {
+    public init(entries: [VolumeManifestEntry]) {
         total = entries.count
 
         // ── Lag points + coverage counts in one pass ───────────────────────
@@ -253,7 +255,7 @@ struct SeriesProductionData: Sendable {
     ///
     /// - Parameter domain: The inclusive publication-year range to keep.
     /// - Returns: The in-range lag points, order preserved.
-    func lagPoints(in domain: ClosedRange<Int>) -> [LagPoint] {
+    public func lagPoints(in domain: ClosedRange<Int>) -> [LagPoint] {
         lagPoints.filter { domain.contains($0.printYear) }
     }
 
@@ -262,7 +264,7 @@ struct SeriesProductionData: Sendable {
     ///
     /// - Parameter domain: The inclusive print-year range to keep.
     /// - Returns: The in-range buckets, order preserved.
-    func volumesPerPrintYearByEra(in domain: ClosedRange<Int>) -> [PrintYearCount] {
+    public func volumesPerPrintYearByEra(in domain: ClosedRange<Int>) -> [PrintYearCount] {
         volumesPerPrintYearByEra.filter { domain.contains($0.printYear) }
     }
 
@@ -271,7 +273,7 @@ struct SeriesProductionData: Sendable {
     ///
     /// - Parameter domain: The inclusive print-year range to keep.
     /// - Returns: The in-range cumulative points, order preserved.
-    func cumulativeByPrintYear(in domain: ClosedRange<Int>) -> [CumulativePoint] {
+    public func cumulativeByPrintYear(in domain: ClosedRange<Int>) -> [CumulativePoint] {
         cumulativeByPrintYear.filter { domain.contains($0.printYear) }
     }
 
@@ -281,7 +283,7 @@ struct SeriesProductionData: Sendable {
     ///
     /// - Parameter sorted: An ascending-sorted array of values.
     /// - Returns: The median, or `nil` for an empty array.
-    static func median(of sorted: [Int]) -> Int? {
+    public static func median(of sorted: [Int]) -> Int? {
         guard !sorted.isEmpty else { return nil }
         let mid = sorted.count / 2
         if sorted.count % 2 == 1 {
