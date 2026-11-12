@@ -8,8 +8,14 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 import SwiftUI
 @testable import FRUSExplorer
+#endif
 
 // MARK: - AdministrationProfilesDataTests
 
@@ -93,10 +99,12 @@ struct AdministrationProfilesDataTests {
         #expect(PoliticalParty.from(raw: "democratic") == .democratic)
         #expect(PoliticalParty.from(raw: "National Union") == .nationalUnion)
         #expect(PoliticalParty.from(raw: "Whig") == .other)
+        #if !SWIFT_PACKAGE // the party's colour is the app's (`PoliticalParty+Color.swift`), a SwiftUI `Color`
         // Colors are stable and distinct across the three real parties.
         #expect(PoliticalParty.republican.color == Color.red)
         #expect(PoliticalParty.democratic.color == Color.blue)
         #expect(PoliticalParty.nationalUnion.color == Color.orange)
+        #endif
         #expect(PoliticalParty.ordered.count == 4)
     }
 
@@ -408,7 +416,7 @@ struct AdministrationProfilesDataTests {
     @Test("Bundled administration-profiles-index.json decodes with the expected headline figures")
     func bundledArtifactDecodes() throws {
         let url = try #require(
-            Bundle.main.url(forResource: "administration-profiles-index", withExtension: "json"),
+            appBundledURL(forResource: "administration-profiles-index", withExtension: "json"),
             "administration-profiles-index.json must be bundled as an app resource"
         )
         let data = try Data(contentsOf: url)
@@ -449,6 +457,7 @@ struct AdministrationProfilesDataTests {
         #expect(Set(clevelands.map(\.id)).count == 2)
     }
 
+    #if !SWIFT_PACKAGE // the axis labels are the dashboard's, a SwiftUI view's
     // MARK: Axis-label disambiguation
 
     /// The two overview charts key the x-position on the distinct administration
@@ -505,6 +514,7 @@ struct AdministrationProfilesDataTests {
             volumeTotals: [:]
         )
     }
+    #endif
 
     // MARK: Subseries scope (#236)
 
@@ -590,6 +600,7 @@ struct AdministrationProfilesDataTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the presets are `AdministrationPresetMenu`'s, a SwiftUI view's
 // MARK: - AdministrationPresetMenuTests
 
 /// Tests for `AdministrationPresetMenu.presets(from:corpusMaxYear:currentYear:)` — the
@@ -674,3 +685,4 @@ struct AdministrationPresetMenuTests {
         #expect(!presets.contains { $0.profile.id == "clinton" })
     }
 }
+#endif

@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
 import Testing
+import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - SourceProvenanceScopeTests
 
@@ -187,8 +193,8 @@ struct SourceProvenanceScopeTests {
 
     @Test("The shipped artifact carries the per-volume table, and it sums to the decade table")
     func shippedArtifactIsConsistent() throws {
-        let url = try #require(Bundle.main.url(forResource: "source-provenance-index",
-                                               withExtension: "json"), """
+        let url = try #require(appBundledURL(forResource: "source-provenance-index",
+                                             withExtension: "json"), """
             source-provenance-index.json must be in the app bundle.
             """)
         let index = try JSONDecoder().decode(SourceProvenanceIndex.self,
@@ -220,6 +226,7 @@ struct SourceProvenanceScopeTests {
         #expect(volumes.count == index.volumesCovered)
     }
 
+    #if !SWIFT_PACKAGE // `SourceProvenanceDashboard`'s code, read from the app's folder
     // MARK: - The dashboard mounts it
 
     @Test("The dashboard mounts the scope bar, gated on the artifact supporting it")
@@ -229,7 +236,7 @@ struct SourceProvenanceScopeTests {
         // the body left the whole suite green. Scoped to `body` and to code lines, and the gate is
         // checked by adjacency so a `supportsVolumeScope` mentioned elsewhere cannot stand in.
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
             encoding: .utf8)
@@ -265,11 +272,12 @@ struct SourceProvenanceScopeTests {
             the charts would not.
             """)
     }
+    #endif
 
     @Test("Scoping the shipped artifact to a real subseries narrows it")
     func shippedArtifactScopes() throws {
-        let url = try #require(Bundle.main.url(forResource: "source-provenance-index",
-                                               withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "source-provenance-index",
+                                             withExtension: "json"))
         let index = try JSONDecoder().decode(SourceProvenanceIndex.self,
                                              from: Data(contentsOf: url))
         let volumes = try #require(index.byVolume)

@@ -8,9 +8,15 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 import SwiftUI
 import Charts
 @testable import FRUSExplorer
+#endif
 
 // MARK: - SourceProvenanceDataTests
 
@@ -248,7 +254,7 @@ struct SourceProvenanceDataTests {
     @Test("Bundled source-provenance-index.json decodes with the expected headline figures")
     func bundledArtifactDecodes() throws {
         let url = try #require(
-            Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"),
+            appBundledURL(forResource: "source-provenance-index", withExtension: "json"),
             "source-provenance-index.json must be bundled as an app resource"
         )
         let data = try Data(contentsOf: url)
@@ -286,7 +292,7 @@ struct SourceProvenanceDataTests {
     /// The bundled index, decoded.
     private func bundledIndex() throws -> SourceProvenanceIndex {
         let url = try #require(
-            Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"))
+            appBundledURL(forResource: "source-provenance-index", withExtension: "json"))
         return try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
     }
 
@@ -332,6 +338,7 @@ struct SourceProvenanceDataTests {
         #expect(sixties.count(for: .subjectNumericFile) > sixties.count(for: .naraCollection))
     }
 
+    #if !SWIFT_PACKAGE // the dashboards' code and colours, and the charts drawn: the app's (SwiftUI, Charts)
     /// The Categories menu's VoiceOver value read "%lld of 10 shown" from a literal. It is now
     /// the count of `SourceProvenanceCategory.ordered` (#1543).
     ///
@@ -342,7 +349,7 @@ struct SourceProvenanceDataTests {
     /// tell the two apart.
     @Test("The dashboard's category count is derived, not the literal ten")
     func dashboardCategoryCountIsDerived() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
             encoding: .utf8)
@@ -477,7 +484,7 @@ struct SourceProvenanceDataTests {
     /// marks, moves one count and not the other.
     @Test("Every chart coloured by provenance category takes the one scale")
     func everyProvenanceChartTakesTheScale() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let legendKeys = ["\"series.provenance.category.legend\"", "\"archival.table.provenance\""]
         let expected = [
             "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift": 2,
@@ -602,6 +609,7 @@ struct SourceProvenanceDataTests {
         }
         return nil
     }
+    #endif
 
     // MARK: Dense share rows, and the stack with no hole (#1543, landing round 3)
 
@@ -710,6 +718,7 @@ struct SourceProvenanceDataTests {
         #expect(SourceProvenanceData.listed([]).isEmpty)
     }
 
+    #if !SWIFT_PACKAGE // the dashboard's chart, drawn, and its code: the app's (SwiftUI, Charts)
     /// What a column scan of the drawn trend chart found.
     private struct StackScan {
         /// The plot's height in pixels: the longest unbroken run of chart colour in any column.
@@ -812,7 +821,7 @@ struct SourceProvenanceDataTests {
     /// as it did is a check by ear.
     @Test("The dashboard's card draws the tested chart over the table's rows and hides the zero rows from VoiceOver")
     func dashboardDrawsTheTestedChart() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
             encoding: .utf8)
@@ -827,6 +836,7 @@ struct SourceProvenanceDataTests {
         #expect(Self.calls(in: source, opening: "let listed = Set(") == ["SourceProvenanceData.listed(shares).map(\\.id)"])
         #expect(Self.calls(in: source, opening: ".accessibilityHidden(") == ["!listed.contains(point.id)"])
     }
+    #endif
 
     // MARK: Category filter (#236)
 

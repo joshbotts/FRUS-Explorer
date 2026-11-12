@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - Test Helpers
 
@@ -588,12 +598,13 @@ struct ChronologyOverflowChipTests {
         #expect(counts(lhs[0], lhs[1], lhs[2]) != counts(rhs[0], rhs[1], rhs[2]))
     }
 
+    #if !SWIFT_PACKAGE // `ChronologyView`'s code, read from the app's folder: these pin what the app's view draws
     // MARK: The view draws these, and counts nowhere else
 
     /// `ChronologyView.swift`, read from the repository.
     fileprivate static func viewSource() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Chronology/ChronologyView.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }
@@ -650,6 +661,7 @@ struct ChronologyOverflowChipTests {
         #expect(callsInFile == callsInLabel,
                 "ChronologyView calls overflowDirection \(callsInFile - callsInLabel) time(s) outside overflowDirectionLabel")
     }
+    #endif
 }
 
 // MARK: - ChronologySpanningChipTests
@@ -735,6 +747,7 @@ struct ChronologySpanningChipTests {
         #expect(parts.spanning.map(\.documentId) == ["narrow"])
     }
 
+    #if !SWIFT_PACKAGE // `ChronologyView`'s code, read from the app's folder: these pin what the app's view draws
     @Test("The spanning chip draws those sentences and formats no count of its own")
     func chipDrawsTheSharedSentences() throws {
         let source = try Scan.viewSource()
@@ -760,6 +773,7 @@ struct ChronologySpanningChipTests {
         #expect(try Scan.matches(#"chronology\.spanning\.header"#, in: source) == 0,
                 "ChronologyView declares the header key again, so the two can drift apart")
     }
+    #endif
 }
 
 // MARK: - Volume Label Distillation
@@ -897,7 +911,7 @@ struct ChronologyVolumeLabelTests {
     @Test("No bundled volume's topic begins with its volume number (#1472)")
     @MainActor
     func noBundledTopicBeginsWithItsNumber() throws {
-        let entries = ManifestStore().bundledEntries
+        let entries = try testManifestEntries()
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         var eVolumes = 0
         var offenders: [String] = []
@@ -933,7 +947,7 @@ struct ChronologyVolumeLabelTests {
     @Test("Every bundled volume's topic begins with a letter or a digit (#1761)")
     @MainActor
     func everyBundledTopicBeginsWithALetterOrDigit() throws {
-        let entries = ManifestStore().bundledEntries
+        let entries = try testManifestEntries()
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         var topics = 0
         var offenders: [String] = []
@@ -1041,7 +1055,7 @@ struct ChronologyVolumeLabelTests {
     @Test("Every id-suffix shape in the bundled manifest reads as its pinned tag (#1388)")
     @MainActor
     func everySuffixShapeReadsAsItsPinnedTag() throws {
-        let entries = ManifestStore().bundledEntries
+        let entries = try testManifestEntries()
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         let manifestIds = Set(entries.map(\.volumeId))
         let pinnedShapes = Set(Self.pinnedTags.map { Self.suffixShape(volumeId: $0.volumeId, subseries: $0.subseries) })

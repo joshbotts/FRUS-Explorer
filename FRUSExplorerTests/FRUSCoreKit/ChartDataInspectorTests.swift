@@ -32,7 +32,6 @@ import Foundation
 ///         with notes, from chart rows that now hold a zero row for every other category
 struct ChartDataInspectorTests {
 
-    #if !SWIFT_PACKAGE // the adapters, their data and the bundled index they read are the app's (`ChartInspectorAdapters`)
     // MARK: - Fixtures
 
     /// Builds a manifest entry with just the fields the production/geography data
@@ -195,7 +194,7 @@ struct ChartDataInspectorTests {
     /// they had, and no "Subject-Numeric File, 1950, 0.0%".
     @Test("Provenance mix table: a category with no notes in a decade has no line")
     func provenanceMixListsOnlyCategoriesWithNotes() throws {
-        let url = try #require(Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "source-provenance-index", withExtension: "json"))
         let index = try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
         let data = SourceProvenanceData(index: index)
         let rows = data.shareByDecade(in: 1861...1993, excluding: [])
@@ -243,7 +242,6 @@ struct ChartDataInspectorTests {
         #expect(ChartInspectorAdapters.percent(1.0) == "100.0%")
         #expect(ChartInspectorAdapters.percent(0.0) == "0.0%")
     }
-    #endif
 
     // MARK: - CSV serialisation
 

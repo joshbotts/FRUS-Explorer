@@ -56,6 +56,10 @@ import Testing
 ///         `SourceExplorerPanels.swift`, so `sources` names it
 ///   1.8 — 2026-11-11: FRUS Explorer Light's S24a moved `SeriesAnalyticsExport.swift` into FRUSCoreKit's
 ///         `Analytics/Export/`, so `sources` names it there
+///   1.9 — 2026-11-12: FRUS Explorer Light's S24b moved the Chronology chips' copy, the trajectory picker's
+///         labels and the co-mention cap's sentence into FRUSCoreKit (`ChronologyGrouping.swift`,
+///         `PersonAnalyticsMath.swift`, `PersonCoMentionNetwork.swift`), so `sources` names those files, and
+///         no longer `ChronologyViewModel.swift`, which keeps no copy
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -109,9 +113,14 @@ struct ArchivalCopyRulesTests {
         "Semantic/Map/SemanticMapLens.swift",
         "Analytics/PersonAnalyticsView.swift",
         "Analytics/PersonCoMentionGraphView.swift",
+        // S24b: the trajectory picker's labels and the co-mention cap's sentence moved into the kit with the
+        // person maths and the network's choice of nodes; the guard follows them.
+        "../FRUSCoreKit/Analytics/PersonAnalyticsMath.swift",
+        "../FRUSCoreKit/Analytics/PersonCoMentionNetwork.swift",
         "Chronology/ChronologyView.swift",
-        // #1387: the overflow chip's copy moved here out of ChronologyView.swift.
-        "Chronology/ChronologyViewModel.swift",
+        // #1387: the overflow chip's copy moved out of ChronologyView.swift into the view model; S24b moved it
+        // on into the kit, with the rules that count the chips, and the guard follows it.
+        "../FRUSCoreKit/Chronology/ChronologyGrouping.swift",
         // W-13: the coverage statement's prose. It ships in exported Markdown, CSV, and a
         // collection PDF, which is the copy least likely to be re-read and the most likely to be
         // quoted — and until it was listed here nothing checked its spelling at all. Both files

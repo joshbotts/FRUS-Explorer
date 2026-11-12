@@ -128,6 +128,10 @@ import Foundation
 ///   1.19 — 2026-11-11: FRUS Explorer Light's S24a — one baseline entry re-pointed to the FRUSCoreKit file its
 ///         string moved to (the About-the-Series corpus caveat, with `SeriesAnalyticsExport.swift`), so the
 ///         ceiling is unchanged
+///   1.20 — 2026-11-12: FRUS Explorer Light's S24b — five baseline entries re-pointed to the FRUSCoreKit files
+///         their strings moved to (the overflow and spanning chips' counts, now in `ChronologyGrouping.swift`,
+///         and the co-mention graph's cap sentence, now in `PersonCoMentionNetwork.swift`), so the ceiling is
+///         unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -910,6 +914,11 @@ extension CodingStandardsAuditTests {
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | series.export.caveat.corpus %lld"#,
+        #"../FRUSCoreKit/Analytics/PersonCoMentionNetwork.swift | personCoMention.cap.disclosed"#,
+        #"../FRUSCoreKit/Chronology/ChronologyGrouping.swift | chronology.overflow.chip.a11y.many"#,
+        #"../FRUSCoreKit/Chronology/ChronologyGrouping.swift | chronology.overflow.chip.many"#,
+        #"../FRUSCoreKit/Chronology/ChronologyGrouping.swift | chronology.spanning.chip.a11y.many"#,
+        #"../FRUSCoreKit/Chronology/ChronologyGrouping.swift | chronology.spanning.chip.many"#,
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterInbound %lld %@"#,
         #"../FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | graph.a11y.clusterOutbound %lld %@"#,
@@ -972,7 +981,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/PersonAnalyticsView.swift | personAnalytics.comparison.empty"#,
         #"Analytics/PersonAnalyticsView.swift | personAnalytics.search.cap"#,
         #"Analytics/PersonCoMentionGraphView.swift | personCoMention.cap.all"#,
-        #"Analytics/PersonCoMentionGraphView.swift | personCoMention.cap.disclosed"#,
         #"Analytics/PersonCoMentionGraphView.swift | personCoMention.node.a11yValue"#,
         #"Analytics/WordCloud/WordCloudBench.swift | settings.wordcloud.bench.keeps %lld %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness %lld %lld %@"#,
@@ -1039,10 +1047,6 @@ extension CodingStandardsAuditTests {
         #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.archival.footer %lld"#,
         #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.header.all.many %lld"#,
         #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.header.many %lld"#,
-        #"Chronology/ChronologyViewModel.swift | chronology.overflow.chip.a11y.many"#,
-        #"Chronology/ChronologyViewModel.swift | chronology.overflow.chip.many"#,
-        #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.a11y.many"#,
-        #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.many"#,
         #"Citation/CitationLookupView.swift | citation.batch.ambiguous %lld"#,
         #"Citation/CitationLookupView.swift | citation.results.count.a11y"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.addedToast %lld"#,

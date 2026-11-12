@@ -37,6 +37,8 @@ import Testing
 ///          `AnalyticsValueUnitTests.swift` by its place in `FRUSCoreKit/`, where it moved, and drops
 ///          `ProvenanceStatementTests.swift`, which reads both trees through this type since
 ///          `AnalyticsProvenance` and `SeriesAnalyticsExport` moved into the kit
+///   1.3 — 2026-11-12 (FRUS Explorer Light, S24b): `SourceProvenanceDataTests` moved into
+///          `FRUSExplorerTests/FRUSCoreKit/`, so `walksTheAppFolderAlone` keys it by that path
 enum AppSourceTree {
 
     /// The directories, relative to the repository root.
@@ -158,6 +160,7 @@ struct AppSourceTreeTests {
     /// kit itself. An exact list, not permission: a scan added here is one somebody has read.
     static let walksTheAppFolderAlone: [String: String] = [
         "FRUSCoreKit/AnalyticsValueUnitTests.swift": "reads the kit's Analytics folder beside the app's, by two paths of its own",
+        "FRUSCoreKit/SourceProvenanceDataTests.swift": "Swift Charts marks and their colour scale",
         "BackgroundTaskAppStateTests.swift": "the app's calls that start an index pass, held to AppState's count, which kit code cannot name; the kit's own calls run inside the pipeline methods those calls reach",
         "BrowseScopeTests.swift": "call sites of ScopeIndexView, a SwiftUI view",
         "BrowseTwoPaneMetricsTests.swift": "root selections on the browser's view model, an app type",
@@ -178,7 +181,6 @@ struct AppSourceTreeTests {
         "SceneEnvironmentAuditTests.swift": "SwiftUI scenes and what each injects",
         "SemanticStorageReportTests.swift": "AppState's shard-fetch scope",
         "SheetExitTests.swift": "SwiftUI sheets and the views they present",
-        "SourceProvenanceDataTests.swift": "Swift Charts marks and their colour scale",
         "ToolbarAccessibilityAuditTests.swift": "SwiftUI toolbars, pickers, sheets, List footers and views",
         "TripPacketEntryPointParityTests.swift": "ArchiveVisitPlan, a SwiftData model, and TripPacketSheet, a view",
         "WindowTargetingTests.swift": "UIKit scene activation and SwiftUI windows",
