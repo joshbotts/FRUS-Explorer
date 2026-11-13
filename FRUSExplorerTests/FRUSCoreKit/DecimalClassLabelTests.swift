@@ -393,7 +393,6 @@ struct DecimalClassLabelTests {
     }
 
 
-    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, a whole era of keys stops rendering bare")
     func perKeyAttributionOverTheRealCorpus() throws {
         // The artifact tests above pin what the table SAYS; this one pins what the app does with
@@ -401,7 +400,7 @@ struct DecimalClassLabelTests {
         // chart draws. It exists because the rule it checks is invisible to every synthetic
         // fixture: the numbers only mean something against the corpus's actual coverage.
         let usage = try #require(CollectionUsageIndexStore.shared)
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
                                                from: Data(contentsOf: url))
         let data = ArchivalCollectionsData.make(
@@ -474,7 +473,6 @@ struct DecimalClassLabelTests {
             the later reading takes the suffix as a second country.
             """)
     }
-    #endif
 
     /// Source with comment LINES removed, so prose about a call is never counted as the call.
     ///
@@ -490,7 +488,7 @@ struct DecimalClassLabelTests {
             .joined(separator: "\n")
     }
 
-    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
+    #if !SWIFT_PACKAGE // its second half walks the app's sources (`AppSourceTree`, the test target's)
     @Test("The ranking hands every surface the same gloss, and nothing else looks the table up")
     func rankingCarriesTheGloss() throws {
         // The single injection point. Every surface that draws a class row — chart, uncapped
@@ -869,11 +867,10 @@ struct DecimalClassLabelTests {
         #expect(table.leafGloss(for: "UN 6", coveringYears: 1963...1963)
                     == "United Nations — MEMBERSHIP. ASSOCIATION.")
 
-        #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, and the manifest the app bundle's
         // And the injection point: the ranking hands the same reading to every surface that draws
         // a class row, which is what keeps one label source honest across two filing systems.
         let usage = try #require(CollectionUsageIndexStore.shared)
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
                                                from: Data(contentsOf: url))
         let data = ArchivalCollectionsData.make(
@@ -883,7 +880,6 @@ struct DecimalClassLabelTests {
                                 weight: .documents, hidingUmbrella: false, limit: .max).rows
         #expect(rows.contains { CollectionKeying.isSubjectNumericClass($0.id) && $0.gloss != nil },
                 "band 3's labelled rows are subject-numeric and must arrive through the ranking")
-        #endif
     }
 
 
@@ -1098,11 +1094,10 @@ struct PrimarySubjectFileLabelTests {
         #expect(geneva?.contains("Germany") != true, "got \(geneva ?? "nil")")
     }
 
-    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, the files with no number are one family under their category")
     func theShippedRankingHoldsTheFamily() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
         let data = ArchivalCollectionsData.make(
             authority: [], usage: usage, coverage: ArchivalVolumeCoverage.map(from: entries))
@@ -1131,7 +1126,6 @@ struct PrimarySubjectFileLabelTests {
         }
         #expect(strays.isEmpty, "ranked as rows of their own: \(strays.map(\.id))")
     }
-    #endif
 }
 
 // MARK: - SubjectNumericStraddleLabelTests
@@ -1224,11 +1218,10 @@ struct SubjectNumericStraddleLabelTests {
         #expect(table.gloss(for: "POL 24", coveringYears: 1960...1977) == nil)
     }
 
-    #if !SWIFT_PACKAGE // the ranking is ArchivalCollectionsData's, the app's
     @Test("Over the shipped corpus, the 1961–1968 and 1969–1976 eras' families and files read in words")
     func theShippedRankingLabelsStraddlingFamilies() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let url = try #require(appBundledURL(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
         let data = ArchivalCollectionsData.make(
             authority: [], usage: usage, coverage: ArchivalVolumeCoverage.map(from: entries))
@@ -1265,5 +1258,4 @@ struct SubjectNumericStraddleLabelTests {
             753 were modelled, and at most 196 could before A16
             """)
     }
-    #endif
 }

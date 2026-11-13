@@ -24,6 +24,9 @@ import CSQLite
 #if canImport(FTS5Store)
 import FTS5Store
 #endif
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 // MARK: - PersonAnalyticsQueryTests
 
@@ -1097,6 +1100,7 @@ struct PersonNetworkFocusTests {
         let message: String
     }
 }
+#endif
 
 // MARK: - GraphNodeLabelTests (#1384)
 
@@ -1134,6 +1138,8 @@ struct PersonNetworkFocusTests {
 ///   1.4 — 2026-10-01: #1438 — a label falls back to a place above its node (owner decision D10),
 ///          and keeps clear of obstacles: the fixtures that pinned "skipped, not moved" now pin
 ///          the place above, and drop a label only when both places are taken
+///   1.5 — 2026-11-12 (FRUS Explorer Light, S24c): in FRUSCoreKit's package too, where the rules now are;
+///          `plateOverlaps(placed:requests:)` reads a touching edge as no overlap on Linux too
 struct GraphNodeLabelTests {
 
     /// A label's size as the canvas would measure it, estimated at 0.55 em a character and 1.25 em
@@ -1198,7 +1204,13 @@ struct GraphNodeLabelTests {
     static func plateOverlaps<ID: Hashable>(placed: [ID: CGRect],
                                             requests: [GraphLabelRequest<ID>]) -> [String] {
         guard let plate = GraphNodeLabels.plate(for: requests, placed: placed) else { return [] }
-        return placed.filter { $0.key != requests.first?.id && $0.value.intersects(plate) }
+        // Open intervals, as `CGRect.intersects` has them on Apple platforms: Linux's Foundation counts a
+        // shared edge as an intersection, which the label that touches the plate's side would fail.
+        return placed.filter { label in
+            label.key != requests.first?.id
+                && label.value.minX < plate.maxX && plate.minX < label.value.maxX
+                && label.value.minY < plate.maxY && plate.minY < label.value.maxY
+        }
             .map { "label \($0.key) at \($0.value) and the plate at \(plate)" }
     }
 
@@ -1499,6 +1511,7 @@ struct GraphNodeLabelTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the co-mention graph's settling layout, and its labels as its canvas places them, are the app's (SwiftUI)
 // MARK: - GraphLayoutFrames (#1434)
 
 /// Watches an animated graph layout from the moment it starts until it settles (#1434), the way the

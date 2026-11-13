@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ArchivalAnalyticsExportTests
 
@@ -278,6 +284,7 @@ struct ArchivalAnalyticsExportTests {
     }
 }
 
+#if !SWIFT_PACKAGE // every test here reads the views' code, the app's
 // MARK: - ArchivalExportWiringTests
 
 /// Every archival card offers its export (#787).
@@ -292,6 +299,7 @@ struct ArchivalExportWiringTests {
 
     private static func source(_ relative: String) throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/\(relative)")
@@ -1047,3 +1055,4 @@ struct ArchivalExportWiringTests {
                 "an export failure must be surfaced, not swallowed")
     }
 }
+#endif

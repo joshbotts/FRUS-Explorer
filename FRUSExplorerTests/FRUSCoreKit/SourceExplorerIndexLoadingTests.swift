@@ -20,7 +20,7 @@ import Foundation
 
 /// The loaders of Source Explorer's twelve bundled indexes (`init(contentsOf:)`), which a host outside the
 /// app calls with the file where it keeps it: the eleven S22a moved, and the register S22b moved with the
-/// classifier.
+/// classifier; and the decimal-class label table's, which the archival derivations take (S24c).
 ///
 /// Each loader decodes what the app's store decodes, so this suite holds the two together: in Xcode it
 /// loads the app bundle's copy and compares the index with the store's, file by file; in the package,
@@ -31,6 +31,7 @@ import Foundation
 /// Version history:
 ///   1.0 — 2026-11-08 (FRUS Explorer Light, S22a): initial implementation
 ///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): the register, `POCOMIndex`
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): the decimal-class label table, `DecimalClassLabelTable`
 @Suite("FRUSCoreKit — Source Explorer's indexes, loaded from a URL")
 struct SourceExplorerIndexLoadingTests {
 
@@ -69,6 +70,8 @@ struct SourceExplorerIndexLoadingTests {
                         store: ProvenanceFlowIndexStore.shared) { ($0.generated, $0.schemaVersion, $0.collectionFlows.count) }
         try expectLoads("subject-numeric-labels", SubjectNumericLabelTable.init(contentsOf:),
                         store: SubjectNumericLabelStore.shared) { ($0.generated, $0.schemaVersion, $0.schedules.count) }
+        try expectLoads("decimal-class-labels", DecimalClassLabelTable.init(contentsOf:),
+                        store: DecimalClassLabelStore.shared) { ($0.generated, $0.schemaVersion, $0.schedules.count) }
         // The register, which the classifier's addressee rule reads through `ChiefsOfMissionRoster` (S22b).
         try expectLoads("pocom-index", POCOMIndex.init(contentsOf:),
                         store: POCOMIndexStore.shared) { ($0.generated, $0.version, $0.chiefTerritoryIds.count) }
@@ -91,6 +94,7 @@ struct SourceExplorerIndexLoadingTests {
             ("CollectionUsageIndex", { _ = try CollectionUsageIndex(contentsOf: $0) }),
             ("ProvenanceFlowIndex", { _ = try ProvenanceFlowIndex(contentsOf: $0) }),
             ("SubjectNumericLabelTable", { _ = try SubjectNumericLabelTable(contentsOf: $0) }),
+            ("DecimalClassLabelTable", { _ = try DecimalClassLabelTable(contentsOf: $0) }),
         ]
         for (name, load) in loaders {
             #expect(throws: (any Error).self, "\(name) loaded a file that is not there") { try load(missing) }

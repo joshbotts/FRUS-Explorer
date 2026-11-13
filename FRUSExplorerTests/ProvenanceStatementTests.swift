@@ -22,6 +22,8 @@ import Foundation
 ///   1.0 — PV-1: initial implementation
 ///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): the builders' scan reads FRUSCoreKit too, through
 ///         `AppSourceTree`, since `SeriesAnalyticsExport`'s four builders moved there (`../FRUSCoreKit/…`)
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): `ArchivalAnalyticsExport`'s five builders are read
+///         where they moved, `../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift`
 @Suite("Provenance statements in exports")
 struct ProvenanceStatementTests {
 
@@ -318,7 +320,7 @@ struct AnalyticsExportSourcesTests {
         "Analytics/WordCloud/WordCloudView.swift": ["[.frusText, .appWordLists]"],
         "Semantic/Map/SemanticMapExport.swift": ["[.frusText, .appModel]"],
         "../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift": [nil, "[.frusText, .ohSubjects]", nil, nil],
-        "Analytics/ArchivalAnalyticsExport.swift": [
+        "../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift": [
             "rankingSources(lens: lens, weight: weight, glossesWritten: glossesWritten)", nil, nil, nil, nil],
     ]
 

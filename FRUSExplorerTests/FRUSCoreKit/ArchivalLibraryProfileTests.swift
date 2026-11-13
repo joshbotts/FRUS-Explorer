@@ -13,9 +13,15 @@
 // limitations under the License.
 
 import Foundation
-import SwiftUI
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
+import SwiftUI
 @testable import FRUSExplorer
+#endif
 
 // MARK: - StoredProvenanceCategoryTests
 
@@ -300,6 +306,7 @@ struct ArchivalLibraryProfileTests {
             """)
     }
 
+    #if !SWIFT_PACKAGE // the composition chart, drawn, and the card's code: the app's (SwiftUI, Charts)
     // MARK: The composition chart's height (#1543, landing round 2)
 
     /// A library with a source note in every one of the eleven categories, the heaviest first as
@@ -363,6 +370,7 @@ struct ArchivalLibraryProfileTests {
     @Test("The composition card draws the measured chart, and nothing fixes its height")
     func compositionCardDrawsTheMeasuredChart() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift"),
             encoding: .utf8)
@@ -384,4 +392,5 @@ struct ArchivalLibraryProfileTests {
         #expect(ArchivalAnalyticsView.libraryCompositionMinimumPlotHeight == 40)
         #expect(ArchivalAnalyticsView.libraryCompositionRestingHeight == 120)
     }
+    #endif
 }

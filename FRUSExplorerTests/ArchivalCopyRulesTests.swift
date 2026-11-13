@@ -60,6 +60,9 @@ import Testing
 ///         labels and the co-mention cap's sentence into FRUSCoreKit (`ChronologyGrouping.swift`,
 ///         `PersonAnalyticsMath.swift`, `PersonCoMentionNetwork.swift`), so `sources` names those files, and
 ///         no longer `ChronologyViewModel.swift`, which keeps no copy
+///   1.10 — 2026-11-12: FRUS Explorer Light's S24c moved `ArchivalAnalyticsExport.swift`,
+///         `ArchivalAnalyticsAxes.swift` and `ArchivalCounts.swift` into FRUSCoreKit (`Analytics/Export/`
+///         and `Analytics/Archival/`), so `sources` names them there
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -69,11 +72,13 @@ struct ArchivalCopyRulesTests {
         "Analytics/ArchivalNetworkView.swift",
         "Analytics/ArchivalFlowsView.swift",
         "Analytics/ArchivalAllUnitsSheet.swift",
-        "Analytics/ArchivalAnalyticsExport.swift",
-        "Analytics/ArchivalAnalyticsAxes.swift",
+        // S24c: the export's statements, the axes' labels and the count phrases moved into the kit with
+        // the archival derivations; the guard follows them.
+        "../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift",
+        "../FRUSCoreKit/Analytics/Archival/ArchivalAnalyticsAxes.swift",
         // 1.4, #1374: the ranking caption, the umbrella caveat, the denominator's source-note count
         // and the gloss's "and N others" moved here out of the view, the export and the link.
-        "Analytics/ArchivalCounts.swift",
+        "../FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift",
         // The scans header lives here, not in the archival family — and the copy rule is about
         // artboard-derived strings wherever they ship.
         "SourceExplorer/SourceExplorerView.swift",
