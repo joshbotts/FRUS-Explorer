@@ -769,6 +769,13 @@ let package = Package(
         /// `Bundle.main`, which a command-line tool does not have — and which would
         /// otherwise let the app and the generator source different lists without anyone
         /// noticing. The JSON shapes live here so both callers decode identically.
+        ///
+        /// FRUS Explorer Light, the web edition, compiles this directory on Linux (its S24d), as it
+        /// does FRUSCoreKit: NaturalLanguage, which the tokenizers and the readiness gate need, is
+        /// imported behind `canImport`, and where it is missing those types are unavailable and say
+        /// why; CryptoKit, for the payload digest, is behind `canImport` too, and on Linux the web
+        /// edition's package supplies swift-crypto's `Crypto`, so this package gains no dependency.
+        /// The bundled clouds and keyness references load by URL as well as from the app's bundle.
         .target(
             name: "WordCloudKit",
             path: "WordCloudKit",
@@ -776,7 +783,9 @@ let package = Package(
         ),
 
         /// Unit tests for WordCloudKit — chiefly the O-1-2 parity suite, which pins the
-        /// one-pass multi-lens tokenizer against four separate single-lens runs.
+        /// one-pass multi-lens tokenizer against four separate single-lens runs. The suites that
+        /// tag are behind `canImport(NaturalLanguage)`, so on Linux the rest run alone.
+        /// `KeynessTests.swift` is compiled into the app's test target as well (`project.yml`).
         .testTarget(
             name: "WordCloudKitTests",
             dependencies: [.target(name: "WordCloudKit")],

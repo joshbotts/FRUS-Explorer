@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// SHA-256 is CryptoKit's on Apple platforms and swift-crypto's `Crypto` where CryptoKit is missing
+// (Linux), whose package supplies it; the two give the same digest of the same bytes.
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Foundation
 
 // MARK: - WordCloudPayloadDigest
@@ -31,6 +37,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): swift-crypto's SHA-256 where CryptoKit is missing
 public enum WordCloudPayloadDigest {
 
     /// Hex SHA-256 of the given bytes.

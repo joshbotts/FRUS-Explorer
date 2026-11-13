@@ -14,8 +14,10 @@
 
 import Testing
 import Foundation
+#if canImport(NaturalLanguage)
 import NaturalLanguage
 import os
+#endif
 @testable import WordCloudKit
 
 /// #1373: the tagger warm-up, its canary, and the lens rules read from the canary's verdict.
@@ -39,6 +41,10 @@ import os
 ///   1.2 — #1539 review round 1: the canary re-run is a control, not a claim that a verdict never
 ///          changes; the canary tags only what it is allowed; both tokenizers count every word over a
 ///          tagger the gate built without `.lemma`
+///   1.3 — 2026-11-12 (FRUS Explorer Light, S24d): the lens rules (``supports``, ``countsAsDesigned``)
+///          run wherever the kit builds; ``works(_:)``, which runtimes ask for the assets, and
+///          everything that tags, warms up or reads the gate are behind `canImport(NaturalLanguage)`,
+///          since where the framework is missing (Linux) the kit has no tagger
 @Suite("WordCloudKit — tagger readiness and the lens rules (#1373)")
 struct NaturalLanguageReadinessTests {
 
@@ -82,6 +88,7 @@ struct NaturalLanguageReadinessTests {
         #expect(partial.allSatisfy { !$0.isFullyWorking })
     }
 
+    #if canImport(NaturalLanguage)
     @Test("Only a runtime from 27 on asks for the tagger's assets; below it the warm-up does not wait")
     func assetRequestsStartAtTwentySeven() {
         // One fixture each side of the line, and the line itself: iOS 26.3 is where no request
@@ -242,8 +249,10 @@ struct NaturalLanguageReadinessTests {
         #expect(!counts.isEmpty == supported,
                 "\(lens.rawValue): the canary says supported=\(supported) but the tokenizer kept \(counts)")
     }
+    #endif
 }
 
+#if canImport(NaturalLanguage)
 // MARK: - #1539: the engine's lifecycle, driven through fakes
 
 /// A stand-in for the framework an engine calls: asset requests that answer when the test says, a
@@ -346,6 +355,7 @@ final class FakeLanguageFramework: Sendable {
             statusDidChange: { self.state.withLock { $0.statusChanges += 1 } })
     }
 }
+#endif
 
 /// #1539: how the readiness engine starts, waits, re-checks and replaces its verdict, driven
 /// through ``FakeLanguageFramework`` so every rule runs on any host in a few seconds.
@@ -370,8 +380,11 @@ final class FakeLanguageFramework: Sendable {
 ///          late answer (it was a control that ran the canary); a first use before the first
 ///          foreground waits; a re-check asks only for what the verdict lacks; the `pending` event
 ///          only while in the background; the live notification; budgets with slack
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): the adoption rule (`improvesOn`) runs wherever
+///          the kit builds; the engine itself is behind `canImport(NaturalLanguage)`
 @Suite("WordCloudKit — the readiness engine's lifecycle (#1539)")
 struct NaturalLanguageReadinessEngineTests {
+    #if canImport(NaturalLanguage)
 
     private static let lemmaOnlyFailing = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
                                                                  recognizesNames: true)
@@ -642,6 +655,7 @@ struct NaturalLanguageReadinessEngineTests {
         #expect(engine.settledVerdict?.warmUp.assetRequests.last?.reasked == 1)
         #expect(!hasPending(fake.events), "\(fake.events)")
     }
+    #endif
 
     @Test("A verdict improves on another only by keeping every capability and adding one", arguments: [
         // (candidate, held, improves) — one fixture per clause of the rule.
@@ -661,6 +675,8 @@ struct NaturalLanguageReadinessEngineTests {
     func improvesOn(candidate: NaturalLanguageHealth, held: NaturalLanguageHealth, improves: Bool) {
         #expect(candidate.improves(on: held) == improves, "\(candidate) over \(held)")
     }
+
+    #if canImport(NaturalLanguage)
 
     @Test("The release log writes enums, scheme names, counts and seconds for every event")
     func logLinesCarryTheRecord() {
@@ -735,9 +751,11 @@ struct NaturalLanguageReadinessEngineTests {
         NaturalLanguageReadinessEngine.Dependencies.live.statusDidChange()
         #expect(deliveredOn.withLock { $0 }.contains(here), "nothing was posted on .default from this call")
     }
+    #endif
 }
 
 
+#if canImport(NaturalLanguage)
 // MARK: - #1608: the session's record
 
 /// The lines the release log is sent are kept, each with its time, for a tester to copy (#1608).
@@ -890,3 +908,4 @@ struct NaturalLanguageSessionRecordTests {
         #expect(stamped.filter { $0.hasPrefix("(") }.count == 1)
     }
 }
+#endif

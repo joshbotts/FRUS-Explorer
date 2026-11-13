@@ -16,19 +16,14 @@ import Foundation
 
 // MARK: - KeynessCloudMeasure
 
-/// Which question the word cloud is answering.
-///
-/// Persisted rather than held as view state: the macOS host applies `.id(scope.signature)` to
-/// `WordCloudView`, which destroys every `@State` when the window is retargeted. A `@State` measure
-/// would silently revert to frequency on the Mac while surviving the same action on iOS.
+/// The control's label for each measure. The measure is `WordCloudKit`'s
+/// (`WordCloudKit/KeynessCloudMeasure.swift`); its words are the app's, as `WordCloudLens+UI`'s are.
 ///
 /// Version history:
-///   1.0 — S-1: initial implementation
-enum KeynessCloudMeasure: String, CaseIterable, Sendable {
-    /// Words sized by how often they occur in the scope. The historical behaviour.
-    case frequency
-    /// Words sized by how much more often they occur here than across the corpus.
-    case keyness
+///   1.0 — S-1: initial implementation, in the measure's own declaration
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): the measure moved into `WordCloudKit`; its label
+///          stays here
+extension KeynessCloudMeasure {
 
     /// The control's label for this measure.
     var pickerLabel: String {

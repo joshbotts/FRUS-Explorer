@@ -9,7 +9,13 @@
 import Foundation
 import Testing
 
+// Compiled twice: into the app's test target (project.yml names this file), against the app's module,
+// and into the package's WordCloudKitTests, against the kit's, which Linux runs too.
+#if SWIFT_PACKAGE
+@testable import WordCloudKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - KeynessTests
 
@@ -18,6 +24,11 @@ import Testing
 ///
 /// The expected values are computed independently (Python, standard G² formulation) rather than
 /// read off this implementation, so the suite can disagree with the code.
+///
+/// Version history:
+///   1.0 — S-1: initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): moved with `Keyness` into `WordCloudKitTests`,
+///          and compiled into the app's test target as well
 @Suite("Keyness")
 struct KeynessTests {
 

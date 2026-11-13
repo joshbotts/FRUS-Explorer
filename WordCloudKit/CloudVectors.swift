@@ -42,6 +42,8 @@ import Foundation
 ///         DECODE what the generator ENCODES, and a second app-side copy of this schema is
 ///         exactly the drift `WordCloudLexiconSet` was created to prevent. One type, one
 ///         shape, both sides.
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
+///         files somewhere other than a bundle
 public struct CloudVectorsFile: Codable, Sendable, Equatable {
 
     /// Schema version. Bump when the shape changes in a way a shipped reader would misread.
@@ -79,6 +81,15 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
         self.lenses = lenses
         self.vocabulary = vocabulary
         self.scopes = scopes
+    }
+
+    /// Decodes `cloud-vectors-core.json` or `cloud-vectors-volumes.json` from `url`, as the app's
+    /// `BundledCloudVectors` decodes its bundled copy, for a host that keeps the files elsewhere.
+    ///
+    /// - Throws: whatever `Data(contentsOf:)` or `JSONDecoder` throws; the app's loader answers `nil`
+    ///   for the same failures, and leaves its backdrop empty.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(CloudVectorsFile.self, from: Data(contentsOf: url))
     }
 
     /// Run provenance.
@@ -229,6 +240,8 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
 /// Version history:
 ///   1.0 — S-1: initial implementation
 ///   1.1 — #1608: ``Configuration/wordForm`` and ``resourceName(for:)``; the printed-form file
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
+///         files somewhere other than a bundle
 public struct KeynessBaselineFile: Codable, Sendable, Equatable {
 
     /// Schema version.
@@ -400,6 +413,19 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         self.termsPerLens = termsPerLens
         self.configuration = configuration
         self.lenses = lenses
+    }
+
+    /// Decodes `keyness-baseline.json` or `keyness-baseline-printed.json` from `url`, as the app's
+    /// `BundledKeynessBaseline` decodes its bundled copies, for a host that keeps the files elsewhere.
+    ///
+    /// It does not check the file against a form: a host that reads the file of one form holds it
+    /// to ``Configuration/wordForm`` as the app does, and refuses a scope its
+    /// ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:)`` names.
+    ///
+    /// - Throws: whatever `Data(contentsOf:)` or `JSONDecoder` throws; the app's loader skips a file
+    ///   that fails, and answers that no reference is there.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(KeynessBaselineFile.self, from: Data(contentsOf: url))
     }
 
     /// The bundled resource that holds the reference counted in `wordForm`, without its `.json`
