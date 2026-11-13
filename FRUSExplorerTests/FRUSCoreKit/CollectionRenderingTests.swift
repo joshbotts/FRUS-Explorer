@@ -299,6 +299,9 @@ enum CollectionRenderingFixtures {
 ///          each grew by its 1,683 bytes, the block `ReaderPageTests` names; the Word, BibTeX and
 ///          RIS pins hold, and no fixture list item holds links alone, so no `class="links-only"`
 ///          entered a page
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): the three HTML pages re-pinned for the
+///          gloss links, named lists and footnote markers that rule now boxes: each grew by 1,346
+///          bytes, the block `ReaderPageTests` names; the Word, BibTeX and RIS pins hold
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -306,13 +309,13 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("2c409fe6bf1686b11e9f838934b9618559b0f8775e362b15bb2bd4b1be06d73a", 46_317),
+        "everything.html": ("d619ecdab6fba825ef3b869c53a9df724e3108c902d1594a64723af0b8f860e6", 47_663),
         "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
         "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
         "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
-        "plain.html": ("7bff0b9fe4d64ebf4f4880662141b037df14366fbc5da600e3e828aa85eb44e3", 30_656),
+        "plain.html": ("0df608b4f6ddafa8213cfb55f62eb174ec1a95aabc7341a3403e035c4400d10a", 32_002),
         "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
-        "preview.html": ("10c83a023508cfe67dad8137a7b3d98c8cab4f118068a1e6fd928f901a8c0e3c", 29_519),
+        "preview.html": ("38ac19a9c32e489b5ca0d4bcf5a8cada1c753311cb5359cd4e2aeb78515bac22", 30_865),
     ]
 
     static func expectPin(_ name: String, _ data: Data, sourceLocation: SourceLocation = #_sourceLocation) {

@@ -50,6 +50,9 @@ import Crypto
 ///          rule that makes the links of a list item of links alone boxes at least 24 px square
 ///          (WCAG 2.2's 2.5.8), which a test reads; `LinksAloneTargetRenderTests`, Xcode's alone,
 ///          measures the boxes in WebKit
+///   1.8 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): the heads are re-pinned for the gloss
+///          links, the named lists and the footnote markers the rule now boxes; the test reads the
+///          four rules, and `LinksAloneTargetRenderTests` measures the new boxes in WebKit
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -110,15 +113,26 @@ struct ReaderPageTests {
     ///   changed: with the block taken out, all eight heads were the 2026-11-08 pins byte for byte
     ///   when these were taken. `theLinksOfAnItemOfLinksAloneAre24PxTargets` below says what the rule
     ///   must be, and `LinksAloneTargetRenderTests` (Xcode's alone) what WebKit draws by it.
+    /// - 2026-11-12 re-pinned them for what the 2026-11-11 block left small (FRUS Explorer Light's S21b
+    ///   follow-up, #1898's leftovers): the block's box rule takes a list item's gloss links and the
+    ///   two lists below a document that names its people and terms on `@ana` (`.named-list`), whose
+    ///   lines stood about 22.6 px apart at Medium; a boxed gloss draws its dotted rule as a dotted
+    ///   underline, which stays under the term, where its border would sit at the foot of the box;
+    ///   and a footnote marker beside the links of such an item, whose box `line-height: 0` leaves
+    ///   with no height, is a box 24 px square, its number at the top. Each head grew by 1,346 bytes,
+    ///   all of them that block and its comment; no variable and no other rule changed: with the block
+    ///   put back as it was, all eight heads were the 2026-11-11 pins byte for byte when these were
+    ///   taken. `theLinksOfAnItemOfLinksAloneAre24PxTargets` below says what the rules must be, and
+    ///   `LinksAloneTargetRenderTests` (Xcode's alone) what WebKit draws by them.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("d889407f53cf670100548427839bfb5d054356c57f46de3da005b05495b141b7", 22257),
-        "light medium": ("78a8e9e5b5bf95462f6f56483dd3126573d75c49c761ad247df5ad044e599b1a", 22258),
-        "light large": ("04da0fbb0d051b17f5f2543d43a7978789c9c8ac02be704d518de33653ddfd00", 22258),
-        "light extraLarge": ("1d9a9326e0bbd4352b9f087949a497f43f159217f977a6a15f0fa200741b9fe9", 22258),
-        "dark small": ("9668ae7c034a7517cf5e8b4a822dce58d8d157efe033378c8db7c13e678ff45c", 22287),
-        "dark medium": ("355a218c7bc67c6f4d7e016e959ec5a04ea2f0e963e37f716b99daa35a5b2de9", 22288),
-        "dark large": ("84e9f312f5fb9578602b96e852037fccf2404bd8747f4bebce4bef81316229a7", 22288),
-        "dark extraLarge": ("3166bb2395ca24d0ec4eb8b1ccb88065d0d1a05a8a44e10d3743f7158d8cf240", 22288),
+        "light small": ("46b73fc5495b39b6945ef0be5b4aa1c7768d0cb4afb19b7e1640925bb8a663c5", 23603),
+        "light medium": ("e6bf4902e19afc364e89844dbfdb9a7d176e5e0a87699f07b89f989d4f5b8f75", 23604),
+        "light large": ("5619252f9c685bcf1cb05acd40ca6d2e41913cb4b45b6c900665965c086ae83c", 23604),
+        "light extraLarge": ("4f0e7c854228fb5de04f9e432c6fdc995b353e694e0f8082ce82210921323eec", 23604),
+        "dark small": ("9ef959c0ab12ae04fa072af098a03e133adef1fa095ba4bd4be3164daea4aaf5", 23633),
+        "dark medium": ("b26a066df3f1a5fcfaa8aec644525af575a91a33bbaa32516b8007fed06cc3d9", 23634),
+        "dark large": ("7195d8cf8007dd32187e5f5eefc0446984814ad74067c9028bbbde2c896cc2d1", 23634),
+        "dark extraLarge": ("c79c2e9dc9acc445dc3e229cfa9153e8066d5d71c597f9a9d63185dd8cc8b6d5", 23634),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -562,36 +576,71 @@ struct ReaderPageTests {
 
     // MARK: - WCAG 2.2's 2.5.8: the links of a list item of links alone
 
-    /// The selectors of the rule that draws the cross-reference and person links of a list item of
-    /// links alone as boxes at least 24 px square: `li.links-only`, which the serializer writes for
-    /// an item with no text beside its links (`FRUSRenderNodeHTMLSerializer.holdsLinksAlone(_:)`), as
-    /// an index entry whose page numbers the TEI prints with no comma between them (FRUS Explorer
-    /// Light's axe check, 2026-11-11). A link in formatting inside the item is one level down.
+    /// The selectors of the rule that draws the links of a list item of links alone as boxes at least
+    /// 24 px square: `li.links-only`, which the serializer writes for an item with no text beside its
+    /// links (`FRUSRenderNodeHTMLSerializer.holdsLinksAlone(_:)`), as an index entry whose page numbers
+    /// the TEI prints with no comma between them (FRUS Explorer Light's axe check, 2026-11-11). A link
+    /// in formatting inside the item is one level down. Since 2026-11-12 the rule takes the item's
+    /// gloss links too, and the links of the two lists below a document that names its people and
+    /// terms on `@ana` (`.named-list`), one to a line at the footnotes' size.
     static let linksAloneSelectors = [
         ".frus-list > li.links-only > a.cross-ref", ".frus-list > li.links-only > a.pers-name",
+        ".frus-list > li.links-only > a.gloss",
         ".frus-list > li.links-only > * > a.cross-ref", ".frus-list > li.links-only > * > a.pers-name",
+        ".frus-list > li.links-only > * > a.gloss",
+        ".named-list > li > a.pers-name", ".named-list > li > a.gloss",
+    ]
+
+    /// The glosses among `linksAloneSelectors`, whose dotted rule is drawn as an underline in a box.
+    static let boxedGlossSelectors = [
+        ".frus-list > li.links-only > a.gloss", ".frus-list > li.links-only > * > a.gloss",
+        ".named-list > li > a.gloss",
+    ]
+
+    /// The footnote markers beside the links of a list item of links alone.
+    static let boxedMarkerSelectors = [
+        ".frus-list > li.links-only > button.fn-marker", ".frus-list > li.links-only > * > button.fn-marker",
     ]
 
     /// Such an item holds no text but its links, so the inline exception of WCAG 2.2's 2.5.8 (Target
     /// Size (Minimum)) does not reach them: each must be a target 24 px square, or stand 24 px clear
     /// of the next. Drawn inline they were neither, as axe found on frus1961-63v06's index. On paper
-    /// there is nothing to follow, so the rule is the screen's alone, and its boxes sit at the top of
-    /// their line, where a list's bullet stays beside a long title's first line. What the boxes
-    /// measure in WebKit is `LinksAloneTargetRenderTests`' (Xcode's alone).
-    @Test("On screen the links of a list item of links alone are boxes at least 24 px square, and no other rule takes a link out of its line")
+    /// there is nothing to follow, so the rules are the screen's alone, and their boxes sit at the top
+    /// of their line, where a list's bullet stays beside a long title's first line. A gloss's dotted
+    /// rule is a border, which in a box would sit at its foot and run its width, so a boxed gloss
+    /// draws it as a dotted underline, solid on hover as the border is; and a footnote marker, whose
+    /// `line-height: 0` gives its box no height, so that axe sees no target, is a box too, its number
+    /// at the top, where a raised number sits. What the boxes measure in WebKit is
+    /// `LinksAloneTargetRenderTests`' (Xcode's alone).
+    @Test("On screen the links of a list item of links alone, glosses and footnote markers among them, and of the named lists are boxes at least 24 px square, and no other rule takes a link out of its line")
     func theLinksOfAnItemOfLinksAloneAre24PxTargets() throws {
         let rules = Self.rules(in: ReaderPage.documentCSS)
-        let matching = rules.filter { $0.selectors == Self.linksAloneSelectors }
-        #expect(matching.count == 1, "\(matching.count) rules for the links of an item of links alone")
-        let rule = try #require(matching.first)
-        #expect(rule.atRule == "@media screen", "the rule sits inside \(rule.atRule ?? "no at-rule")")
-        #expect(rule.declarations == ["display": "inline-block", "min-width": "24px", "min-height": "24px",
-                                      "vertical-align": "top"], "the rule is \(rule.declarations)")
-        // No colour or underline of its own: the links keep their rules', which the tests above read.
-        // And no other rule sets how a person or cross-reference link is displayed.
+        func rule(_ selectors: [String]) throws -> (selectors: [String], declarations: [String: String], atRule: String?) {
+            let matching = rules.filter { $0.selectors == selectors }
+            #expect(matching.count == 1, "\(matching.count) rules for \(selectors)")
+            let rule = try #require(matching.first)
+            #expect(rule.atRule == "@media screen", "\(selectors) sits inside \(rule.atRule ?? "no at-rule")")
+            return rule
+        }
+        #expect(try rule(Self.linksAloneSelectors).declarations
+                == ["display": "inline-block", "min-width": "24px", "min-height": "24px", "vertical-align": "top"])
+        #expect(try rule(Self.boxedGlossSelectors).declarations
+                == ["border-bottom": "none", "text-decoration": "underline dotted", "text-decoration-thickness": "1px",
+                    "text-underline-offset": "0.2em"])
+        #expect(try rule(Self.boxedGlossSelectors.map { $0 + ":hover" }).declarations == ["text-decoration-style": "solid"])
+        #expect(try rule(Self.boxedMarkerSelectors).declarations
+                == ["display": "inline-flex", "align-items": "flex-start", "min-width": "24px", "min-height": "24px",
+                    "line-height": "1", "vertical-align": "top"])
+        // No colour of their own: the links keep their rules', which the tests above read, and the
+        // gloss its dotted rule's colour, which is its text's. And no other rule sets how a link is
+        // displayed.
+        for selectors in [Self.linksAloneSelectors, Self.boxedGlossSelectors, Self.boxedMarkerSelectors] {
+            #expect(try rule(selectors).declarations.keys.allSatisfy { !$0.contains("color") }, "\(selectors)")
+        }
         let others = rules.filter { other in
-            other.selectors != Self.linksAloneSelectors && other.declarations["display"] != nil
-                && other.selectors.contains { $0.contains("a.cross-ref") || $0.contains("a.pers-name") }
+            ![Self.linksAloneSelectors, Self.boxedMarkerSelectors].contains(other.selectors)
+                && other.declarations["display"] != nil
+                && other.selectors.contains { $0.contains("a.cross-ref") || $0.contains("a.pers-name") || $0.contains("a.gloss") }
         }
         #expect(others.isEmpty, "other rules set a link's display: \(others.map(\.selectors))")
     }
@@ -718,18 +767,27 @@ struct CollectionExportContrastTests {
 /// box, with what follows it on the next line. Which entries are which is the fixture's, written out
 /// below, not the serializer's reading of them.
 ///
+/// Since 2026-11-12 the boxes take an item's glosses, whose dotted rule is then an underline, and
+/// the footnote markers beside its links, whose number sits at the top of the box, and the links of
+/// the two lists below a document that names its people and terms on `@ana`.
+///
 /// Version history:
 ///   1.0 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): glosses and footnote markers in an item
+///          of links alone, a gloss beside text, and the named lists; a contents title that names a
+///          person is one link, its item one of links alone
 @Suite("Reader lists — the links of an item of links alone are boxes at least 24 px square (WCAG 2.2, 2.5.8)")
 @MainActor
 struct LinksAloneTargetRenderTests {
 
-    /// One link's boxes as the page draws them, in viewport coordinates.
+    /// One link's boxes as the page draws them, in viewport coordinates; a footnote marker's too.
     private struct MeasuredLink: Decodable {
         /// The link's text, so a failure names what it measured.
         let text: String
         /// Which of the list's items holds it, from 0.
         let entry: Int
+        /// The element and its first class: `a.cross-ref`, `a.pers-name`, `a.gloss` or `button.fn-marker`.
+        let kind: String
         /// Computed `display`.
         let display: String
         /// The border box's width.
@@ -740,6 +798,12 @@ struct LinksAloneTargetRenderTests {
         let top: Double
         /// `getClientRects()`, each `[left, top, width, height]`.
         let rects: [[Double]]
+        /// Computed `text-decoration-line` and `text-decoration-style`, and `border-bottom-style`.
+        let decorationLine: String
+        let decorationStyle: String
+        let borderBottomStyle: String
+        /// The top of the element's text, a range over its contents: where a marker draws its number.
+        let textTop: Double
     }
 
     /// Twelve entries, in two lists. Links and spaces alone, whose links are boxes: frus1961-63v06's
@@ -747,12 +811,17 @@ struct LinksAloneTargetRenderTests {
     /// contents line with its title in bold, as frus1961-63v10-12mSupp prints its own (2); a contents
     /// title too long for its line (3); a name and a page with no space between, as frus1955-57v12's
     /// "Armour, Norman, Sr.,365" (4); a name alone, as a list of participants prints one (5); a link
-    /// alone in a paragraph (6); and, in a list of its own, a name beside its printed label, which
-    /// floats in the margin (11). Text beside the links, which stay inline: a contents title that
-    /// names a person, as frus1961-63v06's "List of Kennedy Administration Volumes", whose nested
-    /// link the browser splits into two links and loose text (7); frus1961-63v06's "Adzhubei,
-    /// Aleksei I.," whose pages run with and without commas (8); "Brezhnev, Leonid I., 2, 3" (9);
-    /// and an entry whose name is text (10).
+    /// alone in a paragraph (6); a contents title that names a person, as frus1961-63v06's "List of
+    /// Kennedy Administration Volumes", which the serializer writes as one link holding the whole
+    /// title, where it was a nested link the browser split into two links and loose text (7); and, in
+    /// a list of its own, a name beside its printed label, which floats in the margin (11). Text
+    /// beside the links, which stay inline: frus1961-63v06's "Adzhubei, Aleksei I.," whose pages run
+    /// with and without commas (8); "Brezhnev, Leonid I., 2, 3" (9); and an entry whose name is text
+    /// (10). In a third list: a gloss alone, as a list of offices
+    /// prints one (12, frus1969-76v33), a gloss alone in italics (13), a name and its office's gloss
+    /// (14, frus1952-54v13p1's "Bonsal PSA"), a signature with its footnote (15, frus1961-63v06's "L.
+    /// Brezhnev" in d18), whose links and marker are boxes; and a gloss beside a word, which stays
+    /// inline with its dotted border (16).
     static let index = """
     <div type="document" subtype="historical-document" n="1" xml:id="d1">
       <list>
@@ -780,27 +849,44 @@ struct LinksAloneTargetRenderTests {
         <label>(c)</label>
         <item><persName corresp="#p_TPH1">Phil Talbot</persName></item>
       </list>
+      <list>
+        <item><gloss target="#t_SALT_1">SALT</gloss></item>
+        <item><hi rend="italic"><gloss target="#t_S_1">S</gloss></hi></item>
+        <item><persName corresp="#p_BPW1">Bonsal</persName> <gloss target="#t_PSA1">PSA</gloss></item>
+        <item><persName corresp="#p_BLI1"><hi rend="strong">L. Brezhnev</hi></persName><note n="1" xml:id="d1fn1">Printed from a copy that bears these typed signatures.</note></item>
+        <item><gloss target="#t_NATO_1">NATO</gloss> countries</item>
+      </list>
     </div>
     """
 
-    /// How many links each entry holds, and which entries hold links and spaces alone.
-    static let linksPerEntry = [7, 3, 2, 2, 2, 1, 1, 3, 4, 3, 3, 1]
-    static let linksAloneEntries: Set<Int> = [0, 1, 2, 3, 4, 5, 6, 11]
+    /// How many links each entry holds, a footnote marker counted as one, and which entries hold links
+    /// and spaces alone.
+    static let linksPerEntry = [7, 3, 2, 2, 2, 1, 1, 2, 4, 3, 3, 1, 1, 1, 2, 2, 1]
+    static let linksAloneEntries: Set<Int> = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15]
 
-    /// Measures the page's list links: the entry each is in, its computed display and its boxes.
-    private static let measuringScript = """
-    (() => {
-      const items = Array.from(document.querySelectorAll('.frus-list > li'));
-      return JSON.stringify(Array.from(document.querySelectorAll('.frus-list a')).map((a) => {
-        const box = a.getBoundingClientRect();
-        return {
-          text: a.textContent, entry: items.indexOf(a.closest('li')), display: getComputedStyle(a).display,
-          width: box.width, height: box.height, top: box.top,
-          rects: Array.from(a.getClientRects()).map((r) => [r.left, r.top, r.width, r.height]),
-        };
-      }));
-    })()
-    """
+    /// Measures the page's list links and footnote markers, or `selector`'s elements: the entry each is
+    /// in, its kind, its computed display, decoration and border, its boxes and where its text starts.
+    private static func measuringScript(_ selector: String = ".frus-list a, .frus-list button.fn-marker") -> String {
+        """
+        (() => {
+          const items = Array.from(document.querySelectorAll('.frus-list > li, .named-list > li'));
+          return JSON.stringify(Array.from(document.querySelectorAll('\(selector)')).map((a) => {
+            const box = a.getBoundingClientRect();
+            const style = getComputedStyle(a);
+            const text = document.createRange();
+            text.selectNodeContents(a);
+            return {
+              text: a.textContent, entry: items.indexOf(a.closest('li')),
+              kind: a.tagName.toLowerCase() + '.' + a.classList[0], display: style.display,
+              width: box.width, height: box.height, top: box.top,
+              rects: Array.from(a.getClientRects()).map((r) => [r.left, r.top, r.width, r.height]),
+              decorationLine: style.textDecorationLine, decorationStyle: style.textDecorationStyle,
+              borderBottomStyle: style.borderBottomStyle, textTop: text.getBoundingClientRect().top,
+            };
+          }));
+        })()
+        """
+    }
 
     /// Whether two `[left, top, width, height]` rectangles share any area; edges that touch do not.
     private static func overlap(_ a: [Double], _ b: [Double]) -> Bool {
@@ -816,21 +902,40 @@ struct LinksAloneTargetRenderTests {
         for measure in [ReaderMeasure.classic, ReaderMeasure(ch: 30)] {
             let key = "\(textSize.rawValue), \(measure.css)"
             let html = HTMLTemplate.build(model: model, colorScheme: .light, textSize: textSize, measure: measure)
-            #expect(html.components(separatedBy: "<li class=\"links-only\">").count == 9,
-                    "\(key): the serializer marks other items than the fixture's eight of links alone")
+            #expect(html.components(separatedBy: "<li class=\"links-only\">").count == Self.linksAloneEntries.count + 1,
+                    "\(key): the serializer marks other items than the fixture's \(Self.linksAloneEntries.count) of links alone")
             try await harness.load(html)
-            let raw = try #require(try await harness.evaluateString(Self.measuringScript),
+            let raw = try #require(try await harness.evaluateString(Self.measuringScript()),
                                    "\(key): the measuring script returned nothing")
             let links = try JSONDecoder().decode([MeasuredLink].self, from: Data(raw.utf8))
             let counts = Self.linksPerEntry.indices.map { entry in links.filter { $0.entry == entry }.count }
             #expect(counts == Self.linksPerEntry, "\(key): the entries hold \(counts) links")
+            // The title that names a person is one link holding the whole title, and its name no link.
+            #expect(links.filter { $0.entry == 7 }.map(\.text) == ["List of Kennedy Administration Volumes", "XXV"],
+                    "\(key): the contents title is drawn as \(links.filter { $0.entry == 7 }.map(\.text))")
             for link in links {
+                let label = "\(key): “\(link.text)” (\(link.kind), entry \(link.entry))"
                 if Self.linksAloneEntries.contains(link.entry) {
-                    #expect(link.display == "inline-block" && link.width >= 23.95 && link.height >= 23.95,
-                            "\(key): “\(link.text)” (entry \(link.entry)) is \(link.display), \(link.width) × \(link.height) px")
-                } else {
-                    #expect(link.display == "inline",
-                            "\(key): “\(link.text)” (entry \(link.entry)), beside text, is drawn \(link.display)")
+                    let display = link.kind == "button.fn-marker" ? "inline-flex" : "inline-block"
+                    #expect(link.display == display && link.width >= 23.95 && link.height >= 23.95,
+                            "\(label) is \(link.display), \(link.width) × \(link.height) px")
+                } else if link.kind != "button.fn-marker" {
+                    #expect(link.display == "inline", "\(label), beside text, is drawn \(link.display)")
+                }
+                // A boxed gloss's dotted rule is an underline, under the term; beside text it keeps its border.
+                if link.kind == "a.gloss" {
+                    let boxed = Self.linksAloneEntries.contains(link.entry)
+                    #expect(boxed ? link.borderBottomStyle == "none" && link.decorationLine.contains("underline")
+                                    && link.decorationStyle == "dotted"
+                                  : link.borderBottomStyle == "dotted" && !link.decorationLine.contains("underline"),
+                            "\(label): border \(link.borderBottomStyle), decoration \(link.decorationLine) \(link.decorationStyle)")
+                }
+                // A boxed marker's number is at the top of its box, where a raised number sits: it starts
+                // no more than 2 px below the box's top edge, and its glyph's box, taller than its
+                // line-height of 1, rises a little above it (2.2 px in WebKit at Extra Large).
+                if link.kind == "button.fn-marker" {
+                    #expect(link.textTop <= link.top + 2 && link.textTop >= link.top - link.height / 4,
+                            "\(label): its number starts at \(link.textTop), its box at \(link.top), \(link.height) px tall")
                 }
             }
             // A target another overlaps is not its own size, and a tap there could land on either.
@@ -849,6 +954,46 @@ struct LinksAloneTargetRenderTests {
                     #expect(contents[1].top >= contents[0].top + contents[0].height - 0.5,
                             "\(key): the page \(contents[1].top) does not follow the title's box \(contents[0].top) + \(contents[0].height)")
                 }
+            }
+        }
+    }
+
+    /// The persons and terms a document names on its `@ana`, which the reader lists below it, one to a
+    /// line at the footnotes' size (#1599), each entry a link alone: drawn inline, about 22.6 px apart
+    /// at Medium, they were neither 24 px square nor 24 px clear of the next.
+    @Test("The links of the lists below a document that names its people and terms are boxes at least 24 px square, a term's dotted rule an underline, and no two overlap",
+          arguments: TextSizePreference.allCases)
+    func namedListsAreBoxes24PxSquare(textSize: TextSizePreference) async throws {
+        var model = try await ListShapeFixtures.renderModel("""
+            <div type="document" subtype="historical-document" n="1" xml:id="d1"><p>Text.</p></div>
+            """)
+        model.listedReferences = ListedReferences(
+            persons: [PersonEntry(ref: "p_RD1", name: "Rusk, Dean"), PersonEntry(ref: "p_BMG1", name: "Bundy, McGeorge")],
+            terms: [GlossEntry(ref: "t_S_1", term: "S", definition: "Secretary of State"),
+                    GlossEntry(ref: "t_NATO_1", term: "NATO", definition: "North Atlantic Treaty Organization")])
+        let html = HTMLTemplate.build(model: model, colorScheme: .light, textSize: textSize)
+        #expect(html.components(separatedBy: "<ul class=\"named-list\">").count == 3,
+                "\(textSize.rawValue): the reader did not write the two named lists")
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(html)
+        let raw = try #require(try await harness.evaluateString(Self.measuringScript(".named-list a")),
+                               "\(textSize.rawValue): the measuring script returned nothing")
+        let links = try JSONDecoder().decode([MeasuredLink].self, from: Data(raw.utf8))
+        #expect(links.map(\.text) == ["Rusk, Dean", "Bundy, McGeorge", "S", "NATO"], "\(textSize.rawValue)")
+        for link in links {
+            let label = "\(textSize.rawValue): “\(link.text)” (\(link.kind))"
+            #expect(link.display == "inline-block" && link.width >= 23.95 && link.height >= 23.95,
+                    "\(label) is \(link.display), \(link.width) × \(link.height) px")
+            if link.kind == "a.gloss" {
+                #expect(link.borderBottomStyle == "none" && link.decorationLine.contains("underline")
+                        && link.decorationStyle == "dotted",
+                        "\(label): border \(link.borderBottomStyle), decoration \(link.decorationLine) \(link.decorationStyle)")
+            }
+        }
+        for (index, link) in links.enumerated() {
+            for other in links[(index + 1)...] {
+                let overlapping = link.rects.contains { mine in other.rects.contains { Self.overlap(mine, $0) } }
+                #expect(!overlapping, "\(textSize.rawValue): “\(link.text)” and “\(other.text)” overlap")
             }
         }
     }

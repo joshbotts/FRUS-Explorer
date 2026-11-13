@@ -31,13 +31,17 @@ import CSQLite
 /// What Project Home's focus subjects, their editor's suggestions and the line under each lead read
 /// of the kit, and the head a visit is titled by, called as a host outside the app calls them (FRUS
 /// Explorer Light's S17f): the subject vocabulary decoded from the bundled file, the suggestions over
-/// it (`ProjectFocusSuggestions`), `IndexingPipeline.documentSnippets(forKeys:maxLength:)` over the
-/// app's own index and over a copy stripped of the writing and opened read-only, as such a host serves
-/// one, and `IndexingPipeline.extractHeader(from:)` over the parsed TEI. The suite imports the kit
-/// `@testable`, so it cannot show that these are public; a host's own build does.
+/// it (`ProjectFocusSuggestions`), `IndexingPipeline.documentSnippets(forKeys:maxLength:userSource:)`
+/// over the app's own index and over a copy stripped of the writing and opened read-only, as such a
+/// host serves one, with and without a store of its readers' writing attached, and
+/// `IndexingPipeline.extractHeader(from:)` and `extractDocumentNumber(from:)` over the parsed TEI. The
+/// suite imports the kit `@testable`, so it cannot show that these are public; a host's own build does.
 ///
 /// Version history:
 ///   1.0 — 2026-10-28 (FRUS Explorer Light S17f): initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S25c's follow-up): a lead's line read from a reader's row of
+///          an attached store, held to the app's index over the same summaries, and a document's number
+///          taken as the reader takes it, held to the number the index stores
 @Suite("FRUSCoreKit — Project Home's subjects and lead lines, and a visit's head, as a host calls them")
 struct ProjectHomeHostTests {
 
@@ -232,8 +236,9 @@ struct ProjectHomeHostTests {
     /// Copies the app's index page for page with SQLite's backup API, out of write-ahead-log mode,
     /// strips the copy with `ResearchDatabaseStrip.steps` on one connection, as an export made without
     /// the writing is stripped and as FRUS Explorer Light strips one made with it, and opens it
-    /// read-only, as such a host serves it.
-    private func servedCopy(of built: URL, volumes: URL, in dir: URL) throws -> IndexingPipeline {
+    /// read-only, as such a host serves it, with the host's store of its readers' writing attached
+    /// when `userStore` names one.
+    private func servedCopy(of built: URL, volumes: URL, in dir: URL, userStore: URL? = nil) throws -> IndexingPipeline {
         let served = dir.appendingPathComponent("served", isDirectory: true)
         try FileManager.default.createDirectory(at: served, withIntermediateDirectories: true)
         let database = served.appendingPathComponent("frus.db")
@@ -251,9 +256,83 @@ struct ProjectHomeHostTests {
         try? FileManager.default.removeItem(at: served.appendingPathComponent("frus.db-shm"))
 
         let pipeline = try IndexingPipeline(readingIndexAt: database, fts5Store: try FTS5Store(readingDatabaseAt: database),
-                                            resources: .none, volumesDirectory: volumes)
+                                            resources: .none, volumesDirectory: volumes, userStore: userStore)
         #expect(pipeline.isReadOnly)
         return pipeline
+    }
+
+    /// One reader's row of a host's `user_search`: the text the app's writers put in the index's
+    /// columns for a document.
+    private struct StoreRow {
+        let user: String
+        let document: String
+        let summary: String?
+        let note: String?
+    }
+
+    /// The first reader's summaries are the ones `appIndex(in:)` writes into the app's index, d3's
+    /// and d4's empty one, with a note alone on d2 and a summary of d99, which the index lacks. The
+    /// other reader summarises d1 and notes d3.
+    private static let storeRows = [
+        StoreRow(user: "reader-a", document: "d3", summary: "  A summary,\n  in its own   words.  ", note: "On the letter."),
+        StoreRow(user: "reader-a", document: "d4", summary: "", note: nil),
+        StoreRow(user: "reader-a", document: "d2", summary: nil, note: "Only a note."),
+        StoreRow(user: "reader-a", document: "d99", summary: "A document the index lacks.", note: nil),
+        StoreRow(user: "reader-b", document: "d1", summary: "The other reader's summary of the telegram.", note: nil),
+        StoreRow(user: "reader-b", document: "d3", summary: nil, note: "The other reader's note."),
+    ]
+
+    /// Adds `rows` to the store at `url`, made first with the two tables
+    /// `SearchUserSource.attachedStore(userId:)` names when it does not exist, as a host keeps one;
+    /// the connection is the host's, closed after the write.
+    private func writeStore(at url: URL, rows: [StoreRow]) throws {
+        let isNew = !FileManager.default.fileExists(atPath: url.path)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var db: OpaquePointer?
+        try #require(sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        if isNew {
+            try #require(sqlite3_exec(db, """
+                CREATE VIRTUAL TABLE user_search USING fts5(user_id UNINDEXED, document_id UNINDEXED,
+                    volume_id UNINDEXED, summary_text, note_text, tokenize = 'porter unicode61');
+                CREATE TABLE tag_assignments (user_id TEXT NOT NULL, id TEXT NOT NULL, volume_id TEXT NOT NULL,
+                    document_id TEXT NOT NULL, tag_id TEXT NOT NULL, created_at TEXT, PRIMARY KEY (user_id, id));
+                """, nil, nil, nil) == SQLITE_OK)
+        }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for row in rows {
+            var stmt: OpaquePointer?
+            try #require(sqlite3_prepare_v2(db, """
+                INSERT INTO user_search (user_id, document_id, volume_id, summary_text, note_text) VALUES (?, ?, ?, ?, ?)
+                """, -1, &stmt, nil) == SQLITE_OK)
+            defer { sqlite3_finalize(stmt) }
+            for (index, value) in [row.user, row.document, Self.volumeId, row.summary, row.note].enumerated() {
+                if let value {
+                    sqlite3_bind_text(stmt, Int32(index + 1), value, -1, transient)
+                } else {
+                    sqlite3_bind_null(stmt, Int32(index + 1))
+                }
+            }
+            try #require(sqlite3_step(stmt) == SQLITE_DONE)
+        }
+    }
+
+    /// Sets the summary of one user's row of the store's `user_search` for a document, through a
+    /// connection of the host's own, closed after the write.
+    private func updateStoreSummary(at url: URL, user: String, document: String, summary: String) throws {
+        var db: OpaquePointer?
+        try #require(sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        var stmt: OpaquePointer?
+        try #require(sqlite3_prepare_v2(db, "UPDATE user_search SET summary_text = ? WHERE user_id = ? AND document_id = ?",
+                                        -1, &stmt, nil) == SQLITE_OK)
+        defer { sqlite3_finalize(stmt) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for (index, value) in [summary, user, document].enumerated() {
+            sqlite3_bind_text(stmt, Int32(index + 1), value, -1, transient)
+        }
+        try #require(sqlite3_step(stmt) == SQLITE_DONE)
+        try #require(sqlite3_changes(db) == 1, "the store held \(sqlite3_changes(db)) rows of \(user)'s text for \(document)")
     }
 
     @Test("On the app's index a lead's line is its summary, folded, or else its text from the head on, cut at a word; a document the index lacks has none")
@@ -308,12 +387,131 @@ struct ProjectHomeHostTests {
         }
     }
 
-    // MARK: A visit's head
+    // MARK: A lead's line, with the reader's summaries in a store (S25c's follow-up)
+
+    @Test("With a reader's store attached to a host's copy, a lead's line is that reader's summary, as on the app's index, or else the document's text; another reader's is never read")
+    func withAStoreALeadsLineIsTheReadersSummary() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try writeStore(at: store, rows: Self.storeRows)
+            let served = try servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let keys = ["d1", "d2", "d3", "d4", "d99"].map { (volumeId: Self.volumeId, documentId: $0) }
+
+            // The first reader's summaries are the app's index's, so the lines are the app's, line for line:
+            // d3's summary folded, d4's empty summary none, d2's note no summary, d99 not in the index.
+            let reader = try await served.documentSnippets(forKeys: keys, userSource: .attachedStore(userId: "reader-a"))
+            let app = try await built.pipeline.documentSnippets(forKeys: keys)
+            #expect(reader == app)
+            #expect(reader[Self.key("d3")] == "A summary, in its own words.")
+            #expect(reader.count == 4)
+
+            // The other reader's line for d1 is their summary, and for d3, which they noted, the text.
+            #expect(try await served.documentSnippets(forKeys: keys, userSource: .attachedStore(userId: "reader-b")) == [
+                Self.key("d1"): "The other reader's summary of the telegram.",
+                Self.key("d2"): "2. Memorandum Short text, on two lines.",
+                Self.key("d3"): "3. Letter The letter's own text.",
+                Self.key("d4"): "4. Note Text four.",
+            ])
+
+            // A reader with no rows reads the documents' text, as the index does as the source, the default,
+            // whose summaries the strip emptied.
+            let opening = try await served.documentSnippets(forKeys: keys)
+            #expect(opening[Self.key("d3")] == "3. Letter The letter's own text.")
+            #expect(try await served.documentSnippets(forKeys: keys, userSource: .attachedStore(userId: "reader-c")) == opening)
+        }
+    }
+
+    @Test("With a store attached, keys past the first 400 read the reader's summary too, a shorter line stops at a word, and the next call reads what the host has written since")
+    func withAStoreManyKeysShortLinesAndLiveWrites() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try writeStore(at: store, rows: Self.storeRows)
+            let served = try servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let reader = SearchUserSource.attachedStore(userId: "reader-a")
+
+            // 446 documents the index lacks, then the four it has: the four are in the statement's second
+            // read, whose reader is bound after its own keys.
+            let keys = (1...446).map { (volumeId: Self.volumeId, documentId: "missing\($0)") }
+                + ["d1", "d2", "d3", "d4"].map { (volumeId: Self.volumeId, documentId: $0) }
+            let lines = try await served.documentSnippets(forKeys: keys, userSource: reader)
+            #expect(lines.keys.sorted() == ["d1", "d2", "d3", "d4"].map(Self.key))
+            #expect(lines[Self.key("d3")] == "A summary, in its own words.")
+
+            let d3 = [(volumeId: Self.volumeId, documentId: "d3")]
+            #expect(try await served.documentSnippets(forKeys: d3, maxLength: 12, userSource: reader)
+                    == [Self.key("d3"): "A summary,…"])
+
+            // The host writes the reader's summary of d2, which held a note alone, into its row through its
+            // own connection, as a host rewrites a document's row; the next call has it.
+            try updateStoreSummary(at: store, user: "reader-a", document: "d2", summary: "Now summarised.")
+            let d2 = [(volumeId: Self.volumeId, documentId: "d2")]
+            #expect(try await served.documentSnippets(forKeys: d2, userSource: reader) == [Self.key("d2"): "Now summarised."])
+        }
+    }
+
+    @Test("Should a store hold two rows of one reader's text for a document, the line reads the greater of their summaries, at every call")
+    func twoRowsOfOneReadersTextReadTheGreaterSummary() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try writeStore(at: store, rows: [
+                StoreRow(user: "reader-a", document: "d1", summary: "Beta summary.", note: nil),
+                StoreRow(user: "reader-a", document: "d1", summary: "Alpha summary.", note: nil),
+                StoreRow(user: "reader-a", document: "d2", summary: nil, note: "A note."),
+                StoreRow(user: "reader-a", document: "d2", summary: "Gamma summary.", note: nil),
+            ])
+            let served = try servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let keys = ["d1", "d2"].map { (volumeId: Self.volumeId, documentId: $0) }
+            for _ in 1...3 {
+                #expect(try await served.documentSnippets(forKeys: keys, userSource: .attachedStore(userId: "reader-a")) == [
+                    Self.key("d1"): "Beta summary.",
+                    Self.key("d2"): "Gamma summary.",
+                ])
+            }
+        }
+    }
+
+    @Test("A store's rows are read once a statement, not once a document: user_search is scanned once, uncorrelated, and each key finds its document by the index's key")
+    func aStoresRowsAreReadOnceAStatement() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try writeStore(at: store, rows: Self.storeRows)
+            let served = try servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            // FTS5 indexes none of user_search's unindexed columns, so a lookup of one document's row scans
+            // every reader's rows: once a document would be the keys times the store, here it is once.
+            let plan = try await served.documentSnippetsPlanForTesting(keyCount: 24, userSource: .attachedStore(userId: "reader-a"))
+            #expect(!plan.contains("CORRELATED"), "\(plan)")
+            #expect(plan.components(separatedBy: "SCAN us VIRTUAL TABLE").count == 2, "\(plan)")
+            #expect(plan.range(of: #"SEARCH dc USING (COVERING )?INDEX sqlite_autoindex_document_cache_1 \(volume_id=\? AND document_id=\?\)"#,
+                               options: .regularExpression) != nil, "\(plan)")
+            // From the index, the default, the statement reads no store.
+            let index = try await served.documentSnippetsPlanForTesting(keyCount: 24, userSource: .index)
+            #expect(!index.contains("VIRTUAL TABLE") && !index.contains("CORRELATED"), "\(index)")
+        }
+    }
+
+    @Test("Asked for a reader's summaries with no store attached, the lines are refused, not read from the index")
+    func withNoStoreAReadersLinesAreRefused() async throws {
+        try await withTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let served = try servedCopy(of: built.database, volumes: built.volumes, in: dir)
+            let keys = [(volumeId: Self.volumeId, documentId: "d3")]
+            await #expect(throws: IndexingError.self) {
+                _ = try await served.documentSnippets(forKeys: keys, userSource: .attachedStore(userId: "reader-a"))
+            }
+        }
+    }
+
+    // MARK: A visit's head, and a document's number
 
     private static let headsVolumeId = "frus1971v03"
 
     /// Writes a volume with a preface in its front matter, a document whose head carries a source
-    /// note, and an editorial note.
+    /// note, and an editorial note, each numbered by its `@n`; then, with no `@n`, a document and an
+    /// editorial note whose heads begin with their numbers, and a document whose head does not.
     private func writeHeadsVolume(in volumes: URL) throws -> URL {
         let xml = """
             <?xml version="1.0" encoding="UTF-8"?>
@@ -330,6 +528,11 @@ struct ProjectHomeHostTests {
                     <p>Text one.</p></div>
                   <div type="document" xml:id="d2" n="2" subtype="editorial-note"><head>2. Editorial Note</head>
                     <p>Text two.</p></div>
+                  <div type="document" xml:id="d3"><head>3. Memorandum for the Record</head><p>Text three.</p></div>
+                  <div type="document" xml:id="d4" subtype="editorial-note"><head>4. Editorial Note</head>
+                    <p>Text four.</p></div>
+                  <div type="document" xml:id="d5"><head>Memorandum From the Secretary of State</head>
+                    <p>Text five.</p></div>
                 </div></body>
               </text>
             </TEI>
@@ -365,6 +568,50 @@ struct ProjectHomeHostTests {
             for (documentId, head) in heads {
                 #expect(try await pipeline.document(forDocumentId: documentId, inVolume: Self.headsVolumeId)?.header == head,
                         "\(documentId)")
+            }
+        }
+    }
+
+    /// The number the app's reader titles a document by (`DocumentViewModel.load`): the document's
+    /// `@n`, else the leading number of its head, read through an editorial note's wrapper, else
+    /// none. A host takes the same two steps over the parsed TEI, `printedNumber` and then
+    /// `IndexingPipeline.extractDocumentNumber(from:)` (FRUS Explorer Light's S25c follow-up).
+    @Test("A document's number, taken from the parsed TEI as the reader takes it, its @n else its head's leading number, is the number the index stores")
+    func aDocumentsNumberIsTheIndexsNumber() async throws {
+        try await withTempDir { dir in
+            let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+            let url = try writeHeadsVolume(in: volumes)
+
+            // The host's path: the kit's parser over the volume's TEI, then the reader's two steps.
+            var numbers: [String: String?] = [:]
+            var fallbacks: [String: String?] = [:]
+            for documentId in ["preface", "d1", "d2", "d3", "d4", "d5"] {
+                let parsed = try await FRUSDocumentParser().parseDocument(documentId: documentId, volumeURL: url)
+                let document = try #require(parsed, "\(documentId) not parsed")
+                let fallback = IndexingPipeline.extractDocumentNumber(from: document.nodes)
+                // Typed, so that `??` is String?'s: assigned straight into the dictionary's subscript,
+                // which takes a `String??`, a missing `@n` would win over the fallback.
+                let number: String? = document.printedNumber ?? fallback
+                numbers[documentId] = number
+                fallbacks[documentId] = fallback
+            }
+            // d3's and d4's numbers come from their heads, d4's through the editorial note's wrapper;
+            // a head that does not begin with a number, and a section's, give none.
+            #expect(numbers == ["preface": nil, "d1": "1", "d2": "2", "d3": "3", "d4": "4", "d5": nil])
+            // Where the TEI gives `@n` too, the head's leading number agrees with it here.
+            #expect(fallbacks == ["preface": nil, "d1": "1", "d2": "2", "d3": "3", "d4": "4", "d5": nil])
+
+            // The index's path: the same volume indexed, and the number it stores for each.
+            let database = dir.appendingPathComponent("built.db")
+            let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                                                volumesDirectory: volumes, resources: .none,
+                                                defaults: InMemoryIndexingStampStore())
+            try await pipeline.indexVolume(Self.headsVolumeId)
+            for (documentId, number) in numbers {
+                let stored = try await pipeline.document(forDocumentId: documentId, inVolume: Self.headsVolumeId)
+                #expect(stored != nil, "\(documentId) is not indexed")
+                #expect(stored?.documentNumber == number, "\(documentId)")
             }
         }
     }

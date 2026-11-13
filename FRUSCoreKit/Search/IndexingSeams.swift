@@ -125,12 +125,19 @@ public final class InMemoryIndexingStampStore: IndexingStampStore, @unchecked Se
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): initial implementation
 ///   1.1 — A18b (index version 71): `citedPages`, the bundled page map, and its name among
 ///          `indexResourceNames`
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S23d's follow-up): `documentSubjects` is public, unchanged,
+///          so that a host reads the subject index its search decoded rather than decoding the file again
 public struct IndexingResources: Sendable {
 
     /// The person-authority crosswalk, or `nil` when the host has none.
     let personAuthority: @Sendable () -> PersonAuthorityIndex?
     /// The document-grain subject index, or `nil`.
-    let documentSubjects: @Sendable () -> DocumentSubjectIndex?
+    ///
+    /// Public since FRUS Explorer Light's S23d follow-up: a host whose Related Documents scores and names
+    /// shared subjects, as the app's `DocumentSubjectStore.shared` serves both, reads the same index here,
+    /// decoded once by the provider (on first use, from ``loading(fromDirectory:)``), where it decoded the
+    /// 6 MB file a second time.
+    public let documentSubjects: @Sendable () -> DocumentSubjectIndex?
     /// The decimal-class label table, or `nil`.
     let decimalClassLabels: @Sendable () -> DecimalClassLabelTable?
     /// The broken-references index, or `nil`.

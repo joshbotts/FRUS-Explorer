@@ -443,11 +443,11 @@ struct FRUSRenderNodeHTMLSerializerTests {
     }
 
     /// What `holdsLinksAlone(_:)` reads as text, which keeps an item's links inline: a word or a
-    /// comma, supplied text's brackets, a block other than a paragraph, and a link that holds
-    /// another link, which a browser splits. Formatting and a paragraph around a link, a label printed
-    /// beside the item (floated into the margin), a space between two elements, a page break and a
-    /// nested list are no text. What axe reads the same way: a widget whose block holds no other
-    /// text, a floated label being a block of its own.
+    /// comma, supplied text's brackets and a block other than a paragraph. Formatting and a paragraph
+    /// around a link, a label printed beside the item (floated into the margin), a space between two
+    /// elements, a page break and a nested list are no text, and a link that holds another link is one
+    /// link, whose text it holds, since the serializer writes the inner one as text. What axe reads the
+    /// same way: a widget whose block holds no other text, a floated label being a block of its own.
     @Test("An item holds links alone when nothing beside its links is text, and holds none without a link")
     func whatHoldsLinksAlone() {
         let holds = FRUSRenderNodeHTMLSerializer.holdsLinksAlone
@@ -479,14 +479,169 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(!holds(ListItemEntry(children: [.paragraph([.plainText("Memorandum, "), numeral])])))
         #expect(!holds(ListItemEntry(children: [.tableBlock(caption: nil, rows: [[TableCell(children: [numeral])]])])))
         // A link that holds a link: frus1961-63v06's "List of Kennedy Administration Volumes", whose
-        // title names a person, which a browser would split into two links and loose text.
+        // title names a person, written as one link holding the whole title; beside a comma it is inline.
         let title = FRUSRenderNode.crossRefLink(target: "#subseriesvols", volumeId: nil, broken: nil, children: [
             .boldText([.plainText("List of "), Self.name("Kennedy"), .plainText(" Administration Volumes")]),
         ])
-        #expect(!holds(ListItemEntry(children: [title, .elementSpace, Self.page("XXV")])))
+        #expect(holds(ListItemEntry(children: [title, .elementSpace, Self.page("XXV")])))
+        #expect(!holds(ListItemEntry(children: [title, .plainText(", "), Self.page("XXV")])))
         // No link.
         #expect(!holds(ListItemEntry(children: [])))
         #expect(!holds(ListItemEntry(children: [.plainText(" "), .elementSpace])))
+    }
+
+    /// How many `<a` start tags in `html` open while another `<a>` is open.
+    private static func nestedLinks(in html: String) -> Int {
+        var depth = 0
+        var nested = 0
+        var rest = html[...]
+        while let tag = rest.range(of: #"<a[ >]|</a>"#, options: .regularExpression) {
+            if rest[tag].hasPrefix("</") {
+                depth -= 1
+            } else {
+                if depth > 0 { nested += 1 }
+                depth += 1
+            }
+            rest = rest[tag.upperBound...]
+        }
+        return nested
+    }
+
+    /// `html`'s text, its tags taken out.
+    private static func text(of html: String) -> String {
+        html.replacingOccurrences(of: #"<[^>]*>"#, with: "", options: .regularExpression)
+    }
+
+    /// HTML nests no `<a>` in another: a browser's parser closes the open one at the next `<a>`, which
+    /// left frus1961-63v06's contents line "Kennedy-Khrushchev Exchanges" an empty link to page 1, a
+    /// person link and loose text. So a link inside a link is written as its text inside the outer
+    /// link, keeping its formatting, and a tap anywhere on the outer link's text follows the outer link
+    /// (S21b's follow-up, #1898's leftovers).
+    @Test("A link inside a link is written as its text inside the outer link, its formatting kept, and the page holds no link inside another")
+    func aLinkInsideALinkIsWrittenAsItsText() {
+        // frus1961-63v06's two contents lines: a reference to page 1 holding a person, and one whose name
+        // has no @corresp, which was a link to "#".
+        let contents = html([.listBlock(type: nil, heading: nil, items: [
+            ListItemEntry(children: [.crossRefLink(target: "#pg_1", volumeId: nil, broken: nil, children: [
+                .boldText([.persNameLink(ref: "#p_ZVA1", children: [.plainText("Kennedy-Khrushchev")], person: nil),
+                           .plainText(" Exchanges")]),
+            ])]),
+            ListItemEntry(children: [.crossRefLink(target: "#pg_XIII", volumeId: nil, broken: nil, children: [
+                .boldText([.plainText("List of "), .persNameLink(ref: nil, children: [.plainText("Kennedy")], person: nil),
+                           .plainText(" Administration Volumes")]),
+            ])]),
+        ], trailing: [])])
+        #expect(contents.contains("<li class=\"links-only\"><a class=\"cross-ref\" href=\"frusexplorer://doc/%23pg_1\">"
+                                  + "<strong>Kennedy-Khrushchev Exchanges</strong></a></li>"), "\(contents)")
+        #expect(contents.contains("<li class=\"links-only\"><a class=\"cross-ref\" href=\"frusexplorer://doc/%23pg_XIII\">"
+                                  + "<strong>List of Kennedy Administration Volumes</strong></a></li>"), "\(contents)")
+        #expect(!contents.contains("pers-name"), "\(contents)")
+
+        // A term inside a citation, a reference inside a reference, a term inside a person, a name with no
+        // @corresp inside a dead reference, which keeps its explanation since neither leads anywhere, and a
+        // person two levels of formatting down, before the link's text.
+        let dead = BrokenRefInfo(target: "#pg_700", reason: "unknownPage", resolvedVolume: nil, resolvedAnchor: "pg_700")
+        let nodes: [FRUSRenderNode] = [
+            .crossRefLink(target: "frus1969-76v41#d310", volumeId: "frus1969-76v41", broken: nil, children: [
+                .italicText([.plainText("Foreign Relations")]), .plainText(", vol. XLI, Western Europe; "),
+                .glossLink(ref: "#t_NATO_1", children: [.plainText("NATO")], entry: nil), .plainText(", Document 310"),
+            ]),
+            .plainText(" and "),
+            .crossRefLink(target: "#d414", volumeId: nil, broken: nil, children: [
+                .crossRefLink(target: "#d414", volumeId: nil, broken: nil, children: [.italicText([.plainText("infra")])]),
+            ]),
+            .plainText("; "),
+            .persNameLink(ref: "#p_X1", children: [
+                .plainText("the "), .glossLink(ref: "#t_S1", children: [.plainText("S")], entry: nil),
+            ], person: nil),
+            .plainText("; "),
+            .crossRefLink(target: "#pg_700", volumeId: nil, broken: dead, children: [
+                .plainText("page 700 of "), .persNameLink(ref: nil, children: [.plainText("Rusk")], person: nil),
+            ]),
+            .plainText("; "),
+            .crossRefLink(target: "#d5", volumeId: nil, broken: nil, children: [
+                .boldText([.italicText([Self.name("Rusk")])]), .plainText("’s memorandum"),
+            ]),
+        ]
+        let page = html([.paragraph(nodes)])
+        #expect(page.contains("<a class=\"cross-ref\" href=\"frusexplorer://doc/frus1969-76v41%23d310/frus1969-76v41\">"
+                              + "<em>Foreign Relations</em>, vol. XLI, Western Europe; NATO, Document 310</a>"), "\(page)")
+        #expect(page.contains("<a class=\"cross-ref\" href=\"frusexplorer://doc/%23d414\"><em>infra</em></a>"), "\(page)")
+        #expect(page.contains("<a class=\"pers-name\" href=\"frusexplorer://person/p_X1\">the S</a>"), "\(page)")
+        #expect(page.contains("\">page 700 of Rusk<span class=\"cross-ref-broken-mark\""), "\(page)")
+        #expect(page.contains("<a class=\"cross-ref\" href=\"frusexplorer://doc/%23d5\"><strong><em>Rusk</em></strong>’s memorandum</a>"),
+                "\(page)")
+        #expect(!page.contains("frusexplorer://gloss/") && !page.contains("frusexplorer://person/p_1"), "\(page)")
+        // No link opens inside another, and the text is the same, so every offset is.
+        for out in [contents, page] {
+            #expect(Self.nestedLinks(in: out) == 0, "\(out)")
+        }
+        #expect(Self.text(of: contents) == "Kennedy-Khrushchev ExchangesList of Kennedy Administration Volumes")
+        #expect(Self.text(of: page) == "Foreign Relations, vol. XLI, Western Europe; NATO, Document 310 and infra; the S; "
+                + "page 700 of Rusk\u{2020}; Rusk’s memorandum")
+        // A link with no link inside is written as before.
+        #expect(html([Self.name("Rusk")]).contains("<a class=\"pers-name\" href=\"frusexplorer://person/p_1\">Rusk</a>"))
+    }
+
+    /// The outer link holds its whole text but where that would hide a working link behind one that
+    /// leads nowhere, or a reference behind a card: then it gives way, written as plain text around the
+    /// links it holds (`givesWayToInnerLink(_:)`), and a tap reaches the link it reached when a browser
+    /// split them. 171 links in 37 volumes, each shape below the corpus's.
+    @Test("A link gives way to the link it holds where it leads nowhere and the inner one works, or is a card around a working reference")
+    func aLinkGivesWayToAWorkingLinkInside() {
+        let dead = BrokenRefInfo(target: "#in4", reason: "unknownAnchor", resolvedVolume: nil, resolvedAnchor: nil)
+        // frus1964-68v12 d238: a name with no @corresp, a link to "#", around a name with one.
+        let bill = html([.persNameLink(ref: nil, children: [
+            .plainText("Bill "), .persNameLink(ref: "#p_MWMCJ1", children: [.plainText("Martin")], person: nil),
+        ], person: nil)])
+        #expect(bill.contains("Bill <a class=\"pers-name\" href=\"frusexplorer://person/p_MWMCJ1\">Martin</a>"), "\(bill)")
+        #expect(!bill.contains("href=\"#\""), "\(bill)")
+        // frus1981-88v38 d123: a name with no @corresp around a term, in bold.
+        let lse = html([.persNameLink(ref: nil, children: [
+            .boldText([.glossLink(ref: "#t_LSE_1", children: [.plainText("LSE")], entry: nil)]),
+        ], person: nil)])
+        #expect(lse.contains("<strong><a class=\"gloss\" href=\"frusexplorer://gloss/t_LSE_1\">LSE</a></strong>"), "\(lse)")
+        #expect(!lse.contains("pers-name"), "\(lse)")
+        // frus1945-50Intel's index: a dead "See" reference around a name.
+        let lovett = html([.crossRefLink(target: "#in4", volumeId: nil, broken: dead, children: [
+            .persNameLink(ref: "#p_LRA1", children: [.plainText("Lovett")], person: nil), .plainText(" Board proposal"),
+        ])])
+        #expect(lovett.contains("<a class=\"pers-name\" href=\"frusexplorer://person/p_LRA1\">Lovett</a> Board proposal"), "\(lovett)")
+        #expect(!lovett.contains("cross-ref-broken"), "\(lovett)")
+        // frus1873p1v1's and frus1948v03's indexes: a "See" reference inside a name, and inside a term.
+        let jay = html([.persNameLink(ref: "#p_JJ1", children: [
+            .crossRefLink(target: "#in10", volumeId: nil, broken: nil, children: [.plainText("JAY, JOHN")]),
+        ], person: nil)])
+        #expect(jay.contains("<a class=\"cross-ref\" href=\"frusexplorer://doc/%23in10\">JAY, JOHN</a>"), "\(jay)")
+        #expect(!jay.contains("pers-name"), "\(jay)")
+        let benelux = html([.glossLink(ref: "#t_Benelux1", children: [
+            .crossRefLink(target: "#in8", volumeId: nil, broken: nil, children: [.plainText("Benelux")]),
+        ], entry: nil)])
+        #expect(benelux.contains("<a class=\"cross-ref\" href=\"frusexplorer://doc/%23in8\">Benelux</a>"), "\(benelux)")
+        #expect(!benelux.contains("class=\"gloss\""), "\(benelux)")
+        // No giving way where nothing inside leads anywhere, or where a card holds a card: the outer
+        // holds all its text (frus1977-80v22's persons list names one person twice, one inside the other).
+        let deadNames = html([.persNameLink(ref: nil, children: [
+            .plainText("A "), .persNameLink(ref: nil, children: [.plainText("B")], person: nil),
+        ], person: nil)])
+        #expect(deadNames.contains("<a class=\"pers-name\" href=\"#\">A B</a>"), "\(deadNames)")
+        let teng = html([.persNameLink(ref: "#p_TH_1", children: [
+            .persNameLink(ref: "#p_TH_1", children: [.plainText("Teng")], person: nil), .plainText(" Hsiao-p’ing"),
+        ], person: nil)])
+        #expect(teng.contains("<a class=\"pers-name\" href=\"frusexplorer://person/p_TH_1\">Teng Hsiao-p’ing</a>"), "\(teng)")
+        for out in [bill, lse, lovett, jay, benelux, deadNames, teng] {
+            #expect(Self.nestedLinks(in: out) == 0, "\(out)")
+        }
+        #expect(Self.text(of: bill + lovett + jay) == "Bill MartinLovett Board proposalJAY, JOHN")
+        // An item holds links alone as the links are written: a name that gives way to its "See"
+        // reference, or to the one link inside it, does; "Bill" beside Martin's link is text.
+        let holds = FRUSRenderNodeHTMLSerializer.holdsLinksAlone
+        #expect(holds(ListItemEntry(children: [.persNameLink(ref: "#p_JJ1", children: [
+            .crossRefLink(target: "#in10", volumeId: nil, broken: nil, children: [.plainText("JAY, JOHN")]),
+        ], person: nil)])))
+        #expect(holds(ListItemEntry(children: [.persNameLink(ref: nil, children: [Self.name("Martin")], person: nil)])))
+        #expect(!holds(ListItemEntry(children: [.persNameLink(ref: nil, children: [.plainText("Bill "), Self.name("Martin")],
+                                                              person: nil)])))
     }
 
     @Test("Simple list emits ul.frus-list.simple")

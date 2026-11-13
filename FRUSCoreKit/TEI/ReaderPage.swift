@@ -106,6 +106,11 @@ public struct ReaderMeasure: Hashable, Sendable {
 ///          24 px square, so it meets WCAG 2.2's 2.5.8 (Target Size (Minimum)), which FRUS Explorer
 ///          Light's axe check found frus1961-63v06's index failing. No colour and no other rule is
 ///          new, and the printed page is unchanged
+///   1.7 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): the box takes a gloss link in such an
+///          item, whose dotted rule is then a dotted underline under the term, and the links of the
+///          named lists, one to a line about 22.6 px apart at Medium; a footnote marker beside such
+///          links, whose box had no height, is a box 24 px square, its number at the top. No colour
+///          is new, and the printed page is unchanged
 public enum ReaderPage {
 
     // MARK: - Page
@@ -585,21 +590,52 @@ public enum ReaderPage {
        Target Size (Minimum)). Drawn inline, one is as tall as its font, about 16 px at Medium, and
        a space from the next, and at Small the items' lines stand 23.4 px apart; to axe in Chromium
        a page number with a note's italic n is two boxes, the n's 8 px wide. So on screen each
-       cross-reference and person link of such an item, or in formatting around one, is a box at
-       least 24 px square, set at the top of its line so that a list's bullet stays beside a long
+       cross-reference, person and gloss link of such an item, or in formatting around one, is a box
+       at least 24 px square, set at the top of its line so that a list's bullet stays beside a long
        title's first line. A line holding one grows by about a pixel at Medium and four at Small, a
        page number narrower than 24 px gains the room after it, a link longer than its line wraps
        inside its box with what follows it on the next line, and the underline stays under the text.
-       On paper, where there is nothing to follow, the links print inline as before, as does a link
-       with a comma, a dash or a word beside it in its item. */
+       A gloss's dotted rule, a border, would sit at the foot of its box and run its width, so there
+       it is a dotted underline, under the term and as wide. The persons and terms a document names
+       on its @ana, listed below it one to a line at the footnotes' size, are links alone too, and
+       are drawn the same way. A footnote marker beside such links, whose line-height of 0 leaves
+       its box no height, so that axe finds no target there, is a box 24 px square too, its number
+       at the top, where a raised number sits. On paper, where there is nothing to follow, the links
+       print inline as before, as does a link with a comma, a dash or a word beside it in its item. */
     @media screen {
       .frus-list > li.links-only > a.cross-ref,
       .frus-list > li.links-only > a.pers-name,
+      .frus-list > li.links-only > a.gloss,
       .frus-list > li.links-only > * > a.cross-ref,
-      .frus-list > li.links-only > * > a.pers-name {
+      .frus-list > li.links-only > * > a.pers-name,
+      .frus-list > li.links-only > * > a.gloss,
+      .named-list > li > a.pers-name,
+      .named-list > li > a.gloss {
         display: inline-block;
         min-width: 24px;
         min-height: 24px;
+        vertical-align: top;
+      }
+      .frus-list > li.links-only > a.gloss,
+      .frus-list > li.links-only > * > a.gloss,
+      .named-list > li > a.gloss {
+        border-bottom: none;
+        text-decoration: underline dotted;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.2em;
+      }
+      .frus-list > li.links-only > a.gloss:hover,
+      .frus-list > li.links-only > * > a.gloss:hover,
+      .named-list > li > a.gloss:hover {
+        text-decoration-style: solid;
+      }
+      .frus-list > li.links-only > button.fn-marker,
+      .frus-list > li.links-only > * > button.fn-marker {
+        display: inline-flex;
+        align-items: flex-start;
+        min-width: 24px;
+        min-height: 24px;
+        line-height: 1;
         vertical-align: top;
       }
     }

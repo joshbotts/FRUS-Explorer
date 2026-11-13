@@ -144,6 +144,15 @@ import SourceNoteKit
 ///          cross-reference and person links the reader's stylesheet draws on screen as targets
 ///          24 px square for WCAG 2.2's 2.5.8. An attribute, so no flat text; every other item is
 ///          written as before
+///   1.16 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): a link inside a link is written as
+///          its text inside the outer link (`withoutLinks(_:)`), where it was a second `<a>` inside
+///          the first, which a browser splits into an outer link holding only the text before the inner
+///          one, often none, the inner link, and loose text; a tap anywhere on the outer link's text
+///          follows the outer link. An outer link that leads nowhere, a name with no `@corresp` or a
+///          dead reference, gives way to a working link it holds, and a person's or a term's card to a
+///          working reference (`givesWayToInnerLink(_:)`), written as plain text around them. The
+///          text, its formatting and every offset are unchanged; `holdsLinksAlone(_:)` reads the links
+///          as written
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -879,15 +888,21 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         // MARK: Interactive links
 
+        // HTML nests no `<a>`: a link that holds another is written around its text alone
+        // (`withoutLinks(_:)`), or, where it gives way to the one inside, as plain text around it
+        // (`givesWayToInnerLink(_:)`).
         case .persNameLink(let ref, let children, _):
+            if Self.givesWayToInnerLink(node) { return inline(children) }
             let href = ref.map { "frusexplorer://person/\(urlEncoded($0.hasPrefix("#") ? String($0.dropFirst()) : $0))" } ?? "#"
-            return "<a class=\"pers-name\" href=\"\(href)\">\(inline(children))</a>"
+            return "<a class=\"pers-name\" href=\"\(href)\">\(inline(Self.withoutLinks(children)))</a>"
 
         case .glossLink(let ref, let children, _):
+            if Self.givesWayToInnerLink(node) { return inline(children) }
             let href = ref.map { "frusexplorer://gloss/\(urlEncoded($0.hasPrefix("#") ? String($0.dropFirst()) : $0))" } ?? "#"
-            return "<a class=\"gloss\" href=\"\(href)\">\(inline(children))</a>"
+            return "<a class=\"gloss\" href=\"\(href)\">\(inline(Self.withoutLinks(children)))</a>"
 
         case .crossRefLink(let target, let volumeId, let broken, let citing, let children):
+            if Self.givesWayToInnerLink(node) { return inline(children) }
             // URL: frusexplorer://doc/{target}/{volumeId} (target first so
             // FRUSURLSchemeHandler can extract it as pathComponents[0]).
             //
@@ -916,7 +931,7 @@ public struct FRUSRenderNodeHTMLSerializer {
                 let a11y = Self.brokenRefAriaLabel(reason: broken.reason)
                 let strictTarget = target.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? target
                 return "<a class=\"cross-ref-broken\" href=\"frusexplorer://brokenref/\(strictTarget)\" "
-                    + "role=\"button\" aria-label=\"\(escaped(a11y))\">\(inline(children))"
+                    + "role=\"button\" aria-label=\"\(escaped(a11y))\">\(inline(Self.withoutLinks(children)))"
                     + "<span class=\"cross-ref-broken-mark\" data-skip=\"1\" aria-hidden=\"true\">\u{2020}</span></a>"
             }
             // #1509: a page link carries what its footnote names as a query, which
@@ -928,7 +943,7 @@ public struct FRUSRenderNodeHTMLSerializer {
                 components.queryItems = citing.queryItems
                 query = "?" + escaped(components.percentEncodedQuery ?? "")
             }
-            return "<a class=\"cross-ref\" href=\"frusexplorer://doc/\(path)\(query)\">\(inline(children))</a>"
+            return "<a class=\"cross-ref\" href=\"frusexplorer://doc/\(path)\(query)\">\(inline(Self.withoutLinks(children)))</a>"
 
         // MARK: Unknown / passthrough
 
@@ -957,14 +972,16 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// ("Preface III"), a name alone in a list of participants, or an index entry whose page numbers
     /// the TEI prints with no comma between them ("Davis, Richard H., 18n 24n 131n",
     /// frus1961-63v06). The serializer writes such an item as `<li class="links-only">`, and on
-    /// screen the reader's stylesheet (`ReaderPage.documentCSS`) draws its cross-reference and
-    /// person links as boxes at least 24 px square: with no text beside them, the inline exception
-    /// of WCAG 2.2's 2.5.8 (Target Size (Minimum)) does not reach them, and axe checks each.
+    /// screen the reader's stylesheet (`ReaderPage.documentCSS`) draws its links, and the footnote
+    /// markers beside them, as boxes at least 24 px square: with no text beside them, the inline
+    /// exception of WCAG 2.2's 2.5.8 (Target Size (Minimum)) does not reach them, and axe checks each.
     ///
-    /// Text is any character but whitespace in the item's content. Supplied text's brackets, a block
-    /// inside the item other than a paragraph, and a link that holds another link count as text:
-    /// such a link is written as two nested `<a>` elements, which a browser's parser splits, leaving
-    /// the rest of the outer link's text outside it, so its item keeps its links inline. Formatting
+    /// Text is any character but whitespace in the item's content. Supplied text's brackets and a block
+    /// inside the item other than a paragraph count as text. A link that holds another link is read as
+    /// the serializer writes it: one link, whose whole text it holds (`withoutLinks(_:)`), or, where it
+    /// gives way to the link inside (`givesWayToInnerLink(_:)`), its own text as text and the links
+    /// inside it as links. Until S21b's follow-up the serializer wrote two nested `<a>` elements, which
+    /// a browser's parser splits, and such an item counted as text. Formatting
     /// and a paragraph around a link are looked into (`<strong><a>Preface</a></strong>`). A label
     /// printed beside the item, which the stylesheet floats into the list's margin and axe reads as a
     /// block of its own, a space between two inline elements, a page break, a line break, a footnote
@@ -980,8 +997,11 @@ public struct FRUSRenderNodeHTMLSerializer {
                     if text.contains(where: { !$0.isWhitespace }) { return false }
                 case .persNameLink(_, let children, _), .glossLink(_, let children, _),
                      .crossRefLink(_, _, _, _, let children):
-                    if holdsLink(children) { return false }
-                    links += 1
+                    if givesWayToInnerLink(node) {
+                        if !holdsNoText(children) { return false }
+                    } else {
+                        links += 1
+                    }
                 case .boldText(let children), .italicText(let children), .smallCapsText(let children),
                      .underlineText(let children), .termText(let children), .sicText(let children),
                      .corrText(let children), .unknown(_, let children), .paragraph(let children):
@@ -1005,16 +1025,90 @@ public struct FRUSRenderNodeHTMLSerializer {
         return leadHoldsNoText && holdsNoText(entry.children) && links > 0
     }
 
-    /// Whether `nodes` hold a link, inside formatting or a link at any depth.
-    private static func holdsLink(_ nodes: [FRUSRenderNode]) -> Bool {
+    // MARK: - A link inside a link
+
+    /// `nodes` with every link in them, at any depth of formatting, written as what it holds: the
+    /// children a link writes inside its own `<a>`, since HTML nests no `<a>` in another.
+    ///
+    /// A browser's parser closes an open `<a>` at the next `<a>` start tag, so a link written inside
+    /// another was split: the outer link kept only its text before the inner one, often none, an empty
+    /// link (axe's `link-name`); the inner took its own text; and the rest of the outer's text was plain.
+    /// frus1961-63v06's contents print "Kennedy-Khrushchev Exchanges" as a `<ref>` to page 1 holding a
+    /// `<persName>`, and no part of the line went to page 1; an index's "See" reference whose text is a
+    /// name without `@corresp` went to `#`. Of the catalogue's outermost links, 3,268 in 258 volumes hold
+    /// another outside a footnote (a reference a person, a term or a reference; a person or a term
+    /// another), 2,136 with no text before it. Now the outer link holds all its text and a tap anywhere
+    /// on it follows the outer link, the inner's text keeping its formatting, not its link, unless the
+    /// outer gives way to the link inside (`givesWayToInnerLink(_:)`). The text, and so every offset, is
+    /// the same.
+    static func withoutLinks(_ nodes: [FRUSRenderNode]) -> [FRUSRenderNode] {
+        nodes.flatMap { node -> [FRUSRenderNode] in
+            switch node {
+            case .persNameLink(_, let children, _), .glossLink(_, let children, _),
+                 .crossRefLink(_, _, _, _, let children):
+                return withoutLinks(children)
+            case .boldText(let children): return [.boldText(withoutLinks(children))]
+            case .italicText(let children): return [.italicText(withoutLinks(children))]
+            case .smallCapsText(let children): return [.smallCapsText(withoutLinks(children))]
+            case .underlineText(let children): return [.underlineText(withoutLinks(children))]
+            case .termText(let children): return [.termText(withoutLinks(children))]
+            case .suppliedText(let children): return [.suppliedText(withoutLinks(children))]
+            case .sicText(let children): return [.sicText(withoutLinks(children))]
+            case .corrText(let children): return [.corrText(withoutLinks(children))]
+            case .unknown(let name, let children): return [.unknown(name: name, children: withoutLinks(children))]
+            default: return [node]
+            }
+        }
+    }
+
+    /// Whether `link`, which holds another link, gives way to it: written as plain text around the
+    /// links it holds, each written by these same rules, rather than as one link holding them as text.
+    ///
+    /// The outer link holds its whole text, as the TEI wraps it, but where it would hide a link that
+    /// works behind one that does not, or a reference behind a card. It gives way when it leads
+    /// nowhere and holds a link that does: a name with no `@corresp`, which is written as a link to
+    /// `#`, or a dead reference, which opens only its explanation. And it gives way when it is a
+    /// person's or a term's card and holds a working reference: a reference goes somewhere in the
+    /// volumes, as an index's "See" reference written inside a name goes to its entry (frus1873p1v1's
+    /// index, frus1948v03's and frus1949v04's), and outranks a card. Of the catalogue's 3,268 outermost
+    /// links that hold another, 171 in 37 volumes give way: in each, the link a tap reaches is the one
+    /// it reached when the browser split them.
+    static func givesWayToInnerLink(_ link: FRUSRenderNode) -> Bool {
+        switch link {
+        case .persNameLink(.none, let children, _), .crossRefLink(_, _, .some(_), _, let children):
+            return holdsLink(children, where: isWorkingLink)
+        case .persNameLink(.some(_), let children, _), .glossLink(_, let children, _):
+            return holdsLink(children) { node in
+                if case .crossRefLink(_, _, .none, _, _) = node { return true }
+                return false
+            }
+        default:
+            return false
+        }
+    }
+
+    /// Whether `link` leads somewhere: a reference that is not dead, a person's card, a term's card.
+    private static func isWorkingLink(_ link: FRUSRenderNode) -> Bool {
+        switch link {
+        case .crossRefLink(_, _, let broken, _, _): return broken == nil
+        case .persNameLink(let ref, _, _): return ref != nil
+        case .glossLink(let ref, _, _): return ref != nil
+        default: return false
+        }
+    }
+
+    /// Whether `nodes` hold a link `matching` answers yes for, inside formatting or another link, at any
+    /// depth.
+    private static func holdsLink(_ nodes: [FRUSRenderNode], where matching: (FRUSRenderNode) -> Bool) -> Bool {
         nodes.contains { node in
             switch node {
-            case .persNameLink, .glossLink, .crossRefLink:
-                return true
+            case .persNameLink(_, let children, _), .glossLink(_, let children, _),
+                 .crossRefLink(_, _, _, _, let children):
+                return matching(node) || holdsLink(children, where: matching)
             case .boldText(let children), .italicText(let children), .smallCapsText(let children),
-                 .underlineText(let children), .termText(let children), .sicText(let children),
-                 .corrText(let children), .suppliedText(let children), .unknown(_, let children):
-                return holdsLink(children)
+                 .underlineText(let children), .termText(let children), .suppliedText(let children),
+                 .sicText(let children), .corrText(let children), .unknown(_, let children):
+                return holdsLink(children, where: matching)
             default:
                 return false
             }
