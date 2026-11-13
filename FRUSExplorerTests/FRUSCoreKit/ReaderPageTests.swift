@@ -774,7 +774,8 @@ struct CollectionExportContrastTests {
 /// Version history:
 ///   1.0 — 2026-11-11 (FRUS Explorer Light, S21b's follow-up): initial implementation
 ///   1.1 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): glosses and footnote markers in an item
-///          of links alone, a gloss beside text, and the named lists
+///          of links alone, a gloss beside text, and the named lists; a contents title that names a
+///          person is one link, its item one of links alone
 @Suite("Reader lists — the links of an item of links alone are boxes at least 24 px square (WCAG 2.2, 2.5.8)")
 @MainActor
 struct LinksAloneTargetRenderTests {
@@ -810,12 +811,13 @@ struct LinksAloneTargetRenderTests {
     /// contents line with its title in bold, as frus1961-63v10-12mSupp prints its own (2); a contents
     /// title too long for its line (3); a name and a page with no space between, as frus1955-57v12's
     /// "Armour, Norman, Sr.,365" (4); a name alone, as a list of participants prints one (5); a link
-    /// alone in a paragraph (6); and, in a list of its own, a name beside its printed label, which
-    /// floats in the margin (11). Text beside the links, which stay inline: a contents title that
-    /// names a person, as frus1961-63v06's "List of Kennedy Administration Volumes", whose nested
-    /// link the browser splits into two links and loose text (7); frus1961-63v06's "Adzhubei,
-    /// Aleksei I.," whose pages run with and without commas (8); "Brezhnev, Leonid I., 2, 3" (9);
-    /// and an entry whose name is text (10). In a third list: a gloss alone, as a list of offices
+    /// alone in a paragraph (6); a contents title that names a person, as frus1961-63v06's "List of
+    /// Kennedy Administration Volumes", which the serializer writes as one link holding the whole
+    /// title, where it was a nested link the browser split into two links and loose text (7); and, in
+    /// a list of its own, a name beside its printed label, which floats in the margin (11). Text
+    /// beside the links, which stay inline: frus1961-63v06's "Adzhubei, Aleksei I.," whose pages run
+    /// with and without commas (8); "Brezhnev, Leonid I., 2, 3" (9); and an entry whose name is text
+    /// (10). In a third list: a gloss alone, as a list of offices
     /// prints one (12, frus1969-76v33), a gloss alone in italics (13), a name and its office's gloss
     /// (14, frus1952-54v13p1's "Bonsal PSA"), a signature with its footnote (15, frus1961-63v06's "L.
     /// Brezhnev" in d18), whose links and marker are boxes; and a gloss beside a word, which stays
@@ -859,8 +861,8 @@ struct LinksAloneTargetRenderTests {
 
     /// How many links each entry holds, a footnote marker counted as one, and which entries hold links
     /// and spaces alone.
-    static let linksPerEntry = [7, 3, 2, 2, 2, 1, 1, 3, 4, 3, 3, 1, 1, 1, 2, 2, 1]
-    static let linksAloneEntries: Set<Int> = [0, 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15]
+    static let linksPerEntry = [7, 3, 2, 2, 2, 1, 1, 2, 4, 3, 3, 1, 1, 1, 2, 2, 1]
+    static let linksAloneEntries: Set<Int> = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15]
 
     /// Measures the page's list links and footnote markers, or `selector`'s elements: the entry each is
     /// in, its kind, its computed display, decoration and border, its boxes and where its text starts.
@@ -908,6 +910,9 @@ struct LinksAloneTargetRenderTests {
             let links = try JSONDecoder().decode([MeasuredLink].self, from: Data(raw.utf8))
             let counts = Self.linksPerEntry.indices.map { entry in links.filter { $0.entry == entry }.count }
             #expect(counts == Self.linksPerEntry, "\(key): the entries hold \(counts) links")
+            // The title that names a person is one link holding the whole title, and its name no link.
+            #expect(links.filter { $0.entry == 7 }.map(\.text) == ["List of Kennedy Administration Volumes", "XXV"],
+                    "\(key): the contents title is drawn as \(links.filter { $0.entry == 7 }.map(\.text))")
             for link in links {
                 let label = "\(key): “\(link.text)” (\(link.kind), entry \(link.entry))"
                 if Self.linksAloneEntries.contains(link.entry) {
