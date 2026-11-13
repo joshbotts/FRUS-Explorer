@@ -85,20 +85,35 @@ private actor FirstCall {
 }
 
 /// Builds a minimal pipeline + store pair backed by a temp database.
+///
+/// The pipeline keeps its stamps in the run's shared store (`testIndexingStamps` in the package,
+/// `UserDefaults.standard` in Xcode) unless `suite` names a store of the test's own, made by
+/// `makeIsolatedStamps(_:)`; the test removes it with `removeIsolatedStamps(_:)`. A test whose result
+/// depends on a stamp passes one: Swift Testing runs tests in parallel, and other tests write the
+/// shared store meanwhile, every `consolidatePersonRollup` the rollup's stamps among them.
 func makeTestPipeline(
     dir: URL,
-    volumesDir: URL? = nil
+    volumesDir: URL? = nil,
+    isolatedStamps suite: String? = nil
 ) async throws -> (pipeline: IndexingPipeline, store: FTS5Store) {
     let dbURL = dir.appendingPathComponent("test.sqlite")
     let volDir = volumesDir ?? dir.appendingPathComponent("volumes")
     try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
 
     let store = try FTS5Store(databaseURL: dbURL)
+    // The package's initialiser takes any stamp store; the app's takes a `UserDefaults`, which is
+    // what `makeIsolatedStamps(_:)` makes in Xcode.
+    #if SWIFT_PACKAGE
+    let defaults = suite.map(makeIsolatedStamps)
+    #else
+    let defaults = try suite.map { try #require(makeIsolatedStamps($0) as? UserDefaults) } ?? .standard
+    #endif
     let pipeline = try IndexingPipeline(
         fts5Store: store,
         databaseURL: dbURL,
         volumesDirectory: volDir,
-        concurrencyLimit: 2
+        concurrencyLimit: 2,
+        defaults: defaults
     )
     return (pipeline, store)
 }
@@ -3854,6 +3869,10 @@ struct VolumeSourceMatcherTests {
 ///
 /// Version history:
 ///   1.0 — Session 36: initial implementation
+///   1.1 — 2026-11-13 (FRUS Explorer Light, the kit tests' stamp race): the `needsDateReindex` pair
+///          each build their pipeline over a stamp store of their own; in the run's shared store one's
+///          mark could land between the other's removal and its read, which failed the web edition's
+///          watch on Linux
 @Suite("DateIndexingAccuracyTests")
 struct DateIndexingAccuracyTests {
 
@@ -3965,9 +3984,12 @@ struct DateIndexingAccuracyTests {
     @Test("needsDateReindex — returns true before markDateReindexComplete is called")
     func needsDateReindexTrue() async throws {
         try await withTempDir { dir in
-            // Remove any pre-existing key that would make this test flaky
-            testStamps.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // A stamp store of the test's own, which holds no date-index stamp. In the run's shared
+            // store, clearing the key first was not enough: `needsDateReindexFalse`, running in
+            // parallel, could mark it between the removal and the read.
+            let suite = "FRUSTests.needsDateReindexTrue.\(UUID().uuidString)"
+            defer { removeIsolatedStamps(suite) }
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, isolatedStamps: suite)
             #expect(pipeline.needsDateReindex == true)
         }
     }
@@ -3975,11 +3997,13 @@ struct DateIndexingAccuracyTests {
     @Test("needsDateReindex — false after markDateReindexComplete")
     func needsDateReindexFalse() async throws {
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // A stamp store of the test's own, so its mark reaches no other test, and no other
+            // test's removal reaches its read.
+            let suite = "FRUSTests.needsDateReindexFalse.\(UUID().uuidString)"
+            defer { removeIsolatedStamps(suite) }
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, isolatedStamps: suite)
             await pipeline.markDateReindexComplete()
             #expect(pipeline.needsDateReindex == false)
-            // Cleanup
-            testStamps.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
         }
     }
 
@@ -4674,23 +4698,21 @@ struct FTS5RebuildTests {
         }
     }
 
-    /// `needsFTSRebuildReindex` returns `true` before marking complete and `false` after.
+    /// `needsFTSRebuildReindex` returns `true` before marking complete and `false` after, over a stamp
+    /// store of the test's own, which starts empty and which nothing else writes, as the
+    /// `needsDateReindex` pair's are.
     @Test("migrationFlagTriggersReindexMarker")
     func migrationFlagTriggersReindexMarker() async throws {
-        // Clear any prior state so the test starts clean.
-        testStamps.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
-
         try await withTempDir { dir in
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let suite = "FRUSTests.migrationFlagTriggersReindexMarker.\(UUID().uuidString)"
+            defer { removeIsolatedStamps(suite) }
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, isolatedStamps: suite)
 
-            // UserDefaults key is absent (integer returns 0) → needs reindex.
+            // The key is absent (integer returns 0) → needs reindex.
             #expect(pipeline.needsFTSRebuildReindex == true)
 
             await pipeline.markFTSRebuildReindexComplete()
             #expect(pipeline.needsFTSRebuildReindex == false)
-
-            // Cleanup: restore UserDefaults to a clean state.
-            testStamps.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
         }
     }
 
@@ -6361,22 +6383,15 @@ struct PersonRollupConsolidationTests {
     @Test("the gated path reconsolidates on a same-count override SWAP (fingerprint, not count, #243)")
     func fingerprintStalenessReconsolidates() async throws {
         try await withTempDir { dir in
-            // The gate persists version + fingerprint in process-global UserDefaults; clear both so
-            // this test starts from a clean slate regardless of run order.
-            //
-            // Fixture ids (volFP1/volFP2, p_fpk/p_fpa) are deliberately UNIQUE to this test:
-            // every ungated consolidatePersonRollup call in parallel suite-mates stamps ITS
-            // override set's fingerprint into the same global key, and a sibling using
-            // identical anchors could stamp exactly the fingerprint this test's gate is about
-            // to compare — a spurious skip and a flake. Unique anchors make collision impossible.
-            testStamps.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
-            testStamps.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
-            defer {
-                testStamps.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
-                testStamps.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
-            }
+            // The gate reads its version and fingerprint stamps from the pipeline's store. A store of
+            // the test's own starts with neither, and no parallel test's ungated
+            // `consolidatePersonRollup` stamps its override set's fingerprint into it. In the run's
+            // shared store only the fixture ids (volFP1/volFP2, p_fpk/p_fpa), unique to this test,
+            // kept a sibling from stamping exactly the fingerprint this gate was about to compare.
+            let suite = "FRUSTests.fingerprintStalenessReconsolidates.\(UUID().uuidString)"
+            defer { removeIsolatedStamps(suite) }
 
-            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, isolatedStamps: suite)
             let volDir = dir.appendingPathComponent("volumes")
             try writeVolume(
                 to: volDir.appendingPathComponent("volFP1.xml"), volumeId: "volFP1", year: "1970",
@@ -6952,21 +6967,6 @@ struct PersonRollupConsolidationTests {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 10)
     }
 
-    /// A pipeline over its own stamp store, so the gate's stamps cannot race a parallel test's: a
-    /// defaults suite in Xcode, an in-memory store in the package (`IndexingTestSupport.swift`).
-    private func makeIsolatedPipeline(dir: URL, suite: String) throws -> IndexingPipeline {
-        let dbURL = dir.appendingPathComponent("test.sqlite")
-        let volDir = dir.appendingPathComponent("volumes")
-        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
-        #if SWIFT_PACKAGE
-        let defaults = makeIsolatedStamps(suite)
-        #else
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        #endif
-        return try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL,
-                                    volumesDirectory: volDir, concurrencyLimit: 2, defaults: defaults)
-    }
-
     /// **The race the review found.** The v58 re-index re-parses `persons` in place: the rollup
     /// version is the code's and the member count does not move, so a consolidation that ran between
     /// two volumes of the re-index — a correction goes straight to `consolidatePersonRollup` — stamped
@@ -6978,7 +6978,8 @@ struct PersonRollupConsolidationTests {
         try await withTempDir { dir in
             let suite = "FRUSTests.rollupMidReindex.\(UUID().uuidString)"
             defer { removeIsolatedStamps(suite) }
-            let pipeline = try makeIsolatedPipeline(dir: dir, suite: suite)
+            // Over a stamp store of its own, so the gate's stamps cannot race a parallel test's.
+            let (pipeline, _) = try await makeTestPipeline(dir: dir, isolatedStamps: suite)
             let defaults = pipeline.defaults
             try writeVolume(
                 to: dir.appendingPathComponent("volumes/volRI.xml"), volumeId: "volRI", year: "1970",

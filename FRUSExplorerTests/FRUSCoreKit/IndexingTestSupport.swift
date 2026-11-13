@@ -43,7 +43,9 @@ let testIndexingResources: IndexingResources = {
 }()
 
 /// The stamps of every pipeline the package's suites build without a store of their own, shared
-/// as `UserDefaults.standard` is in Xcode.
+/// as `UserDefaults.standard` is in Xcode. Parallel tests write it (`consolidatePersonRollup` stamps
+/// the rollup), so a test whose result depends on a stamp builds its pipeline over a store of its own
+/// (`makeIsolatedStamps(_:)`) instead.
 let testIndexingStamps = InMemoryIndexingStampStore()
 
 extension IndexingPipeline {
@@ -65,19 +67,11 @@ extension IndexingPipeline {
 }
 #endif
 
-/// The stamp store a test pipeline keeps its stamps in when the test passes none:
-/// `UserDefaults.standard` in Xcode, the default of the app's initialiser, and the run's shared
-/// store in the package. A test that clears a stamp before building a pipeline clears it here.
-var testStamps: any IndexingStampStore {
-    #if SWIFT_PACKAGE
-    testIndexingStamps
-    #else
-    UserDefaults.standard
-    #endif
-}
-
 /// A stamp store of a test's own, so a test's stamps meet no other test's: a fresh `UserDefaults`
 /// suite in Xcode, removed by `removeIsolatedStamps(_:)`, and a fresh in-memory store in the package.
+/// `makeTestPipeline(dir:volumesDir:isolatedStamps:)` builds a pipeline over one. A test pipeline
+/// built without one shares the run's store (`testIndexingStamps` in the package, and in Xcode
+/// `UserDefaults.standard`, the default of the app's initialiser), which parallel tests write.
 func makeIsolatedStamps(_ suite: String) -> any IndexingStampStore {
     #if SWIFT_PACKAGE
     InMemoryIndexingStampStore()
