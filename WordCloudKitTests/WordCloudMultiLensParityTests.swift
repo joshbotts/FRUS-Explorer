@@ -16,6 +16,10 @@ import Testing
 import Foundation
 @testable import WordCloudKit
 
+// The tokenizers count with NaturalLanguage, so this suite is Apple-only: where the framework is
+// missing (Linux) the kit has no tokenizer to hold to another.
+#if canImport(NaturalLanguage)
+
 /// Decision **O-1-2**: one `NLTagger` pass with N accumulators, instead of one pass per lens.
 ///
 /// The merge is only sound if it is a refactor rather than an approximation, and the claim
@@ -30,6 +34,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): behind `canImport(NaturalLanguage)`
 @Suite("WordCloudKit — one-pass / four-pass parity (O-1-2)")
 struct WordCloudMultiLensParityTests {
 
@@ -235,3 +240,4 @@ struct WordCloudMultiLensParityTests {
         #expect(counts[.topics] == single)
     }
 }
+#endif

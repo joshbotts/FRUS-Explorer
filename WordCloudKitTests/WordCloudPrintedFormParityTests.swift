@@ -14,9 +14,12 @@
 
 import Testing
 import Foundation
+#if canImport(NaturalLanguage)
 import NaturalLanguage
+#endif
 @testable import WordCloudKit
 
+#if canImport(NaturalLanguage)
 /// The printed-form count (#1608): what a `.printed` tokenizer counts, and that the generator's one
 /// pass counts the same thing.
 ///
@@ -39,6 +42,8 @@ import NaturalLanguage
 ///
 /// Version history:
 ///   1.0 — #1608: initial implementation
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): behind `canImport(NaturalLanguage)`, as the
+///          tokenizers are; the word form a verdict gives runs everywhere, below
 @Suite("WordCloudKit — printed forms: the device's count, the direct walk and the one pass (#1608)")
 struct WordCloudPrintedFormParityTests {
 
@@ -385,6 +390,7 @@ struct WordCloudPrintedFormParityTests {
         #expect(withLemma == without)
     }
 }
+#endif
 
 /// The form a verdict's word lenses count in (#1608).
 @Suite("WordCloudKit — the word form a verdict counts in (#1608)")
@@ -417,6 +423,7 @@ struct NaturalLanguageHealthWordFormTests {
     }
 }
 
+#if canImport(NaturalLanguage)
 /// The debug launch that leaves the lemma request unanswered (#1608), which is how the launch the
 /// fallback is for is had on demand: the owner's iPhone logged
 /// `Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true`.
@@ -491,3 +498,4 @@ struct UnansweredLemmaRequestTests {
         #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered())
     }
 }
+#endif
