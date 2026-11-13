@@ -364,6 +364,20 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   counts every word as printed (`accumulate(from:into:printedInto:)`), for the keyness reference a
   launch with no lemmatiser compares with; `WordCloudPrintedFormParityTests` holds that tally to a
   `.printed` tokenizer's, and the generator's `VERIFY_PRINTED_WALK=1` run holds it over the corpus.
+  Since FRUS Explorer Light's S24d the web edition compiles it on Linux. NaturalLanguage and `os` are
+  imported behind `canImport(NaturalLanguage)`: `WordCloudTokenizer`'s counting (its configuration
+  and its filters, `accepts(_:)` and `singularize(_:)`, read no tagger and stay on every platform),
+  `WordCloudMultiLensTokenizer`, and `NaturalLanguageReadiness`'s warm-up, gate and engine; where
+  the framework is missing, each declaration that tags is unavailable and says why, so nothing there
+  counts another way. `NaturalLanguageHealth` stays on every platform. CryptoKit is behind
+  `canImport` too (`WordCloudPayloadDigest`), and the web edition's package supplies swift-crypto, so
+  this package gains no dependency. The kit also holds `Keyness` and `KeynessScore` (`Keyness.swift`,
+  from `FRUSExplorer/Analytics/`), `KeynessCloudMeasure`'s two cases (its label stays in
+  `KeynessCloud.swift`), the tuning's reading of the settings (`WordCloudTuning.minimumLength(fromSetting:)`
+  and its siblings, which `WordCloudSettings` calls) and `CloudVectorsFile(contentsOf:)` and
+  `KeynessBaselineFile(contentsOf:)`; `BundledCloudVectors`, `BundledKeynessBaseline` and `KeynessCloud`
+  stay the app's. A WordCloudKitTests suite that tags goes behind `canImport(NaturalLanguage)`, and
+  `WordCloudKitTests/KeynessTests.swift` is compiled into the app's test target too (`project.yml`).
 - Test targets: **39 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
 
 ## Coding Standards
@@ -401,9 +415,9 @@ Conventions with **no** automated check — reviewer's responsibility:
 
 joshbotts/FRUS-Explorer-Web-App compiles this repository's shared kits on Linux from a pinned commit. Sessions here follow four rules and do nothing else for it. Web sessions watch this repository, repair Linux breaks, and write every change only the web edition needs, as pull requests here for the owner to merge. The arrangement: https://github.com/joshbotts/FRUS-Explorer-Web-App/blob/main/docs/COORDINATION.md
 
-Shared code: FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit, ManifestGeneratorCore and FRUSCoreKit/, with their test folders (FRUSCoreKit's is FRUSExplorerTests/FRUSCoreKit/; see its entry under SPM package targets). Code inside a kit test's `#if !SWIFT_PACKAGE` branch is the app's own and exempt from rules 1 and 2.
+Shared code: FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit, WordCloudKit, ManifestGeneratorCore and FRUSCoreKit/, with their test folders (FRUSCoreKit's is FRUSExplorerTests/FRUSCoreKit/; see its entry under SPM package targets). Code inside a kit test's `#if !SWIFT_PACKAGE` branch is the app's own and exempt from rules 1 and 2.
 
-1. In shared code, never import SwiftUI, UIKit, AppKit, WebKit, SwiftData, CoreSpotlight, TipKit or NaturalLanguage. Keep the existing `#if canImport` imports inside their guards; FRUSCoreKit/ allows only Foundation and the guarded modules its entry names. Do not read Bundle.main, UserDefaults or the Keychain: pass them in.
+1. In shared code, never import SwiftUI, UIKit, AppKit, WebKit, SwiftData, CoreSpotlight, TipKit or NaturalLanguage, except WordCloudKit's tagging code, which imports NaturalLanguage and `os` only inside `#if canImport(NaturalLanguage)`, as a WordCloudKitTests suite that tags does. Keep the existing `#if canImport` imports inside their guards; FRUSCoreKit/ allows only Foundation and the guarded modules its entry names. Do not read Bundle.main, UserDefaults or the Keychain: pass them in.
 2. A kit file never uses an app-only type: pass the value in, or move the declaration into the kit. A member that reads app state goes in an extension in an app file.
 3. Leave the `#if canImport` guards in place, though they look redundant here. Change kit behaviour in the kit, never in an app forwarder to it.
 4. After changing shared code, run `swift test` as well as the usual unit target: Xcode never runs the kits' own suites.
