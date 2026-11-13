@@ -31,6 +31,8 @@ import FTS5Store
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 2: initial implementation
 ///   1.1 — #1604: the pipeline the app builds is given the Spotlight donor
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S23d's follow-up): a host reads the subject index the
+///          providers decoded once
 @Suite("FRUSCoreKit — the indexer's seams")
 struct IndexingSeamsTests {
 
@@ -121,6 +123,34 @@ struct IndexingSeamsTests {
                 .write(to: url)
             #expect(resource.value() == nil)
             #expect(LazyResource<BrokenRefsIndex>(dir, "broken-refs-index").value()?.generated == "2026-10-04")
+        }
+    }
+
+    /// A host reads the document subject index through `documentSubjects`, public since FRUS Explorer
+    /// Light's S23d follow-up, so that its Related Documents and the kit's search share one decode of
+    /// the 6 MB file, as the app's `DocumentSubjectStore.shared` serves both. The provider that
+    /// `loading(fromDirectory:)` makes decodes the file on first use and keeps what it decoded.
+    @Test("The subject index a host reads from loading(fromDirectory:) is the one decode search reads: asked again with its file gone, the provider answers the same index")
+    func aHostReadsTheSubjectIndexsOneDecode() async throws {
+        try await withTempDir { dir in
+            let bundled = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("FRUSExplorer/Resources/document-subject-index.json")
+            let copy = dir.appendingPathComponent("document-subject-index.json")
+            try FileManager.default.copyItem(at: bundled, to: copy)
+            // The other four need only be there: nothing here asks for them.
+            for name in IndexingResources.indexResourceNames where name != "document-subject-index" {
+                try Data("{}".utf8).write(to: dir.appendingPathComponent("\(name).json"))
+            }
+            let resources = try IndexingResources.loading(fromDirectory: dir)
+            let first = try #require(resources.documentSubjects(), "the bundled subject index did not decode")
+            try FileManager.default.removeItem(at: copy)
+            let second = try #require(resources.documentSubjects(), "the provider read the file again, and it was gone")
+            #expect(second.generated == first.generated)
+            #expect(second.bucketVocabulary.digest == first.bucketVocabulary.digest)
+            #expect(IndexingPipeline.documentSubjectsStamp(for: second) == IndexingPipeline.documentSubjectsStamp(for: first))
+            // A new provider over the folder refuses it now.
+            #expect(throws: IndexingResources.LoadError.self) { try IndexingResources.loading(fromDirectory: dir) }
         }
     }
 

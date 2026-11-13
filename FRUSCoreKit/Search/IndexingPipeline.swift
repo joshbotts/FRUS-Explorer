@@ -540,6 +540,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         and `dateBucketVolumeCounts(_:bucket:scopeVolumeIds:)` are public, unchanged, since the Chronology
 ///         browser loads its rows and its capped chart's counts with them, for a host that does the same;
 ///         nothing the indexer stores or reads changes
+///  4.60 — 2026-11-12 (FRUS Explorer Light, S25c's follow-up): `extractDocumentNumber(from:)` is public,
+///         unchanged, for the number a host titles a document by, as the reader does; and
+///         `documentSnippets(forKeys:maxLength:userSource:)` reads a document's summary from one user's
+///         row of an attached store's `user_search`, for a host that keeps each reader's writing apart
+///         from the index it serves. From the index, the default and the app's call, it runs the same
+///         statement as before; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -7544,7 +7550,11 @@ public actor IndexingPipeline {
     /// Reads an editorial note's head through its wrapper, as `extractHeader` does (#1372) — its
     /// own example above is a note's head. Every shipped document carries `@n`, so this changes
     /// no stored value; it keeps the two extractors from disagreeing about the same wrapper.
-    nonisolated static func extractDocumentNumber(from nodes: [FRUSASTNode]) -> String? {
+    ///
+    /// Public since FRUS Explorer Light's S25c follow-up: a host numbers a document it opens as the
+    /// app's `DocumentViewModel.load` does, `printedNumber ?? extractDocumentNumber(from:)` over the
+    /// parsed TEI, for the title it gives the document beside ``extractHeader(from:)``'s head.
+    public nonisolated static func extractDocumentNumber(from nodes: [FRUSASTNode]) -> String? {
         if case .editorialNote(let children)? = nodes.first {
             return extractDocumentNumber(from: children)
         }
@@ -11079,20 +11089,29 @@ public actor IndexingPipeline {
     /// body text; both are whitespace-collapsed and truncated at a word boundary to `maxLength`.
     /// A document with neither (or an unindexed one) is simply absent from the result. Keys are
     /// point-looked-up through the composite primary key in 400-pair chunks, so this is bounded to
-    /// the (small) set of shown rows — never a scan.
+    /// the (small) set of shown rows — never a scan of the index. A summary read from an attached
+    /// store (`userSource`) costs one scan of its `user_search`, every user's rows, for each chunk,
+    /// since FTS5 indexes none of that table's unindexed columns: a host's cost grows with its store.
     ///
     /// Public since FRUS Explorer Light's S17f: a host's Project Home calls it as the app's
     /// `ProjectHomeView.loadLeadSnippets()` does, for the line under each lead in Suggested Next. The
     /// summary it prefers is this index's own `summary_text`, which a copy exported without the
     /// reader's writing, or stripped of it by `ResearchDatabaseStrip`, does not hold: over such a copy
-    /// every line is the document's opening text.
+    /// every line is the document's opening text, unless the host names where its reader's summaries
+    /// are (`userSource`, since S25c's follow-up).
     ///
     /// - Parameters:
     ///   - keys: The document keys to fetch snippets for.
     ///   - maxLength: Maximum snippet length in characters.
+    ///   - userSource: Where a document's summary is read: the index's own `summary_text`, as the app
+    ///     reads it (the default), or one user's row of `user_search` in a store attached to the
+    ///     index (`SearchUserSource.attachedStore(userId:)`), as a host that keeps each reader's
+    ///     writing apart from the index it serves reads it. The text a line falls back to is always
+    ///     the index's.
     /// - Returns: `"volumeId/documentId" → snippet` for the documents that have text.
     public func documentSnippets(forKeys keys: [(volumeId: String, documentId: String)],
-                                 maxLength: Int = 240) throws -> [String: String] {
+                                 maxLength: Int = 240,
+                                 userSource: SearchUserSource = .index) throws -> [String: String] {
         guard !keys.isEmpty else { return [:] }
         var result: [String: String] = [:]
         let chunkSize = 400
@@ -11100,19 +11119,17 @@ public actor IndexingPipeline {
         while index < keys.count {
             let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
             index += chunkSize
-            let values = Array(repeating: "(?,?)", count: chunk.count).joined(separator: ",")
-            let sql = """
-                WITH wanted(v, d) AS (VALUES \(values))
-                SELECT dc.volume_id, dc.document_id, dc.summary_text, dc.body_text
-                FROM document_cache dc
-                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
-                """
-            let stmt = try auxPrepare(sql)
+            let statement = Self.documentSnippetsStatement(keyCount: chunk.count, userSource: userSource)
+            let stmt = try auxPrepare(statement.sql)
             defer { sqlite3_finalize(stmt) }
             var bind: Int32 = 1
             for key in chunk {
                 sqlite3_bind_text(stmt, bind, key.volumeId, -1, SQLITE_TRANSIENT_IP); bind += 1
                 sqlite3_bind_text(stmt, bind, key.documentId, -1, SQLITE_TRANSIENT_IP); bind += 1
+            }
+            // The user's bind follows the keys', as its text follows theirs.
+            for value in statement.binds {
+                sqlite3_bind_text(stmt, bind, value, -1, SQLITE_TRANSIENT_IP); bind += 1
             }
             while sqlite3_step(stmt) == SQLITE_ROW {
                 guard let volumeId = auxColumnString(stmt, 0),
@@ -11125,6 +11142,50 @@ public actor IndexingPipeline {
             }
         }
         return result
+    }
+
+    /// The statement ``documentSnippets(forKeys:maxLength:userSource:)`` reads `keyCount` keys with, and
+    /// the binds that follow the keys' (S25c's follow-up).
+    ///
+    /// From the index, each document's `summary_text` and `body_text`, by the statement the function
+    /// has always run. From an attached store, the summary is the user's row of `user_search` for the
+    /// document, and the text the index's. Its rows are read once a statement, not once a document:
+    /// FTS5 indexes none of the table's unindexed columns, `user_id`, `volume_id` and `document_id`
+    /// among them, so finding one document's row scans every user's rows, and the user's rows among
+    /// the keys are gathered in that one scan. A store keeps one row of a user's text for each
+    /// document (`SearchUserSource.attachedStore(userId:)`); should one hold two, the line reads the
+    /// greater of their summaries, so that it is the same at every call.
+    private static func documentSnippetsStatement(keyCount: Int,
+                                                  userSource: SearchUserSource) -> (sql: String, binds: [String]) {
+        let values = Array(repeating: "(?,?)", count: keyCount).joined(separator: ",")
+        switch userSource {
+        case .index:
+            return ("""
+                WITH wanted(v, d) AS (VALUES \(values))
+                SELECT dc.volume_id, dc.document_id, dc.summary_text, dc.body_text
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                """, [])
+        case .attachedStore(let userId):
+            return ("""
+                WITH wanted(v, d) AS (VALUES \(values)),
+                summaries(v, d, s) AS MATERIALIZED (
+                    SELECT us.volume_id, us.document_id, max(us.summary_text)
+                    FROM \(attachedUserStoreSchema).user_search us
+                    WHERE us.user_id = ? AND (us.volume_id, us.document_id) IN (SELECT v, d FROM wanted)
+                    GROUP BY us.volume_id, us.document_id)
+                SELECT dc.volume_id, dc.document_id, summaries.s, dc.body_text
+                FROM document_cache dc
+                JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
+                LEFT JOIN summaries ON summaries.v = dc.volume_id AND summaries.d = dc.document_id
+                """, [userId])
+        }
+    }
+
+    /// `EXPLAIN QUERY PLAN` for the statement ``documentSnippets(forKeys:maxLength:userSource:)`` runs
+    /// for `keyCount` keys, so a test can hold how often it reads an attached store's rows.
+    func documentSnippetsPlanForTesting(keyCount: Int, userSource: SearchUserSource) throws -> String {
+        try queryPlanForTesting(Self.documentSnippetsStatement(keyCount: keyCount, userSource: userSource).sql)
     }
 
     /// Display rows for the Meaning search mode (V-5 hybrid page): the same fields the FTS path's
