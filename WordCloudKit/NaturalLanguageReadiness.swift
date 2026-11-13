@@ -13,8 +13,10 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(NaturalLanguage)
 import NaturalLanguage
 import os
+#endif
 
 // MARK: - NaturalLanguageHealth
 
@@ -48,6 +50,9 @@ import os
 ///   1.1 — #1539: ``improves(on:)``, the rule a re-check's verdict must pass to replace this one
 ///   1.2 — #1539 review round 1: ``works(_:)``, the capability a tag scheme provides
 ///   1.3 — #1608: ``wordForm``, the form a word lens counts in under this verdict
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S24d): on every platform, for the rules a host reads
+///          from a verdict (``supports(_:)``, ``wordForm``); ``works(_:)``, which names a tag scheme,
+///          behind `canImport(NaturalLanguage)`
 public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 
     /// The lemmatiser reduced at least one word of the canary sentence to a different dictionary
@@ -98,6 +103,7 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
             && (recognizesNames || !other.recognizesNames)
     }
 
+    #if canImport(NaturalLanguage)
     /// Whether the capability `scheme` provides works in this verdict: lemmas for `.lemma`, lexical
     /// classes for `.lexicalClass`, names for `.nameType` (#1539 review round 1). A scheme the canary
     /// does not measure reads as working, since nothing here says otherwise.
@@ -110,6 +116,7 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
         default: return true
         }
     }
+    #endif
 
     /// Whether `lens` can draw a cloud in this process.
     ///
@@ -149,6 +156,8 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
     /// are the same under either.
     public var wordForm: WordCloudWordForm { lemmatizes ? .dictionary : .printed }
 }
+
+#if canImport(NaturalLanguage)
 
 // MARK: - NaturalLanguageWarmUp
 
@@ -470,6 +479,9 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///          lemma request unanswered, so the launch the owner's iPhone logged can be had on demand
 ///   1.6 — #1608: ``sessionRecord``, the lines ``record(_:)`` has written in this process, each
 ///          with its time
+///   1.7 — 2026-11-12 (FRUS Explorer Light, S24d): this file's warm-up, gate and engine behind
+///          `canImport(NaturalLanguage)`; where the framework is missing the type is unavailable and
+///          says why, at the end of the file
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -1481,3 +1493,15 @@ final class NaturalLanguageReadinessEngine: Sendable {
         Double(DispatchTime.now().uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000
     }
 }
+
+#else
+
+// MARK: - Where NaturalLanguage is missing
+
+/// Where `NaturalLanguage` is missing (Linux), there is no tagger to warm up, measure or hand out
+/// (FRUS Explorer Light, S24d), so the gate is unavailable and says why. ``NaturalLanguageHealth``
+/// stays, for the rules a host reads from a verdict the app recorded, such as the form a stored
+/// cloud was counted in; no verdict is made here.
+@available(*, unavailable, message: "NaturalLanguageReadiness warms up and measures NaturalLanguage's tagger, which this platform does not have: no live count is made here")
+public enum NaturalLanguageReadiness {}
+#endif

@@ -27,6 +27,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Word Cloud: tunable criteria + stop-list management
 ///   2.0 — O-1: moved into `WordCloudKit` so the generator shares the type
+///   2.1 — 2026-11-12 (FRUS Explorer Light, S24d): the reading of a reader's settings, which was the
+///          app's `WordCloudSettings`', so a host maps the synced preferences as the app maps them
 public struct WordCloudTuning: Sendable, Equatable, Codable {
     /// Shortest surviving token length (in characters).
     public var minimumLength: Int = 3
@@ -53,5 +55,61 @@ public struct WordCloudTuning: Sendable, Equatable, Codable {
     /// A short, stable token capturing this tuning for cache keys.
     public var cacheToken: String {
         "l\(minimumLength)c\(minimumCount)f\(foldPlurals ? 1 : 0)m\(filterMarkings ? 1 : 0)"
+    }
+}
+
+// MARK: - From a reader's settings
+
+extension WordCloudTuning {
+
+    /// A stored minimum length as the settings read it: the shipped default where nothing is
+    /// stored, and never below 2.
+    ///
+    /// The app's `WordCloudSettings.minimumLength` reads its stored value through this, and so does
+    /// ``init(settingsMinimumLength:minimumCount:foldPlurals:filterMarkings:)``.
+    /// - Parameter stored: The stored value, or `nil` when none is stored.
+    public static func minimumLength(fromSetting stored: Int?) -> Int {
+        max(2, stored ?? standard.minimumLength)
+    }
+
+    /// A stored minimum count as the settings read it: the shipped default where nothing is stored,
+    /// and never below 1.
+    /// - Parameter stored: The stored value, or `nil` when none is stored.
+    public static func minimumCount(fromSetting stored: Int?) -> Int {
+        max(1, stored ?? standard.minimumCount)
+    }
+
+    /// A stored plural-folding switch as the settings read it: on where nothing is stored.
+    /// - Parameter stored: The stored value, or `nil` when none is stored.
+    public static func foldPlurals(fromSetting stored: Bool?) -> Bool {
+        stored ?? standard.foldPlurals
+    }
+
+    /// A stored markings-filter switch as the settings read it: on where nothing is stored.
+    /// - Parameter stored: The stored value, or `nil` when none is stored.
+    public static func filterMarkings(fromSetting stored: Bool?) -> Bool {
+        stored ?? standard.filterMarkings
+    }
+
+    /// The tuning a reader's Word Cloud settings give, read as the app reads them: the minimum
+    /// length at least 2, the minimum count at least 1, and the shipped value of each setting that
+    /// holds nothing.
+    ///
+    /// A host passes the synced preferences' `wcMinLength`, `wcMinCount`, `wcFoldPlurals` and
+    /// `wcFilterMarkings`, the values the app copies into its settings when they sync. The
+    /// boilerplate setting, `wcExcludeBoilerplate`, is not a tuning: it is the diplomatic stopword
+    /// layer, passed as it is stored (`includeDiplomatic`, never inverted), and the custom stop
+    /// lists are the app's `WordCloudSettings.extraStopwords(for:)`.
+    /// - Parameters:
+    ///   - minimumLength: The stored minimum length, or `nil`.
+    ///   - minimumCount: The stored minimum count, or `nil`.
+    ///   - foldPlurals: The stored plural-folding switch, or `nil`.
+    ///   - filterMarkings: The stored markings-filter switch, or `nil`.
+    public init(settingsMinimumLength minimumLength: Int?, minimumCount: Int?,
+                foldPlurals: Bool?, filterMarkings: Bool?) {
+        self.init(minimumLength: Self.minimumLength(fromSetting: minimumLength),
+                  minimumCount: Self.minimumCount(fromSetting: minimumCount),
+                  foldPlurals: Self.foldPlurals(fromSetting: foldPlurals),
+                  filterMarkings: Self.filterMarkings(fromSetting: filterMarkings))
     }
 }

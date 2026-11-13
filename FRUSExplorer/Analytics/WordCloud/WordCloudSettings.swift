@@ -19,6 +19,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Word Cloud: tunable criteria + stop-list management
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): the scalar criteria read their stored values
+///          through `WordCloudTuning`'s rules, in `WordCloudKit`, so a host reads the synced ones the
+///          same way
 enum WordCloudSettings {
 
     /// `UserDefaults` keys. The scalar keys are also used as `@AppStorage` keys in
@@ -65,10 +68,11 @@ enum WordCloudSettings {
         }
     }
 
-    /// Default minimum token length.
-    static let defaultMinLength = 3
-    /// Default minimum occurrence count.
-    static let defaultMinCount = 1
+    /// Default minimum token length: the shipped tuning's, which the stored value's reading falls
+    /// back to (`WordCloudTuning.minimumLength(fromSetting:)`).
+    static let defaultMinLength = WordCloudTuning.standard.minimumLength
+    /// Default minimum occurrence count: the shipped tuning's, as above.
+    static let defaultMinCount = WordCloudTuning.standard.minimumCount
 
     private static var store: UserDefaults { .standard }
 
@@ -76,22 +80,22 @@ enum WordCloudSettings {
 
     /// Minimum surviving token length (≥ 2).
     static var minimumLength: Int {
-        max(2, (store.object(forKey: Keys.minLength) as? Int) ?? defaultMinLength)
+        WordCloudTuning.minimumLength(fromSetting: store.object(forKey: Keys.minLength) as? Int)
     }
 
     /// Minimum total occurrence count (≥ 1).
     static var minimumCount: Int {
-        max(1, (store.object(forKey: Keys.minCount) as? Int) ?? defaultMinCount)
+        WordCloudTuning.minimumCount(fromSetting: store.object(forKey: Keys.minCount) as? Int)
     }
 
     /// Whether plural-folding is enabled.
     static var foldPlurals: Bool {
-        (store.object(forKey: Keys.foldPlurals) as? Bool) ?? true
+        WordCloudTuning.foldPlurals(fromSetting: store.object(forKey: Keys.foldPlurals) as? Bool)
     }
 
     /// Whether classification markings are filtered.
     static var filterMarkings: Bool {
-        (store.object(forKey: Keys.filterMarkings) as? Bool) ?? true
+        WordCloudTuning.filterMarkings(fromSetting: store.object(forKey: Keys.filterMarkings) as? Bool)
     }
 
     /// The cloud typeface family (device-local; defaults to ``WordCloudFontDesign/rounded``).

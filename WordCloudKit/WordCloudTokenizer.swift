@@ -7,7 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(NaturalLanguage)
 import NaturalLanguage
+#endif
 
 /// Turns document body text into a stream of normalised, filtered terms for
 /// word-cloud frequency counting.
@@ -42,6 +44,9 @@ import NaturalLanguage
 ///   1.2 — #1539 review round 1: the word walk follows the tagger's schemes, so a tagger built
 ///          without `.lemma` still counts every word
 ///   1.3 — #1608: ``wordForm``; a `.printed` tokenizer never asks for the lemma scheme
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S24d): its counting behind `canImport(NaturalLanguage)`;
+///          where the framework is missing (Linux) the type keeps its configuration and its filters
+///          (``accepts(_:)``, ``singularize(_:)``), and its counting is unavailable and says why
 public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
@@ -95,6 +100,7 @@ public struct WordCloudTokenizer: Sendable {
         self.wordForm = wordForm
     }
 
+    #if canImport(NaturalLanguage)
     /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
     private var nameTag: NLTag? {
         switch lens {
@@ -237,6 +243,21 @@ public struct WordCloudTokenizer: Sendable {
         }
         return added
     }
+    #else
+    /// Where `NaturalLanguage` is missing (Linux), the tokenizer counts nothing, and says so rather
+    /// than counting another way (FRUS Explorer Light, S24d). The app counts its tagger's words,
+    /// lemmas, lexical classes and names; a count made by any other rule would be another vocabulary,
+    /// which the bundled clouds, the keyness references and every comparison between them would
+    /// read as a finding. A host there refuses a live count, as the app refuses a lens its tagger
+    /// cannot serve, and reads the bundled clouds (`CloudVectorsFile`), which the generator counted
+    /// with this kit's multi-lens pass. The configuration and the filters, ``accepts(_:)`` and
+    /// ``singularize(_:)``, read no tagger and are here on every platform.
+    @available(*, unavailable, message: "WordCloudTokenizer counts with NaturalLanguage, which this platform does not have, and a count made another way would not compare with the bundled clouds or the keyness references: refuse a live count, and read the bundled clouds")
+    @discardableResult
+    public func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
+        fatalError("WordCloudTokenizer counts with NaturalLanguage, which this platform does not have")
+    }
+    #endif
 
     /// Words that look plural (end in `s`) but are singular or uncountable, and so
     /// must never be folded.
