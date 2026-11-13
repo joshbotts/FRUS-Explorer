@@ -56,11 +56,12 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///          where it reads it (`rankingSources`)
 ///   1.6 — index version 69: the grain caveat says a designator with no number is grouped
 ///          under its category alone (`archival.export.caveat.grain.v2`)
-enum ArchivalAnalyticsExport {
+///   1.7 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
     /// are not.
-    static var baseCaveat: String {
+    public static var baseCaveat: String {
         String(localized: "archival.export.caveat.base",
                defaultValue: "Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. They record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.")
     }
@@ -72,7 +73,7 @@ enum ArchivalAnalyticsExport {
     /// Folding to category+number is owner decision **D-3**'s grain and the one the co-citation
     /// network already used — but it hides the designator a reader writes on a pull slip, so the
     /// export says the fold happened and the app offers the leaves.
-    static var grainCaveat: String {
+    public static var grainCaveat: String {
         String(localized: "archival.export.caveat.grain.v2",
                defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), or to their category alone when they have no number (POL US-USSR counts under POL), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
     }
@@ -92,11 +93,11 @@ enum ArchivalAnalyticsExport {
     ///   - indexedVolumeCount: Volumes indexed on this device.
     ///   - glossesWritten: Whether the table writes a class's gloss beside it — the every-unit sheet's
     ///     CSV does, the ranking card's does not (see `rankingSources`).
-    static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
-                        hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
-                        indexedVolumeCount: Int, noteCount: Int = 0,
-                        shownValue: Int = 0, rowCapApplied: Bool = true,
-                        scopeLabel: String? = nil, glossesWritten: Bool = false) -> AnalyticsProvenance {
+    public static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
+                               hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
+                               indexedVolumeCount: Int, noteCount: Int = 0,
+                               shownValue: Int = 0, rowCapApplied: Bool = true,
+                               scopeLabel: String? = nil, glossesWritten: Bool = false) -> AnalyticsProvenance {
         var caveats = [weight.measuresPrintedMaterial ? baseCaveat : pointerBaseCaveat,
                        weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
@@ -174,8 +175,8 @@ enum ArchivalAnalyticsExport {
     /// schedule (`external-citation-index.json` is `.stateDeptSchedule`, as Source Explorer badges a class citation),
     /// and a class's gloss, which the every-unit sheet writes beside it (`decimal-class-labels.json`,
     /// `subject-numeric-labels.json`).
-    static func rankingSources(lens: ArchivalUnitLens, weight: ArchivalWeight,
-                               glossesWritten: Bool) -> Set<ProvenanceSource> {
+    public static func rankingSources(lens: ArchivalUnitLens, weight: ArchivalWeight,
+                                      glossesWritten: Bool) -> Set<ProvenanceSource> {
         lens == .centralFileClasses && (weight == .unprintedPointers || glossesWritten)
             ? [.frusText, .stateDeptSchedule]
             : [.frusText]
@@ -199,8 +200,8 @@ enum ArchivalAnalyticsExport {
     /// - Parameters:
     ///   - collectionName: The collection whose record this chart sits on.
     ///   - indexedVolumeCount: Volumes indexed on this device.
-    static func collectionTimeline(collectionName: String,
-                                   indexedVolumeCount: Int) -> AnalyticsProvenance {
+    public static func collectionTimeline(collectionName: String,
+                                          indexedVolumeCount: Int) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: String(format: String(
                 localized: "archival.export.title.timeline %@",
@@ -229,8 +230,8 @@ enum ArchivalAnalyticsExport {
     ///   - profile: The library being described, for its two denominators.
     ///   - indexedVolumeCount: Volumes indexed on this device.
     ///   - corpusVolumeCount: Volumes in the series.
-    static func library(title: String, axisLabel: String, profile: ArchivalLibraryProfile,
-                        indexedVolumeCount: Int, corpusVolumeCount: Int) -> AnalyticsProvenance {
+    public static func library(title: String, axisLabel: String, profile: ArchivalLibraryProfile,
+                               indexedVolumeCount: Int, corpusVolumeCount: Int) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: title,
             axisLabel: axisLabel,
@@ -255,9 +256,9 @@ enum ArchivalAnalyticsExport {
     }
 
     /// The Network mode's statement.
-    static func network(focusName: String, measure: ArchivalEdgeMeasure, drawn: Int,
-                        aboveThreshold: Int, partnersTotal: Int,
-                        indexedVolumeCount: Int) -> AnalyticsProvenance {
+    public static func network(focusName: String, measure: ArchivalEdgeMeasure, drawn: Int,
+                               aboveThreshold: Int, partnersTotal: Int,
+                               indexedVolumeCount: Int) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: String(format: String(localized: "archival.export.title.network %@",
                                                defaultValue: "Co-cited with %@"),
@@ -281,8 +282,8 @@ enum ArchivalAnalyticsExport {
     }
 
     /// The Flows mode's statement — the one that owes the footnote sentence.
-    static func flows(title: String, axisLabel: String, data: ArchivalFlowsData,
-                      indexedVolumeCount: Int) -> AnalyticsProvenance {
+    public static func flows(title: String, axisLabel: String, data: ArchivalFlowsData,
+                             indexedVolumeCount: Int) -> AnalyticsProvenance {
         // #784: the two layers are different bodies of evidence and owe different disclosures.
         // An export that carried the printed layer's caveats over unprinted-material rows would
         // state a footnote share of 0.0% and a class exclusion that never applied — a methods
@@ -348,10 +349,10 @@ enum ArchivalAnalyticsExport {
 
     /// Why the two Collections weights disagree — the single most misreadable thing on the surface.
     ///
-    /// Internal rather than private so the test requiring it can match the sentence the builder
+    /// Not private, so the test requiring it can match the sentence the builder
     /// really appends. A test quoting a fragment instead keeps passing once the wording changes,
     /// which is a guard that has quietly stopped guarding.
-    static var weightCaveat: String {
+    public static var weightCaveat: String {
         String(localized: "archival.export.caveat.weight.v2",
                defaultValue: "The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.")
     }
@@ -363,7 +364,7 @@ enum ArchivalAnalyticsExport {
     /// record where the editors drew documents from — a description of work a pointers export did
     /// not do. Leaving it in place and adding a correction underneath would put two contradictory
     /// methods statements in one file, and the first one is the one a reader trusts.
-    static var pointerBaseCaveat: String {
+    public static var pointerBaseCaveat: String {
         String(localized: "archival.export.caveat.base.pointers",
                defaultValue: "These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive’s catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.")
     }

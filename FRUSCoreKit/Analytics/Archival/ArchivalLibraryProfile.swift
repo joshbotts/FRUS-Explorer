@@ -11,43 +11,43 @@ import Foundation
 // MARK: - ArchivalLibraryCategoryCount
 
 /// One provenance category's share of the user's own source notes.
-struct ArchivalLibraryCategoryCount: Identifiable, Sendable, Equatable {
+public struct ArchivalLibraryCategoryCount: Identifiable, Sendable, Equatable {
     /// The category.
-    let category: SourceProvenanceCategory
+    public let category: SourceProvenanceCategory
     /// Documents in it.
-    let documentCount: Int
+    public let documentCount: Int
 
-    var id: String { category.rawValue }
+    public var id: String { category.rawValue }
 }
 
 // MARK: - ArchivalLibraryBandComposition
 
 /// One era band's citation-form composition across the user's indexed volumes.
-struct ArchivalLibraryBandComposition: Identifiable, Sendable, Equatable {
+public struct ArchivalLibraryBandComposition: Identifiable, Sendable, Equatable {
     /// The band.
-    let band: ArchivalEraBand
+    public let band: ArchivalEraBand
     /// Indexed volumes in it.
-    let volumeCount: Int
+    public let volumeCount: Int
     /// Categories present, in ``SourceProvenanceCategory/ordered`` order, zeroes dropped.
-    let categories: [ArchivalLibraryCategoryCount]
+    public let categories: [ArchivalLibraryCategoryCount]
 
-    var id: Int { band.index }
+    public var id: Int { band.index }
 
     /// Source notes in the band.
-    var documentCount: Int { categories.reduce(0) { $0 + $1.documentCount } }
+    public var documentCount: Int { categories.reduce(0) { $0 + $1.documentCount } }
 }
 
 // MARK: - ArchivalLibraryCollection
 
 /// One collection the user's own volumes draw on, with the record needed to open its
 /// neighbours.
-struct ArchivalLibraryCollection: Identifiable, Sendable, Equatable {
+public struct ArchivalLibraryCollection: Identifiable, Sendable, Equatable {
     /// The resolved authority record.
-    let record: AuthorityCollectionRecord
+    public let record: AuthorityCollectionRecord
     /// Documents in the user's index drawn from it.
-    let documentCount: Int
+    public let documentCount: Int
 
-    var id: String { record.id }
+    public var id: String { record.id }
 }
 
 // MARK: - ArchivalLibraryProfile
@@ -77,33 +77,34 @@ struct ArchivalLibraryCollection: Identifiable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (rider E)
-struct ArchivalLibraryProfile: Sendable, Equatable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public struct ArchivalLibraryProfile: Sendable, Equatable {
 
     /// Collections listed in the ranking.
-    static let collectionCap = 12
+    public static let collectionCap = 12
 
     /// Source notes across the user's index.
-    let noteCount: Int
+    public let noteCount: Int
     /// Volumes contributing at least one source note.
-    let volumeCount: Int
+    public let volumeCount: Int
     /// Card 1: the whole library's composition, heaviest category first.
-    let composition: [ArchivalLibraryCategoryCount]
+    public let composition: [ArchivalLibraryCategoryCount]
     /// Card 2: composition per era band, earliest band first, empty bands dropped.
-    let bands: [ArchivalLibraryBandComposition]
+    public let bands: [ArchivalLibraryBandComposition]
     /// Card 3: the most-cited resolvable collections, heaviest first.
-    let collections: [ArchivalLibraryCollection]
+    public let collections: [ArchivalLibraryCollection]
     /// Notes citing the central files, which the collection ranking cannot resolve.
-    let centralFileNoteCount: Int
+    public let centralFileNoteCount: Int
     /// Notes in collection-shaped citations that resolved to no authority record.
-    let unresolvedCollectionNoteCount: Int
+    public let unresolvedCollectionNoteCount: Int
 
     /// A profile with nothing in it — the honest state for an empty index.
-    static let empty = ArchivalLibraryProfile(
+    public static let empty = ArchivalLibraryProfile(
         noteCount: 0, volumeCount: 0, composition: [], bands: [], collections: [],
         centralFileNoteCount: 0, unresolvedCollectionNoteCount: 0)
 
     /// Whether there is anything to draw.
-    var isEmpty: Bool { noteCount == 0 }
+    public var isEmpty: Bool { noteCount == 0 }
 
     // MARK: - Building
 
@@ -117,10 +118,10 @@ struct ArchivalLibraryProfile: Sendable, Equatable {
     ///   - authority: The bundled authority, or `nil` when it failed to load — in which case
     ///     the collection ranking is empty and every collection-shaped note is reported as
     ///     unresolved, which is exactly what happened.
-    static func make(groups: [IndexingPipeline.ArchivalLibraryGroup],
-                     collectionGroups: [IndexingPipeline.ArchivalLibraryCollectionGroup],
-                     coverage: [String: ArchivalVolumeCoverage],
-                     authority: CollectionAuthorityIndex?) -> ArchivalLibraryProfile {
+    public static func make(groups: [IndexingPipeline.ArchivalLibraryGroup],
+                            collectionGroups: [IndexingPipeline.ArchivalLibraryCollectionGroup],
+                            coverage: [String: ArchivalVolumeCoverage],
+                            authority: CollectionAuthorityIndex?) -> ArchivalLibraryProfile {
         guard !groups.isEmpty else { return .empty }
 
         var totals: [SourceProvenanceCategory: Int] = [:]

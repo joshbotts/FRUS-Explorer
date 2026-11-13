@@ -18,7 +18,14 @@ import SourceNoteKit
 /// Mirrors the artifact `DecimalClassLabelGenerator` writes. The vocabularies are stored
 /// separately and composed at read time, because a decimal file number is not an opaque
 /// identifier: `761.62` is *class 7, political relations, between country 61 and country 62*.
-struct DecimalClassLabelTable: Decodable, Sendable {
+///
+/// Version history:
+///   1.0 — 2026-08-11 (#828): initial implementation, in the app; FRUSCoreKit, part 2 moved it here
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): public with its decoder, and loaded from a URL the host
+///          gives (`init(contentsOf:)`), as `SubjectNumericLabelTable` is, for
+///          `ArchivalCollectionsData.make`; `DecimalClassLabelStore`, which reads the app's bundle,
+///          stays in the app
+public struct DecimalClassLabelTable: Decodable, Sendable {
 
     /// Artifact schema version.
     let schemaVersion: Int
@@ -208,5 +215,16 @@ struct DecimalClassLabelTable: Decodable, Sendable {
             return "\(word) \(stem)"
         }
         return name
+    }
+}
+
+// MARK: - Loading
+
+extension DecimalClassLabelTable {
+
+    /// The table in the `decimal-class-labels.json` at `url`, decoded as `DecimalClassLabelStore` decodes
+    /// the copy bundled with the app, for a host that keeps the file elsewhere.
+    public init(contentsOf url: URL) throws {
+        self = try JSONDecoder().decode(DecimalClassLabelTable.self, from: Data(contentsOf: url))
     }
 }

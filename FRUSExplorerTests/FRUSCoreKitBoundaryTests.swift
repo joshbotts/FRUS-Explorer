@@ -80,6 +80,8 @@ import Testing
 ///         Zotero clients
 ///   1.6 — 2026-11-11 (FRUS Explorer Light, S24a): the suites' walk's sanity set names `measureCoverage`,
 ///         since `makeAnalyticsPipeline` moved into the kit's suites with `CorpusAnalyticsServiceTests`
+///   1.7 — 2026-11-12 (FRUS Explorer Light, S24c): the kit may import CoreGraphics behind
+///         `canImport(CoreGraphics)`, for the archival network's layout and the graphs' label rules
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -114,7 +116,11 @@ struct FRUSCoreKitBoundaryTests {
     /// TEIHeaderKit joined with the library's rules (FRUS Explorer Light's S21a), the same way as
     /// FTS5Store: `LocalVolumeCatalog` reads a side-loaded volume's header with it. FoundationNetworking
     /// joined with the NARA and Zotero clients (S22c): Linux's `URLSession` is there, and Darwin's in
-    /// Foundation, where `canImport(FoundationNetworking)` is false.
+    /// Foundation, where `canImport(FoundationNetworking)` is false. CoreGraphics joined with the
+    /// archival network's layout and the graphs' label rules (S24c): on Apple platforms the geometry
+    /// types' conformances and members (`Equatable`, `.zero`, `union`) are its overlay's, which
+    /// Foundation alone does not bring into the package's module, and on Linux, where
+    /// `canImport(CoreGraphics)` is false, Foundation declares the same types itself.
     static let permittedImports: [String: (condition: String, inElse: Bool)] = [
         "FoundationXML": ("canImport(FoundationXML)", false),
         "FoundationNetworking": ("canImport(FoundationNetworking)", false),
@@ -126,6 +132,7 @@ struct FRUSCoreKitBoundaryTests {
         "CSQLite": ("canImport(SQLite3)", true),
         "FTS5Store": ("canImport(FTS5Store)", false),
         "TEIHeaderKit": ("canImport(TEIHeaderKit)", false),
+        "CoreGraphics": ("canImport(CoreGraphics)", false),
     ]
 
     /// Each import in `source` that breaks the kit's rule, as `line: import`: Foundation anywhere;
@@ -177,6 +184,8 @@ struct FRUSCoreKitBoundaryTests {
         #expect(Self.importRuleViolations(in: "#if canImport(FTS5Store)\nimport FTS5Store\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "#if canImport(TEIHeaderKit)\nimport TEIHeaderKit\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "import TEIHeaderKit\n") == ["1: import TEIHeaderKit"])
+        #expect(Self.importRuleViolations(in: "#if canImport(CoreGraphics)\nimport CoreGraphics\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "import CoreGraphics\n") == ["1: import CoreGraphics"])
         // Apple-only, guarded or not.
         #expect(Self.importRuleViolations(in: "import SwiftUI\n") == ["1: import SwiftUI"])
         #expect(Self.importRuleViolations(in: "#if canImport(SwiftUI)\nimport SwiftUI\n#endif\n") == ["2: import SwiftUI"])

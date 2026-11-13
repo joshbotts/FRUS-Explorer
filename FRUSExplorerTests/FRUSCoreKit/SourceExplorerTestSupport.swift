@@ -31,6 +31,8 @@ import Foundation
 //         and the reader's AST cache, for the suites that moved with the classifier
 //   1.2 — 2026-11-11 (FRUS Explorer Light, S22c): the app's two-argument lookup analyzer and one-argument
 //         series facts, over the stores here, for the suites that moved with the clients and the guards'
+//   1.3 — 2026-11-12 (FRUS Explorer Light, S24c): the decimal-class table through the kit's loader, which it
+//         has now
 
 /// The shipped copy of a JSON file bundled with the app: the app bundle's in Xcode, the repository's
 /// `FRUSExplorer/Resources` in the package, as `testManifestURL()` finds the manifest.
@@ -150,7 +152,7 @@ extension NARALookupAnalyzer {
 
 /// The app's `DecimalClassLabelStore`: `decimal-class-labels.json`.
 enum DecimalClassLabelStore {
-    static let shared = decodedSourceExplorerResource(DecimalClassLabelTable.self, "decimal-class-labels")
+    static let shared = try? DecimalClassLabelTable(contentsOf: sourceExplorerResource("decimal-class-labels"))
 }
 
 /// The app's `POCOMIndexStore`: `pocom-index.json`.

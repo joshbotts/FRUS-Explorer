@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ArchivalVolumeCoverage
 
@@ -18,17 +21,18 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
-struct ArchivalVolumeCoverage: Sendable, Equatable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public struct ArchivalVolumeCoverage: Sendable, Equatable {
     /// Earliest coverage year.
-    let firstYear: Int
+    public let firstYear: Int
     /// Latest coverage year.
-    let lastYear: Int
+    public let lastYear: Int
 
     /// The midpoint SA-3a and #762 both attribute by — `(first + last) / 2`.
-    var midpointYear: Int { (min(firstYear, lastYear) + max(firstYear, lastYear)) / 2 }
+    public var midpointYear: Int { (min(firstYear, lastYear) + max(firstYear, lastYear)) / 2 }
 
     /// Creates a coverage span, ordering the endpoints.
-    init(firstYear: Int, lastYear: Int) {
+    public init(firstYear: Int, lastYear: Int) {
         self.firstYear = min(firstYear, lastYear)
         self.lastYear = max(firstYear, lastYear)
     }
@@ -50,8 +54,8 @@ extension ArchivalVolumeCoverage {
     ///   - entries: The manifest entries to read spans from.
     ///   - allowed: The scope's volume ids, or `nil` for every entry.
     /// - Returns: `volumeId -> span`, carrying only the in-scope, year-bearing volumes.
-    static func map(from entries: [VolumeManifestEntry],
-                    limitedTo allowed: Set<String>? = nil) -> [String: ArchivalVolumeCoverage] {
+    public static func map(from entries: [VolumeManifestEntry],
+                           limitedTo allowed: Set<String>? = nil) -> [String: ArchivalVolumeCoverage] {
         var result: [String: ArchivalVolumeCoverage] = [:]
         result.reserveCapacity(allowed?.count ?? entries.count)
         for entry in entries {
@@ -68,18 +72,18 @@ extension ArchivalVolumeCoverage {
 // MARK: - ArchivalRankingRow
 
 /// One bar in a Collections-mode ranking.
-struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
+public struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     /// The unit's stable key — an authority collection id, or a class key.
-    let id: String
+    public let id: String
     /// The label drawn on the axis. Unique within a ranking; see
     /// ``ArchivalCollectionsData/disambiguate(_:)``.
-    let label: String
+    public let label: String
     /// The row's own name before disambiguation, for detail copy and accessibility.
-    let name: String
+    public let name: String
     /// The custodian bucket the bar is coloured by.
-    let category: ArchivalRepositoryCategory
+    public let category: ArchivalRepositoryCategory
     /// Documents or volumes, per the ranking's weight.
-    let value: Int
+    public let value: Int
     /// On the class lens, the leaf keys folded into this row — `POL 27 VIET S` and its siblings
     /// under `POL 27`. Empty on the collections lens, and empty for a decimal file number, which
     /// is already the grain a reader writes on a pull slip.
@@ -87,17 +91,17 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     /// A row is a *family* when this holds anything other than the row's own key: the leaf is
     /// what NARA is asked for, so folding it out of sight without a way back would trade a
     /// rankable chart for an unusable one.
-    var leaves: [ArchivalClassLeaf] = []
+    public var leaves: [ArchivalClassLeaf] = []
     /// The OTHER places this row's country code also names, or empty (#1257).
     ///
     /// Carried beside the gloss and computed at the same call, because they answer one question:
     /// the gloss says what the code is called and this says that the name stands for several
     /// places. Measured, a quarter of the documents a schedule can gloss sit on such a code, so a
     /// surface showing the name alone asserts more than the table knows.
-    var glossAlternates: [String] = []
+    public var glossAlternates: [String] = []
 
     /// Whether this row folds names a reader would need to see to act on it.
-    var isFamily: Bool {
+    public var isFamily: Bool {
         leaves.count > 1 || (leaves.count == 1 && leaves[0].key != id)
     }
     /// The class key's reading in plain words, or `nil` (#828).
@@ -106,16 +110,16 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     /// move. Only the class lens carries one, and only where the bundled schedule covers the era
     /// and knows the country. Kept BESIDE the key rather than replacing it: the key is what a pull
     /// slip needs, so every surface shows both.
-    var gloss: String?
+    public var gloss: String?
 
 }
 
 // MARK: - ArchivalClassLeaf
 
 /// One subject-numeric leaf inside a folded family row (`POL 27 VIET S` under `POL 27`).
-struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
+public struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
     /// The full class key, as a source note wrote it and as a pull slip needs it.
-    let key: String
+    public let key: String
     /// The leaf's reading in words, composed in NARA's filing order — country then subject —
     /// or `nil` when no table can say (#1254).
     ///
@@ -123,21 +127,21 @@ struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
     /// leaf: a row is `POL 27` and its leaves are `POL 27 VIET S`, `POL 27 CYP` and the rest, which
     /// are different countries' files under one subject. This is also the grain a researcher writes
     /// on a pull slip.
-    let gloss: String?
+    public let gloss: String?
     /// Documents this leaf supplies in the band.
-    let documents: Int
+    public let documents: Int
     /// Volumes citing this leaf in the band.
     ///
     /// Carried beside `documents` so an expanded family can be read in the **same unit as the
     /// bar above it**. Without it a row measured in volumes — say 36 — expands to leaves summing
     /// to several hundred, and the arithmetic a reader does in their head is wrong in a way the
     /// screen never explains.
-    let volumes: Int
+    public let volumes: Int
 
-    var id: String { key }
+    public var id: String { key }
 
     /// This leaf's value under one weight, so the expansion always matches its bar.
-    func value(weight: ArchivalWeight) -> Int {
+    public func value(weight: ArchivalWeight) -> Int {
         weight == .documents ? documents : volumes
     }
 }
@@ -145,25 +149,25 @@ struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
 // MARK: - ArchivalRanking
 
 /// A ranked list plus everything a caller must disclose about it.
-struct ArchivalRanking: Sendable, Equatable {
+public struct ArchivalRanking: Sendable, Equatable {
     /// The bars, heaviest first.
-    let rows: [ArchivalRankingRow]
+    public let rows: [ArchivalRankingRow]
     /// The umbrella record's own value in this band, when it was hidden and had one.
     ///
     /// `nil` means nothing was hidden — either the filter is off, or the umbrella contributes
     /// nothing to this band. The two are different and the disclosure line says which: the
     /// umbrella supplies 12,067 documents to the 1948–1960 band and **none at all** before
     /// 1948, so a fixed "157 volumes hidden" sentence would be wrong in three bands of five.
-    let hiddenUmbrellaValue: Int?
+    public let hiddenUmbrellaValue: Int?
     /// Units with a non-zero value in this band, before the row cap and less a withheld umbrella.
-    let unitsReached: Int
+    public let unitsReached: Int
     /// Volumes whose coverage midpoint falls in this band.
-    let bandVolumeCount: Int
+    public let bandVolumeCount: Int
     /// Source notes scanned across the band's volumes — the denominator for every share below.
     /// Zero when the usage index is absent, in which case no share may be stated.
-    var bandNoteCount: Int = 0
+    public var bandNoteCount: Int = 0
     /// What the **drawn** rows account for, in the weight's own unit.
-    var shownValue: Int = 0
+    public var shownValue: Int = 0
 
     /// The drawn rows' share of the band's source notes, or `nil` when it cannot be stated.
     ///
@@ -175,7 +179,7 @@ struct ArchivalRanking: Sendable, Equatable {
     /// count is not a share of it, and neither is a footnote-pointer count — pointers are read from
     /// editorial footnotes, not from source notes at all, so the ratio would divide two unrelated
     /// populations and print a plausible percentage. Leave this gated on `.documents`.
-    func shownShare(weight: ArchivalWeight) -> Double? {
+    public func shownShare(weight: ArchivalWeight) -> Double? {
         guard weight == .documents, bandNoteCount > 0, shownValue > 0 else { return nil }
         return Double(shownValue) / Double(bandNoteCount)
     }
@@ -199,10 +203,10 @@ struct ArchivalRanking: Sendable, Equatable {
 /// comes from a parsed document note — so both weights there are computed from the usage index.
 ///
 /// ## Cost
-/// ``make(authority:usage:coverage:)`` walks every record's volume list and every usage row
-/// once: roughly 12,000 memberships and 12,000 usage rows on the shipped artifacts. It is
-/// built once per visit off the main actor and every ranking after that is a dictionary read
-/// and a sort.
+/// ``make(authority:usage:coverage:external:labels:subjectNumericLabels:)`` walks every record's
+/// volume list and every usage row once: roughly 12,000 memberships and 12,000 usage rows on the
+/// shipped artifacts. It is built once per visit off the main actor and every ranking after that
+/// is a dictionary read and a sort.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
@@ -221,7 +225,12 @@ struct ArchivalRanking: Sendable, Equatable {
 ///   1.6 — Session 2026-08-11: #828 — a class label is decided by the coverage of the volumes
 ///         citing THAT KEY (`classSpans`, `gloss(forKey:bands:)`) rather than by the era band's
 ///         own years, which straddle the 1950 renumbering in every band after the first
-struct ArchivalCollectionsData: Sendable {
+///   1.7 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public; `make` takes the external-citation index and the
+///          decimal-class table it defaulted to the app's stores, and the subject-numeric table it read
+///          from the app's store at each reading, which a non-public form still reads there; the app's
+///          `make(authority:usage:coverage:external:labels:)` passes its stores to that form
+///          (`ArchivalCollectionsData+App.swift`)
+public struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
     /// default.
@@ -237,10 +246,10 @@ struct ArchivalCollectionsData: Sendable {
     /// authority records and are **not** hidden: they are the era's real central-file bar, and
     /// suppressing them would remove the State Department from the very charts that show it
     /// losing ground to the White House.
-    static let umbrellaCollectionId = "txt:department of state|central file"
+    public static let umbrellaCollectionId = "txt:department of state|central file"
 
     /// Rows shown per ranking before "Show more".
-    static let rowCap = 12
+    public static let rowCap = 12
 
     /// Per-band document counts by authority collection id.
     private let collectionDocuments: [[String: Int]]
@@ -260,6 +269,9 @@ struct ArchivalCollectionsData: Sendable {
     /// output: with a single schedule the clamp handles every lower bound that could matter. The
     /// rule this parameter exists to test is the one the next schedule will land on.
     private let labels: DecimalClassLabelTable?
+    /// The subject-numeric label table class rows and leaves are read against, asked for at each
+    /// reading, as the app's lazily decoded store was read there.
+    private let subjectNumericLabels: @Sendable () -> SubjectNumericLabelTable?
     /// Per-band coverage span of the volumes citing each folded class key.
     ///
     /// The evidence a class label rests on. See ``gloss(forKey:bands:)``: a decimal key means
@@ -280,7 +292,7 @@ struct ArchivalCollectionsData: Sendable {
 
     /// Whether document weights are available at all — `false` when the usage index is missing,
     /// in which case the Documents weight must be disabled rather than shown as zeroes.
-    let supportsDocumentWeight: Bool
+    public let supportsDocumentWeight: Bool
 
     /// Footnote references pointing at each collection, per band.
     ///
@@ -288,22 +300,22 @@ struct ArchivalCollectionsData: Sendable {
     /// rather than a third column: `collectionDocuments` and `collectionVolumes` both count where
     /// FRUS *drew documents from*; this counts what its footnotes *pointed at* and FRUS did not
     /// print. The two are never added — that addition is the defect #783 removed.
-    let collectionPointers: [[String: Int]]
+    public let collectionPointers: [[String: Int]]
 
     /// Per-band references naming each central-file CLASS — the class lens's pointer vocabulary
     /// (#834). Empty before schema 2, which is why the weight was withheld on this lens.
-    let classPointers: [[String: Int]]
+    public let classPointers: [[String: Int]]
 
     /// Whether the pointer weight can be drawn — `false` when the external-citation index is
     /// missing, in which case the weight is disabled rather than ranking an empty table.
-    let supportsPointerWeight: Bool
+    public let supportsPointerWeight: Bool
 
     /// Volumes the derivation could place in a band (i.e. whose coverage parsed).
-    let volumesPlaced: Int
+    public let volumesPlaced: Int
 
     /// Volumes the document-level usage index scanned — its `coverage.volumesScanned` — or `nil`
     /// when the index is unavailable and the card is counting volumes itself (R-3).
-    let volumesScanned: Int?
+    public let volumesScanned: Int?
 
     /// Distinct volumes the cross-volume authority names in ANY collection's `volumeIds` (R-3).
     ///
@@ -311,7 +323,7 @@ struct ArchivalCollectionsData: Sendable {
     /// authority was re-clustered on 2026-08-19 (#372 1b added 87 lot resolutions) and the literal
     /// did not move; a source-scan test pinned the stale value as "measured". Derived here from
     /// the same records the rows are built from, so it cannot drift from them again.
-    let authorityVolumeReach: Int
+    public let authorityVolumeReach: Int
 
     // MARK: - Building
 
@@ -322,11 +334,36 @@ struct ArchivalCollectionsData: Sendable {
     ///   - usage: The bundled usage index, or `nil` when it failed to load.
     ///   - coverage: Coverage spans by volume id. Volumes absent here are skipped entirely —
     ///     they cannot be attributed to a band without a coverage year.
+    ///   - external: The external-citation index, the pointer weight's source, or `nil`, which
+    ///     withholds that weight.
+    ///   - labels: The decimal-class label table, or `nil`, which leaves decimal keys bare.
+    ///   - subjectNumericLabels: The subject-numeric label table, or `nil`, which leaves those keys
+    ///     bare.
+    ///
+    /// A host passes the tables it loaded by URL. The app's `make(authority:usage:coverage:external:labels:)`
+    /// passes its stores (`ArchivalCollectionsData+App.swift`), through the form below.
+    public static func make(authority: [AuthorityCollectionRecord],
+                            usage: CollectionUsageIndex?,
+                            coverage: [String: ArchivalVolumeCoverage],
+                            external: ExternalCitationIndex?,
+                            labels: DecimalClassLabelTable?,
+                            subjectNumericLabels: SubjectNumericLabelTable?)
+        -> ArchivalCollectionsData {
+        make(authority: authority, usage: usage, coverage: coverage, external: external,
+             labels: labels, readingSubjectNumericLabels: { subjectNumericLabels })
+    }
+
+    /// The same derivation, with the subject-numeric table asked of `subjectNumericLabels` at each
+    /// class row's and leaf's reading, never here: a store that decodes on first use, as the app's
+    /// does, decodes where a class ranking first asks for a reading. The app's
+    /// `make(authority:usage:coverage:external:labels:)` passes its store's read.
     static func make(authority: [AuthorityCollectionRecord],
                      usage: CollectionUsageIndex?,
                      coverage: [String: ArchivalVolumeCoverage],
-                     external: ExternalCitationIndex? = ExternalCitationIndexStore.shared,
-                     labels: DecimalClassLabelTable? = DecimalClassLabelStore.shared)
+                     external: ExternalCitationIndex?,
+                     labels: DecimalClassLabelTable?,
+                     readingSubjectNumericLabels subjectNumericLabels: @escaping @Sendable ()
+                         -> SubjectNumericLabelTable?)
         -> ArchivalCollectionsData {
         let bandCount = ArchivalEraBand.all.count
         var bandByVolume: [String: Int] = [:]
@@ -401,6 +438,7 @@ struct ArchivalCollectionsData: Sendable {
             classVolumes: classVolumes,
             classLeaves: classLeaves,
             labels: labels,
+            subjectNumericLabels: subjectNumericLabels,
             classSpans: classSpans,
             bandVolumeCounts: bandVolumeCounts,
             bandNoteCounts: bandNoteCounts,
@@ -532,8 +570,8 @@ struct ArchivalCollectionsData: Sendable {
     ///   - hidingUmbrella: Whether to drop the `Central Files` umbrella record. Ignored on the
     ///     class lens, which has no umbrella — a class key is already a leaf.
     ///   - limit: Rows returned.
-    func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
-                 hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
+    public func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
+                        hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
         ranking(bands: [band], lens: lens, weight: weight,
                 hidingUmbrella: hidingUmbrella, limit: limit)
     }
@@ -566,8 +604,8 @@ struct ArchivalCollectionsData: Sendable {
     ///   - limit: Rows returned.
     /// - Returns: The merged ranking. Its `bandVolumeCount` and `bandNoteCount` are the totals
     ///   over the requested bands, so a share computed from them describes the same population.
-    func ranking(bands: [ArchivalEraBand], lens: ArchivalUnitLens, weight: ArchivalWeight,
-                 hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
+    public func ranking(bands: [ArchivalEraBand], lens: ArchivalUnitLens, weight: ArchivalWeight,
+                        hidingUmbrella: Bool, limit: Int = rowCap) -> ArchivalRanking {
         // Deduplicated so a caller passing the same band twice cannot silently double every
         // figure in the card that draws it.
         var seen = Set<Int>()
@@ -692,7 +730,7 @@ struct ArchivalCollectionsData: Sendable {
         // is on the shared `CollectionKeying` test, so the two tables divide the vocabulary exactly
         // as the usage index does.
         if CollectionKeying.isSubjectNumericClass(key) {
-            return SubjectNumericLabelStore.shared?.gloss(for: key, coveringYears: low...high)
+            return subjectNumericLabels()?.gloss(for: key, coveringYears: low...high)
         }
         return labels?.gloss(for: key, coveringYears: low...high)
     }
@@ -747,7 +785,7 @@ struct ArchivalCollectionsData: Sendable {
     /// - Returns: The reading, or `nil`.
     private func leafGloss(_ key: String, span: ClosedRange<Int>?) -> String? {
         guard let span, CollectionKeying.isSubjectNumericClass(key) else { return nil }
-        return SubjectNumericLabelStore.shared?.leafGloss(for: key, coveringYears: span)
+        return subjectNumericLabels()?.leafGloss(for: key, coveringYears: span)
     }
 
     /// One class key's leaves across several bands, folded and re-ranked.
@@ -795,7 +833,7 @@ struct ArchivalCollectionsData: Sendable {
     /// so the two lenses' reaches overlap and must never be added or subtracted. It is used only
     /// to decide whether the *other* lens would show a reader materially more of the same band,
     /// which is the one comparison the overlap does not spoil.
-    func reach(band: ArchivalEraBand, lens: ArchivalUnitLens) -> Int {
+    public func reach(band: ArchivalEraBand, lens: ArchivalUnitLens) -> Int {
         let table = lens == .namedCollections
             ? collectionDocuments[band.index]
             : classDocuments[band.index]
@@ -809,12 +847,12 @@ struct ArchivalCollectionsData: Sendable {
     /// authority does not carry; the ranking already falls back to the raw id for such a row's
     /// label. Callers that navigate must therefore treat `nil` as "this row does not open"
     /// rather than as an error — a row with no record has no detail screen to show.
-    func record(forId id: String) -> AuthorityCollectionRecord? {
+    public func record(forId id: String) -> AuthorityCollectionRecord? {
         records[id]
     }
 
     /// Source notes scanned across a band's volumes, or `nil` when the usage index is absent.
-    func noteCount(band: ArchivalEraBand) -> Int? {
+    public func noteCount(band: ArchivalEraBand) -> Int? {
         let count = bandNoteCounts[band.index]
         return count > 0 ? count : nil
     }

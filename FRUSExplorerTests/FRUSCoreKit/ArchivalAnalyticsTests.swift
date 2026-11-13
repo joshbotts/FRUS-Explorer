@@ -14,7 +14,17 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ArchivalEraBandTests
 
@@ -505,6 +515,7 @@ struct ArchivalCollectionsDataTests {
         let url = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Resources/manifest.json")
         guard let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode([VolumeManifestEntry].self, from: data)
@@ -753,6 +764,7 @@ struct ArchivalCollectionsDataTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // the copy it reads is the views' and the theme's, the app's
     // MARK: - The central files are three filing systems (#1543)
 
     /// Five Archival Analytics strings called the Department's central files one filing system:
@@ -815,12 +827,14 @@ struct ArchivalCollectionsDataTests {
         }
         #expect(seen == sites.count, "only \(seen) of \(sites.count) strings were found")
     }
+    #endif
 
     // MARK: - One class grain (#826 / R-4)
 
     /// One app source file, for the drift guards that cannot reach the code they protect.
     private static func source(_ relative: String) throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/\(relative)")
@@ -951,8 +965,8 @@ struct ArchivalCollectionsDataTests {
         // A source scan because the Network's fold is buried in its own accumulation and cannot
         // be reached from here. It is the drift guard: a second, local fold in either file is
         // how the two grains would part company again.
-        for relative in ["Analytics/ArchivalCollectionsData.swift",
-                         "Analytics/ArchivalNetworkData.swift"] {
+        for relative in ["../FRUSCoreKit/Analytics/Archival/ArchivalCollectionsData.swift",
+                         "../FRUSCoreKit/Analytics/Archival/ArchivalNetworkData.swift"] {
             let source = try Self.source(relative)
             #expect(source.contains("CollectionKeying.subjectNumericGroup("),
                     "\(relative) no longer routes through the shared fold")
@@ -1111,7 +1125,7 @@ struct ArchivalCollectionsDataTests {
     /// `@MainActor` and this needs to be a plain static.
     private static let shipped: ArchivalCollectionsData? = {
         guard let authority = CollectionAuthorityStore.shared?.collections,
-              let url = Bundle.main.url(forResource: "manifest", withExtension: "json"),
+              let url = appBundledURL(forResource: "manifest", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let entries = try? JSONDecoder().decode([VolumeManifestEntry].self, from: data)
         else { return nil }
@@ -1188,6 +1202,7 @@ struct ArchivalCollectionsDataTests {
         #expect(!documentIds.subtracting(pointerIds).isEmpty)
     }
 
+    #if !SWIFT_PACKAGE // the popover's text is `FeatureInfoButton`'s, a SwiftUI view's
     /// The two figures About These Figures states in words, held to the bundled indexes (#1588).
     ///
     /// The popover said "a hundred and eighty-one collections appear only under pointers" from
@@ -1229,6 +1244,7 @@ struct ArchivalCollectionsDataTests {
             The popover says "about a hundred and ninety".
             """)
     }
+    #endif
 
     /// The class lens ranks the pointer weight, which it could not do before #834.
     ///

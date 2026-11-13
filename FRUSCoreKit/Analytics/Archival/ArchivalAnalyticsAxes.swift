@@ -6,7 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import SwiftUI
+import Foundation
 
 // MARK: - ArchivalAnalyticsMode
 
@@ -15,7 +15,8 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1 (Collections + Your Library)
 ///   1.1 — Session 2026-08-09: #765 stage 2 adds Network and Flows
-enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
     /// Corpus-wide era × archival-unit rankings.
     case collections
     /// The co-citation neighbourhood of one collection, drawn in custodian sectors.
@@ -25,17 +26,17 @@ enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
     /// The archival profile of the volumes this user has indexed.
     case yourLibrary
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Whether the mode draws a full-frame `Canvas` that owns its own gestures.
     ///
     /// The two chart modes scroll; Network pans and zooms. Nesting a pinch-and-pan canvas inside
     /// the shell's `ScrollView` would make the two gesture recognisers fight, so the shell
     /// branches on this rather than wrapping every mode the same way.
-    var isFullFrameCanvas: Bool { self == .network }
+    public var isFullFrameCanvas: Bool { self == .network }
 
     /// Segment label.
-    var title: String {
+    public var title: String {
         switch self {
         case .collections:
             return String(localized: "archival.mode.collections", defaultValue: "Collections")
@@ -80,7 +81,8 @@ enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
 ///   1.0 — Session 2026-08-09: #765 stage 2
 ///   1.1 — 2026-09-25 (#1467): `detail(shared:documents:)` takes an optional count and says an
 ///          unknown one is not counted
-enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
     /// Jaccard over citing volumes: shared ÷ the volumes citing **either**. Unlike the overlap
     /// coefficient this cannot be won by being small, because a partner's own breadth is in the
     /// denominator.
@@ -89,10 +91,10 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
     /// shared volume, the smaller of the two contributions, summed. Needs the usage index.
     case sharedDocuments
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Menu label.
-    var title: String {
+    public var title: String {
         switch self {
         case .sharedVolumes:
             return String(localized: "archival.measure.sharedVolumes",
@@ -114,7 +116,7 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
     ///   - shared: Volumes citing both.
     ///   - documents: The joint document count, `nil` when it is unknown because one side has no
     ///     usage row (#1467) — worded as not counted, never as zero.
-    func detail(shared: Int, documents: Int?) -> String {
+    public func detail(shared: Int, documents: Int?) -> String {
         switch self {
         case .sharedVolumes:
             return String(format: String(localized: "archival.measure.detail.volumes %lld",
@@ -146,7 +148,8 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
-enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
     /// One `Central Files` node, like any other collection.
     case collapsed
     /// Replaced by the decimal classes (`763.72`) co-cited with the focus.
@@ -161,10 +164,10 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
     /// so `POL` is a node beside `POL 27`.
     case subjectNumeric
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Menu label.
-    var title: String {
+    public var title: String {
         switch self {
         case .collapsed:
             return String(localized: "archival.umbrella.collapsed", defaultValue: "Collapsed")
@@ -208,7 +211,9 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
-enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, Hashable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public, without `color`, a SwiftUI `Color`, which stays
+///          the app's (`FRUSExplorer/Analytics/ArchivalRepositoryCategory+Color.swift`)
+public enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, Hashable {
     /// A numbered State Department bureau, office, or post lot file.
     case lotFile
     /// Material the corpus attributes to the Department of State that is not a numbered lot —
@@ -221,10 +226,10 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
     /// unattributed.
     case otherInstitution
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Display order — heaviest and most specific first, "other" last, matching the legend.
-    static let ordered: [ArchivalRepositoryCategory] = [
+    public static let ordered: [ArchivalRepositoryCategory] = [
         .stateDepartment, .lotFile, .presidentialLibrary, .otherInstitution,
     ]
 
@@ -240,7 +245,7 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
     ///
     /// Presidential custody is tested first because it is a statement about *who holds the
     /// paper*, which outranks the filing system it was once part of.
-    static func from(_ record: AuthorityCollectionRecord) -> ArchivalRepositoryCategory {
+    public static func from(_ record: AuthorityCollectionRecord) -> ArchivalRepositoryCategory {
         if let repository = record.repository,
            repository.hasSuffix(" Library") || presidentialRepositories.contains(repository) {
             return .presidentialLibrary
@@ -251,7 +256,7 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
     }
 
     /// Legend and axis label.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .stateDepartment:
             return String(localized: "archival.category.stateDepartment",
@@ -264,16 +269,6 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
         case .otherInstitution:
             return String(localized: "archival.category.otherInstitution",
                           defaultValue: "Other institutions")
-        }
-    }
-
-    /// The design's four sector tints.
-    var color: Color {
-        switch self {
-        case .stateDepartment: return .blue
-        case .lotFile: return .teal
-        case .presidentialLibrary: return .purple
-        case .otherInstitution: return .orange
         }
     }
 }
@@ -305,26 +300,27 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
 ///   1.1 — Session 2026-08-11: #833 — `bandHoldingMost(of:)`, so a scope arriving from a topic
 ///         or a search lands on an era its volumes actually occupy, and so that decision can be
 ///         tested against real spans rather than asserted by name in a source scan
-struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 
     /// Position in ``all``; also `id`.
-    let index: Int
+    public let index: Int
     /// Indices into ``CollectionRelations/coverageEras``, contiguous and ascending.
-    let eraIndices: ClosedRange<Int>
+    public let eraIndices: ClosedRange<Int>
 
-    var id: Int { index }
+    public var id: Int { index }
 
     /// The band's first coverage year, read off its first era.
-    var startYear: Int { CollectionRelations.coverageEras[eraIndices.lowerBound].startYear }
+    public var startYear: Int { CollectionRelations.coverageEras[eraIndices.lowerBound].startYear }
     /// The band's last coverage year, read off its last era.
-    var endYear: Int { CollectionRelations.coverageEras[eraIndices.upperBound].endYear }
+    public var endYear: Int { CollectionRelations.coverageEras[eraIndices.upperBound].endYear }
 
     /// Segment label — `1961–1968`, or `Through 1947` for the open-ended first band.
     ///
     /// The first band opens at 1861 only because that is where the *series* opens; writing
     /// `1861–1947` on a segment would imply an evenly covered span, when in fact it holds four
     /// nineteenth-century decades of retrospective compilations alongside the war years.
-    var title: String {
+    public var title: String {
         if index == 0 {
             return String(format: String(localized: "archival.band.through %lld",
                                          defaultValue: "Through %lld"), Int64(endYear))
@@ -333,7 +329,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     }
 
     /// Whether a coverage midpoint falls inside this band.
-    func contains(midpointYear: Int) -> Bool {
+    public func contains(midpointYear: Int) -> Bool {
         eraIndices.contains(CollectionRelations.eraIndex(forMidpointYear: midpointYear))
     }
 
@@ -352,7 +348,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     ///   - end: The range's last year. Endpoints order themselves.
     /// - Returns: The overlapping bands, earliest first; empty when the range lies entirely
     ///   outside the axis, which a caller must report as a fact about the RANGE.
-    static func bands(overlapping start: Int, through end: Int) -> [ArchivalEraBand] {
+    public static func bands(overlapping start: Int, through end: Int) -> [ArchivalEraBand] {
         let low = min(start, end)
         let high = max(start, end)
         return all.filter { $0.startYear <= high && $0.endYear >= low }
@@ -372,7 +368,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     /// - Parameter coverage: The scoped volumes' coverage spans, keyed by volume id.
     /// - Returns: The band containing the most volumes, ties going to the EARLIER band so the
     ///   answer is stable rather than dictionary-ordered; `nil` for empty coverage.
-    static func bandHoldingMost(of coverage: [String: ArchivalVolumeCoverage]) -> ArchivalEraBand? {
+    public static func bandHoldingMost(of coverage: [String: ArchivalVolumeCoverage]) -> ArchivalEraBand? {
         var counts: [Int: Int] = [:]
         for span in coverage.values {
             let midpoint = span.midpointYear
@@ -388,7 +384,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     /// The five bands, earliest first.
     ///
     /// Volume counts over the shipped manifest: 261 / 120 / 64 / 66 / 41.
-    static let all: [ArchivalEraBand] = [
+    public static let all: [ArchivalEraBand] = [
         ArchivalEraBand(index: 0, eraIndices: 0...8),    // 1861–1947
         ArchivalEraBand(index: 1, eraIndices: 9...12),   // 1948–1960
         ArchivalEraBand(index: 2, eraIndices: 13...14),  // 1961–1968
@@ -401,7 +397,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
     /// Never `nil`: ``CollectionRelations/eraIndex(forMidpointYear:)`` is clamped at both ends
     /// and ``all`` tiles the whole era axis, so every year resolves. The band that ends up
     /// holding an out-of-range year is the clamped one, which is what the timeline does too.
-    static func band(forMidpointYear year: Int) -> ArchivalEraBand {
+    public static func band(forMidpointYear year: Int) -> ArchivalEraBand {
         let era = CollectionRelations.eraIndex(forMidpointYear: year)
         return all.first { $0.eraIndices.contains(era) } ?? all[all.count - 1]
     }
@@ -418,17 +414,18 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
-enum ArchivalUnitLens: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalUnitLens: String, CaseIterable, Identifiable, Sendable {
     /// Authority collections — the 4,432-record cross-volume clustering.
     case namedCollections
     /// Central-file class keys: decimal classes (`763.72`) and the 1963–1973 subject-numeric
     /// designators (`POL 27 VIET S`) the same grammar produces.
     case centralFileClasses
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Menu label.
-    var title: String {
+    public var title: String {
         switch self {
         case .namedCollections:
             return String(localized: "archival.lens.namedCollections",
@@ -450,7 +447,8 @@ enum ArchivalUnitLens: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
-enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
     /// Documents drawn from the unit — needs `collection-usage-index.json`.
     case documents
     /// Distinct volumes citing the unit.
@@ -464,10 +462,10 @@ enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
     /// the caption says so, and nothing may add a pointer total to a usage count (#783).
     case unprintedPointers
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Segment label.
-    var title: String {
+    public var title: String {
         switch self {
         case .documents:
             return String(localized: "archival.weight.documents", defaultValue: "Documents")
@@ -480,7 +478,7 @@ enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// What one unit of this weight is, for a caption or an export's counting-unit stamp.
-    var countingUnit: String {
+    public var countingUnit: String {
         switch self {
         case .documents:
             return String(localized: "archival.weight.unit.documents", defaultValue: "documents")
@@ -496,5 +494,5 @@ enum ArchivalWeight: String, CaseIterable, Identifiable, Sendable {
     ///
     /// The switch every drawn-from sentence must branch on: a ranking caption that says volumes
     /// "draw on" N collections is false above a pointers chart, which ranks what they pointed *at*.
-    var measuresPrintedMaterial: Bool { self != .unprintedPointers }
+    public var measuresPrintedMaterial: Bool { self != .unprintedPointers }
 }

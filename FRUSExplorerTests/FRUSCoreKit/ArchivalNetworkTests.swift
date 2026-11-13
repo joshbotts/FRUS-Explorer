@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import CoreGraphics
 import Foundation
-import SwiftUI
 import Testing
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
+import SwiftUI
 import UIKit
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ArchivalNetworkBuilderTests
 
@@ -862,6 +870,7 @@ struct ArchivalNetworkBuilderTests {
     }
 }
 
+#if !SWIFT_PACKAGE // both suites read the view's code, the app's
 // MARK: - ArchivalNetworkWiringTests
 
 /// The two structural properties of the Network view that no derivation test can see (#765).
@@ -876,6 +885,7 @@ struct ArchivalNetworkWiringTests {
 
     private static func source(_ relative: String) throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/\(relative)")
@@ -927,6 +937,7 @@ struct ArchivalNetworkSectorZoneTests {
 
     private static func source() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Analytics/ArchivalNetworkView.swift")
@@ -991,6 +1002,7 @@ struct ArchivalNetworkSectorZoneTests {
                 "an empty survivor set must fall back to the full graph rather than draw nothing")
     }
 }
+#endif
 
 // MARK: - ArchivalNetworkLabelTests (#1384)
 
@@ -1284,10 +1296,12 @@ struct ArchivalNetworkLabelTests {
         // its node, the labels break the placement's promise.
         let everyLabel = requests.reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
         #expect(!GraphNodeLabelTests.clearanceViolations(placed: everyLabel, requests: requests).isEmpty)
+        #if !SWIFT_PACKAGE // pinned where the captions are measured with UIKit, which the package estimates
         // Pinned, so the counts `Planning/DEVELOPMENT-PLAN.md` states cannot drift unnoticed.
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
         let above = requests.dropFirst().filter { placed[$0.id] == GraphNodeLabels.labelRectAbove(for: $0) }
         #expect(above.count == layoutCase.above, "\(above.count) above their node")
+        #endif
         // The focus is labelled at every size — at 390 × 300 over the node under it (the owner's
         // decision) — on the one plate, which no partner label overlaps.
         let focusRect = GraphNodeLabels.labelRect(for: requests[0])
@@ -1370,8 +1384,9 @@ struct ArchivalNetworkCaptionTests {
                                      CGSize(width: 1000, height: 640), CGSize(width: 1300, height: 800),
                                      CGSize(width: 402, height: 520), CGSize(width: 874, height: 180)]
 
-    /// The 100 most widely cited foci, collapsed and under each expansion that draws classes.
-    private static func graphs() -> [ArchivalNetworkGraph] {
+    /// The 100 most widely cited foci, collapsed and under each expansion that draws classes, built once
+    /// for the twelve cases that sweep them.
+    private static let sweptGraphs: [ArchivalNetworkGraph] = {
         let records = CollectionAuthorityStore.shared?.collections ?? []
         let foci = records.sorted {
             $0.volumeIds.count != $1.volumeIds.count ? $0.volumeIds.count > $1.volumeIds.count
@@ -1387,12 +1402,12 @@ struct ArchivalNetworkCaptionTests {
                 return !g.nodes.isEmpty && g.expansion == expansion ? g : nil
             }
         }
-    }
+    }()
 
     @Test("Every custodian caption keeps clear of every node, the class box and its caption, inside the canvas",
           arguments: canvases)
     func captionsAreReservedClearOfEverything(_ canvas: CGSize) {
-        let graphs = Self.graphs()
+        let graphs = Self.sweptGraphs
         #expect(graphs.count > 150, "swept \(graphs.count) graphs")
         #expect(graphs.contains { $0.expansion != .collapsed }, "no graph drew the class box")
         let clearance = GraphNodeLabels.clearance
@@ -1441,7 +1456,7 @@ struct ArchivalNetworkCaptionTests {
     func labelsKeepClearOfTheCaptions(_ canvas: CGSize) {
         var failures: [String] = []
         var labelsChecked = 0
-        for g in Self.graphs() {
+        for g in Self.sweptGraphs {
             let layout = ArchivalNetworkBuilder.layout(g, in: canvas)
             var sizes: [String: CGSize] = [:]
             for id in ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: nil) {
@@ -1498,6 +1513,7 @@ struct ArchivalNetworkCaptionTests {
         #expect(abs(weakestClass - reach) < 0.001, "\(weakestClass) against \(reach)")
     }
 
+    #if !SWIFT_PACKAGE // the canvas's font and the app's measure of it are UIKit's
     @MainActor
     @Test("The canvas draws every caption in the font the layout measures")
     func theCaptionFontIsTheMeasuredOne() {
@@ -1514,6 +1530,7 @@ struct ArchivalNetworkCaptionTests {
                     "\(text): drawn \(drawn), measured \(measured)")
         }
     }
+    #endif
 
     @Test("On a canvas too small to clear every node, each caption still sits inside the canvas, in its own quadrant")
     func aTinyCanvasKeepsEachCaptionInItsQuadrant() throws {
@@ -1565,6 +1582,7 @@ struct ArchivalNetworkCaptionTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the dock and the card are SwiftUI views, hosted in UIKit
 // MARK: - ArchivalNetworkNodeCardTests (#1468)
 
 /// The selected node's card (#1468): however long the name, the actions stay in the dock.
@@ -1760,3 +1778,4 @@ private final class FrameLog {
     /// Each button's frame in window coordinates, by its title.
     var buttons: [String: CGRect] = [:]
 }
+#endif

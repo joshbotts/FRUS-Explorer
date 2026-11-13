@@ -132,6 +132,10 @@ import Foundation
 ///         their strings moved to (the overflow and spanning chips' counts, now in `ChronologyGrouping.swift`,
 ///         and the co-mention graph's cap sentence, now in `PersonCoMentionNetwork.swift`), so the ceiling is
 ///         unchanged
+///   1.21 — 2026-11-12: FRUS Explorer Light's S24c — ten baseline entries re-pointed to the FRUSCoreKit files
+///         their strings moved to (the Network measure's two details, now in `ArchivalAnalyticsAxes.swift`,
+///         the Flows remainder, now in `ArchivalFlowsData.swift`, and seven export caveats, now in
+///         `ArchivalAnalyticsExport.swift`), so the ceiling is unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -913,6 +917,16 @@ extension CodingStandardsAuditTests {
     /// Administrations drill's caption, re-keyed when the drill was put in the order of its own
     /// counts, says its volume count through `CountCopy` ("1 volumes" on George H. W. Bush's drill).
     static let countCopyBaseline: [String] = [
+        #"../FRUSCoreKit/Analytics/Archival/ArchivalAnalyticsAxes.swift | archival.measure.detail.documents %lld"#,
+        #"../FRUSCoreKit/Analytics/Archival/ArchivalAnalyticsAxes.swift | archival.measure.detail.volumes %lld"#,
+        #"../FRUSCoreKit/Analytics/Archival/ArchivalFlowsData.swift | archival.flows.remainder %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.classes %lld %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.coverage %lld %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.sameUnit %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.claim %lld %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.scope %lld %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
+        #"../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
         #"../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | series.export.caveat.corpus %lld"#,
         #"../FRUSCoreKit/Analytics/PersonCoMentionNetwork.swift | personCoMention.cap.disclosed"#,
         #"../FRUSCoreKit/Chronology/ChronologyGrouping.swift | chronology.overflow.chip.a11y.many"#,
@@ -941,22 +955,12 @@ extension CodingStandardsAuditTests {
         #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
         #"Analytics/AnalyticsView.swift | analytics.figure.legend.docs"#,
         #"Analytics/AnalyticsView.swift | analytics.figure.legend.occurrences"#,
-        #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.documents %lld"#,
-        #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.volumes %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.classes %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.coverage %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.sameUnit %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.claim %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.scope %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption.v2 %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.composition.a11y %lld %@"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.footer %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.footer.detail %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.intro %lld %lld"#,
-        #"Analytics/ArchivalFlowsData.swift | archival.flows.remainder %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.block.a11y %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.incoming %lld %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.outgoing %lld %lld"#,

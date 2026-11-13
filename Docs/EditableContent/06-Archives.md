@@ -87,7 +87,7 @@ Reading the archival authority…
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.rankingCaption | lines: 93–94 | key: archival.ranking.caption %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.rankingCaption | lines: 94–95 | key: archival.ranking.caption %@ %@ %@ -->
 
 Volumes covering %1$@ — %2$@ of them — draw on %3$@. Bars are colored by who holds the records. *(Interpolated with the era band's title, its volume count grouped, and the units the ranking reaches as a count and its noun — “5,893 classes”, “1 collection” — grouped and singular at one (#1374 review, round 1), where it read “draw on 5893 classes”.)*
 
@@ -137,7 +137,7 @@ Archival locations are parsed from the source note on each published document, n
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.umbrellaCaveat | lines: 129–130 | key: archival.caveats.umbrella %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.umbrellaCaveat | lines: 130–131 | key: archival.caveats.umbrella %@ %@ -->
 
 The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown. *(Interpolated with the umbrella's count in the Count-by weight's own words — “12,067 documents”, “1 volume” — grouped and singular at one (#1374), then the era band's title.)*
 
@@ -244,13 +244,13 @@ Select a node to see the link
      for any other count, where each had one form: "1 collections share", "1 more are held back",
      "The 1 squares are central-file classes". %@ is the count, grouped ("1,204"). The wording is
      otherwise what it was; only the words that must agree with the count differ between a pair. -->
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkPartners | lines: 149–150 | key: archival.network.dock.grain.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkPartners | lines: 150–151 | key: archival.network.dock.grain.one | shared: iOS+macOS (single edit point) -->
 
 %@ collection shares two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity.
 
 <!-- END SOURCE: archival.network.dock.grain.one -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkPartners | lines: 151–152 | key: archival.network.dock.grain.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkPartners | lines: 152–153 | key: archival.network.dock.grain.many | shared: iOS+macOS (single edit point) -->
 
 %@ collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity.
 
@@ -262,13 +262,13 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkHeldBack | lines: 169–170 | key: archival.network.dock.capped.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkHeldBack | lines: 170–171 | key: archival.network.dock.capped.one | shared: iOS+macOS (single edit point) -->
 
 %@ more is held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it.
 
 <!-- END SOURCE: archival.network.dock.capped.one -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkHeldBack | lines: 171–172 | key: archival.network.dock.capped.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkHeldBack | lines: 172–173 | key: archival.network.dock.capped.many | shared: iOS+macOS (single edit point) -->
 
 %@ more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it.
 
@@ -280,13 +280,13 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkClassSquares | lines: 190–191 | key: archival.network.dock.classes.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkClassSquares | lines: 191–192 | key: archival.network.dock.classes.one | shared: iOS+macOS (single edit point) -->
 
 The %@ square is a central-file class drawn from inside the Central Files record, which is hidden while it is shown.
 
 <!-- END SOURCE: archival.network.dock.classes.one -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.networkClassSquares | lines: 192–193 | key: archival.network.dock.classes.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.networkClassSquares | lines: 193–194 | key: archival.network.dock.classes.many | shared: iOS+macOS (single edit point) -->
 
 The %@ squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown.
 
@@ -298,25 +298,25 @@ The %@ squares are central-file classes drawn from inside the Central Files reco
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.* `%1$@` is the shared-volume count with its noun ("13 volumes"), `%2$@` the focus collection's name and, in the first sentence, `%3$@` the jointly supplied document count with its noun ("7 documents"). One of the four is shown (#1467): the first when both collections' documents are counted, the other three when the count is unknown — because the partner, or the focus, has no document source note resolving to it, or because the usage index is missing. An unknown count is never printed as 0.
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 393–394 | key: archival.network.card.detail.counted %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalNetworkData.swift | lines: 412–413 | key: archival.network.card.detail.counted %@ %@ %@ -->
 
 %1$@ cite both this and %2$@. In those volumes the two jointly supplied %3$@ — for each volume, the smaller of their two document counts, summed.
 
 <!-- END SOURCE: archival.network.card.detail.counted %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 410–411 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalNetworkData.swift | lines: 429–430 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to this collection, so the documents it supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.partnerUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 405–406 | key: archival.network.card.detail.focusUncounted %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalNetworkData.swift | lines: 424–425 | key: archival.network.card.detail.focusUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to %2$@, so the documents the two supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.focusUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 399–400 | key: archival.network.card.detail.noIndex %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalNetworkData.swift | lines: 418–419 | key: archival.network.card.detail.noIndex %@ %@ -->
 
 %1$@ cite both this and %2$@. The documents they supplied are not counted, because the document-usage index could not be loaded.
 
@@ -518,7 +518,7 @@ The app can only list the references for the volumes you have indexed and it has
 
 #### The References picker — first option
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsData.swift | lines: 59–60 | key: archival.flows.layer.printed -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalFlowsData.swift | lines: 59–60 | key: archival.flows.layer.printed -->
 
 Between printed documents
 
@@ -528,7 +528,7 @@ Between printed documents
 
 #### The References picker — second option
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsData.swift | lines: 62–63 | key: archival.flows.layer.unprinted -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalFlowsData.swift | lines: 62–63 | key: archival.flows.layer.unprinted -->
 
 To unprinted material
 
@@ -1818,7 +1818,7 @@ This source note cites the Subject-Numeric File, but not in a form the app can m
 ### Archival analytics — the three weights
 
 #### The three weights count different things. A document coun…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 355–356 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | lines: 356–357 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -2322,7 +2322,7 @@ Files with no subject number
 <!-- END SOURCE: archival.classLabel.noSubjectNumber -->
 
 #### Footnotes in the volumes covering %1$@ — %2$@ of them…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalCounts.swift | ArchivalCounts.rankingCaption | lines: 88–89 | key: archival.ranking.caption.pointers %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalCounts.swift | ArchivalCounts.rankingCaption | lines: 89–90 | key: archival.ranking.caption.pointers %@ %@ %@ -->
 
 Footnotes in the volumes covering %1$@ — %2$@ of them — point at unprinted material in %3$@. Bars are colored by who holds the records. *(Interpolated as §9.2's ranking caption is.)*
 
@@ -2380,7 +2380,7 @@ The Department filed a colonial territory under the number of the imperial power
 
 #### Measure detail — jointly supplied documents not counted (a fragment)
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsAxes.swift | key: archival.measure.detail.documents.uncounted -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Archival/ArchivalAnalyticsAxes.swift | key: archival.measure.detail.documents.uncounted -->
 
 jointly supplied documents not counted
 
