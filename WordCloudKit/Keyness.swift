@@ -14,15 +14,17 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
-struct KeynessScore: Equatable, Sendable, Identifiable {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): moved into `WordCloudKit`, public, so a host on
+///          Linux scores keyness through the app's own measure
+public struct KeynessScore: Equatable, Sendable, Identifiable {
 
     /// The term, in whatever normalised form both sides were counted in.
-    let term: String
+    public let term: String
 
     /// Occurrences in the documents being described.
-    let scopeCount: Int
+    public let scopeCount: Int
     /// Occurrences in the reference corpus.
-    let referenceCount: Int
+    public let referenceCount: Int
 
     /// Log-likelihood (G²), **signed**: positive when the term is over-represented in the scope,
     /// negative when under-represented.
@@ -31,7 +33,7 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
     /// conspicuously *absent* just as much as one that is conspicuously present. A keyness list
     /// showing both without distinguishing them would put the vocabulary a set avoids beside the
     /// vocabulary it favours, unlabelled.
-    let logLikelihood: Double
+    public let logLikelihood: Double
 
     /// Log-2 ratio of the two relative frequencies — the **effect size**.
     ///
@@ -40,12 +42,13 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
     /// once against once scores 6.5 — yet both are exactly 100× over-represented and share a log
     /// ratio of 6.64. Ranking on G² alone therefore ranks by how much text you have, which for a
     /// researcher comparing a 20-document set against a 200-document one is actively misleading.
-    let logRatio: Double
+    public let logRatio: Double
 
-    var id: String { term }
+    /// The term, which identifies a score in a ranking.
+    public var id: String { term }
 
     /// Whether the term is over-represented in the scope.
-    var isOverused: Bool { logLikelihood > 0 }
+    public var isOverused: Bool { logLikelihood > 0 }
 
     /// The effect size as a plain multiple: how many times more often the term is used here than in
     /// the reference, per word of text.
@@ -56,7 +59,7 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
     /// makes it look. Lives here rather than in a view so it can be tested: a renderer that printed
     /// `logRatio` directly would understate a 320× concentration as "8×" and nothing about the
     /// screen would look wrong.
-    var foldOverRepresentation: Double { pow(2, logRatio) }
+    public var foldOverRepresentation: Double { pow(2, logRatio) }
 }
 
 // MARK: - Keyness
@@ -81,7 +84,8 @@ struct KeynessScore: Equatable, Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
-enum Keyness {
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): moved into `WordCloudKit`, public
+public enum Keyness {
 
     /// Minimum occurrences in the scope for a term to be ranked at all.
     ///
@@ -89,7 +93,7 @@ enum Keyness {
     /// G² = 6.48 — nominally significant, and enough to top a list. That is not a finding about the
     /// documents; it is a finding about the corpus being large. The plan asks that "a term appearing
     /// twice cannot top the ranking", so the floor is 3.
-    static let defaultMinimumScopeCount = 3
+    public static let defaultMinimumScopeCount = 3
 
     /// Scores every term in `scopeCounts` against `referenceCounts`.
     ///
@@ -103,7 +107,7 @@ enum Keyness {
     ///   - referenceTotal: total tokens in the reference corpus, with the same caveat.
     ///   - minimumScopeCount: the low-frequency floor.
     /// - Returns: scores sorted by descending log-likelihood — most distinctive first.
-    static func score(
+    public static func score(
         scopeCounts: [String: Int],
         referenceCounts: [String: Int],
         scopeTotal: Int,
@@ -157,7 +161,7 @@ enum Keyness {
     ///
     /// Returns the overlap as a fraction of the scope's vocabulary. A caller comparing like with like
     /// should see a high value; anything low means the baseline is counting something else.
-    static func vocabularyOverlap(
+    public static func vocabularyOverlap(
         scopeCounts: [String: Int], referenceCounts: [String: Int]
     ) -> Double {
         guard !scopeCounts.isEmpty else { return 0 }

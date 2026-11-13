@@ -561,6 +561,10 @@ targets:
       # pass must find the same citations the pipeline's AST walk writes to
       # external_citations. Foundation only, same as above.
       - path: CollectionAuthorityGeneratorCore/DocumentFootnoteExtractor.swift
+      # Keyness's suite, which moved with it into WordCloudKit (FRUS Explorer Light, S24d): the
+      # package's WordCloudKitTests runs it against the kit, on the Mac and on Linux, and this
+      # target still runs it against the app's module, on iOS, as before the move.
+      - path: WordCloudKitTests/KeynessTests.swift
     resources:
       - path: FRUSExplorer/FRUSExplorer-iOS.entitlements
       - path: FRUSExplorer/FRUSExplorer-AppStore.entitlements

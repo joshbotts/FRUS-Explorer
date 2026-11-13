@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(NaturalLanguage)
 import NaturalLanguage
 
 /// Counts several word lenses from **one** `NLTagger` pass instead of one pass each.
@@ -70,6 +71,8 @@ import NaturalLanguage
 ///          does, so a tagger the gate built without `.lemma` still counts every word
 ///   1.3 — #1608: ``wordForm``, and ``accumulate(from:into:printedInto:)``, which counts the
 ///          dictionary and the printed form of every word in one pass; ``readsLexicalClass(_:)``
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S24d): behind `canImport(NaturalLanguage)`; where the
+///          framework is missing the type is unavailable and says why, below
 public struct WordCloudMultiLensTokenizer: Sendable {
 
     /// One lens and the filter it applies, resolved once at init.
@@ -313,3 +316,14 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         return !stopwords.contains(term)
     }
 }
+
+#else
+
+// MARK: - Where NaturalLanguage is missing
+
+/// Where `NaturalLanguage` is missing (Linux), the kit has no multi-lens pass either, for the reason
+/// `WordCloudTokenizer` gives there (FRUS Explorer Light, S24d): the generator's counts are its
+/// tagger's, and the kit makes no count another way.
+@available(*, unavailable, message: "WordCloudMultiLensTokenizer counts with NaturalLanguage, which this platform does not have, and the kit counts no other way: read the bundled clouds")
+public struct WordCloudMultiLensTokenizer {}
+#endif
