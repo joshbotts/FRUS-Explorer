@@ -170,6 +170,13 @@ public struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable
 ///
 /// All keys are produced by `SourceNoteKit.CollectionKeying` — the same functions the
 /// generator clustered with, so lookups agree with the artifact by construction.
+///
+/// Version history:
+///   1.0 — Session 2026-07-03 (Source Explorer Phase 4 step 2): initial implementation
+///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder and
+///          loaded from a URL the host gives (`init(contentsOf:)`)
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): `collections` and `record(id:)` public, which a host
+///          building the archival analytics passes on and looks a focus up by
 public struct CollectionAuthorityIndex: Decodable, Sendable {
 
     /// Artifact schema version.
@@ -177,7 +184,7 @@ public struct CollectionAuthorityIndex: Decodable, Sendable {
     /// Generation date stamp (`yyyy-MM-dd`).
     let generated: String
     /// All authority records, sorted by `id`.
-    let collections: [AuthorityCollectionRecord]
+    public let collections: [AuthorityCollectionRecord]
 
     /// Record index by dedup key (`"lot:64D199"`, `"txt:johnson library|…"`).
     private let byId: [String: Int]
@@ -228,7 +235,7 @@ public struct CollectionAuthorityIndex: Decodable, Sendable {
     // MARK: - Lookups
 
     /// The record with the given dedup key, or `nil`.
-    func record(id: String) -> AuthorityCollectionRecord? {
+    public func record(id: String) -> AuthorityCollectionRecord? {
         byId[id].map { collections[$0] }
     }
 

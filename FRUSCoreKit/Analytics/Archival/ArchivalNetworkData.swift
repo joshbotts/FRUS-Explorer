@@ -6,23 +6,21 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-// `CollectionKeying` needs no import: SourceNoteKit's sources are compiled directly into the app
-// target (project.yml), the same arrangement as FTS5Store and WordCloudKit.
-import CoreGraphics
 import Foundation
-#if canImport(UIKit)
-import UIKit
-#elseif canImport(AppKit)
-import AppKit
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
 #endif
 
 // MARK: - ArchivalNetworkNode
 
 /// One node in the co-citation neighbourhood of a focus collection.
-struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
+public struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
 
     /// What kind of archival thing the node is. A class is **never** drawn like a collection.
-    enum Kind: Sendable, Equatable {
+    public enum Kind: Sendable, Equatable {
         /// An authority collection — a body of records with a custodian. Drawn as a circle.
         case collection
         /// A central-file class expanded out of the umbrella. Drawn as a rounded square.
@@ -30,28 +28,28 @@ struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
     }
 
     /// Authority collection id, or the class key.
-    let id: String
+    public let id: String
     /// Display label, disambiguated within the graph.
-    let label: String
+    public let label: String
     /// The node's own name before disambiguation.
-    let name: String
+    public let name: String
     /// Circle or square.
-    let kind: Kind
+    public let kind: Kind
     /// Which sector wedge it sits in. Classes take ``ArchivalRepositoryCategory/stateDepartment``,
     /// because a central-file class is a heading inside the Department's own filing system.
-    let category: ArchivalRepositoryCategory
+    public let category: ArchivalRepositoryCategory
     /// Volumes citing both this node and the focus.
-    let sharedVolumeCount: Int
+    public let sharedVolumeCount: Int
     /// Documents the two jointly supplied to those volumes — for each shared volume the smaller of
     /// the two contributions, summed — or `nil` when it is **unknown**: the usage index holds no row
     /// for the focus or for this node, or is not loaded (#1467). A `nil` is never a zero; `0` means
     /// both were counted and no shared volume drew documents from both.
-    let sharedDocumentCount: Int?
+    public let sharedDocumentCount: Int?
     /// The active measure's raw value — a Jaccard ratio, or a joint document count.
-    let measureValue: Double
+    public let measureValue: Double
     /// The same value as a fraction of the strongest partner's, in `0...1`. This is what the
     /// radius and the threshold slider both read, so the two measures share one geometry.
-    let relativeStrength: Double
+    public let relativeStrength: Double
 }
 
 // MARK: - ArchivalNetworkGraph
@@ -74,61 +72,78 @@ struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
 ///   1.0 — Session 2026-08-09: #765 stage 2
 ///   1.1 — 2026-10-01: #1437 — `focusLabel`, the focus's name qualified when a node shares it;
 ///          #1438 — `expansion`, which the Central Files box's caption names
-struct ArchivalNetworkGraph: Sendable, Equatable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public, its memberwise initialiser spelt out and public
+public struct ArchivalNetworkGraph: Sendable, Equatable {
 
     /// Nodes drawn per custodian wedge.
     ///
     /// Six, because the geometry says so: a wedge is 74° of usable arc, and six nodes of up to
     /// 22pt radius are about as many as fit without their 48pt hit targets swallowing each other.
-    static let sectorCap = 6
+    public static let sectorCap = 6
 
     /// Classes drawn when the umbrella is expanded. They get their own sub-arc inside the State
     /// wedge rather than sharing the collections' — which is also what makes the dashed hull
     /// around them honest, since it can then enclose classes and nothing else.
-    static let classCap = 6
+    public static let classCap = 6
 
     /// The focus record.
-    let focus: AuthorityCollectionRecord
+    public let focus: AuthorityCollectionRecord
     /// The focus's custodian sector.
-    let focusCategory: ArchivalRepositoryCategory
+    public let focusCategory: ArchivalRepositoryCategory
     /// Nodes drawn, strongest first.
-    let nodes: [ArchivalNetworkNode]
+    public let nodes: [ArchivalNetworkNode]
     /// Nodes that passed the threshold, of both kinds — the denominator ``nodes`` is drawn from.
     ///
     /// Counted over the same population as ``nodes``: when the umbrella is expanded its circle is
     /// gone and its classes are in, so both sides move together. The first draft counted classes
     /// in the numerator against a collection-only denominator and could report drawing more
     /// collections than existed.
-    let nodesAboveThreshold: Int
+    public let nodesAboveThreshold: Int
     /// Collections sharing at least two volumes with the focus, whatever their strength — the
     /// figure the volume-grain sentence quotes. Independent of the measure and the threshold.
-    let partnersTotal: Int
+    public let partnersTotal: Int
     /// The strongest **drawn** value, which every radius and every ring is a fraction of.
     ///
     /// Computed across collections *and* classes. Normalising classes against a collection-only
     /// maximum let a square exceed 1.0 and clamp: on `Conference Files, Lot 60 D 627` four
     /// classes exceeded the strongest collection, the largest by 76%, and all four drew at
     /// identical radius and identical size on top of the focus disc.
-    let strongestMeasureValue: Double
+    public let strongestMeasureValue: Double
     /// The umbrella record, when it was replaced by classes.
-    let expandedUmbrella: AuthorityCollectionRecord?
+    public let expandedUmbrella: AuthorityCollectionRecord?
     /// What the classes drawn in place of the umbrella are — decimal classes or subject-numeric
     /// families — and `.collapsed` when none are drawn. The Central Files box's caption names it.
-    var expansion: ArchivalUmbrellaExpansion = .collapsed
+    public var expansion: ArchivalUmbrellaExpansion = .collapsed
+
+    /// A graph of `nodes` around `focus`: the memberwise initialiser, spelt out so a host can make one,
+    /// as the app's "Show only this group" narrows a built graph to one custodian's nodes.
+    public init(focus: AuthorityCollectionRecord, focusCategory: ArchivalRepositoryCategory,
+                nodes: [ArchivalNetworkNode], nodesAboveThreshold: Int, partnersTotal: Int,
+                strongestMeasureValue: Double, expandedUmbrella: AuthorityCollectionRecord?,
+                expansion: ArchivalUmbrellaExpansion = .collapsed) {
+        self.focus = focus
+        self.focusCategory = focusCategory
+        self.nodes = nodes
+        self.nodesAboveThreshold = nodesAboveThreshold
+        self.partnersTotal = partnersTotal
+        self.strongestMeasureValue = strongestMeasureValue
+        self.expandedUmbrella = expandedUmbrella
+        self.expansion = expansion
+    }
 
     /// The focus's label: its name, qualified by its repository when a drawn node carries the
     /// same name (#1437) — `ArchivalNetworkBuilder.focusLabel(_:nodes:)`.
-    var focusLabel: String { ArchivalNetworkBuilder.focusLabel(focus, nodes: nodes) }
+    public var focusLabel: String { ArchivalNetworkBuilder.focusLabel(focus, nodes: nodes) }
 
     /// Nodes the sector caps withheld.
-    var withheldCount: Int { max(nodesAboveThreshold - nodes.count, 0) }
+    public var withheldCount: Int { max(nodesAboveThreshold - nodes.count, 0) }
     /// Whether anything was withheld.
-    var isCapped: Bool { withheldCount > 0 }
+    public var isCapped: Bool { withheldCount > 0 }
     /// Class squares drawn.
-    var classNodeCount: Int { nodes.count { $0.kind == .centralFileClass } }
+    public var classNodeCount: Int { nodes.count { $0.kind == .centralFileClass } }
 
     /// An empty graph — the honest state for a focus with no co-citing partners.
-    static func empty(focus: AuthorityCollectionRecord) -> ArchivalNetworkGraph {
+    public static func empty(focus: AuthorityCollectionRecord) -> ArchivalNetworkGraph {
         ArchivalNetworkGraph(focus: focus,
                              focusCategory: ArchivalRepositoryCategory.from(focus),
                              nodes: [], nodesAboveThreshold: 0, partnersTotal: 0,
@@ -140,11 +155,11 @@ struct ArchivalNetworkGraph: Sendable, Equatable {
 
 /// A caption the network canvas draws — a custodian's name, or the Central Files box's — and the
 /// rect reserved for it (#1438, #1470).
-struct ArchivalNetworkCaption: Sendable, Equatable {
+public struct ArchivalNetworkCaption: Sendable, Equatable {
     /// The text as drawn.
-    let text: String
+    public let text: String
     /// Where it is drawn: the measured text, padded, centred in this rect.
-    let rect: CGRect
+    public let rect: CGRect
 }
 
 /// Where each node sits, in canvas coordinates.
@@ -157,31 +172,32 @@ struct ArchivalNetworkCaption: Sendable, Equatable {
 ///   1.0 — Session 2026-08-09: #765 stage 2
 ///   1.1 — 2026-10-01: #1470 — `captions`, each custodian's reserved clear of every node, the
 ///          class box and its caption; #1438 — `hullCaption`
-struct ArchivalNetworkLayout: Sendable, Equatable {
+///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public struct ArchivalNetworkLayout: Sendable, Equatable {
     /// Node id → centre point.
-    let positions: [String: CGPoint]
+    public let positions: [String: CGPoint]
     /// The focus node's centre.
-    let center: CGPoint
+    public let center: CGPoint
     /// Radii of the three dashed guide rings, **innermost first** — parallel to
     /// ``ringFractions``, which descends, because a stronger link sits nearer the centre.
-    let ringRadii: [CGFloat]
+    public let ringRadii: [CGFloat]
     /// The fraction of the strongest link each ring marks, parallel to ``ringRadii``.
-    let ringFractions: [Double]
+    public let ringFractions: [Double]
     /// The bounding radius the wedge tints are filled to.
-    let outerRadius: CGFloat
+    public let outerRadius: CGFloat
     /// The rectangle enclosing the class squares, when any are drawn — the dashed hull.
     ///
     /// Supplied by the layout rather than derived in the renderer from a bounding box of the
     /// class positions: in a radial layout that box also swallows whatever collection circles
     /// happen to fall inside it, and a hull labelled "Central Files" drawn around a presidential
     /// library is precisely the unit confusion the shapes exist to prevent.
-    let classHull: CGRect?
+    public let classHull: CGRect?
     /// Each custodian's caption, in the corner of its quadrant, reserved where no node, no class
     /// square, no class box and no other caption is drawn (#1470) — see
     /// `ArchivalNetworkBuilder.layout(_:in:captionSize:)`.
-    var captions: [ArchivalRepositoryCategory: ArchivalNetworkCaption] = [:]
+    public var captions: [ArchivalRepositoryCategory: ArchivalNetworkCaption] = [:]
     /// The class box's caption, above the box, when the box is drawn (#1438).
-    var hullCaption: ArchivalNetworkCaption?
+    public var hullCaption: ArchivalNetworkCaption?
 }
 
 // MARK: - ArchivalNetworkBuilder
@@ -206,16 +222,19 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///          the focus through `sentenceName(_:)`; #1470 and #1438 — the layout reserves each
 ///          caption's rect beyond `nodeReach(outerRadius:)`, which bounds a class square's corner
 ///          from the drawing constants the canvas draws with, and `labelObstacles(_:)`
-enum ArchivalNetworkBuilder {
+///   1.4 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public; `layout(_:in:captionSize:)` takes the caption measure a
+///          host supplies, and `measuredCaptionSize(_:)`, which measures with UIKit or AppKit, stays the
+///          app's with `layout(_:in:)`, which passes it (`ArchivalNetworkBuilder+App.swift`)
+public enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
     ///
     /// The same floor #762 applies, for the same reason: one shared volume is a coincidence of
     /// compilation, and 2,846 of the shipped records cite one volume.
-    static let minimumSharedVolumes = 2
+    public static let minimumSharedVolumes = 2
 
     /// The three guide rings, as fractions of the strongest link.
-    static let ringFractions: [Double] = [0.75, 0.50, 0.25]
+    public static let ringFractions: [Double] = [0.75, 0.50, 0.25]
 
     /// One candidate before normalisation — the shape both the collection and the class pass
     /// produce, so a single ranking and a single maximum cover both.
@@ -243,12 +262,12 @@ enum ArchivalNetworkBuilder {
     ///   - measure: Which strength to rank and place by.
     ///   - minimumRelativeStrength: The threshold slider, as a fraction of the strongest link.
     ///   - expansion: Whether to replace the umbrella node with its co-cited classes.
-    static func graph(focus: AuthorityCollectionRecord,
-                      in collections: [AuthorityCollectionRecord],
-                      usage: CollectionUsageIndex?,
-                      measure: ArchivalEdgeMeasure,
-                      minimumRelativeStrength: Double,
-                      expansion: ArchivalUmbrellaExpansion) -> ArchivalNetworkGraph {
+    public static func graph(focus: AuthorityCollectionRecord,
+                             in collections: [AuthorityCollectionRecord],
+                             usage: CollectionUsageIndex?,
+                             measure: ArchivalEdgeMeasure,
+                             minimumRelativeStrength: Double,
+                             expansion: ArchivalUmbrellaExpansion) -> ArchivalNetworkGraph {
         let focusVolumes = Set(focus.volumeIds)
         guard focusVolumes.count >= minimumSharedVolumes else { return .empty(focus: focus) }
         let focusDocuments = usage?.documentsByVolume(forCollectionId: focus.id) ?? [:]
@@ -384,8 +403,8 @@ enum ArchivalNetworkBuilder {
     /// The volume phrase goes through `CountCopy`; its verb is always the plural "cite", because a
     /// partner shares at least ``minimumSharedVolumes`` (two) volumes with the focus or it is not a
     /// node at all.
-    static func cardDetail(for node: ArchivalNetworkNode, in graph: ArchivalNetworkGraph,
-                           usage: CollectionUsageIndex?) -> String {
+    public static func cardDetail(for node: ArchivalNetworkNode, in graph: ArchivalNetworkGraph,
+                                  usage: CollectionUsageIndex?) -> String {
         let volumes = CountCopy.volumes(node.sharedVolumeCount)
         let focus = sentenceName(graph.focusLabel)
         if let documents = node.sharedDocumentCount {
@@ -418,7 +437,7 @@ enum ArchivalNetworkBuilder {
     /// ran to 570 pt in an iPhone's portrait dock (measured for decision D11). Eighty characters
     /// keep a name whole in 3,576 of the shipped authority's 3,985 records (3,635 of 4,051 when the
     /// decision was taken).
-    static let sentenceNameLimit = 80
+    public static let sentenceNameLimit = 80
 
     /// A collection's name as the panel's sentences print it (#1468): whole up to
     /// ``sentenceNameLimit`` characters, otherwise cut at a word boundary and marked with "…"
@@ -426,14 +445,14 @@ enum ArchivalNetworkBuilder {
     /// up to three lines, and in its `.help` and accessibility label.
     /// - Parameter name: A collection's name or label.
     /// - Returns: The name as a sentence prints it.
-    static func sentenceName(_ name: String) -> String {
+    public static func sentenceName(_ name: String) -> String {
         GraphNodeLabels.shortLabel(name, limit: sentenceNameLimit)
     }
 
     /// One exported row of the drawn neighbourhood: unit, kind, custodian, shared volumes, jointly
     /// supplied documents, share of the strongest link. The document cell is **empty** when the count
     /// is unknown (#1467) — a spreadsheet reads a `0` as a measurement.
-    static func exportCells(for node: ArchivalNetworkNode) -> [String] {
+    public static func exportCells(for node: ArchivalNetworkNode) -> [String] {
         [node.label,
          node.kind == .collection
             ? String(localized: "archival.network.kind.collection", defaultValue: "collection")
@@ -521,9 +540,9 @@ enum ArchivalNetworkBuilder {
     ///   - collections: Every authority record, for the repositories.
     ///   - focus: The graph's focus.
     /// - Returns: The nodes, each with a label no other node and not the focus draws.
-    static func disambiguate(_ nodes: [ArchivalNetworkNode],
-                             in collections: [AuthorityCollectionRecord],
-                             focus: AuthorityCollectionRecord)
+    public static func disambiguate(_ nodes: [ArchivalNetworkNode],
+                                    in collections: [AuthorityCollectionRecord],
+                                    focus: AuthorityCollectionRecord)
         -> [ArchivalNetworkNode] {
         var seen: Set<String> = [focus.name]
         var repeated = Set<String>()
@@ -559,7 +578,7 @@ enum ArchivalNetworkBuilder {
     ///   - focus: The graph's focus.
     ///   - nodes: The nodes drawn around it.
     /// - Returns: The label the centre is drawn and named with.
-    static func focusLabel(_ focus: AuthorityCollectionRecord, nodes: [ArchivalNetworkNode]) -> String {
+    public static func focusLabel(_ focus: AuthorityCollectionRecord, nodes: [ArchivalNetworkNode]) -> String {
         guard let repository = focus.repository, nodes.contains(where: { $0.name == focus.name })
         else { return focus.name }
         return "\(focus.name) · \(repository)"
@@ -595,11 +614,13 @@ enum ArchivalNetworkBuilder {
     /// - Parameters:
     ///   - graph: The graph to lay out.
     ///   - size: The canvas.
-    ///   - captionSize: The size a caption's text draws at; `measuredCaptionSize(_:)` unless a test
-    ///     passes an estimate.
+    ///   - captionSize: The size a caption's text draws at, in the system font at `captionPointSize`
+    ///     semibold: the app passes `measuredCaptionSize(_:)`, which measures it with UIKit or AppKit
+    ///     (`ArchivalNetworkBuilder+App.swift`, and its `layout(_:in:)`), a test an estimate, and a host
+    ///     its own measure of the font it draws the captions in.
     /// - Returns: The layout.
-    static func layout(_ graph: ArchivalNetworkGraph, in size: CGSize,
-                       captionSize: (String) -> CGSize = measuredCaptionSize) -> ArchivalNetworkLayout {
+    public static func layout(_ graph: ArchivalNetworkGraph, in size: CGSize,
+                              captionSize: (String) -> CGSize) -> ArchivalNetworkLayout {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let outer = max(min(size.width, size.height) / 2 - 44, 60)
         let inner = min(70, outer * 0.35)
@@ -664,22 +685,22 @@ enum ArchivalNetworkBuilder {
 
     /// The space added on each side of a caption's measured text when its rect is reserved, so a
     /// caption drawn a point wider than measured is still inside it.
-    static let captionPadding = CGSize(width: 2, height: 1)
+    public static let captionPadding = CGSize(width: 2, height: 1)
 
     /// The least space kept between the canvas's edge and a caption.
-    static let captionInset: CGFloat = 4
+    public static let captionInset: CGFloat = 4
 
     /// The caption the canvas draws in `category`'s quadrant: the custodian's name in capitals.
     /// - Parameter category: The custodian.
     /// - Returns: The caption's text.
-    static func captionText(for category: ArchivalRepositoryCategory) -> String {
+    public static func captionText(for category: ArchivalRepositoryCategory) -> String {
         category.displayName.uppercased()
     }
 
     /// The class box's caption: which classes it holds (`expansion`).
     /// - Parameter expansion: How the umbrella is drawn.
     /// - Returns: The caption's text.
-    static func hullCaptionText(for expansion: ArchivalUmbrellaExpansion) -> String {
+    public static func hullCaptionText(for expansion: ArchivalUmbrellaExpansion) -> String {
         String(format: String(localized: "archival.network.hull %@",
                               defaultValue: "Central Files — %@"),
                expansion.title.lowercased())
@@ -687,22 +708,7 @@ enum ArchivalNetworkBuilder {
 
     /// The point size a caption is drawn at, semibold: the canvas's `captionFont` and
     /// `measuredCaptionSize(_:)` both read it.
-    static let captionPointSize: CGFloat = 9
-
-    /// The size a caption's text draws at — the system font at `captionPointSize` semibold, which
-    /// the canvas's `captionFont` resolves to (`ArchivalNetworkCaptionTests` measures the two
-    /// against each other) — rounded up to whole points.
-    /// - Parameter text: The caption.
-    /// - Returns: Its size.
-    static func measuredCaptionSize(_ text: String) -> CGSize {
-        #if canImport(UIKit)
-        let font = UIFont.systemFont(ofSize: captionPointSize, weight: .semibold)
-        #else
-        let font = NSFont.systemFont(ofSize: captionPointSize, weight: .semibold)
-        #endif
-        let size = (text as NSString).size(withAttributes: [.font: font])
-        return CGSize(width: ceil(size.width), height: ceil(size.height))
-    }
+    public static let captionPointSize: CGFloat = 9
 
     /// The farthest a node's outline reaches from the centre, for an outer radius, whatever the
     /// node's shape.
@@ -720,7 +726,7 @@ enum ArchivalNetworkBuilder {
     /// disc, `outer + 17`, which a selected class's corner could pass by up to 4 pt.
     /// - Parameter outerRadius: The layout's outer radius.
     /// - Returns: The reach, in points from the centre.
-    static func nodeReach(outerRadius: CGFloat) -> CGFloat {
+    public static func nodeReach(outerRadius: CGFloat) -> CGFloat {
         let r = radius(forStrength: 0) + selectionGrowth
         let ring = selectionRingGap + selectionRingWidth / 2
         let disc = r + ring
@@ -734,7 +740,7 @@ enum ArchivalNetworkBuilder {
     /// box or wholly outside it, never across its line.
     /// - Parameter layout: The layout as drawn.
     /// - Returns: The obstacles for `GraphNodeLabels.place(_:avoiding:settling:)`.
-    static func labelObstacles(_ layout: ArchivalNetworkLayout) -> [CGRect] {
+    public static func labelObstacles(_ layout: ArchivalNetworkLayout) -> [CGRect] {
         var rects = ArchivalRepositoryCategory.ordered.compactMap { layout.captions[$0]?.rect }
         if let caption = layout.hullCaption { rects.append(caption.rect) }
         if let hull = layout.classHull {
@@ -857,7 +863,7 @@ enum ArchivalNetworkBuilder {
     ///   - a: One rect.
     ///   - b: The other.
     /// - Returns: The gap, in points.
-    static func rectGap(_ a: CGRect, _ b: CGRect) -> CGFloat {
+    public static func rectGap(_ a: CGRect, _ b: CGRect) -> CGFloat {
         max(a.minX - b.maxX, b.minX - a.maxX, a.minY - b.maxY, b.minY - a.maxY)
     }
 
@@ -865,37 +871,37 @@ enum ArchivalNetworkBuilder {
     ///
     /// Range 11…22, so the weakest neighbour is still a comfortable tap target once the
     /// transparent hit button around it is counted.
-    static func radius(for node: ArchivalNetworkNode) -> CGFloat {
+    public static func radius(for node: ArchivalNetworkNode) -> CGFloat {
         radius(forStrength: node.relativeStrength)
     }
 
     /// The drawn radius of a node of relative strength `strength`: `radius(for:)`'s rule.
     /// - Parameter strength: The node's relative strength, 0…1.
     /// - Returns: The radius in points.
-    static func radius(forStrength strength: Double) -> CGFloat {
+    public static func radius(forStrength strength: Double) -> CGFloat {
         11 + 11 * CGFloat(strength)
     }
 
     /// How much larger a selected node is drawn.
-    static let selectionGrowth: CGFloat = 3
+    public static let selectionGrowth: CGFloat = 3
 
     /// The gap between a selected node's outline and the white ring drawn around it.
-    static let selectionRingGap: CGFloat = 2
+    public static let selectionRingGap: CGFloat = 2
 
     /// The width of the white ring around a selected node.
-    static let selectionRingWidth: CGFloat = 1.5
+    public static let selectionRingWidth: CGFloat = 1.5
 
     /// A class square's corner radius, as a fraction of its radius (half its side).
-    static let classCornerFraction: CGFloat = 0.35
+    public static let classCornerFraction: CGFloat = 0.35
 
     /// The corner radius of a selected class square's ring, as a fraction of its radius.
-    static let selectedClassCornerFraction: CGFloat = 0.4
+    public static let selectedClassCornerFraction: CGFloat = 0.4
 
     // MARK: - Labels (#1384)
 
     /// The radius of the focus collection's disc, which the canvas draws and the label placement
     /// keeps clear of.
-    static let focusRadius: CGFloat = 26
+    public static let focusRadius: CGFloat = 26
 
     /// The radius a node is drawn at, which the canvas and the label placement both read:
     /// `radius(for:)`, `selectionGrowth` more while it is selected. A class square's is half its side.
@@ -903,17 +909,17 @@ enum ArchivalNetworkBuilder {
     ///   - node: The node.
     ///   - isSelected: Whether it is the selected node, which the canvas enlarges and rings.
     /// - Returns: The radius in points.
-    static func drawnRadius(for node: ArchivalNetworkNode, isSelected: Bool) -> CGFloat {
+    public static func drawnRadius(for node: ArchivalNetworkNode, isSelected: Bool) -> CGFloat {
         radius(for: node) + (isSelected ? selectionGrowth : 0)
     }
 
     /// The most characters a label naming one record may have, the "…" of a cut included —
     /// twenty-six, as before #1384.
-    static let labelLimit = 26
+    public static let labelLimit = 26
 
     /// The most characters the NAME half of a disambiguated label (`name · repository`) may have,
     /// the "…" of a cut included: the fourteen characters and mark the name half had before #1384.
-    static let labelNameLimit = 15
+    public static let labelNameLimit = 15
 
     /// The most characters the QUALIFIER half of a disambiguated label may have, the "…" of a cut
     /// included.
@@ -925,7 +931,7 @@ enum ArchivalNetworkBuilder {
     /// repositories in the bundled authority whole and keeps all 26 distinct; the six it cuts are
     /// the long names ("Washington National R…", "Central Intelligence…"). A marked cut keeps them
     /// distinct from sixteen characters up.
-    static let labelQualifierLimit = 22
+    public static let labelQualifierLimit = 22
 
     /// The label a node draws for `label` (#1384): whole when it has at most `labelLimit`
     /// characters. A longer label naming one record is cut and marked. A disambiguated label is
@@ -955,7 +961,7 @@ enum ArchivalNetworkBuilder {
     /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's
     ///   (`ArchivalNetworkGraph.focusLabel`).
     /// - Returns: The label to draw.
-    static func drawnLabel(_ label: String) -> String {
+    public static func drawnLabel(_ label: String) -> String {
         guard label.count > labelLimit else { return label }
         guard let separator = label.range(of: " · ") else {
             return identifierKeepingCut(label, limit: labelLimit)
@@ -968,7 +974,7 @@ enum ArchivalNetworkBuilder {
 
     /// The fewest characters of a name's head an `identifierKeepingCut(_:limit:)` keeps before its
     /// "…"; with less room it cuts from the end like `markedCut(_:limit:)`.
-    static let minimumHeadKept = 4
+    public static let minimumHeadKept = 4
 
     /// `text` whole when it has at most `limit` characters; otherwise, when it ends in an
     /// identifier (`trailingIdentifier(of:)`), its head cut and marked and the identifier whole —
@@ -978,7 +984,7 @@ enum ArchivalNetworkBuilder {
     ///   - text: The name to cut.
     ///   - limit: The most characters the result may have, the "…" included.
     /// - Returns: The text as drawn.
-    static func identifierKeepingCut(_ text: String, limit: Int) -> String {
+    public static func identifierKeepingCut(_ text: String, limit: Int) -> String {
         guard text.count > limit else { return text }
         guard let tail = trailingIdentifier(of: text) else { return markedCut(text, limit: limit) }
         var head = String(text[..<tail.lowerBound])
@@ -1009,7 +1015,7 @@ enum ArchivalNetworkBuilder {
     ///   - others: The full labels it was drawn like.
     ///   - limit: The most characters the result may have.
     /// - Returns: The cut, or `nil`.
-    static func distinguishingCut(_ text: String, from others: [String], limit: Int) -> String? {
+    public static func distinguishingCut(_ text: String, from others: [String], limit: Int) -> String? {
         guard text.count > limit else { return nil }
         let words = text.split(separator: " ", omittingEmptySubsequences: true)
         let otherWords = others.map { $0.split(separator: " ", omittingEmptySubsequences: true) }
@@ -1038,7 +1044,7 @@ enum ArchivalNetworkBuilder {
     /// "National Security Council Files" both drew "National Security Council…".
     /// - Parameter graph: The graph as drawn.
     /// - Returns: The drawn label of the focus and of every node.
-    static func drawnLabels(in graph: ArchivalNetworkGraph) -> [String: String] {
+    public static func drawnLabels(in graph: ArchivalNetworkGraph) -> [String: String] {
         let focusLabel = graph.focusLabel
         var full: [String: String] = [graph.focus.id: focusLabel]
         var drawn: [String: String] = [graph.focus.id: drawnLabel(focusLabel)]
@@ -1076,7 +1082,7 @@ enum ArchivalNetworkBuilder {
     /// ending in "Files (H-Files)" ends in none.
     /// - Parameter text: A name.
     /// - Returns: The identifier's range in `text`, or `nil`.
-    static func trailingIdentifier(of text: String) -> Range<String.Index>? {
+    public static func trailingIdentifier(of text: String) -> Range<String.Index>? {
         let punctuation = CharacterSet(charactersIn: "()[],.;:")
         func bare(_ word: Substring) -> String {
             String(word).trimmingCharacters(in: punctuation)
@@ -1117,7 +1123,7 @@ enum ArchivalNetworkBuilder {
     ///   - text: The text to cut.
     ///   - limit: The most characters the result may have, the "…" included.
     /// - Returns: The text as drawn.
-    static func markedCut(_ text: String, limit: Int) -> String {
+    public static func markedCut(_ text: String, limit: Int) -> String {
         guard text.count > limit else { return text }
         var kept = text.prefix(max(1, limit - 1))
         while let last = kept.last, last.isWhitespace, kept.count > 1 { kept.removeLast() }
@@ -1129,7 +1135,7 @@ enum ArchivalNetworkBuilder {
     ///   - id: A node's id, or the focus's.
     ///   - graph: The graph as drawn.
     /// - Returns: The label to draw, or `nil` for an id the graph does not hold.
-    static func drawnLabel(for id: String, in graph: ArchivalNetworkGraph) -> String? {
+    public static func drawnLabel(for id: String, in graph: ArchivalNetworkGraph) -> String? {
         drawnLabels(in: graph)[id]
     }
 
@@ -1142,7 +1148,7 @@ enum ArchivalNetworkBuilder {
     ///   - graph: The graph as drawn.
     ///   - selectedNodeId: The selected node's id, if any.
     /// - Returns: Every id the canvas draws, highest priority first.
-    static func labelPriority(_ graph: ArchivalNetworkGraph, selectedNodeId: String?) -> [String] {
+    public static func labelPriority(_ graph: ArchivalNetworkGraph, selectedNodeId: String?) -> [String] {
         let ranked = graph.nodes.map(\.id)
         return [graph.focus.id]
             + ranked.filter { $0 == selectedNodeId }
@@ -1159,9 +1165,9 @@ enum ArchivalNetworkBuilder {
     ///   - selectedNodeId: The selected node's id, if any.
     ///   - sizes: Each label's measured size, keyed by id.
     /// - Returns: The requests, highest priority first.
-    static func labelRequests(_ graph: ArchivalNetworkGraph, layout: ArchivalNetworkLayout,
-                              selectedNodeId: String?,
-                              sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
+    public static func labelRequests(_ graph: ArchivalNetworkGraph, layout: ArchivalNetworkLayout,
+                                     selectedNodeId: String?,
+                                     sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
         let nodes = Dictionary(graph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return labelPriority(graph, selectedNodeId: selectedNodeId).compactMap { id in
             guard let center = layout.positions[id], let size = sizes[id] else { return nil }

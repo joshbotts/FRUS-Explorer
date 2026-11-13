@@ -22,7 +22,8 @@ import Foundation
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the ranking caption, its VoiceOver value, the
 ///         umbrella caveat on screen and the gloss's "and N others", moved here from the views
 ///   1.2 — 2026-10-12: #1643 — the Network dock's three count sentences, each with a form for one
-enum ArchivalCounts {
+///   1.3 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+public enum ArchivalCounts {
 
     /// "1 source note" / "59,973 source notes" — an era's denominator.
     ///
@@ -31,7 +32,7 @@ enum ArchivalCounts {
     ///
     /// - Parameter count: How many source notes.
     /// - Returns: The phrase.
-    static func sourceNotes(_ count: Int) -> String {
+    public static func sourceNotes(_ count: Int) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "archival.count.sourceNotes.one",
                                      defaultValue: "%@ source note"),
@@ -46,7 +47,7 @@ enum ArchivalCounts {
     ///   - count: How many units carry a non-zero value in the band, before the row cap and less a withheld umbrella.
     ///   - lens: Named collections or central-file classes.
     /// - Returns: The phrase.
-    static func units(_ count: Int, lens: ArchivalUnitLens) -> String {
+    public static func units(_ count: Int, lens: ArchivalUnitLens) -> String {
         switch lens {
         case .namedCollections:
             return CountCopy.phrase(count,
@@ -80,8 +81,8 @@ enum ArchivalCounts {
     ///   - lens: Named collections or central-file classes.
     ///   - measuresPrintedMaterial: `false` for the unprinted-pointers weight.
     /// - Returns: The caption.
-    static func rankingCaption(bandTitle: String, bandVolumeCount: Int, unitsReached: Int,
-                               lens: ArchivalUnitLens, measuresPrintedMaterial: Bool) -> String {
+    public static func rankingCaption(bandTitle: String, bandVolumeCount: Int, unitsReached: Int,
+                                      lens: ArchivalUnitLens, measuresPrintedMaterial: Bool) -> String {
         let units = units(unitsReached, lens: lens)
         guard measuresPrintedMaterial else {
             return String(format: String(
@@ -105,8 +106,8 @@ enum ArchivalCounts {
     ///   - weight: The Count-by weight.
     ///   - custodian: Who holds the records, as the legend names them.
     /// - Returns: The value.
-    static func rankingAccessibilityValue(_ value: Int, weight: ArchivalWeight,
-                                          custodian: String) -> String {
+    public static func rankingAccessibilityValue(_ value: Int, weight: ArchivalWeight,
+                                                 custodian: String) -> String {
         String(format: String(localized: "archival.ranking.a11y %@ %@",
                               defaultValue: "%1$@, %2$@"),
                weight.countPhrase(value), custodian)
@@ -124,7 +125,7 @@ enum ArchivalCounts {
     ///   - hidden: The umbrella record's value in the band.
     ///   - bandTitle: The era band's title.
     /// - Returns: The caveat.
-    static func umbrellaCaveat(weight: ArchivalWeight, hidden: Int, bandTitle: String) -> String {
+    public static func umbrellaCaveat(weight: ArchivalWeight, hidden: Int, bandTitle: String) -> String {
         String(format: String(
             localized: "archival.caveats.umbrella %@ %@",
             defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
@@ -143,7 +144,7 @@ enum ArchivalCounts {
     ///   - count: Collections that share two or more volumes with the focus.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func networkPartners(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func networkPartners(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         CountCopy.phrase(
             count,
             one: String(localized: "archival.network.dock.grain.one",
@@ -163,7 +164,7 @@ enum ArchivalCounts {
     ///   - count: Partners above the threshold that the cap left undrawn.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func networkHeldBack(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func networkHeldBack(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         CountCopy.phrase(
             count,
             one: String(localized: "archival.network.dock.capped.one",
@@ -184,7 +185,7 @@ enum ArchivalCounts {
     ///   - count: Class nodes drawn.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func networkClassSquares(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func networkClassSquares(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         CountCopy.phrase(
             count,
             one: String(localized: "archival.network.dock.classes.one",
@@ -205,7 +206,7 @@ enum ArchivalCounts {
     ///
     /// - Parameter count: How many other places the code names.
     /// - Returns: The phrase.
-    static func andOthers(_ count: Int) -> String {
+    public static func andOthers(_ count: Int) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "archival.gloss.andOthers.one", defaultValue: "and %@ other"),
                          many: String(localized: "archival.gloss.andOthers.many", defaultValue: "and %@ others"))
@@ -217,7 +218,7 @@ enum ArchivalCounts {
     ///   - key: The class key the gloss belongs to.
     ///   - count: How many other places the code names.
     /// - Returns: The label.
-    static func andOthersAccessibilityLabel(key: String, count: Int) -> String {
+    public static func andOthersAccessibilityLabel(key: String, count: Int) -> String {
         String(format: String(localized: "archival.gloss.andOthers.a11y %@ %@",
                               defaultValue: "%1$@ also names %2$@"),
                key,
@@ -236,7 +237,7 @@ enum ArchivalCounts {
     ///   - gloss: The vended name.
     ///   - alternates: How many other places the code names.
     /// - Returns: The cell's reading.
-    static func exportReading(gloss: String, alternates: Int) -> String {
+    public static func exportReading(gloss: String, alternates: Int) -> String {
         guard alternates > 0 else { return gloss }
         return String(format: String(localized: "archival.export.andOthers %@ %@",
                                      defaultValue: "%1$@ (%2$@)"),
@@ -257,7 +258,7 @@ extension ArchivalWeight {
     ///
     /// - Parameter count: How many.
     /// - Returns: The phrase, grouped and singular at one.
-    func countPhrase(_ count: Int) -> String {
+    public func countPhrase(_ count: Int) -> String {
         switch self {
         case .documents:
             return CountCopy.documents(count)

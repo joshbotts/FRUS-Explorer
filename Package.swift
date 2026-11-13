@@ -675,9 +675,11 @@ let package = Package(
         /// both app targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the
         /// web edition, which compiles this directory on Linux, render, cite, index, search and look
         /// up citations through the same code.
-        /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store, SourceNoteKit and
-        /// TEIHeaderKit are imported behind `canImport`, and the stand-ins under `Linux/` compile to
-        /// nothing on Apple platforms. On Linux, the web edition's package supplies swift-crypto's
+        /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store, SourceNoteKit,
+        /// TEIHeaderKit and CoreGraphics are imported behind `canImport`, and the stand-ins under
+        /// `Linux/` compile to nothing on Apple platforms. CoreGraphics, since the archival network's
+        /// layout moved in (FRUS Explorer Light's S24c), gives the geometry types their members on Apple
+        /// platforms; on Linux, Foundation declares them. On Linux, the web edition's package supplies swift-crypto's
         /// `Crypto` and the SQLite headers. TEIHeaderKit, since the library's rules moved in (FRUS
         /// Explorer Light's S21a), reads a side-loaded volume's header for `LocalVolumeCatalog`.
         .target(
