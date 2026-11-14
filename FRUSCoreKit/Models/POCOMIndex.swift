@@ -50,6 +50,10 @@ import Foundation
 ///         the host gives (`init(contentsOf:)`), since `ChiefsOfMissionRoster`, which reads its chiefs,
 ///         is the kit's; `POCOMIndexStore`, which reads the app's bundle, stays in the app
 ///         (`FRUSExplorer/Models/POCOMIndexStore.swift`)
+///   1.6 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): `career(forSlug:)` public, with `POCOMCareer`'s
+///         life years and posts and `POCOMAssignment`'s title, dates and note, for a host that draws the
+///         person sheet's Career section; `PersonLifespan`, the sheet's lifespan line, moved here from
+///         `PersonIndexView.swift`, public. Nothing they answer changes
 public struct POCOMIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -82,7 +86,7 @@ public struct POCOMIndex: Codable, Sendable {
     }
 
     /// The career for a POCOM slug, or `nil`.
-    func career(forSlug slug: String) -> POCOMCareer? { careers[slug] }
+    public func career(forSlug slug: String) -> POCOMCareer? { careers[slug] }
 
     /// Every territory id the `chiefs` table covers, sorted.
     var chiefTerritoryIds: [String] { chiefs.keys.sorted() }
@@ -233,22 +237,22 @@ enum POCOMPartialDate {
 // MARK: - POCOMCareer
 
 /// One person's register entry: name, life dates, and appointments in chronological order.
-struct POCOMCareer: Codable, Sendable, Equatable {
+public struct POCOMCareer: Codable, Sendable, Equatable {
     /// Display name as POCOM spells it.
     let n: String
     /// Birth year, if recorded. The person sheet reads it only where the name authority has none
     /// (`PersonLifespan`, #1370).
-    let b: Int?
+    public let b: Int?
     /// Death year, if recorded. Read the same way as `b`.
-    let d: Int?
+    public let d: Int?
     /// Appointments, already sorted by the generator — the view renders them in order.
-    let a: [POCOMAssignment]
+    public let a: [POCOMAssignment]
 }
 
 // MARK: - POCOMAssignment
 
 /// One post held: what, where, and when.
-struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
+public struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
     /// Role title ("Under Secretary of State").
     let r: String
     /// Place or organization, absent for posts inside the Department.
@@ -260,10 +264,10 @@ struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
     /// Date they left it.
     let en: String?
     /// The register's note on the termination ("Left Tehran on", "Resigned").
-    let nt: String?
+    public let nt: String?
 
     /// Stable within one career: no two appointments share all four of these.
-    var id: String { "\(r)|\(p ?? "")|\(ap ?? "")|\(st ?? "")" }
+    public var id: String { "\(r)|\(p ?? "")|\(ap ?? "")|\(st ?? "")" }
 
     /// The date range to show, or `nil` when the register has no date at all.
     ///
@@ -273,7 +277,7 @@ struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
     ///
     /// Dates are rendered as the register writes them rather than reformatted: many are partial
     /// (`1935` with no month), and a formatter would have to invent the missing precision.
-    var dateRangeText: String? {
+    public var dateRangeText: String? {
         let start = st ?? ap
         switch (start, en) {
         case let (.some(from), .some(to)):
@@ -288,9 +292,71 @@ struct POCOMAssignment: Codable, Sendable, Equatable, Identifiable {
     }
 
     /// "Under Secretary of State" or "Ambassador — France".
-    var titleText: String {
+    public var titleText: String {
         guard let p, !p.isEmpty else { return r }
         return String(localized: "pocom.roleAtPlace", defaultValue: "\(r) — \(p)")
+    }
+}
+
+// MARK: - PersonLifespan
+
+/// A reconciled person's life years, as the detail sheet prints them (#1370).
+///
+/// **Life years are not active years, and until #1370 the app wrote one into the other.** The
+/// rollup stored the name authority's birth and death years in `start_year`/`end_year` — the
+/// columns the People list prints beside the role and the sheet labels **Active** — while the
+/// Career footer printed POCOM's, so Kissinger's sheet read *Active 1923–2015* above *1923–2023*.
+/// The rollup now carries only the volumes' years, and the life years are read here, at display
+/// time, once.
+///
+/// **Two sources, in a fixed order.** The name authority's year comes first; POCOM's fills only a
+/// year the authority lacks. Measured over the shipped artifacts: POCOM fills a gap for 76 people
+/// (Kissinger's death year, 2023, is in POCOM alone); the two disagree for exactly two, Byrnes and
+/// Deming, on a birth year each, and the authority wins; and 18 people have authority years and no
+/// POCOM career at all — 13 of them presidents — so they had no lifespan line until now.
+///
+/// Display time rather than rollup columns, because the sheet already holds both entries (it
+/// reads the authority for the register's role and POCOM for the Career section) and because
+/// columns filled from the authority alone would have missed POCOM's 76 fills.
+///
+/// Version history:
+///   1.0 — #1370: in `PersonIndexView.swift`, beside the sheet
+///   1.1 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): moved into FRUSCoreKit, public, unchanged, for a
+///         host whose person sheet prints the lifespan line as the app does
+public enum PersonLifespan {
+
+    /// Birth and death years: the authority's, each gap filled from the POCOM career.
+    public static func years(authority: PersonAuthorityIndex.AuthorityEntry?,
+                             career: POCOMCareer?) -> (born: Int?, died: Int?) {
+        (authority?.b ?? career?.b, authority?.d ?? career?.d)
+    }
+
+    /// The sheet's lifespan line for this person, or `nil` when neither source has a year.
+    public static func text(authority: PersonAuthorityIndex.AuthorityEntry?, career: POCOMCareer?) -> String? {
+        let lived = years(authority: authority, career: career)
+        return text(born: lived.born, died: lived.died)
+    }
+
+    /// "1893–1971", "Born 1893", "Died 1971", or `nil`.
+    ///
+    /// Grouping is switched **off** explicitly. `String(localized:)` interpolates an `Int` through a
+    /// number formatter, which renders 1893 as "1,893" — a year wearing a thousands separator — and
+    /// shipped once that way in the Career footer this line replaces.
+    public static func text(born: Int?, died: Int?) -> String? {
+        let plain = IntegerFormatStyle<Int>.number.grouping(.never)
+        switch (born, died) {
+        case let (.some(born), .some(died)):
+            return String(localized: "people.detail.lifespan",
+                          defaultValue: "\(born, format: plain)–\(died, format: plain)")
+        case let (.some(born), .none):
+            return String(localized: "people.detail.lifespan.born",
+                          defaultValue: "Born \(born, format: plain)")
+        case let (.none, .some(died)):
+            return String(localized: "people.detail.lifespan.died",
+                          defaultValue: "Died \(died, format: plain)")
+        case (.none, .none):
+            return nil
+        }
     }
 }
 

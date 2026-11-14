@@ -29,8 +29,11 @@ import Foundation
 ///
 /// Public since FRUS Explorer Light's S17f: a host decodes the bundled file itself, as the app's
 /// `VolumeSubjectProfilesStore` does, and reads `allSubjects`, the vocabulary Project Home's Focus
-/// subjects and their editor list (`ProjectHomeView`, `ProjectFocusSubjectsEditor`). The rest of
-/// the type stays internal.
+/// subjects and their editor list (`ProjectHomeView`, `ProjectFocusSubjectsEditor`). Since S21g's
+/// follow-up a host's person sheet reads it too, `topSubjects(forVolumeId:)` with `ResolvedSubject`,
+/// which `PersonSubjectAffinity` (below) ranks, and `otherVolumes(forSubjectRef:excluding:)`, its chips'
+/// pivot where the document index is absent; and a host's scope bars read `resolvedByVolume`, through
+/// `ScopeFacets`, for "By Detected Topic". The rest of the type stays internal.
 ///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
@@ -40,18 +43,22 @@ import Foundation
 ///   1.2 — FRUSCoreKit, part 2: moved into the kit; `VolumeSubjectProfilesStore` stays in the app
 ///   1.3 — FRUS Explorer Light S17f: the type, its decoding, `allSubjects` and `SubjectOption` are
 ///         public, unchanged, for a host's Project Home
+///   1.4 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): `topSubjects(forVolumeId:)`,
+///         `otherVolumes(forSubjectRef:excluding:)`, `resolvedByVolume` and `ResolvedSubject` public,
+///         unchanged, for a host's person sheet and scope bars; `PersonSubjectAffinity`, the sheet's
+///         ranking, moved here from `PersonIndexView.swift`, public
 public struct VolumeSubjectProfiles: Decodable, Sendable {
 
     /// One subject characteristic of a volume, fully resolved (name/category/score).
-    struct ResolvedSubject: Sendable, Equatable, Identifiable {
+    public struct ResolvedSubject: Sendable, Equatable, Identifiable {
         /// The stable subject ref (from the source dataset).
-        let ref: String
+        public let ref: String
         /// Display name (e.g. `"Vietnamization"`).
-        let name: String
+        public let name: String
         /// Top-level category (e.g. `"Warfare"`).
-        let category: String
+        public let category: String
         /// Second-level subcategory.
-        let subcategory: String
+        public let subcategory: String
         /// An **ordering weight, whose arithmetic meaning depends on which producer built the
         /// value** — never a displayed number, and never comparable across producers.
         ///
@@ -101,9 +108,9 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
         /// So: **sort by it freely; sum, average, threshold, or display it only against a producer
         /// you have named.** `SubjectMeaningTests` pins that the two producers really do disagree,
         /// and that the document one is constant per ref — the properties this warning rests on.
-        let score: Double
+        public let score: Double
 
-        var id: String { ref }
+        public var id: String { ref }
     }
 
     /// One entry in the corpus-wide subject vocabulary — a subject a project can adopt as a
@@ -135,7 +142,7 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
     let provenance: String
 
     /// `volumeId → [ResolvedSubject]`, each list ranked (highest score first).
-    let resolvedByVolume: [String: [ResolvedSubject]]
+    public let resolvedByVolume: [String: [ResolvedSubject]]
 
     /// `subjectRef → [volumeId]` — the volumes whose profile carries the subject,
     /// sorted, for the cross-volume "other volumes covering this subject" pivot.
@@ -220,7 +227,7 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
     ///
     /// - Parameter volumeId: The manifest volume id.
     /// - Returns: The ranked resolved subjects, or `nil` if absent.
-    func topSubjects(forVolumeId volumeId: String) -> [ResolvedSubject]? {
+    public func topSubjects(forVolumeId volumeId: String) -> [ResolvedSubject]? {
         resolvedByVolume[volumeId]
     }
 
@@ -256,7 +263,7 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
     ///   - ref: The subject ref.
     ///   - currentVolumeId: The volume to exclude (the one being viewed).
     /// - Returns: The other volume ids sharing the subject, sorted.
-    func otherVolumes(forSubjectRef ref: String, excluding currentVolumeId: String) -> [String] {
+    public func otherVolumes(forSubjectRef ref: String, excluding currentVolumeId: String) -> [String] {
         (volumesBySubjectRef[ref] ?? []).filter { $0 != currentVolumeId }
     }
 
@@ -273,5 +280,76 @@ public struct VolumeSubjectProfiles: Decodable, Sendable {
             if let volumes = volumesBySubjectRef[ref] { result.formUnion(volumes) }
         }
         return result
+    }
+}
+
+// MARK: - PersonSubjectAffinity
+
+/// The pure person↔subject affinity ranking (#264), factored out of `PersonIndexDetailSheet`
+/// so the join is unit-testable without a live `PersonMentionStore` or the subject-profiles
+/// bundle.
+///
+/// Join: the person's per-volume distinct-document mention counts × each volume's bundled
+/// subject profile. Affinity weight = Σ (person's doc count in a volume × the subject's score
+/// in that volume), so a subject scores high when it characterizes the volumes where the person
+/// appears MOST — not merely any volume they brush. Volume-grain by deliberate decision (#261):
+/// the affinity never claims a per-document link.
+///
+/// Version history:
+///   1.0 — #264: in `PersonIndexView.swift`, beside the sheet
+///   1.1 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): moved into FRUSCoreKit, public, unchanged, for a
+///         host whose person sheet ranks a person's subjects as the app does; `Ranked` says `Sendable`, as
+///         it was implicitly while internal
+public enum PersonSubjectAffinity {
+
+    /// One ranked affinity: a subject plus how broadly (`volumeCount`) and strongly (`weight`)
+    /// it co-occurs with the person's mentions.
+    public struct Ranked: Identifiable, Equatable, Sendable {
+        /// The resolved subject (name, category, per-volume distinctiveness score).
+        public let subject: VolumeSubjectProfiles.ResolvedSubject
+        /// How many of the person's mention volumes carry this subject in their profile.
+        public let volumeCount: Int
+        /// Σ over those volumes of (person's distinct-document count × the subject's score).
+        public let weight: Double
+        public var id: String { subject.id }
+    }
+
+    /// Ranks a person's subject affinities. `topSubjectsByVolume` returns a volume's profile
+    /// subjects (`nil` when the volume has no bundled profile — that volume is skipped). Ties on
+    /// weight break by subject name for determinism; the result is capped to `limit`.
+    ///
+    /// **`topSubjectsByVolume` must be the PROFILE producer, not the document-subject index**, and
+    /// the compiler cannot tell them apart: both vend `[ResolvedSubject]` per volume, and the app
+    /// swaps one for the other at six other call sites to widen their reach. Here the swap would
+    /// be wrong, because this is the one place that does arithmetic on
+    /// ``VolumeSubjectProfiles/ResolvedSubject/score`` **through an injected producer** rather than
+    /// sorting by it. (`ProjectFocusSuggestions` sums the same field, but takes a concrete
+    /// `VolumeSubjectProfiles`, so the swap is not reachable there without a signature change.)
+    /// The profile score
+    /// varies per volume — how characteristic the subject is of that volume — so
+    /// `Σ documentCount × score` is a genuine affinity. The document index's score is corpus IDF,
+    /// a constant per subject, which factors out of the sum and leaves rarity × total mentions:
+    /// the same type, plausible output, and a different question answered. See the field's own
+    /// documentation (#1024).
+    public static func rank(
+        mentionCounts: [(volumeId: String, documentCount: Int)],
+        topSubjectsByVolume: (String) -> [VolumeSubjectProfiles.ResolvedSubject]?,
+        limit: Int
+    ) -> [Ranked] {
+        var aggregate: [String: (subject: VolumeSubjectProfiles.ResolvedSubject, volumes: Int, weight: Double)] = [:]
+        for (volumeId, documentCount) in mentionCounts {
+            guard let subjects = topSubjectsByVolume(volumeId) else { continue }
+            for subject in subjects {
+                var entry = aggregate[subject.ref] ?? (subject, 0, 0)
+                entry.volumes += 1
+                entry.weight += Double(documentCount) * subject.score
+                aggregate[subject.ref] = entry
+            }
+        }
+        return aggregate.values
+            .sorted { $0.weight != $1.weight ? $0.weight > $1.weight
+                                             : $0.subject.name < $1.subject.name }
+            .prefix(limit)
+            .map { Ranked(subject: $0.subject, volumeCount: $0.volumes, weight: $0.weight) }
     }
 }

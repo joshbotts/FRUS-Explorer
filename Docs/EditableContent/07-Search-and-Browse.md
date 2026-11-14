@@ -3112,21 +3112,21 @@ Merges and separations you make in the People browser appear here, where you can
 <!-- END SOURCE: people.corrections.empty.detail -->
 
 #### \(…)–\(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 493–494 | key: people.detail.lifespan -->
+<!-- SOURCE: FRUSCoreKit/Models/POCOMIndex.swift | PersonLifespan.text | lines: 349–350 | key: people.detail.lifespan -->
 
 \(born, format: plain)–\(died, format: plain)
 
 <!-- END SOURCE: people.detail.lifespan -->
 
 #### Born \(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 496–497 | key: people.detail.lifespan.born -->
+<!-- SOURCE: FRUSCoreKit/Models/POCOMIndex.swift | PersonLifespan.text | lines: 352–353 | key: people.detail.lifespan.born -->
 
 Born \(born, format: plain)
 
 <!-- END SOURCE: people.detail.lifespan.born -->
 
 #### Died \(…)
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 499–500 | key: people.detail.lifespan.died -->
+<!-- SOURCE: FRUSCoreKit/Models/POCOMIndex.swift | PersonLifespan.text | lines: 355–356 | key: people.detail.lifespan.died -->
 
 Died \(died, format: plain)
 
@@ -3145,35 +3145,35 @@ until \(end, format: plain)
 <!-- END SOURCE: people.era.until -->
 
 #### Volume-level: subjects characteristic of the volumes where…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 830–831 | key: people.detail.subjects.note -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 711–712 | key: people.detail.subjects.note -->
 
 Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags.
 
 <!-- END SOURCE: people.detail.subjects.note -->
 
 #### This person has no indexed document mentions to open — they…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 866–867 | key: people.detail.findMentions.noMentions -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 747–748 | key: people.detail.findMentions.noMentions -->
 
 This person has no indexed document mentions to open — they appear only in a volume’s front-matter person list.
 
 <!-- END SOURCE: people.detail.findMentions.noMentions -->
 
 #### Footer — Use this when one person appears under different names and…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 914–915 | key: people.detail.mergeManual.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 795–796 | key: people.detail.mergeManual.footer -->
 
 Use this when one person appears under different names and the app kept them apart. The change syncs across your devices and can be undone from Corrections.
 
 <!-- END SOURCE: people.detail.mergeManual.footer -->
 
 #### “%1$@” and “%2$@” will become a single identity. Merging is…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1148–1149 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1029–1030 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 “%1$@” and “%2$@” will become a single identity. Merging is transitive — if you later merge a third record with either one, all three become one identity. You can undo this from Corrections.
 
 <!-- END SOURCE: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 #### These records match different entries in the bundled…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1152–1153 | key: people.detail.mergeConfirm.authorityWarning -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1033–1034 | key: people.detail.mergeConfirm.authorityWarning -->
 
 These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.
 

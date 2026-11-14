@@ -61,6 +61,9 @@ struct DocumentSubjectCategoryGroup: Sendable, Identifiable {
 ///         `DocumentSubjectStore`, stays in the app
 ///   2.2 — 2026-11-08: FRUS Explorer Light's S23a — public, with its decoding and the shared
 ///         subjects' names, for a host that gives the find-related engine its own copy
+///   2.3 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): `volumeIds(forSubjectRef:)` and
+///         `subjectsByVolume` public, unchanged, for a host whose person sheet opens the volumes covering a
+///         subject and whose scope bars offer "By Detected Topic"
 public struct DocumentSubjectIndex: Decodable, Sendable {
 
     /// One subject in the shared vocabulary.
@@ -355,7 +358,7 @@ public struct DocumentSubjectIndex: Decodable, Sendable {
     // MARK: - Membership, for the facets
 
     /// **Every** volume containing a subject — the complete map the facets should resolve through.
-    func volumeIds(forSubjectRef ref: String) -> Set<String> {
+    public func volumeIds(forSubjectRef ref: String) -> Set<String> {
         Set(volumesByRef[ref] ?? [])
     }
 
@@ -377,7 +380,7 @@ public struct DocumentSubjectIndex: Decodable, Sendable {
     ///
     /// A stored map since the topic picker was measured freezing the main actor for 3.6 s per
     /// keystroke — see ``subjectsByVolumeCache``.
-    var subjectsByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] { subjectsByVolumeCache }
+    public var subjectsByVolume: [String: [VolumeSubjectProfiles.ResolvedSubject]] { subjectsByVolumeCache }
 
     /// The full subject vocabulary — all 491, including the **111 that never reach any volume's
     /// top-15** and are therefore invisible to a profile-derived catalogue.

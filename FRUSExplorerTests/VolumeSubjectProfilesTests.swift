@@ -250,90 +250,6 @@ struct VolumeSubjectProfilesTests {
     }
 }
 
-// MARK: - PersonSubjectAffinityTests (#264)
-
-/// Tests the pure person↔subject affinity ranking extracted from `PersonIndexDetailSheet`
-/// (`loadSubjectAffinities`) so the join is covered without a live `PersonMentionStore`.
-struct PersonSubjectAffinityTests {
-
-    private func subject(_ ref: String, _ name: String, score: Double,
-                         category: String = "Category") -> VolumeSubjectProfiles.ResolvedSubject {
-        VolumeSubjectProfiles.ResolvedSubject(
-            ref: ref, name: name, category: category, subcategory: "Sub", score: score)
-    }
-
-    /// Builds a `topSubjectsByVolume` lookup from a plain dictionary (nil ⇒ no bundled profile).
-    private func lookup(_ map: [String: [VolumeSubjectProfiles.ResolvedSubject]])
-        -> (String) -> [VolumeSubjectProfiles.ResolvedSubject]? {
-        { map[$0] }
-    }
-
-    @Test("Weight sums docCount × score across the person's volumes; volumeCount counts volumes")
-    func weightingAndAggregation() {
-        let a1 = subject("A", "Alpha", score: 0.8)
-        let a2 = subject("A", "Alpha", score: 0.9)   // same ref, other volume
-        let b  = subject("B", "Bravo", score: 0.5)
-        let c  = subject("C", "Charlie", score: 0.3)
-        let ranked = PersonSubjectAffinity.rank(
-            mentionCounts: [("v1", 10), ("v2", 2)],
-            topSubjectsByVolume: lookup(["v1": [a1, b], "v2": [a2, c]]),
-            limit: 8)
-
-        // A: in both volumes → weight 10*0.8 + 2*0.9 = 9.8, volumeCount 2.
-        // B: only v1 → 10*0.5 = 5.0. C: only v2 → 2*0.3 = 0.6.
-        #expect(ranked.map(\.subject.ref) == ["A", "B", "C"])
-        #expect(ranked[0].volumeCount == 2)
-        #expect(abs(ranked[0].weight - 9.8) < 1e-9)
-        #expect(ranked[1].volumeCount == 1)
-        #expect(abs(ranked[1].weight - 5.0) < 1e-9)
-        #expect(abs(ranked[2].weight - 0.6) < 1e-9)
-    }
-
-    @Test("Volumes with no bundled profile are skipped")
-    func skipsProfilelessVolumes() {
-        let a = subject("A", "Alpha", score: 0.5)
-        let ranked = PersonSubjectAffinity.rank(
-            mentionCounts: [("v1", 4), ("vNoProfile", 100)],
-            topSubjectsByVolume: lookup(["v1": [a]]),   // vNoProfile absent ⇒ nil
-            limit: 8)
-        #expect(ranked.map(\.subject.ref) == ["A"])
-        #expect(abs(ranked[0].weight - 2.0) < 1e-9)   // 4*0.5 only; the 100-doc volume contributed nothing
-    }
-
-    @Test("Equal weights break ties by subject name for determinism")
-    func tieBreakByName() {
-        // Same docCount × score for both ⇒ equal weight; expect name-ascending order.
-        let zebra = subject("Z", "Zebra", score: 0.5)
-        let apple = subject("A", "Apple", score: 0.5)
-        let ranked = PersonSubjectAffinity.rank(
-            mentionCounts: [("v1", 3)],
-            topSubjectsByVolume: lookup(["v1": [zebra, apple]]),
-            limit: 8)
-        #expect(ranked.map(\.subject.name) == ["Apple", "Zebra"])
-    }
-
-    @Test("The result is capped to the limit, keeping the highest-weight subjects")
-    func respectsLimit() {
-        let subjects = (1...5).map { subject("S\($0)", "S\($0)", score: Double($0) / 10.0) }
-        let ranked = PersonSubjectAffinity.rank(
-            mentionCounts: [("v1", 1)],
-            topSubjectsByVolume: lookup(["v1": subjects]),
-            limit: 2)
-        // Highest scores are S5 (0.5) then S4 (0.4).
-        #expect(ranked.map(\.subject.ref) == ["S5", "S4"])
-    }
-
-    @Test("No mention volumes yields no affinities")
-    func emptyCounts() {
-        let ranked = PersonSubjectAffinity.rank(
-            mentionCounts: [],
-            topSubjectsByVolume: lookup(["v1": [subject("A", "Alpha", score: 1)]]),
-            limit: 8)
-        #expect(ranked.isEmpty)
-    }
-}
-
-
 // MARK: - SubjectMeaningTests
 
 /// Pins #1024: `ResolvedSubject.score` carries two different quantities depending on which producer
@@ -351,6 +267,9 @@ struct PersonSubjectAffinityTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-21: #1024
+///   1.1 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): the score scan's `known` names
+///         `VolumeSubjectProfiles.swift`, where `PersonSubjectAffinity` now sums the score, and a failure
+///         message names the ranking rather than the view it left
 @Suite("Subject score means two things (#1024)")
 struct SubjectMeaningTests {
 
@@ -373,8 +292,8 @@ struct SubjectMeaningTests {
         }
         #expect(varying.isEmpty, """
             \(varying.count) subjects vary in score across volumes at the document grain. That \
-            score is documented as corpus IDF — a constant — and PersonIndexView's affinity \
-            warning depends on it being one.
+            score is documented as corpus IDF — a constant — and the affinity warning on \
+            `PersonSubjectAffinity` depends on it being one.
             """)
     }
 
@@ -450,7 +369,7 @@ struct SubjectMeaningTests {
         // where an aggregator could accumulate the score unseen.
         let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let known: Set<String> = ["PersonIndexView.swift", "ProjectFocusSuggestions.swift"]
+        let known: Set<String> = ["VolumeSubjectProfiles.swift", "ProjectFocusSuggestions.swift"]
 
         var found: [String] = []
         for url in AppSourceTree.swiftFiles(in: repoRoot) {

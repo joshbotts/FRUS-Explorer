@@ -40,7 +40,10 @@ import Foundation
 ///   1.0 — 2026-09-25: #1374, #1382 and #1422 — the shared count phrase
 ///   1.1 — 2026-09-30: #1478 — `phrase(_:one:many:then:locale:)`, for a one/many sentence that
 ///         carries a second slot after its count
-enum CountCopy {
+///   1.2 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): public, unchanged, for a host that prints
+///         the analytics, archival and word cloud surfaces' counts as the app does; `StatusBarCopy`
+///         stays internal
+public enum CountCopy {
 
     /// "1 document" / "12,067 documents": `count` formatted for `locale` and placed in `one` when it
     /// is exactly 1, in `many` otherwise (0 included, which English writes as a plural).
@@ -51,8 +54,8 @@ enum CountCopy {
     ///   - many: The plural form, with `%@` where the number goes — `"%@ documents"`.
     ///   - locale: The locale that groups the number; the user's own unless a test passes one.
     /// - Returns: The phrase.
-    static func phrase(_ count: Int, one: String, many: String,
-                       locale: Locale = .autoupdatingCurrent) -> String {
+    public static func phrase(_ count: Int, one: String, many: String,
+                              locale: Locale = .autoupdatingCurrent) -> String {
         String(format: count == 1 ? one : many, count.formatted(.number.locale(locale)))
     }
 
@@ -71,8 +74,8 @@ enum CountCopy {
     ///   - arguments: The form's remaining arguments, `%2$@` onward.
     ///   - locale: The locale that groups the number; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func phrase(_ count: Int, one: String, many: String, then arguments: [CVarArg],
-                       locale: Locale = .autoupdatingCurrent) -> String {
+    public static func phrase(_ count: Int, one: String, many: String, then arguments: [CVarArg],
+                              locale: Locale = .autoupdatingCurrent) -> String {
         String(format: count == 1 ? one : many,
                arguments: [count.formatted(.number.locale(locale))] + arguments)
     }
@@ -83,7 +86,7 @@ enum CountCopy {
     ///   - count: How many documents.
     ///   - locale: The locale that groups the number.
     /// - Returns: The phrase.
-    static func documents(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func documents(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         phrase(count,
                one: String(localized: "count.documents.one", defaultValue: "%@ document"),
                many: String(localized: "count.documents.many", defaultValue: "%@ documents"),
@@ -96,7 +99,7 @@ enum CountCopy {
     ///   - count: How many volumes.
     ///   - locale: The locale that groups the number.
     /// - Returns: The phrase.
-    static func volumes(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func volumes(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         phrase(count,
                one: String(localized: "count.volumes.one", defaultValue: "%@ volume"),
                many: String(localized: "count.volumes.many", defaultValue: "%@ volumes"),
@@ -109,7 +112,7 @@ enum CountCopy {
     ///   - count: How many documents.
     ///   - locale: The locale that groups the number.
     /// - Returns: The phrase.
-    static func docs(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func docs(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         phrase(count,
                one: String(localized: "count.docs.one", defaultValue: "%@ doc"),
                many: String(localized: "count.docs.many", defaultValue: "%@ docs"),
@@ -122,7 +125,7 @@ enum CountCopy {
     ///   - count: How many volumes.
     ///   - locale: The locale that groups the number.
     /// - Returns: The phrase.
-    static func vols(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func vols(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         phrase(count,
                one: String(localized: "count.vols.one", defaultValue: "%@ vol"),
                many: String(localized: "count.vols.many", defaultValue: "%@ vols"),
