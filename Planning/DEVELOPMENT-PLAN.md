@@ -10784,3 +10784,24 @@ FRUS Explorer Light's follow-ups of its third batch, Mac check 27 in its plan: f
 **Owed by the owner:** Mac check 27, listed in the pull request, from a clone at a real path, with its taps; then the merge. FRUS Explorer Light's pin move past the third batch (S24e) waits for this pull request and carries it with the batch, on the owner's word of 13 November.
 
 **Not done:** the `<br>`-segment case and Related Documents' lines from a reader's summaries (named in the pull request); the UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-11-13 — The kit's stamp tests each build their pipeline over a stamp store of their own, so a parallel test's mark cannot land between one's removal and its read
+
+FRUS Explorer Light's follow-up for a race in the kit's tests, Mac check 28 in its plan, cut from `v2` at `39859a51` (#1902's merge). Test files only.
+
+**What was wrong:** FRUS Explorer Light's daily watch failed `DateIndexingAccuracyTests`' "needsDateReindex — returns true before markDateReindexComplete is called" on Linux at `39859a51` (13 November). The test removed `IndexingPipeline.dateIndexVersionKey` from the stamp store every test pipeline shares (`testIndexingStamps` in the package, `UserDefaults.standard` in Xcode), built a pipeline and read the key, while `needsDateReindexFalse`, run in parallel, marked the same key in the same store. `FTS5RebuildTests.migrationFlagTriggersReindexMarker` and `PersonRollupConsolidationTests.fingerprintStalenessReconsolidates` cleared and read stamps in the same store; the second was safe only through fixture ids unique to it.
+
+**What changed** (`FRUSExplorerTests/FRUSCoreKit/` only): `makeTestPipeline(dir:volumesDir:isolatedStamps:)` builds a pipeline over a store of the test's own, made by `makeIsolatedStamps(_:)`, an in-memory store in the package and a `UserDefaults` suite in Xcode; the four tests take one, the #1370 test's private `makeIsolatedPipeline(dir:suite:)` folds into it, and `testStamps`, the accessor through which tests cleared the shared store, goes. No test's result now depends on a stamp in the shared store.
+
+**Shown before and after.** A repro suite never committed, which runs the pair together 300 times in one process, two copies of the FTS test together 100 times and two of the fingerprint test 50 times, failed at `v2` on Linux 1 to 2, 0 and 24 to 40 times a run, and on the iPhone simulator 153 to 170, 101 to 108 and 1 to 3; at this branch 0 everywhere, in three runs each. `DateIndexingAccuracyTests` run alone 100 times on Linux failed 5 times at `v2`, each at the watch's line, and never at this branch. In Xcode the shared store is also the test host's own: after this branch's runs the app's preferences held the date-index, FTS and broken-references stamps, which no test at this branch writes there, so the host's launch did.
+
+**Apple platforms, and how that was checked.** Each heavy job through `Scripts/heavy.sh`, Xcode 27.2 on macOS 27.2.1, clean and unsigned, on an iPhone 17e simulator (iOS 27.2), beside `v2` at `39859a51` built and run the same way, at `35cc4f7d`, whose tree is the head's but for this entry:
+- **`FRUSExplorerMac`:** "** BUILD SUCCEEDED **" both, with `v2`'s 2 warning lines, line for line; the symbol lists identical, 257,245 names normalized and 258,871 raw.
+- **iOS:** a clean `build-for-testing`, "** TEST BUILD SUCCEEDED **" both, with `v2`'s 3 warning lines; the full unit target, 7,999 tests in 962 suites at both, with `v2`'s one failure (the ranking chart's "At 720 pt" test) and the same 17 tests and 2 suites skipped; the three suites changed, 47 tests, ten repetitions passed at both.
+- **`swift build --target FRUSCoreKit`:** "Build complete!" with no warning; the kit's test target builds from clean with no warning. **`swift test`:** exit 0; 39 runs and 4,490 tests in 529 suites at both; `FRUSCoreKitTests` "✔ Test run with 2509 tests in 307 suites passed".
+
+**Linux:** Docker Desktop, `swift:6.4-noble` on arm64: FRUS Explorer Light's `main` (`fedd7cd`, pinned at `39859a51`), with each head's tree over its submodule by `git archive`, with PostgreSQL: 4,156 tests at both, every target passing, the one named Linux skip; `FRUSCoreKitTests` 2,509 tests, three times more at each head, all passing.
+
+**Owed by the owner:** Mac check 28, listed in the pull request, with the stamp suites run a few times in Xcode; then the merge. FRUS Explorer Light's next pin move carries it.
+
+**Not done:** `CitationStyleTests` (Xcode's alone) and `SettingsSyncCoordinatorTests` both clear and set `SettingsKeys.citationStyle` in `UserDefaults.standard` and run in parallel, the same kind of race on another store; `CitationStyle.current` reads `.standard` itself, so a store of the test's own needs an app change (named in the pull request). The UI suites, iOS 26.x, a device and a signed run.
