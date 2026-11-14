@@ -99,6 +99,9 @@ import SourceNoteKit
 ///         presidential-library catalogue (`presidentialLibrary:`), and `libraryResolution`'s and
 ///         `dividedLotClaimants`' indexes have no default; the overloads over the app's bundled indexes
 ///         stay in the app (`ArchivalResolver+App.swift`)
+///   1.6 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `dividedLotClaimants(lotFile:claimants:)` public,
+///         for a host that says on a volume's Sources outline why a divided lot carries no catalogue link;
+///         nothing it answers changes
 public enum ArchivalResolver {
 
     /// The resolution for a **document's own source citation**: its lot, and nothing else.
@@ -310,8 +313,8 @@ extension ArchivalResolver {
     /// lot across N series" is a fact worth printing, and without this the only signal is the
     /// same `nil` an unresolvable lot produces. The trip packet reaches the claimants directly
     /// for its restriction line and does not need this; the Collections export block does.
-    static func dividedLotClaimants(lotFile: String?,
-                                    claimants: LotClaimantsIndex?) -> [LotClaimant]? {
+    public static func dividedLotClaimants(lotFile: String?,
+                                           claimants: LotClaimantsIndex?) -> [LotClaimant]? {
         let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !lot.isEmpty else { return nil }
         return claimants?.claimants(forRawLot: lot)

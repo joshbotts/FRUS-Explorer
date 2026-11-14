@@ -30,6 +30,9 @@ import Foundation
 ///          app resolves; `VolumeSourcesIndexStore` stays in the app (`VolumeSourcesIndexStore.swift`)
 ///   1.2 — 2026-11-08 (FRUS Explorer Light, S22a): `ArchivalResolution` public, what `ArchivalResolver`
 ///          answers a host
+///   1.3 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `authority(recordGroup:lotFile:text:)` public,
+///          with `MajorCollectionRecord`, for a host that draws a volume's Sources outline and its headings'
+///          cross-volume counts; nothing it answers changes
 public struct VolumeSourcesIndex: Decodable, Sendable {
 
     /// Record-group headers → their resolved record, keyed by record-group **number** (`"59"`).
@@ -96,7 +99,7 @@ public struct VolumeSourcesIndex: Decodable, Sendable {
     ///
     /// The dedup key mirrors the generator's `accumulateAuthority`: `lot:<normalized>` when a
     /// lot file is present, otherwise `txt:<lowercased text>`.
-    func authority(recordGroup: String?, lotFile: String?, text: String) -> MajorCollectionRecord? {
+    public func authority(recordGroup: String?, lotFile: String?, text: String) -> MajorCollectionRecord? {
         let key: String
         if let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines), !lot.isEmpty {
             key = "lot:" + CentralFilesIndex.normalizeLot(lot)
@@ -159,26 +162,26 @@ public struct ArchivalResolution: Decodable, Sendable, Equatable {
 // MARK: - MajorCollectionRecord
 
 /// One collection in the cross-volume authority: which volumes' Sources sections cite it.
-struct MajorCollectionRecord: Decodable, Sendable, Equatable {
+public struct MajorCollectionRecord: Decodable, Sendable, Equatable {
     /// Stable dedup key (`lot:<normalized>` or `txt:<lowercased text>`).
-    let key: String
+    public let key: String
     /// The collection's display text.
-    let text: String
+    public let text: String
     /// Whether the collection was a `<hi rend="strong">` heading (a major named collection).
-    let isHeading: Bool
+    public let isHeading: Bool
     /// The owning record group's number, when parsed.
-    let recordGroup: String?
+    public let recordGroup: String?
     /// The lot-file citation, when present.
-    let lotFile: String?
+    public let lotFile: String?
     /// The holding repository, when named.
-    let repository: String?
+    public let repository: String?
     // `resolved` was here. It is no longer serialized (#372 / N-5 PR 2): nothing ever read it
     // — this record is consulted only for `volumeIds`, to caption "Cited in N volumes" — and 758
     // of its 932 populated objects duplicated a `lots` entry verbatim. 307,810 bytes, 20.4% of
     // the artifact, decoded on every launch and discarded. An older bundle that still carries the
     // key simply decodes without it.
     /// Volumes whose Sources section cites this collection, sorted.
-    let volumeIds: [String]
+    public let volumeIds: [String]
     /// Total citing nodes across all volumes.
-    let occurrences: Int
+    public let occurrences: Int
 }

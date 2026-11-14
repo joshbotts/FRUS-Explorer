@@ -1347,7 +1347,7 @@ NARA did not accession this lot as a single series, so no one record is the answ
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/LotClaimantsIndex.swift | lines: 125–126 | key: source.explorer.dividedLot.rationale %lld -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/LotClaimantsIndex.swift | lines: 130–131 | key: source.explorer.dividedLot.rationale %lld -->
 
 NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one. Consult with NARA archivist staff for further assistance.
 
@@ -2531,35 +2531,35 @@ Counted from editors’ footnotes naming material FRUS did not print. A separate
 <!-- END SOURCE: collection.detail.unprinted.footer -->
 
 #### This collection is cited in the %1$@ volumes and again as…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 290–291 | key: collection.detail.timeline.narrative.gapped %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 293–294 | key: collection.detail.timeline.narrative.gapped %@ %@ -->
 
 This collection is cited in the %1$@ volumes and again as late as the %2$@ volumes, with eras in between where it does not appear.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.gapped %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes and…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 295–296 | key: collection.detail.timeline.narrative.flat %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 298–299 | key: collection.detail.timeline.narrative.flat %@ %@ -->
 
 This collection enters the record with the %1$@ volumes and runs through the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.flat %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes and…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 307–308 | key: collection.detail.timeline.narrative.peak %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 310–311 | key: collection.detail.timeline.narrative.peak %@ %@ -->
 
 This collection enters the record with the %1$@ volumes and peaks across the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.peak %@ %@ -->
 
 #### This collection enters the record at its peak with the %1$@…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 315–316 | key: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 318–319 | key: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
 
 This collection enters the record at its peak with the %1$@ volumes and fades after the %2$@ volumes.
 
 <!-- END SOURCE: collection.detail.timeline.narrative.entersAtPeak %@ %@ -->
 
 #### This collection enters the record with the %1$@ volumes…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 320–321 | key: collection.detail.timeline.narrative.fade %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CollectionRelations.swift | CollectionRelations.timelineNarrative | lines: 323–324 | key: collection.detail.timeline.narrative.fade %@ %@ %@ -->
 
 This collection enters the record with the %1$@ volumes, peaks across the %2$@ volumes, and fades after the %3$@ volumes.
 

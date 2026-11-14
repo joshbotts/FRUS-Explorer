@@ -177,6 +177,10 @@ public struct AuthoritySubSeriesRecord: Decodable, Sendable, Equatable, Hashable
 ///          loaded from a URL the host gives (`init(contentsOf:)`)
 ///   1.2 — 2026-11-12 (FRUS Explorer Light, S24c): `collections` and `record(id:)` public, which a host
 ///          building the archival analytics passes on and looks a focus up by
+///   1.3 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `record(forFrontMatterText:repository:
+///          lotFileNorm:decimalClass:)` public, and `IndexingPipeline.CollectionAliasFallback`'s
+///          `init(record:)`, for a host that draws a volume's Sources outline, its rows' Collection
+///          buttons and their Archival Neighbors; nothing they answer changes
 public struct CollectionAuthorityIndex: Decodable, Sendable {
 
     /// Artifact schema version.
@@ -308,8 +312,8 @@ public struct CollectionAuthorityIndex: Decodable, Sendable {
     /// The record for a volume front-matter Sources row (the `VolumeSourcesView`
     /// entry point): the shared `CollectionKeying.frontMatterIdentity` derivation,
     /// then the documented lookup order.
-    func record(forFrontMatterText text: String, repository: String?,
-                lotFileNorm: String?, decimalClass: String?) -> AuthorityCollectionRecord? {
+    public func record(forFrontMatterText text: String, repository: String?,
+                       lotFileNorm: String?, decimalClass: String?) -> AuthorityCollectionRecord? {
         guard let identity = CollectionKeying.frontMatterIdentity(
             text: text, repository: repository, lotFileNorm: lotFileNorm,
             decimalClass: decimalClass) else { return nil }
@@ -348,7 +352,7 @@ extension IndexingPipeline.CollectionAliasFallback {
     /// authority record: the record's canonical lot key plus its name and merged
     /// alias forms (see `IndexingPipeline.archivalNeighbors(forLotFile:…)` for the
     /// documented fallback order).
-    init(record: AuthorityCollectionRecord) {
+    public init(record: AuthorityCollectionRecord) {
         self.init(lotFileNorm: record.lotFileNorm, names: [record.name] + record.aliases)
     }
 }

@@ -37,6 +37,9 @@ import Foundation
 ///          `NumericalFileRoll` public, and the Numerical File's two catalogue links, `numericalFileSeriesURL`
 ///          and `cardIndexURL`, `NumericalFileIndex`'s, moved from `CentralFilesIndexStore`, which forwards;
 ///          both Source Explorer views read them while they draw, and a host draws what they draw
+///   1.5 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `isUntrustworthyNAID(_:)` public, the guard the
+///          collection record puts on its NARA Catalog link, for a host that draws the record; nothing it
+///          answers changes
 public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
@@ -129,7 +132,7 @@ public struct CentralFilesIndex: Codable, Sendable, Equatable {
     /// NARA link from a lot-keyed record in any bundle (#351). `nil`/empty is trustworthy.
     /// The scan is over the ~16 flagged/fileUnit entries' NAIDs; callers at render frequency can
     /// hoist `untrustworthyNAIDs` if they test many records.
-    func isUntrustworthyNAID(_ naId: String?) -> Bool {
+    public func isUntrustworthyNAID(_ naId: String?) -> Bool {
         guard let naId, !naId.isEmpty else { return false }
         return untrustworthyNAIDs.contains(naId)
     }

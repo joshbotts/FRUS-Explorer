@@ -18,14 +18,14 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #762 (archival analytics Phase 1)
-struct RelatedCollection: Identifiable, Sendable, Equatable {
+public struct RelatedCollection: Identifiable, Sendable, Equatable {
 
     /// The related authority record. Carried whole so a row can push its own
     /// ``CollectionDetailView`` without a second lookup.
-    let record: AuthorityCollectionRecord
+    public let record: AuthorityCollectionRecord
 
     /// Volumes that cite both this record and the focus record.
-    let sharedVolumeCount: Int
+    public let sharedVolumeCount: Int
 
     /// Distinct volumes citing *this* record — how broadly it is drawn on across the series.
     ///
@@ -33,16 +33,16 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
     /// and the breadth tie-break are the same number. The shipped artifact happens to carry no
     /// repeated volume id inside a single record, but a comparator keyed on the raw array while
     /// the score is keyed on the deduplicated set is an inconsistency waiting for the first one.
-    let partnerVolumeCount: Int
+    public let partnerVolumeCount: Int
 
     /// Overlap coefficient — shared ÷ the *smaller* of the two citing-volume lists, in
     /// `0...1`. Dividing by the smaller list is what damps the umbrella records: the
     /// "Central Files" cluster cites 157 volumes, and on raw shared count it is the top answer
     /// for 461 of the 1,557 collections that have a list at all — near enough one in three,
     /// whatever the two actually have to do with each other.
-    let overlap: Double
+    public let overlap: Double
 
-    var id: String { record.id }
+    public var id: String { record.id }
 }
 
 // MARK: - CollectionCoverageEra
@@ -64,27 +64,27 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #762
-struct CollectionCoverageEra: Identifiable, Sendable, Equatable, Hashable {
+public struct CollectionCoverageEra: Identifiable, Sendable, Equatable, Hashable {
 
     /// Position in ``CollectionRelations/coverageEras``; also the sort key and `id`.
-    let index: Int
+    public let index: Int
     /// First coverage year in the bucket.
-    let startYear: Int
+    public let startYear: Int
     /// Last coverage year in the bucket.
-    let endYear: Int
+    public let endYear: Int
 
-    var id: Int { index }
+    public var id: Int { index }
 
     /// Axis-tick form — `'61–63`. Two-digit years are used only from 1900 on, so a
     /// nineteenth-century bucket can never be read as a twentieth-century one.
-    var shortLabel: String {
+    public var shortLabel: String {
         guard startYear >= 1900 else { return fullLabel }
         return "’\(Self.twoDigits(startYear))–\(Self.twoDigits(endYear))"
     }
 
     /// Prose form — `1961–1963`. Used in the generated caption, where the years are read
     /// rather than scanned.
-    var fullLabel: String { "\(startYear)–\(endYear)" }
+    public var fullLabel: String { "\(startYear)–\(endYear)" }
 
     private static func twoDigits(_ year: Int) -> String {
         let last = year % 100
@@ -95,13 +95,13 @@ struct CollectionCoverageEra: Identifiable, Sendable, Equatable, Hashable {
 // MARK: - CollectionEraCount
 
 /// How many of a collection's citing volumes fall in one coverage era.
-struct CollectionEraCount: Identifiable, Sendable, Equatable {
+public struct CollectionEraCount: Identifiable, Sendable, Equatable {
     /// The era bucket.
-    let era: CollectionCoverageEra
+    public let era: CollectionCoverageEra
     /// Citing volumes attributed to it.
-    let volumeCount: Int
+    public let volumeCount: Int
 
-    var id: Int { era.index }
+    public var id: Int { era.index }
 }
 
 // MARK: - CollectionRelations
@@ -117,7 +117,10 @@ struct CollectionEraCount: Identifiable, Sendable, Equatable {
 /// Version history:
 ///   1.0 — Session 2026-08-08: #762 (archival analytics Phase 1)
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit
-enum CollectionRelations {
+///   1.2 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): public, with `RelatedCollection`,
+///          `CollectionCoverageEra` and `CollectionEraCount`, for a host that draws the collection
+///          record's Related Collections and Cited Over Time; nothing they answer changes
+public enum CollectionRelations {
 
     // MARK: - Related collections
 
@@ -136,10 +139,10 @@ enum CollectionRelations {
     /// 0.5% there — but 27.7% corpus-wide, since for a single-volume focus every candidate ties
     /// on both keys. This floor removes the class outright: a one-volume record cannot share
     /// two. It costs 19 of the 1,577 multi-volume records their list.
-    static let minimumSharedVolumes = 2
+    public static let minimumSharedVolumes = 2
 
     /// Rows shown before the "Show all" disclosure, in every capped section of the detail view.
-    static let previewRowCap = 5
+    public static let previewRowCap = 5
 
     /// The collections cited alongside `focus`, best first.
     ///
@@ -159,8 +162,8 @@ enum CollectionRelations {
     /// - Parameters:
     ///   - focus: The record being viewed.
     ///   - collections: Every authority record, `focus` included (it is skipped by id).
-    static func related(to focus: AuthorityCollectionRecord,
-                        in collections: [AuthorityCollectionRecord]) -> [RelatedCollection] {
+    public static func related(to focus: AuthorityCollectionRecord,
+                               in collections: [AuthorityCollectionRecord]) -> [RelatedCollection] {
         let focusVolumes = Set(focus.volumeIds)
         guard focusVolumes.count >= minimumSharedVolumes else { return [] }
 
@@ -193,7 +196,7 @@ enum CollectionRelations {
     // MARK: - Coverage eras
 
     /// The coverage-era axis, earliest first. See ``CollectionCoverageEra``.
-    static let coverageEras: [CollectionCoverageEra] = {
+    public static let coverageEras: [CollectionCoverageEra] = {
         let spans = [(1861, 1870), (1871, 1880), (1881, 1890), (1891, 1900),
                      (1901, 1910), (1911, 1920), (1921, 1930), (1931, 1940),
                      (1941, 1947), (1948, 1950), (1951, 1954), (1955, 1957),
@@ -207,7 +210,7 @@ enum CollectionRelations {
     /// The volume's coverage midpoint — the same join SA-3a's generator uses for its decade
     /// attribution (`(earliest + latest) / 2`, falling back to whichever endpoint parses).
     /// Only the bucket boundaries differ between the two surfaces; the attribution does not.
-    static func midpointYear(earliest: String?, latest: String?) -> Int? {
+    public static func midpointYear(earliest: String?, latest: String?) -> Int? {
         let first = FRUSVolumeMetadata.firstYear(in: earliest)
         let last = FRUSVolumeMetadata.firstYear(in: latest)
         guard let start = first ?? last, let end = last ?? first else { return nil }
@@ -221,7 +224,7 @@ enum CollectionRelations {
     /// (`frus1872p2v5` reaches back to 1620, for a midpoint of 1746), and two because their
     /// coverage simply opens in 1860. None is cited by any authority record today, but dropping a
     /// citing volume would silently shrink a count the user is reading as complete.
-    static func eraIndex(forMidpointYear year: Int) -> Int {
+    public static func eraIndex(forMidpointYear year: Int) -> Int {
         for era in coverageEras where year <= era.endYear {
             return era.index
         }
@@ -236,7 +239,7 @@ enum CollectionRelations {
     ///   date range does not parse are simply absent).
     /// - Returns: Contiguous era buckets, or an empty array when the volumes reach fewer than
     ///   two eras — a single bar states nothing the section header does not.
-    static func citedOverTime(volumeMidpoints: [Int]) -> [CollectionEraCount] {
+    public static func citedOverTime(volumeMidpoints: [Int]) -> [CollectionEraCount] {
         var counts: [Int: Int] = [:]
         for year in volumeMidpoints {
             counts[eraIndex(forMidpointYear: year), default: 0] += 1
@@ -271,7 +274,7 @@ enum CollectionRelations {
     /// caller that hands it a bucket list with an empty end.
     ///
     /// Returns an empty string for fewer than two buckets — the caller renders no chart there.
-    static func timelineNarrative(for buckets: [CollectionEraCount]) -> String {
+    public static func timelineNarrative(for buckets: [CollectionEraCount]) -> String {
         guard buckets.count >= 2,
               let firstEra = buckets.first(where: { $0.volumeCount > 0 })?.era,
               let lastEra = buckets.last(where: { $0.volumeCount > 0 })?.era else { return "" }

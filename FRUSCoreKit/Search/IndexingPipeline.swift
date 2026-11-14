@@ -546,6 +546,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         row of an attached store's `user_search`, for a host that keeps each reader's writing apart
 ///         from the index it serves. From the index, the default and the app's call, it runs the same
 ///         statement as before; nothing the indexer stores or reads changes
+///  4.61 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `contentHash(header:dateline:sourceNote:bodyText:)`
+///         and `bodyHash(for:)` are public, unchanged, with three of the four strings the first hashes as
+///         `document_cache` stores them, `extractDateline(from:)`, `extractSourceNote(from:)` and
+///         `extractBodyText(from:)` (`extractHeader(from:)` already was), for a host that compares a TEI file
+///         with the revisions an export carries, and so is `isLibraryRepository(_:)`, for a host that draws a
+///         volume's Sources outline; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -7094,8 +7100,16 @@ public actor IndexingPipeline {
     /// `content_hash`: over the exact strings `document_cache` stores, so it moves for any change
     /// a reader can see — a corrected footnote, a revised source note, a re-headed document — and
     /// is unmoved by the whitespace-only re-serialisations `normalizedWhitespace` already folds.
-    nonisolated static func contentHash(header: String, dateline: String?,
-                                        sourceNote: String?, bodyText: String) -> String {
+    ///
+    /// Public since FRUS Explorer Light's S22d follow-up, as are ``bodyHash(for:)`` and the strings this hashes,
+    /// so a host hashes a parsed document as `indexVolume` stamps it, with no index: pass it
+    /// ``extractHeader(from:)``, ``extractDateline(from:)``, ``extractSourceNote(from:)`` and
+    /// ``extractBodyText(from:)`` of each document's nodes, as `FRUSDocumentParser.parseVolumeFull(volumeURL:)`
+    /// parses them. A stored row compares only when its `index_version` is ``currentDateIndexVersion``: a new
+    /// version can move a document's hashes with no change to its file, and the indexer stamps no hash change
+    /// across one.
+    public nonisolated static func contentHash(header: String, dateline: String?,
+                                               sourceNote: String?, bodyText: String) -> String {
         let joined = [header, dateline ?? "", sourceNote ?? "", bodyText].joined(separator: "\u{1F}")
         return SHA256.hash(data: Data(joined.utf8)).map { String(format: "%02x", $0) }.joined()
     }
@@ -7106,7 +7120,7 @@ public actor IndexingPipeline {
     /// stale, run over the same conversion — so the answer "your offsets moved" here and the
     /// amber highlight there cannot disagree. A hash over the AST instead would move for a
     /// footnote correction that shifts no offset, and would disagree with every highlight.
-    nonisolated static func bodyHash(for document: FRUSDocumentAST) -> String {
+    public nonisolated static func bodyHash(for document: FRUSDocumentAST) -> String {
         var converter = ASTToRenderNodeConverter()
         return ASTToRenderNodeConverter.renderingVersion(for: converter.convert(document))
     }
@@ -7118,7 +7132,7 @@ public actor IndexingPipeline {
     /// `<placeName>Washington</placeName>, <date>October 1, 1962</date>.`, and the space join this
     /// replaced stored it as "Washington , October 1, 1962 ." for 96.7% of the corpus's datelines.
     /// Footnotes stay in, as they always have; only the separator changed.
-    nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
+    public nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             switch node {
             case .dateline:
@@ -7316,7 +7330,7 @@ public actor IndexingPipeline {
     /// `[Source: …]` bracket wrapper collapses to `Source: …` — one stored shape across
     /// both encodings, and the `Source:` prefix is preserved so `SourceNoteParser`'s
     /// narrative branch (→ `citation_era='structured'` rows) fires.
-    nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+    public nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
         // Patterns 1 + 2: <head>-nested notes (1955+ encodings). A whole-note candidate
         // without a `Source:` prefix is deferred (see the pattern-2 gate in the doc
         // comment): when a top-level note also exists, the top-level text is the real
@@ -7536,7 +7550,7 @@ public actor IndexingPipeline {
     /// excerpt verifier's haystack. A block the reader sets apart keeps a space from its neighbours
     /// here; the reader's own flat text runs blocks together, which is the one place the two differ
     /// by design besides the footnotes this string inlines.
-    nonisolated static func extractBodyText(from nodes: [FRUSASTNode]) -> String {
+    public nonisolated static func extractBodyText(from nodes: [FRUSASTNode]) -> String {
         FRUSASTNode.printedText(of: nodes).normalizedWhitespace
     }
 
@@ -13430,7 +13444,7 @@ public actor IndexingPipeline {
     /// entry through the presidential-library match path instead of the record-group
     /// one. Mirrors `SourcesParserDelegate.repoKeywords`' library entries: the
     /// "…Library" names, the Nixon Presidential Materials, and the Hoover Institution.
-    static func isLibraryRepository(_ repository: String) -> Bool {
+    public static func isLibraryRepository(_ repository: String) -> Bool {
         let r = repository.lowercased()
         return r.contains("library") || r.contains("nixon") || r.contains("hoover institution")
     }
