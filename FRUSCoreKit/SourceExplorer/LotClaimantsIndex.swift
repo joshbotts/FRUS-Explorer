@@ -14,23 +14,23 @@ import SourceNoteKit
 // MARK: - LotClaimant
 
 /// One NARA series that claims a FRUS lot number.
-struct LotClaimant: Codable, Sendable, Equatable {
+public struct LotClaimant: Codable, Sendable, Equatable {
     /// NARA unique identifier.
-    let naId: String
+    public let naId: String
     /// The series title as NARA describes it.
-    let title: String
+    public let title: String
     /// The record group NARA holds it in.
-    let recordGroup: String?
+    public let recordGroup: String?
     /// HMS/MLR entry numbers — what NARA staff use to pull the records.
-    let hmsMlrEntryNumbers: [String]?
+    public let hmsMlrEntryNumbers: [String]?
     /// Coverage span as NARA states it.
-    let dateRange: String?
+    public let dateRange: String?
     /// `"controlNumber"` (the series lists the lot among its own control numbers) or
     /// `"consolidationNote"` (NARA names the lot in prose attached to another control number).
-    let evidence: String
+    public let evidence: String
 
     /// Deep link to the catalogue record.
-    var catalogURL: String { "https://catalog.archives.gov/id/\(naId)" }
+    public var catalogURL: String { "https://catalog.archives.gov/id/\(naId)" }
 }
 
 // MARK: - LotClaimantsIndex
@@ -69,6 +69,9 @@ struct LotClaimant: Codable, Sendable, Equatable {
 ///          `candidatesOutcome(forRawLot:in:seriesFacts:)` and `unanimousCreator(_:)`, moved here from the app with
 ///          `SourceExplorerProvenance.lotCards`, which calls it; the series facts it names the creator from are a
 ///          parameter, and the app's overload without it passes its store
+///   1.3 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `claimants(forRawLot:)` public, with
+///          `LotClaimant`, and `lots` with `Entry`, for a host that draws the collection record's Divided at
+///          NARA and counts the divided lots under it; nothing they answer changes
 public struct LotClaimantsIndex: Codable, Sendable {
     /// Bumped when the row shape changes.
     let schemaVersion: Int
@@ -79,19 +82,21 @@ public struct LotClaimantsIndex: Codable, Sendable {
     /// The `generated` stamp of the harvest it was derived from.
     let harvestGenerated: String?
     /// One entry per lot NARA divided.
-    let lots: [Entry]
+    public let lots: [Entry]
 
     /// A lot and every series claiming it.
-    struct Entry: Codable, Sendable {
-        let lotNumber: String
-        let claimants: [LotClaimant]
+    public struct Entry: Codable, Sendable {
+        /// The lot number, stored folded (`64D563`): the key ``claimants(forRawLot:)`` matches.
+        public let lotNumber: String
+        /// The series claiming the lot, as the index lists them.
+        public let claimants: [LotClaimant]
     }
 
     /// The series claiming `raw`, or `nil` when NARA did not divide this lot.
     ///
     /// Matched on the same folded key the acceptance test uses, so a citation reading
     /// `64–D 563` finds the entry stored as `64D563`.
-    func claimants(forRawLot raw: String) -> [LotClaimant]? {
+    public func claimants(forRawLot raw: String) -> [LotClaimant]? {
         let key = LotResolutionAcceptance.foldControlNumber(raw)
         guard !key.isEmpty else { return nil }
         guard let found = lots.first(where: { $0.lotNumber == key })?.claimants,

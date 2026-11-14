@@ -44,6 +44,9 @@ import Foundation
 ///   1.1 — 2026-11-08 (FRUS Explorer Light, S22a): moved into FRUSCoreKit, public with its decoder, and
 ///          loaded from a URL the host gives (`init(contentsOf:)`); `ExternalCitationIndexStore`, which
 ///          reads the app's bundle, stays in the app (`ExternalCitationIndexStore.swift`)
+///   1.2 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `referenceCount(forCollectionId:)` and
+///          `volumeCounts(forCollectionId:)` public, for a host that draws the collection record's Pointed at;
+///          nothing they answer changes
 public struct ExternalCitationIndex: Decodable, Sendable {
 
     /// One archival unit's references, broken down by the volume whose footnotes made them.
@@ -240,13 +243,13 @@ public struct ExternalCitationIndex: Decodable, Sendable {
     }
 
     /// Total references pointing at one collection, across every volume.
-    func referenceCount(forCollectionId id: String) -> Int {
+    public func referenceCount(forCollectionId id: String) -> Int {
         guard let index = targetIds.firstIndex(of: id) else { return 0 }
         return targets.first { $0.key == index }?.total ?? 0
     }
 
     /// The volumes whose footnotes point at one collection, and how often.
-    func volumeCounts(forCollectionId id: String) -> [(volumeId: String, count: Int)] {
+    public func volumeCounts(forCollectionId id: String) -> [(volumeId: String, count: Int)] {
         guard let index = targetIds.firstIndex(of: id),
               let row = targets.first(where: { $0.key == index }) else { return [] }
         return pairs(in: row)
