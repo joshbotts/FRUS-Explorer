@@ -189,6 +189,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.25 — L14 (plan of record decision 124): `indexWorkInFlight`, the index work the process runs in
 ///          tasks of its own (`IndexWorkInFlight`), the launch's, a download's and the reader's, which a
 ///          run of the iOS background task waits for
+///   4.26 — #1918 (L18, HCD-4): `hasReadIndexedVolumeIds`, so an empty library's notice waits for the
+///          launch's read of the indexed set
 
 // MARK: - CloudKitSyncState
 
@@ -2160,6 +2162,13 @@ final class AppState {
     /// during indexing — saturating the main thread and making the education sheet laggy).
     var indexedVolumeIds: Set<String> = []
 
+    /// Whether ``indexedVolumeIds`` has been read from the index at least once this launch (#1918, HCD-4).
+    ///
+    /// Boot publishes the search service and reads the set in a task of its own afterwards, so for a moment the set is
+    /// empty whatever the index holds. A search that found nothing then must not say the device has no volumes
+    /// (`EmptyLibraryNotice`), so the notice waits for this.
+    private(set) var hasReadIndexedVolumeIds = false
+
     /// What Volumes & Storage last measured and the volume removals in progress (#1356).
     ///
     /// Held here rather than by the hub, because a hub does not outlive the reader leaving it: the
@@ -2656,6 +2665,7 @@ final class AppState {
         }
         ids.remove("")
         indexedVolumeIds = ids
+        hasReadIndexedVolumeIds = true
         #if os(iOS)
         refreshUnindexedVolumeCount()
         #endif

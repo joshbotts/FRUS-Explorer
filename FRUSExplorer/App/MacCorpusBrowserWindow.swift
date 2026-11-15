@@ -245,7 +245,8 @@ struct CorpusBrowserWindowView: View {
                 Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
                     // The review's MAC-12, with HCD-4: the downloaded-only filter over a library with nothing
                     // downloaded left this section empty, with no word of why.
-                    if filterDownloaded, subseries.isEmpty {
+                    // Once the download manager can say what is downloaded: before it boots, nothing reads as downloaded.
+                    if filterDownloaded, subseries.isEmpty, appState.downloadManager != nil {
                         emptyDownloadedSubseriesRow
                     }
                     ForEach(subseries, id: \.self) { sub in

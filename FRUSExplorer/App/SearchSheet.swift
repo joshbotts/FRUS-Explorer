@@ -1702,10 +1702,12 @@ struct MacSearchWindowView: View {
     }
 
     /// Why a finished search found nothing because of the library, or `nil` when the search's own words and filters
-    /// are what found nothing (HCD-4). The iOS twin is `SearchView.emptyLibraryReason`.
+    /// are what found nothing (HCD-4), once the launch has read the indexed set. The iOS twin is
+    /// `SearchView.emptyLibraryReason`.
     private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
         guard hasZeroResults, searchVM.pinnedBase == nil, searchVM.swapUnderWay == nil,
-              searchVM.beyondLibraryHits.isEmpty, !searchVM.semanticNeedsModel else { return nil }
+              searchVM.beyondLibraryHits.isEmpty, !searchVM.semanticNeedsModel, appState.hasReadIndexedVolumeIds
+        else { return nil }
         return EmptyLibraryNotice.reason(
             indexedVolumeCount: appState.indexedVolumeIds.count,
             isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)

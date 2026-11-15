@@ -604,6 +604,29 @@ struct FilterSheetDismissalTests {
     }
 }
 
+// MARK: - EmptyLibraryNoticeTests (#1918, HCD-4 and A11Y-2)
+
+/// When a search names the library as the reason it found nothing, and what VoiceOver hears then.
+struct EmptyLibraryNoticeTests {
+
+    @Test("The library is the reason only while no volume is indexed, and preparing while volumes are on their way")
+    func reasonFollowsTheIndexedCount() {
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 0, isPreparing: false) == .noVolumes)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 0, isPreparing: true) == .preparing)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 1, isPreparing: false) == nil)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 552, isPreparing: true) == nil)
+    }
+
+    @Test("A finished search says the notice's headline where it stands, and the header's words otherwise")
+    func announcementSaysWhatTheScreenSays() {
+        #expect(SearchFinishAnnouncement.text(header: "3 results", emptyLibrary: nil) == "3 results")
+        #expect(SearchFinishAnnouncement.text(header: "No results", emptyLibrary: .noVolumes)
+                == EmptyLibraryNotice.title(for: .noVolumes))
+        #expect(EmptyLibraryNotice.title(for: .noVolumes) == "No volumes on this device yet")
+        #expect(SearchFinishAnnouncement.text(header: "No results", emptyLibrary: .preparing) == "No volumes ready yet")
+    }
+}
+
 // MARK: - PersonFilterTests
 
 @MainActor

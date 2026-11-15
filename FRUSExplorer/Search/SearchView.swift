@@ -1006,10 +1006,12 @@ struct SearchView: View {
     /// need for the search model, each of which its own state says.
     ///
     /// While volumes are downloading or being indexed the reason is `.preparing`, so the notice does not say the
-    /// device has none while the queue banner counts them.
+    /// device has none while the queue banner counts them; and until the launch has read the indexed set, there is
+    /// none (`AppState.hasReadIndexedVolumeIds`).
     private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
         guard vm.hasSearched, vm.results.isEmpty, vm.searchError == nil, vm.pinnedBase == nil,
-              vm.beyondLibraryHits.isEmpty, !vm.semanticNeedsModel else { return nil }
+              vm.beyondLibraryHits.isEmpty, !vm.semanticNeedsModel, appState.hasReadIndexedVolumeIds
+        else { return nil }
         return EmptyLibraryNotice.reason(
             indexedVolumeCount: appState.indexedVolumeIds.count,
             isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)

@@ -88,7 +88,8 @@ struct SubseriesDirectoryView: View {
         // The review's IPA-1, with HCD-4: the downloaded-only filter over a library with nothing downloaded left this
         // list blank, with no word of why.
         .overlay {
-            if vm.filterDownloadedOnly, vm.allSubseriesGroups.isEmpty {
+            // Once the download manager can say what is downloaded: before it boots, nothing reads as downloaded.
+            if vm.filterDownloadedOnly, vm.allSubseriesGroups.isEmpty, vm.downloadManager != nil {
                 EmptyLibraryNotice(reason: appState.downloadQueue.isEmpty ? .noVolumes : .preparing,
                                    context: .browse,
                                    onDownloadVolumes: downloadVolumesAction,
