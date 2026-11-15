@@ -115,19 +115,19 @@ Note: re-keyed for #1918 (L18, HCD-4) from `search.empty.denominator` (“0 here
 #### The empty library (#1918, HCD-4)
 *Shown in place of the zero-result state when no volume is indexed, on iPhone, iPad and the Mac, and in place of a blank Subseries list when the downloaded-only filter leaves it empty. Its button, **Download Volumes…**, opens the download browser on iPhone and iPad and Settings ▸ Library ▸ Volumes & Storage on the Mac; **Show All Volumes** takes the filter off.*
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 499–500 | key: library.empty.title | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 500–501 | key: library.empty.title | shared: iOS only -->
 
 No volumes on this device yet
 
 <!-- END SOURCE: library.empty.title -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 497–498 | key: library.empty.title.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 498–499 | key: library.empty.title.mac | shared: macOS only -->
 
 No volumes on this Mac yet
 
 <!-- END SOURCE: library.empty.title.mac -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 502–503 | key: library.preparing.title | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 503–504 | key: library.preparing.title | shared: iOS+macOS (single edit point) -->
 
 *Shown while volumes are downloading or being indexed and none is ready.*
 
@@ -135,31 +135,31 @@ No volumes ready yet
 
 <!-- END SOURCE: library.preparing.title -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 514–515 | key: library.empty.search | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 515–516 | key: library.empty.search | shared: iOS only -->
 
 Search reads only the volumes downloaded to this device, so it cannot find anything yet. Download some, and search them here.
 
 <!-- END SOURCE: library.empty.search -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 511–512 | key: library.empty.search.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 512–513 | key: library.empty.search.mac | shared: macOS only -->
 
 Search reads only the volumes downloaded to this Mac, so it cannot find anything yet. Download some, and search them here.
 
 <!-- END SOURCE: library.empty.search.mac -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 518–519 | key: library.empty.browse | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 519–520 | key: library.empty.browse | shared: iOS+macOS (single edit point) -->
 
 This list shows downloaded volumes only, and none is downloaded yet. Download some, or show every volume in the series.
 
 <!-- END SOURCE: library.empty.browse -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 521–522 | key: library.preparing.search | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 522–523 | key: library.preparing.search | shared: iOS+macOS (single edit point) -->
 
 Search finds the volumes you are downloading once each one is indexed.
 
 <!-- END SOURCE: library.preparing.search -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 524–525 | key: library.preparing.browse | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 525–526 | key: library.preparing.browse | shared: iOS+macOS (single edit point) -->
 
 The volumes you are downloading appear here as each one arrives.
 
@@ -171,13 +171,13 @@ The volumes you are downloading appear here as each one arrives.
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1390–1391 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1403–1404 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1238–1239 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1240–1241 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -193,7 +193,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1906–1908 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1908–1910 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -201,7 +201,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1911–1913 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1913–1915 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -1779,7 +1779,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1962–1962 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1975–1975 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1792,28 +1792,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3063–3063 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3076–3076 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3052–3052 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3065–3065 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3059–3059 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3072–3072 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1531–1531 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1544–1544 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1822,7 +1822,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1557–1558 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1570–1571 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -2041,7 +2041,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3036–3036 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3049–3049 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -2059,14 +2059,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 848–848 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 850–850 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 855–856 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 857–858 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -2075,7 +2075,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2664–2664 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2673–2673 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -2747,14 +2747,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1133–1134 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1135–1136 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1631–1632 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1633–1634 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 

@@ -47,12 +47,13 @@ import XCTest
 /// is made in the row's own menu (Add Tags…), so the test also drives the tagging a reader does.
 ///
 /// ## Devices
-/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`, with the iOS 27 timeout flags; three tests, none
-/// skipped there. Under iOS 26 two tests skip and the third reads the labels without listening: the
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`, with the iOS 27 timeout flags; four tests, none
+/// skipped there. Under iOS 26 three tests skip and the fourth reads the labels without listening: the
 /// service is iOS 27's.
 ///
 /// Version history:
 ///   1.0 — #1684: initial implementation
+///   1.1 — #1918 (L18, A11Y-2): `testAFinishedSearchSaysWhatItFound`, a finished search's announcement
 @MainActor
 final class SearchResultVoiceOverTests: XCTestCase {
 
@@ -80,6 +81,9 @@ final class SearchResultVoiceOverTests: XCTestCase {
 
     /// `d7`'s label once it carries the suite's tag.
     private static var taggedDocumentLabel: String { labels[0].label + ", Tags: " + tagName }
+
+    /// What a finished search of the three rows says (A11Y-2): the results header's words.
+    private static let announcement = "3 results"
 
     /// The name of the row's action for the suite's tag.
     private static var filterAction: String { "Filter by " + tagName }
@@ -192,6 +196,35 @@ final class SearchResultVoiceOverTests: XCTestCase {
             XCTAssertFalse(resultRow(heading).exists,
                            "Filtering by \(Self.tagName) left the row of \(heading), which does not carry the tag")
         }
+    }
+
+    /// A finished search says what it found as its rows arrive: the header's own words, "3 results"
+    /// (#1918, the review's A11Y-2). Until then only a search inside a held list was announced, so a
+    /// VoiceOver reader heard nothing when a list arrived, or came back empty.
+    func testAFinishedSearchSaysWhatItFound() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        // The volume is indexed during launch, and a search that runs first lists nothing, so the rows are
+        // made sure of with VoiceOver off; the search listened to is the same words submitted again.
+        runTheSearch()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field")
+
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        field.tap()
+        field.typeText("\n")
+        var heard: [String] = []
+        let deadline = Date().addingTimeInterval(Self.patience)
+        while Date() < deadline, !heard.contains(where: { $0.contains(Self.announcement) }) {
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+            Thread.sleep(forTimeInterval: 0.2)
+        }
+        try voiceOver.disable()
+        XCTAssertTrue(heard.contains { $0.contains(Self.announcement) }, """
+            VoiceOver did not say what the search found ("\(Self.announcement)") within \(Int(Self.patience)) s. \
+            It said: \(heard)
+            """)
     }
 
     /// While results are being selected a tap on a tag chip picks its row and filters nothing, as

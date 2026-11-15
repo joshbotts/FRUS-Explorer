@@ -484,13 +484,14 @@ struct EmptyLibraryNotice: View {
     ///   - indexedVolumeCount: How many volumes the index holds.
     ///   - isPreparing: Whether volumes are downloading or being indexed.
     /// - Returns: The reason, or `nil`.
-    static func reason(indexedVolumeCount: Int, isPreparing: Bool) -> Reason? {
+    nonisolated static func reason(indexedVolumeCount: Int, isPreparing: Bool) -> Reason? {
         guard indexedVolumeCount == 0 else { return nil }
         return isPreparing ? .preparing : .noVolumes
     }
 
-    /// The notice's headline, which a finished search also says to VoiceOver (A11Y-2).
-    static func title(for reason: Reason) -> String {
+    /// The notice's headline, which a finished search also says to VoiceOver (A11Y-2). `nonisolated`, as a view's
+    /// statics are main-actor otherwise, and the announcement's rule is not.
+    nonisolated static func title(for reason: Reason) -> String {
         switch reason {
         case .noVolumes:
             #if os(macOS)
@@ -504,7 +505,7 @@ struct EmptyLibraryNotice: View {
     }
 
     /// The sentence under the headline.
-    static func detail(for reason: Reason, in context: Context) -> String {
+    nonisolated static func detail(for reason: Reason, in context: Context) -> String {
         switch (reason, context) {
         case (.noVolumes, .search):
             #if os(macOS)

@@ -1025,3 +1025,30 @@ struct ResultSetScope: Equatable, Sendable {
                       defaultValue: "These are the highest-scoring matches, not a sample across time — this shape is theirs, not the whole match’s.")
     }
 }
+
+// MARK: - SearchFinishAnnouncement
+
+/// What VoiceOver hears when a search finishes, on iPhone, iPad and the Mac (the review's A11Y-2).
+///
+/// Until A11Y-2 a finished search was announced only inside a held list (#1577 lanes 4 and 5), so a VoiceOver
+/// reader heard nothing when a list arrived or came back empty. Every search runs on the reader's own act (a
+/// submitted field, a filter, a facet, a chip), so saying each one's outcome adds no noise. A search that fails says
+/// its error, which both hosts announce as the error appears, since a refused query finishes no search.
+///
+/// Version history:
+///   1.0 — #1918 (L18, A11Y-2): initial implementation
+enum SearchFinishAnnouncement {
+
+    /// The words for a finished search that did not fail.
+    ///
+    /// - Parameters:
+    ///   - header: What the results header says of the rows (`ResultSetScope.headerDescription`): "412 results",
+    ///     "No results", a layer's own sentence.
+    ///   - emptyLibrary: Why the empty-library notice stands in for the zero-result state, or `nil` when it does not
+    ///     (HCD-4).
+    /// - Returns: The notice's headline where it is shown, and the header's words otherwise.
+    static func text(header: String, emptyLibrary: EmptyLibraryNotice.Reason?) -> String {
+        if let emptyLibrary { return EmptyLibraryNotice.title(for: emptyLibrary) }
+        return header
+    }
+}

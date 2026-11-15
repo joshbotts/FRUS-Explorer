@@ -165,7 +165,8 @@ import SwiftUI
 ///   1.32 — 2026-11-15: #1905 (L15) — the token help reads *Chosen in Subjects* and *Subject areas are chosen in the facet panel*
 ///   1.33 — 2026-11-15: #1918 (L18) — the facet panel's Apply sends every staged section (IPH-3); with no volume
 ///          indexed a finished search shows `EmptyLibraryNotice`, whose Download Volumes… opens Settings ▸ Library ▸
-///          Volumes & Storage, where the zero-result state blamed a term (HCD-4)
+///          Volumes & Storage, where the zero-result state blamed a term (HCD-4); every finished search is announced,
+///          and a failed one says its error, where only a layer's finish was (A11Y-2)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -724,10 +725,11 @@ struct MacSearchWindowView: View {
         .onChange(of: searchVM.offersReadings) { _, offered in
             if !offered { readingSelection.wrappedValue = .list }
         }
-        // #1577 lane 5: a layer's finish is announced, the header that says what it found.
-        .onChange(of: searchVM.executedSearchVersion) { _, _ in
-            announceLayerFinished()
-        }
+        // A11Y-2: every finished search is announced, what it found, where #1577 lane 5 announced a layer's
+        // alone; a failed one says its error, which a refused query sets with no search run.
+        .modifier(SearchFinishAnnouncer(version: searchVM.executedSearchVersion,
+                                        error: searchVM.searchError?.localizedDescription,
+                                        finished: { announceFinishedSearch() }))
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale
         // `documentIds` gate — otherwise a search picked to "this project's documents" for
@@ -2149,10 +2151,17 @@ struct MacSearchWindowView: View {
         AccessibilityNotification.Announcement(SearchLayerCopy.swapHelp(swap)).post()
     }
 
-    /// Announces a layer's finish to VoiceOver: the header that says what it found.
-    private func announceLayerFinished() {
-        guard searchVM.executedRoute.isLayer else { return }
-        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
+    /// Says to VoiceOver what a finished search found (the review's A11Y-2): the header's words, or the empty-library
+    /// notice's headline (`SearchFinishAnnouncement`). A failed search says its error instead, from the error's own
+    /// observer. Until A11Y-2 only a layer's finish was announced, behind `executedRoute.isLayer`.
+    ///
+    /// Nothing is said while another search is under way: it replaced this one, and says what it found when it
+    /// finishes. The window runs a search on each filter edit, so each edit's count is said, as the list shows it.
+    private func announceFinishedSearch() {
+        guard !searchVM.isSearching, searchVM.searchError == nil else { return }
+        AccessibilityNotification.Announcement(
+            SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          emptyLibrary: emptyLibraryReason)).post()
     }
 
     /// Which set this window is showing: `MacSearchViewModel.resultSetScope`, which composes it from

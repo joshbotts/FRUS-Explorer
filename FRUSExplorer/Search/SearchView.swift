@@ -275,6 +275,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          close (the sheet's Done, a swipe, the binoculars menu's Facets) applies them (`closeFacetPanelByHand()`)
 ///   1.39 — 2026-11-15: #1918 (L18, HCD-4) — with no volume indexed a finished search shows `EmptyLibraryNotice`, with
 ///          Download Volumes… opening `DownloadVolumesSheet`, where the zero-result state blamed a term
+///   1.40 — 2026-11-15: #1918 (L18, A11Y-2) — every finished search is announced (`announceFinishedSearch()`), and a
+///          failed one says its error, where only a layer's finish was
 
 struct SearchView: View {
 
@@ -770,12 +772,10 @@ struct SearchView: View {
                 .onChange(of: vm.offersReadings) { _, offered in
                     if !offered { readingSelection.wrappedValue = .list }
                 }
-                // #1577 lane 4: a layer's finish is announced, the header that says what it found.
-                .onChange(of: vm.executedSearchVersion) { _, _ in
-                    if vm.executedRoute.isLayer {
-                        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
-                    }
-                }
+                // A11Y-2: every finished search is announced, what it found, where #1577 lane 4 announced a
+                // layer's alone; a failed one says its error, which a refused query sets with no search run.
+                .modifier(SearchFinishAnnouncer(version: vm.executedSearchVersion, error: vm.searchError,
+                                                finished: { announceFinishedSearch() }))
                 .sheet(item: $saveSearchRequest) { request in
                     SaveSearchSheet(request: request) { name in
                         modelContext.insert(SavedSearch(name: name, parameters: request.parameters))
@@ -1021,6 +1021,19 @@ struct SearchView: View {
         #else
         return nil
         #endif
+    }
+
+    /// Says to VoiceOver what a finished search found (the review's A11Y-2): the results header's words, or the
+    /// empty-library notice's headline (`SearchFinishAnnouncement`). A failed search says its error instead, from the
+    /// error's own observer.
+    ///
+    /// Nothing is said while another search is under way: it replaced this one, as the second of a swap's two
+    /// searches replaces the first, and says what it found when it finishes.
+    private func announceFinishedSearch() {
+        guard !vm.isSearching, vm.searchError == nil else { return }
+        AccessibilityNotification.Announcement(
+            SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          emptyLibrary: emptyLibraryReason)).post()
     }
 
     /// What the Filters sheet's closing does, by Done or by a swipe (IPS-1): the search on screen runs
@@ -3163,3 +3176,31 @@ private struct SearchTipsPresenter: ViewModifier {
 }
 
 #endif
+
+// MARK: - SearchFinishAnnouncer (#1918, A11Y-2)
+
+/// Says a search's outcome to VoiceOver on both platforms' search screens (the review's A11Y-2): each completed search
+/// through the host's `finished`, which reads its own screen, and each error as it appears.
+///
+/// A modifier rather than two `onChange`s in each host's chain: the Mac window's chain is at the type checker's limit,
+/// and one of its two more observers would not type-check in reasonable time.
+///
+/// Version history:
+///   1.0 — #1918 (L18, A11Y-2): initial implementation
+struct SearchFinishAnnouncer: ViewModifier {
+
+    /// The host's `executedSearchVersion`, which moves once per completed search.
+    let version: Int
+    /// The error the host shows in place of results, or `nil`.
+    let error: String?
+    /// Says what the completed search found.
+    let finished: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: version) { _, _ in finished() }
+            .onChange(of: error) { _, error in
+                if let error { AccessibilityNotification.Announcement(error).post() }
+            }
+    }
+}
