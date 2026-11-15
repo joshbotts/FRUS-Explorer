@@ -120,10 +120,7 @@ sup.fn a { color: inherit; text-decoration: none; }
 .pnote { font-family: var(--sans); font-size: 13.5px; line-height: 1.5; color: var(--note-ink); background: var(--note-bg); border: 1px dashed var(--note-line); border-radius: 6px; padding: 10px 14px; }
 .pnote b { font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11.5px; margin-right: 6px; }
 body.hide-notes .pnote { display: none; }
-.present { font-size: .95em; margin-bottom: 8px; }
 .sub-t { font-variant: small-caps; letter-spacing: .03em; margin-bottom: 6px; }
-.a-fn .elide { font-style: italic; color: var(--muted); }
-.a-ednote .ed-h { font-weight: 600; margin-bottom: 4px; }
 
 /* Parts */
 .part { padding-block: 72px 24px; }
@@ -226,25 +223,16 @@ footer.foot .inner { display: grid; gap: 8px; font-family: var(--sans); font-siz
 .anat { gap: 14px; }
 .anat-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 40px; border: 1px solid var(--rule); background: var(--tint); padding: 36px 40px 28px; border-radius: 2px; }
 .a-doc { position: relative; padding: 10px 0 10px 40px; font-size: 17px; line-height: 1.6; min-width: 0; }
-.a-doc p + p { margin-top: 10px; }
 .a-doc .mk { position: absolute; left: 0; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--red); color: var(--paper); font: 600 12px/24px var(--sans); text-align: center; }
-.a-doc sup { font-family: var(--sans); font-size: 0.6em; color: var(--link); }
-.a-doc .dh { font-size: 21px; line-height: 1.35; font-weight: 600; }
-.a-doc .dl { font-size: 15px; color: var(--muted); line-height: 1.5; }
-.a-doc .smc { font-variant: small-caps; letter-spacing: 0.03em; }
-.a-doc .pn { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.a-rest { color: var(--muted); }
-.a-fn { font-size: 14.5px; line-height: 1.5; }
+.a-shot .zoom { background: var(--paper); padding: 10px 12px; }
+.a-shot .zoom + .zoom { margin-top: 10px; }
 .a-fn-first { border-top: 1px solid var(--ink); margin-top: 14px; padding-top: 18px; }
 .a-fn-first .mk { top: 20px; }
-.a-fn .fnm { font-family: var(--sans); font-weight: 600; color: var(--link); display: inline-block; min-width: 1.4em; }
-.a-fn .srcline { margin-bottom: 6px; }
 .a-note { padding: 10px 0 18px; border-left: 1px solid var(--rule); padding-left: 20px; display: grid; gap: 6px; align-content: start; font-family: var(--sans); font-size: 14px; line-height: 1.5; min-width: 0; }
 .a-note .nk { font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
 .a-note .q { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--muted); }
 .a-note .app { display: grid; gap: 4px; margin-top: 2px; }
 .a-note .app .ia { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.a-empty { padding: 0; }
 .a-fn-first + .a-note { margin-top: 14px; padding-top: 18px; }
 [hidden] { display: none !important; }
 body.mark-new [data-new] { outline: 2px dashed var(--new); outline-offset: 8px; border-radius: 3px; }
@@ -263,9 +251,10 @@ body.mark-new section.part[data-new] { outline-offset: -6px; }
 .figures-row .lbl { font-size: 15.5px; line-height: 1.45; color: var(--muted); }
 @media (max-width: 860px) {
   .anat-grid { grid-template-columns: 1fr; padding: 24px 18px 18px; }
-  .a-note { border-left: 2px solid var(--red); margin: 0 0 12px 40px; padding: 8px 0 8px 14px; }
+  .a-note { border-left: 2px solid var(--red); margin: 0 0 12px; padding: 8px 0 8px 14px; }
+  .a-shot { padding-left: 0; }
+  .a-shot .mk { position: static; display: block; margin-bottom: 8px; }
   .a-fn-first + .a-note { margin-top: 0; padding-top: 8px; }
-  .a-empty { display: none; }
   .figures-row { grid-template-columns: 1fr; gap: 18px; }
 }
 
@@ -398,7 +387,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
       <p id="fn1"><span class="m">1</span>The number of volumes in the app's catalog in November 2026. You choose which ones to download. <a href="#fr1" aria-label="Back to text">↩</a></p>
     </div>
 
-    <p class="pnote"><b>Production note</b>Screens are cropped from the build-1861 captures in <span class="mono">Docs/screenshots/</span> (October and November 2026 sittings), with status bars removed. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.</p>
+    <p class="pnote"><b>Production note</b>Screens are cropped from the build-1861 captures in <span class="mono">Docs/screenshots/</span> (October and November 2026 sittings), with status bars removed. The prologue's figure is cropped from captures of the Mac reader taken on 15 November 2026 for that figure. The walk shows iPad and Mac. Use the bar at the top to switch between the coming-soon and launch versions, or to hide these notes.</p>
   </div>
 </section>
 
@@ -417,31 +406,28 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
 
     <figure class="anat" aria-label="One document with its editorial annotation labeled">
       <div class="anat-grid">
-        <div class="a-doc a-head"><span class="mk">A</span><p class="dh"><i>Memorandum of Conversation</i><sup>61</sup></p></div>
+        <div class="a-doc a-shot"><span class="mk">A</span><button class="zoom" type="button" aria-label="Enlarge the heading"><img src="img/anat-a.png" width="1096" height="117" alt="The reader on Mac: the heading Memorandum of Conversation, with footnote 61, under the archive-box mark"></button></div>
         <div class="a-note"><p class="nk">A · Heading</p><p>The editors create a heading for every document they print. This one names only the kind of document; its footnote says who probably wrote it.</p><p class="q">“A heading has been supplied by the editors for each document included in the volume.”</p><p class="app"><span class="ia">In the app</span>Search results, Browse, Chronology and every citation use these headings.</p></div>
 
-        <div class="a-doc"><span class="mk">B</span><p class="dl"><span class="smc">Top Secret</span><br>[<span class="smc">Moscow</span>,] April 15, 1947.</p></div>
+        <div class="a-doc a-shot"><span class="mk">B</span><button class="zoom" type="button" aria-label="Enlarge the marking and date line"><img src="img/anat-b.png" width="1096" height="112" alt="TOP SECRET, and the date line [Moscow,] April 15, 1947, with the place in brackets"></button></div>
         <div class="a-note"><p class="nk">B · Classification marking and date line</p><p>The original classification marking, place and date. Brackets show what the editors added: here, the place. The documents are printed in date order.</p><p class="app"><span class="ia">In the app</span>Chronology and Administrations put each document on the date the editors gave it. Search filters and analytics scope pickers use these dates to give users a way to narrow focus and zero in on key moments. Search results and Source Explorer show the classification marking, whether the volume prints it above the dateline, as here, or in the source note.</p></div>
 
-        <div class="a-doc"><span class="mk">C</span><p class="present">Present: Secretary <span class="pn">Marshall</span>, Ambassador <span class="pn">Smith</span>, Mr. <span class="pn">Bohlen</span>, Generalissimo <span class="pn">Stalin</span>, Mr. <span class="pn">Molotov</span>, Ambassador <span class="pn">Novikov</span>, Mr. <span class="pn">Pavlov</span></p><p>The Secretary, after greeting <span class="pn">Stalin</span>, said that he had been very busy since he had been here, as Mr. <span class="pn">Molotov</span> could testify. He said he recalled with great interest their meeting at the Teheran Conference and their discussions concerning amphibious and cross-river operations.<sup>62</sup></p><p><span class="pn">Stalin</span> interrupted to say, “Yes, the second front.”</p></div>
+        <div class="a-doc a-shot"><span class="mk">C</span><button class="zoom" type="button" aria-label="Enlarge the list of those present"><img src="img/anat-c.png" width="1096" height="978" alt="The Present list as a table of seven names, Secretary Marshall to Mr. Pavlov, each name a link, then the opening paragraph with Stalin and Molotov linked"></button></div>
         <div class="a-note"><p class="nk">C · People</p><p>In half of the volumes in the series, and nearly all covering 1955 and later, editors tagged the key people named in the text and included a list of persons in the front matter to describe the roles they held: Stalin is “Chairman of the Council of Ministers of the Soviet Union.” Here every one of the seven meeting participants is tagged. The editors assembled these lists volume by volume; the app rolls those volume-level lists and tags into consolidated identities.</p><p class="app"><span class="ia">In the app</span>Person cards, the People list, Person Analytics and the person filter in Search. Each volume's page says whether its editors tagged its people.</p></div>
 
-        <div class="a-doc a-rest"><p>Turning to the Conference, <span class="pn">Stalin</span> stated that he did not think the situation was so tragic, and he was more optimistic than Mr. <span class="pn">Marshall</span>. After all, these were only the first skirmishes and brushes of reconnaissance forces on this question. …</p></div>
-        <div class="a-note a-empty" aria-hidden="true"></div>
-
-        <div class="a-doc a-fn a-fn-first"><span class="mk">D</span><p class="srcline"><span class="fnm" aria-label="Source note">▤</span><span class="mono">740.00119 Council/4–1547</span></p></div>
+        <div class="a-doc a-shot a-fn-first"><span class="mk">D</span><button class="zoom" type="button" aria-label="Enlarge the source note"><img src="img/anat-d.png" width="1096" height="143" alt="Under Footnotes, the archive-box mark and 740.00119 Council/4–1547"></button></div>
         <div class="a-note"><p class="nk">D · Source note</p><p>The source note explains where the underlying record was found and, in recent volumes, its original operational context. The app focuses on the first part of the source note: the document's <i>archival provenance</i>, including the archive, collection and file that held the original record. Here, it is a State Department decimal file number. This volume prints it above the heading; more recent volumes include this information in each document's first footnote.</p><p class="q">“The first footnote to each document indicates the document’s source, original classification, distribution, and drafting information.”</p><p class="app"><span class="ia">In the app</span>Source Explorer, the Archives Visit plan, the archival provenance facet in Search and Archival Analytics all start here.</p></div>
 
-        <div class="a-doc a-fn"><span class="mk">E</span><p><span class="fnm">⁶¹</span>The conversation took place at the Kremlin, April 15, 1947, 10 p.m. to 11:30 p.m. This memorandum, and an early draft of it, filed separately under 711.61/4–1547, were presumably prepared by Mr. Bohlen. It was transmitted to Acting Secretary of State Acheson in telegram 1405, Kosmos 46, April 16, 1947, from Moscow, with the request that it be delivered to President Truman (711.61/4–1647). Additional details regarding the circumstances of this conversation are provided in the account in Walter Bedell Smith, <i>My Three Years in Moscow</i>, pp. 210–212.</p></div>
+        <div class="a-doc a-shot"><span class="mk">E</span><button class="zoom" type="button" aria-label="Enlarge footnote 61"><img src="img/anat-e.png" width="1096" height="377" alt="Footnote 61: where the conversation took place, the early draft filed under 711.61/4–1547, Bohlen as the probable author, the telegram that carried it to Truman, and Walter Bedell Smith’s memoir"></button></div>
         <div class="a-note"><p class="nk">E · What wasn't printed</p><p>An early draft of the memorandum survived, and the volume didn't print it. Instead, the editors cited the draft's archival location so researchers have a trail to follow if they want to investigate further. In the same note, the editor also identified who probably wrote the record, how it reached the President, and where one of the participants told the story in a memoir.</p><p class="app"><span class="ia">In the app</span>The Archives Visit lists files like this one, so your trip can cover them too.</p></div>
 
-        <div class="a-doc a-fn"><span class="mk">F</span><p><span class="fnm">⁶²</span>For documentation on the American-British-Soviet Conference at Tehran, November 27–December 2, 1943, see <i>Foreign Relations</i>, The Conferences at Cairo and Tehran, 1943, pp. 459 ff.</p></div>
+        <div class="a-doc a-shot"><span class="mk">F</span><button class="zoom" type="button" aria-label="Enlarge footnote 62"><img src="img/anat-f.png" width="1096" height="139" alt="Footnote 62, linking to Foreign Relations, The Conferences at Cairo and Tehran, 1943, page 459"></button></div>
         <div class="a-note"><p class="nk">F · Cross-reference</p><p>The editors provide cross-reference citations to related documents printed elsewhere in the series: here, a volume on the wartime conferences. This document has seven such notes, spanning Tehran and Yalta to regular volumes for 1945, 1946 and 1947.</p><p class="app"><span class="ia">In the app</span>If the volume is already on your device, the link opens the document directly. Otherwise, it offers to download the volume. The Cross-Reference Graph is built from these editor-asserted connections among FRUS documents.</p></div>
 
-        <div class="a-doc a-fn a-ednote"><span class="mk">G</span><p class="ed-h">Editorial Note</p><p>Principal Members of the Delegations to the Fourth Session of the Council of Foreign Ministers, Moscow, March 10–April 24, 1947. This list was compiled from materials in the files of the Department of State. …</p></div>
+        <div class="a-doc a-shot a-shot-g"><span class="mk">G</span><button class="zoom" type="button" aria-label="Enlarge the editorial note"><img src="img/anat-g.png" width="1096" height="310" alt="The editorial note d78, shaded, headed Principal Members of the Delegations to the Fourth Session of the Council of Foreign Ministers, with footnote 88"></button><button class="zoom" type="button" aria-label="Enlarge the editorial note’s footnote"><img src="img/anat-g2.png" width="1096" height="324" alt="Footnote 88: This list was compiled from materials in the files of the Department of State"></button></div>
         <div class="a-note"><p class="nk">G · Editorial note</p><p>Editors often summarized documents that they decided not to include in volumes in editorial notes. Editorial notes can also provide other kinds of annotation. This one, which appeared at the outset of the volume's documents on the Moscow conference, lists who came and explains where the information was found.</p><p class="q">“Editorial notes and additional annotation summarize pertinent material not printed in the volume.”</p><p class="app"><span class="ia">In the app</span>You can search editorial notes, or show only editorial notes in Search, using the editors' own labels.</p></div>
       </div>
-      <figcaption><span class="sn">Source</span>The 3,600-word memorandum recording Marshall's meeting with Stalin, <span class="mono">frus1947v02/d127</span>, as the app shows it: its heading, its opening, one later passage, two of its nine footnotes, and the editorial note that lists the conference's delegations (<span class="mono">d78</span>). The quotations come from the “Editorial Methodology” section of a 2014 volume's preface.</figcaption>
+      <figcaption><span class="sn">Source</span>The 3,600-word memorandum recording Marshall's meeting with Stalin, <span class="mono">frus1947v02/d127</span>, in FRUS Explorer for Mac, build 1861, at the reader's Extra Large text size: its heading, its opening, its source note, two of its nine footnotes, and the editorial note that lists the conference's delegations (<span class="mono">d78</span>), with its own footnote. Select a crop to see it at full size. The quotations come from the “Editorial Methodology” section of a 2014 volume's preface.</figcaption>
     </figure>
     <div class="figures-row">
       <div><span class="big">264,598</span><span class="lbl">source notes the editors attached to documents, in 502 of the 553 volumes<sup class="fn"><a href="#fn3" id="fr3">2</a></sup></span></div>
@@ -980,7 +966,7 @@ body[data-state="soon"] [data-show="launch"], body[data-state="launch"] [data-sh
       <p>FRUS Explorer is in final testing. It will be free, when it is released, for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.</p>
     </div>
     <div class="cta">
-      <span class="btn soon" aria-disabled="true">Not yet on the App Store</span>
+      <span class="btn soon" aria-disabled="true">In final testing</span>
       <span>Quick start: <a href="https://frusexplorer.app/quick-start-ios">iPad and iPhone</a> · <a href="https://frusexplorer.app/quick-start-mac">Mac</a></span>
       <span>Questions? <span class="mono">help@frusexplorer.app</span></span>
     </div>
