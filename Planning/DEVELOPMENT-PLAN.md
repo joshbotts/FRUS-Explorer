@@ -11222,3 +11222,5 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 
 **Not done.**
 - **Printing to a printer** (ASR-4) is the owner's: from an AppStore-configuration build, File ▸ Print on a document, with Console open and filtered on `sandbox` and the app's name, for a deny. R6 lists it if this row's own check did not reach one.
+
+**Opened as #1939** on the owner's word of 2026-11-15 ("Open the PR"), against `v2` at `6a7b9683`, which had moved by #1935 to #1938 (the website's tour and icon and their records, docs and images alone): `v2` was merged into the branch (`50cddc35`), the session log keeping the website's two entries before this one, and `CodingStandardsAuditTests` and `EditableContentKeyTests` passed again on the merged tree (84 tests); ready for review, Auto-fix on, auto-merge off.
