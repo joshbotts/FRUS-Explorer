@@ -549,6 +549,17 @@ struct SemanticMeaningEmptyState: View {
     ///   - disclosure: The run's disclosure, or `nil` when it has none.
     ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: The sentence.
+    /// The heading over a Meaning search's matches in volumes not on this device, which a finished search also says to
+    /// VoiceOver when they are all it found (#1918, A11Y-2). `nonisolated`, as a view's statics are main-actor otherwise.
+    ///
+    /// - Parameter count: How many such matches.
+    /// - Returns: The heading.
+    nonisolated static func beyondHeader(count: Int) -> String {
+        String(format: String(localized: "search.meaning.beyond.header %lld",
+                              defaultValue: "In volumes you have not downloaded (%lld)"),
+               Int64(count))
+    }
+
     static func emptyStatement(disclosure: SemanticSearchBackend.Disclosure?,
                                locale: Locale = .autoupdatingCurrent) -> String {
         if let disclosure, let setSize = disclosure.rankedWithin {
@@ -589,10 +600,7 @@ struct SemanticMeaningEmptyState: View {
                         .padding(.horizontal)
                     } else {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(String(format: String(
-                                localized: "search.meaning.beyond.header %lld",
-                                defaultValue: "In volumes you have not downloaded (%lld)"),
-                                Int64(beyondHits.count)))
+                            Text(Self.beyondHeader(count: beyondHits.count))
                                 .font(.headline)
                             ForEach(beyondHits) { hit in
                                 SemanticUndownloadedRow(

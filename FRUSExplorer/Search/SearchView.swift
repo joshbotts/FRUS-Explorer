@@ -1037,6 +1037,9 @@ struct SearchView: View {
         guard !vm.isSearching, vm.searchError == nil else { return }
         AccessibilityNotification.Announcement(
             SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          rowsFound: vm.results.count,
+                                          beyondLibrary: vm.beyondLibraryHits.count,
+                                          needsModel: vm.semanticNeedsModel,
                                           emptyLibrary: emptyLibraryReason)).post()
     }
 

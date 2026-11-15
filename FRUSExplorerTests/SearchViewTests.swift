@@ -617,13 +617,24 @@ struct EmptyLibraryNoticeTests {
         #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 552, isPreparing: true) == nil)
     }
 
-    @Test("A finished search says the notice's headline where it stands, and the header's words otherwise")
+    @Test("A finished search says what the screen shows at its head")
     func announcementSaysWhatTheScreenSays() {
-        #expect(SearchFinishAnnouncement.text(header: "3 results", emptyLibrary: nil) == "3 results")
-        #expect(SearchFinishAnnouncement.text(header: "No results", emptyLibrary: .noVolumes)
-                == EmptyLibraryNotice.title(for: .noVolumes))
-        #expect(EmptyLibraryNotice.title(for: .noVolumes) == "No volumes on this device yet")
-        #expect(SearchFinishAnnouncement.text(header: "No results", emptyLibrary: .preparing) == "No volumes ready yet")
+        func said(_ header: String, rows: Int, beyond: Int = 0, needsModel: Bool = false,
+                  emptyLibrary: EmptyLibraryNotice.Reason? = nil) -> String {
+            SearchFinishAnnouncement.text(header: header, rowsFound: rows, beyondLibrary: beyond,
+                                          needsModel: needsModel, emptyLibrary: emptyLibrary)
+        }
+        #expect(said("3 results", rows: 3) == "3 results")
+        #expect(said("No results", rows: 0) == "No results")
+        // HCD-4's notice, in place of the zero-result state.
+        #expect(said("No results", rows: 0, emptyLibrary: .noVolumes) == "No volumes on this device yet")
+        #expect(said("No results", rows: 0, emptyLibrary: .preparing) == "No volumes ready yet")
+        // A Meaning search's own empty states: its matches beyond the library, and its model's offer.
+        #expect(said("No results", rows: 0, beyond: 5) == "In volumes you have not downloaded (5)")
+        #expect(said("No results", rows: 0, needsModel: true)
+                == SemanticModelOfferCard.offerText(followsKeywordSearch: false))
+        // Rows found say the header, whatever lies beyond the library.
+        #expect(said("12 closest matches", rows: 12, beyond: 5) == "12 closest matches")
     }
 }
 

@@ -2164,6 +2164,9 @@ struct MacSearchWindowView: View {
         guard !searchVM.isSearching, searchVM.searchError == nil else { return }
         AccessibilityNotification.Announcement(
             SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          rowsFound: searchVM.results.count,
+                                          beyondLibrary: searchVM.beyondLibraryHits.count,
+                                          needsModel: searchVM.semanticNeedsModel,
                                           emptyLibrary: emptyLibraryReason)).post()
     }
 

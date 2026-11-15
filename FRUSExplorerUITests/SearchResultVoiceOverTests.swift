@@ -208,10 +208,11 @@ final class SearchResultVoiceOverTests: XCTestCase {
         runTheSearch()
         let field = app.searchFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field")
+        // The field takes the keyboard before VoiceOver is on, so that Return reaches it.
+        field.tap()
 
         let voiceOver = XCUIDevice.shared.voiceOverService
         try voiceOver.enable()
-        field.tap()
         field.typeText("\n")
         var heard: [String] = []
         let deadline = Date().addingTimeInterval(Self.patience)

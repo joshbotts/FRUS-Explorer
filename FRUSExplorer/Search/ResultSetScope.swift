@@ -1037,18 +1037,28 @@ struct ResultSetScope: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1918 (L18, A11Y-2): initial implementation
+///   1.1 — #1918 (L18, A11Y-2 follow-up): a Meaning search that found no rows says the model's offer or the heading
+///          over its matches beyond the library, where the screen shows them, not "No results"
 enum SearchFinishAnnouncement {
 
-    /// The words for a finished search that did not fail.
+    /// The words for a finished search that did not fail: what the screen then shows at its head.
     ///
     /// - Parameters:
     ///   - header: What the results header says of the rows (`ResultSetScope.headerDescription`): "412 results",
     ///     "No results", a layer's own sentence.
+    ///   - rowsFound: How many rows the search found.
+    ///   - beyondLibrary: How many Meaning matches it found in volumes not on this device.
+    ///   - needsModel: Whether a Meaning search could not run for want of its model.
     ///   - emptyLibrary: Why the empty-library notice stands in for the zero-result state, or `nil` when it does not
     ///     (HCD-4).
-    /// - Returns: The notice's headline where it is shown, and the header's words otherwise.
-    static func text(header: String, emptyLibrary: EmptyLibraryNotice.Reason?) -> String {
+    /// - Returns: The notice's headline where it is shown; for a search that found no rows, the model's offer where
+    ///   the screen shows it, or the heading over the matches beyond the library; the header's words otherwise.
+    static func text(header: String, rowsFound: Int, beyondLibrary: Int, needsModel: Bool,
+                     emptyLibrary: EmptyLibraryNotice.Reason?) -> String {
         if let emptyLibrary { return EmptyLibraryNotice.title(for: emptyLibrary) }
+        guard rowsFound == 0 else { return header }
+        if needsModel { return SemanticModelOfferCard.offerText(followsKeywordSearch: false) }
+        if beyondLibrary > 0 { return SemanticMeaningEmptyState.beyondHeader(count: beyondLibrary) }
         return header
     }
 }

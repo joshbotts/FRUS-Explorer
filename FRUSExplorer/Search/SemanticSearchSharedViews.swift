@@ -140,7 +140,9 @@ struct SemanticModelOfferCard: View {
     ///
     /// - Parameter followsKeywordSearch: See the property of the same name.
     /// - Returns: The sentence, ending in both cases with the size of the download and where the model runs.
-    static func offerText(followsKeywordSearch: Bool) -> String {
+    ///
+    /// `nonisolated`, for the words a finished Meaning search says to VoiceOver when it needs the model (#1918, A11Y-2).
+    nonisolated static func offerText(followsKeywordSearch: Bool) -> String {
         followsKeywordSearch
             ? String(
                 localized: "search.semantic.offer.body",
