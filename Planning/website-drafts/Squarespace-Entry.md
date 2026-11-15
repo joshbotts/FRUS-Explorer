@@ -57,7 +57,7 @@ that day: [the next section](#what-the-site-holds) has what the site holds now.
 **Paste again, after 15 November.** The site went live before the submission, so the pages stopped
 saying the app had been submitted or was coming soon. They now say it is in final testing and not
 yet on the App Store, and Home's headline is *Research 165 years of U.S. diplomatic history.*
-Three blocks change; paste each file over its block's contents:
+Three blocks changed, and a session entered all three on the site the same day, at your word; for later reference, these are the files:
 
 | Page | Block | File |
 |---|---|---|
