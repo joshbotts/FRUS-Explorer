@@ -11073,9 +11073,9 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - **T2's retakes**, R5's: 30 captures, three store frames and four tour crops (above). The alt text that describes them still says *Topics*, until then.
 - **The owner's re-paste in Squarespace** of `quick-start-ios.txt`, `quick-start-mac.txt` and `tour-block-1.txt`, after the merge (the plan's §2).
 - **The hand-over to FRUS Explorer Light:** the pull request's *For the web edition* line (Related's two kit strings, and the caption's text for its own copy).
-- **For the owner to file or not:**
-  - the Mac's subject sheet drawing no *All «area» subjects* door;
-  - the two UI tests that fail under iOS 27.0 on `v2`.
+- **The owner's word on the findings, the same day:**
+  - the Mac's subject sheet drawing no *All «area» subjects* door is filed as #1931, with what was ruled out and a first step;
+  - the three UI tests that fail under iOS 27.0 on `v2` are written into the plan as a plan revision, not an issue: R5 owns them, in test code only, and R6 looks on a device for the iPhone's search field.
 - **A device check of the iOS volume page and the person sheet with the caption**, where no UI test reads it. On the Mac the walk read both.
 - The check copy built from three commits on no branch (`fd454106`, `0148aeb0`, `527c4729`), which git collects in time.
 
