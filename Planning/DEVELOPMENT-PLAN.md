@@ -10865,3 +10865,37 @@ FRUS Explorer Light's follow-up of its row S21g (the People screen) and of its f
 **Owed by the owner:** Mac check 30, listed in the pull request: the two builds, the unit target beside `v2`, `swift test`, and a launch of the Mac app with a person's sheet, an analytics scope bar and a custom scope opened; then the merge. FRUS Explorer Light's next pin move carries it, and the web's follow-ups use what it makes public: S21g's (the person sheet's Career, lifespan line and Subjects, with the chips' pivot), S24f to S24i (the count phrases, which S22d's Archival Collections list reads too), and S24f and S24h (the scope bars' detected topics). S24h's archival reads are public already.
 
 **Not done:** what the hosts' rows mirror stays app code, as their hand-overs list it (the views' presentation rules); the phase-4 members a live word cloud reads stay internal (`IndexingPipeline.allDocumentKeys`, `documentBodyTexts`, `documentCacheCount`, `documentKeys`, `VolumeSubjectProfiles.generated`), and so do `AXChartDescriptorBuilder`, `ArchivalExportRequest`, `DecadeFrequency`'s initialiser and the analytics' `storageKey`s, which no browser needs. The UI suites, iOS 26.x, a device and a signed run; the Mac app was built and not run.
+
+## Session 2026-11-14 — The Zotero client waits on a Retry-After or a Backoff only for seconds that are finite and not negative, and for a minute at most, so no header value can trap it or hold a send without end
+
+FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 31 in its plan, cut from `v2` at `f011ab04` (#1906's merge). The kit's Zotero client and its tests.
+
+**What was wrong:** `ZoteroAPIClient` read a 429's `Retry-After` (30 when absent) and an advisory `Backoff` with `TimeInterval(_:)` and slept on `UInt64(seconds * 1_000_000_000)` nanoseconds. Swift reads "nan", "inf", "-1" and "1e300" as numbers, and `UInt64(_:)` traps on each, so a malformed header quit the app in the middle of a send, and would end a server that sends through the kit; a well-formed but long one (`Retry-After: 3600`) held the send as long as it said, three times over for a 429.
+
+**What changed** (`FRUSCoreKit/Zotero/`, and the kit's Zotero suite):
+- `headerSeconds(_:)`: a header counts only when its seconds are finite and not negative; anything else is absent, as an HTTP-date `Retry-After` already was, so a 429 waits the 30 s default; "-0" reads as 0.
+- `longestWait`, 60 s, above the default: a `Retry-After` past it reaches the caller at once as `rateLimited(retryAfter:)`, with Zotero's seconds and no retry, since a retry before Zotero's time breaks its rule; a `Backoff` past it is waited for 60 s and the send goes on. That is a bounded departure from Zotero's advice, made because the write it came with succeeded. `send`'s doc comment gives a write's longest wait, four minutes.
+- The waits go through a sleep a test can replace (`init(session:sleep:)`, internal); the public initialiser passes `Task.sleep`, and `pause` clamps what it converts to nanoseconds.
+- `ZoteroAPIError.rateLimited(retryAfter:)` documents its seconds: finite, not negative, not capped. Its file's two `Docs/EditableContent` blocks move 6 lines down.
+- Unchanged: values up to a minute, the three retries, the default, the `Backoff` wait after each successful write, the public API.
+- `ZoteroRetryWaitTests`: 13 tests, 63 cases, over a stubbed `URLProtocol`. A recorder stands in for the sleep, so none waits, but for two tests that hold the public client to its real sleep.
+
+**Shown on `v2`'s client and this branch's.** A suite never committed ran the public client over one stubbed answer each, through the public API, one test at a time.
+- At `v2`, a `Backoff` of "nan", "-1" or "inf" and a `Retry-After` of "1e300" each trapped the test process in `UInt64(_:)`, on Linux and on the iPhone simulator ("Double value cannot be converted to UInt64 because it is either infinite or NaN", "…less than UInt64.min").
+- At `v2`, a `Retry-After` of "3600" slept until the suite's one-minute limit stopped it.
+- At this branch, each passed at once.
+
+**Apple platforms, and how that was checked.** Each heavy job ran through `Scripts/heavy.sh`, with Xcode 27.2 on macOS 27.2.1, clean and unsigned, on an iPhone 17 simulator (iOS 27.2). `v2` at `f011ab04` was built and run the same way beside the branch at `080ef38e`, whose tree is the head's but for this entry:
+- **`FRUSExplorerMac`:** "** BUILD SUCCEEDED **" at both, with `v2`'s 2 warning lines, line for line. The symbols went from 257,245 to 257,263 normalized: 4 removed and 22 added, each the change's own (the pull request names them).
+- **iOS:**
+  - A clean `build-for-testing`: "** TEST BUILD SUCCEEDED **" at both, with `v2`'s 3 warning lines.
+  - The full unit target: 8,012 tests in 963 suites, against `v2`'s 7,999 in 962, with `v2`'s one failure (the ranking chart's "At 720 pt" test) and the same 17 tests and 2 suites skipped.
+  - The Zotero suites passed ten repetitions.
+- **`swift build --target FRUSCoreKit`:** "Build complete!" with no warning, and the kit's test target builds from clean with no warning.
+- **`swift test`:** exit 0, with 39 runs and 4,512 tests in 532 suites, against `v2`'s 4,499 in 531. `FRUSCoreKitTests`: "✔ Test run with 2531 tests in 310 suites passed".
+
+**Linux:** Docker Desktop, `swift:6.4-noble` on arm64, with PostgreSQL, over FRUS Explorer Light's `main` (pinned at `f011ab04`), each head's tree put over its submodule with `git archive`. Over `13ee15d`, `v2` ran 4,230 tests and the branch 4,243, all passing but, at the branch, the golden files' 22 freshness issues, which come from the source digest (FRUSCoreKit is in it). Over `db0cba7`, with the golden files' recorded digest set to the branch's, all 4,251 passed. The one named Linux skip came at each.
+
+**Owed by the owner:** Mac check 31, listed in the pull request, with a real send if a Zotero key is at hand; then the merge. FRUS Explorer Light's next pin move carries it.
+
+**Not done:** a send that records how far it got, or resumes, so that a send stopped part-way (by a long `Retry-After` now, as by an exhausted retry or a network error before) can go on without duplicating what it sent; waiting out a `Backoff` before the next request rather than after a send's last write; saying a wait in the send's status line. The UI suites, iOS 26.x, a device and a signed run.
