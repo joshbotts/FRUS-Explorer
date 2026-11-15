@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import SwiftData
+import WebKit
 @testable import FRUSExplorer
 
 // MARK: - AboutViewTests
@@ -158,5 +159,220 @@ struct AboutViewTests {
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: config)
+    }
+}
+
+// MARK: - InAppBrowserScopeTests
+
+/// The in-app browser keeps to the site of the page it opened (#1917's ASR-3, decision 136): the
+/// rule, decision by decision. `InAppBrowserCoordinatorTests` puts the same rule to WebKit.
+struct InAppBrowserScopeTests {
+
+    /// The Research tab's Quick Start, one of the browser's start pages.
+    private static let quickStart = URL(string: AboutLinks.iosQuickStart)!
+
+    /// A scope whose opening page committed where it was opened.
+    private func opened(on url: URL = quickStart) -> InAppBrowserScope {
+        var scope = InAppBrowserScope(openingURL: url)
+        scope.didCommitMainFrame(at: url)
+        return scope
+    }
+
+    private func url(_ string: String) throws -> URL {
+        try #require(URL(string: string))
+    }
+
+    @Test("A link on the opening page's site is followed, with or without www.")
+    func linksOnTheSiteAreFollowed() throws {
+        let scope = opened()
+        for link in ["https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md",
+                     "https://www.github.com/joshbotts",
+                     "http://github.com/HistoryAtState",
+                     "https://GitHub.com/joshbotts/FRUS-Explorer#readme"] {
+            let destination = try url(link)
+            #expect(scope.decision(for: destination, target: .mainFrame, followedByReader: true) == .allow,
+                    "\(link)")
+        }
+    }
+
+    @Test("A link to any other site goes to the system, a subdomain of the site included")
+    func linksOffTheSiteGoOutside() throws {
+        let scope = opened(on: try url(AboutLinks.officeOfHistorian))
+        for link in ["https://static.history.state.gov/frus/frus1902app1/figure_0081.png",
+                     "https://github.com/HistoryAtState/frus",
+                     "https://www.archives.gov/research"] {
+            let destination = try url(link)
+            #expect(scope.decision(for: destination, target: .mainFrame, followedByReader: true)
+                    == .openOutside(destination), "\(link)")
+        }
+    }
+
+    @Test("The opening load's redirects are followed, and the host it commits on joins the site")
+    func theOpeningLoadMayRedirect() throws {
+        var scope = InAppBrowserScope(openingURL: try url(AboutLinks.claude))
+        let landing = try url("https://www.anthropic.com/claude")
+        #expect(scope.decision(for: landing, target: .mainFrame, followedByReader: false) == .allow)
+        scope.didCommitMainFrame(at: landing)
+        let news = try url("https://anthropic.com/news")
+        let login = try url("https://claude.ai/login")
+        #expect(scope.decision(for: news, target: .mainFrame, followedByReader: true) == .allow)
+        #expect(scope.decision(for: login, target: .mainFrame, followedByReader: true) == .allow)
+        let elsewhere = try url("https://example.org/")
+        #expect(scope.decision(for: elsewhere, target: .mainFrame, followedByReader: true) == .openOutside(elsewhere))
+        // A later commit adds nothing to the site.
+        scope.didCommitMainFrame(at: elsewhere)
+        #expect(scope.decision(for: elsewhere, target: .mainFrame, followedByReader: true) == .openOutside(elsewhere))
+    }
+
+    @Test("Once the opening page has committed, the page's own move to another site is stopped")
+    func thePagesOwnMoveOffTheSiteIsStopped() throws {
+        let scope = opened()
+        let tracker = try url("https://example.org/tracker")
+        #expect(scope.decision(for: tracker, target: .mainFrame, followedByReader: false) == .cancel)
+        // Back, Forward, a reload or a redirect on the site go through.
+        #expect(scope.decision(for: Self.quickStart, target: .mainFrame, followedByReader: false) == .allow)
+    }
+
+    @Test("A frame's own load is followed; a link followed inside a frame meets the site rule")
+    func framesLoadButTheirLinksMeetTheRule() throws {
+        let scope = opened()
+        let embed = try url("https://www.youtube-nocookie.com/embed/x")
+        #expect(scope.decision(for: embed, target: .subframe, followedByReader: false) == .allow)
+        #expect(scope.decision(for: embed, target: .subframe, followedByReader: true) == .openOutside(embed))
+        let onSite = try url("https://github.com/joshbotts")
+        #expect(scope.decision(for: onSite, target: .subframe, followedByReader: true) == .allow)
+    }
+
+    @Test("A new-window link on the site loads in this one; off the site it goes to the system")
+    func newWindowLinks() throws {
+        let scope = opened()
+        let onSite = try url("https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/screenshots/ipad/onboarding-volumes.png")
+        #expect(scope.decision(for: onSite, target: .newWindow, followedByReader: true) == .loadHere(onSite))
+        let offSite = try url("https://docs.github.com/")
+        #expect(scope.decision(for: offSite, target: .newWindow, followedByReader: true) == .openOutside(offSite))
+        let blank = try url("about:blank")
+        #expect(scope.decision(for: blank, target: .newWindow, followedByReader: false) == .cancel)
+    }
+
+    @Test("Mail goes to the system when the reader asks; the page's own addresses load; a file never does")
+    func otherAddresses() throws {
+        let scope = opened()
+        let mail = try url("mailto:help@frusexplorer.app")
+        #expect(scope.decision(for: mail, target: .mainFrame, followedByReader: true) == .openOutside(mail))
+        #expect(scope.decision(for: mail, target: .mainFrame, followedByReader: false) == .cancel)
+        let blank = try url("about:blank")
+        let file = try url("file:///etc/hosts")
+        #expect(scope.decision(for: blank, target: .subframe, followedByReader: false) == .allow)
+        #expect(scope.decision(for: blank, target: .mainFrame, followedByReader: false) == .allow)
+        #expect(scope.decision(for: file, target: .mainFrame, followedByReader: true) == .cancel)
+        #expect(scope.decision(for: nil, target: .mainFrame, followedByReader: true) == .cancel)
+    }
+
+    @Test("From each page About opens, its own site is followed and another About page's site goes out")
+    func everyStartPageKeepsToItsSite() {
+        let pages = AboutLinks.allURLStrings.compactMap(URL.init(string:))
+        #expect(pages.count == AboutLinks.allURLStrings.count)
+        var crossings = 0
+        for start in pages {
+            let scope = opened(on: start)
+            #expect(scope.decision(for: start, target: .mainFrame, followedByReader: true) == .allow, "\(start)")
+            for other in pages
+            where InAppBrowserScope.siteHost(of: other) != InAppBrowserScope.siteHost(of: start) {
+                #expect(scope.decision(for: other, target: .mainFrame, followedByReader: true) == .openOutside(other),
+                        "\(start) → \(other)")
+                crossings += 1
+            }
+        }
+        // Seven sites among the fourteen pages, so most pairs cross: a count of none would mean the
+        // hosts compared equal.
+        #expect(crossings > 100)
+    }
+}
+
+// MARK: - InAppBrowserCoordinatorTests
+
+/// WebKit asks the coordinator about each navigation, and the coordinator does what the scope decides
+/// (#1917's ASR-3). A real `WKWebView`, on a page loaded from a string under a `.test` address that
+/// never resolves, whose links are followed by script: the questions are WebKit's own, so a delegate
+/// method WebKit never calls fails here, where `InAppBrowserScopeTests` would still pass.
+@MainActor
+struct InAppBrowserCoordinatorTests {
+
+    /// What WebKit asked, what the coordinator decided, and what it handed to the system, in order.
+    @MainActor
+    private final class Log {
+        var decisions: [(url: URL?, decision: InAppBrowserScope.Decision)] = []
+        var handedOut: [URL] = []
+    }
+
+    private struct Timeout: Error {}
+
+    private static let site = URL(string: "https://frus-explorer.test/start")!
+
+    private static let page = """
+        <!doctype html><html><body>
+        <a id="off" href="https://example.org/elsewhere">off the site</a>
+        <a id="mail" href="mailto:help@frusexplorer.app">mail</a>
+        <a id="windowOff" target="_blank" href="https://example.org/window">a new window off the site</a>
+        <a id="on" href="https://www.frus-explorer.test/next">on the site</a>
+        <a id="windowOn" target="_blank" href="https://frus-explorer.test/window">a new window on the site</a>
+        </body></html>
+        """
+
+    private static func waitFor(_ what: String, _ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(20)
+        while !condition() {
+            guard ContinuousClock.now < deadline else {
+                Issue.record("Timed out waiting for \(what)")
+                throw Timeout()
+            }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    @Test("WebKit asks the coordinator, which follows the site's links and hands any other to the system")
+    func webKitAsksTheCoordinator() async throws {
+        let log = Log()
+        let coordinator = InAppBrowserCoordinator(navigator: InAppBrowserNavigator(),
+                                                  openingURL: Self.site,
+                                                  openOutside: { log.handedOut.append($0) })
+        coordinator.onDecision = { log.decisions.append(($0, $1)) }
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 400, height: 600))
+        webView.navigationDelegate = coordinator
+
+        webView.loadHTMLString(Self.page, baseURL: Self.site)
+        try await Self.waitFor("the opening page") { !webView.isLoading && webView.url == Self.site }
+        let openingDecisions = log.decisions.map { $0.decision }
+        #expect(openingDecisions.allSatisfy { $0 == .allow }, "the opening load was stopped: \(log.decisions)")
+
+        /// Follows the link with this id as a click does, and returns the coordinator's first answer.
+        func follow(_ id: String, answers: Int = 1) async throws -> InAppBrowserScope.Decision {
+            let before = log.decisions.count
+            _ = try await webView.evaluateJavaScript("document.getElementById('\(id)').click(); true")
+            try await Self.waitFor("WebKit's question about #\(id)") { log.decisions.count >= before + answers }
+            return log.decisions[before].decision
+        }
+
+        let elsewhere = try #require(URL(string: "https://example.org/elsewhere"))
+        let mail = try #require(URL(string: "mailto:help@frusexplorer.app"))
+        let window = try #require(URL(string: "https://example.org/window"))
+        #expect(try await follow("off") == .openOutside(elsewhere))
+        #expect(try await follow("mail") == .openOutside(mail))
+        #expect(try await follow("windowOff") == .openOutside(window))
+        #expect(log.handedOut == [elsewhere, mail, window])
+        #expect(webView.url == Self.site, "a link off the site left the page")
+
+        // On the site, www. or not: followed. Its load then fails, since `.test` never resolves,
+        // and the page stays where it was.
+        let next = try #require(URL(string: "https://www.frus-explorer.test/next"))
+        #expect(try await follow("on") == .allow)
+        #expect(log.decisions.last?.url == next)
+
+        // A new-window link on the site loads in this window, and that load is asked about too.
+        let onSite = try #require(URL(string: "https://frus-explorer.test/window"))
+        #expect(try await follow("windowOn", answers: 2) == .loadHere(onSite))
+        #expect(log.decisions.last?.url == onSite)
+        #expect(log.decisions.last?.decision == .allow)
+        #expect(log.handedOut.count == 3, "a link on the site went to the system: \(log.handedOut)")
     }
 }

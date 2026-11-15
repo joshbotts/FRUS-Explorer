@@ -145,7 +145,7 @@ frequency for each content description". The definitions quoted here are Apple's
 | Item | Answer | What the app does |
 |---|---|---|
 | Parental Controls, Age Assurance | no | It has neither. |
-| Unrestricted Web Access | no | Apple: "Users can navigate to any webpage within the app or freely browse the web." The app has a built-in browser for the links in About and the FRUS Research Guide and for the quick start. It has Back, Forward and Open in Browser, and no field for an address or a search. It does not stop a page's own links from leading on to other sites. If App Review reads that as unrestricted, the answer is yes and the rating is 16+. |
+| Unrestricted Web Access | no | Apple: "Users can navigate to any webpage within the app or freely browse the web." The app has a built-in browser for the links in About and the FRUS Research Guide and for the quick start. It has Back, Forward and Open in Browser, and no field for an address or a search. It follows a link only on the site of the page it opened; any other link opens in the default browser (decision 136, #1917). |
 | User-Generated Content, Social Media, Messaging and Chat | no | Notes, highlights and collections go to the reader's own devices and files, and to no other user. |
 | Advertising | no | None. |
 
