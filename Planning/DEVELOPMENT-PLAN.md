@@ -11144,4 +11144,5 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 
 **Not done.**
 - **The hand-over to FRUS Explorer Light**, after the merge: the notes in #1892's and #1893's comments and in #1914's body, filled in with the pull request and its merge commit and filed in FRUS-Explorer-Web-App as each says. #1893's reads that below 116 pt the layout keeps the axis's range closed at x = 48 and draws no tick, every node placed. #1914's kit change is its doc comment alone.
-- **Not pushed:** the pull request waits on the owner's word.
+
+**Opened as #1934** on the owner's word of 2026-11-15 ("Open the PR"), against `v2` at `bb455123`, which had moved by #1932 and #1933 (the website's wording and its record, docs alone): `v2` was merged into the branch (`2093b6d3`), the session log keeping the website's entry before this one, and `CodingStandardsAuditTests` and `EditableContentKeyTests` passed again on the merged tree (84 tests); ready for review, auto-merge off.
