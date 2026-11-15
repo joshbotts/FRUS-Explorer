@@ -385,6 +385,7 @@ private struct PersonIndexRow: View {
 ///   1.6 — 2026-11-14 (FRUS Explorer Light, S21g's follow-up): `PersonSubjectAffinity` and
 ///          `PersonLifespan`, which sat between this comment and the sheet, are FRUSCoreKit's, public
 ///          and unchanged (`Browser/VolumeSubjectProfiles.swift`, `Models/POCOMIndex.swift`)
+///   1.7 — 2026-11-15: #1905 (L15) — the Subjects note is followed by the subject data's caption
 struct PersonIndexDetailSheet: View {
 
     let indexEntry: PersonIndexEntry
@@ -708,8 +709,8 @@ struct PersonIndexDetailSheet: View {
                             }
                             .padding(.vertical, 1)
                         }
-                        Text(String(localized: "people.detail.subjects.note",
-                                    defaultValue: "Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags."))
+                        Text(SubjectDataCaption.trailing(String(localized: "people.detail.subjects.note",
+                                    defaultValue: "Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags.")))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     } header: {

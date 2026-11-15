@@ -294,6 +294,7 @@ struct ArchivalAnalyticsExportTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #787
+///   1.1 — 2026-11-15: #1905 (L15) — the subject footer's clause is its join to the subject data's caption
 @Suite("Archival analytics — export wiring")
 struct ArchivalExportWiringTests {
 
@@ -712,10 +713,17 @@ struct ArchivalExportWiringTests {
             a topic's name — the exact misreading the footer exists to prevent.
             """)
         // #833 requires the door to inherit the subject profile's own caveats, so the reader
-        // is not handed a chart built on tags they were never told are machine-derived.
-        #expect(sheet.contains("detected automatically, not editorial headings"), """
-            The scope rests on automatically detected subject tags. A chart offered without that \
-            clause presents a derived topic set as if it were an editorial subject heading.
+        // is not handed a chart built on tags they were never told are machine-derived. Since
+        // #1905 that caveat is the one caption every subject surface carries, joined after the
+        // footer's own sentence; the caption's text, "they are not editorial headings" among it,
+        // is `SubjectDataCaptionTests`' to hold.
+        #expect(sheet.contains("""
+            Text(SubjectDataCaption.trailing(String(format: String(
+                                localized: "browser.volume.subjectVolumes.archival.footer %lld",
+            """), """
+            The scope rests on subject tags matched by name, not editorial headings. A chart \
+            offered without the caption presents a derived subject set as if it were an editorial \
+            subject heading.
             """)
         #expect(sheet.contains("not the documents about this subject inside them"), """
             The load-bearing sentence. The scope is whole volumes whose profile ranks the \

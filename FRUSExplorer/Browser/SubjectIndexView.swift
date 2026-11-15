@@ -27,6 +27,7 @@ import SwiftUI
 ///          ``HostState/post(_:)``, emptied by ``HostState/landPending(rows:)``, so a delivery
 ///          lands once) and the reader's ``IndexState``, so a re-mounted index shows what the
 ///          reader left; only ``HostState/openWhole()`` resets it
+///   1.2 — 2026-11-15: #1905 (L15) — the area chip reads *Subject area: … — N subjects*
 enum SubjectIndexGrouping {
 
     /// One initial-letter section of the index.
@@ -315,18 +316,18 @@ enum SubjectIndexGrouping {
         if shown == total {
             return total == 1
                 ? String(format: String(localized: "subjects.index.groupFilter.all.one %@",
-                                        defaultValue: "Topic area: %@ — 1 topic"),
+                                        defaultValue: "Subject area: %@ — 1 subject"),
                          filter.label)
                 : String(format: String(localized: "subjects.index.groupFilter.all.many %@ %@",
-                                        defaultValue: "Topic area: %1$@ — %2$@ topics"),
+                                        defaultValue: "Subject area: %1$@ — %2$@ subjects"),
                          filter.label, total.formatted())
         }
         return total == 1
             ? String(format: String(localized: "subjects.index.groupFilter.some.one %@ %@",
-                                    defaultValue: "Topic area: %1$@ — %2$@ of 1 topic"),
+                                    defaultValue: "Subject area: %1$@ — %2$@ of 1 subject"),
                      filter.label, shown.formatted())
             : String(format: String(localized: "subjects.index.groupFilter.some.many %@ %@ %@",
-                                    defaultValue: "Topic area: %1$@ — %2$@ of %3$@ topics"),
+                                    defaultValue: "Subject area: %1$@ — %2$@ of %3$@ subjects"),
                      filter.label, shown.formatted(), total.formatted())
     }
 }
@@ -371,6 +372,7 @@ enum SubjectIndexGrouping {
 ///          two-pane's Back or by crossing the two-pane gate shows the area and search
 ///          the reader left, a delivery lands once, and Browse ▸ Topics resets it to
 ///          the whole index rather than re-landing the last hand-off
+///   1.3 — 2026-11-15: #1905 (L15) — the index is *Subjects*; its header ends with the subject data's caption
 struct SubjectIndexView: View {
 
     /// The host's Topic-index state — the hand-off waiting to land, and the reader's search,
@@ -426,9 +428,9 @@ struct SubjectIndexView: View {
         }
         .searchable(text: $host.index.query,
                     prompt: Text(String(localized: "subjects.index.search.prompt",
-                                        defaultValue: "Search topics")))
+                                        defaultValue: "Search subjects")))
         .overlay { emptyResultsOverlay }
-        .navigationTitle(String(localized: "subjects.index.title", defaultValue: "Topics"))
+        .navigationTitle(String(localized: "subjects.index.title", defaultValue: "Subjects"))
         .task { load() }
         // An arrival can come while this view is LIVE (a second hand-off into the open macOS
         // Topics window, or a new arrival at the already-selected Browse level): `load()`'s rows
@@ -469,10 +471,10 @@ struct SubjectIndexView: View {
                 .buttonStyle(.borderless)
                 .accessibilityLabel(
                     String(localized: "subjects.index.groupFilter.clear.a11y",
-                           defaultValue: "Show all topics")
+                           defaultValue: "Show all subjects")
                 )
                 .help(String(localized: "subjects.index.groupFilter.clear.help",
-                             defaultValue: "Clear the topic-area narrowing"))
+                             defaultValue: "Clear the subject-area narrowing"))
             }
         }
     }
@@ -481,10 +483,12 @@ struct SubjectIndexView: View {
     private var coverageCaption: String {
         // R-3: the volume count is the bundled manifest's, never a literal — `552` shipped here
         // and would have been false on the day a 553rd volume was catalogued.
-        String(format: String(
+        // The header begins with the count (decision 135), and the caption stands last, where the
+        // old account did (#1905).
+        SubjectDataCaption.trailing(String(format: String(
             localized: "subjects.index.coverage.v2 %lld %lld",
-            defaultValue: "%1$lld assigned topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are drawn from experimental enrichment data, not editorial subject headings, so some are wrong."),
-            Int64(rows.count), Int64(appState.manifestStore.bundledEntries.count))
+            defaultValue: "%1$lld subjects across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device."),
+            Int64(rows.count), Int64(appState.manifestStore.bundledEntries.count)))
     }
 
     @ViewBuilder
@@ -513,11 +517,11 @@ struct SubjectIndexView: View {
     @ViewBuilder
     private var unavailableSection: some View {
         ContentUnavailableView(
-            String(localized: "subjects.index.unavailable.title", defaultValue: "Topics Unavailable"),
+            String(localized: "subjects.index.unavailable.title", defaultValue: "Subjects Unavailable"),
             systemImage: "tag.slash",
             description: Text(String(
                 localized: "subjects.index.unavailable.message",
-                defaultValue: "The detected-topic index did not load, so topics cannot be browsed. Everything else in the app is unaffected.")))
+                defaultValue: "The subject index did not load, so subjects cannot be browsed. Everything else in the app is unaffected.")))
     }
 
     @ViewBuilder
@@ -570,6 +574,7 @@ struct SubjectIndexView: View {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
+///   1.1 — 2026-11-15: #1905 (L15) — the footer ends with the caption; *Find documents on this subject*, *All «area» subjects*
 struct SubjectDetailSheet: View {
 
     /// The subject being shown.
@@ -614,8 +619,8 @@ struct SubjectDetailSheet: View {
                                           defaultValue: "Indexed on this device"),
                                    value: deviceCountText)
                 } footer: {
-                    Text(String(localized: "subjects.detail.footer",
-                                defaultValue: "The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings."))
+                    Text(SubjectDataCaption.trailing(String(localized: "subjects.detail.footer",
+                                defaultValue: "The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return.")))
                 }
 
                 coveringVolumesSection
@@ -625,7 +630,7 @@ struct SubjectDetailSheet: View {
                         findDocuments()
                     } label: {
                         Label(String(localized: "subjects.detail.findDocuments",
-                                     defaultValue: "Find documents on this topic"),
+                                     defaultValue: "Find documents on this subject"),
                               systemImage: "magnifyingglass")
                     }
                     .disabled(!appState.isBootComplete)
@@ -640,7 +645,7 @@ struct SubjectDetailSheet: View {
                             browseTopicArea(key)
                         } label: {
                             Label(String(localized: "subjects.detail.browseArea",
-                                         defaultValue: "All \(subject.subcategory) topics"),
+                                         defaultValue: "All \(subject.subcategory) subjects"),
                                   systemImage: "square.grid.2x2")
                         }
                         .accessibilityIdentifier("subjects.detail.browseArea")

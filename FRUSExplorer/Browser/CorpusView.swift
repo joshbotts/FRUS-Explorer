@@ -85,6 +85,7 @@ import SwiftData
 ///   2.9 — 2026-11-10: that door joins the grid as a half-width tile titled "Annotations", its caption
 ///          going with the full width, and the grid's six tiles take the owner's order: All Volumes and
 ///          Administrations, Editors and Annotations, Archives and Clusters
+///   2.10 — 2026-11-15: #1905 (L15) — the root's row is *Subjects*, with its VoiceOver label and tooltip
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -336,7 +337,7 @@ struct CorpusView: View {
                 vm.openTopicIndex()
             } label: {
                 Label(
-                    String(localized: "browser.corpus.subjects", defaultValue: "Topics"),
+                    String(localized: "browser.corpus.subjects", defaultValue: "Subjects"),
                     systemImage: "tag"
                 )
                 .foregroundStyle(.primary)
@@ -350,10 +351,10 @@ struct CorpusView: View {
             .browseOpenDoorMark(isOpen(.subjects))
             .accessibilityLabel(
                 String(localized: "browser.corpus.subjects.a11y",
-                       defaultValue: "Browse detected topics across the whole series")
+                       defaultValue: "Browse subjects across the whole series")
             )
             .help(String(localized: "browser.corpus.subjects.help",
-                         defaultValue: "Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it"))
+                         defaultValue: "Browse an index of the subjects across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it"))
         }
     }
 

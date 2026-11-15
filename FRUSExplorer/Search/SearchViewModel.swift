@@ -114,6 +114,7 @@ import Observation
 ///          the facet panel made go with it (`clearFacetNarrowings()`), each while it is still as the panel made it
 ///   2.14 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
 ///          from the filters they were found under, which a working corpus records
+///   2.15 — 2026-11-15: #1905 (L15) — an unnamed subject chip reads *Subject filter*
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -2638,7 +2639,7 @@ final class SearchViewModel {
             out.append(ActiveNarrowing(
                 id: "subjectRef",
                 label: subjectName ?? String(localized: "search.narrowing.subjectRef.unknown",
-                                             defaultValue: "Topic filter")))
+                                             defaultValue: "Subject filter")))
         }
         return out
     }

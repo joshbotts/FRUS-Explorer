@@ -409,15 +409,16 @@ struct ResearchRailView: View {
         if !topics.isEmpty {
             Divider()
             accordionHeader(
-                title: String(localized: "panel.subjects.title", defaultValue: "Topics"),
+                title: String(localized: "panel.subjects.title", defaultValue: "Subjects"),
                 badge: "\(topics.count)",
                 isExpanded: $subjectsExpanded)
             if subjectsExpanded {
                 Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     subjectChips(topics)
-                    Text(String(localized: "panel.subjects.caveat",
-                                defaultValue: "Detected automatically from the text, not editorial subject headings — so some are wrong. Most distinctive first."))
+                    // The caption first, where the old account stood, then the chips' order (#1905).
+                    Text(SubjectDataCaption.leading(String(localized: "panel.subjects.caveat",
+                                                           defaultValue: "Most distinctive first.")))
                         .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -447,7 +448,7 @@ struct ResearchRailView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(String(localized: "panel.subjects.chip.hint",
-                                              defaultValue: "Opens this topic in the topic index"))
+                                              defaultValue: "Opens this subject in the Subject index"))
                 } else {
                     FRUSTagChip(label: topic.name, style: .system)
                 }

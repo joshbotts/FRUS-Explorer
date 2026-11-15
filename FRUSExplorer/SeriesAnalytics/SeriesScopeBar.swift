@@ -71,6 +71,7 @@ struct SeriesScope: Sendable, Equatable {
 ///   1.2 — #1274: the Topic-index door switches to the Browse tab on iOS, tells its host to
 ///         close the Research Guide sheet first, and is withheld where the hand-off cannot
 ///         be delivered
+///   1.3 — 2026-11-15: #1905 (L15) — *By Subject*, *Subjects — experimental*, *Browse all subjects…*
 struct SeriesScopeBar: View {
 
     /// Shared app state — for the Topic-index door (#1040).
@@ -210,9 +211,9 @@ struct SeriesScopeBar: View {
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> some View {
         let manifestIds = Set(entries.map(\.volumeId))
-        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
           Section(String(localized: "analytics.scope.subject.experimental",
-                         defaultValue: "Detected topics — experimental")) {
+                         defaultValue: "Subjects — experimental")) {
             // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
             ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 let catIds = ScopeFacets.volumeIds(forCategory: category.label,
@@ -289,7 +290,7 @@ struct SeriesScopeBar: View {
     /// the guide is ALWAYS a sheet, so without that notification the index lands underneath it.
     private var topicIndexButton: some View {
         Button(String(localized: "analytics.scope.subject.browseIndex",
-                      defaultValue: "Browse all topics…")) {
+                      defaultValue: "Browse all subjects…")) {
             #if os(macOS)
             appState.openSubjectExplorer(.all, from: sceneID)
             openWindow.fronting(id: "frus.subjects")

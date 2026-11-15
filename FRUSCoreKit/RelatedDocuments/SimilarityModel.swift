@@ -28,6 +28,7 @@ import Foundation
 ///   1.2 — 2026-11-08: FRUS Explorer Light's S23a — the model is FRUSCoreKit's, and what a host
 ///          calls is public; the axes' SF Symbols (`systemImage`) stay in the app
 ///          (`SimilarityModel+App.swift`), since the semantic axis's is the app's `SemanticGlyph`
+///   1.3 — 2026-11-15: #1905 (L15) — the shared-subjects axis is *Shared subjects*
 public enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifiable {
     /// Same original archival provenance — lot file, central decimal file, record-group series,
     /// or presidential-library collection (`IndexingPipeline.archivalNeighbors`). A generator.
@@ -115,7 +116,7 @@ public enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, I
         case .sharedPersons:
             return String(localized: "related.axis.persons", defaultValue: "Shared people")
         case .sharedSubjects:
-            return String(localized: "related.axis.subjects", defaultValue: "Shared topics")
+            return String(localized: "related.axis.subjects", defaultValue: "Shared subjects")
         case .semanticSimilarity:
             // "Experimental" is in the NAME, not only in a tooltip: the axis ships without the
             // quality gate its own design specified, and a user moving this slider is the
@@ -272,6 +273,7 @@ public struct AxisWeights: Codable, Hashable, Sendable {
 ///   1.1 — 2026-10-09: #1586 — `displayText(locale:)`, the chip's words, moved out of
 ///          `RelatedDocumentsContent.whyRelated` so a test reads them; the archival chip groups
 ///          its container's size
+///   1.2 — 2026-11-15: #1905 (L15) — the shared-subjects chip reads *subjects: …*
 public enum WhyRelatedChip: Hashable, Sendable {
     /// A cross-reference axis, stating the citation multiplicity it actually found.
     case citations(Int)
@@ -332,10 +334,10 @@ public enum WhyRelatedChip: Hashable, Sendable {
                                          defaultValue: "shares: %@"),
                           terms.joined(separator: ", "))
         case .sharedSubjects(let names):
-            // "topics", not "shares" — the semantic chip already owns that verb on the same
-            // row, and these are detected topics rather than the document's own words.
+            // "subjects", not "shares" — the semantic chip already owns that verb on the same
+            // row, and these are matched subjects rather than the document's own words (#1905).
             return String(format: String(localized: "related.why.sharedSubjects %@",
-                                         defaultValue: "topics: %@"),
+                                         defaultValue: "subjects: %@"),
                           names.joined(separator: ", "))
         case .percent(let pct):
             // A real but sub-1% contribution reads as "<1%", never "0%".

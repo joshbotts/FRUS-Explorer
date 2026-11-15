@@ -1068,6 +1068,8 @@ private struct MacAxisVolumeListView: View {
 /// Version history:
 ///   1.0 — Session 9 review: bounds the Top-subjects block (unbounded, it crushed
 ///          the structure list / Download button for many-category volumes)
+///   1.1 — 2026-11-15: #1905 (L15) — the subject data's caption is drawn below the capped scroll
+///          view, not inside it, where a profile taller than the cap hid it until scrolled to
 private struct BoundedSubjectsBlock: View {
     /// The volume whose subject profile is shown.
     let volume: VolumeManifestEntry
@@ -1080,22 +1082,34 @@ private struct BoundedSubjectsBlock: View {
     @State private var naturalHeight: CGFloat = 0
 
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(String(localized: "corpus.volume.subjects.header",
-                            defaultValue: "Top subjects"))
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-                VolumeSubjectsChips(volume: volume)
+        VStack(alignment: .leading, spacing: 6) {
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(String(localized: "corpus.volume.subjects.header",
+                                defaultValue: "Top subjects"))
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                    VolumeSubjectsChips(volume: volume, showsCaption: false)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { naturalHeight = $0 }
+            // Hug short profiles (height == natural), cap tall ones (scrolls internally).
+            // Starts at 0 before the first measurement — briefly collapsed is harmless,
+            // a greedy height would reintroduce the overflow this guards against.
+            .frame(height: min(naturalHeight, maxHeight))
+            .scrollDisabled(naturalHeight <= maxHeight)
+            // The caption outside the cap (#1905): inside it, a profile taller than the cap hid it
+            // below the groups until the reader scrolled the block (measured on frus1961-63v01).
+            // Never `.fixedSize(horizontal: false, vertical: true)` here: this column does not
+            // scroll, and a caption that may not compress gave the window a minimum height of the
+            // caption wrapped at no width, which left the whole volume page blank (the check copy,
+            // 2026-11-15). It wraps at the column's width and may shorten only where the column is.
+            Text(SubjectDataCaption.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // Hug short profiles (height == natural), cap tall ones (scrolls internally).
-        // Starts at 0 before the first measurement — briefly collapsed is harmless,
-        // a greedy height would reintroduce the overflow this guards against.
-        .frame(height: min(naturalHeight, maxHeight))
-        .scrollDisabled(naturalHeight <= maxHeight)
         .padding(.horizontal)
         .padding(.vertical, 8)
     }

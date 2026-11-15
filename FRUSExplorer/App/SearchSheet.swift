@@ -162,6 +162,7 @@ import SwiftUI
 ///          8-point glyph took a click, and keeps its own help; the editor's help moves onto the editor
 ///   1.31 — #1758: the results list opens at its top for a new search's rows and for another page, re-identified
 ///          on `executedSearchVersion` and `currentPage`
+///   1.32 — 2026-11-15: #1905 (L15) — the token help reads *Chosen in Subjects* and *Subject areas are chosen in the facet panel*
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -1541,13 +1542,13 @@ struct MacSearchWindowView: View {
                           defaultValue: "Edit this filter in Advanced filters")
         case .elsewhere:
             return String(localized: "search.token.editor.elsewhere.help",
-                          defaultValue: "Chosen in Topics. Remove it here, or pick another there.")
+                          defaultValue: "Chosen in Subjects. Remove it here, or pick another there.")
         case .facetPanel:
             // Named per field: two fields route here now, and "Years are chosen in the facet
-            // panel" is simply false hovering over a Subject token.
+            // panel" is simply false hovering over a Subject area token.
             return field == .subject
                 ? String(localized: "search.token.editor.facets.subject.help",
-                         defaultValue: "Subjects are chosen in the facet panel")
+                         defaultValue: "Subject areas are chosen in the facet panel")
                 : String(localized: "search.token.editor.facets.help",
                          defaultValue: "Years are chosen in the facet panel")
         }

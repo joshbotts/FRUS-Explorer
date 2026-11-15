@@ -27,13 +27,13 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
     case type
     case frontMatter
     case subject
-    /// One detected TOPIC, from the Subject Explorer (#1023) — finer than `subject`, which is a
-    /// `(category, subcategory)` area holding ~4.6 of them.
-    ///
+    /// ONE subject, from the Subject Explorer (#1023) — finer than `subject`, which is a
+    /// `(category, subcategory)` area holding ~4.6 of them; so this token reads *Subject* and that
+    /// one *Subject area* (#1905), the names the index's area chip uses.
     /// A sibling case rather than a second meaning for `subject`, because the two filters coexist:
-    /// a reader can narrow to an area from the results facet and to a topic from the explorer, and
-    /// a single two-valued token would show one of them while the other filtered silently. That is
-    /// the failure this whole row exists to prevent.
+    /// a reader can narrow to an area from the results facet and to a subject from the explorer,
+    /// and a single two-valued token would show one of them while the other filtered silently. That
+    /// is the failure this whole row exists to prevent.
     case topic
 
     var id: String { rawValue }
@@ -50,9 +50,9 @@ enum SearchFilterField: String, CaseIterable, Identifiable, Sendable {
         case .frontMatter: return String(localized: "search.token.field.frontMatter",
                                          defaultValue: "Front matter")
         case .subject:     return String(localized: "search.token.field.subject",
-                                         defaultValue: "Subject")
+                                         defaultValue: "Subject area")
         case .topic:       return String(localized: "search.token.field.topic",
-                                         defaultValue: "Topic")
+                                         defaultValue: "Subject")
         }
     }
 
