@@ -25,7 +25,7 @@ It is written from four sources:
 - 89: the listing launches without App Previews.
 - 101: the website's pages are generated, reviewed and revised after the submission of 1.0 (1861).
 - 113: `1.0-release` tags the submitted commit; a TestFlight build's tag is the owner's call (`build-51`, `build-52`, `build-53` so far).
-- 117 to 119: index versions 72 to 74 ship in the next release, so 1.0 (1861) re-indexes once at launch a library last indexed by 1.0 (1787) or earlier. A library from 1.0 (1812) is already at 74.
+- 117 to 119: index versions 72 to 74 ship in the next release, so 1.0 (1861) re-indexes once at launch a library last indexed by 1.0 (1787) or earlier. A library from 1.0 (1812) is already at 74, so decision 131's version 75 re-indexes it once too.
 - 120 to 124: in 1.0 and merged (L10 to L14).
 
 **The owner's instruction of 2026-11-15**, which this plan is written from:
@@ -39,9 +39,45 @@ It is written from four sources:
 
 127. **The review's five rows are filed as issues, and this plan goes to a pull request.** The owner's words: "File the fix groups and open the PR".
     - L17 to L21 are #1917 to #1921. Each is labelled *before App Store submission*, as #1756 to #1763 were, and each body is the row's brief from the review's section, so that each row's session starts from its issue.
-    - This settles Q4's filing half. The rest of Q4 (whether every S2 goes in 1.0, and the order rows give way in) stands as proposed, with Q1 to Q3 and Q5 to Q7, until the owner answers it.
+    - This settles Q4's filing half. The rest of Q4 (whether every S2 goes in 1.0, and the order rows give way in) stood as proposed, with Q1 to Q3 and Q5 to Q7, until the owner answered them the same evening (decisions 128 to 136).
 
-**Proposed by this plan, for the owner's word.** Seven questions, Q1 to Q7, each with its recommendation (§4). The track below follows each recommendation, and says where. Each becomes a numbered decision, as written or as changed, when the owner answers.
+**The owner's answers of 2026-11-15**, given the same evening, one question at a time. §4 had put Q1 to Q7, each with a recommendation, and two follow-ups came from the answer to Q3. Numbered on:
+
+128. **Q1, how 1.0 (1861) is reached: a fourth TestFlight build, then 1861.** The owner's choice: "4th TestFlight, then 1861 (Recommended)".
+    - The frozen tree goes up as a TestFlight build numbered between 1812 and 1861, which the owner names as 1776, 1787 and 1812 were, and that build carries R6's device pass.
+    - R7 bumps that same tree to 1861 for the submission, so a defect the pass finds cannot spend the number decision 25 gives it.
+129. **Q2, the freeze: from R5's start until 1.0 (1861) is uploaded, `v2` takes only this plan's rows.** The owner's choice: "Freeze from R5 to the upload (Recommended)".
+    - Web-authored pull requests merge after the upload: #1907, #1911 to #1913, and the hand-overs' follow-ups.
+    - Before R5, other pull requests may merge on the owner's word.
+130. **Q3, the twelve issues: as placed, with #1909 and #1910 in 1.0, and a checkpoint for #1915.** The owner's words: "As placed plus 1909 and 1910. Include a check point where usage can be assessed and 1915 included as well, if feasible".
+    - In 1.0: #1905, #1892, #1893, #1914, #1909 and #1910, as L15, L16 and the new L22.
+    - #1908 is N1's lookup.
+    - #1915 is C1's (decision 132).
+    - #1907, #1911, #1912 and #1913 follow the upload.
+131. **#1909 takes index version 75.** The owner's choice, asked as Q3's first follow-up (an additive table with no version, or a version of its own): "Index version 75".
+    - So 1.0 (1861) carries versions 72 to 75, and every library re-indexes once at launch: one from 1.0 (1787) or earlier for all four versions, one from 1.0 (1812) for 75.
+    - Every export then carries a complete record of the files it was indexed from.
+    - FRUS Explorer Light's server refuses a version-75 export until its pin move ships (its COORDINATION §4). The row's hand-over note says so.
+132. **#1915 is decided at checkpoint C1, on Wednesday evening, by the week's usage and the rows' pace.** The owner's choice, asked as Q3's second follow-up: "Yes: Wednesday evening, usage and pace (Recommended)".
+    - It confirms that *usage* means the week's Claude session allowance.
+    - C1 comes once L20 and L21 have merged, before R5's freeze.
+133. **Q4, the review's findings: the 2 S1s and all 23 S2s go in 1.0, as L17 to L21.** The owner's choice: "S1s and all 23 S2s, as planned (Recommended)". §1's order for a day that slips stands, and the 37 S3s go to §5.
+134. **Q5: the checklist runs the full unit target on iOS 27.0 and iOS 27.2.** The owner's choice: "Yes, 27.0 and 27.2 (Recommended)".
+135. **Q6: *detected topics* is renamed *Subjects*, with one caption everywhere.** The owner's choice: "Subjects, with this caption (Recommended)".
+    - The owner first asked for the caption ("Subjects may be ok. Tell me what the caption will say.") and then set its terms: "The subject data is from the office of the historian, but it is still experimental and not published on their website. I want the caption to credit the office but not imply that it has reviewed this data and approved its editorial accuracy."
+    - The caption, word for word: *Experimental subject data from the Office of the Historian, not published on history.state.gov. Subjects are matched to documents by name in the text; they are not editorial headings from the FRUS publication process, so some are wrong.*
+    - It credits the Office, says the data is experimental and unpublished, names no reviewer, and claims no review either way.
+    - It replaces the five accounts the review found (its §7), and each surface keeps its own practical sentence after it.
+    - The labels, as the question listed them:
+      - *By Detected Topic* → *By Subject*;
+      - *Filter by detected topic…* → *Filter by subject…*;
+      - the rail's and Browse's *Topics* → *Subjects*;
+      - Related's *Shared topics* → *Shared subjects*;
+      - the Topic index → the *Subject index*, whose header begins *491 subjects across the whole series*, as the caption's preview showed it.
+    - The Word Cloud's *Topics* lens is another thing, and keeps its name.
+136. **Q7: the in-app browser follows links only on its opening page's host, and the age rating stays 13+.** The owner's choice: "Limit the browser; keep 13+ (Recommended)".
+    - Every other link opens in the system browser.
+    - So the entry sheet's *Unrestricted Web Access: no* is true.
 
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
@@ -49,14 +85,14 @@ It is written from four sources:
 - **Small defects are fixed inline**, several related issues to one pull request, with one review pass on the diff.
 - **Tests are scoped with `-only-testing` while developing.** Landing owes one full unit run, `swift test` where the diff names package input, and the Mac build. Build output goes to a file, and the session reads the summary.
 - **Every heavy job goes through `Scripts/heavy.sh`**, one at a time on this Mac.
-- **One index bump a build.** 1.0 (1861) carries versions 72 to 74 (decisions 117 to 119), and no row in this plan changes what indexing stores. A fix that would is a candidate for the release after 1.0 (§3): #1854 and #1909 are two.
+- **One index bump a build.** 1.0 (1861) carries versions 72 to 75 (decisions 117 to 119 and 131), and any library re-indexes once at launch: one from 1.0 (1787) or earlier for all four, one from 1.0 (1812) for 75. L22 is the only row that changes what indexing stores. Any other fix that would is a candidate for the release after 1.0 (§3); #1854 is one.
 - **No CloudKit schema change in 1.0.** A row that would add a `@Model`, or a stored property to one, goes after 1.0; the R-7 gate (`CloudKitSchemaInventoryTests`) catches one, and Production would need a deploy before the build ships.
 - **Lanes edit the manuals** where they change what a manual describes, and leave the *AI Generated* notice (decision 94).
 - **A test that pins specific language is an advisory reminder** (decision 9): the edit goes ahead, the test is brought to the new text in the same change, and the reason is written where the test is.
 - **The web edition.** Sessions follow `CLAUDE.md`'s four rules. A row that changes shared code says so, runs `swift build --target FRUSCoreKit` and `swift test`, and, where its issue carries a hand-over note for FRUS Explorer Light, fills it in after the merge.
 - **The EditableContent range gate stays exact** (`EditableContentKeyTests.everyRangedBlockHoldsItsKey`).
 - **A finding is filed as an issue on the owner's word.** The review's findings that no row takes stay in §5 and in the review's record until then.
-- **The freeze (Q2):** from R5's start until 1.0 (1861) is uploaded, `v2` takes only this plan's rows. Any other pull request waits for the upload, or becomes a row on the owner's word.
+- **The freeze (decision 129):** from R5's start until 1.0 (1861) is uploaded, `v2` takes only this plan's rows. Any other pull request waits for the upload, or becomes a row on the owner's word.
 
 ---
 
@@ -64,55 +100,70 @@ It is written from four sources:
 
 | | Pull request | Issues |
 |---|---|---|
-| L15 | *Detected topics* renamed (Q6): the label the scope menus, Search's filters, the facet panel, Browse and the manuals give the Office's subject tags, and one caption in place of the five that explain them | #1905 |
+| L15 | *Detected topics* renamed *Subjects* (decision 135): the labels in the scope menus, Search's filters, the facet panel, the rail, Browse, Related and the Subject index, with one caption in place of the five that explain them | #1905 |
 | L16 | The cross-reference graph: the banner's count at two and three hops, the timeline's tick range below 116 pt, and the timeline kept through a relayout | #1892, #1893, #1914 |
 | L17 | What App Review checks: a privacy-policy and support link inside the app, the Photos usage string, the in-app browser's reach, the Mac's print entitlement, and the review notes | #1917 (review ASR-1, ASR-2, ASR-3, ASR-4, ASR-6) |
 | L18 | Search says what it did: Filters' Done reruns the search, Facets' Apply where it can be seen, a result spoken to VoiceOver, an empty library named as the cause, 44-pt targets, and the Mac's matched words readable | #1918 (review IPS-1, IPH-3, HCD-4, A11Y-2, IPH-5, A11Y-1) |
 | L19 | Nothing the researcher wrote is lost without asking: the note editor, a collection row that holds the researcher's text, Add to Collection's confirmation, Open Document from the inspector, and the iPad's rail at compact width | #1919 (review IPA-2, MAC-2, A11Y-3, IPA-4, IPA-6) |
 | L20 | Downloads, the first run and Apple Intelligence say what is happening: the size on the device, Cancel All, a failed download shown with Retry, and why a summary is unavailable | #1920 (review HCD-1, HCD-2, HCD-3, HCD-5) |
 | L21 | The Mac's windows, a chart's lines and Browse's tile names: the main window's title, toolbars that fit their windows, numbered Research rows, the empty window's way in, comparison lines that differ by more than colour, and tile names Voice Control can say | #1921 (review MAC-1, MAC-3, MAC-5, MAC-6, IPS-3, A11Y-5) |
+| L22 | The research export names what it was made from: the index records each volume file's git blob SHA-1, at index version 75 (decision 131), and the Mac's Export Research Database… says which index version it carries | #1909, #1910 |
 | N1 | Where NARA's live answers put a record's record group, read from one lookup with the owner's key; a fix in the kit only if the lookup shows one is owed | #1908 |
+| C1 | The checkpoint for Import from JSON, Wednesday evening: the week's usage and the rows' pace decide whether #1915 is built for 1.0 (decision 132) | #1915 |
 | R5 | The release checklist on the frozen tree, the bump to the fourth TestFlight build, both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
-| R6 | The fourth TestFlight build uploaded, and the device pass: what changed since 1.0 (1812), the re-index a 1.0 (1787) library makes, and the 1812 pass still owed | — |
+| R6 | The fourth TestFlight build uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
 | R7 | The bump to 1.0 (1861) | — |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
-**The calendar** (Q1's, Q2's and Q4's recommendations). Each day's rows are serial, and a row starts when the one before has merged. The 2026-10-21 plan's L1 to L7, seven rows of this size, were built and merged in two days.
+**The calendar** (decisions 128, 129, 132 and 133). Each day's rows are serial, and a row starts when the one before has merged. The 2026-10-21 plan's L1 to L7, seven rows of this size, were built and merged in two days.
 
 | Day | Rows | Who |
 |---|---|---|
-| Sun 2026-11-15 | This plan | the owner merges it, and answers Q1 to Q7 |
+| Sun 2026-11-15 | This plan, with the owner's answers to Q1 to Q7 (decisions 128 to 136) | the owner merges it |
 | Mon 2026-11-16 | L15, L16, L17; N1's lookup | sessions; the owner merges each and makes the lookup |
-| Tue 2026-11-17 | L18, L19 | sessions; the owner merges each |
-| Wed 2026-11-18 | L20, L21 | sessions; the owner merges each |
+| Tue 2026-11-17 | L18, L19, L22 | sessions; the owner merges each |
+| Wed 2026-11-18 | L20, L21; C1, the checkpoint for #1915, in the evening | sessions; the owner merges each, then reads the week's usage and decides C1 |
 | Thu 2026-11-19 | R5: the freeze starts, the checklist runs, the tree goes to the fourth TestFlight number, sitting T2 retakes what the rows changed | a session; the owner archives and uploads that evening |
 | Fri 2026-11-20 | R6, the device pass, in the morning; R7, the bump to 1861; R3: the website made public, the App Store Connect entry, the submission, the tag | the owner; a session for R7 |
 | Sat 2026-11-21 | Slack: R3, if Friday's pass or entry runs long | — |
 
-**If a day slips**, the rows give way in this order, each to the first update after 1.0: L21 first, then L20's S parts (Cancel All on the Mac, the failed download's line), then L19's IPA-6. L15 to L17, L18 and the rest of L19 and L20 stay: they are the owner's own issues, the store's checks, and the defects that mislead a researcher or lose their work. A defect R6 finds goes to a row on the owner's word; one that is not a crash, a loss of work or a store check may go to the first update instead, so that 1.0 (1861) keeps its week.
+**If a day slips**, the rows give way in this order, each to the first update after 1.0: L21 first, then L20's S parts (Cancel All on the Mac, the failed download's line), then L19's IPA-6. L15 to L18, L22 and the rest of L19 and L20 stay: they are the owner's own issues and choices (decision 130), the store's checks, and the defects that mislead a researcher or lose their work. A defect R6 finds goes to a row on the owner's word. One that is not a crash, a loss of work or a store check may go to the first update instead, so that 1.0 (1861) keeps its week.
+
+**If C1 takes #1915**, its two pull requests are rows L23 and L24 before R5: the kit's rules, then the screen. R5 then moves to Friday, R6 to Saturday, and the submission to Sunday 2026-11-22 at the earliest. If C1 does not take it, the calendar stands, and #1915 leads the release after 1.0.
 
 ### 1a. Where each issue filed from 2026-11-09 to 2026-11-14 goes
 
 | Issue | Goes | Why |
 |---|---|---|
-| #1905, *detected topics* → *tagged topics* | **L15, in 1.0** | The owner's own copy change: *detected* says the app does the detecting, and the topics are the Office of the Historian's tags, matched upstream by name. Copy only. The review found the same data under seven names; which one replaces *detected* is Q6. |
+| #1905, *detected topics* → *Subjects* | **L15, in 1.0** | The owner's own copy change: *detected* says the app does the detecting. The name is *Subjects*, with one caption that credits the Office and claims no review (decision 135). Copy only, but for Related's label in the kit. |
 | #1892, the banner's count at two and three hops | **L16, in 1.0** | A graph opened at two hops, which the view model does by itself for a sparse graph (`CrossReferenceGraphViewModel.loadGraph`), shows the sentence #262 retired. One line in the kit (`CrossReferenceStore.expandedGraph`'s return, `FRUSCoreKit/CrossReference/CrossReferenceStore.swift:387`), read at `4a269a35`. |
 | #1893, the timeline traps below 116 pt | **L16, in 1.0** | A trap is a crash in a release build. Nothing seen reaches it, and the iOS view sets no minimum width (§1's L16 asks the session to look for a layout that does). One clamp in the kit (`CrossReferenceGraphDisplay.swift:917`). |
 | #1914, the timeline lost on a relayout | **L16, in 1.0** | A resize, an expanded cluster or a brushed range sends a graph whose dated nodes share one date back to the network layout. `timelineEligible` reads `displayNodes` (`CrossReferenceGraphViewModel.swift:163`), which `rerunLayout` replaces with the date-clustered set. App code. |
 | #1908, NARA's record group on the ancestor | **N1, before R5** | Only a live answer settles it, and only the owner holds a key. If lots resolve, nothing in the app changes: the generator's note is corrected and the issue closes. If not, the fallback to the `recordGroup` ancestor is a small kit change, a row before R5 if it can merge by Tuesday, else the first update's. A reader without a key never meets it, and the App Review notes offer none. |
-| #1910, the Mac export's index version | **After 1.0** | A line of text the web edition needs, and no reader of 1.0 is misled without it (FRUS Explorer Light refuses a mismatched export with a sentence that names both versions). Taken before R5 only on the owner's word. |
+| #1910, the Mac export's index version | **L22, in 1.0** (decision 130) | A line beside Export Research Database… naming the index version the copy carries, so a reader of FRUS Explorer Light can check it before copying 2.8 GB. With #1909 in the same row, it reads 75. |
 | #1907, #1912, #1913 | **After 1.0, web-authored, after the upload** | Kit parameters and cache keys only the web edition needs, each changing nothing the app does: #1913 only for a term spelt `occ:` and a word. Under the freeze they merge once 1.0 (1861) is uploaded. |
 | #1911, boundary tests for the other kits | **After the upload, web-authored** | Tests only, so no binary moves; the freeze holds it to keep R5's runs and R6's tree the same. |
-| #1909, the blob SHA of each indexed volume | **After 1.0, the owner's call** | An index-schema change, and 1.0 carries 72 to 74 (one bump a build). Whether it needs a version is that row's question. |
-| #1915, Import from JSON on every platform | **After 1.0, the first candidate for the release after it** (§3) | A new feature that writes research into the synced store, on both platforms, with merge rules over seven format versions. It cannot be built, reviewed and device-passed inside the week without putting the submission at risk. Its kit half, the rules over values, changes nothing the app does, and can be built during App Review and merged after the upload. |
+| #1909, the blob SHA of each indexed volume | **L22, in 1.0, at index version 75** (decisions 130 and 131) | The index records the git blob SHA-1 of the bytes each volume was indexed from. An export then names its files, and the web edition's import re-parses only the volumes that changed. Version 75 re-indexes every library once at launch, so every record is complete. |
+| #1915, Import from JSON on every platform | **C1 decides, Wednesday evening** (decision 132): in 1.0 if the week's usage and pace allow, else the first candidate after 1.0 (§3) | A new feature that writes research into the synced store, on both platforms, with merge rules over seven format versions. If C1 takes it, its two pull requests come before R5, and the submission moves to the weekend at the earliest. Its kit half, rules over values, changes nothing the app does, and can be built beside the rows either way. |
 
 **The rows.**
 
-- **L15, *detected topics* renamed** (#1905). One fresh session, one pull request. Copy only: no index version, no CloudKit change, and no kit code unless Related's *Shared topics* is renamed too (below); the kit's other mentions are comments.
+- **L15, *detected topics* renamed *Subjects*** (#1905, decision 135). One fresh session, one pull request. Copy only: no index version, no CloudKit change, and kit code only for Related's label (below); the kit's other mentions are comments.
   - **What the reader meets.** Every user-facing *Detected Topic* or *detected topics*, counted at `4a269a35`: the scope menus (`analytics.scope.bySubject` in `AnalyticsChartChrome.swift:543` and `SeriesScopeBar.swift:213`, `wordcloud.scope.bySubject` in `WordCloudView.swift:2446`, each with its *Detected topics — experimental* header), the word cloud's `Detected Topic` (`WordCloudView.swift:2182`), Browse's *Browse detected topics across the whole series* (`CorpusView.swift:353`), Search's *By Subject · Detected Topics*, *Filter by detected topic…*, *Filter by Detected Topic* and the explanation under it (`SearchFilterView.swift:955`, `:966`, `:1419`, `:1487`), and the facet panel's row (`FacetPanelView.swift:1116`). The keys stay; their `defaultValue`s change.
-  - **The name is Q6's answer.** The issue asks for *tagged topics*. The review (§7) found the same data under seven names, and *tagged* would sit directly above the reader's own **Tags** in the rail and beside the volume page's editorial Tags. So the evidence there supports *Subjects*, the word the provenance chip, Facets, Top subjects and the person sheet already use. Until the owner answers, the session builds nothing that depends on the name.
-  - **The sentences that explain them** say the topics are *detected*, *inferred from the text*, *automatically detected*, *experimental enrichment data* or *assigned*: five accounts. The data's own provenance (`Planning/Generators-Runbook.md`, `DocumentSubjectIndexGenerator`) is the Office of the Historian's subject export, which matches subject names and variants against the text, case-insensitively, before the app reads it. So one caption replaces the five, under either name, and the session puts its wording to the owner before writing it everywhere. For example: *Office of the Historian subjects, matched to the text by name, not chosen by the volume's editors, so some are wrong.*
-  - **The other names** go with the choice. *Topics* (the rail, Browse), *Top subjects* (the volume page), *Shared topics* (Related, whose axis title is in `FRUSCoreKit/RelatedDocuments/SimilarityModel.swift`, so a change there owes `swift build --target FRUSCoreKit` and `swift test`) and *assigned topics* (the Topic index) take the chosen name or are left, as the owner says; the review's §7 lists each with its line.
+  - **The name is *Subjects***, the word the provenance chip, Facets, Top subjects and the person sheet already use.
+    - **The labels:**
+      - *By Detected Topic* → *By Subject*;
+      - *Filter by detected topic…* → *Filter by subject…*;
+      - *By Subject · Detected Topics* → *By Subject*, and *Filter by Detected Topic* → *Filter by Subject*;
+      - the rail's and Browse's *Topics* → *Subjects*;
+      - the Topic index → the *Subject index*, its header *491 subjects across the whole series…* with the count read as now;
+      - Related's *Shared topics* → *Shared subjects*.
+    - The Word Cloud's *Topics* lens is another thing, and keeps its name.
+    - Any other place the name appears follows the same rule, and the pull request lists each change: the Mac's Topics window, the volume scopes editor's *Subject…*.
+  - **The caption**, word for word, replaces each of the five accounts the review found (*detected*, *inferred from the text*, *automatically detected*, *experimental enrichment data*, *assigned*): *Experimental subject data from the Office of the Historian, not published on history.state.gov. Subjects are matched to documents by name in the text; they are not editorial headings from the FRUS publication process, so some are wrong.*
+    - Each surface keeps its own practical sentence after it: the rail's *Most distinctive first.*; Search's sentence on what makes a volume a member and on choosing a sub-category; the index's counts.
+    - It credits the Office and claims no review, on the owner's terms (decision 135). A session that finds a surface where it does not fit asks before shortening it.
+  - **Related's label is the kit's** (`FRUSCoreKit/RelatedDocuments/SimilarityModel.swift`), so its change owes `swift build --target FRUSCoreKit`, `swift test` and a line in the hand-over to FRUS Explorer Light. Every other change is the app's.
   - **The mirrors:** both manuals (about 12 lines in the iOS manual and 14 in the Mac's, found with `grep -n -i "detected"`), the two `07-Search-and-Browse.md` blocks that hold the changed strings, one Amendment-Log bullet, the quick starts' web copies (`Docs/Website/quick-start-ios.html`, `quick-start-mac.html`, regenerated by `Scripts/build_website_pages.py`, whose `--check` must pass) and the website paste kit (`Planning/website-drafts/build_paste.py`). The owner re-pastes the quick-start pages in Squarespace (§2).
   - **Checks:** `EditableContentKeyTests`, `CodingStandardsAuditTests`, the unit target, the Mac build. **Captures:** the ledger shows no frame with a scope menu open or Search's filters on the Subjects row; the session reads the T1, R4 and S1 entries and the frames themselves to confirm, and lists any it finds for T2.
 - **L16, the cross-reference graph** (#1892, #1893, #1914). One fresh session, one pull request: a commit for each issue, then a docs commit. Kit code (`FRUSCoreKit/CrossReference/`) and app code (`FRUSExplorer/CrossReference/`), so `swift build --target FRUSCoreKit` and `swift test` are owed; no index version, no CloudKit change.
@@ -125,7 +176,7 @@ It is written from four sources:
   - **L17, what App Review checks** (§2, and §3's row L17).
     - **ASR-2:** Privacy Policy and Support rows in About ▸ Legal, which both platforms share, and two items in the Mac's Help menu. They point at `https://frusexplorer.app/privacy` and `/support`, the entry sheet's addresses. `AboutLinks.allURLStrings`'s test takes them, and the EditableContent blocks that cite `AboutView.swift` and the Help menu are re-pointed.
     - **ASR-1:** `NSPhotoLibraryAddUsageDescription` in `project.yml`'s iOS `info.properties` and in `FRUSExplorer/Info.plist`, both by hand, with no `xcodegen generate`. Then the three paths checked on an iPhone 17 simulator under iOS 27.0 and 26.5, before the key and after, and the result recorded: Save Image from an exported figure, a reader figure's long press, an image in the in-app browser.
-    - **ASR-3, on Q7's answer:** the in-app browser follows a link only on its opening page's host, and sends any other to the system browser. Under the other answer, the entry sheet's age rating says *yes*, and the code is unchanged.
+    - **ASR-3 (decision 136):** the in-app browser follows a link only on its opening page's host and that page's subresources, and sends any other to the system browser. So the entry sheet's *Unrestricted Web Access: no* is true, and the rating stays 13+.
     - **ASR-4:** `com.apple.security.print` in both Mac entitlements files; the owner then prints to a real printer from an AppStore-configuration build.
     - **ASR-6:** the review notes' onboarding step (`Store-Listing-Draft.md` §7, then `app-store-connect/build_paste.py`).
   - **L18, Search says what it did** (§3, row L18).
@@ -155,30 +206,61 @@ It is written from four sources:
     - **IPS-3:** `.lineStyle(by:)` or `.symbol(by:)` on the comparison lines.
     - **A11Y-5:** the tiles' input labels, checked once with Voice Control.
     - Captures for T2: `macos/toolbar`, `macos/research-strip`, `macos/research` and `ipad/analytics`.
+- **L22, the research export names what it was made from** (#1909, #1910; decisions 130 and 131). One fresh session, one pull request: a commit for each issue, then a docs commit.
+  - **Scope:** kit code (the indexing pipeline under `FRUSCoreKit/Search/`) and app code (the Mac's export view).
+    - So `swift build --target FRUSCoreKit` and `swift test` are owed.
+    - It takes **index version 75**.
+    - No CloudKit change: the index is SQLite, not SwiftData.
+  - **#1909:**
+    - At indexing time the pipeline records the git blob SHA-1 of the bytes `indexVolume` read for each volume, and their length, through the kit's `VolumeUpdateChecker.gitBlobSHA1(for:)`.
+    - The record is a table of its own or a column on the per-volume row, which the issue leaves to this repository.
+    - Re-indexing a volume replaces its record.
+    - Tests, from the issue: the record equals `gitBlobSHA1(for:)` of the file indexed; a changed file, indexed again, updates it; Export Research Database…'s copy carries it.
+  - **The version:**
+    - The index version goes to 75, as V72 to V74 took theirs.
+    - `cited-page-map.json` is regenerated for it, where its `indexVersion` alone should move, and `resolved-edge-index.json` is checked byte for byte (`Planning/Generators-Runbook.md`, `ResolvedEdgeIndexGenerator`). `volume-annotations-index.json` too, if its generator stamps the version.
+    - The Agentic Analysis Guide's schema reference (§4) gains the record, with a version-history line, since the guide documents the database an export carries.
+  - **#1910:**
+    - Beside Export Research Database… on the Mac (`ResearchDataExportView.swift`), a line names the index version the copy will carry: the installed one, from `IndexingPipeline.dateIndexVersionKey`, which `ResearchDataExporter`'s stamp already reads.
+    - It says the index is being updated while a batch runs, and the done line names the version too.
+    - Each string goes through `String(localized:)`, with its EditableContent block, and a unit test covers the helper that builds the line.
+  - **After the merge:** both issues' hand-over notes for FRUS Explorer Light are filled in and filed as each says. #1909's note says that exports from 1861 are at version 75, which its server refuses until its pin move ships.
+  - **Captures:** none are expected. `ipad/data-recovery-export` shows the iPad's export settings, which #1910 leaves alone.
 - **N1, NARA's record group** (#1908). The owner's lookup and, if owed, a session.
   - **The owner's step, on the Mac with the key (Settings ▸ Connections):** a lot lookup the bundled indexes resolve, a D-designator lot in RG 59, in Source Explorer. Then one of two:
     - it resolves: say so on the issue. A session corrects the note in `RecordGroupCatalogGeneratorCore/CatalogRecordModels.swift` (`CatalogAncestor`) with the live answer's shape and closes the issue (generator code only; `swift test`).
     - it finds nothing: a session captures the raw `/records/search` answer with the owner (the key and every header removed), keeps it as a fixture, and has `NARACatalogClient.buildResult(from:)` fall back to the `recordGroup` ancestor after the record's own fields, as the issue's steps say (kit code: `swift build --target FRUSCoreKit`, `swift test`). It is a row before R5 if it merges by Tuesday evening; else it goes to the first update, and the App Review notes, which offer no key, need no change.
-- **R5, the release checklist and the fourth TestFlight build.** One fresh session from `v2` when every row above has merged; the freeze starts when it does (Q2).
+- **C1, the checkpoint for #1915** (decision 132), on Wednesday evening, once L20 and L21 have merged and before R5's freeze. The owner reads the week's usage (the Claude session allowance) and where the rows stand, and decides one of two:
+  - **#1915 in 1.0.**
+    - Its two pull requests, as its issue lays them out, are rows L23 and L24:
+      - L23, the kit's merge rules, Foundation only, with the issue's tests over format versions 1 to 7 and a file from the web edition;
+      - L24, the **Import from JSON…** screen in Data & Recovery on both platforms, through `fileImporter`, with the plan's report shown before anything is written and saves made in batches.
+    - R5 moves to Friday, R6 to Saturday, and the submission to Sunday 2026-11-22 at the earliest.
+    - The TestFlight notes and R6 add an import on each platform: an export from 1.0 (1812), and one from the web edition.
+    - No CloudKit change is expected, since imported records are the existing models. A row that finds one stops, by §0's rule.
+  - **#1915 after 1.0.** It leads the release after it (§3). Its kit half may still be built beside the rows, and merges after the upload (decision 129).
+- **R5, the release checklist and the fourth TestFlight build.** One fresh session from `v2` when every row above has merged; the freeze starts when it does (decision 129).
   - **Two things the checklist would stop on, fixed first, test code only:**
     - **The third warning line.** A clean `build-for-testing` has printed three warning lines since Lane 2 (#1875): the two known residues and `FRUSOffsetEngineTests.swift:2736`'s ambiguous `#require(… as? Bool)` (L11's session found it; every session since counts "`v2`'s 3 warning lines"). The checklist allows the two residues and nothing else, so the value is read first and the cast required after (`:2736`, and `:2753`'s twin if it warns).
     - **The one failing test under iOS 27.2.** Every full unit run on an iOS 27.2 simulator since 2026-11-10 fails `CrossReferenceRankingLabelsTests`' *At 720 pt every row's title is drawn* (`FRUSExplorerTests/CrossReferenceRankingLabelsTests.swift:846`), which reads the rendered chart back with Vision; under iOS 27.0 it passes (R2c's run, 7,934 tests, none failed). The test prints what Vision reads. The session runs it on both runtimes, reads the two outputs and the rendered image, and settles which is at fault: if the chart draws a title cut or blank under 27.2, that is an app defect on the system readers have, and it is fixed in the chart; if Vision reads a whole chart differently, the test's reading is widened, as it was for iOS 27.0 (its comment on the count Vision read as *m-*), with the reason beside it.
   - **The checklist**, as R2 and R2b ran it, each figure against R2b's (`Completed/Plan-Of-Record-2026-10-21.md` §1):
     - a clean `build-for-testing`, read for warnings: the two known residues and nothing else;
-    - the full unit target on iPhone 17 under **iOS 27.0 and iOS 27.2** (Q5): none failed. R2b had 7,864 tests in 942 suites; the sessions since `build-53` count 8,012 in 963 on 27.2;
+    - the full unit target on iPhone 17 under **iOS 27.0 and iOS 27.2** (decision 134): none failed. R2b had 7,864 tests in 942 suites; the sessions since `build-53` count 8,012 in 963 on 27.2;
     - `swift test`, owed since `build-52` for the kit moves (#1891 onward): R2b had 3,267 tests in 394 suites; #1916's session had 4,512 in 532;
-    - the Mac build, and a walk of the Mac check copy that opens what changed since 1.0 (1812): Source Explorer on `frus1952-54v02p1` d41 (#1894's resolution); a Most-Referenced chart's bar and the graph at two hops and on its timeline (#1891, L16); Corpus Analytics' **View N documents ↗** over Kennedy's years (#1896); Person Analytics' co-mention network, Chronology and About the Series (#1899); a word cloud in two lenses with Distinctive sizing (#1900); Archival Analytics' rankings and network (#1901); the person sheet's lifespan, Career and Subjects, and a scope bar's renamed topics (#1906, L15); `frus1961-63v06`'s index and contents in the reader at Small and Medium, the contents line *Kennedy-Khrushchev Exchanges*, `frus1873p1v1`'s *See* reference *De Long* and `frus1964-68v12` d238's *Bill Martin* (#1898, #1902, the taps of Mac check 27); and every row's own surface;
+    - the Mac build, and a walk of the Mac check copy that opens what changed since 1.0 (1812): Source Explorer on `frus1952-54v02p1` d41 (#1894's resolution); a Most-Referenced chart's bar and the graph at two hops and on its timeline (#1891, L16); Corpus Analytics' **View N documents ↗** over Kennedy's years (#1896); Person Analytics' co-mention network, Chronology and About the Series (#1899); a word cloud in two lenses with Distinctive sizing (#1900); Archival Analytics' rankings and network (#1901); the person sheet's lifespan, Career and Subjects, and a scope bar's *Subjects* (#1906, L15); `frus1961-63v06`'s index and contents in the reader at Small and Medium, the contents line *Kennedy-Khrushchev Exchanges*, `frus1873p1v1`'s *See* reference *De Long* and `frus1964-68v12` d238's *Bill Martin* (#1898, #1902, the taps of Mac check 27); Export Research Database…'s index-version line (L22); and every row's own surface;
     - the window-fronting audit (R2b: 80 / 2 / 34 / 0, 20 scenes, 23 `openAuxWindow` sites);
     - the link check in report mode (R2b: 19 OK and 3 owner-asserted, NARA's page answering 502 that night and 200 the next morning);
     - the dSYM fetch and `./Scripts/check_cloudkit_schema.py` (R2b: PASS, 268 of 272 identifiers required, Production 310). No `@Model` file's stored properties changed since `build-52`, read by `git diff build-53..v2 -- FRUSExplorer/Models/`: the changes moved nested value types into the kit;
-    - **the re-index census at version 74**, owed since R2b counted 71: decisions 117 to 119 ask the release that carries 72 to 74 to count its re-index, as A19 counted 71's.
-  - **The bump** to the fourth TestFlight build: a number between 1812 and 1861, the owner's to name as 1776, 1787 and 1812 were (Q1). `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and every occurrence in `project.pbxproj` (`replace_all`), the README's line and its mirror in `Docs/EditableContent/03-Repository-README.md`, and an Amendment-Log bullet, by `CLAUDE.md`'s procedure, with no `xcodegen generate`.
-  - **Both TestFlight notes** rewritten for that build, each 4,000 characters at most by Python's `len()`, with ⚙, ✕ and ⓘ written as words (#1783): for a tester who has 1.0 (1812), and for one who has 1.0 (1787), whose library re-indexes once at launch. What changed since 1812, from the rows above; every fix in the one line, as the owner's rule for these notes has it; what to test, from R6's list. The new behaviour a tester should look for:
+    - **the re-index census at version 75**, owed since R2b counted 71. Decisions 117 to 119 and 131 ask the release that carries 72 to 75 to count its re-index, as A19 counted 71's: over a library from 1.0 (1812) at 74, and one from 1.0 (1787) at 71.
+  - **The bump** to the fourth TestFlight build: a number between 1812 and 1861, the owner's to name as 1776, 1787 and 1812 were (decision 128). `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and every occurrence in `project.pbxproj` (`replace_all`), the README's line and its mirror in `Docs/EditableContent/03-Repository-README.md`, and an Amendment-Log bullet, by `CLAUDE.md`'s procedure, with no `xcodegen generate`.
+  - **Both TestFlight notes** rewritten for that build, each 4,000 characters at most by Python's `len()`, with ⚙, ✕ and ⓘ written as words (#1783): for a tester who has 1.0 (1812) and one who has 1.0 (1787). Each library re-indexes once at launch, to version 75 (decision 131). What changed since 1812, from the rows above; every fix in the one line, as the owner's rule for these notes has it; what to test, from R6's list. The new behaviour a tester should look for:
     - the Privacy Policy and Support rows in About;
     - Search's Filters applying on Done;
     - Cancel All;
     - a failed download's Retry;
-    - the Mac's window titles.
+    - the Mac's window titles;
+    - *Subjects* in place of detected topics, with its caption;
+    - on the Mac, the export's index-version line.
   - **Sitting T2, the retakes** (decision 88): every committed capture a row since `build-53` changed, read from each row's log entry and from #1898's and #1902's (whose entries list none), retaken by the ledger's conventions (`Docs/screenshots/README.md`), each diffed by pixel against the frame it replaces.
     - **Expected from the rows' briefs, about seven frames:**
       - `macos/search` (A11Y-1), which is the README's hero and the Mac's store frame 01;
@@ -192,7 +274,7 @@ It is written from four sources:
   - **The records 1861 reads:** `Planning/app-store-connect/App-Store-Connect-Entry.md` says 1.0 (1861) is "taken to be what 1.0 (1812) … already does"; it now says what 1861 adds. `Store-Listing-Draft.md` and the paste kit are read against the frozen tree, as the 2026-11-10 session read them against 1812; the website drafts too, since L15 changes a sentence of the quick starts (#1888's condition: "Should 1861 take a change after all, the pages are read against it again").
   - **The owner's steps**, in the checkout the archive is cut from: bring `v2` to R5's merge; run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py` there; archive and upload `FRUSExplorer` and `FRUSExplorerMac` in the AppStore configuration, each with its note as What to Test; tag the commit (`build-54` would follow the others; decision 113 leaves it to the owner).
 - **R6, the device pass** of the fourth TestFlight build, on an iPhone, an iPad and the Mac. The owner's.
-  - **A library that had 1.0 (1787) or earlier**, so the one re-index to 74 is seen (decisions 117 to 119), and **one that had 1.0 (1812)**, which re-indexes nothing: this folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
+  - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
   - **What changed since 1812:** R5's Mac walk, on the iPad and the iPhone too; and, on iOS, a queue left to index while the app is away (L11 to L14, which 1812 was the first to carry).
   - **Each row's own surface**, from its log entry, and the review's checks that only a device can make (its §6), where the device is at hand:
     - the Lock Screen during a queue (IPH-7);
@@ -210,7 +292,7 @@ It is written from four sources:
 
 The repository holds a draft for each.
 - **The website.** Make frusexplorer.app public, with `/privacy` and `/support`, on the day of the submission: App Review opens both addresses, and every path answered 401 on 2026-11-10. The six pages and the footer are entered and hold their current files (`website-drafts/Squarespace-Entry.md`); L15 changes the two quick-start pages, which the owner pastes again from `website-drafts/paste/` after L15 merges.
-- **App Store Connect**, page by page in `app-store-connect/App-Store-Connect-Entry.md`, each text field ready to paste in `app-store-connect/paste/` and each screenshot slot in `~/Desktop/store/upload/<preset>/` (ten iPad, ten Mac, five iPhone, and the iPhone's five again at 1206 × 2622). R5 brings the sheet's description of 1861 up to date. The sheet's four decisions are the owner's (§4): the age rating (13+ as drafted, which Q7's recommended answer keeps true by limiting the in-app browser, or 16+), the trader status under the Digital Services Act, whether China mainland stays among the storefronts if a filing number or permit is asked for, and a manual release (recommended). And its two offers: `relations` for `FRUS` among the keywords, and the home page's Editors' Annotations sentence in the description.
+- **App Store Connect**, page by page in `app-store-connect/App-Store-Connect-Entry.md`, each text field ready to paste in `app-store-connect/paste/` and each screenshot slot in `~/Desktop/store/upload/<preset>/` (ten iPad, ten Mac, five iPhone, and the iPhone's five again at 1206 × 2622). R5 brings the sheet's description of 1861 up to date. The sheet's four decisions are the owner's (§4): the age rating (13+ as drafted, which decision 136 keeps true by limiting the in-app browser, or 16+), the trader status under the Digital Services Act, whether China mainland stays among the storefronts if a filing number or permit is asked for, and a manual release (recommended). And its two offers: `relations` for `FRUS` among the keywords, and the home page's Editors' Annotations sentence in the description.
 - **`check_repository_links.py --stamp`**, which writes the owner's confirmation date.
 - **The archives, the uploads and the tags:** the fourth TestFlight build (R5, R6) and 1.0 (1861) (R7, R3), `1.0-release` on the second.
 
@@ -220,11 +302,9 @@ The repository holds a draft for each.
 
 - **The website's pages** (decision 101), while App Review runs and before release: generate the home page and the tour in their coming-soon versions, review every figure against 1.0 (1861)'s bundle and every screen against the submitted build, revise, and publish; on release day the home page and the tour switch to their launch versions with the App Store badge. Still owed from 2026-11-10: the fold of the two plain-language drafts into `Docs/Support.md` and `Docs/Privacy-Policy.md`, on the owner's word; the reading level; captures for the tour's steps 19 and 20.
 - **The release after 1.0: its candidates.** Its order is the next plan's.
-  - **#1915, Import from JSON on every platform** (§1a): first, since the owner asked for it on 2026-11-14 after setting it aside on 2026-10-23. Its issue's two pull requests: the kit's rules, then the screen.
+  - **#1915, Import from JSON on every platform**, unless C1 takes it for 1.0 (decision 132). It comes first, since the owner asked for it on 2026-11-14 after setting it aside on 2026-10-23. Its issue's two pull requests: the kit's rules, then the screen.
   - **#1723, A7: App Intents and Siri**, with A7b's Spotlight association; the owner's device check with Spike Reader decides A7b's place (`App-Intents-Siri-Assessment-2026-10-18.md` §4 and §5).
   - **#1854**, 138 editorial-note documents with no source note, dateline or provenance stored: an index version.
-  - **#1909**, the blob SHA of each indexed volume: the owner's call on the proposal, then its index-version question.
-  - **#1910**, the Mac export's index version, unless taken before R5.
   - **The web edition's kit rows**, #1907, #1911, #1912 and #1913, web-authored, merging once 1.0 (1861) is uploaded.
   - **The review's findings no 1.0 row takes** (§5, *Found by the review*), each filed on the owner's word.
   - **Carried from the 2026-10-21 plan's §3:** six cross-volume references by id to a section's row, missing from the bundled edge index (A18b); the two Archival Neighbors readers disagreeing on a class key no note carries (A19); a volume whose indexing is cut short marked nowhere until the next launch (A14); the Archives Visit labelling lot targets by their first document (A15); Search's cost (`Issue-1648-Stopping-A-Replaced-Search-2026-10-15.md` §6: an exact-word search for a common word holds the pipeline for about two minutes, most of a Mac search's time is the snippet pass, the default scope's user-content union costs a common word's count about 0.3 s).
@@ -235,16 +315,11 @@ The repository holds a draft for each.
 
 ## 4. Waiting on the owner
 
-**The seven questions** this plan proposes answers to (§0). Each recommendation is what §1 follows until the owner answers.
-- **Q1. How 1.0 (1861) is reached.** *Recommended: a fourth TestFlight build, its number the owner's between 1812 and 1861, carries the frozen tree for R6's device pass, and R7 bumps that same tree to 1861 for the submission.* The alternative, uploading 1861 to TestFlight first and submitting it after the pass, tests the exact binary but spends 1861 on the first defect the pass finds, and decision 25 makes 1861 the submission's number. Either way 1861 is cut from `v2`, with what has merged since `build-53`; a release branch from `build-53` would leave the web edition's moves and #1916's fix out, and this repository has never cut one.
-- **Q2. The freeze.** *Recommended: from R5's start until 1.0 (1861) is uploaded, `v2` takes only this plan's rows.* Web-authored pull requests (#1907, #1911 to #1913, and the hand-overs' follow-ups) merge after the upload. The alternative lets test-only pull requests through, at the cost of a tree that moves between R5's runs and R6's archive.
-- **Q3. The twelve issues** (§1a). *Recommended: #1905, #1892, #1893 and #1914 in 1.0 (L15, L16); #1908 settled by N1's lookup; the other seven after 1.0.*
-- **Q4. The review's findings** (`UI-UX-Adversarial-Review-2026-11-15.md`). *Recommended: its 2 S1s and 23 S2s go in 1.0 as rows L17 to L21, in that order, with §1's rule for a day that slips (L21 gives way first). Its 37 S3s go to §5.* Each row's findings are filed as one issue labelled *before App Store submission*, #1917 to #1921 (decision 127), so that each row's issue body is its brief.
-  - **Why the S2s, and not only the S1s:** each is XS or S and app code only. Together they are what a first-time researcher, or a reviewer trying the app for ten minutes, would meet first: a filter that says it narrowed and did not, a note lost to a swipe, a download that cannot be stopped or fails without a word, a first Mac window with nothing to click.
-  - **The cost:** five more pull requests before the checklist, and a T2 sitting of about seven frames (§1, R5).
-- **Q5. iOS 27.2 in the checklist.** *Recommended: yes.* App Review uses current systems, the sessions since 2026-11-10 ran their unit targets on iOS 27.2 simulators, and one test fails only there (R5). The checklist ran on iOS 27.0 alone until now.
-- **Q6. The name that replaces *detected topics*** (L15, #1905). *The owner's word decides; the review recommends* Subjects. The issue asks for *tagged topics*. On the rail, *Tagged* would sit directly above the reader's own **Tags**, and beside the volume page's editorial Tags. *Subjects* is the word five surfaces already use. Either way, one caption replaces the five accounts of where the data comes from (the review's §7).
-- **Q7. The in-app browser and the age rating** (L17, the review's ASR-3). *Recommended: the browser follows links only on its opening page's host and sends the rest to the system browser, so the rating's* Unrestricted Web Access: no *is true and the rating stays 13+ as drafted.* The alternative is to answer *yes*, which rates the app 16+ and changes no code. The other age-rating items stay as the entry sheet drafts them, the owner's declaration.
+**The seven questions are answered** (decisions 128 to 136, 2026-11-15). Five took §4's recommendation as it stood. Q3 added #1909 and #1910 to 1.0, with a checkpoint for #1915. Q6 took *Subjects*, with a caption on the owner's terms. What is left for the owner this week:
+- **N1**, the NARA lookup with the key, on Monday.
+- **C1**, the checkpoint for #1915, on Wednesday evening (decision 132).
+- **The fourth TestFlight build's number** (decision 128), when R5 bumps the tree.
+- **The merges**, each row's in turn; the archives and uploads; and R6's device pass.
 
 **Carried:**
 - **The submission's entry** (§2): the four decisions and two offers in `App-Store-Connect-Entry.md`.
@@ -264,7 +339,7 @@ The 2026-10-21 plan's §5, with what has been fixed since left out (the ASCII fa
 
 ### Found by the review, 2026-11-15 — after 1.0 unless a row takes one
 
-The review's 37 S3 findings, less ASR-6, the review notes' wording, which L17 takes since it costs nothing. Each of the other 36 has its evidence and size in the review's §4, and the 7 that need a running app to settle have their checks in its §6. Each is filed as an issue on the owner's word, or declined. In brief:
+The review's 37 S3 findings, less the two that 1.0 rows take: ASR-6, the review notes' wording (L17), and HCD-6, the seven names (L15, decision 135). Each of the other 35 has its evidence and size in the review's §4, and the 7 that need a running app to settle have their checks in its §6. Each is filed as an issue on the owner's word, or declined. In brief:
 - **iPhone:**
   - IPH-6, the sync banner at accessibility sizes on a small iPhone;
   - IPH-7, the Lock Screen Live Activity's count;
@@ -302,7 +377,6 @@ The review's 37 S3 findings, less ASR-6, the review notes' wording, which L17 ta
   - A11Y-6, the rail's accordion state;
   - A11Y-7, the Research tab's rows by keyboard;
   - A11Y-8, removing a highlight without pointing;
-  - HCD-6, the seven names (L15 takes its labels; its captions follow Q6);
   - HCD-7, the iCloud wording;
   - HCD-9, the Research Guide at every launch during a queue (#757's choice);
   - HCD-10, a long summary's spinner.

@@ -10952,3 +10952,14 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - The issues' bodies write every code attribute in backticks, so that none mentions a GitHub user.
   - Each ends with the session's footer.
 - This change's pull request was opened the same day, on the same word, as #1922, against `v2` at `4a269a35`, which had not moved since the branch was cut.
+- **The owner answered Q1 to Q7 the same evening**, one question at a time, with two follow-ups from Q3. The answers are the plan's decisions 128 to 136:
+  - 128: a fourth TestFlight build, then 1861.
+  - 129: the freeze from R5 to the upload.
+  - 130: #1909 and #1910 in 1.0, with a checkpoint for #1915.
+  - 131: #1909 at index version 75, so 1861 carries 72 to 75.
+  - 132: checkpoint C1 on Wednesday evening, by the week's usage and pace.
+  - 133: the review's 2 S1s and 23 S2s in 1.0.
+  - 134: the checklist on iOS 27.0 and 27.2.
+  - 135: *Subjects*, with a caption that credits the Office and claims no review.
+  - 136: the in-app browser limited, so the rating stays 13+.
+  - The plan gains row L22 (#1909, #1910) and checkpoint C1, and its rows, calendar, checklist and device pass follow the answers. The review's §7 records the naming decision.
