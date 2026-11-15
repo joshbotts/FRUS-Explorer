@@ -1,6 +1,6 @@
 # OS 27 — Semantic Retrieval: Siri Distribution, Natural-Language Search, Similarity Axis
 
-> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). Every workstream has landed or been settled: A0 is A6's assessment
+> **Moved to `Completed/` on 2026-10-21** (`Plan-Of-Record-2026-10-21.md`, decision 98). Every workstream has landed or been settled: A0 is A6's assessment
 > (`../App-Intents-Siri-Assessment-2026-10-18.md`), A1 is A7 (#1723, a candidate for build 52), B0 shipped in build 44,
 > B1 (`CSUserQuery`) was declined, and C shipped through the vectors program. C3, project-lead centroid retrieval, is
 > parked in the 2026-10-21 plan's §5. The status line below is the sketch's own, of 2026-08-01.

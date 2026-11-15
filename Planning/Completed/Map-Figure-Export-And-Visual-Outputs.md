@@ -1,6 +1,6 @@
 # Offscreen Metal figure export, and the visual-outputs program behind it
 
-> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). §1 to §6 shipped. `../Visual-Marketing-Plan.md` carries §7's residue and
+> **Moved to `Completed/` on 2026-10-21** (`Plan-Of-Record-2026-10-21.md`, decision 98). §1 to §6 shipped. `../Visual-Marketing-Plan.md` carries §7's residue and
 > cites this file here now.
 
 **Status:** §6 Phases 1+2 SHIPPED 2026-08-27 (#1100); §6 Phase 3 SHIPPED 2026-08-27 (the

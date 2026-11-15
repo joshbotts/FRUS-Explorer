@@ -1,6 +1,6 @@
 # C-2: does the pasted house-rules block survive a long session?
 
-> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). C-2 was run and judged on 2026-08-31. `../Agentic-Loop-Development-Plan.md` and
+> **Moved to `Completed/` on 2026-10-21** (`Plan-Of-Record-2026-10-21.md`, decision 98). C-2 was run and judged on 2026-08-31. `../Agentic-Loop-Development-Plan.md` and
 > `../Agentic-Guide-Revisions-2026-09-04.md` cite it here now. Its run folder, `../c2-long-session/`, stays at the
 > Planning root, where `CodingStandardsAuditTests.brokenSqliteInvocationsAreMarked` reads it.
 

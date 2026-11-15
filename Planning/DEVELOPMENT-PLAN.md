@@ -10899,3 +10899,72 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 **Owed by the owner:** Mac check 31, listed in the pull request, with a real send if a Zotero key is at hand; then the merge. FRUS Explorer Light's next pin move carries it.
 
 **Not done:** a send that records how far it got, or resumes, so that a send stopped part-way (by a long `Retry-After` now, as by an exhausted retry or a network error before) can go on without duplicating what it sent; waiting out a `Backoff` before the next request rather than after a send's last write; saying a wait in the send's status line. The UI suites, iOS 26.x, a device and a signed run.
+
+## Session 2026-11-15 — The plan of record from 2026-11-15: 1.0 (1861) to App Review this week, the twelve issues filed since 2026-11-09 placed, and an adversarial review of the UI and UX against the HIG and human-centred design
+
+**What was asked.** The owner's words: "My goal for this week's development sessions is to submit build 1861 for App Store review. Please create a new plan of record that works toward that goal while also addressing issues opened over the last 6 days and performing an adversarial review over the UI/UX against both general human centered design best practices and Apple's HIG." It is the new plan's decision 126. A cloud session, from `v2` at `4a269a35`, on `claude/stoic-lovelace-zu993v`.
+
+**What changed** (documents only; no source, test, resource or manual):
+- **`Planning/Plan-Of-Record-2026-11-15.md`, the live plan.**
+  - Its rows: L15 (#1905), L16 (#1892, #1893, #1914), L17 to L21 (the review's 2 S1s and 23 S2s), N1 (#1908's live lookup), R5 (the checklist, a fourth TestFlight build and sitting T2), R6 (its device pass), R7 (the bump to 1861) and R3 (the submission).
+  - A calendar from Monday 2026-11-16 to Friday 2026-11-20, with Saturday as slack, and the order in which rows give way if a day slips.
+  - Where each of the twelve issues goes, and the five older ones.
+  - Seven questions for the owner, Q1 to Q7, each with its recommendation, which the track follows until answered. The fourth TestFlight build is Q1's recommendation, so that a defect the device pass finds cannot spend 1861, which decision 25 makes the submission's number.
+- **`Planning/UI-UX-Adversarial-Review-2026-11-15.md`, the review's record:** 68 findings, every one through a skeptic. 2 S1s, 23 S2s, 37 S3s and 6 duplicates; none refuted outright.
+- **Moved to `Completed/`:** `Plan-Of-Record-2026-10-21.md`, its head now marked superseded and kept as the record of decisions 84 to 125; and `Planning-Review-2026-10-21.md`, with a dated note.
+  - The live pointers to them now name the archived path, or the new plan where they meant the live one: `Completed/README.md` (a 2026-11-15 move entry, and its *Deliberately NOT here* list), `Visual-Marketing-Plan.md` (its §7 struck rows untouched), `website-drafts/README.md`, the cross-platform review's `STATUS.md`, and `Docs/Agentic-Analysis-Guide.md`'s two citations of decision 115 (lines 324 and 3445, outside the §15.1 and §15.1a blocks that `CollectionTests` reads).
+  - The seven heads the 2026-10-21 move wrote, the 2026-10-14 plan's status line and `Completed/README.md`'s entry for that move named the old plan or its review at `../`; they now name them in their own folder.
+  - Dated records are left as written: this log's entries, the archived plans' bodies, and the dated memos at the Planning root.
+
+**The review.** Seven reviewers: the iPhone; the iPad's reading half and its search half; the Mac; cross-platform flows and words; accessibility; App Review readiness.
+- **The reviewers' brief:**
+  - the evidence standard: a `file:line` re-read in this tree, or a capture named with its ledger date;
+  - a severity scale;
+  - decision 93's declined findings, not to be re-raised without new evidence;
+  - the old plan's carried backlog and the open issues.
+- **Two skeptics**, given the findings and not the reviewers' reasoning, tried to refute each one, and checked the S1s against Apple's documentation and WebKit's source.
+- **Apple's guidance was read as published that day:** 57 HIG pages fetched as JSON and turned to text, and the App Review Guidelines ("Last Updated: October 16, 2026"). It is kept in the session's scratch folder, not committed.
+- **Where the agents' words were not taken alone:** this session re-read the Filters sheet's dismissal path (`SearchView.swift:703-720`, `SearchFilterView.swift:247-252`) and About's twelve links (no privacy policy, no support page). It confirmed that no usage-description key exists in `project.yml`, and that `macos/search.png` is both the README's first hero image and the Mac's store frame 01 (`tools/marketing/shots.json`, `shots[1]`).
+- **The two S1s:**
+  - no privacy-policy link inside the app (guideline 5.1.1(i));
+  - no `NSPhotoLibraryAddUsageDescription`, which three iOS paths need when a person saves an image to Photos.
+
+**Found in the records, for R5:**
+- every full unit run on an iOS 27.2 simulator since 2026-11-10 fails `CrossReferenceRankingLabelsTests`' *At 720 pt every row's title is drawn*, which passes on 27.0;
+- a clean `build-for-testing` prints a third warning line, `FRUSOffsetEngineTests.swift:2736`'s ambiguous `#require`;
+- R2c's device pass of 1.0 (1812) is still owed;
+- `App-Store-Connect-Entry.md` describes 1861 as what 1812 does, while 18 pull requests have merged since `build-53` (about 20,000 lines moved into `FRUSCoreKit`, the reader's lists, the Zotero back-off).
+
+**Checked:**
+- `planOfRecordMatchesTheVisualMarketingPlan`'s two conditions, recomputed in Python over the new tree:
+  - one live plan of record, `Plan-Of-Record-2026-11-15.md`, with no "Status: SUPERSEDED" in it;
+  - its *§7 struck* line equal to the Visual Marketing Plan's strikes (0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15, over 17 rows).
+- No test reads any other file this change touches. The tests that read `Planning/` are that one and the workflow-script scan, which reads `.js` and `.mjs` files.
+- No Swift, test, resource, manual or EditableContent file changed, so no unit run, `swift test` or build was owed. This container has no Swift toolchain, so none was run.
+
+**Not done, and for the owner:**
+- The answers to Q1 to Q7.
+- N1's lookup with the NARA key.
+- Every row's build.
+- The issues' hand-over notes for FRUS Explorer Light, which L16 fills in after its merge.
+- The review's rows were filed on the owner's word, the same day ("File the fix groups and open the PR"; the plan's decision 127). Each is labelled *before App Store submission*, and each body is the row's brief:
+  - L17 is #1917, L18 #1918, L19 #1919, L20 #1920 and L21 #1921.
+  - The issues' bodies write every code attribute in backticks, so that none mentions a GitHub user.
+  - Each ends with the session's footer.
+- This change's pull request was opened the same day, on the same word, as #1922, against `v2` at `4a269a35`, which had not moved since the branch was cut.
+- **The owner answered Q1 to Q7 the same evening**, one question at a time, with two follow-ups from Q3. The answers are the plan's decisions 128 to 136:
+  - 128: a fourth TestFlight build, then 1861.
+  - 129: the freeze from R5 to the upload.
+  - 130: #1909 and #1910 in 1.0, with a checkpoint for #1915.
+  - 131: #1909 at index version 75, so 1861 carries 72 to 75.
+  - 132: checkpoint C1 on Wednesday evening, by the week's usage and pace.
+  - 133: the review's 2 S1s and 23 S2s in 1.0.
+  - 134: the checklist on iOS 27.0 and 27.2.
+  - 135: *Subjects*, with a caption that credits the Office and claims no review.
+  - 136: the in-app browser limited, so the rating stays 13+.
+  - The plan gains row L22 (#1909, #1910) and checkpoint C1, and its rows, calendar, checklist and device pass follow the answers. The review's §7 records the naming decision.
+- **The owner named the fourth TestFlight build**: "The 4th test flight build will be 1823" (decision 137). R5 bumps the tree to 1.0 (1823), between 1812 and 1861, so every upload of 1.0 still rises.
+- **The seven issues FRUS Explorer Light filed the same evening, #1923 to #1929**, were read whole, and the two claims that touch the app were checked in the code.
+  - #1929: `volumeSources(forVolumeId:)` leaves `job_number` out of its query, while the Sources outline reads `entry.jobNumber`.
+  - The app makes a new `ZoteroAPIClient()` for each of its three sends.
+  - The owner took the recommendations (decision 138): #1929 in 1.0, folded into L22; #1923 to #1926 as one Zotero row after 1.0; #1927 and #1928 web-authored, after the upload.
