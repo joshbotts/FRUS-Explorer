@@ -15,7 +15,7 @@
 
 FRUS Explorer is a research app for iPhone, iPad and Mac. It helps you read and search the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian. The app builds on the Office's open TEI editions.
 
-**Coming soon.** FRUS Explorer has been submitted to the App Store and is not there yet. Until it is, this page is here for the people testing it.
+**In testing.** FRUS Explorer is in final testing and is not yet on the App Store. Until it is, this page is here for the people testing it.
 
 > FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 

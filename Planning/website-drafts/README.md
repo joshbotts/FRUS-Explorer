@@ -79,10 +79,12 @@ The banner is a section, not Squarespace's Announcement Bar: the site is on the 
 Squarespace includes the bar from the Core plan up (its help centre says a feature the plan lacks
 can still show to the owner while logged in, and not to visitors).
 
-The banner on the home page and the tour reads "FRUS Explorer has been submitted to the App Store"
-(the owner's comment of 2026-10-20, since Apple decides whether it is allowed). The kicker and button
-("Coming soon to the App Store") and the tour's "will be free" still assume approval; whether to
-soften them is the owner's call.
+The banner on the home page and the tour reads "FRUS Explorer is in final testing for iPhone, iPad
+and Mac. It is not yet on the App Store." The site went live on 2026-11-15, before the submission,
+and the earlier "has been submitted" and "Coming soon to the App Store" were not true of it; on the
+owner's word that day the pages say what is true now, and need no change until App Review approves.
+Only "will be free" still assumes approval. The same day the home page's headline became
+"Research 165 years of U.S. diplomatic history.", and 553 moved into its opening paragraph.
 
 ## What the drafts already follow
 
