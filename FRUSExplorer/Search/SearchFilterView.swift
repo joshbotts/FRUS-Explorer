@@ -18,7 +18,10 @@ import SwiftData
 /// the presentation model changes from an inline expandable VStack to a sheet.
 ///
 /// ## Presentation
-/// - **iOS**: sheet with `.medium, .large` detents; filters apply on dismiss
+/// - **iOS**: sheet with `.medium, .large` detents. The fields are the search's own, so the chips above the
+///   results change as they are edited; the search on screen runs again when the sheet closes, by Done or a
+///   swipe, if they changed (`SearchView.filterSheetDismissed()`, the review's IPS-1). Until then "filters apply
+///   on dismiss" was this comment's claim alone: nothing ran
 /// - **macOS**: live popover anchored to the Search window's "Advanced…" button
 ///   (UI audit C4) — edits apply to the result list immediately (the presenter
 ///   observes `SearchViewModel.advancedFilterSignature`); Done just closes the
@@ -29,7 +32,8 @@ import SwiftData
 /// `SearchView`) because they are purely filter-scoped display state.
 ///
 /// ## Toolbar
-/// - **Done** (confirmationAction) — always visible; dismisses the sheet
+/// - **Done** (confirmationAction) — always visible; dismisses the sheet, and on iOS the host then runs a
+///   search on screen again if the filters changed
 /// - **Clear** (cancellationAction) — visible only when `vm.hasActiveFilters`;
 ///   clears all filter fields and the person search text
 ///
@@ -55,6 +59,7 @@ import SwiftData
 ///          modal sheet to a live popover (view content unchanged — the popover host
 ///          drives live application; `dismiss()` closes the popover)
 ///   1.4 — 2026-11-15: #1905 (L15) — *By Subject*, *Filter by subject…*; both subject footers lead with the caption
+///   1.5 — 2026-11-15: #1918 (L18, IPS-1) — the header says what the iOS sheet's closing does; the view is unchanged
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel

@@ -499,6 +499,212 @@ final class FilterVolumeListTests: XCTestCase {
     }
 }
 
+// MARK: - FilterSheetDoneTests (#1918, IPS-1)
+
+/// Closing Filters runs the search on screen again when its filters changed.
+///
+/// ## The defect
+/// The iPhone and iPad Filters sheet edits the search's own fields, so the *Narrowed by* chips, the scope banners and
+/// the filled filter glyph changed as soon as a filter did. **Done** only closed the sheet: nothing ran, and the list
+/// went on showing the search from before the change, "3 results" under a chip that said they were narrowed to
+/// editorial notes. Clear and then Done was the mirror image. The iOS manual's §7.4 told the reader to submit the
+/// search again (the review's IPS-1). `SearchViewModel.filterSheetClosed()` says what closing does now.
+///
+/// ## Fixture
+/// The spoken-row volume (`FRUS_UI_TEST_SEED_SPOKEN_VOLUME`, which `SearchResultVoiceOverTests` describes): a keyword
+/// search for "xylograph" lists its document, its editorial note and its preface, and Filters ▸ Document Type ▸
+/// Editorial notes only leaves the note alone.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`, with the iOS 27 timeout flags; nothing skips. On the code before the
+/// fix each test fails at its first count after the sheet closes.
+///
+/// Version history:
+///   1.0 — #1918 (L18, IPS-1): initial implementation
+@MainActor
+final class FilterSheetDoneTests: XCTestCase {
+
+    /// The word every section of the spoken-row volume holds (`UITestVolumeSeeder.spokenQueryWord`).
+    private static let query = "xylograph"
+    /// The volume's document, its editorial note and its preface: the three rows the search lists.
+    private static let document = "UI Test Spoken Document"
+    private static let editorialNote = "UI Test Spoken Editorial Note"
+    private static let preface = "UI Test Spoken Preface"
+    /// Long, because a wait that is met returns at once and this Mac is not always quiet.
+    private static let patience: TimeInterval = 30
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_SPOKEN_VOLUME"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .search)
+        app.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            if app.state == .runningForeground {
+                UITestPresentation.dismissAnyPresentation(in: app)
+            }
+            app.terminate()
+        }
+        app = nil
+    }
+
+    // MARK: Tests
+
+    /// A filter changed in the sheet narrows the list when Done closes it.
+    func testDoneRunsTheSearchAgainUnderTheChangedFilter() throws {
+        runTheSearch()
+        openFilters()
+        chooseDocumentType("Editorial notes only")
+        closeFiltersWithDone()
+        assertTheListHolds([Self.editorialNote], count: "1 result", after: "Editorial notes only and Done")
+    }
+
+    /// Clear and then Done takes the filter away from the list as well as from the chips.
+    func testClearAndDoneRunTheSearchAgainWithoutTheFilter() throws {
+        runTheSearch()
+        openFilters()
+        chooseDocumentType("Editorial notes only")
+        closeFiltersWithDone()
+        assertTheListHolds([Self.editorialNote], count: "1 result", after: "Editorial notes only and Done")
+
+        openFilters()
+        let clear = app.navigationBars["Filters"].buttons["Clear"].firstMatch
+        XCTAssertTrue(clear.waitForExistence(timeout: Self.patience),
+                      "Filters offers no Clear while a document type is in force")
+        clear.tap()
+        closeFiltersWithDone()
+        assertTheListHolds([Self.document, Self.editorialNote, Self.preface], count: "3 results",
+                           after: "Clear and Done")
+    }
+
+    /// A swipe that closes the sheet runs the search again too: the chips already say the filter is in force.
+    func testASwipeThatClosesFiltersRunsTheSearchAgain() throws {
+        runTheSearch()
+        openFilters()
+        chooseDocumentType("Editorial notes only")
+        let panel = app.navigationBars["Filters"]
+        panel.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: panel)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed,
+                       "A downward drag from its navigation bar did not close Filters")
+        assertTheListHolds([Self.editorialNote], count: "1 result", after: "Editorial notes only and a swipe")
+    }
+
+    // MARK: Steps
+
+    /// A result row, by the heading it draws. Found by `CONTAINS`, since a row that draws its number says it first.
+    private func resultRow(_ heading: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", heading)).firstMatch
+    }
+
+    /// Runs the keyword search and waits for its three rows. The volume is indexed during launch, and a search that
+    /// runs first lists nothing, so the query is submitted until the rows are there.
+    private func runTheSearch(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field",
+                      file: file, line: line)
+        for attempt in 1...5 {
+            field.tap()
+            if attempt > 1, let typed = field.value as? String, typed == Self.query {
+                field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: typed.count))
+            }
+            field.typeText(Self.query + "\n")
+            if app.staticTexts["3 results"].firstMatch.waitForExistence(timeout: 12),
+               [Self.document, Self.editorialNote, Self.preface].allSatisfy({
+                   resultRow($0).waitForExistence(timeout: 5) }) {
+                return
+            }
+        }
+        XCTFail("A search for \"\(Self.query)\" did not list the spoken-row volume's three sections in five attempts",
+                file: file, line: line)
+    }
+
+    /// Opens Filters from the actions bar.
+    private func openFilters(file: StaticString = #filePath, line: UInt = #line) {
+        let filters = app.descendants(matching: .any).matching(identifier: "search.actions.filter").firstMatch
+        XCTAssertTrue(filters.waitForExistence(timeout: Self.patience), "The actions bar has no Filters control",
+                      file: file, line: line)
+        filters.tap()
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: Self.patience), "Filters did not open",
+                      file: file, line: line)
+    }
+
+    /// Chooses one of Document Type's three segments. The section is below the sheet's fold at its medium height, on an
+    /// iPhone and on an iPad alike, so the sheet is first raised to its full height by its own navigation bar, and then
+    /// swiped up until the segment can be tapped.
+    ///
+    /// Two ways failed on the iPad Pro 13-inch (M5) under iOS 27.0. A drag from just below the sheet's bar moved nothing,
+    /// probably because it began on the Limit by date switch. A swipe at the app's centre, which landed at the medium
+    /// sheet's top edge, moved nothing in two runs of three (its recording shows eight swipes and the sheet still).
+    private func chooseDocumentType(_ segment: String, file: StaticString = #filePath, line: UInt = #line) {
+        let button = app.segmentedControls.buttons[segment].firstMatch
+        if !(button.exists && button.isHittable) {
+            app.navigationBars["Filters"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)))
+        }
+        var swipes = 0
+        while !(button.exists && button.isHittable) && swipes < 8 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(button.exists && button.isHittable,
+                      "Filters ▸ Document Type offers no \(segment) segment after \(swipes) swipes",
+                      file: file, line: line)
+        button.tap()
+        XCTAssertTrue(button.isSelected, "\(segment) is not selected after a tap on it", file: file, line: line)
+    }
+
+    /// Closes Filters with its navigation bar's Done, and waits for it to go.
+    private func closeFiltersWithDone(file: StaticString = #filePath, line: UInt = #line) {
+        let panel = app.navigationBars["Filters"]
+        let done = panel.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "Filters has no Done", file: file, line: line)
+        done.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: panel)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed, "Filters did not close",
+                       file: file, line: line)
+    }
+
+    /// Requires the results header to read `count` and the list to hold exactly the rows of `headings` among the three.
+    private func assertTheListHolds(_ headings: [String], count: String, after step: String,
+                                    file: StaticString = #filePath, line: UInt = #line) {
+        let header = app.staticTexts[count].firstMatch
+        if !header.waitForExistence(timeout: Self.patience) {
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "After \(step)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+        XCTAssertTrue(header.exists, """
+            After \(step) the results header does not read "\(count)": the list was not searched again under the \
+            filters the chips describe
+            """, file: file, line: line)
+        for heading in [Self.document, Self.editorialNote, Self.preface] {
+            if headings.contains(heading) {
+                XCTAssertTrue(resultRow(heading).waitForExistence(timeout: Self.patience),
+                              "After \(step) the list has no row for \(heading)", file: file, line: line)
+            } else {
+                let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
+                                                     object: resultRow(heading))
+                XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed,
+                               "After \(step) the list still has a row for \(heading)", file: file, line: line)
+            }
+        }
+    }
+}
+
 // MARK: - MeaningStripFitTests
 
 /// Search in Meaning mode at five text sizes on the two iPhone widths: the Keywords | Meaning control, the actions bar

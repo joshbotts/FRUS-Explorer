@@ -269,6 +269,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.36 — #1758: emptying the field closes the facet panel and takes away the narrowings it made
 ///          (`endSearch()`); the binoculars menu's Facets is a toggle, offered while the panel is open; a
 ///          *Narrowed by* chip's ✕ runs the search again only when something is left to search
+///   1.37 — 2026-11-15: #1918 (L18, IPS-1) — the Filters sheet's closing runs the search on screen again when its
+///          filters changed (`filterSheetDismissed()`), where Done only closed it
 
 struct SearchView: View {
 
@@ -699,8 +701,9 @@ struct SearchView: View {
                 }
                 #endif
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
-                // declared inside SearchFilterView.
-                .sheet(isPresented: $vm.showFilterPanel) {
+                // declared inside SearchFilterView. Its closing, by Done or a swipe, runs the
+                // search on screen again when the filters changed (IPS-1, `filterSheetDismissed()`).
+                .sheet(isPresented: $vm.showFilterPanel, onDismiss: filterSheetDismissed) {
                     // iOS's filter sheet shares this view model, so its parameters ARE the
                     // search's — but pass them explicitly anyway, because macOS's do not.
                     SearchFilterView(vm: vm, tagCountScope: vm.userTagCountScope,
@@ -712,8 +715,11 @@ struct SearchView: View {
                 // the History scope reflects documents engaged since the tab was shown (#377
                 // Phase 2a) — parity with the macOS Advanced panel, which reloads on open. The
                 // panel's volume list is read again for the same reason (`reloadAvailableVolumes`).
+                // The parameters are recorded first, so a scope those reads move under the list
+                // on screen also runs it again when the sheet closes (IPS-1).
                 .onChange(of: vm.showFilterPanel) { _, isOpen in
                     if isOpen {
+                        vm.filterSheetOpened()
                         refreshEngagedKeys()
                         reloadAvailableVolumes()
                     }
@@ -947,6 +953,25 @@ struct SearchView: View {
         vm.endSearchOnScreen()
         showFacetSheet = false
         facetController.clear()
+    }
+
+    /// What the Filters sheet's closing does, by Done or by a swipe (IPS-1): the search on screen runs
+    /// again when the filters changed, or ends when they took away the last thing to search, by
+    /// ``removeNarrowing(_:)``'s rule (`SearchViewModel.filterSheetClosed()`).
+    ///
+    /// Until the review's IPS-1 the sheet's Done only closed it. The *Narrowed by* chips, the scope
+    /// banners and the filled filter glyph, which read the filters as they are edited, then described a
+    /// narrowing the list on screen did not have, and the manual told the reader to submit the search
+    /// again by hand.
+    private func filterSheetDismissed() {
+        switch vm.filterSheetClosed() {
+        case .runAgain:
+            Task { await runSearch() }
+        case .endSearch:
+            endSearch()
+        case .nothing:
+            break
+        }
     }
 
     /// Takes away one *Narrowed by* chip, and runs the search again when there is still something to

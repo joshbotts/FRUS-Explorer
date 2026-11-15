@@ -514,6 +514,96 @@ struct SearchViewTests {
     }
 }
 
+// MARK: - FilterSheetDismissalTests (#1918, IPS-1)
+
+/// What closing the iPhone and iPad Filters sheet does to the search on screen (`SearchViewModel.filterSheetClosed()`).
+///
+/// The sheet edits the search's own fields, so the chips above the list describe a change at once; until the review's
+/// IPS-1 nothing ran when the sheet closed. `FilterSheetDoneTests` drives the sheet itself in the UI test target.
+@MainActor
+struct FilterSheetDismissalTests {
+
+    /// A view model over an empty index: the rule reads the fields, and runs no search.
+    private func makeViewModel() throws -> (vm: SearchViewModel, dir: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFilterSheet-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("filters.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        return (SearchViewModel(searchService: SearchService(fts5Store: store, pipeline: pipeline)), dir)
+    }
+
+    @Test("A changed filter runs a search on screen again; an unchanged one runs nothing")
+    func changedFilterRunsTheSearchAgain() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.hasSearched = true
+
+        vm.filterSheetOpened()
+        #expect(vm.filterSheetClosed() == .nothing, "Opened and closed with no change")
+
+        vm.filterSheetOpened()
+        vm.documentTypeFilter = .editorialNotesOnly
+        #expect(vm.filterSheetClosed() == .runAgain, "The list under the chips must be the filtered one")
+
+        // A change and its undoing inside one opening leave the list as it was.
+        vm.filterSheetOpened()
+        vm.dateRangeEnabled = true
+        vm.dateRangeEnabled = false
+        #expect(vm.filterSheetClosed() == .nothing)
+
+        // The opening's parameters are forgotten on closing: a close with no opening runs nothing.
+        vm.documentTypeFilter = .all
+        #expect(vm.filterSheetClosed() == .nothing)
+    }
+
+    @Test("Filters set before any search wait for it")
+    func noSearchOnScreenRunsNothing() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.filterSheetOpened()
+        vm.documentTypeFilter = .documentsOnly
+        #expect(vm.filterSheetClosed() == .nothing)
+    }
+
+    @Test("Clear takes away a facet panel's subject narrowing, which the Mac's signature does not sign, and the list follows")
+    func clearedSubjectNarrowingRunsTheSearchAgain() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.subjectBucket = 3
+        vm.subjectBucketKey = "bucket-3"
+        vm.hasSearched = true
+
+        vm.filterSheetOpened()
+        let signature = vm.advancedFilterSignature
+        vm.clearFilters()
+        #expect(vm.advancedFilterSignature == signature,
+                "If the signature saw this change the comparison could read it; the test would then prove less")
+        #expect(vm.filterSheetClosed() == .runAgain)
+    }
+
+    @Test("A browse whose only term the sheet cleared ends, as a chip's ✕ ends it")
+    func clearedBrowseEnds() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // A person's Find all mentions: no words, a person filter as the whole search.
+        vm.personRefText = "per_dulles"
+        vm.hasSearched = true
+        #expect(vm.hasRunnableQuery(in: .keywords))
+
+        vm.filterSheetOpened()
+        vm.clearFilters()
+        #expect(vm.filterSheetClosed() == .endSearch)
+    }
+}
+
 // MARK: - PersonFilterTests
 
 @MainActor
