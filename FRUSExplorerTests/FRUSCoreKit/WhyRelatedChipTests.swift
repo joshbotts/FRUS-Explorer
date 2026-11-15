@@ -34,6 +34,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — cross-reference chip honesty: initial implementation
+///   1.1 — 2026-11-15: #1905 (L15) — the shared-subjects chip reads *subjects: …*
 @Suite("Why-related chips")
 struct WhyRelatedChipTests {
 
@@ -216,7 +217,7 @@ struct WhyRelatedChipTests {
         #expect(WhyRelatedChip.citations(3).displayText() == "cited 3×")
         #expect(WhyRelatedChip.presence.displayText() == "same provenance")
         #expect(WhyRelatedChip.sharedTerms(["Berlin", "airlift"]).displayText() == "shares: Berlin, airlift")
-        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "topics: Berlin blockade")
+        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "subjects: Berlin blockade")
         #expect(WhyRelatedChip.percent(0).displayText() == "<1%")
         #expect(WhyRelatedChip.percent(38).displayText() == "38%")
         #expect(SemanticSimilarityGenerator.evidenceLabel(for: 0.823) == "Semantic match · 82%")

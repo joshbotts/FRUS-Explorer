@@ -148,6 +148,8 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/TopicIndexArrivalTests
 ```
 
+**Under iOS 27.0 on the iPhone 17 (`80CF0F18`), two of the three fail on `v2` itself (measured 2026-11-15, L15, #1905).** `testAreaDoorReplacesTheSearchEveryTime` and `testBackFromAVolumeKeepsTheAreaAndTheSearch` stop in `revealTopicSearch()`: the index is open and listing its rows, but the screen has no search field and no Search button in a navigation bar ("Search fields: none"), with the tab shell's *Local Only* banner up. The same two failed with the same message on `v2` at `7918075f`, before L15, warmed and given 600 s; `testTopicsRowAfterAHandOffOpensTheWholeIndex` passed on both. The iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`) passed 3 of 3. So the iPhone's half of the guard does not run under iOS 27.0 until the test finds the field where iOS 27 puts it; it was measured green on an iPhone 17e under iOS 26.3. Not investigated further.
+
 **`CollectionEditorTitleTests` (#1359, #1415, #1413) must run on an iPhone AND an iPad, and only the iPhone guards the
 push-over and the Collections-tab exit.** On a compact width Collection settings is PUSHED over the editor; on a regular
 width it is a sheet, which covers nothing and fires no `onDisappear`. So the push-over test
@@ -451,6 +453,8 @@ xcodebuild test \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseRootSelectionTests
 ```
+
+**On the iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`), 3 of 4 pass and the Continue reading test fails on `v2` itself (measured 2026-11-15, L15, #1905).** `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` stops at "the seeded compilation's row is absent", after it taps the fixture volume's row, on `v2` at `7918075f` as on L15's branch, warmed and given 600 s; the simulator held the fixture `frus1961-63v06` (six documents). Not investigated further. The other three, the doors' titles among them, passed; the first run of that day, on a simulator just booted and given 300 s, timed out on its first test and passed it when the simulator was warmed first and given 600 s.
 
 **`WordCloudLensTests` (#1373) is a guard only on an iOS 27.0 simulator.** On iOS 27.0 an
 `NLTagger` scheme whose first use in a process fails stays failed for that process; the app's

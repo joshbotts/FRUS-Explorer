@@ -20,7 +20,7 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 ### 3.1 Page 1 — The Official Record of American Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 690–736 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 691–737 -->
 
 **Title:** The Official Record of American Foreign Policy
 
@@ -65,7 +65,7 @@ FRUS volumes produced today cover U.S. bilateral and regional relations across t
 
 ### 3.2 Page 2 — 165 Years of Documenting U.S. Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 742–796 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 743–797 -->
 
 **Title:** 165 Years of Documenting U.S. Foreign Policy
 
@@ -117,7 +117,7 @@ To dive deeper into the history of the series, see the Office of the Historian�
 
 ### 3.3 Page 3 — Understanding What You're Reading
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 802–851 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 803–852 -->
 
 **Title:** Understanding What You’re Reading
 
@@ -175,7 +175,7 @@ FRUS publishes thousands of documents for every administration’s foreign polic
 
 ### 3.4 Page 4 — Using FRUS for Research
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 857–911 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 858–912 -->
 
 **Title:** Using FRUS for Research
 
@@ -225,7 +225,7 @@ FRUS tells the U.S. side of the history of foreign relations. The counterpart ca
 
 ### 3.5 Page 5 — Finding What You Need in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 919–961 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 920–962 -->
 
 **Title:** Finding What You Need in FRUS Explorer
 
@@ -235,7 +235,7 @@ FRUS tells the U.S. side of the history of foreign relations. The counterpart ca
 
 **Start From Whatever You Have**
 
-FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The topic index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning.
+FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The Subject index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and subjects, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning.
 
 <!-- section-id: narrowing -->
 
@@ -267,7 +267,7 @@ To delve into the details about search screens, filters, and syntax, visit the U
 
 ### 3.6 Page 6 — Seeing the Bigger Picture in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 965–1014 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 966–1015 -->
 
 **Title:** Seeing the Bigger Picture in FRUS Explorer
 
@@ -317,7 +317,7 @@ FRUS is a selective, evolving proxy for the archival record. To learn more about
 
 ### 3.7 Page 7 — Working With Documents in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 1018–1067 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 1019–1068 -->
 
 **Title:** Working With Documents in FRUS Explorer
 
@@ -365,7 +365,7 @@ To learn more about what FRUS Explorer lets you do with documents, see the User 
 
 ### 3.8 Page 8 — Production & Timeliness *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1079–1088 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1080–1089 | note: dashboard page, sections: [] -->
 
 This page renders the live **Production & Timeliness** dashboard (`EducationDashboard.seriesProduction`) instead of prose, so it has no editable page-level sections. Its page **title** (“Production & Timeliness”) and **subtitle** (“How long the official record takes to reach print”) are localized in code at the lines above (`education.series.production.page.title` / `.subtitle`).
 
@@ -383,7 +383,7 @@ The dashboard’s own on-screen copy — the intro paragraph, per-chart captions
 
 ### 3.9 Page 9 — Geographic Emphasis *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1100–1109 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1101–1110 | note: dashboard page, sections: [] -->
 
 This page renders the live **Geographic Emphasis** dashboard (`EducationDashboard.seriesGeography`) instead of prose, so it has no editable page-level sections. Its page **title** (“Geographic Emphasis”) and **subtitle** (“Which regions and countries the series covers most”) are localized in code at the lines above (`education.series.geography.page.title` / `.subtitle`).
 
@@ -401,7 +401,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Se
 
 ### 3.10 Page 10 — Archival Sourcing *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1121–1130 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1122–1131 | note: dashboard page, sections: [] -->
 
 This page renders the live **Archival Sourcing** dashboard (`EducationDashboard.seriesSourcing`) instead of prose, so it has no editable page-level sections. Its page **title** (“Archival Sourcing”) and **subtitle** (“Where the series drew its documents from, over time”) are localized in code at the lines above (`education.series.sourcing.page.title` / `.subtitle`).
 
@@ -419,7 +419,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/So
 
 ### 3.11 Page 11 — Administration Profiles *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1142–1151 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1143–1152 | note: dashboard page, sections: [] -->
 
 This page renders the live **Administration Profiles** dashboard (`EducationDashboard.administrationProfiles`) instead of prose, so it has no editable page-level sections. Its page **title** (“Administration Profiles”) and **subtitle** (“How the series’ coverage is distributed across presidencies”) are localized in code at the lines above (`education.series.administrations.page.title` / `.subtitle`).
 

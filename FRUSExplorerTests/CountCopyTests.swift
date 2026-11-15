@@ -125,6 +125,7 @@ struct CountCopyTests {
 ///         Scope sentence
 ///   1.3 — 2026-10-09: #1586 — Related Documents' archival chip and its pool-cut footer
 ///   1.4 — 2026-10-21: #1761 — a working corpus's coverage line
+///   1.5 — 2026-11-15: #1905 (L15) — the shared-subjects chip reads *subjects: …*
 struct CountCopySiteTests {
 
     /// 12,067 as this host groups it.
@@ -370,7 +371,7 @@ struct CountCopySiteTests {
         #expect(WhyRelatedChip.citations(3).displayText() == "cited 3×")
         #expect(WhyRelatedChip.presence.displayText() == "same provenance")
         #expect(WhyRelatedChip.sharedTerms(["Berlin", "airlift"]).displayText() == "shares: Berlin, airlift")
-        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "topics: Berlin blockade")
+        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "subjects: Berlin blockade")
         #expect(WhyRelatedChip.percent(0).displayText() == "<1%")
         #expect(WhyRelatedChip.percent(38).displayText() == "38%")
     }

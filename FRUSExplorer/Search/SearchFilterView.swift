@@ -54,6 +54,7 @@ import SwiftData
 ///   1.3 — Session 2026-07-04 (macOS UI audit C4): macOS presentation changed from a
 ///          modal sheet to a live popover (view content unchanged — the popover host
 ///          drives live application; `dismiss()` closes the popover)
+///   1.4 — 2026-11-15: #1905 (L15) — *By Subject*, *Filter by subject…*; both subject footers lead with the caption
 struct SearchFilterView: View {
 
     @Bindable var vm: SearchViewModel
@@ -952,18 +953,18 @@ struct SearchFilterView: View {
             collapsibleSection(
                 .subjectFacet,
                 title: String(localized: "search.section.subject",
-                              defaultValue: "By Subject · Detected Topics"),
+                              defaultValue: "By Subject"),
                 summary: subjectFacetLabel ?? selectionSummary(0),
                 forced: customScopes.isEmpty && scopeWarningName != nil,
-                footer: Text(String(localized: "search.subject.facet.footer",
-                                    defaultValue: "Experimental. These topics are experimental enrichment data, not editorial subject headings reviewed as part of the FRUS publication process, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed."))
+                footer: Text(SubjectDataCaption.leading(String(localized: "search.subject.facet.footer",
+                                    defaultValue: "Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.")))
             ) {
                 Button {
                     showSubjectFacet = true
                 } label: {
                     HStack {
                         Label(String(localized: "search.subject.facet.button",
-                                     defaultValue: "Filter by detected topic…"),
+                                     defaultValue: "Filter by subject…"),
                               systemImage: "text.book.closed")
                         Spacer()
                         if let subjectFacetLabel {
@@ -1416,7 +1417,7 @@ private struct SubjectCategoryFacetPicker: View {
     }
 
     private var pickerTitle: String {
-        String(localized: "search.subject.facet.title", defaultValue: "Filter by Detected Topic")
+        String(localized: "search.subject.facet.title", defaultValue: "Filter by Subject")
     }
     private var searchPrompt: String {
         String(localized: "search.subject.facet.prompt", defaultValue: "Search categories")
@@ -1483,8 +1484,8 @@ private struct SubjectCategoryFacetPicker: View {
                     }
                 }
             } footer: {
-                Text(String(localized: "search.subject.facet.picker.footer",
-                            defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer topics, browse the Topic index."))
+                Text(SubjectDataCaption.leading(String(localized: "search.subject.facet.picker.footer",
+                            defaultValue: "A volume appears when any document in it carries the subject — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer subjects, browse the Subject index.")))
                     // #361's fixedSize did not stop the Mac's List footer cutting it to one line; the
                     // WrappingFooterSection draws it as a row there, where it wraps (#1475).
                     .fixedSize(horizontal: false, vertical: true)

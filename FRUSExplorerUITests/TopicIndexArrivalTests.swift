@@ -79,15 +79,17 @@ import XCTest
 ///          Topics-row test for the emptied slot
 ///   1.2 — 2026-09-24: #1365 review, round 2 — Back from a covering volume keeps the area and the
 ///          search; the Topics row is also tapped beside a narrowed index in the two-pane
+///   1.3 — 2026-11-15: #1905 — the index is the Subject index: the row's label, the search prompt
+///          and the area chip read as the app now does
 @MainActor
 final class TopicIndexArrivalTests: XCTestCase {
 
-    /// The Browse root's Topics row, by its accessibility label.
-    private static let topicsRow = "Browse detected topics across the whole series"
+    /// The Browse root's Subjects row, by its accessibility label.
+    private static let topicsRow = "Browse subjects across the whole series"
     /// The Browse root's People row, by its accessibility label — the two-pane's way out.
     private static let peopleRow = "Browse people mentioned across all indexed volumes"
     /// The Topic index's search prompt, which no other search field in the app carries.
-    private static let searchPrompt = "Search topics"
+    private static let searchPrompt = "Search subjects"
     /// The subject whose sheet carries the door.
     private static let subject = "Berlin crisis"
     /// A Cold War topic the search "Berlin" hides, so its presence proves the search is gone.
@@ -105,7 +107,7 @@ final class TopicIndexArrivalTests: XCTestCase {
     /// A covering-volume row's accessibility identifier, on a topic's sheet.
     private static let volumeRowID = "subjects.detail.volume"
     /// The chip after the door, with "Berlin" typed inside the area.
-    private static let searchedChip = "Topic area: Cold War — 1 of 6 topics"
+    private static let searchedChip = "Subject area: Cold War — 1 of 6 subjects"
 
     var app: XCUIApplication!
 
@@ -202,7 +204,7 @@ final class TopicIndexArrivalTests: XCTestCase {
             // with the index still the level on screen. The same index view stays; only a reset of
             // what the host holds brings the whole index back.
             tapTopicsRow()
-            assertWholeIndex(after: "Browse ▸ Topics, tapped beside the narrowed index,")
+            assertWholeIndex(after: "Browse ▸ Subjects, tapped beside the narrowed index,")
             takeAreaDoor(from: Self.firstTopic)
             XCTAssertTrue(chip.waitForExistence(timeout: 10),
                           "Precondition: the door landed no chip the second time")
@@ -210,7 +212,7 @@ final class TopicIndexArrivalTests: XCTestCase {
 
         leaveTheIndex()
         tapTopicsRow()
-        assertWholeIndex(after: "Browse ▸ Topics")
+        assertWholeIndex(after: "Browse ▸ Subjects")
     }
 
     // MARK: - Steps
@@ -385,7 +387,7 @@ final class TopicIndexArrivalTests: XCTestCase {
             "Berlin" survived the arrival — the list shows one topic under a chip that reads \
             "\(chip.label)" (#1365).
             """)
-        XCTAssertEqual(chip.label, "Topic area: Cold War — 6 topics",
+        XCTAssertEqual(chip.label, "Subject area: Cold War — 6 subjects",
                        "Round \(round): the chip must count the whole area once the search is gone")
         // The field may have collapsed back into the bar's button, which holds no text; when it
         // is on screen it must be empty.

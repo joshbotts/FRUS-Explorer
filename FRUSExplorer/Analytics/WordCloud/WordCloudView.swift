@@ -614,6 +614,7 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 ///   1.11 — 2026-10-01: #1518 — a word's context menu comes before `.position`, so on iOS a long
 ///          press lifts the word where it sits rather than the whole cloud, and its preview draws
 ///          the word level (`cloudWord(_:)`), so a vertical word is not cut to its unrotated frame.
+///   1.12 — 2026-11-15: #1905 (L15) — a subject scope's fallback title is *Subject*; *Analyze within this subject*
 
 struct WordCloudView: View {
 
@@ -2103,7 +2104,7 @@ struct WordCloudView: View {
             // Volume-aligned like the others (#308 F6); same #258 empty-set guard.
             guard subjectCategoryAnalyticsIds() != nil else { return nil }
             return String(localized: "wordcloud.word.analyze.subject",
-                          defaultValue: "Analyze within this topic")
+                          defaultValue: "Analyze within this subject")
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return nil
         }
@@ -2179,7 +2180,7 @@ struct WordCloudView: View {
             guard let ids = subjectCategoryAnalyticsIds() else { return (nil, nil) }
             return (ids, title.isEmpty
                     ? String(localized: "wordcloud.scope.subject",
-                             defaultValue: "Detected Topic")
+                             defaultValue: "Subject")
                     : title)
         case .corpus, .document, .collection, .userTag, .savedSearch, .dateRange:
             return (nil, nil)
@@ -2390,6 +2391,7 @@ struct WordCloudWindowContent: View {
 ///          indexed; a zero-indexed scope could only ever render an empty cloud)
 ///   1.2 — #1791: the saved-search section offers each saved search once, however many copies of
 ///          it are stored
+///   1.3 — 2026-11-15: #1905 (L15) — *By Subject*, *Subjects — experimental*, *Browse all subjects…*
 private struct WordCloudScopeBar: View {
 
     /// The scene this bar renders in, so the hand-off addresses the presenting window (#338) —
@@ -2443,9 +2445,9 @@ private struct WordCloudScopeBar: View {
     private func subjectScopeMenu(
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> some View {
-        Menu(String(localized: "wordcloud.scope.bySubject", defaultValue: "By Detected Topic")) {
+        Menu(String(localized: "wordcloud.scope.bySubject", defaultValue: "By Subject")) {
           Section(String(localized: "wordcloud.scope.subject.experimental",
-                         defaultValue: "Detected topics — experimental")) {
+                         defaultValue: "Subjects — experimental")) {
             // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
             ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
@@ -2464,7 +2466,7 @@ private struct WordCloudScopeBar: View {
             // not the headline.
             Divider()
             Button(String(localized: "wordcloud.scope.subject.browseIndex",
-                          defaultValue: "Browse all topics…")) {
+                          defaultValue: "Browse all subjects…")) {
                 appState.openSubjectExplorer(.all, from: sceneID)
                 #if os(macOS)
                 openWindow.fronting(id: "frus.subjects")

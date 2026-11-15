@@ -32,6 +32,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-21: #1029, extracted from the two copies
+///   1.1 — 2026-11-15: #1905 (L15) — the unavailable line names *Subject data*
 struct AxisWeightRow: View {
 
     /// The axis this row tunes.
@@ -80,7 +81,7 @@ struct AxisWeightRow: View {
                 // collision this codebase has been bitten by before. With one view there is one
                 // string, so the reason for two keys is gone.
                 Text(String(localized: "related.weights.axis.unavailable",
-                            defaultValue: "Detected-topic data is unavailable on this device."))
+                            defaultValue: "Subject data is unavailable on this device."))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

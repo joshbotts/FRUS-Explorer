@@ -431,6 +431,7 @@ struct AnalyticsViewModePicker: View {
 ///   1.0 — #189-B: initial implementation
 ///   1.1 — #1274: the Topic-index door switches to the Browse tab on iOS, tells a sheet host to
 ///          close first, and is withheld where the hand-off cannot be delivered
+///   1.2 — 2026-11-15: #1905 (L15) — *By Subject*, *Subjects — experimental*, *Browse all subjects…*
 struct AnalyticsScopeBar: View {
 
     /// Shared app state — for the Topic-index door (#1040). `@Environment` is safe here for the
@@ -540,9 +541,9 @@ struct AnalyticsScopeBar: View {
     private func subjectScopeMenu(
         _ resolved: [String: [VolumeSubjectProfiles.ResolvedSubject]]
     ) -> some View {
-        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Detected Topic")) {
+        Menu(String(localized: "analytics.scope.bySubject", defaultValue: "By Subject")) {
           Section(String(localized: "analytics.scope.subject.experimental",
-                         defaultValue: "Detected topics — experimental")) {
+                         defaultValue: "Subjects — experimental")) {
             // A category is a HEADING, not a scope (#1040) — see `narrowingCategories`.
             ForEach(ScopeFacets.narrowingCategories(resolvedByVolume: resolved)) { category in
                 Menu(category.label) {
@@ -616,7 +617,7 @@ struct AnalyticsScopeBar: View {
     /// records: a sheet's dismissal must not race the push it is getting out of the way of.
     private var topicIndexButton: some View {
         Button(String(localized: "analytics.scope.subject.browseIndex",
-                      defaultValue: "Browse all topics…")) {
+                      defaultValue: "Browse all subjects…")) {
             #if os(macOS)
             appState.openSubjectExplorer(.all, from: sceneID)
             openWindow.fronting(id: "frus.subjects")

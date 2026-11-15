@@ -45,6 +45,7 @@ import SwiftUI
 ///          printed "Doc. [Unnumbered document following …]"
 ///   1.6 — 2026-11-06: the editors' annotations design, lane C — crumbs for the Editors’
 ///          Annotations axis and a layer's page, by the layer's name
+///   1.7 — 2026-11-15: #1905 (L15) — the subject index's crumb reads *Subjects*
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -276,7 +277,7 @@ extension BrowserViewModel.BrowserLevel {
         case .people:
             return String(localized: "browser.breadcrumb.people", defaultValue: "People")
         case .subjects:
-            return String(localized: "browser.breadcrumb.subjects", defaultValue: "Topics")
+            return String(localized: "browser.breadcrumb.subjects", defaultValue: "Subjects")
         case .subseriesIndex:
             return String(localized: "browser.breadcrumb.subseriesIndex", defaultValue: "Subseries")
         case .catalogue:

@@ -136,6 +136,7 @@ import Foundation
 ///         their strings moved to (the Network measure's two details, now in `ArchivalAnalyticsAxes.swift`,
 ///         the Flows remainder, now in `ArchivalFlowsData.swift`, and seven export caveats, now in
 ///         `ArchivalAnalyticsExport.swift`), so the ceiling is unchanged
+///   1.22 — 2026-11-15: #1905 (L15) — the subject sheet's exemption quotes *All … subjects*; no entry moves
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -875,7 +876,7 @@ extension CodingStandardsAuditTests {
         "Search/QueryInspectorView.swift | search.empty.oneEmpty":
             #"the interpolation is a search term and "matches" is its verb: "\(text) matches no document""#,
         "Browser/SubjectIndexView.swift | subjects.detail.browseArea":
-            #"the interpolation is a topic area's name: "All \(subject.subcategory) topics""#,
+            #"the interpolation is a subject area's name: "All \(subject.subcategory) subjects""#,
     ]
 
     /// Count literals the tree held when the scan was written, less the ones #1374, #1382 and

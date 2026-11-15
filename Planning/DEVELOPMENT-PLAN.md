@@ -10968,3 +10968,115 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - #1929: `volumeSources(forVolumeId:)` leaves `job_number` out of its query, while the Sources outline reads `entry.jobNumber`.
   - The app makes a new `ZoteroAPIClient()` for each of its three sends.
   - The owner took the recommendations (decision 138): #1929 in 1.0, folded into L22; #1923 to #1926 as one Zotero row after 1.0; #1927 and #1928 web-authored, after the upload.
+
+## Session 2026-11-15 — L15: the Office of the Historian's subject data is *Subjects* everywhere, with one caption that credits the Office and claims no review (#1905, plan of record decision 135)
+
+**What and why.** The owner's "start the plan of record", the first row of the plan of record from 2026-11-15 (#1922, merged as `7918075f` the same night). From `v2` at `7918075f`, on `claude/plan-of-record-91c701`. #1905 asked for *tagged topics* in place of *detected topics*, since *detected* says the app does the detecting; the plan's review (its §7) found seven names and five accounts for one dataset, and the owner chose *Subjects*, with one caption on the owner's terms (decision 135). Two questions were put to the owner during the session, and the answers are the owner's: the empty state of a volume the data does not cover, where the full caption does not fit ("Shortened (Recommended)"), and the two surfaces that showed subjects with no account at all ("Add to both (Recommended)").
+
+**Changed.**
+- **The caption, once:** `SubjectDataCaption` in `FRUSExplorer/Browser/VolumeSubjectProfilesStore.swift` (1.2), key `subjects.caption`, with `leading(_:)` and `trailing(_:)`, which join it to a surface's own sentence with one space. Nothing new in the project (no `xcodegen`).
+- **Where it stands, each surface's old account replaced in place:**
+  - first, then the surface's sentence: the Research rail's Subjects (*Most distinctive first.*), Search's *By Subject* footer and the Filter by Subject picker's footer;
+  - last: the Subject index's header (*491 subjects across the whole series. Counts describe all 553 cataloged volumes, …*), a subject's sheet, the archival profile's footer and, on the owner's word, the person sheet's volume-level note;
+  - alone: the facet panel's Subjects section and, on the owner's word, under a volume's Top subjects.
+- **Every key stays; only `defaultValue`s change**, as the plan's brief says. Re-keying with a `%@` would have taken two strings off the count-copy baseline (`subjects.index.coverage.v2 %lld %lld`, `browser.volume.subjectVolumes.archival.footer %lld`), a list that may only shrink. `facets.subjects.provenance` alone goes, since its line is the caption.
+- **The labels:** decision 135's list, and each other place the name appeared:
+  - the scope menus of Corpus Analytics, About the Series and the Word Cloud: *By Subject*, their section *Subjects — experimental*, and *Browse all subjects…*;
+  - the Word Cloud's scope fallback *Subject* and *Analyze within this subject*;
+  - Search: *By Subject*, *Filter by subject…*, *Filter by Subject*;
+  - the rail's, Browse's, the breadcrumb's and the index's *Subjects*, and the Mac's window of that name (`subjects.window.title`), in the Window menu;
+  - the index's *Search subjects*, *Show all subjects*, *Clear the subject-area narrowing*, *Subjects Unavailable* and its message, and the area chip's four forms, *Subject area: Cold War — 6 subjects*;
+  - the subject sheet's *Find documents on this subject* and *All «area» subjects*;
+  - the volume page's *Browse this subject in the index* and its footer;
+  - Browse's row label and tooltip;
+  - Facets' *Subject data covers N of M matches.* and *Browse all subjects*;
+  - Related's tuning row (*Subject data is unavailable on this device.*) and, in the kit, *Shared subjects* and the chip *subjects: …* (`FRUSCoreKit/RelatedDocuments/SimilarityModel.swift`);
+  - the narrowing chip's fallback *Subject filter*;
+  - on the Mac Search window's token row, the one-subject token *Subject* (was *Topic*) and the area token *Subject area* (was *Subject*, the name the other now takes; the two coexist), with *Chosen in Subjects. …* and *Subject areas are chosen in the facet panel*.
+- **Kept:** the Word Cloud's *Topics* lens, the volume tags' *topics* category, an Archives Visit's *topic sentence*, a summary template's *Topics* field and NARA Lookup's *Detected in This Passage*, which are other things.
+- **The in-app Research Guide** (`IndexingEducationView` 1.23): page 5 names *the Subject index* and *shared people and subjects*.
+- **Tests:** `SubjectDataCaptionTests`, a new suite at the end of `SubjectFacetScopeTests.swift`, in four tests:
+  - the caption's text (a language pin, advisory by decision 9);
+  - the join, one space on either side;
+  - each of eight surfaces joining its sentence to the caption, and the facet panel and the volume page showing it;
+  - a scan, through `AppSourceTree`, of every string literal the app and the kit ship for fifteen retired names and accounts. Run as a shell grep, the same rule finds 37 strings on `v2` at `7918075f` and none on the branch.
+
+  Brought to the new text, each with the reason beside it where it pins language: `SubjectFacetScopeTests`' area-chip expectations and its suite title, `CountCopyTests` and the kit's `WhyRelatedChipTests` (*subjects: Berlin blockade*), `ResearchGuideCoverageTests`' row (*subject index*), `ArchivalAnalyticsExportTests`' clause check (now the footer's join to the caption), the copy scan's exemption reason, and the UI suites `TopicIndexArrivalTests` (1.3: the row's label, the prompt, the chip) and `BrowseRootSelectionTests` (the root door's title).
+- **Docs:**
+  - both manuals, the dataset's lines only, by hand (iOS 47 edits, Mac 40), with the caption quoted in §4.2 and §6.2a and §6.4 retitled *The Subject Index*;
+  - both quick starts and their web copies (`Scripts/build_website_pages.py`, `--check` clean);
+  - `Docs/EditableContent/`:
+    - 16 blocks' text, the caption's own block at the head of `07-Search-and-Browse.md` §16.4, and comments on each block the app joins to the caption;
+    - `facets.subjects.provenance`'s block retired;
+    - the Research Guide's mirror;
+    - 39 ranges re-pointed;
+    - one Amendment-Log bullet;
+  - the tour's four phrases (`tour/tour.html`, `Tour-draft.md`) and the paste kit (`build_paste.py`: `quick-start-ios.txt`, `quick-start-mac.txt`, `tour-block-1.txt` and the entry guide's fingerprints, `--check` clean);
+  - the plan of record's L15 bullet, T2's list and §2's paste step.
+- **Alt text left as it is**, for the frames T2 retakes: the manuals' and quick starts' descriptions of `topic-index`, `research-rail`, `research-strip` and `browse-root` still say *Topics*, since they describe the images as they are.
+
+**Captures, for T2.** The brief expected none: the ledger shows no frame with a scope menu open or Search's filters on the Subjects row. Reading the frames themselves found 30. A Vision OCR pass over all 89 committed captures (`ocr_captures.swift` in the session's scratchpad), for *topic* and *detected*, found them:
+- **iPad (27):**
+  - the 18 two-pane `browse-*` frames, whose left column is the root with its **Topics** row (every one but `browse-clusters-map`);
+  - `people-list`, `people-detail` and `people-detail-records` (the same row, half covered);
+  - `sidebar-landscape`;
+  - `research-rail`, `cite-sheet` and `stage-manager` (the rail's TOPICS);
+  - `related-documents` (*Shared topics*, *topics:* chips);
+  - `topic-index`.
+- **Mac (3):** `research-strip`, `topic-index`, and `browser`, whose volume page shows Top subjects, which gain the caption (a second pass, for *Top subjects* and the person note).
+- **iPhone:** none.
+- **What they feed:**
+  - three store frames: *reader* on the iPad and the Mac (the listing's second) and *cite* on the iPad (its seventh);
+  - four tour crops (an OCR pass over `tour/img/`): `truman.jpg`, `related.jpg`, `rail.jpg` and `browse.jpg`.
+- **Read as false positives, and kept:** the clusters' *detected by an AI model*, a document's *other topics*, and the Word Cloud's *Topics (nouns)* lens.
+
+**The Mac, walked in the check copy** on the owner's "do mac walk now". `tools/mac-check-copy` builds a commit, and nothing was committed, so each build was given the working tree as a commit on no branch, written through a temporary index (`git commit-tree`). The branch and the real index were untouched: `fd454106`, then `0148aeb0` and `527c4729` after the two fixes below. Each copy built in the AppStore configuration (BUILD SUCCEEDED, no warning lines, the third in 2 min 54 s), and the third is the Mac build of this change's final Swift. The copy was driven in the background, and full-screen only for a disclosure and a menu the background could not open.
+- **Passed:**
+  - the Window menu's **Subjects**, beside People, and its window: titled **Subjects**, *Search subjects*, and the header *491 subjects across the whole series. Counts describe all 553 cataloged volumes, …* followed by the caption;
+  - Berlin crisis's sheet: its footer ends with the caption, and it has *Find documents on this subject*;
+  - the Search window's token from that door: **Subject** *Berlin crisis*, *Clear Subject filter*, with the help *Chosen in Subjects. Remove it here, or pick another there.* (read through `axread`), and VoiceOver's *Subject, Berlin crisis*;
+  - Facets ▸ Subjects: *Subject data covers 219 of 219 matches.*, the caption, **Browse all subjects**;
+  - the Research rail on `frus1961-63v01` d100: **SUBJECTS 6**, its chips, the caption and *Most distinctive first.*;
+  - Related Documents: the signal **Shared subjects** (the kit's string) and the chips *subjects: Guerrilla*;
+  - David Aaron's person sheet: Subjects, its volume-level note and the caption;
+  - a volume page: Top subjects with the caption below it (after the two fixes below);
+  - Search's filters: **By Subject**, its footer led by the caption, *Filter by subject…*, and the **Filter by Subject** picker, whose footer is the caption and its sentence to *For finer subjects, browse the Subject index.*;
+  - Corpus Analytics' scope menu: **By Subject**, its section *Subjects — experimental*, and *Browse all subjects…*.
+- **Found and fixed, the Mac's volume page:**
+  - **First:** the caption, inside the Corpus Browser's `BoundedSubjectsBlock`, sat below the profile's last group in a block capped at 180 pt that scrolls inside, so on `frus1961-63v01` it showed only once the block was scrolled. The block now draws it below the capped scroll view (`VolumeSubjectsChips(volume:showsCaption: false)`; iOS unchanged).
+  - **Second:** that move, with the caption `.fixedSize(horizontal: false, vertical: true)`, left every volume page blank, its title included, and pushed the sidebar up under the window's buttons. The copy was idle, at 0% CPU. A caption that may not shrink, in a column that does not scroll, gave the window a minimum height of the caption wrapped at no width. The caption now wraps at the column's width (`.frame(maxWidth: .infinity, alignment: .leading)`), and the page drew whole, with the caption under the block.
+  - `SubjectDataCaptionTests` holds both: the Mac's caption below `.scrollDisabled(naturalHeight <= maxHeight)`, and with no `.fixedSize(` after it.
+- **Seen, not this row's, and not investigated:** Berlin crisis's sheet in the Mac's Subjects window drew no *All «area» subjects* door. The bundled vocabulary holds the pair (*Warfare*, *Cold War*), and `DocumentSubjectStore` loads in the copy (the rail drew the document's subjects), so the area chip could not be reached on the Mac. L15 touches neither `bucketKey` nor the store. It is left for the owner to file or not.
+- The copy was quit at the end, and its folder kept with the search model (`~/Library/Caches/frus-mac-check`). The installed app was never launched (`ps` showed only the copy's process).
+
+**Checked**, each heavy job through `Scripts/heavy.sh`, Xcode 27.2, on the iPhone 17 under iOS 27.0 (`80CF0F18`).
+- `swift build --target FRUSCoreKit`: Build complete, no warnings.
+- **`build-for-testing`, from an empty DerivedData** (this worktree's first build): TEST BUILD SUCCEEDED in 2 min 33 s. Its three warning lines are the two known residues (`GeneratedSummary`) and `FRUSOffsetEngineTests.swift:2736`, which R5 owes; none is in the change.
+- **The suites that read the changed copy**, scoped (23 types): 239 tests passed, `SubjectDataCaptionTests` among them.
+- **The unit target**, before the version-history lines: 8,016 tests in 964 suites, 7,978 passed, none failed, 37 skipped, 1 expected failure, #1606's six known issues, in 528.7 s. After them, on the tree before the Mac fixes: the same figures, in 539.9 s, and one warning line, `GeneratedSummary`'s, from a recompiled file.
+- **`swift test`:** 4,512 tests in 532 suites, 39 runs, none failed (#1916's session had 4,512 in 532). No kit file changed after it.
+- **The Mac build:** the check copy's third build, above.
+- **The unit target on the final tree** (after the Mac fixes and `showsCaption`; built with the run): 8,016 tests in 964 suites, 7,978 passed, none failed, 37 skipped, 1 expected failure, the six known issues, in 536.3 s; one warning line, `GeneratedSummary`'s.
+- **The UI suites the change's labels move**, by CLAUDE.md's table, on this tree, without rebuilding:
+  - **First run**, with simulators just booted and the 300 s allowance:
+    - iPad Pro 13-inch (M5), iOS 27.0, 4 of 7, with two timeouts, one of them the run's first test;
+    - iPhone 17, 1 of 3.
+  - **Again**, each simulator warmed with a launch first, given 600 s:
+    - the iPad passed 6 of 7: all three of `TopicIndexArrivalTests` (the row's label, *Search subjects*, *Subject area: Cold War — 1 of 6 subjects*, in the two-pane), and `BrowseRootSelectionTests`' doors test with **Subjects** in its list;
+    - the iPhone passed 1 of 3, `testTopicsRowAfterAHandOffOpensTheWholeIndex`, which taps the row by its new label.
+  - **The three still failing fail on `v2` too.** A control at `7918075f` was extracted with `git archive`, built for the simulator and run on the same simulators, warmed, with 600 s. It failed all three, with the same messages:
+    - on the iPad, `BrowseRootSelectionTests.testTheResumeRowIsMarkedWhileItsDocumentIsOpen` ("the seeded compilation's row is absent");
+    - on the iPhone, `TopicIndexArrivalTests`' `testAreaDoorReplacesTheSearchEveryTime` and `testBackFromAVolumeKeepsTheAreaAndTheSearch` ("shows neither its search field nor the bar button": no search field at all under iOS 27.0, with the *Local Only* banner up).
+  - **So none is this row's.** `Planning/UI-Test-Destinations-Runbook.md` notes them under each suite. The control's tree and DerivedData were removed afterwards.
+
+**Not done.**
+- **T2's retakes**, R5's: 30 captures, three store frames and four tour crops (above). The alt text that describes them still says *Topics*, until then.
+- **The owner's re-paste in Squarespace** of `quick-start-ios.txt`, `quick-start-mac.txt` and `tour-block-1.txt`, after the merge (the plan's §2).
+- **The hand-over to FRUS Explorer Light:** the pull request's *For the web edition* line (Related's two kit strings, and the caption's text for its own copy).
+- **The owner's word on the findings, the same day:**
+  - the Mac's subject sheet drawing no *All «area» subjects* door is filed as #1931, with what was ruled out and a first step;
+  - the three UI tests that fail under iOS 27.0 on `v2` are written into the plan as a plan revision, not an issue: R5 owns them, in test code only, and R6 looks on a device for the iPhone's search field.
+- **A device check of the iOS volume page and the person sheet with the caption**, where no UI test reads it. On the Mac the walk read both.
+- The check copy built from three commits on no branch (`fd454106`, `0148aeb0`, `527c4729`), which git collects in time.
+
+**Opened as #1930** on the owner's word of 2026-11-15 ("Open the PR"), against `v2` at `7918075f`, which had not moved since the branch was cut; not merged, auto-merge off.

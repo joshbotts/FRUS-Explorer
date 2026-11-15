@@ -102,6 +102,7 @@ import SwiftUI
 ///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
 ///          copy names the Options menu and the CSV's ranked terms, shares, and
 ///          hidden-word disclosure
+///   1.23 — #1905 (L15): page 5's starting points name the Subject index and shared subjects, not topics
 ///   1.22 — #1577 lane 7's docs pass: page 5's narrowing section says a list of results can be searched within by the
 ///          other kind of search, in either order, and the two swapped
 ///   1.21 — #1380 review, round 1: page 5's facet sentence says "one click or tap", not "one tap"
@@ -926,7 +927,7 @@ private extension EducationPage {
                 id: "starting-points",
                 heading: "Start From Whatever You Have",
                 paragraphs: [
-                    "FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The topic index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning."
+                    "FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The Subject index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and subjects, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning."
                 ]
             ),
             EducationSection(

@@ -375,13 +375,13 @@ this table:
 |---|---|---|---|
 | [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,143 bytes | `8c230dab` |
 | [paste/support.txt](paste/support.txt) | `/support` | 6,419 bytes | `64da46d0` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,429 bytes | `df732dbf` |
-| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,918 bytes | `0a79a3cd` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,485 bytes | `83dbaac0` |
+| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,972 bytes | `0b22502f` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
 | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,892 bytes | `814c41f7` |
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,036 bytes | `73a41228` |
-| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 66,699 bytes | `7919c798` |
+| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 66,707 bytes | `4c04035b` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,826 bytes | `4671c5d0` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,139 bytes | `a65b3389` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |

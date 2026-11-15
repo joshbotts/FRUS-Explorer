@@ -34,6 +34,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #597 PR 2: initial implementation
+///   1.1 — 2026-11-15: #1905 (L15) — the index's row is *subject index*
 @Suite("Research guide coverage")
 struct ResearchGuideCoverageTests {
 
@@ -79,8 +80,10 @@ struct ResearchGuideCoverageTests {
         "the subjects facet on search results": ["and subjects. most of those become a filter"],
         // #1023: the topic index. Terms checked against the guide, the mirror and BOTH manuals
         // before the section was written — all four returned zero, which is the only way this row
-        // pins anything on the day it is added.
-        "the topic index": ["topic index"],
+        // pins anything on the day it is added. #1905 renamed it the Subject index (decision 135),
+        // so the row follows the name: the guide and its mirror call it nothing else now, and the
+        // old term would pin a sentence that is gone.
+        "the subject index": ["subject index"],
         // #830: the research trip packet. Terms verified zero-hit against the guide, the mirror
         // and both manuals before the section was written (the same discipline as above). NOT
         // "archive visit" — that phrase already headed the manuals' §18.3 recipe, so a row using

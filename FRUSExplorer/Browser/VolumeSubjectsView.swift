@@ -31,10 +31,16 @@ import SwiftUI
 ///   1.2 — Session 2026-09-10: a volume the bundled aggregate does not cover says so. Measured, it
 ///         is exactly one of 553 — `frus1981-88v16`, ingested ahead of the Office of the Historian's
 ///         subject export — so this branch is narrow by construction, not a general empty state.
+///   1.3 — 2026-11-15: #1905 (L15) — the subject data's caption under the chips; the empty state's shortened account
 struct VolumeSubjectsChips: View {
 
     /// The volume whose profile is shown.
     let volume: VolumeManifestEntry
+
+    /// Whether the subject data's caption is drawn under the chips (#1905). The Mac's
+    /// `BoundedSubjectsBlock` turns it off and draws the caption below its height-capped scroll
+    /// view, where a long profile cannot scroll it out of sight.
+    var showsCaption = true
 
     /// #338 step 4: this window's scene, injected into the cross-volume sheet so its volume-open
     /// hand-off targets THIS window.
@@ -73,7 +79,7 @@ struct VolumeSubjectsChips: View {
         VStack(alignment: .leading, spacing: 10) {
             if groups.isEmpty {
                 Text(String(localized: "browser.volume.subjects.none",
-                            defaultValue: "No subjects detected for this volume yet. The topic data is the Office of the Historian's own subject export, and it does not cover this volume."))
+                            defaultValue: "No subjects for this volume yet. The Office of the Historian’s experimental subject data, not published on history.state.gov, does not cover it."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -101,6 +107,15 @@ struct VolumeSubjectsChips: View {
                         .padding(.vertical, 1)
                     }
                 }
+            }
+            if showsCaption && !groups.isEmpty {
+                // The one caption, under the subjects it describes (#1905): the section showed them
+                // with no account of where they come from, and the owner asked for the caption
+                // wherever they show.
+                Text(SubjectDataCaption.text)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .sheet(item: $selectedSubject) { subject in
@@ -150,6 +165,7 @@ struct VolumeSubjectsChips: View {
 ///   1.3 — Session 2026-08-21: #1027, one membership resolver behind the row list and the
 ///         archival-profile button — the list was the top-15 profiles while the button was
 ///         complete membership, so the sheet stated two counts for one subject
+///   1.4 — 2026-11-15: #1905 (L15) — the archival footer ends with the caption; *Browse this subject in the index*
 struct VolumeSubjectVolumesSheet: View {
 
     /// The subject being pivoted on.
@@ -335,10 +351,12 @@ struct VolumeSubjectVolumesSheet: View {
                 // documents about this subject, which is what a reader will assume unless told
                 // otherwise. Widening the membership made the caveat matter MORE, not less: the
                 // scope is now every volume that mentions the subject at all.
-                Text(String(format: String(
+                // The caption stands last, where the old account did (#1905): it is the clause #833
+                // requires this door to inherit, that the subjects are not editorial headings.
+                Text(SubjectDataCaption.trailing(String(format: String(
                     localized: "browser.volume.subjectVolumes.archival.footer %lld",
-                    defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them — and the subjects themselves are detected automatically, not editorial headings."),
-                    Int64(coveringVolumeIds.count)))
+                    defaultValue: "Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them."),
+                    Int64(coveringVolumeIds.count))))
             }
         }
     }
@@ -356,12 +374,12 @@ struct VolumeSubjectVolumesSheet: View {
                 openSubjectExplorer()
             } label: {
                 Label(String(localized: "browser.volume.subjectVolumes.explore.button",
-                             defaultValue: "Browse this topic in the index"),
+                             defaultValue: "Browse this subject in the index"),
                       systemImage: "tag")
             }
         } footer: {
             Text(String(localized: "browser.volume.subjectVolumes.explore.footer",
-                        defaultValue: "Shows this topic’s reach across the whole series, and finds the documents on it that you have indexed."))
+                        defaultValue: "Shows this subject’s reach across the whole series, and finds the documents on it that you have indexed."))
         }
     }
 

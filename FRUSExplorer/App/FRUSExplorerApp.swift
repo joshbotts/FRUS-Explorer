@@ -312,6 +312,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          starts the launch's four index tasks through `AppState.indexWorkInFlight`, which counts each from
 ///          before it is made to its last line, and a download's pass counts itself, as the index work the
 ///          reader starts does in its own views
+///   4.37 — 2026-11-15: #1905 (L15) — the Mac's subject index window is titled *Subjects*
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -1283,7 +1284,7 @@ struct FRUSExplorerApp: App {
         // `.modelContainer` is required even though this subtree has no `@Query` today — the
         // Cross-Reference Graph scene records why: a latent omission is what the About window
         // looked like for two months.
-        Window(String(localized: "subjects.window.title", defaultValue: "Topics"),
+        Window(String(localized: "subjects.window.title", defaultValue: "Subjects"),
                id: "frus.subjects") {
             SubjectExplorerWindowContent(appState: appState)
                 .environment(appState)

@@ -237,7 +237,8 @@ struct PivotSheetMembershipTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-21: from the #1027/#1024 adversarial review
-@Suite("Detected-topic facet copy matches its reach")
+///   1.1 — 2026-11-15: #1905 (L15) — the suite is titled for subjects
+@Suite("Subject facet copy matches its reach")
 struct SubjectFacetCopyTests {
 
     /// The measurement the copy rests on. If categories ever stop saturating, the sentences
@@ -562,6 +563,7 @@ struct SubjectCatalogueTests {
 ///         `HostState` (a delivery lands once, landing again with nothing waiting keeps what the
 ///         reader left, Browse's Topics row resets it) and the macOS Topics window's routing, by
 ///         source scan
+///   1.3 — 2026-11-15: #1905 (L15) — the area chip reads *Subject area: … — N subjects*
 @Suite("Subject index grouping (#1023)")
 struct SubjectIndexGroupingTests {
 
@@ -778,7 +780,7 @@ struct SubjectIndexGroupingTests {
         #expect(listed.count == 6, "the area holds six topics; the list shows \(listed.count)")
         #expect(SubjectIndexGrouping.groupFilterCaption(
             filter, areaRows: SubjectIndexGrouping.filtered(rows, by: filter), query: state.query)
-            == "Topic area: Cold War — 6 topics")
+            == "Subject area: Cold War — 6 subjects")
     }
 
     /// One fixture per case of `SubjectExplorerRequest`, each from the same busy state.
@@ -932,7 +934,7 @@ struct SubjectIndexGroupingTests {
             vm.openTopicIndex()
             #expect(vm.navigationPath == [.subjects], "the row must show the index; path \(vm.navigationPath)")
             #expect(vm.topicIndex == .init(), """
-                Browse ▸ Topics, tapped from \(path), opened the index as \(vm.topicIndex) — the \
+                Browse ▸ Subjects, tapped from \(path), opened the index as \(vm.topicIndex) — the \
                 last door's area and the reader's search, where the row asks for the whole index.
                 """)
         }
@@ -1038,12 +1040,12 @@ struct SubjectIndexGroupingTests {
                                                                     rows: rows))
         #expect(SubjectIndexGrouping.groupFilterCaption(
             coldWar, areaRows: SubjectIndexGrouping.filtered(rows, by: coldWar), query: "")
-            == "Topic area: Cold War — 6 topics")
+            == "Subject area: Cold War — 6 subjects")
         let food = try #require(SubjectIndexGrouping.groupFilter(
             forCategoryKey: "Global Issues\u{1F}Food", rows: rows))
         #expect(SubjectIndexGrouping.groupFilterCaption(
             food, areaRows: SubjectIndexGrouping.filtered(rows, by: food), query: "")
-            == "Topic area: Food — 1 topic", "one topic is not \"1 topics\"")
+            == "Subject area: Food — 1 subject", "one subject is not \"1 subjects\"")
     }
 
     @Test("A search that hides topics makes the chip say how many of the area are listed")
@@ -1053,15 +1055,15 @@ struct SubjectIndexGroupingTests {
                                                                     rows: rows))
         let area = SubjectIndexGrouping.filtered(rows, by: coldWar)
         #expect(SubjectIndexGrouping.groupFilterCaption(coldWar, areaRows: area, query: "Berlin")
-            == "Topic area: Cold War — 1 of 6 topics", """
-            The list shows one topic; a chip saying "6 topics" over it is the contradiction #1365 \
+            == "Subject area: Cold War — 1 of 6 subjects", """
+            The list shows one subject; a chip saying "6 subjects" over it is the contradiction #1365 \
             reports for a reader who types after landing.
             """)
         let food = try #require(SubjectIndexGrouping.groupFilter(
             forCategoryKey: "Global Issues\u{1F}Food", rows: rows))
         #expect(SubjectIndexGrouping.groupFilterCaption(
             food, areaRows: SubjectIndexGrouping.filtered(rows, by: food), query: "zzz")
-            == "Topic area: Food — 0 of 1 topic", "the noun follows the area's size, which is one")
+            == "Subject area: Food — 0 of 1 subject", "the noun follows the area's size, which is one")
     }
 
     /// A search that matches every topic in the area hides nothing, so the chip keeps the plain
@@ -1073,7 +1075,7 @@ struct SubjectIndexGroupingTests {
                                                                     rows: rows))
         #expect(SubjectIndexGrouping.groupFilterCaption(
             coldWar, areaRows: SubjectIndexGrouping.filtered(rows, by: coldWar), query: "cold war")
-            == "Topic area: Cold War — 6 topics",
+            == "Subject area: Cold War — 6 subjects",
                 "\"cold war\" matches every row's sub-category, so all six are listed")
     }
 
@@ -1088,9 +1090,9 @@ struct SubjectIndexGroupingTests {
         #expect(1_200.formatted() != "1200",
                 "this platform's locale does not group, so the assertion below proves nothing")
         #expect(SubjectIndexGrouping.groupFilterCaption(filter, areaRows: rows, query: "match")
-            == "Topic area: Cold War — \(1_000.formatted()) of \(1_200.formatted()) topics")
+            == "Subject area: Cold War — \(1_000.formatted()) of \(1_200.formatted()) subjects")
         #expect(SubjectIndexGrouping.groupFilterCaption(filter, areaRows: rows, query: "")
-            == "Topic area: Cold War — \(1_200.formatted()) topics")
+            == "Subject area: Cold War — \(1_200.formatted()) subjects")
     }
 }
 
@@ -1357,6 +1359,143 @@ struct DocumentTopicRowTests {
         #expect(source.contains("frus.document.researchPanel.subjects"), """
             The expansion key C1 orphaned should be reused, so a reader who had this section open \
             before D1 retired it still does.
+            """)
+    }
+}
+
+// MARK: - SubjectDataCaptionTests
+
+/// Holds the one caption the subject surfaces carry (#1905; the plan of record's decision 135).
+///
+/// ## What was wrong
+/// The Office of the Historian's subject data, matched to documents by name before the app reads
+/// it, was explained five ways — "detected automatically from the text", "inferred from the text",
+/// "experimental enrichment data", "assigned", "detected topics … matched by name" — and named
+/// seven, *Detected Topic* among them, which says the app does the detecting. The owner renamed it
+/// *Subjects* on 2026-11-15 and set one caption, which credits the Office and claims no review of
+/// the data either way.
+///
+/// ## What these pin
+/// The caption's text, which is a language pin and so an advisory reminder (decision 9): an edit to
+/// the wording edits it here too, with the owner's reason beside it. Then that each surface that
+/// explained the data joins the caption to its own sentence on the side its account stood, and the
+/// facet panel shows it alone, as do the two surfaces the owner added (a volume's Top subjects and
+/// the person sheet's Subjects); and that no string the app or the kit ships uses a retired name or
+/// account again. That last scan reads `FRUSCoreKit/` with `FRUSExplorer/` (``AppSourceTree``),
+/// since Related's label is the kit's; measured on the tree before #1905, it finds 37 strings.
+///
+/// Version history:
+///   1.0 — 2026-11-15: #1905 (L15)
+@Suite("The subject data's one caption (#1905)")
+struct SubjectDataCaptionTests {
+
+    /// The repository root, from this file's place in it.
+    private static let repoRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+
+    /// A source file under `FRUSExplorer/`.
+    ///
+    /// - Parameter path: The path under `FRUSExplorer/`.
+    /// - Returns: The file's text.
+    private static func appSource(_ path: String) throws -> String {
+        try String(contentsOf: repoRoot.appendingPathComponent("FRUSExplorer").appendingPathComponent(path),
+                   encoding: .utf8)
+    }
+
+    @Test("The caption is the owner's, word for word")
+    func captionIsTheOwners() {
+        // Decision 135's text, set by the owner on 2026-11-15: it credits the Office, says the data
+        // is experimental and not published, and names no reviewer. A change to it is the owner's.
+        #expect(SubjectDataCaption.text == "Experimental subject data from the Office of the Historian, not published on history.state.gov. Subjects are matched to documents by name in the text; they are not editorial headings from the FRUS publication process, so some are wrong.")
+    }
+
+    @Test("A surface's sentence joins the caption with one space, on the side its account stood")
+    func joinsWithOneSpace() {
+        let caption = SubjectDataCaption.text
+        #expect(SubjectDataCaption.leading("Most distinctive first.") == caption + " Most distinctive first.")
+        #expect(SubjectDataCaption.trailing("Counts describe the series.") == "Counts describe the series. " + caption)
+    }
+
+    /// Each surface that gave an account of the data: its file, the side its account stood on, and
+    /// the key of the sentence it keeps.
+    private static let surfaces: [(path: String, join: String, key: String)] = [
+        ("DocumentView/ResearchRailView.swift", "leading", "panel.subjects.caveat"),
+        ("Search/SearchFilterView.swift", "leading", "search.subject.facet.footer"),
+        ("Search/SearchFilterView.swift", "leading", "search.subject.facet.picker.footer"),
+        ("Browser/SubjectIndexView.swift", "trailing", "subjects.index.coverage.v2 %lld %lld"),
+        ("Browser/SubjectIndexView.swift", "trailing", "subjects.detail.footer"),
+        ("Browser/VolumeSubjectsView.swift", "trailing", "browser.volume.subjectVolumes.archival.footer %lld"),
+        // Gave no account before #1905; the owner asked for the caption here too.
+        ("Browser/PersonIndexView.swift", "trailing", "people.detail.subjects.note"),
+    ]
+
+    @Test("Every surface that explained the data joins its sentence to the caption")
+    func everySurfaceCarriesTheCaption() throws {
+        for surface in Self.surfaces {
+            let source = try Self.appSource(surface.path)
+            let call = "SubjectDataCaption.\(surface.join)("
+            // The surface's key is the first localized string inside the call.
+            let carried = source.ranges(of: call).contains { range in
+                source[range.upperBound...].prefix(120).contains("localized: \"\(surface.key)\"")
+            }
+            #expect(carried, """
+                \(surface.path) shows \(surface.key) without \(call)…). Every surface that explains \
+                the subject data carries the one caption, where its old account stood.
+                """)
+        }
+        let facets = try Self.appSource("Search/FacetPanelView.swift")
+        #expect(facets.contains("Text(SubjectDataCaption.text)"),
+                "the facet panel's Subjects section must show the caption, where its own account stood")
+        let volumePage = try Self.appSource("Browser/VolumeSubjectsView.swift")
+        #expect(volumePage.contains("if showsCaption && !groups.isEmpty {") && volumePage.contains("Text(SubjectDataCaption.text)"),
+                "a volume's Top subjects must show the caption under the subjects it describes")
+        // The Mac caps the block's height and scrolls inside it, so its caption is drawn below the
+        // capped scroll view: inside it, the walk found it hidden under a tall profile's groups.
+        let macBrowser = try Self.appSource("App/MacCorpusBrowserWindow.swift")
+        let chips = try #require(macBrowser.range(of: "VolumeSubjectsChips(volume: volume, showsCaption: false)"),
+                                 "the Mac's Top subjects block must take the caption out of the capped chips")
+        let afterCap = try #require(macBrowser[chips.upperBound...].range(of: ".scrollDisabled(naturalHeight <= maxHeight)"))
+        let below = String(macBrowser[afterCap.upperBound...].prefix(1_000))
+        #expect(below.contains("Text(SubjectDataCaption.text)"),
+                "the Mac's Top subjects block must draw the caption below its capped scroll view")
+        // Measured in the check copy: fixed in size there, the caption raised the window's minimum
+        // height to the caption wrapped at no width, and the volume page drew nothing.
+        let caption = try #require(below.range(of: "Text(SubjectDataCaption.text)"))
+        #expect(!below[caption.upperBound...].prefix(200).contains(".fixedSize("),
+                "the Mac's caption sits in a column that does not scroll, so it must not be fixed in size")
+        #expect(!facets.contains("\"facets.subjects.provenance\""),
+                "the facet panel's own account is the caption now, and its key is retired")
+    }
+
+    /// The names and accounts #1905 retired, as a reader met them, lower-cased.
+    private static let retired = [
+        "detected topic", "detected-topic", "topics detected", "subjects detected", "assigned topics",
+        "enrichment data", "inferred from the text", "detected automatically", "topic index",
+        "topic area", "topic-area", "shared topics", "browse all topics", "search topics",
+        "topics unavailable",
+    ]
+
+    @Test("No string the app or the kit ships uses a retired name or account")
+    func noRetiredWording() throws {
+        let alternation = Self.retired.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")
+        let literal = try NSRegularExpression(pattern: #""[^"]*("# + alternation + #")[^"]*""#,
+                                              options: [.caseInsensitive])
+        var found: [String] = []
+        let files = AppSourceTree.swiftFiles(in: Self.repoRoot)
+        #expect(files.count > 500, "the walk found \(files.count) files; did the folders move?")
+        for file in files {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            for (index, line) in text.components(separatedBy: "\n").enumerated() {
+                // Comments may name the old words, which is how they record what changed.
+                if line.trimmingCharacters(in: .whitespaces).hasPrefix("//") { continue }
+                if literal.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) != nil {
+                    found.append("\(file.deletingLastPathComponent().lastPathComponent)/\(file.lastPathComponent):\(index + 1)")
+                }
+            }
+        }
+        #expect(found.isEmpty, """
+            These strings use a name or an account #1905 retired. The data is *Subjects*, and the one \
+            account of it is `SubjectDataCaption.text`: \(found.joined(separator: ", "))
             """)
     }
 }

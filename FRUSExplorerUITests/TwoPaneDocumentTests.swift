@@ -383,6 +383,7 @@ final class TwoPaneDocumentTests: XCTestCase {
 ///          what they show
 ///   1.2 — #1694: the resume-row test opens the fixture's subseries by name; the first test still opens
 ///          the first subseries row, which any subseries answers
+///   1.3 — 2026-11-15: #1905 (L15) — the root's subject door is titled *Subjects*
 @MainActor
 final class BrowseRootSelectionTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -439,7 +440,7 @@ final class BrowseRootSelectionTests: XCTestCase {
     /// Every door the root always draws, with the title its level gives the navigation bar.
     private static let doors: [(identifier: String, title: String)] = [
         (people, "People"),
-        (topics, "Topics"),
+        (topics, "Subjects"),
         (subseriesTile, "Subseries"),
         (prefix + "catalogueTile", "All Volumes"),
         (prefix + "administrationsTile", "Administrations"),

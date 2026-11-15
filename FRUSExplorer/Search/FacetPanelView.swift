@@ -402,6 +402,7 @@ final class FacetPanelController {
 ///         of, the door's only condition is the section itself (nested in the non-empty branch it
 ///         vanished exactly when the section had nothing to say), and the controller records the
 ///         query its breakdown describes so the scope is never labelled with an uncommitted one
+///   1.3 — 2026-11-15: #1905 (L15) — the Subjects section's account is the caption; *Subject data covers N of M matches.*
 struct FacetPanelView: View {
 
     /// The panel's state.
@@ -1105,15 +1106,16 @@ struct FacetPanelView: View {
         VStack(alignment: .leading, spacing: 2) {
             if facets.subjectsPrepared {
                 Text(String(localized: "facets.subjects.coverage",
-                            defaultValue: "Subjects detected for \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches."))
+                            defaultValue: "Subject data covers \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches."))
             } else {
                 // NOT "0 of 1,234" — that would state as a fact about the corpus what is really
                 // the backfill not having finished.
                 Text(String(localized: "facets.subjects.preparing",
                             defaultValue: "Subjects are still being prepared for your library — this breakdown is not complete yet."))
             }
-            Text(String(localized: "facets.subjects.provenance",
-                        defaultValue: "Detected topics from the Office of the Historian, matched by name — not the volumes’ own markup."))
+            // The one caption every subject surface carries, in place of this panel's own account
+            // ("Detected topics from the Office of the Historian, matched by name", #1905).
+            Text(SubjectDataCaption.text)
         }
         .font(.caption2)
         .foregroundStyle(.tertiary)
@@ -1159,7 +1161,7 @@ struct FacetPanelView: View {
                 onBrowseTopics()
             } label: {
                 Label(String(localized: "facets.subjects.browseIndex",
-                             defaultValue: "Browse all topics"),
+                             defaultValue: "Browse all subjects"),
                       systemImage: "tag")
                     .font(.caption)
             }
