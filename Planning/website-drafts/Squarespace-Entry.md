@@ -357,6 +357,22 @@ What to expect:
   be made again and pasted again.
 - Skip section 3 and the page reads on from the map to step 14 with nothing missing.
 
+## The app's icon: browser icon, header logo and sharing image
+
+All three are site settings, not pages, and were entered by a session on 15 November 2026. The
+files are in [brand/](brand/), made from the Mac icon's tile
+(`FRUSExplorer/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-mac-1024.png`) cropped to
+the tile itself.
+
+| What | Where in Squarespace | File | Notes |
+|---|---|---|---|
+| **Browser icon** | Settings ▸ Website ▸ **Favicon** (search *favicon*) ▸ Default | [brand/favicon.png](brand/favicon.png), 192 px | The field takes 0.1 MB at most. The tile reads on a dark tab bar too, so the optional dark-mode icon is left empty. |
+| **Header logo** | Edit ▸ hover the header ▸ **Edit Site Header** ▸ click the site title ▸ its pencil ▸ **Logo Image**; **Logo Height** 36 px, Mobile Logo Max Height 30 px | [brand/logo.png](brand/logo.png) | A logo *replaces* the site title on every page, so the file is the tile followed by "FRUS Explorer" in the header's own Manrope 500. The site title stays set: search engines and the logo's alt text read it. |
+| **Sharing image** | Settings ▸ Website ▸ **Social Sharing** (search *social sharing*) | [brand/share-card.png](brand/share-card.png), 1,200 × 630 | What Messages, Slack, mail and social sites show for a link to any page. It says *Free · iPhone, iPad and Mac*, as Home's label does. |
+
+Home's hero also opens with the tile, at 88 points: that one is part of Home's paste, and loads
+from GitHub (`tour/img/app-icon.png`) as the tour's screens do.
+
 ## Going public, and release day
 
 | When | What |
@@ -392,8 +408,8 @@ this table:
 | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,485 bytes | `83dbaac0` |
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,972 bytes | `0b22502f` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
-| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,951 bytes | `e9b8ba22` |
-| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,052 bytes | `197820d9`, not ready: it waits for the App Store address |
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,271 bytes | `3ee9e161` |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,372 bytes | `e7e699ea`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,007 bytes | `d4bfa31d` |
