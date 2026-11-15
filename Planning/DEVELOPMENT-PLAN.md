@@ -10964,3 +10964,7 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - 136: the in-app browser limited, so the rating stays 13+.
   - The plan gains row L22 (#1909, #1910) and checkpoint C1, and its rows, calendar, checklist and device pass follow the answers. The review's §7 records the naming decision.
 - **The owner named the fourth TestFlight build**: "The 4th test flight build will be 1823" (decision 137). R5 bumps the tree to 1.0 (1823), between 1812 and 1861, so every upload of 1.0 still rises.
+- **The seven issues FRUS Explorer Light filed the same evening, #1923 to #1929**, were read whole, and the two claims that touch the app were checked in the code.
+  - #1929: `volumeSources(forVolumeId:)` leaves `job_number` out of its query, while the Sources outline reads `entry.jobNumber`.
+  - The app makes a new `ZoteroAPIClient()` for each of its three sends.
+  - The owner took the recommendations (decision 138): #1929 in 1.0, folded into L22; #1923 to #1926 as one Zotero row after 1.0; #1927 and #1928 web-authored, after the upload.

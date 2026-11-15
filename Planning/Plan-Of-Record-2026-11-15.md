@@ -86,6 +86,24 @@ It is written from four sources:
     - R5 bumps the tree to 1823, R6 passes it on devices, and R7 bumps the same tree to 1861.
     - Its tag is the owner's call (decision 113): `build-54` would follow the others.
 
+**The owner's word of 2026-11-15, later still**, on the seven issues FRUS Explorer Light filed that evening (#1923 to #1929), each read whole and the two claims that touch the app checked in the code:
+
+138. **#1929 goes into 1.0, folded into L22. #1923 to #1926 are one Zotero row after 1.0. #1927 and #1928 are web-authored and merge after the upload.** The owner's choice: "Take the recommendations (Recommended)".
+    - **#1929.** `IndexingPipeline.volumeSources(forVolumeId:)` leaves `job_number` and `job_number_norm` out of its query (`FRUSCoreKit/Search/IndexingPipeline.swift:3977`).
+      - Those columns have been written since #733 (v39 and v40).
+      - The Sources outline builds a row's Archival Neighbors target from `entry.jobNumber` (`VolumeSourcesView.swift:625`).
+      - So a CIA job's row gets no button, on the Mac and on iOS.
+      - The fix reads the two columns. It needs no schema change and no index version of its own.
+    - **#1923 to #1926, the Zotero client, one row after 1.0:**
+      - a send that stops partway says how far it got, and can be finished without duplicates (#1923, a proposal whose design is the owner's then);
+      - a `Backoff` is waited before the next request rather than after the last write, with a deadline every client sees, since the app makes a new client for each of its three sends (#1924);
+      - the waits are reported through the send's `status` (#1925);
+      - a date `Retry-After` is read (#1926, low priority, since Zotero sends seconds).
+      - A reader meets these only with a Zotero key, and App Review has none.
+    - **#1927 and #1928.** Kit API only the web edition needs, changing nothing the app does: a user source for Chronology's summaries, and `DecadeFrequency`'s public initialiser.
+      - Both merge after the 1861 upload (decision 129).
+      - #1927 may share #1907's pull request, and #1928 another small kit change's, as the issues offer.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
@@ -114,7 +132,7 @@ It is written from four sources:
 | L19 | Nothing the researcher wrote is lost without asking: the note editor, a collection row that holds the researcher's text, Add to Collection's confirmation, Open Document from the inspector, and the iPad's rail at compact width | #1919 (review IPA-2, MAC-2, A11Y-3, IPA-4, IPA-6) |
 | L20 | Downloads, the first run and Apple Intelligence say what is happening: the size on the device, Cancel All, a failed download shown with Retry, and why a summary is unavailable | #1920 (review HCD-1, HCD-2, HCD-3, HCD-5) |
 | L21 | The Mac's windows, a chart's lines and Browse's tile names: the main window's title, toolbars that fit their windows, numbered Research rows, the empty window's way in, comparison lines that differ by more than colour, and tile names Voice Control can say | #1921 (review MAC-1, MAC-3, MAC-5, MAC-6, IPS-3, A11Y-5) |
-| L22 | The research export names what it was made from: the index records each volume file's git blob SHA-1, at index version 75 (decision 131), and the Mac's Export Research Database… says which index version it carries | #1909, #1910 |
+| L22 | The research export names what it was made from: the index records each volume file's git blob SHA-1, at index version 75 (decision 131), and the Mac's Export Research Database… says which index version it carries; and a CIA job's row in a volume's Sources gets its Archival Neighbors button (decision 138) | #1909, #1910, #1929 |
 | N1 | Where NARA's live answers put a record's record group, read from one lookup with the owner's key; a fix in the kit only if the lookup shows one is owed | #1908 |
 | C1 | The checkpoint for Import from JSON, Wednesday evening: the week's usage and the rows' pace decide whether #1915 is built for 1.0 (decision 132) | #1915 |
 | R5 | The release checklist on the frozen tree, the bump to 1.0 (1823), the fourth TestFlight build (decision 137), both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
@@ -152,6 +170,18 @@ It is written from four sources:
 | #1911, boundary tests for the other kits | **After the upload, web-authored** | Tests only, so no binary moves; the freeze holds it to keep R5's runs and R6's tree the same. |
 | #1909, the blob SHA of each indexed volume | **L22, in 1.0, at index version 75** (decisions 130 and 131) | The index records the git blob SHA-1 of the bytes each volume was indexed from. An export then names its files, and the web edition's import re-parses only the volumes that changed. Version 75 re-indexes every library once at launch, so every record is complete. |
 | #1915, Import from JSON on every platform | **C1 decides, Wednesday evening** (decision 132): in 1.0 if the week's usage and pace allow, else the first candidate after 1.0 (§3) | A new feature that writes research into the synced store, on both platforms, with merge rules over seven format versions. If C1 takes it, its two pull requests come before R5, and the submission moves to the weekend at the earliest. Its kit half, rules over values, changes nothing the app does, and can be built beside the rows either way. |
+
+### 1b. Where each issue FRUS Explorer Light filed on 2026-11-15 goes (decision 138)
+
+| Issue | Goes | Why |
+|---|---|---|
+| #1929, a CIA job's row with no Archival Neighbors button | **L22, in 1.0** | A real defect on both platforms, and an XS read in the kit, in the file L22 already changes. No index version. |
+| #1923, a stopped Zotero send that duplicates on resend | **After 1.0, the Zotero row** | A proposal whose resume design is the owner's. It is rare (a Zotero key and a failure mid-send), and needs new API, history and strings. |
+| #1924, a finished send that waits up to a minute | **After 1.0, the Zotero row** | It shows only when Zotero sends `Backoff`. It needs a deadline shared across the app's three sends. |
+| #1925, no status while a send waits | **After 1.0, the Zotero row** | Rare, and it needs new strings in the manuals. |
+| #1926, a date `Retry-After` | **After 1.0, the Zotero row** | Zotero documents seconds alone, so only something in front of it would send a date. |
+| #1927, Chronology's summaries from a user source | **After the upload, web-authored** | Only the web edition needs it; it may share #1907's pull request. |
+| #1928, `DecadeFrequency`'s public initialiser | **After the upload, web-authored** | Access only, beside another small kit change. |
 
 **The rows.**
 
@@ -213,7 +243,7 @@ It is written from four sources:
     - **IPS-3:** `.lineStyle(by:)` or `.symbol(by:)` on the comparison lines.
     - **A11Y-5:** the tiles' input labels, checked once with Voice Control.
     - Captures for T2: `macos/toolbar`, `macos/research-strip`, `macos/research` and `ipad/analytics`.
-- **L22, the research export names what it was made from** (#1909, #1910; decisions 130 and 131). One fresh session, one pull request: a commit for each issue, then a docs commit.
+- **L22, the research export names what it was made from, and a CIA job's row finds its neighbours** (#1909, #1910, #1929; decisions 130, 131 and 138). One fresh session, one pull request: a commit for each issue, then a docs commit.
   - **Scope:** kit code (the indexing pipeline under `FRUSCoreKit/Search/`) and app code (the Mac's export view).
     - So `swift build --target FRUSCoreKit` and `swift test` are owed.
     - It takes **index version 75**.
@@ -231,7 +261,11 @@ It is written from four sources:
     - Beside Export Research Database… on the Mac (`ResearchDataExportView.swift`), a line names the index version the copy will carry: the installed one, from `IndexingPipeline.dateIndexVersionKey`, which `ResearchDataExporter`'s stamp already reads.
     - It says the index is being updated while a batch runs, and the done line names the version too.
     - Each string goes through `String(localized:)`, with its EditableContent block, and a unit test covers the helper that builds the line.
-  - **After the merge:** both issues' hand-over notes for FRUS Explorer Light are filled in and filed as each says. #1909's note says that exports from 1861 are at version 75, which its server refuses until its pin move ships.
+  - **#1929** (decision 138):
+    - `volumeSources(forVolumeId:)` reads `job_number` and `job_number_norm` into `VolumeSourceEntry`, so a CIA job's row in a volume's Sources outline forms its Archival Neighbors target.
+    - Tests, from the issue: the pipeline gives a CIA job row's number and its normalized form, and the outline's target forms, counting what `document_sources.job_number_norm` gives.
+    - A Mac check on a volume with a CIA job row in its Sources.
+  - **After the merge:** the three issues' hand-over notes for FRUS Explorer Light are filled in and filed as each says. #1909's note says that exports from 1861 are at version 75, which its server refuses until its pin move ships.
   - **Captures:** none are expected. `ipad/data-recovery-export` shows the iPad's export settings, which #1910 leaves alone.
 - **N1, NARA's record group** (#1908). The owner's lookup and, if owed, a session.
   - **The owner's step, on the Mac with the key (Settings ▸ Connections):** a lot lookup the bundled indexes resolve, a D-designator lot in RG 59, in Source Explorer. Then one of two:
@@ -254,7 +288,7 @@ It is written from four sources:
     - a clean `build-for-testing`, read for warnings: the two known residues and nothing else;
     - the full unit target on iPhone 17 under **iOS 27.0 and iOS 27.2** (decision 134): none failed. R2b had 7,864 tests in 942 suites; the sessions since `build-53` count 8,012 in 963 on 27.2;
     - `swift test`, owed since `build-52` for the kit moves (#1891 onward): R2b had 3,267 tests in 394 suites; #1916's session had 4,512 in 532;
-    - the Mac build, and a walk of the Mac check copy that opens what changed since 1.0 (1812): Source Explorer on `frus1952-54v02p1` d41 (#1894's resolution); a Most-Referenced chart's bar and the graph at two hops and on its timeline (#1891, L16); Corpus Analytics' **View N documents ↗** over Kennedy's years (#1896); Person Analytics' co-mention network, Chronology and About the Series (#1899); a word cloud in two lenses with Distinctive sizing (#1900); Archival Analytics' rankings and network (#1901); the person sheet's lifespan, Career and Subjects, and a scope bar's *Subjects* (#1906, L15); `frus1961-63v06`'s index and contents in the reader at Small and Medium, the contents line *Kennedy-Khrushchev Exchanges*, `frus1873p1v1`'s *See* reference *De Long* and `frus1964-68v12` d238's *Bill Martin* (#1898, #1902, the taps of Mac check 27); Export Research Database…'s index-version line (L22); and every row's own surface;
+    - the Mac build, and a walk of the Mac check copy that opens what changed since 1.0 (1812): Source Explorer on `frus1952-54v02p1` d41 (#1894's resolution); a Most-Referenced chart's bar and the graph at two hops and on its timeline (#1891, L16); Corpus Analytics' **View N documents ↗** over Kennedy's years (#1896); Person Analytics' co-mention network, Chronology and About the Series (#1899); a word cloud in two lenses with Distinctive sizing (#1900); Archival Analytics' rankings and network (#1901); the person sheet's lifespan, Career and Subjects, and a scope bar's *Subjects* (#1906, L15); `frus1961-63v06`'s index and contents in the reader at Small and Medium, the contents line *Kennedy-Khrushchev Exchanges*, `frus1873p1v1`'s *See* reference *De Long* and `frus1964-68v12` d238's *Bill Martin* (#1898, #1902, the taps of Mac check 27); Export Research Database…'s index-version line and a CIA job row's Archival Neighbors in a volume's Sources (L22); and every row's own surface;
     - the window-fronting audit (R2b: 80 / 2 / 34 / 0, 20 scenes, 23 `openAuxWindow` sites);
     - the link check in report mode (R2b: 19 OK and 3 owner-asserted, NARA's page answering 502 that night and 200 the next morning);
     - the dSYM fetch and `./Scripts/check_cloudkit_schema.py` (R2b: PASS, 268 of 272 identifiers required, Production 310). No `@Model` file's stored properties changed since `build-52`, read by `git diff build-53..v2 -- FRUSExplorer/Models/`: the changes moved nested value types into the kit;
@@ -312,7 +346,8 @@ The repository holds a draft for each.
   - **#1915, Import from JSON on every platform**, unless C1 takes it for 1.0 (decision 132). It comes first, since the owner asked for it on 2026-11-14 after setting it aside on 2026-10-23. Its issue's two pull requests: the kit's rules, then the screen.
   - **#1723, A7: App Intents and Siri**, with A7b's Spotlight association; the owner's device check with Spike Reader decides A7b's place (`App-Intents-Siri-Assessment-2026-10-18.md` §4 and §5).
   - **#1854**, 138 editorial-note documents with no source note, dateline or provenance stored: an index version.
-  - **The web edition's kit rows**, #1907, #1911, #1912 and #1913, web-authored, merging once 1.0 (1861) is uploaded.
+  - **The web edition's kit rows**, #1907, #1911, #1912, #1913, #1927 and #1928, web-authored, merging once 1.0 (1861) is uploaded (decisions 129 and 138).
+  - **The Zotero row**, #1923 to #1926 (decision 138), with #1923's resume design the owner's call: a stopped send that says how far it got, `Backoff` waited before the next request, the waits reported, and a date `Retry-After` read.
   - **The review's findings no 1.0 row takes** (§5, *Found by the review*), each filed on the owner's word.
   - **Carried from the 2026-10-21 plan's §3:** six cross-volume references by id to a section's row, missing from the bundled edge index (A18b); the two Archival Neighbors readers disagreeing on a class key no note carries (A19); a volume whose indexing is cut short marked nowhere until the next launch (A14); the Archives Visit labelling lot targets by their first document (A15); Search's cost (`Issue-1648-Stopping-A-Replaced-Search-2026-10-15.md` §6: an exact-word search for a common word holds the pipeline for about two minutes, most of a Mac search's time is the snippet pass, the default scope's user-content union costs a common word's count about 0.3 s).
   - **An owner device sitting:** the Topics lens on an iOS 27 device; one Audio Graph heard aloud; the Mac's Sync Log after a sync; the Mac Search window with a selection under VoiceOver, in dark appearance and with Full Keyboard Access; Text Color's picker on an iPad under iOS 27; the by-eye checks carried from builds 48 and 49 (`Completed/Plan-Of-Record-2026-10-14.md` §4). The review's record lists the checks only a running app can settle; they join this sitting.
