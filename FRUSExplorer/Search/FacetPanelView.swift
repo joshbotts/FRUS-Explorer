@@ -91,6 +91,22 @@ struct FacetVolumeChoice: Equatable, Sendable {
     }
 }
 
+// MARK: - FacetStagedChoice
+
+/// One section's staged choice, resolved over the section's rows, as the facet panel's Apply sends it (#775, IPH-3).
+///
+/// Version history:
+///   1.0 — #1918 (L18, IPH-3): initial implementation, for one Apply over every staged section
+struct FacetStagedChoice: Equatable, Sendable {
+
+    /// The section, Years or Volumes (`FacetPanelController.stagedSections`).
+    let section: FacetSection
+
+    /// The resolved key set (`FacetSelection.resolved(from:)`). An **empty array is a real value**: the reader
+    /// excluded everything they included, which a host passes through rather than reading as no filter.
+    let keys: [String]?
+}
+
 // MARK: - FacetPanelController
 
 /// Owns the facet panel's state, and decides what is affordable to compute.
@@ -109,6 +125,8 @@ struct FacetVolumeChoice: Equatable, Sendable {
 ///          route; it no longer takes the pipeline. `stagedSections` forwards to the kit's
 ///          `FacetSelectionApplier.stagedSections`
 ///   1.3 — #1758: `clear()`, for a search taken off the screen with none in its place
+///   1.4 — #1918 (L18, IPH-3): `stagedSelections`, `stagedChoices` and `clearAllSelections()`, for the bar pinned to
+///          the panel's foot and for a host's Done, which applies what is staged
 @Observable
 @MainActor
 final class FacetPanelController {
@@ -195,6 +213,38 @@ final class FacetPanelController {
             return
         }
         selection[section] = FacetSelection(included: Set(keys))
+    }
+
+    /// The sections holding a staged choice, in the panel's order, each with its selection (the review's IPH-3).
+    var stagedSelections: [(section: FacetSection, selection: FacetSelection)] {
+        FacetSection.allCases.compactMap { section in
+            guard Self.stagedSections.contains(section) else { return nil }
+            let staged = selection(for: section)
+            return staged.isEmpty ? nil : (section, staged)
+        }
+    }
+
+    /// Every staged choice, each resolved over its section's whole row list, as Apply sends them (#775, IPH-3).
+    ///
+    /// Over the section's WHOLE bucket list, not the page on screen: an exclude-only selection means "everything here
+    /// except these", and resolving it against one page would drop every row the reader had not paged to. Empty while
+    /// nothing is computed, since nothing can be staged then.
+    var stagedChoices: [FacetStagedChoice] {
+        guard let facets else { return [] }
+        return stagedSelections.map { section, staged in
+            let universe: [String]
+            switch section {
+            case .years: universe = facets.years.map(\.key)
+            case .volumes: universe = facets.volumes.map(\.key)
+            case .people, .documentType, .provenance, .subjects: universe = []
+            }
+            return FacetStagedChoice(section: section, keys: staged.resolved(from: universe))
+        }
+    }
+
+    /// Drops every section's staged choice: the pinned bar's Clear.
+    func clearAllSelections() {
+        selection.removeAll()
     }
 
     /// The match this data describes. Changing it clears everything.
@@ -403,6 +453,9 @@ final class FacetPanelController {
 ///         vanished exactly when the section had nothing to say), and the controller records the
 ///         query its breakdown describes so the scope is never labelled with an uncommitted one
 ///   1.3 — 2026-11-15: #1905 (L15) — the Subjects section's account is the caption; *Subject data covers N of M matches.*
+///   1.4 — 2026-11-15: #1918 (L18, IPH-3) — Years' and Volumes' staged choice, Clear and Apply are one bar pinned to
+///          the panel's foot (`stagedSelectionBar`), where each section drew a `.mini` strip after its last row; Apply
+///          sends every staged section at once (`onApplySelection`)
 struct FacetPanelView: View {
 
     /// The panel's state.
@@ -447,13 +500,14 @@ struct FacetPanelView: View {
     let onNarrow: (FacetNarrowing) -> Void
 
 
-    /// Called when a staged multi-select is applied (#775).
+    /// Called when the staged choices are applied (#775): the pinned bar's Apply (IPH-3).
     ///
-    /// The payload is the RESOLVED key set — include minus exclude, over the section's own
-    /// buckets — so the host never has to reproduce the resolution and the two cannot disagree.
-    /// An **empty array is a real value** meaning "the user excluded everything they included";
-    /// hosts must pass it through rather than treating it as no filter.
-    let onApplySelection: (FacetSection, [String]?) -> Void
+    /// The payload is every section's RESOLVED key set — include minus exclude, over the section's
+    /// own buckets (`FacetPanelController.stagedChoices`) — so the host never has to reproduce the
+    /// resolution and the two cannot disagree, and runs one search for all of them. An **empty
+    /// array is a real value** meaning "the user excluded everything they included"; hosts must
+    /// pass it through rather than treating it as no filter.
+    let onApplySelection: ([FacetStagedChoice]) -> Void
 
     /// Opens the archival profile of this result set's volumes (#833).
     ///
@@ -501,6 +555,11 @@ struct FacetPanelView: View {
             }
             .padding(.vertical, 12)
         }
+        // The review's IPH-3: what Years and Volumes stage, and its Apply, at the panel's foot while
+        // anything is staged, in every container. Drawn after a section's last row and its page
+        // footer, Apply was below the fold on a phone for any list longer than the sheet, and a
+        // tapped row ticked while nothing on screen said what would make it narrow.
+        .safeAreaInset(edge: .bottom, spacing: 0) { stagedSelectionBar }
         // **The panel's single requester** (#850). Fires on first disclosure *and* whenever a new
         // search empties the data under a section that is still open — which are the same
         // condition, "open with nothing in it", rather than two paths to keep in step.
@@ -830,11 +889,8 @@ struct FacetPanelView: View {
                         row(bucket, in: kind, matchCount: facets.matchCount)
                     }
                     pageFooter(page, in: kind)
-                    // #775: over the section's WHOLE bucket list, not the visible page — an
-                    // exclude-only selection means "everything here except these", and resolving
-                    // it against one page would silently drop every row the user had not scrolled
-                    // to.
-                    selectionStrip(kind, universe: buckets.map(\.key))
+                    // The staged choice's Apply is no longer drawn here, after the rows and the
+                    // page footer, but pinned to the panel's foot (`stagedSelectionBar`, IPH-3).
                     if kind == .years, facets.undatedCount > 0 {
                         // Reported, not dropped: otherwise the bars sum to less than the
                         // match with nothing explaining the gap.
@@ -1045,40 +1101,70 @@ struct FacetPanelView: View {
         }
     }
 
-    /// The Apply / Clear strip a staged section shows once the user has chosen something (#775).
+    /// The bar pinned to the panel's foot while Years or Volumes holds a staged choice (#775, IPH-3): what is
+    /// staged, **Clear** and **Apply**.
     ///
-    /// Deliberately reports the counts rather than the values: a section can stage more rows than
-    /// fit, and a strip that listed them would either truncate silently or push the list off
-    /// screen. Rows carry their own state; this says how many and offers the commit.
+    /// Until the review's IPH-3 each section drew a strip of its own after its last row and its page footer,
+    /// with Apply at `.mini` size: below the fold on a phone for any list longer than the sheet, Years
+    /// opening on every year. One bar for the whole panel, so a choice staged in both sections runs as one
+    /// search, which is what the hosts' Done does as well.
+    ///
+    /// It reports the counts rather than the values: a section can stage more rows than fit, and a bar that
+    /// listed them would either truncate silently or push the list off screen. Rows carry their own state;
+    /// this says how many and offers the commit.
     @ViewBuilder
-    private func selectionStrip(_ kind: FacetSection, universe: [String]) -> some View {
-        let selection = controller.selection(for: kind)
-        if !selection.isEmpty {
-            HStack(spacing: 8) {
-                Text(selectionSummary(selection))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Spacer(minLength: 4)
-                Button(String(localized: "facets.selection.clear", defaultValue: "Clear")) {
-                    controller.clearSelection(in: kind)
+    private var stagedSelectionBar: some View {
+        let staged = controller.stagedSelections
+        if !staged.isEmpty {
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 12) {
+                    Text(staged.map { Self.stagedSummary(section: $0.section, selection: $0.selection) }
+                            .joined(separator: "; "))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Button(String(localized: "facets.selection.clear", defaultValue: "Clear")) {
+                        controller.clearAllSelections()
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityHint(String(localized: "facets.selection.clear.hint",
+                                              defaultValue: "Takes away the rows you chose, and narrows nothing"))
+                    Button(String(localized: "facets.selection.apply", defaultValue: "Apply")) {
+                        onApplySelection(controller.stagedChoices)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityHint(String(localized: "facets.selection.apply.hint",
+                                              defaultValue: "Narrows the search to the rows you chose"))
                 }
-                .font(.caption2)
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                Button(String(localized: "facets.selection.apply", defaultValue: "Apply")) {
-                    onApplySelection(kind, selection.resolved(from: universe))
-                }
-                .font(.caption2.weight(.semibold))
-                .buttonStyle(.borderedProminent)
-                .controlSize(.mini)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
             }
-            .padding(.vertical, 2)
+            .background(.bar)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("facets.selection.bar")
         }
     }
 
+    /// "Years: 2 included", "Volumes: 1 included · 1 excluded": one section's staged choice, named by its section.
+    ///
+    /// - Parameters:
+    ///   - section: The section, Years or Volumes.
+    ///   - selection: Its staged selection.
+    /// - Returns: The line.
+    static func stagedSummary(section: FacetSection, selection: FacetSelection) -> String {
+        let name = section == .years
+            ? String(localized: "facets.years", defaultValue: "Years")
+            : String(localized: "facets.volumes", defaultValue: "Volumes")
+        return String(format: String(localized: "facets.selection.summary %@ %@",
+                                     defaultValue: "%1$@: %2$@"),
+                      name, selectionSummary(selection))
+    }
+
     /// "2 included · 1 excluded", omitting whichever half is zero.
-    private func selectionSummary(_ selection: FacetSelection) -> String {
+    private static func selectionSummary(_ selection: FacetSelection) -> String {
         var parts: [String] = []
         if !selection.included.isEmpty {
             parts.append(String(format: String(localized: "facets.selection.included %lld",

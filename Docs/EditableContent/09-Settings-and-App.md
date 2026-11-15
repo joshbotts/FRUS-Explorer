@@ -836,7 +836,7 @@ Facet Rows Are Filters
 
 <!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | FacetNarrowTip.message | key: tip.facetNarrow.message | shared: iOS+macOS (single edit point) -->
 
-Select any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing.
+Select a person, a document type or a subject to narrow your search to it. In Years and Volumes, select rows and then Apply. Each narrowing becomes a chip you can clear; the counts always describe the whole match, before any narrowing.
 
 <!-- END SOURCE: tip.facetNarrow.message -->
 

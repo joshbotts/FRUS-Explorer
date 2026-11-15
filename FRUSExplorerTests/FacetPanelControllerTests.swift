@@ -30,6 +30,8 @@ import Foundation
 ///          section, so the fixture returns none; the narrowing map's tests moved to the kit's
 ///          `FacetNarrowingTests`, beside the narrowing
 ///   1.2 — #1758: `clearingDiscardsEverything`, the panel cleared when its search leaves the screen
+///   1.3 — #1918 (L18, IPH-3): `stagedChoicesCoverEverySection` and `stagedSummaryNamesTheSection`, what the pinned
+///          bar's Apply and a host's Done send
 @Suite("Facet panel controller")
 @MainActor
 struct FacetPanelControllerTests {
@@ -109,6 +111,52 @@ struct FacetPanelControllerTests {
         #expect(!facets.volumes.isEmpty, "the first section must survive the second's merge")
         #expect(!facets.years.isEmpty)
         #expect(controller.loadedSections == [.volumes, .years])
+    }
+
+    // MARK: - Staged choices (#1918, IPH-3)
+
+    /// What the pinned bar's Apply and a host's Done send: every staged section, in the panel's order, each
+    /// resolved over its whole row list.
+    @Test("Staged choices are every staged section, in the panel's order, resolved over its rows")
+    func stagedChoicesCoverEverySection() async throws {
+        let (dir, service) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let controller = FacetPanelController()
+        controller.invalidate(signature: "q1")
+        let params = SearchParameters(keywords: "containment")
+        await controller.load(.volumes, parameters: params, service: service)
+        await controller.load(.years, parameters: params, service: service)
+        let facets = try #require(controller.facets)
+        let year = try #require(facets.years.first?.key)
+        let volume = try #require(facets.volumes.first?.key)
+        #expect(controller.stagedChoices.isEmpty, "nothing is staged until a row is chosen")
+
+        // Volumes first, then Years: the choices still come in the panel's order.
+        controller.cycleSelection(volume, in: .volumes)
+        controller.cycleSelection(volume, in: .volumes)
+        controller.cycleSelection(year, in: .years)
+        #expect(controller.stagedSelections.map(\.section) == [.years, .volumes])
+        #expect(controller.stagedChoices == [
+            FacetStagedChoice(section: .years, keys: [year]),
+            // An exclusion alone: every other volume the section lists — none in this one-volume fixture, an empty
+            // set, which the applier reads as clearing the volume gate.
+            FacetStagedChoice(section: .volumes, keys: facets.volumes.map(\.key).filter { $0 != volume }),
+        ])
+
+        controller.clearAllSelections()
+        #expect(controller.stagedChoices.isEmpty)
+        #expect(controller.stagedSelections.isEmpty)
+    }
+
+    @Test("A staged line names its section and counts both halves")
+    func stagedSummaryNamesTheSection() {
+        #expect(FacetPanelView.stagedSummary(section: .years,
+                                             selection: FacetSelection(included: ["1948", "1949"]))
+                == "Years: 2 included")
+        #expect(FacetPanelView.stagedSummary(section: .volumes,
+                                             selection: FacetSelection(included: ["a"], excluded: ["b"]))
+                == "Volumes: 1 included · 1 excluded")
     }
 
     @Test("Re-loading a computed section is a no-op")

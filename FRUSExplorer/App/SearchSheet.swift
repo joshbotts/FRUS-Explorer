@@ -556,9 +556,13 @@ struct MacSearchWindowView: View {
                     // leaves it (#1686).
                     searchVM.applyFacetNarrowing(narrowing)
                 },
-                onApplySelection: { section, keys in
+                onApplySelection: { choices in
+                    // IPH-3: every staged section at once; the window's search task runs once for them.
+                    guard !choices.isEmpty else { return }
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    searchVM.applyFacetSelection(section, keys: keys)
+                    for choice in choices {
+                        searchVM.applyFacetSelection(choice.section, keys: choice.keys)
+                    }
                 },
                 onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                 onBrowseTopics: { browseTopics() },

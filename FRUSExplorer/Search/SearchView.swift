@@ -368,13 +368,12 @@ struct SearchView: View {
                 if dismissesOnApply { showFacetSheet = false }
                 Task { await runSearch() }
             },
-            onApplySelection: { section, keys in
+            onApplySelection: { choices in
                 // #775: one search for the whole selection, and the sheet closes on the commit
                 // rather than on the first tap — staging is what makes a second row reachable.
-                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
-                vm.applyFacetSelection(section, keys: keys)
+                // IPH-3: one search for every section that holds a choice.
+                applyFacetChoices(choices)
                 if dismissesOnApply { showFacetSheet = false }
-                Task { await runSearch() }
             },
             onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
             onBrowseTopics: { browseAllTopics() },
@@ -438,6 +437,32 @@ struct SearchView: View {
     ) {
         _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
+    }
+
+    /// Applies the facet panel's staged choices, Years' and Volumes', and runs one search for them (#775, IPH-3).
+    ///
+    /// - Parameter choices: The resolved choices (`FacetPanelController.stagedChoices`); nothing runs when empty.
+    private func applyFacetChoices(_ choices: [FacetStagedChoice]) {
+        guard !choices.isEmpty else { return }
+        facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+        for choice in choices {
+            vm.applyFacetSelection(choice.section, keys: choice.keys)
+        }
+        Task { await runSearch() }
+    }
+
+    /// Closes the facet panel by the reader's own hand — the sheet's Done, a swipe, the binoculars
+    /// menu's Facets — and applies what Years or Volumes has staged, as Apply does (the review's IPH-3).
+    ///
+    /// Until IPH-3 the sheet's Done closed it and left a choice staged, ticked in the rows and
+    /// applied to nothing until the next search cleared it, while the panel's tip said a selected
+    /// year narrows the search. A close the app makes on its way elsewhere (the Topic index, an
+    /// archival profile, a held list, an emptied field) applies nothing: those set
+    /// `showFacetSheet` themselves.
+    private func closeFacetPanelByHand() {
+        let staged = facetController.stagedChoices
+        showFacetSheet = false
+        applyFacetChoices(staged)
     }
 
     /// Opens the Topic index on the Browse tab (#1023, #1274).
@@ -630,9 +655,14 @@ struct SearchView: View {
                 // R-1c; this gives iPad the same container. The `!isPhone` guard matters: on compact
                 // width SwiftUI presents an inspector AS a sheet, which would collide with this
                 // view's other sheets — the same trap `DocumentView`'s rail documents.
+                // IPH-3: the reader's own close — Done, or a swipe, which reaches the binding's setter —
+                // applies what Years or Volumes has staged (`closeFacetPanelByHand()`).
                 .sheet(isPresented: Binding(
                     get: { isPhone && showFacetSheet },
-                    set: { if isPhone { showFacetSheet = $0 } }
+                    set: { isOpen in
+                        guard isPhone else { return }
+                        if isOpen { showFacetSheet = true } else if showFacetSheet { closeFacetPanelByHand() }
+                    }
                 )) {
                     NavigationStack {
                         facetPanel(dismissesOnApply: true)
@@ -641,7 +671,7 @@ struct SearchView: View {
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
                                     Button(String(localized: "search.done", defaultValue: "Done")) {
-                                        showFacetSheet = false
+                                        closeFacetPanelByHand()
                                     }
                                 }
                             }
@@ -650,7 +680,10 @@ struct SearchView: View {
                 }
                 .inspector(isPresented: Binding(
                     get: { !isPhone && showFacetSheet },
-                    set: { if !isPhone { showFacetSheet = $0 } }
+                    set: { isOpen in
+                        guard !isPhone else { return }
+                        if isOpen { showFacetSheet = true } else if showFacetSheet { closeFacetPanelByHand() }
+                    }
                 )) {
                     // No dismissal on apply: staying open beside the narrowing results is the
                     // entire point of the inspector container.
@@ -1295,7 +1328,11 @@ struct SearchView: View {
 
             Divider()
 
-            Toggle(isOn: $showFacetSheet) {
+            // Closing the panel from here is the reader's own close, so it applies what is staged (IPH-3).
+            Toggle(isOn: Binding(get: { showFacetSheet },
+                                 set: { isOn in
+                                     if isOn { showFacetSheet = true } else { closeFacetPanelByHand() }
+                                 })) {
                 Label {
                     Text(String(localized: "search.mode.facets", defaultValue: "Facets"))
                     Text(ResultReading.facetsDenominatorDescription)
