@@ -174,6 +174,7 @@ public struct ZoteroKeyInfo: Decodable, Sendable {
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
 ///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, as a host's send reads it
+///   1.2 — FRUS Explorer Light's follow-up for S22e: what `rateLimited`'s seconds can be
 public enum ZoteroAPIError: Error, LocalizedError, Sendable {
     case missingCredentials
     case invalidKey
@@ -181,6 +182,11 @@ public enum ZoteroAPIError: Error, LocalizedError, Sendable {
     case network(String)
     case http(Int)
     case decoding
+    /// A 429 that reached the caller: `resolveAccount(key:)` never retries one, and a write's is
+    /// retried up to three times, or not at all when it asks for more than a minute, the client's
+    /// longest wait. `retryAfter` is the seconds Zotero asked for, finite and not negative, or 30
+    /// when it gave none the client could use. It is not capped: it can pass a minute by any
+    /// amount, so a host that makes an integer or a `Duration` of it bounds it first.
     case rateLimited(retryAfter: TimeInterval)
 
     public var errorDescription: String? {

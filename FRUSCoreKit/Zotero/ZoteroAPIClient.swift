@@ -18,23 +18,50 @@ import FoundationNetworking
 /// Authentication is a user-supplied API key (passed per call from
 /// `ZoteroAccountStore`); no OAuth flow. Writes are chunked to Zotero's 50-item
 /// limit, carry a `Zotero-Write-Token` for idempotency on retry, and honour the
-/// `Retry-After` (429) and advisory `Backoff` headers.
+/// `Retry-After` (429) and advisory `Backoff` headers, each wait at most `longestWait`.
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
 ///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, with `URLSession` from
 ///          FoundationNetworking on Linux; the key was a parameter already
+///   1.2 — FRUS Explorer Light's follow-up for S22e: a wait on Zotero's word reads only seconds
+///          that are finite and not negative (`headerSeconds(_:)`) and lasts at most `longestWait`,
+///          so no header value can trap the client or hold a send without end; the waits go
+///          through a sleep a test can replace (`init(session:sleep:)`)
 public actor ZoteroAPIClient {
 
     private let session: URLSession
     private let base = URL(string: "https://api.zotero.org")!
     private let maxBatch = 50
     private let maxRetries = 3
+    /// Waits the given nanoseconds: `Task.sleep`, or a test's recorder.
+    private let sleepNanoseconds: @Sendable (UInt64) async throws -> Void
+
+    /// The longest the client waits at once on Zotero's word, in seconds: a 429's `Retry-After`,
+    /// or a `Backoff`. It is above the 30 s a 429 waits when it gives no seconds the client can
+    /// use, so that default, and any well-formed value up to a minute, waits as it always has.
+    /// Zotero's documentation names two forms of rate limiting, and the client treats them apart:
+    /// - A 429 is the hard limit: the request was refused, and Zotero asks for none before its
+    ///   `Retry-After`. Past this wait the 429 reaches the caller at once, as
+    ///   `ZoteroAPIError.rateLimited`, rather than a retry before Zotero's time, which breaks its
+    ///   rule and invites stricter throttling.
+    /// - A `Backoff` is a request to slow down, on a write that succeeded. Past this wait the
+    ///   client waits this long and the send goes on, its remaining writes inside Zotero's backoff:
+    ///   a bounded departure from the advice to make no request until it ends, so that a send is
+    ///   not stopped part-way, with what it already wrote kept in the library and nothing to say so.
+    static let longestWait: TimeInterval = 60
 
     /// Creates a client.
     /// - Parameter session: URL session (injectable for testing).
     public init(session: URLSession = .shared) {
+        self.init(session: session, sleep: { try await Task.sleep(nanoseconds: $0) })
+    }
+
+    /// Creates a client whose waits go to `sleep`, in nanoseconds, so that a test can read the
+    /// waits the client asks for without waiting them out.
+    init(session: URLSession, sleep: @escaping @Sendable (UInt64) async throws -> Void) {
         self.session = session
+        self.sleepNanoseconds = sleep
     }
 
     // MARK: - Account
@@ -59,6 +86,12 @@ public actor ZoteroAPIClient {
 
     /// Pushes the given items (with their tags and notes) into the user's library,
     /// optionally creating a new collection to hold them.
+    ///
+    /// A send makes one write for the collection, one for each 50 items and one for each 50
+    /// notes, and each write waits on Zotero's word when it asks: up to a minute before each of
+    /// three retries of a 429, and up to a minute after a `Backoff`, so one write can take four
+    /// minutes. A 429 that asks for longer stops the send there, as `ZoteroAPIError.rateLimited`,
+    /// with the writes before it kept in the library.
     ///
     /// - Parameters:
     ///   - items: Resolved export items (tags + notes already attached).
@@ -175,18 +208,29 @@ public actor ZoteroAPIClient {
                 let (data, response) = try await perform(request)
                 try Self.checkStatus(response, invalidKeyOn: [403])
                 if let backoff = Self.backoffSeconds(response) {
-                    try await Task.sleep(nanoseconds: UInt64(backoff * 1_000_000_000))
+                    // This write succeeded: a longer backoff is waited for `longestWait`, and the send goes on.
+                    try await pause(min(backoff, Self.longestWait))
                 }
                 guard let decoded = try? JSONDecoder().decode(ZoteroWriteResponse.self, from: data) else {
                     throw ZoteroAPIError.decoding
                 }
                 return decoded
             } catch let ZoteroAPIError.rateLimited(retryAfter) where attempt < maxRetries {
+                // Zotero asks for no request before `retryAfter`: past `longestWait` the caller hears it now.
+                guard retryAfter <= Self.longestWait else { throw ZoteroAPIError.rateLimited(retryAfter: retryAfter) }
                 attempt += 1
-                try await Task.sleep(nanoseconds: UInt64(retryAfter * 1_000_000_000))
+                try await pause(retryAfter)
                 continue
             }
         }
+    }
+
+    /// Waits `seconds` through the client's sleep. Every caller holds it to 0...`longestWait`
+    /// already; the clamp here (nothing for a value that is not finite) keeps the conversion to
+    /// nanoseconds from trapping whatever a caller passes.
+    private func pause(_ seconds: TimeInterval) async throws {
+        let bounded = seconds.isFinite ? min(max(seconds, 0), Self.longestWait) : 0
+        try await sleepNanoseconds(UInt64(bounded * 1_000_000_000))
     }
 
     /// Wraps `URLSession.data(for:)` to normalise transport errors.
@@ -209,7 +253,8 @@ public actor ZoteroAPIClient {
         case 200...299:
             return
         case 429:
-            let retry = http.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init) ?? 30
+            // Zotero's seconds, or 30 when it gives none the client can use (`headerSeconds(_:)`).
+            let retry = headerSeconds(http.value(forHTTPHeaderField: "Retry-After")) ?? 30
             throw ZoteroAPIError.rateLimited(retryAfter: retry)
         case let code where invalidKeyOn.contains(code):
             throw ZoteroAPIError.invalidKey
@@ -218,11 +263,18 @@ public actor ZoteroAPIClient {
         }
     }
 
-    /// The advisory `Backoff` header value in seconds, if present.
+    /// The advisory `Backoff` header value in seconds, if present and usable (`headerSeconds(_:)`).
     private static func backoffSeconds(_ response: URLResponse) -> TimeInterval? {
-        (response as? HTTPURLResponse)?
-            .value(forHTTPHeaderField: "Backoff")
-            .flatMap(TimeInterval.init)
+        headerSeconds((response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Backoff"))
+    }
+
+    /// The seconds a `Retry-After` or `Backoff` header gives, or nil when it gives none the client can
+    /// use: absent, not a number Swift reads, not finite ("nan", "inf"), or negative ("-1"). An HTTP-date
+    /// `Retry-After` is not a number Swift reads, and Zotero documents seconds alone. "-0" reads as 0,
+    /// as "0" does.
+    static func headerSeconds(_ value: String?) -> TimeInterval? {
+        guard let value, let seconds = TimeInterval(value), seconds.isFinite, seconds >= 0 else { return nil }
+        return seconds == 0 ? 0 : seconds
     }
 
     /// A random 32-character hex write token for idempotency.
