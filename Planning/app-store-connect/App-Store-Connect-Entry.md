@@ -78,7 +78,7 @@ you say so:
 | Keywords | [paste/keywords.txt](paste/keywords.txt) | 92 | 100 bytes |
 | Description | [paste/description.txt](paste/description.txt) | 3,423 | 4,000 characters |
 | What's New in This Version (a first version has no such field) | [paste/whats-new.txt](paste/whats-new.txt) | 169 | 4,000 characters |
-| App Review Information: Notes | [paste/review-notes.txt](paste/review-notes.txt) | 3,886 | 4,000 bytes |
+| App Review Information: Notes | [paste/review-notes.txt](paste/review-notes.txt) | 3,990 | 4,000 bytes |
 
 <!-- end of the generated field table -->
 
@@ -145,7 +145,7 @@ frequency for each content description". The definitions quoted here are Apple's
 | Item | Answer | What the app does |
 |---|---|---|
 | Parental Controls, Age Assurance | no | It has neither. |
-| Unrestricted Web Access | no | Apple: "Users can navigate to any webpage within the app or freely browse the web." The app has a built-in browser for the links in About and the FRUS Research Guide and for the quick start. It has Back, Forward and Open in Browser, and no field for an address or a search. It does not stop a page's own links from leading on to other sites. If App Review reads that as unrestricted, the answer is yes and the rating is 16+. |
+| Unrestricted Web Access | no | Apple: "Users can navigate to any webpage within the app or freely browse the web." The app has a built-in browser for the links in About and the FRUS Research Guide and for the quick start. It has Back, Forward and Open in Browser, and no field for an address or a search. It follows a link only on the site of the page it opened; any other link opens in the default browser (decision 136, #1917). |
 | User-Generated Content, Social Media, Messaging and Chat | no | Notes, highlights and collections go to the reader's own devices and files, and to no other user. |
 | Advertising | no | None. |
 
@@ -284,7 +284,7 @@ The same as step 4, with these differences:
   again here. Whether App Store Connect carries them over from the iOS page could not be seen
   from here, so read each field before leaving the page.
 - **Notes:** the same file. Its last paragraph is the Mac's: sandboxed, with outgoing network
-  connections, user-selected files and iCloud.
+  connections, user-selected files, printing and iCloud.
 
 ## 6. Submit
 

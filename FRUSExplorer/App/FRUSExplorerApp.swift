@@ -313,6 +313,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          before it is made to its last line, and a download's pass counts itself, as the index work the
 ///          reader starts does in its own views
 ///   4.37 — 2026-11-15: #1905 (L15) — the Mac's subject index window is titled *Subjects*
+///   4.38 — L17 (#1917, ASR-2): the Help menu links the privacy policy and the support page
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2287,12 +2288,21 @@ struct FRUSExplorerApp: App {
             // settings or app metadata. `replacing:` retires the system's
             // "FRUS Explorer Help" item, which opens a help book and the app
             // has none. ⌘? stays macOS's Show Help menu (2026-11-03, #1848).
+            // Below a divider, the privacy policy and the support page, which App Review
+            // looks for inside the app (#1917, ASR-2); About ▸ Legal links them too.
             CommandGroup(replacing: .help) {
                 QuickStartHelpMenuItem()
                 Button(String(localized: "menu.researchGuide",
                               defaultValue: "FRUS Research Guide")) {
                     openWindow(value: ResearchGuideWindowID())   // #363 #7: value-based guide window
                 }
+                Divider()
+                HelpLinkMenuItem(title: String(localized: "menu.help.privacyPolicy",
+                                               defaultValue: "Privacy Policy"),
+                                 urlString: AboutLinks.privacyPolicy)
+                HelpLinkMenuItem(title: String(localized: "menu.help.support",
+                                               defaultValue: "FRUS Explorer Support"),
+                                 urlString: AboutLinks.support)
             }
             }
 
@@ -4173,6 +4183,26 @@ struct QuickStartHelpMenuItem: View {
             }
         }
         // No shortcut: ⌘? (⇧⌘/) is macOS's Show Help menu and never reaches an item (#1848).
+    }
+}
+
+/// A Help-menu item that opens one of the app's web pages in the default browser: the privacy
+/// policy and the support page, which App Review looks for inside the app (#1917, ASR-2). A `View`,
+/// as `QuickStartHelpMenuItem` is, so that it reads `\.openURL`.
+struct HelpLinkMenuItem: View {
+    /// The item's title, already localized.
+    let title: String
+    /// The page it opens, one of `AboutLinks`' addresses.
+    let urlString: String
+
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button(title) {
+            if let url = URL(string: urlString) {
+                openURL(url)
+            }
+        }
     }
 }
 

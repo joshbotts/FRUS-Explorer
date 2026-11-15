@@ -41,6 +41,14 @@ enum AboutLinks {
     static let embeddingGemma2   = "https://huggingface.co/google/embeddinggemma-2"
     static let llamaCpp          = "https://github.com/ggml-org/llama.cpp"
 
+    /// The privacy policy, the page App Store Connect's Privacy Policy URL names. About ▸ Legal and
+    /// the Mac's Help menu link it, since App Review Guideline 5.1.1(i) asks for the policy "within
+    /// the app in an easily accessible manner" as well as in the metadata (#1917, ASR-2).
+    static let privacyPolicy     = "https://frusexplorer.app/privacy"
+    /// The support page, App Store Connect's Support URL, which gives the developer's address
+    /// (Guideline 1.5: "an easy way to contact you"). Linked beside the policy.
+    static let support           = "https://frusexplorer.app/support"
+
     static let allURLStrings: [String] = [
         officeOfHistorian,
         historyAtState,
@@ -54,6 +62,8 @@ enum AboutLinks {
         macQuickStart,
         embeddingGemma2,
         llamaCpp,
+        privacyPolicy,
+        support,
     ]
 }
 
@@ -68,7 +78,8 @@ enum AboutLinks {
 /// 3. **Resources** — the FRUS Research Guide, the platform quick start and manual,
 ///    history.state.gov, and HistoryAtState on GitHub
 /// 4. **Attribution** — code generation credit and contributor note
-/// 5. **Legal** — one row to `FullNoticesView` (open-source licenses + the two disclaimers)
+/// 5. **Legal** — one row to `FullNoticesView` (open-source licenses + the two disclaimers), and
+///    the privacy policy and the support page, which App Review looks for inside the app
 ///
 /// ## Version history
 ///   1.0 — Session 26: initial implementation
@@ -85,6 +96,7 @@ enum AboutLinks {
 ///          behind one Legal row into `FullNoticesView` — a push on iOS, a sheet on macOS,
 ///          because the Settings detail column has no back button of its own.
 ///   1.5 — 2026-11-03: the platform's quick start above its manual in Resources.
+///   1.6 — L17 (#1917, ASR-2): Legal links the privacy policy and the support page.
 struct AboutView: View {
 
     @Environment(AppState.self) private var appState
@@ -335,6 +347,11 @@ challenges and the United States's role in the world.
     /// A push on iOS, a sheet on macOS: the Settings window's detail column has no navigation
     /// chrome, so a `NavigationLink` there pushes to a screen with no back button. Same shape
     /// `DataRecoveryView.link(_:)` uses for the recovery sub-screens (S-4b).
+    ///
+    /// Below it, the privacy policy and the support page (#1917, ASR-2): App Review looks for both
+    /// inside the app, and the policy's guideline makes no exception for an app that collects
+    /// nothing. They open in the in-app browser, as Resources' links do, and the Mac's Help menu
+    /// links them too.
     @ViewBuilder
     private var legalSection: some View {
         Section {
@@ -359,6 +376,10 @@ challenges and the United States's role in the world.
                 legalRowLabel
             }
             #endif
+            resourceLink(String(localized: "about.legal.privacyPolicy", defaultValue: "Privacy Policy"),
+                         urlString: AboutLinks.privacyPolicy, systemImage: "hand.raised")
+            resourceLink(String(localized: "about.legal.support", defaultValue: "Support"),
+                         urlString: AboutLinks.support, systemImage: "questionmark.circle")
         } header: {
             Text(String(localized: "about.legal.header", defaultValue: "Legal"))
         }

@@ -198,6 +198,14 @@ targets:
           - com.joshbotts.frus-explorer.semanticMap
         # Required to call Activity.request() and start Live Activities.
         NSSupportsLiveActivities: YES
+        # Saving an image to Photos (#1917, ASR-1). Three paths write to the photo library in the
+        # app's own process: Save Image on an exported chart's share sheet, and Save to Photos on an
+        # image long-pressed in the reader or the in-app browser (WebKit's menu, which never reads
+        # this file). Without this string iOS terminates the app at the save: measured on iOS 27.0
+        # and 26.5 for both web-view paths (TCC: "must contain an NSPhotoLibraryAddUsageDescription
+        # key"), where the share sheet leaves Save Image out. Add-only: the app never reads Photos.
+        # Edited here AND in FRUSExplorer/Info.plist by hand; xcodegen sorts the plist's keys.
+        NSPhotoLibraryAddUsageDescription: "FRUS Explorer saves the image you choose, such as an exported chart or a figure in a document, to your photo library."
         # Native shareable collection file (.fruscollection) — Phase 4 / D9. Declares the
         # exported UTI and registers the app as an editor for it, so opening a file (share
         # sheet → "Copy to FRUS Explorer", Files, AirDrop) routes to the app's onOpenURL.

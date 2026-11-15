@@ -368,7 +368,7 @@ it; they were caught by running the counter. That is the whole argument for havi
 
 ## 7. App Review notes
 
-**4,000-byte field. This draft is 3,886 / 4,000 ✅**, counted as pasted. The field is on each
+**4,000-byte field. This draft is 3,990 / 4,000 ✅**, counted as pasted. The field is on each
 platform's version page, under App Review Information, and customers never see it. One text serves
 both pages. It is plain ASCII, so that bytes and characters agree and no symbol can be refused.
 
@@ -392,9 +392,10 @@ There is no sign-in, no purchase, no advertising and no tracking. The app is fre
 data.
 
 TO REVIEW
-1. Launch the app. Onboarding offers the whole series, a subseries or a single volume. Choose A
-   Single Volume and pick any volume: it is a few megabytes. The whole series is 553 volumes,
-   about 3.3 GB, and is not needed for review.
+1. Launch the app. Onboarding asks what to download and selects the whole series: Corpus on
+   iPhone and iPad, Entire Corpus on the Mac. Choose Volume (A Single Volume on the Mac), pick
+   one, then Continue. A volume is a few megabytes; the whole series is 553 volumes, about
+   3.5 GB, and is not needed for review.
 2. On iPhone and iPad the tabs are Browse, Search, Research, Collections and Settings. On the Mac
    the same tools are in the main window, the Corpus Browser (Shift-Command-B), the Search window
    and the Analytics menu.
@@ -441,7 +442,8 @@ war, weapons and political conflict as well as trade and treaties.
 
 MAC
 The app is sandboxed. Its entitlements are outgoing network connections (the downloads above),
-user-selected files (exports and imports through the system's panels) and iCloud.
+user-selected files (exports and imports through the system's panels), printing (File > Print)
+and iCloud.
 ```
 
 **Two things the notes leave to the owner.** They do not offer App Review a National Archives key:

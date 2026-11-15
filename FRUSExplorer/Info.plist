@@ -58,6 +58,8 @@
 	<string>public.app-category.reference</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>FRUS Explorer saves the image you choose, such as an exported chart or a figure in a document, to your photo library.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSUserActivityTypes</key>

@@ -75,6 +75,20 @@ struct DistributionTests {
                 "DirectDistribution entitlements missing network.client")
     }
 
+    /// File ▸ Print (⌘P) prints the reader's document through `WKWebView.printOperation(with:)`, and
+    /// the App Sandbox lets an app reach a printer only with `com.apple.security.print` (#1917, ASR-4).
+    /// Read as property lists, so a key left in a comment does not count.
+    @Test("SandboxParityTest: both entitlement files let File ▸ Print reach a printer")
+    func bothEntitlementsGrantPrinting() throws {
+        for url in [Self.appStoreEntitlementsURL, Self.directDistEntitlementsURL] {
+            let data = try Data(contentsOf: url)
+            let plist = try #require(
+                try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+            #expect(plist["com.apple.security.print"] as? Bool == true,
+                    "\(url.lastPathComponent) does not grant com.apple.security.print")
+        }
+    }
+
     @Test("SandboxParityTest: DirectDistribution entitlements do not add extra capabilities beyond AppStore")
     func directDistributionHasNoExtraCapabilities() throws {
         let appStore = try String(contentsOf: Self.appStoreEntitlementsURL, encoding: .utf8)
@@ -171,5 +185,45 @@ struct DistributionTests {
         let content = try String(contentsOf: Self.notarizeScriptURL, encoding: .utf8)
         #expect(content.hasPrefix("#!/usr/bin/env bash") || content.hasPrefix("#!/bin/bash"),
                 "notarize.sh should start with a bash shebang")
+    }
+}
+
+// MARK: - PhotosUsageStringTests
+
+/// Saving an image to Photos needs a purpose string, or iOS terminates the app at the save (#1917,
+/// ASR-1). Three paths write to the photo library in the app's own process: Save Image on an
+/// exported chart's share sheet, and Save to Photos on an image long-pressed in the reader or in the
+/// in-app browser, which WebKit offers without reading the Info.plist. Measured on an iPhone 17
+/// simulator under iOS 27.0 and 26.5, at `61cdeaeb` and so without the key: both web-view paths ended
+/// in a TCC termination naming `NSPhotoLibraryAddUsageDescription`, and the share sheet left Save
+/// Image out.
+///
+/// The key is kept by hand in two places, `project.yml`'s iOS `info.properties` and the
+/// `FRUSExplorer/Info.plist` generated from them, so the test reads both, and the built app's own.
+struct PhotosUsageStringTests {
+
+    private static let key = "NSPhotoLibraryAddUsageDescription"
+
+    private static let projectRoot: URL = {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests/
+            .deletingLastPathComponent()   // project root
+    }()
+
+    @Test("The iOS Info.plist says why the app adds to the photo library, as project.yml does")
+    func photoLibraryAddUsageIsDeclared() throws {
+        let data = try Data(contentsOf: Self.projectRoot.appendingPathComponent("FRUSExplorer/Info.plist"))
+        let plist = try #require(
+            try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+        let purpose = try #require(plist[Self.key] as? String, "FRUSExplorer/Info.plist has no \(Self.key)")
+        #expect(purpose.count > 40, "the purpose string should say what is saved: \(purpose)")
+        let yml = try String(contentsOf: Self.projectRoot.appendingPathComponent("project.yml"), encoding: .utf8)
+        #expect(yml.contains("\(Self.key): \"\(purpose)\""),
+                "project.yml's iOS info.properties do not state the same string, so xcodegen would drop it")
+        #if os(iOS)
+        // The unit tests run inside the built app, so this is the Info.plist that ships.
+        #expect(Bundle.main.object(forInfoDictionaryKey: Self.key) as? String == purpose,
+                "the built app's Info.plist does not carry the string")
+        #endif
     }
 }
