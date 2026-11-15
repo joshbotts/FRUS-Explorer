@@ -40,6 +40,49 @@ struct AboutViewTests {
         // (ai.google.dev) retired with EmbeddingGemma 300m.
         #expect(hosts.contains("huggingface.co"))
         #expect(!hosts.contains("ai.google.dev"))
+        // The privacy policy and the support page (#1917, ASR-2).
+        #expect(hosts.contains("frusexplorer.app"))
+    }
+
+    /// The two pages App Review looks for inside the app (#1917, ASR-2) are the addresses App Store
+    /// Connect's Privacy Policy URL and Support URL give (`Planning/app-store-connect/
+    /// App-Store-Connect-Entry.md`, §2 and §4): the in-app link and the listing's must be one page.
+    /// No test reaches the pages themselves, which answer only once the site is public.
+    @Test("AboutScreenLinksTest: the privacy policy and support links are the listing's two addresses")
+    func privacyAndSupportAreTheListingsAddresses() {
+        #expect(AboutLinks.privacyPolicy == "https://frusexplorer.app/privacy")
+        #expect(AboutLinks.support == "https://frusexplorer.app/support")
+        #expect(AboutLinks.allURLStrings.contains(AboutLinks.privacyPolicy))
+        #expect(AboutLinks.allURLStrings.contains(AboutLinks.support))
+    }
+
+    /// About ▸ Legal, which both platforms show, and the Mac's Help menu each link both pages (#1917,
+    /// ASR-2). Read from the source, since the rows are SwiftUI and the menu is the Mac's alone: the
+    /// Legal section's body and the Help menu's group are each asked for the call that links each page.
+    @Test("AboutScreenLinksTest: Legal and the Mac's Help menu link the privacy policy and the support page")
+    func legalAndHelpMenuLinkBothPages() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests
+            .deletingLastPathComponent()   // repo root
+        let about = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Settings/AboutView.swift"),
+                               encoding: .utf8)
+        let legal = try #require(Self.slice(of: about, from: "private var legalSection: some View {",
+                                            to: "private var legalRowLabel: some View {"))
+        #expect(legal.contains("urlString: AboutLinks.privacyPolicy,"), "About ▸ Legal does not link the privacy policy")
+        #expect(legal.contains("urlString: AboutLinks.support,"), "About ▸ Legal does not link the support page")
+        let app = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/FRUSExplorerApp.swift"),
+                             encoding: .utf8)
+        let help = try #require(Self.slice(of: app, from: "CommandGroup(replacing: .help) {",
+                                           to: "TextFormattingCommands()"))
+        #expect(help.contains("urlString: AboutLinks.privacyPolicy)"), "the Help menu does not link the privacy policy")
+        #expect(help.contains("urlString: AboutLinks.support)"), "the Help menu does not link the support page")
+    }
+
+    /// The text between the first `start` and the next `end` after it, or `nil` when either is missing.
+    private static func slice(of text: String, from start: String, to end: String) -> Substring? {
+        guard let lower = text.range(of: start),
+              let upper = text.range(of: end, range: lower.upperBound..<text.endIndex) else { return nil }
+        return text[lower.upperBound..<upper.lowerBound]
     }
 
     /// The manuals and quick starts that About, the Research tab and the Mac's Help menu open are
