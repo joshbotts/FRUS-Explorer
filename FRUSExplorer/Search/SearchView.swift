@@ -277,6 +277,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          Download Volumes… opening `DownloadVolumesSheet`, where the zero-result state blamed a term
 ///   1.40 — 2026-11-15: #1918 (L18, A11Y-2) — every finished search is announced (`announceFinishedSearch()`), and a
 ///          failed one says its error, where only a layer's finish was
+///   1.41 — 2026-11-15: #1918 (L18, IPH-5) — the actions bar's five controls and the pager's two chevrons take 44-pt hit
+///          areas by an outset content shape (`minimumHitTarget()`), their layout unchanged
 
 struct SearchView: View {
 
@@ -1290,6 +1292,8 @@ struct SearchView: View {
             Image(systemName: vm.hasActiveFilters
                   ? "line.3.horizontal.decrease.circle.fill"
                   : "line.3.horizontal.decrease.circle")
+                // IPH-5: 44 pt each way by declaration; without it a tap 6–8 pt off the glyph was taken too.
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.filters.toggle.a11y", defaultValue: "Toggle filters"),
@@ -1392,6 +1396,7 @@ struct SearchView: View {
             .disabled(!examineOffered && !showFacetSheet)
         } label: {
             Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
+                .minimumHitTarget()
         }
         // #597 Phase 1. Anchored on the menu LABEL: `.popoverTip` cannot attach to a Button inside
         // a Menu's content, because a menu row is not a popover host — which is also why the tip's
@@ -1436,6 +1441,7 @@ struct SearchView: View {
         } label: {
             Image(systemName: "checklist")
                 .foregroundStyle(vm.checklistMode ? Color.accentColor : Color.primary)
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
@@ -1563,6 +1569,7 @@ struct SearchView: View {
             #endif
         } label: {
             Image(systemName: "ellipsis.circle")
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
@@ -1788,6 +1795,7 @@ struct SearchView: View {
                       ? "arrow.up.arrow.down"
                       : "arrow.up.arrow.down.circle.fill")
                 .labelStyle(.iconOnly)
+                .minimumHitTarget()
         }
         .disabled(vm.results.isEmpty)
         // #1307: Sort was the one capped control with no Large Content Viewer HUD, which is what
@@ -2291,7 +2299,9 @@ struct SearchView: View {
             Button {
                 if vm.currentPage > 0 { vm.currentPage -= 1 }
             } label: {
+                // IPH-5: the only way to page, a footnote glyph: 44 pt each way by declaration.
                 Image(systemName: "chevron.left")
+                    .minimumHitTarget()
             }
             .disabled(vm.currentPage == 0)
             .accessibilityLabel(String(localized: "search.page.previous",
@@ -2309,6 +2319,7 @@ struct SearchView: View {
                 if vm.currentPage < vm.totalPages - 1 { vm.currentPage += 1 }
             } label: {
                 Image(systemName: "chevron.right")
+                    .minimumHitTarget()
             }
             .disabled(vm.currentPage >= vm.totalPages - 1)
             .accessibilityLabel(String(localized: "search.page.next",

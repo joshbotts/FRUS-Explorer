@@ -171,7 +171,7 @@ The volumes you are downloading appear here as each one arrives.
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1403–1404 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1408–1409 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -1779,7 +1779,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1975–1975 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1983–1983 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1792,28 +1792,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3076–3076 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3087–3087 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3065–3065 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3076–3076 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3072–3072 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3083–3083 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1544–1544 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1550–1550 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1822,7 +1822,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1570–1571 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1577–1578 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -2041,7 +2041,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3049–3049 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3060–3060 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -2761,14 +2761,14 @@ Open advanced filters — date range, volume scope, document type, person, searc
 <!-- END SOURCE: search.filter.advanced.help -->
 
 #### This breakdown stopped at \(…) of \(…) values.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 921–922 | key: facets.bound -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 922–923 | key: facets.bound -->
 
 This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values.
 
 <!-- END SOURCE: facets.bound -->
 
 #### Subject data covers \(…) of \(…) matches.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1210–1211 | key: facets.subjects.coverage -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1218–1219 | key: facets.subjects.coverage -->
 
 Subject data covers \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
 
@@ -2787,7 +2787,7 @@ Detected topics from the Office of the Historian, matched by name — not the vo
 <!-- END SOURCE: facets.subjects.provenance -->
 
 #### Ranks the collections behind all %lld volumes these matches…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1309–1310 | key: facets.provenance.openProfile.detail %lld -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1317–1318 | key: facets.provenance.openProfile.detail %lld -->
 
 Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves.
 

@@ -476,3 +476,100 @@ final class SearchActionsBarFitTests: XCTestCase {
                       "Could not open the Search tab, so this suite would read another screen")
     }
 }
+
+// MARK: - SearchHitAreaTests (#1918, IPH-5)
+
+/// Search's small controls answer a tap beside their glyphs: each one's hit area is 44 points each way.
+///
+/// ## The defect
+/// The actions bar's five controls were default buttons in an `HStack(spacing: 20)` with no frame or content shape, so
+/// a glyph was the whole target, Filter about 19 × 19 pt on an iPhone; and the pager's two `.footnote` chevrons, the only
+/// way to page, were about 6 × 10 pt (the review's IPH-5). `minimumHitTarget()` grows each one's content shape to 44 pt
+/// about its centre and leaves its frame as it was, which `SearchActionsBarFitTests` above measures.
+///
+/// ## What it requires
+/// A tap beside a control's frame, inside the 44 pt and outside the glyph, does what a tap on the glyph does: beside
+/// Filter, Filters opens; below it, the same; beside More, its menu opens; beside the pager's ›, page 2 shows. On the
+/// code before the fix each tap lands on the bar's or the header's own background, and nothing happens.
+///
+/// ## Fixture and devices
+/// The bulk volume (`FRUS_UI_TEST_SEED_BULK_VOLUME`, which `SearchBulkActionsTests` describes): thirty results, two
+/// pages. iPhone 17 and iPhone SE (3rd generation), `OS=27.0`, at the default text size; nothing skips, and an iPad runs
+/// it too.
+///
+/// Version history:
+///   1.0 — #1918 (L18, IPH-5): initial implementation
+@MainActor
+final class SearchHitAreaTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private var screen: BulkActionsScreen { BulkActionsScreen(app: app) }
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// How far beside a frame each tap lands: inside the outset of a 20-pt glyph's 44-pt hit area (12 pt) and of the
+    /// bar's own padding (16 pt across, 8 pt down), so on the code before the fix it lands on nothing.
+    private static let besideAcross: CGFloat = 8
+    private static let besideDown: CGFloat = 6
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = BulkActionsScreen.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+        screen.runTheSearch()
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            if app.state == .runningForeground { UITestPresentation.dismissAnyPresentation(in: app) }
+            app.terminate()
+        }
+        app = nil
+    }
+
+    func testFilterAnswersATapBesideItsGlyph() throws {
+        let filter = try control("search.actions.filter")
+        tap(at: CGPoint(x: filter.frame.minX - Self.besideAcross, y: filter.frame.midY))
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideAcross) pt before Filter's glyph \(filter.frame) did not open Filters")
+    }
+
+    func testFilterAnswersATapBelowItsGlyph() throws {
+        let filter = try control("search.actions.filter")
+        tap(at: CGPoint(x: filter.frame.midX, y: filter.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below Filter's glyph \(filter.frame) did not open Filters")
+    }
+
+    func testMoreAnswersATapBesideItsGlyph() throws {
+        let more = try control("search.actions.more")
+        tap(at: CGPoint(x: more.frame.maxX + Self.besideAcross, y: more.frame.midY))
+        XCTAssertTrue(app.buttons["Select Results"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideAcross) pt after More's glyph \(more.frame) did not open its menu")
+    }
+
+    func testThePagerAnswersATapBesideItsChevron() throws {
+        let next = app.buttons["Next page"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: BulkActionsScreen.patience), "The results have no Next page control")
+        XCTAssertTrue(app.staticTexts["Page 1 of 2"].firstMatch.exists, "Thirty results should show page 1 of 2")
+        tap(at: CGPoint(x: next.frame.maxX + Self.besideAcross, y: next.frame.midY))
+        XCTAssertTrue(app.staticTexts["Page 2 of 2"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideAcross) pt after the › chevron \(next.frame) did not turn the page")
+    }
+
+    // MARK: Steps
+
+    /// A control of the actions bar, by its identifier, once it is hittable.
+    private func control(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) throws -> XCUIElement {
+        let element = screen.element(identifier)
+        XCTAssertTrue(element.waitForExistence(timeout: BulkActionsScreen.patience), "\(identifier) is not in the tree",
+                      file: file, line: line)
+        print("[#1918 IPH-5] \(identifier) frame \(element.frame)")
+        return element
+    }
+
+    /// Taps the screen at `point`, in the window's points.
+    private func tap(at point: CGPoint) {
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+    }
+}

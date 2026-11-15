@@ -456,6 +456,7 @@ final class FacetPanelController {
 ///   1.4 — 2026-11-15: #1918 (L18, IPH-3) — Years' and Volumes' staged choice, Clear and Apply are one bar pinned to
 ///          the panel's foot (`stagedSelectionBar`), where each section drew a `.mini` strip after its last row; Apply
 ///          sends every staged section at once (`onApplySelection`)
+///   1.5 — 2026-11-15: #1918 (L18, IPH-5) — the bar's Clear and Apply take 44-pt hit areas (`minimumHitTarget()`)
 struct FacetPanelView: View {
 
     /// The panel's state.
@@ -1142,14 +1143,21 @@ struct FacetPanelView: View {
                         .lineLimit(3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Spacer(minLength: 4)
-                    Button(String(localized: "facets.selection.clear", defaultValue: "Clear")) {
+                    // IPH-5: 44-pt hit areas on iPhone and iPad, outset from each button's label.
+                    Button {
                         controller.clearAllSelections()
+                    } label: {
+                        Text(String(localized: "facets.selection.clear", defaultValue: "Clear"))
+                            .minimumHitTarget()
                     }
                     .buttonStyle(.bordered)
                     .accessibilityHint(String(localized: "facets.selection.clear.hint",
                                               defaultValue: "Takes away the rows you chose, and narrows nothing"))
-                    Button(String(localized: "facets.selection.apply", defaultValue: "Apply")) {
+                    Button {
                         onApplySelection(controller.stagedChoices)
+                    } label: {
+                        Text(String(localized: "facets.selection.apply", defaultValue: "Apply"))
+                            .minimumHitTarget()
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityHint(String(localized: "facets.selection.apply.hint",
