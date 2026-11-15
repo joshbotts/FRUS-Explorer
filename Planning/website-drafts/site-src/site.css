@@ -67,6 +67,7 @@ body.hide-notes [data-rv] { display: none !important; }
 /* Home */
 .pg-banner { display: none; }
 .pg-hero { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--ink); }
+.pg-icon { display: block; width: 88px; height: 88px; max-width: none; border: 0; border-radius: 0; box-shadow: none; margin-bottom: 4px; }
 .pg-kick { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--red); }
 .pg-hero h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.05; letter-spacing: -0.01em; max-width: 17em; }
 .pg-lead { font-size: 19px; line-height: 1.55; max-width: 36em; }

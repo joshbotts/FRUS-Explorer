@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint 197820d9 -->
+<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint e7e699ea -->
 <style>
 .frus-home { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #5F5F67; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #22705F; --ok: #2F6B3A; --warn: #8A5300; --bad: #A61C2A; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; color-scheme: light; }
 .frus-home { font-family: var(--serif); font-size: 17px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -15,6 +15,7 @@
 .frus-home a { color: var(--link); text-underline-offset: 3px; }
 .frus-home a:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
 .frus-home .pg-hero { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--ink); }
+.frus-home .pg-icon { display: block; width: 88px; height: 88px; max-width: none; border: 0; border-radius: 0; box-shadow: none; margin-bottom: 4px; }
 .frus-home .pg-kick { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--red); }
 .frus-home .pg-hero h1 { font-size: clamp(32px, 5vw, 54px); line-height: 1.05; letter-spacing: -0.01em; max-width: 17em; }
 .frus-home .pg-lead { font-size: 19px; line-height: 1.55; max-width: 36em; }
@@ -56,6 +57,7 @@
 
 
 <section class="pg-hero">
+  <img class="pg-icon" src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/app-icon.png" alt="" width="88" height="88">
   <p class="pg-kick">Free on the App Store</p>
   <h1>Research 165 years of U.S. diplomatic history.</h1>
   <p class="pg-lead">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts all 553 volumes of the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
