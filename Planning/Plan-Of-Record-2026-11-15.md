@@ -44,7 +44,7 @@ It is written from four sources:
 **The owner's answers of 2026-11-15**, given the same evening, one question at a time. §4 had put Q1 to Q7, each with a recommendation, and two follow-ups came from the answer to Q3. Numbered on:
 
 128. **Q1, how 1.0 (1861) is reached: a fourth TestFlight build, then 1861.** The owner's choice: "4th TestFlight, then 1861 (Recommended)".
-    - The frozen tree goes up as a TestFlight build numbered between 1812 and 1861, which the owner names as 1776, 1787 and 1812 were, and that build carries R6's device pass.
+    - The frozen tree goes up as a TestFlight build numbered between 1812 and 1861, which the owner names as 1776, 1787 and 1812 were, and that build carries R6's device pass. The owner named it 1823 (decision 137).
     - R7 bumps that same tree to 1861 for the submission, so a defect the pass finds cannot spend the number decision 25 gives it.
 129. **Q2, the freeze: from R5's start until 1.0 (1861) is uploaded, `v2` takes only this plan's rows.** The owner's choice: "Freeze from R5 to the upload (Recommended)".
     - Web-authored pull requests merge after the upload: #1907, #1911 to #1913, and the hand-overs' follow-ups.
@@ -79,6 +79,13 @@ It is written from four sources:
     - Every other link opens in the system browser.
     - So the entry sheet's *Unrestricted Web Access: no* is true.
 
+**The owner's word of 2026-11-15, later the same evening**, naming the build decision 128 left to the owner:
+
+137. **The fourth TestFlight build is 1.0 (1823).** The owner's words: "The 4th test flight build will be 1823".
+    - 1823 lies between 1812 and 1861, so every upload of 1.0 still rises, on the Mac above every earlier upload: 50, 1776, 1787, 1812, 1823 and 1861.
+    - R5 bumps the tree to 1823, R6 passes it on devices, and R7 bumps the same tree to 1861.
+    - Its tag is the owner's call (decision 113): `build-54` would follow the others.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
@@ -110,8 +117,8 @@ It is written from four sources:
 | L22 | The research export names what it was made from: the index records each volume file's git blob SHA-1, at index version 75 (decision 131), and the Mac's Export Research Database… says which index version it carries | #1909, #1910 |
 | N1 | Where NARA's live answers put a record's record group, read from one lookup with the owner's key; a fix in the kit only if the lookup shows one is owed | #1908 |
 | C1 | The checkpoint for Import from JSON, Wednesday evening: the week's usage and the rows' pace decide whether #1915 is built for 1.0 (decision 132) | #1915 |
-| R5 | The release checklist on the frozen tree, the bump to the fourth TestFlight build, both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
-| R6 | The fourth TestFlight build uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
+| R5 | The release checklist on the frozen tree, the bump to 1.0 (1823), the fourth TestFlight build (decision 137), both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
+| R6 | 1.0 (1823) uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
 | R7 | The bump to 1.0 (1861) | — |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
@@ -123,7 +130,7 @@ It is written from four sources:
 | Mon 2026-11-16 | L15, L16, L17; N1's lookup | sessions; the owner merges each and makes the lookup |
 | Tue 2026-11-17 | L18, L19, L22 | sessions; the owner merges each |
 | Wed 2026-11-18 | L20, L21; C1, the checkpoint for #1915, in the evening | sessions; the owner merges each, then reads the week's usage and decides C1 |
-| Thu 2026-11-19 | R5: the freeze starts, the checklist runs, the tree goes to the fourth TestFlight number, sitting T2 retakes what the rows changed | a session; the owner archives and uploads that evening |
+| Thu 2026-11-19 | R5: the freeze starts, the checklist runs, the tree goes to 1.0 (1823), sitting T2 retakes what the rows changed | a session; the owner archives and uploads that evening |
 | Fri 2026-11-20 | R6, the device pass, in the morning; R7, the bump to 1861; R3: the website made public, the App Store Connect entry, the submission, the tag | the owner; a session for R7 |
 | Sat 2026-11-21 | Slack: R3, if Friday's pass or entry runs long | — |
 
@@ -239,7 +246,7 @@ It is written from four sources:
     - The TestFlight notes and R6 add an import on each platform: an export from 1.0 (1812), and one from the web edition.
     - No CloudKit change is expected, since imported records are the existing models. A row that finds one stops, by §0's rule.
   - **#1915 after 1.0.** It leads the release after it (§3). Its kit half may still be built beside the rows, and merges after the upload (decision 129).
-- **R5, the release checklist and the fourth TestFlight build.** One fresh session from `v2` when every row above has merged; the freeze starts when it does (decision 129).
+- **R5, the release checklist and 1.0 (1823), the fourth TestFlight build.** One fresh session from `v2` when every row above has merged; the freeze starts when it does (decision 129).
   - **Two things the checklist would stop on, fixed first, test code only:**
     - **The third warning line.** A clean `build-for-testing` has printed three warning lines since Lane 2 (#1875): the two known residues and `FRUSOffsetEngineTests.swift:2736`'s ambiguous `#require(… as? Bool)` (L11's session found it; every session since counts "`v2`'s 3 warning lines"). The checklist allows the two residues and nothing else, so the value is read first and the cast required after (`:2736`, and `:2753`'s twin if it warns).
     - **The one failing test under iOS 27.2.** Every full unit run on an iOS 27.2 simulator since 2026-11-10 fails `CrossReferenceRankingLabelsTests`' *At 720 pt every row's title is drawn* (`FRUSExplorerTests/CrossReferenceRankingLabelsTests.swift:846`), which reads the rendered chart back with Vision; under iOS 27.0 it passes (R2c's run, 7,934 tests, none failed). The test prints what Vision reads. The session runs it on both runtimes, reads the two outputs and the rendered image, and settles which is at fault: if the chart draws a title cut or blank under 27.2, that is an app defect on the system readers have, and it is fixed in the chart; if Vision reads a whole chart differently, the test's reading is widened, as it was for iOS 27.0 (its comment on the count Vision read as *m-*), with the reason beside it.
@@ -252,7 +259,7 @@ It is written from four sources:
     - the link check in report mode (R2b: 19 OK and 3 owner-asserted, NARA's page answering 502 that night and 200 the next morning);
     - the dSYM fetch and `./Scripts/check_cloudkit_schema.py` (R2b: PASS, 268 of 272 identifiers required, Production 310). No `@Model` file's stored properties changed since `build-52`, read by `git diff build-53..v2 -- FRUSExplorer/Models/`: the changes moved nested value types into the kit;
     - **the re-index census at version 75**, owed since R2b counted 71. Decisions 117 to 119 and 131 ask the release that carries 72 to 75 to count its re-index, as A19 counted 71's: over a library from 1.0 (1812) at 74, and one from 1.0 (1787) at 71.
-  - **The bump** to the fourth TestFlight build: a number between 1812 and 1861, the owner's to name as 1776, 1787 and 1812 were (decision 128). `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and every occurrence in `project.pbxproj` (`replace_all`), the README's line and its mirror in `Docs/EditableContent/03-Repository-README.md`, and an Amendment-Log bullet, by `CLAUDE.md`'s procedure, with no `xcodegen generate`.
+  - **The bump** to 1.0 (1823), the fourth TestFlight build (decision 137). `CURRENT_PROJECT_VERSION` in `project.yml`'s three targets and every occurrence in `project.pbxproj` (`replace_all`), the README's line and its mirror in `Docs/EditableContent/03-Repository-README.md`, and an Amendment-Log bullet, by `CLAUDE.md`'s procedure, with no `xcodegen generate`.
   - **Both TestFlight notes** rewritten for that build, each 4,000 characters at most by Python's `len()`, with ⚙, ✕ and ⓘ written as words (#1783): for a tester who has 1.0 (1812) and one who has 1.0 (1787). Each library re-indexes once at launch, to version 75 (decision 131). What changed since 1812, from the rows above; every fix in the one line, as the owner's rule for these notes has it; what to test, from R6's list. The new behaviour a tester should look for:
     - the Privacy Policy and Support rows in About;
     - Search's Filters applying on Done;
@@ -273,7 +280,7 @@ It is written from four sources:
     - **Then** `tools/marketing/compose.py` with `SCALE=1 STAMP=0` for every store frame a retake feeds (the Mac's 01 at least), into `~/Desktop/store/upload/` in the listing's order, and the drafts rendered again. The quick starts' web copies load the captures from the default branch, so a merged retake shows there unaided.
   - **The records 1861 reads:** `Planning/app-store-connect/App-Store-Connect-Entry.md` says 1.0 (1861) is "taken to be what 1.0 (1812) … already does"; it now says what 1861 adds. `Store-Listing-Draft.md` and the paste kit are read against the frozen tree, as the 2026-11-10 session read them against 1812; the website drafts too, since L15 changes a sentence of the quick starts (#1888's condition: "Should 1861 take a change after all, the pages are read against it again").
   - **The owner's steps**, in the checkout the archive is cut from: bring `v2` to R5's merge; run `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py` there; archive and upload `FRUSExplorer` and `FRUSExplorerMac` in the AppStore configuration, each with its note as What to Test; tag the commit (`build-54` would follow the others; decision 113 leaves it to the owner).
-- **R6, the device pass** of the fourth TestFlight build, on an iPhone, an iPad and the Mac. The owner's.
+- **R6, the device pass** of 1.0 (1823), on an iPhone, an iPad and the Mac. The owner's.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
   - **What changed since 1812:** R5's Mac walk, on the iPad and the iPhone too; and, on iOS, a queue left to index while the app is away (L11 to L14, which 1812 was the first to carry).
   - **Each row's own surface**, from its log entry, and the review's checks that only a device can make (its §6), where the device is at hand:
@@ -282,7 +289,7 @@ It is written from four sources:
     - onboarding at AX3 and AX5 on a small iPhone (IPH-9).
   - **On the Mac:** File ▸ Print to a printer (ASR-4), if L17's own check did not reach one.
   - **If the iPad is an iPad mini on iOS 27:** a search field with the keyboard up on the Browse root, for #1835, which fails only in the iPad mini simulator under 27.0.
-  - **A defect the pass finds** goes to a row on the owner's word, and the next upload takes a number above the fourth build's and below 1861, with the calendar's Saturday as its slack. One that is not a crash, a loss of work or a store check may go to the first update instead (§1's calendar).
+  - **A defect the pass finds** goes to a row on the owner's word, and the next upload takes a number above 1823 and below 1861, with the calendar's Saturday as its slack. One that is not a crash, a loss of work or a store check may go to the first update instead (§1's calendar).
 - **R7, the bump to 1.0 (1861).** One session, one pull request, when R6 has passed: `CURRENT_PROJECT_VERSION` 1861 by the same procedure, the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes' release-candidate line. No other change: the tree that goes to App Review is R6's but for its build number.
 - **R3, the submission.** The owner archives and uploads 1.0 (1861) for both platforms, opens it once from TestFlight (About reads *Version 1.0 (1861)*), and submits it with §2's answers; then tags that commit `1.0-release` (decision 113).
 
@@ -294,7 +301,7 @@ The repository holds a draft for each.
 - **The website.** Make frusexplorer.app public, with `/privacy` and `/support`, on the day of the submission: App Review opens both addresses, and every path answered 401 on 2026-11-10. The six pages and the footer are entered and hold their current files (`website-drafts/Squarespace-Entry.md`); L15 changes the two quick-start pages, which the owner pastes again from `website-drafts/paste/` after L15 merges.
 - **App Store Connect**, page by page in `app-store-connect/App-Store-Connect-Entry.md`, each text field ready to paste in `app-store-connect/paste/` and each screenshot slot in `~/Desktop/store/upload/<preset>/` (ten iPad, ten Mac, five iPhone, and the iPhone's five again at 1206 × 2622). R5 brings the sheet's description of 1861 up to date. The sheet's four decisions are the owner's (§4): the age rating (13+ as drafted, which decision 136 keeps true by limiting the in-app browser, or 16+), the trader status under the Digital Services Act, whether China mainland stays among the storefronts if a filing number or permit is asked for, and a manual release (recommended). And its two offers: `relations` for `FRUS` among the keywords, and the home page's Editors' Annotations sentence in the description.
 - **`check_repository_links.py --stamp`**, which writes the owner's confirmation date.
-- **The archives, the uploads and the tags:** the fourth TestFlight build (R5, R6) and 1.0 (1861) (R7, R3), `1.0-release` on the second.
+- **The archives, the uploads and the tags:** 1.0 (1823), the fourth TestFlight build (R5, R6; its tag the owner's call, `build-54` following the others), and 1.0 (1861) (R7, R3), with `1.0-release` on the second.
 
 ---
 
@@ -318,7 +325,6 @@ The repository holds a draft for each.
 **The seven questions are answered** (decisions 128 to 136, 2026-11-15). Five took §4's recommendation as it stood. Q3 added #1909 and #1910 to 1.0, with a checkpoint for #1915. Q6 took *Subjects*, with a caption on the owner's terms. What is left for the owner this week:
 - **N1**, the NARA lookup with the key, on Monday.
 - **C1**, the checkpoint for #1915, on Wednesday evening (decision 132).
-- **The fourth TestFlight build's number** (decision 128), when R5 bumps the tree.
 - **The merges**, each row's in turn; the archives and uploads; and R6's device pass.
 
 **Carried:**

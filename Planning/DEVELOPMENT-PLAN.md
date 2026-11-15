@@ -10963,3 +10963,4 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - 135: *Subjects*, with a caption that credits the Office and claims no review.
   - 136: the in-app browser limited, so the rating stays 13+.
   - The plan gains row L22 (#1909, #1910) and checkpoint C1, and its rows, calendar, checklist and device pass follow the answers. The review's §7 records the naming decision.
+- **The owner named the fourth TestFlight build**: "The 4th test flight build will be 1823" (decision 137). R5 bumps the tree to 1.0 (1823), between 1812 and 1861, so every upload of 1.0 still rises.
