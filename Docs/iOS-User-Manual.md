@@ -93,7 +93,7 @@ Choosing *Subseries* or *Volume* opens a scrolling list above the panel — ever
 
 ### 2.4 The Embedded Browser
 
-Links inside **About** and the **FRUS Research Guide** — including the copy of the guide that opens while your first volumes index (Section 4.8) — open in a built-in browser sheet rather than leaving the app, and so does the Research tab's **Quick Start** row (Section 16). The sheet has Back and Forward arrows and an **Open in Browser** button (the compass) for a page that needs the real thing; tap **Close** (or swipe the sheet down) and you are exactly where you were. Links that lead out of a document, **Source Explorer**, or a **NARA Catalog** lookup — catalog records, finding aids, digitized scans — open in your default browser instead.
+Links inside **About** and the **FRUS Research Guide** — including the copy of the guide that opens while your first volumes index (Section 4.8) — open in a built-in browser sheet rather than leaving the app, and so does the Research tab's **Quick Start** row (Section 16). The sheet has Back and Forward arrows and an **Open in Browser** button (the compass) for a page that needs the real thing; tap **Close** (or swipe the sheet down) and you are exactly where you were. It keeps to the site of the page it opened: a link to any other site opens in your default browser instead, and an email address in Mail, while the sheet stays where it was. Links that lead out of a document, **Source Explorer**, or a **NARA Catalog** lookup — catalog records, finding aids, digitized scans — open in your default browser instead.
 
 ---
 
@@ -1482,7 +1482,7 @@ The **Settings** tab opens with your iCloud sync status — when sync has a prob
 | | **Search** | Default scope, default document type, result snippet length (1–10 lines), and **Classification Corrections…**, where every document you reclassified is listed with a per-row **Undo** |
 | **System** | **Connections** | NARA Catalog and Zotero (17.4) |
 | | **Data & Recovery** | Getting your work out, diagnostics, and recovery (17.6) |
-| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, legal notices |
+| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, and under **Legal** the full notices, the privacy policy and the support page |
 
 ### 17.2 Volumes & Storage
 

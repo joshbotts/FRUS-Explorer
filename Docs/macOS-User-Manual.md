@@ -1255,7 +1255,7 @@ Alongside the methodology chapters, the Guide carries **About the Series**: four
 
 ### 16.5 The Embedded Browser
 
-From About and the Research Guide, an external link opens in a built-in browser sheet rather than launching Safari; Source Explorer's NARA Catalog and finding-aid links open in your default browser. Dismiss the sheet and you are exactly where you were, with your document, search, or guide content untouched behind it.
+From About and the Research Guide, an external link opens in a built-in browser sheet rather than launching Safari; Source Explorer's NARA Catalog and finding-aid links open in your default browser. Dismiss the sheet and you are exactly where you were, with your document, search, or guide content untouched behind it. The sheet keeps to the site of the page it opened: a link to any other site opens in your default browser instead, and an email address in Mail, while the sheet stays where it was.
 
 ---
 
@@ -1280,7 +1280,7 @@ Open Settings with **⌘,**. The window is a sidebar of panes in four groups —
 | **System** | **iCloud Sync** | The **Sync Settings Across Devices** toggle — mirrors your word-cloud filters and stop lists, citation style, default document mode, and research-logging preference to your other devices; off by default. (Live sync status is in the main window's status bar, not here) |
 | | **Connections** | NARA Catalog and Zotero (17.3) |
 | | **Data & Recovery** | Getting your work out, diagnostics, and recovery (17.5) |
-| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, legal notices |
+| | **About** | Version, what FRUS is, the Research Guide, the quick start and this manual, attribution, and under **Legal** the full notices, the privacy policy and the support page (also in the Help menu) |
 
 ### 17.2 Volumes & Storage
 
@@ -1407,6 +1407,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Open Complete History window | My Research ▾ → Complete History…, or Research ▸ History |
 | Open the quick start | Help menu |
 | Open FRUS Research Guide | Help menu |
+| Open the privacy policy or the support page | Help menu |
 | Open Settings | ⌘, |
 
 There is no Back or Forward key equivalent: the toolbar's back button steps out of the window's navigation stack, and anything you read earlier is reachable from **Research ▸ History**.
