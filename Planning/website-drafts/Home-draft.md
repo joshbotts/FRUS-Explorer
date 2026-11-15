@@ -13,24 +13,24 @@
 > - **Revised 2026-11-03:** the hero's second link and the closing links go to the two quick starts, which did not exist when this was drafted, in place of the iOS manual alone; every link goes to this site's own pages.
 > - **Figures:** 553 volumes and 3.3 GB recounted from the bundle; 2.8× is the app's own estimate (`MacVolumesStorageHub`). See the review sheet.
 > - **Checked 2026-11-10 against 1.0 (1812)**, which the owner expects to ship as 1.0 (1861) with no further features: no sentence changed. 553 volumes, 3.3 GB and the system requirement recount the same, and the door to Editors’ Annotations, now the Browse grid's Annotations tile (#1884), is still “Browse lays out each kind of annotation”.
-> - **Owner's call:** “Coming soon to the App Store” and “It will be free” assume approval; App Review decides.
+> - **Owner's call:** “It will be free” assumes approval; App Review decides.
 
-**[Coming soon] Banner:** **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.
+**[Coming soon] Banner:** **In testing** — FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.
 
 ---
 
-**[Coming soon] Kicker:** Coming soon to the App Store
+**[Coming soon] Kicker:** Free · iPhone, iPad and Mac
 
 **[At launch] Kicker:** Free on the App Store
 
-# Search 553 volumes of the U.S. diplomatic record.
+# Research 165 years of U.S. diplomatic history.
 
-**[Coming soon]** FRUS Explorer is a free research app for iPhone, iPad and Mac, coming soon to the App Store. It puts the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
+**[Coming soon]** FRUS Explorer is a free research app for iPhone, iPad and Mac, now in final testing. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 
-**[At launch]** FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
+**[At launch]** FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 
 **Buttons and links:**
-- [Coming soon] button: Coming soon to the App Store
+- [Coming soon] button: Not yet on the App Store
 - [At launch] button: Download on the App Store (Apple's official badge)
 - [Take the tour](tour.html)
 - Quick start: [iPad and iPhone](quick-start-ios.html) · [Mac](quick-start-mac.html)
@@ -86,8 +86,8 @@ FRUS Explorer collects no data. What you read, search and write stays with you: 
 **Is this an official government app?**
 No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.
 
-**[Coming soon] When will it be out?**
-Soon. This page will link to the App Store as soon as the app is there.
+**[Coming soon] When can I get it?**
+It is in final testing before App Store review. This page will link to the App Store as soon as the app is there.
 
 **What does it cost?**
 [Coming soon] It will be free.
@@ -111,7 +111,7 @@ The quick start for [iPad and iPhone](quick-start-ios.html) or for [the Mac](qui
 **Which languages does it support?**
 English only, just like the FRUS series itself.
 
-## [Coming soon] Questions before it's out?
+## [Coming soon] Questions in the meantime?
 
 Email [help@frusexplorer.app](mailto:help@frusexplorer.app). If you're testing the app, the [Support page](support.html) has the quick starts and manuals, and tells you what to put in a bug report.
 

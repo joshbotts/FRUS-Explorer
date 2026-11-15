@@ -54,6 +54,20 @@ that day: [the next section](#what-the-site-holds) has what the site holds now.
 
 ## What the site holds
 
+**Paste again, after 15 November.** The site went live before the submission, so the pages stopped
+saying the app had been submitted or was coming soon. They now say it is in final testing and not
+yet on the App Store, and Home's headline is *Research 165 years of U.S. diplomatic history.*
+Three blocks change; paste each file over its block's contents:
+
+| Page | Block | File |
+|---|---|---|
+| Home | its one Code Block | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
+| Tour | section 1, the line at the top | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) |
+| Tour | section 5, the closing | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) |
+
+The tour's two large blocks, the four other pages and the footer do not change. The table below
+is what the site held on 10 November.
+
 On 10 November you signed in to Squarespace in the Claude app's browser pane, and a session looked
 at the site's pages in its own preview, at computer width and at phone width: all six, and then,
 after you had pasted four of them again, those four. At your word it entered the footer's Code
@@ -274,11 +288,11 @@ paste over the other.
 The launch version differs from the first in six places, and in nothing else:
 
 1. the coming-soon line at the top is gone;
-2. the label over the headline reads *Free on the App Store*, where it read *Coming soon to the App Store*;
+2. the label over the headline reads *Free on the App Store*, where it read *Free · iPhone, iPad and Mac*;
 3. the opening paragraph no longer says the app is coming soon;
-4. Apple's “Download on the App Store” badge, linked to the app's page there, stands where the outlined “Coming soon to the App Store” did;
-5. under *Questions*, *When will it be out?* is gone and *What does it cost?* answers *It's free.*;
-6. the last section is *Tell me what it can't answer yet*, where it was *Questions before it's out?*.
+4. Apple's “Download on the App Store” badge, linked to the app's page there, stands where the outlined “Not yet on the App Store” did;
+5. under *Questions*, *When can I get it?* is gone and *What does it cost?* answers *It's free.*;
+6. the last section is *Tell me what it can't answer yet*, where it was *Questions in the meantime?*.
 
 **The launch file is not ready yet.** Its badge has to link to the app's page on the App Store, an address the app has only once it is approved: `https://apps.apple.com/app/id` followed by the app's Apple ID, which App Store Connect shows under **App Information**. Until then the file holds `APP-STORE-ADDRESS` in its place, says *NOT READY* on its first line, and shows a notice in a dashed box at the top of the page, so a paste of it cannot pass for the finished page.
 
@@ -290,8 +304,8 @@ The badge itself is Apple's own artwork, loaded from Apple's marketing toolbox, 
 
 What to expect:
 
-- **The coming-soon version** opens with the coming-soon line in a tinted box, then *Coming soon to
-  the App Store* over the headline, *Search 553 volumes of the U.S. diplomatic record.*
+- **The coming-soon version** opens with the *In testing* line in a tinted box, then *Free ·
+  iPhone, iPad and Mac* over the headline, *Research 165 years of U.S. diplomatic history.*
 - Four columns under *What it does*, which become two and then one as the page narrows.
 - Nine questions under *Questions*, each with its answer showing.
 - Its links go to `/tour`, the two quick starts, `/privacy` and `/support`, so they work as those
@@ -324,7 +338,7 @@ that does not change at launch, the two small ones hold what does, and the film 
 **On release day, change two things.**
 
 1. **Section 1:** delete it.
-2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Coming soon to the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “Coming soon to the App Store” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
+2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “Not yet on the App Store” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
 
 <!-- /generated:tour -->
 
@@ -334,7 +348,7 @@ What to expect:
 - **The first large block** opens with *Take one question through 553 volumes* and a table of
   contents whose entries jump down the page, and ends with the dark band that holds the map.
 - **The second** opens at step 14 and ends with step 20.
-- **The closing** reads *Coming soon to the App Store*, with the two quick starts and the help
+- **The closing** reads *Not yet on the App Store*, with the two quick starts and the help
   address beside it.
 - Each screenshot is a link: a click opens it at full size in a new tab.
 - Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
@@ -352,7 +366,7 @@ What to expect:
 | **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy and the quick starts do not change. Support does not change either, unless the plain-language draft was folded in: then its *Coming soon* line comes out, and you paste it once more. |
 
 Making the site public is yours to do: it is the step that publishes it. So is the wording that
-assumes approval, *Coming soon to the App Store* and *It will be free*, which App Review decides.
+assumes approval, *It will be free*, which App Review decides.
 
 ## When a page changes later
 
@@ -378,12 +392,12 @@ this table:
 | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,485 bytes | `83dbaac0` |
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,972 bytes | `0b22502f` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
-| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,892 bytes | `814c41f7` |
-| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,036 bytes | `ccf6ec51`, not ready: it waits for the App Store address |
-| [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,036 bytes | `73a41228` |
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,951 bytes | `e9b8ba22` |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,052 bytes | `197820d9`, not ready: it waits for the App Store address |
+| [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 66,707 bytes | `4c04035b` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,826 bytes | `4671c5d0` |
-| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,139 bytes | `a65b3389` |
+| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,177 bytes | `8943be1b` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
 <!-- /generated:kit -->
@@ -403,7 +417,7 @@ only section 0 is new.
 
 | Block | Style | Content |
 |---|---|---|
-| Text | **Paragraph 2**, centred | **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac. |
+| Text | **Paragraph 2**, centred | **In testing** — FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store. |
 
 - Bold the first two words. Under **Edit Section**, give the section the smallest height and a background that sets it off, so it reads as a notice.
 - This takes the place of the Announcement Bar, which the Basic plan does not include (see *Three things the Basic plan changes*, above).
@@ -413,16 +427,16 @@ only section 0 is new.
 
 | Block | Style | Content |
 |---|---|---|
-| Text | **Heading 4** (a small label) | Coming soon to the App Store |
-| Text | **Heading 1** | Search 553 volumes of the U.S. diplomatic record. |
-| Text | **Paragraph 1** | FRUS Explorer is a free research app for iPhone, iPad and Mac, coming soon to the App Store. It puts the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history. |
+| Text | **Heading 4** (a small label) | Free · iPhone, iPad and Mac |
+| Text | **Heading 1** | Research 165 years of U.S. diplomatic history. |
+| Text | **Paragraph 1** | FRUS Explorer is a free research app for iPhone, iPad and Mac, now in final testing. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history. |
 | Button | Primary | **Take the tour** → `/tour` |
 | Text | **Paragraph 2** | Quick start: iPad and iPhone · Mac |
 | Text | **Paragraph 3** (small) | FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State. |
 
 *After pasting* — italic: *Foreign Relations of the United States*; link: “iPad and iPhone” → `/quick-start-ios`; link: “Mac” → `/quick-start-mac`.
 
-- The draft's outlined “Coming soon to the App Store” pill is left out on purpose: a Button block with no link looks clickable and does nothing, and the label above already says it.
+- The draft's outlined “Not yet on the App Store” pill is left out on purpose: a Button block with no link looks clickable and does nothing, and the label above already says it.
 
 #### 2. What it does: a heading, four columns, a link
 
@@ -494,7 +508,7 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 | Title | Description |
 |---|---|
 | Is this an official government app? | No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain. |
-| When will it be out? | Soon. This page will link to the App Store as soon as the app is there. |
+| When can I get it? | It is in final testing before App Store review. This page will link to the App Store as soon as the app is there. |
 | What does it cost? | It will be free. |
 | What do I need? | An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. |
 | Does it need the internet? | Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity. |
@@ -509,7 +523,7 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 
 #### 7. Contact: one Text block
 
-> **Questions before it's out?**
+> **Questions in the meantime?**
 >
 > Email help@frusexplorer.app. If you're testing the app, the Support page has the quick starts and manuals, and tells you what to put in a bug report.
 
@@ -519,9 +533,9 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 
 1. **Section 0:** delete it.
 2. **Hero label:** Free on the App Store
-3. **Hero paragraph:** FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
+3. **Hero paragraph:** FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 4. **Hero, above the button:** add an **Image** block with Apple's “Download on the App Store” badge, from Apple's marketing resources, linked to the app's App Store page. Use Apple's artwork as supplied.
-5. **Questions:** delete “When will it be out?”. Under “What does it cost?”, the answer becomes: It's free.
+5. **Questions:** delete “When can I get it?”. Under “What does it cost?”, the answer becomes: It's free.
 6. **Section 7:** the heading becomes **Tell me what it can't answer yet**, and the text: Bug reports, ideas and questions are all welcome. Email help@frusexplorer.app, or see the Support page for what to include.
 
 *After pasting* — italic: *Foreign Relations of the United States*; link: “help@frusexplorer.app” → `mailto:help@frusexplorer.app`; link: “Support page” → `/support`.

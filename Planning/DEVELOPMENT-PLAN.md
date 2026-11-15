@@ -11080,3 +11080,14 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - The check copy built from three commits on no branch (`fd454106`, `0148aeb0`, `527c4729`), which git collects in time.
 
 **Opened as #1930** on the owner's word of 2026-11-15 ("Open the PR"), against `v2` at `7918075f`, which had not moved since the branch was cut; not merged, auto-merge off.
+
+## Session 2026-11-15 — The website says the app is in final testing, and Home's headline names its whole range
+
+**What was asked.** The owner's words: "frusexplorer.app is now live, but misleading because the app has not been submitted to the app store. i also want to change the headline on home from "search 553 volumes of the U.S. diplomatic record" to something that better reflects the full range of capabilities of the app." Of the wordings offered: "Use the testing wording and headline 1". From `v2` at `db4f8236`.
+
+- **The banner** on Home and the Tour reads *In testing · FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.*, where it said the app had been submitted.
+- **Home:** the label over the headline is *Free · iPhone, iPad and Mac*; the headline is *Research 165 years of U.S. diplomatic history.*, where it was *Search 553 volumes of the U.S. diplomatic record.*; the opening paragraph says "now in final testing" and "all 553 volumes of the *Foreign Relations of the United States* series", in both versions; the button reads *Not yet on the App Store*; the FAQ asks *When can I get it?* and answers that the app is in final testing before App Store review; the last heading is *Questions in the meantime?*.
+- **The Tour's closing** is headed *Not yet on the App Store* and says the app "is in final testing. It will be free, when it is released, …"; its button reads *Not yet on the App Store*.
+- The Markdown mirrors, the review frame, the preview's shell and the plain-language Support draft follow. Only "will be free" still assumes approval.
+- `build_paste.py` rewrote four files: `home-coming-soon.txt`, `home-launch.txt` (its headline and paragraph; still not ready), `tour-coming-soon-line.txt` and `tour-closing-coming-soon.txt`. The guide opens *What the site holds* with the three blocks to paste again. Both scripts' `--check` pass, and `build_site.py` builds. Not seen on the site: the owner pastes.
+- **Opened as #1932** on the owner's word of 2026-11-15 ("Yes, open a PR"), against `v2` at `db4f8236`, on `claude/website-testing-wording`, ready for review, auto-merge off.

@@ -13,7 +13,7 @@
   Made by the app, Yours.
 -->
 
-**[Coming soon] Banner:** **Coming soon** — FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.
+**[Coming soon] Banner:** **In testing** — FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.
 
 **Parts menu:** § Editors · I Finding · II Managing · III Visualizing · IV Sharing · V Standing
 
@@ -543,11 +543,11 @@ Caption — Source: The app's own banner and actions, set as text.
 
 ---
 
-## [Coming soon] Coming soon to the App Store
+## [Coming soon] Not yet on the App Store
 
-FRUS Explorer will be free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
+FRUS Explorer is in final testing. It will be free, when it is released, for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
 
-- Button: Coming soon to the App Store
+- Button: Not yet on the App Store
 - Quick start: [iPad and iPhone](https://frusexplorer.app/quick-start-ios) · [Mac](https://frusexplorer.app/quick-start-mac)
 - Questions? help@frusexplorer.app
 

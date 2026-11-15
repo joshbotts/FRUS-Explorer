@@ -105,7 +105,7 @@ SHELL = """<!doctype html>
   <a class="brand" href="index.html"><img src="../tour/img/icon.png" alt="">FRUS Explorer</a>
   <nav class="site-nav" aria-label="Site">{nav}</nav>
 </div></header>
-<div class="soon-strip" data-show="soon"><div class="inner"><b>Coming soon</b><span>FRUS Explorer has been submitted to the App Store for iPhone, iPad and Mac.</span></div></div>
+<div class="soon-strip" data-show="soon"><div class="inner"><b>In testing</b><span>FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.</span></div></div>
 <main class="site-main"><div class="inner">
 {body}
 </div></main>
@@ -568,7 +568,7 @@ REVIEW = """<div class="sheet">
 <h2><span class="n">6</span>Your calls</h2>
 <ol class="calls">
   <li><b>The quick-start addresses.</b> <code>/quick-start-ios</code> and <code>/quick-start-mac</code> are still proposals (<code>Docs/Website/README.md</code>).</li>
-  <li><b>“Coming soon to the App Store” and “will be free”</b> on Home and the tour assume approval; App Review decides.</li>
+  <li><b>“Will be free”</b> on Home and the tour assumes approval; App Review decides. Since 2026-11-15 the pages say the app is in final testing and not yet on the App Store, which stays true however long review takes.</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
   <li><b>Folding the Support and Privacy drafts</b> into <code>Docs/</code>: then <code>Scripts/build_website_pages.py</code>, its <code>--check</code>, and the TEI sentence's row in the README.</li>
   <li><b>The tour's remaining screens</b>: steps 19 and 20 have no capture, and step 15 is a text slip.</li>
