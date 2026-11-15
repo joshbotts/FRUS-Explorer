@@ -206,7 +206,7 @@ Caption — Source: iPad, build 1861. The overall project question returns match
 ### 3. Choose how to browse among volumes
 *Browse · iPad*
 
-Explore the series by subseries, presidency, editor, archive, or the editors' annotations. You can also use lists of tagged people and topics as your starting point for finding relevant volumes. Your own volume scopes (sets of volumes you choose) and working corpora (sets of documents you save, see 8) sit beside them.
+Explore the series by subseries, presidency, editor, archive, or the editors' annotations. You can also use lists of tagged people and subjects as your starting point for finding relevant volumes. Your own volume scopes (sets of volumes you choose) and working corpora (sets of documents you save, see 8) sit beside them.
 
 **Administrations** groups volumes by the dates of their documents, not by when they were published. A volume that covers two presidencies shows up under both.
 
@@ -219,12 +219,12 @@ Caption — Source: iPad, build 1861. Browse ▸ Administrations ▸ Truman: 103
 ### 4. See similar documents
 *Related Documents · iPad*
 
-The **Related** tile ranks other documents by what they share with the one you're reading. It weighs eight measures: archival provenance, cross-references, closeness in date, corpus proximity (how near each other the editors placed two documents), shared people, shared topics, semantic similarity and similar wording. Look in this volume, this subseries or all volumes. You can change how much each measure counts.
+The **Related** tile ranks other documents by what they share with the one you're reading. It weighs eight measures: archival provenance, cross-references, closeness in date, corpus proximity (how near each other the editors placed two documents), shared people, shared subjects, semantic similarity and similar wording. Look in this volume, this subseries or all volumes. You can change how much each measure counts.
 
 *Limit:* Two of the measures, semantic similarity and similar wording, are experimental. Each result shows the similarity axis and measurement that surfaced it as related.
 
 - **From the editors** — Five of the measures come from the editorial annotation: archival provenance, cross-references, the dates the editors gave, corpus proximity and the people they tagged.
-- **From other records** — Shared topics come from the Office's subject lists.
+- **From other records** — Shared subjects come from the Office's subject lists.
 - **Made by the app** — Semantic similarity and similar wording are worked out by the app, and marked experimental.
 
 **Screen:** `img/related.jpg`
@@ -260,7 +260,7 @@ The app tracks your highlights, notes, tags, projects and collections so they pe
 
 Documents appear as the Office of the Historian published them, with working footnotes, cross-references and links to people. You can also add your own annotations: highlighting in four colors, your own notes, and tags you create.
 
-The Research rail next to the text holds **Cite**, **Word Cloud**, **Sources**, **Graph**, **Related**, **On the Map** and **Share**. Below them are the document's topics and summary along with your notes, your tags, and the custom collections that include the document.
+The Research rail next to the text holds **Cite**, **Word Cloud**, **Sources**, **Graph**, **Related**, **On the Map** and **Share**. Below them are the document's subjects and summary along with your notes, your tags, and the custom collections that include the document.
 
 Summaries come from Apple Intelligence on your device. You can generate a summary as you read each document or start a batch run over a volume, a tag, a saved search, or a range of years. A large run takes hours. Any summary can then become the start of a note, which you correct and finish in your own words.
 

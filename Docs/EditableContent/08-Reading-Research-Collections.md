@@ -445,84 +445,84 @@ Document tools
 <!-- END SOURCE: researchRail.tools.info.heading -->
 
 #### Cite — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1071–1071 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1072–1072 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
 
 Cite
 
 <!-- END SOURCE: researchRail.tile.cite -->
 
 #### Cite — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1072–1073 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1073–1074 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
 
 Cite this document — copy a formatted citation or export BibTeX/RIS
 
 <!-- END SOURCE: researchRail.tile.cite.help -->
 
 #### Word Cloud — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1078–1078 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1079–1079 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
 
 Word Cloud
 
 <!-- END SOURCE: researchRail.tile.wordCloud -->
 
 #### Word Cloud — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1079–1080 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1080–1081 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
 
 Show a word cloud of this document’s most frequent terms
 
 <!-- END SOURCE: researchRail.tile.wordCloud.help -->
 
 #### Sources — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1085–1085 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1086–1086 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
 
 Sources
 
 <!-- END SOURCE: researchRail.tile.sources -->
 
 #### Sources — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1086–1087 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1087–1088 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
 
 Resolve this document’s source note in the NARA Catalog or RG-59 records
 
 <!-- END SOURCE: researchRail.tile.sources.help -->
 
 #### Graph — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1092–1092 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1093–1093 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
 
 Graph
 
 <!-- END SOURCE: researchRail.tile.graph -->
 
 #### Graph — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1093–1094 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1094–1095 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
 
 Show this document’s cross-reference graph
 
 <!-- END SOURCE: researchRail.tile.graph.help -->
 
 #### Related — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1099–1099 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1100–1100 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
 
 Related
 
 <!-- END SOURCE: researchRail.tile.related -->
 
 #### Related — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1100–1101 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1101–1102 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
 
 Find related documents by archival provenance, cross-references, date, and shared people
 
 <!-- END SOURCE: researchRail.tile.related.help -->
 
 #### Share — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1106–1106 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1107–1107 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
 
 Share
 
 <!-- END SOURCE: researchRail.tile.share -->
 
 #### Share — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1107–1108 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1108–1109 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
 
 Share or export this document
 
@@ -593,28 +593,28 @@ mistag the app went on quoting the old reading — and the Undo beside it put th
 into the index. Both now read FRUS's parse as it stands.
 
 #### When FRUS adopts the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1189–1190 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1190–1191 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
 
 FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.
 
 <!-- END SOURCE: panel.classification.overrideNowRedundant -->
 
 #### FRUS's own tagging, beside the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1192–1193 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1193–1194 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
 
 FRUS tags this as %@ — reclassified by you.
 
 <!-- END SOURCE: panel.classification.overridden %@ -->
 
 #### The inline noun for an editorial note
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1195–1196 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1196–1197 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
 
 an editorial note
 
 <!-- END SOURCE: panel.classification.note.inline -->
 
 #### The inline noun for a document
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1197–1198 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1198–1199 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
 
 a document
 
@@ -1555,7 +1555,7 @@ corpus). Softening the "cannot see this change" sentence would turn a disclosed 
 silent inconsistency.*
 
 #### The override confirmation warning
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1227–1228 | key: classification.override.warning.v2 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1228–1229 | key: classification.override.warning.v2 -->
 
 The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search.
 
@@ -1759,7 +1759,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, the notice for a link that only works inside a document, and the line a volume's page in Browse shows when a page link opened it.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3557–3558 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3558–3559 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2184,22 +2184,23 @@ This volume was side-loaded, not downloaded from the published catalogue. The ap
 
 <!-- END SOURCE: citation.sideloaded.note -->
 
-#### Detected automatically from the text, not editorial subject…
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.subjectsAccordion | lines: 419–420 | key: panel.subjects.caveat -->
+#### Most distinctive first. (after the subject data's caption)
+<!-- The app shows the subject data's caption (`subjects.caption`, 07-Search-and-Browse.md §16.4) before this sentence, where the old account stood (#1905). -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.subjectsAccordion | lines: 420–421 | key: panel.subjects.caveat -->
 
-Detected automatically from the text, not editorial subject headings — so some are wrong. Most distinctive first.
+Most distinctive first.
 
 <!-- END SOURCE: panel.subjects.caveat -->
 
 #### Apple Intelligence is not available on this device, so new…
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 559–560 | key: panel.summary.unavailable | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 560–561 | key: panel.summary.unavailable | shared: iOS only -->
 
 Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud.
 
 <!-- END SOURCE: panel.summary.unavailable -->
 
 #### Ranked from the first %1$@ of %2$@ documents that share…
-<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.poolCut | lines: 398–399 | key: related.poolCut %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.poolCut | lines: 400–401 | key: related.poolCut %@ %@ -->
 
 Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them.
 
@@ -2222,7 +2223,7 @@ Shared words compared as printed: this device’s language analysis isn’t redu
 <!-- END SOURCE: related.sharedTerms.printedForms.note -->
 
 #### At least %1$@ documents in %2$@ you have not downloaded…
-<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 423–424 | key: related.offIndex.caption.capped %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 425–426 | key: related.offIndex.caption.capped %@ %@ -->
 
 *The opening sentence of Related Documents' Beyond your library section when the scan stopped at its cap of 4,096 documents, so the count is a floor: "At least 4,096 documents in 12 volumes you have not downloaded read as close…". `%1$@` is the number of documents and `%2$@` the volumes with their noun, "1 volume" or "12 volumes". Until #1618 the two numbers were not grouped and this read "At least 4096 documents".*
 
@@ -2231,7 +2232,7 @@ At least %1$@ documents in %2$@ you have not downloaded read as close to this on
 <!-- END SOURCE: related.offIndex.caption.capped %@ %@ -->
 
 #### %1$@ document in %2$@ you have not downloaded reads as…
-<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 429–430 | key: related.offIndex.caption.one %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 431–432 | key: related.offIndex.caption.one %@ %@ -->
 
 *The same sentence for exactly one document: "1 document in 1 volume you have not downloaded reads as close…". Until #1618 there was one form for every count, and it read "1 documents in 1 volumes … read as close".*
 
@@ -2240,7 +2241,7 @@ At least %1$@ documents in %2$@ you have not downloaded read as close to this on
 <!-- END SOURCE: related.offIndex.caption.one %@ %@ -->
 
 #### %1$@ documents in %2$@ you have not downloaded read as…
-<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 431–432 | key: related.offIndex.caption.many %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 433–434 | key: related.offIndex.caption.many %@ %@ -->
 
 *The same sentence for any other count: "94 documents in 19 volumes you have not downloaded read as close…". `%2$@` is the volumes with their noun, so many documents in one volume read "1,204 documents in 1 volume".*
 

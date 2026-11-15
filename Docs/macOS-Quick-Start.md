@@ -113,7 +113,7 @@ The **Research rail** is the panel beside the document, for everything you do *a
 | **On the Map** | A map of the series that places documents by their language, centered here |
 | **Share** | Sending the document to Zotero, and sharing its citation |
 
-Below the tiles, **Topics** lists the subjects detected in the text (when there are any), **Summary** writes an on-device AI summary, and **Notes**, **Tags** and **Collections** are where you add a note, a tag, or the document to a collection. The **ⓘ** at the top of the rail explains each tile.
+Below the tiles, **Subjects** lists the document's subjects, from the Office of the Historian's experimental subject data (when there are any), **Summary** writes an on-device AI summary, and **Notes**, **Tags** and **Collections** are where you add a note, a tag, or the document to a collection. The **ⓘ** at the top of the rail explains each tile.
 
 ## 7. Cite a Document
 

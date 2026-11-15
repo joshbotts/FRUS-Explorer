@@ -120,7 +120,7 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1224–1225 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1225–1226 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1875–1877 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1876–1878 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1880–1882 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1881–1883 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -441,21 +441,23 @@ Source notes parsed for %lld of %lld matches; %lld name a record group.
 
 ---
 
-#### Detected-topic facet — footer
+#### Subject facet — footer
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 958–959 | key: search.subject.facet.footer -->
+<!-- The app shows the subject data's caption (`subjects.caption`, §16.4) before this sentence, where the old account stood (#1905). -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 959–960 | key: search.subject.facet.footer -->
 
-Experimental. These topics are experimental enrichment data, not editorial subject headings reviewed as part of the FRUS publication process, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
+Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
 
 <!-- END SOURCE: search.subject.facet.footer -->
 
 ---
 
-#### Detected-topic facet — picker footer
+#### Subject facet — picker footer
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 1486–1487 | key: search.subject.facet.picker.footer -->
+<!-- The app shows the subject data's caption (`subjects.caption`, §16.4) before this sentence, where the old account stood (#1905). -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 1487–1488 | key: search.subject.facet.picker.footer -->
 
-Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer topics, browse the Topic index.
+A volume appears when any document in it carries the subject — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer subjects, browse the Subject index.
 
 <!-- END SOURCE: search.subject.facet.picker.footer -->
 
@@ -897,13 +899,13 @@ Opening a result does not hide it while Log Research Sessions is off in Settings
 
 <!-- END SOURCE: search.checklist.hiddenBanner.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 798–799 | key: search.corpus.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 799–800 | key: search.corpus.footer -->
 
 A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings.
 
 <!-- END SOURCE: search.corpus.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 868–869 | key: search.corpus.noneIndexed %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 869–870 | key: search.corpus.noneIndexed %@ -->
 
 *Interpolated with the corpus name.*
 
@@ -1179,7 +1181,7 @@ Reclaimed %@.
 
 <!-- END SOURCE: settings.storage.compact.done %@ -->
 
-<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.cohort | lines: 381–382 | key: related.why.cohort %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.cohort | lines: 383–384 | key: related.why.cohort %@ %@ -->
 
 *The archival “why related” chip (#644). Interpolated with the container name and its size, which is
 grouped since #1586 (“1 of 1,063”).
@@ -1710,7 +1712,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1415–1416 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1416–1417 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1991,7 +1993,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4325–4325, 4848–4848 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4326–4326, 4849–4849 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -2000,14 +2002,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 834–834 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 835–835 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 841–842 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 842–843 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -2016,7 +2018,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2633–2633 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2634–2634 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -2570,45 +2572,60 @@ Volumes filed by the administration their documents cover — dated to each term
 
 ### 16.4 Subjects
 
-#### The coverage statement
-<!-- The two disclosures are the caption: counts describe all 553 volumes while search reaches
-     only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
-     sentence the feature owes the reader and must survive editing. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 485–486 | key: subjects.index.coverage.v2 %lld %lld -->
+#### The subject data's caption, on every subject surface (#1905)
+<!-- One text under one key, which the app joins to each subject surface's own sentence where that
+     surface's old account of the data stood: before it on the Research rail (§18.10) and in Search's
+     two subject footers (§7.3); after it in the coverage statement below, on a subject's sheet and
+     under its archival profile (§18.7); alone in the facet panel's Subjects section (§18.1). It
+     goes too where subjects showed with no account: alone under a volume's Top subjects, and after
+     the person sheet's volume-level note (§18.8), on the owner's later word. The owner set the
+     text on 2026-11-15 (the plan of record's decision 135): it credits the Office of the
+     Historian and does not imply that the Office has reviewed the data or approved its editorial
+     accuracy. "So some are wrong" is a clause the feature owes the reader and must survive editing. -->
+<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectProfilesStore.swift | SubjectDataCaption.text | lines: 78–79 | key: subjects.caption -->
 
-%1$lld assigned topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are drawn from experimental enrichment data, not editorial subject headings, so some are wrong.
+Experimental subject data from the Office of the Historian, not published on history.state.gov. Subjects are matched to documents by name in the text; they are not editorial headings from the FRUS publication process, so some are wrong.
+
+<!-- END SOURCE: subjects.caption -->
+
+#### The coverage statement
+<!-- The count of subjects first (decision 135), then the disclosure that counts describe all 553
+     volumes while search reaches only this device's index. The app shows the caption after it. -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 489–490 | key: subjects.index.coverage.v2 %lld %lld -->
+
+%1$lld subjects across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device.
 
 <!-- END SOURCE: subjects.index.coverage.v2 %lld %lld -->
 
-#### The topic-area chip (#1365)
-<!-- Shown above the index when it is narrowed to one topic area ("All Cold War topics" on a
-     topic's sheet). Four forms, chosen in code: the first two when every topic in the area is
+#### The subject-area chip (#1365)
+<!-- Shown above the index when it is narrowed to one subject area ("All Cold War subjects" on a
+     subject's sheet). Four forms, chosen in code: the first two when every subject in the area is
      listed, the last two when the reader's search hides some of them — before #1365 the chip
      counted the area alone and read "6 topics" over a list of one. Placeholders: `%1$@` (or the
      bare `%@`) is the area's name, `%2$@` the number listed or the area's size, `%3$@` the area's
-     size; the numbers arrive already grouped. The "one" forms are for an area of ONE topic, so
-     they must keep "1 topic" singular — "0 of 1 topic" is what the third form prints. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 317–318 | key: subjects.index.groupFilter.all.one %@ -->
+     size; the numbers arrive already grouped. The "one" forms are for an area of ONE subject, so
+     they must keep "1 subject" singular — "0 of 1 subject" is what the third form prints. -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 318–319 | key: subjects.index.groupFilter.all.one %@ -->
 
-Topic area: %@ — 1 topic
+Subject area: %@ — 1 subject
 
 <!-- END SOURCE: subjects.index.groupFilter.all.one %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 320–321 | key: subjects.index.groupFilter.all.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 321–322 | key: subjects.index.groupFilter.all.many %@ %@ -->
 
-Topic area: %1$@ — %2$@ topics
+Subject area: %1$@ — %2$@ subjects
 
 <!-- END SOURCE: subjects.index.groupFilter.all.many %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 325–326 | key: subjects.index.groupFilter.some.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 326–327 | key: subjects.index.groupFilter.some.one %@ %@ -->
 
-Topic area: %1$@ — %2$@ of 1 topic
+Subject area: %1$@ — %2$@ of 1 subject
 
 <!-- END SOURCE: subjects.index.groupFilter.some.one %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 328–329 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 329–330 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
 
-Topic area: %1$@ — %2$@ of %3$@ topics
+Subject area: %1$@ — %2$@ of %3$@ subjects
 
 <!-- END SOURCE: subjects.index.groupFilter.some.many %@ %@ %@ -->
 
@@ -2673,42 +2690,47 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1119–1120 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1120–1121 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1617–1618 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1618–1619 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
 <!-- END SOURCE: search.filter.advanced.help -->
 
 #### This breakdown stopped at \(…) of \(…) values.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 850–851 | key: facets.bound -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 851–852 | key: facets.bound -->
 
 This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values.
 
 <!-- END SOURCE: facets.bound -->
 
-#### Subjects detected for \(…) of \(…) matches.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1107–1108 | key: facets.subjects.coverage -->
+#### Subject data covers \(…) of \(…) matches.
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1108–1109 | key: facets.subjects.coverage -->
 
-Subjects detected for \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
+Subject data covers \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
 
 <!-- END SOURCE: facets.subjects.coverage -->
 
 #### Detected topics from the Office of the Historian, matched…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1115–1116 | key: facets.subjects.provenance -->
+
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: #1905 put the subject data's one
+> caption, `subjects.caption` (§16.4), where this account stood in the facet panel's Subjects section.
+> Kept so the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | key: facets.subjects.provenance -->
 
 Detected topics from the Office of the Historian, matched by name — not the volumes’ own markup.
 
 <!-- END SOURCE: facets.subjects.provenance -->
 
 #### Ranks the collections behind all %lld volumes these matches…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1205–1206 | key: facets.provenance.openProfile.detail %lld -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1207–1208 | key: facets.provenance.openProfile.detail %lld -->
 
 Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves.
 
@@ -2722,49 +2744,49 @@ Ranks the collections behind all %lld volumes these matches sit in — whole vol
 <!-- END SOURCE: search.empty.severalEmpty -->
 
 #### History limits results to the 1 document you’ve collected…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 368–369 | key: search.projectscope.footer.history.one -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 369–370 | key: search.projectscope.footer.history.one -->
 
 History limits results to the 1 document you’ve collected, annotated, or opened in this project.
 
 <!-- END SOURCE: search.projectscope.footer.history.one -->
 
 #### History limits results to the \(…) documents you’ve…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 370–371 | key: search.projectscope.footer.history.other -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 371–372 | key: search.projectscope.footer.history.other -->
 
 History limits results to the \(n) documents you’ve collected, annotated, or opened in this project.
 
 <!-- END SOURCE: search.projectscope.footer.history.other -->
 
 #### Choose History to search only what you’ve engaged, or Focus…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 394–395 | key: search.projectscope.footer.off -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 395–396 | key: search.projectscope.footer.off -->
 
 Choose History to search only what you’ve engaged, or Focus to discover across the volumes your project’s subjects define.
 
 <!-- END SOURCE: search.projectscope.footer.off -->
 
 #### Documents without a parseable date are excluded. Documents…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.dateRangeSection | lines: 421–422 | key: search.daterange.help -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.dateRangeSection | lines: 422–423 | key: search.daterange.help -->
 
 Documents without a parseable date are excluded. Documents with only a year or month in their dateline are treated as January 1 of that period and may appear as false positives near range boundaries.
 
 <!-- END SOURCE: search.daterange.help -->
 
 #### Counts are how many of your closest matches carry that tag.
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.countFooterText | lines: 628–629 | key: search.usertags.countFooter.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.countFooterText | lines: 629–630 | key: search.usertags.countFooter.meaning -->
 
 Counts are how many of your closest matches carry that tag.
 
 <!-- END SOURCE: search.usertags.countFooter.meaning -->
 
 #### Footer — Applying a scope fills the volume picker with its indexed…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.customScopeSection | lines: 768–769 | key: search.scope.custom.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.customScopeSection | lines: 769–770 | key: search.scope.custom.footer -->
 
 Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings.
 
 <!-- END SOURCE: search.scope.custom.footer -->
 
 #### Subseries and volumes combine: results include every…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.volumeScopeFooter | lines: 1093–1094 | key: search.scope.volume.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.volumeScopeFooter | lines: 1094–1095 | key: search.scope.volume.footer -->
 
 Subseries and volumes combine: results include every document in the chosen subseries plus any individually chosen volumes. Only indexed volumes are listed.
 
@@ -2845,14 +2867,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1521–1522 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1535–1536 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1523–1524 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1537–1538 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 
@@ -2959,42 +2981,42 @@ The closest match of a Meaning search
 <!-- END SOURCE: browser.corpora.meaning.one -->
 
 #### Tooltip — Browse an alphabetical index of all people mentioned across…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 324–325 | key: browser.corpus.people.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 325–326 | key: browser.corpus.people.help -->
 
 Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear
 
 <!-- END SOURCE: browser.corpus.people.help -->
 
-#### Tooltip — Browse an index of the topics detected across the whole…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 355–356 | key: browser.corpus.subjects.help -->
+#### Tooltip — Browse an index of the subjects across the whole series…
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 356–357 | key: browser.corpus.subjects.help -->
 
-Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
+Browse an index of the subjects across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
 
 <!-- END SOURCE: browser.corpus.subjects.help -->
 
 #### Tooltip — One catalogue of every volume — search it, or arrange it by…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 412–413 | key: browser.corpus.tile.catalogue.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 413–414 | key: browser.corpus.tile.catalogue.help -->
 
 One catalogue of every volume — search it, or arrange it by title, publication year, era, or length
 
 <!-- END SOURCE: browser.corpus.tile.catalogue.help -->
 
 #### Tooltip — Volumes filed by the kind of file their documents came…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 494–495 | key: browser.corpus.tile.archives.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 495–496 | key: browser.corpus.tile.archives.help -->
 
 Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on
 
 <!-- END SOURCE: browser.corpus.tile.archives.help -->
 
 #### Tooltip — Documents grouped by the language they share, computed from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 513–514 | key: browser.corpus.tile.clusters.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 514–515 | key: browser.corpus.tile.clusters.help -->
 
 Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings
 
 <!-- END SOURCE: browser.corpus.tile.clusters.help -->
 
 #### Tooltip — Fixed document sets captured from Search results or the…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 592–593 | key: browser.corpus.corpora.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 593–594 | key: browser.corpus.corpora.help -->
 
 Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume
 
@@ -3014,17 +3036,18 @@ Volume sets you assemble yourself, most recently edited first. Scopes also narro
 
 <!-- END SOURCE: browser.scopes.coverage -->
 
-#### Empty state — The detected-topic index did not load, so topics cannot be…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 519–520 | key: subjects.index.unavailable.message -->
+#### Empty state — The subject index did not load, so subjects cannot be…
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 523–524 | key: subjects.index.unavailable.message -->
 
-The detected-topic index did not load, so topics cannot be browsed. Everything else in the app is unaffected.
+The subject index did not load, so subjects cannot be browsed. Everything else in the app is unaffected.
 
 <!-- END SOURCE: subjects.index.unavailable.message -->
 
 #### Footer — The first three figures describe the whole series…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 617–618 | key: subjects.detail.footer -->
+<!-- The app shows the subject data's caption (`subjects.caption`, §16.4) after this sentence, where the old account stood (#1905). -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 622–623 | key: subjects.detail.footer -->
 
-The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings.
+The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return.
 
 <!-- END SOURCE: subjects.detail.footer -->
 
@@ -3056,24 +3079,25 @@ Archival Neighbors — no documents in your indexed volumes cite this collection
 
 <!-- END SOURCE: browser.sources.archivalNeighbors.zero.accessibility -->
 
-#### No subjects detected for this volume yet. The topic data is…
-<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectsChips.body | lines: 75–76 | key: browser.volume.subjects.none -->
+#### No subjects for this volume yet. The Office of the Historian’s…
+<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectsChips.body | lines: 81–82 | key: browser.volume.subjects.none -->
 
-No subjects detected for this volume yet. The topic data is the Office of the Historian's own subject export, and it does not cover this volume.
+No subjects for this volume yet. The Office of the Historian’s experimental subject data, not published on history.state.gov, does not cover it.
 
 <!-- END SOURCE: browser.volume.subjects.none -->
 
 #### Ranks the collections and file series the %lld volumes…
-<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectVolumesSheet.archivalProfileSection | lines: 339–340 | key: browser.volume.subjectVolumes.archival.footer %lld -->
+<!-- The app shows the subject data's caption (`subjects.caption`, §16.4) after this sentence, where the old account stood (#1905). -->
+<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectVolumesSheet.archivalProfileSection | lines: 357–358 | key: browser.volume.subjectVolumes.archival.footer %lld -->
 
-Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them — and the subjects themselves are detected automatically, not editorial headings.
+Ranks the collections and file series the %lld volumes covering this subject draw on. The scope is whole volumes, not the documents about this subject inside them.
 
 <!-- END SOURCE: browser.volume.subjectVolumes.archival.footer %lld -->
 
-#### Footer — Shows this topic’s reach across the whole series, and finds…
-<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectVolumesSheet.subjectExplorerSection | lines: 363–364 | key: browser.volume.subjectVolumes.explore.footer -->
+#### Footer — Shows this subject’s reach across the whole series, and finds…
+<!-- SOURCE: FRUSExplorer/Browser/VolumeSubjectsView.swift | VolumeSubjectVolumesSheet.subjectExplorerSection | lines: 381–382 | key: browser.volume.subjectVolumes.explore.footer -->
 
-Shows this topic’s reach across the whole series, and finds the documents on it that you have indexed.
+Shows this subject’s reach across the whole series, and finds the documents on it that you have indexed.
 
 <!-- END SOURCE: browser.volume.subjectVolumes.explore.footer -->
 
@@ -3145,35 +3169,36 @@ until \(end, format: plain)
 <!-- END SOURCE: people.era.until -->
 
 #### Volume-level: subjects characteristic of the volumes where…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 711–712 | key: people.detail.subjects.note -->
+<!-- The app shows the subject data's caption (`subjects.caption`, §16.4) after this sentence (#1905). -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 712–713 | key: people.detail.subjects.note -->
 
 Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags.
 
 <!-- END SOURCE: people.detail.subjects.note -->
 
 #### This person has no indexed document mentions to open — they…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 747–748 | key: people.detail.findMentions.noMentions -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 748–749 | key: people.detail.findMentions.noMentions -->
 
 This person has no indexed document mentions to open — they appear only in a volume’s front-matter person list.
 
 <!-- END SOURCE: people.detail.findMentions.noMentions -->
 
 #### Footer — Use this when one person appears under different names and…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 795–796 | key: people.detail.mergeManual.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 796–797 | key: people.detail.mergeManual.footer -->
 
 Use this when one person appears under different names and the app kept them apart. The change syncs across your devices and can be undone from Corrections.
 
 <!-- END SOURCE: people.detail.mergeManual.footer -->
 
 #### “%1$@” and “%2$@” will become a single identity. Merging is…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1029–1030 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1030–1031 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 “%1$@” and “%2$@” will become a single identity. Merging is transitive — if you later merge a third record with either one, all three become one identity. You can undo this from Corrections.
 
 <!-- END SOURCE: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 #### These records match different entries in the bundled…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1033–1034 | key: people.detail.mergeConfirm.authorityWarning -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1034–1035 | key: people.detail.mergeConfirm.authorityWarning -->
 
 These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.
 

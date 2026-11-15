@@ -67,7 +67,7 @@ The app has five tabs. On iPad they sit in a tab strip at the top of the screen,
 
 | Tab | What it is for |
 |-----|----------------|
-| **Browse** | The series by subseries, volume and document, and by people, topics, administrations, editors, what the editors annotated, archives and clusters |
+| **Browse** | The series by subseries, volume and document, and by people, subjects, administrations, editors, what the editors annotated, archives and clusters |
 | **Search** | Full-text search of the volumes you have indexed, and search by meaning |
 | **Research** | Everything you have marked — notes, highlights, tags — plus your reading history and the FRUS Research Guide |
 | **Collections** | Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word |
@@ -120,7 +120,7 @@ The second button at the top right of a document (a page with a magnifying glass
 | **On the Map** | A map of the series that places documents by their language, centered here |
 | **Share** | Sending the document to Zotero, and sharing its citation |
 
-Below the tiles, **Topics** lists the subjects detected in the text (when there are any), **Summary** writes an on-device AI summary, and **Notes**, **Tags** and **Collections** are where you add a note, a tag, or the document to a collection. The **ⓘ** in the rail's header explains each tile, and the button beside it opens the document in a window of its own.
+Below the tiles, **Subjects** lists the document's subjects, from the Office of the Historian's experimental subject data (when there are any), **Summary** writes an on-device AI summary, and **Notes**, **Tags** and **Collections** are where you add a note, a tag, or the document to a collection. The **ⓘ** in the rail's header explains each tile, and the button beside it opens the document in a window of its own.
 
 ## 7. Cite a Document
 
