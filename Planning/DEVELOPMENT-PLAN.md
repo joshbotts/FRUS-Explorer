@@ -10947,5 +10947,8 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - N1's lookup with the NARA key.
 - Every row's build.
 - The issues' hand-over notes for FRUS Explorer Light, which L16 fills in after its merge.
-- Whether to file each review row's findings as one issue labelled *before App Store submission* (Q4).
-- No issue was filed and no pull request opened.
+- The review's rows were filed on the owner's word, the same day ("File the fix groups and open the PR"; the plan's decision 127). Each is labelled *before App Store submission*, and each body is the row's brief:
+  - L17 is #1917, L18 #1918, L19 #1919, L20 #1920 and L21 #1921.
+  - The issues' bodies write every code attribute in backticks, so that none mentions a GitHub user.
+  - Each ends with the session's footer.
+- This change's pull request was opened the same day, on the same word.
