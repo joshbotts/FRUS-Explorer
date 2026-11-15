@@ -365,6 +365,8 @@ def home_blocks():
                       source, flags=re.S)
         body = body.replace(' data-show="{}"'.format(state), "")
         body = re.sub(r'href="([^"]*)"', lambda m: 'href="{}"'.format(site_path(m.group(1))), body)
+        # The app's icon on the hero, served from the tour's image folder on GitHub as its screens are.
+        body = body.replace('src="../tour/img/', 'src="' + TOUR_IMAGES)
         note = ""
         if state == "launch":
             badge = ('<a class="pg-badge-link" href="{}"><img src="{}" alt="Download on the App Store" '
@@ -377,7 +379,7 @@ def home_blocks():
                 note = "NOT READY: {} stands where the app's App Store address goes".format(
                     APP_STORE_PLACEHOLDER)
                 body = _HOME_UNREADY + body
-        for leftover in ("data-show", "<script", "<iframe", "<button", '.html"', 'class="pg-badge"'):
+        for leftover in ("data-show", "<script", "<iframe", "<button", '.html"', 'class="pg-badge"', 'src="../'):
             if leftover in body:
                 raise OutOfShape("home.html: {!r} is left in its {} version".format(leftover, version))
         payload = '{}\n<div class="frus-home">\n\n{}\n\n</div>'.format(style, body.strip("\n"))

@@ -84,7 +84,7 @@ FRUS is an edited documentary history series produced by the State Department's 
 
 Here is one document, with its editorial annotation labeled: the record of Secretary of State George Marshall's meeting with Stalin at the Kremlin on April 15, 1947, five weeks into a foreign ministers' conference in Moscow that ended without agreement on Germany or Austria.
 
-*The document (left column on the page) is quoted from the volume and is not edited here. Each labeled note (right column) follows it.*
+*On the page, the left column shows crops of the Mac reader, one per label (`tour/img/anat-a.png` to `anat-g2.png`, captured 15 November 2026). The text below quotes what each crop shows, and is not edited here. Each labeled note (right column) follows it.*
 
 **[A] Document:** *Memorandum of Conversation*⁶¹
 
@@ -109,9 +109,6 @@ The original classification marking, place and date. Brackets show what the edit
 **C · People**
 In half of the volumes in the series, and nearly all covering 1955 and later, editors tagged the key people named in the text and included a list of persons in the front matter to describe the roles they held: Stalin is “Chairman of the Council of Ministers of the Soviet Union.” Here every one of the seven meeting participants is tagged. The editors assembled these lists volume by volume; the app rolls those volume-level lists and tags into consolidated identities.
 *In the app:* Person cards, the People list, Person Analytics and the person filter in Search. Each volume's page says whether its editors tagged its people.
-
-**Document (later passage, no label):**
-> Turning to the Conference, Stalin stated that he did not think the situation was so tragic, and he was more optimistic than Mr. Marshall. After all, these were only the first skirmishes and brushes of reconnaissance forces on this question. …
 
 **[D] Document:** ▤ `740.00119 Council/4–1547`
 
@@ -547,7 +544,7 @@ Caption — Source: The app's own banner and actions, set as text.
 
 FRUS Explorer is in final testing. It will be free, when it is released, for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.
 
-- Button: Not yet on the App Store
+- Button: In final testing
 - Quick start: [iPad and iPhone](https://frusexplorer.app/quick-start-ios) · [Mac](https://frusexplorer.app/quick-start-mac)
 - Questions? help@frusexplorer.app
 
