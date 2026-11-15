@@ -78,7 +78,7 @@ you say so:
 | Keywords | [paste/keywords.txt](paste/keywords.txt) | 92 | 100 bytes |
 | Description | [paste/description.txt](paste/description.txt) | 3,423 | 4,000 characters |
 | What's New in This Version (a first version has no such field) | [paste/whats-new.txt](paste/whats-new.txt) | 169 | 4,000 characters |
-| App Review Information: Notes | [paste/review-notes.txt](paste/review-notes.txt) | 3,911 | 4,000 bytes |
+| App Review Information: Notes | [paste/review-notes.txt](paste/review-notes.txt) | 3,990 | 4,000 bytes |
 
 <!-- end of the generated field table -->
 
