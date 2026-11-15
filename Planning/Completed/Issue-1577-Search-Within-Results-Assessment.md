@@ -1,6 +1,6 @@
 # Issue #1577, "Combined FTS/semantic search": assessment
 
-> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). Built: #1577's lanes 4 to 7 merged on 2026-10-18 as #1715, #1717,
+> **Moved to `Completed/` on 2026-10-21** (`Plan-Of-Record-2026-10-21.md`, decision 98). Built: #1577's lanes 4 to 7 merged on 2026-10-18 as #1715, #1717,
 > #1718 and #1720 (A5 of `Plan-Of-Record-2026-10-14.md`, beside this file), and the issue closed that night.
 
 Assessed 2026-10-07 at v2 f384d2d5 (build 49, index version 65). Read from the code; nothing was built or run.

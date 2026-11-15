@@ -1,6 +1,6 @@
 # C-0: the falsifier the L-8 assessment put in front of the CLI
 
-> **Moved to `Completed/` on 2026-10-21** (`../Plan-Of-Record-2026-10-21.md`, decision 98). C-0 was run and judged on 2026-08-31. `../Agentic-Loop-Development-Plan.md` and
+> **Moved to `Completed/` on 2026-10-21** (`Plan-Of-Record-2026-10-21.md`, decision 98). C-0 was run and judged on 2026-08-31. `../Agentic-Loop-Development-Plan.md` and
 > `../Agentic-Guide-Revisions-2026-09-04.md` cite it here now. Its run folder, `../c0-falsifier/`, stays at the
 > Planning root, where `CodingStandardsAuditTests.brokenSqliteInvocationsAreMarked` reads it.
 

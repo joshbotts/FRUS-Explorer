@@ -1,6 +1,6 @@
 # FRUS Explorer — Development Plan: the session log, 2026-06-09 to 2026-09-30
 
-**Status: ARCHIVED 2026-10-21.** These are the session log's entries from 2026-06-09 to 2026-09-30, split from `../DEVELOPMENT-PLAN.md` on the owner's word (`../Plan-Of-Record-2026-10-21.md`, decision 97). That file keeps the plan's header, from the session sequence to the cross-session dependency notes, and every entry from 2026-10-01, and new entries are appended there. No test or tool reads the log; code and test comments cite its entries, by date or by name, and each entry is in one file or the other.
+**Status: ARCHIVED 2026-10-21.** These are the session log's entries from 2026-06-09 to 2026-09-30, split from `../DEVELOPMENT-PLAN.md` on the owner's word (`Plan-Of-Record-2026-10-21.md`, decision 97). That file keeps the plan's header, from the session sequence to the cross-session dependency notes, and every entry from 2026-10-01, and new entries are appended there. No test or tool reads the log; code and test comments cite its entries, by date or by name, and each entry is in one file or the other.
 
 The entries are as they were written and in the order they stood, which is by date, though in seven places an entry is dated a day before the one above it. One entry stood in the old file's header instead, between the Task File Index and the notes for all sessions: the N wave of 2026-08-06/07. It is placed here at its date, before the first entry of 2026-08-08, with a note under its heading.
 

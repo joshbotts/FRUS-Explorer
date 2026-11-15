@@ -321,7 +321,7 @@ revised section's overviews preferred in 7 of 8 pairs, and on the owner's word t
 and its template were adopted at v1.40. The three revised rules were not.
 
 **The revision of 2026-11-02 (v1.41)** read the steering review's remaining recommendations
-against v1.40 and, on the owner's word (decision 115 of `Planning/Plan-Of-Record-2026-10-21.md`),
+against v1.40 and, on the owner's word (decision 115 of `Planning/Completed/Plan-Of-Record-2026-10-21.md`),
 changed the block with no run of its own. The READER-FACING OUTPUT section's ban on a volume and
 document id now excepts the history.state.gov URL its Documents cited list requires, which the
 harness's scorers already excepted. Its numbers bullet now names a count read in a document, a
@@ -3442,7 +3442,7 @@ terms are here because they appear in the outputs.
   base block's own rules, and never named the addendum's surface. The block itself is unchanged: a
   vectors section inside it was measured on 2026-10-30 and not adopted (§3a).
 - 1.41 — 2026-11-02: **the steering review's remaining recommendations, read against v1.40, on the
-  owner's word** ("Take your picks", decision 115 of `Planning/Plan-Of-Record-2026-10-21.md`). The
+  owner's word** ("Take your picks", decision 115 of `Planning/Completed/Plan-Of-Record-2026-10-21.md`). The
   §12 block's READER-FACING OUTPUT section takes R9's two clauses
   (`Planning/Agentic-Guide-Steering-Review-2026-10-27.md`), with no run of their own: its ban on a
   `volume_id/document_id` string excepts the history.state.gov URL after an edition citation, which

@@ -190,7 +190,7 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
 
 - **The 2026-10-21 move (7 documents, and the session log's first part)** — moved with the plan of
   record that replaced the 2026-10-14 one, after build 51's capture sittings, from the planning
-  review of that day (`../Planning-Review-2026-10-21.md` §1) on the owner's word (the live plan's
+  review of that day (`Planning-Review-2026-10-21.md` §1) on the owner's word (the live plan's
   decisions 97 and 98). **Residue is carried by the live plan**, in its §1 to §5.
   - **The superseded plan of record**: `Plan-Of-Record-2026-10-14.md` (superseded 2026-10-21, a
     week old). It is the record of decisions 1 to 83, Track A's lanes A1 to A19 and their follow-on
@@ -244,12 +244,35 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     were left as written: `DEVELOPMENT-PLAN.md`'s entries, the archived plans and
     `Planning-Review-2026-10-21.md`.
 
-**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-21, by listing the
+- **The 2026-11-15 move (2 documents)** — moved with the plan of record that replaced the
+  2026-10-21 one, when the owner set this week's sessions to the submission of 1.0 (1861) (the live
+  plan's decision 126). **Residue is carried by the live plan**, in its §1 to §5.
+  - **The superseded plan of record**: `Plan-Of-Record-2026-10-21.md` (superseded 2026-11-15, three
+    and a half weeks old). It is the record of decisions 84 to 125; Track A's rows L1 to L14, the
+    retake sittings R1, R4 and T1, G1 and the index versions V72 to V74; and the three TestFlight
+    uploads, 1.0 (1776), (1787) and (1812), with R2's and R2b's checklists. Its last row, R3, the
+    submission, is the live plan's aim; its §2 to §5 are the live plan's §2 to §5.
+  - **The review it was written from**: `Planning-Review-2026-10-21.md`, decided the same day
+    (decisions 84 to 98), cited by no code, test or tool. Its dated note says where its residue went.
+  - **Pointers to these files.** The live plan's status line, §0 and §6. For the superseded plan:
+    `../Visual-Marketing-Plan.md` (the privacy label's step now names the live plan's §2; R1's two
+    mentions name this directory), `../website-drafts/README.md` (decision 101),
+    `../Cross-Platform-UI-Adversarial-Review/STATUS.md` (decision 93, and the carried list, which
+    names the live plan's §5 with this plan's beside it) and `../../Docs/Agentic-Analysis-Guide.md`'s
+    two citations of decision 115. In this directory, the seven heads the 2026-10-21 move wrote
+    (the session log's first part among them), this file's entry for that move and the 2026-10-14
+    plan's status line, which named the plan or its review at `../`, now name them here. Dated
+    records were left as written: `DEVELOPMENT-PLAN.md`'s entries, the archived plans' bodies, and
+    the dated memos and results at the Planning root (the C-3 designs and results, the agentic
+    guide's reviews and assessments, and the 2026-10 and 2026-11 assessments).
+
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-11-15, by listing the
 directory):
-- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-21`; every
-  superseded one is in this directory, `Plan-Of-Record-2026-10-14` since 2026-10-21), the review it
-  was written from (`Planning-Review-2026-10-21`), the log (`DEVELOPMENT-PLAN`, its entries from
-  2026-10-01; the earlier ones are `DEVELOPMENT-PLAN-to-2026-09` here) and the spec;
+- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-11-15`; every
+  superseded one is in this directory, `Plan-Of-Record-2026-10-21` since 2026-11-15), the review it
+  was written from (`UI-UX-Adversarial-Review-2026-11-15`, until its 1.0 rows merge and its backlog
+  is filed or declined), the log (`DEVELOPMENT-PLAN`, its entries from 2026-10-01; the earlier ones
+  are `DEVELOPMENT-PLAN-to-2026-09` here) and the spec;
 - **the manuals' review** — `Manual-Update-Build-49-Owner-Review` (the worklist for the owner's
   review, which waits past build 52, the live plan's decision 94) and `Manual-Revisions-Pending`
   (the lanes' 137 proposals of the build-49 wave, which the manual update of 2026-10-07 read and
