@@ -138,6 +138,8 @@ final class QueryInspectorController {
 ///         for a query holding something searchable, never a lone `"` or `(` typed on the way to one (A2)
 ///   1.6 — #1297 round 4 (comment only): the EXACT comment names a word marked in two spellings, which parser 6.6
 ///         applies on both
+///   1.7 — #1918 (L18, HCD-4): the denominator caption counts its volumes through `CountCopy`
+///         (`search.inspector.denominator %@`), where it read "the 1 volumes"
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -350,8 +352,10 @@ struct QueryInspectorStrip: View {
     }
 
     private var denominatorCaption: some View {
-        Text(String(localized: "search.inspector.denominator",
-                    defaultValue: "Counts are over the \(inspection.indexedVolumeCount) volumes indexed on this device — not the whole published series."))
+        // The count through `CountCopy` (the review's HCD-4): it read "the 1 volumes".
+        Text(String(format: String(localized: "search.inspector.denominator %@",
+                                   defaultValue: "Counts are over the %@ indexed on this device — not the whole published series."),
+                    CountCopy.volumes(inspection.indexedVolumeCount)))
             .font(.caption2)
             .foregroundStyle(.tertiary)
     }
@@ -377,6 +381,8 @@ struct QueryInspectorStrip: View {
 ///
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
+///   1.1 — #1918 (L18, HCD-4): the denominator line counts its volumes through `CountCopy`
+///         (`search.empty.denominator %@`); with no volume indexed both hosts show `EmptyLibraryNotice` instead
 struct QueryZeroResultView: View {
 
     /// The inspection for the empty query.
@@ -414,13 +420,129 @@ struct QueryZeroResultView: View {
                     .multilineTextAlignment(.center)
             }
 
-            Text(String(localized: "search.empty.denominator",
-                        defaultValue: "0 here means 0 in what you have indexed — \(inspection.indexedVolumeCount) volumes on this device."))
+            // The count through `CountCopy` (the review's HCD-4): it read "1 volumes". A search with no volume
+            // indexed shows `EmptyLibraryNotice` instead of this view, so it never reads "0 volumes" there.
+            Text(String(format: String(localized: "search.empty.denominator %@",
+                                       defaultValue: "0 here means 0 in what you have indexed — %@ on this device."),
+                        CountCopy.volumes(inspection.indexedVolumeCount)))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
         }
         .padding(24)
         .frame(maxWidth: 420)
+    }
+}
+
+// MARK: - EmptyLibraryNotice
+
+/// What a search shows, and the Subseries list filtered to downloaded volumes, while no volume on the device can be
+/// searched or listed: the library is the cause, not the words (the review's HCD-4, with IPA-1 and MAC-12).
+///
+/// Before HCD-4 a search after onboarding's Skip ran its terms one at a time and said "Berlin matches no document in
+/// your current scope. The rest of your query is not the problem.", with the real cause on the last line in tertiary
+/// grey, "0 volumes on this device", and under it an offer to download a 310 MB search model. The Subseries list
+/// filtered to downloaded volumes stood blank with no word at all.
+///
+/// Shared by both platforms' search screens and both Browse lists; the host passes where **Download Volumes…** goes:
+/// the download browser on iPhone and iPad, Settings ▸ Library ▸ Volumes & Storage on the Mac.
+///
+/// Version history:
+///   1.0 — #1918 (L18, HCD-4): initial implementation
+struct EmptyLibraryNotice: View {
+
+    /// Why nothing can be searched or listed.
+    enum Reason: Equatable, Sendable {
+        /// No volume is on the device, and none is on its way.
+        case noVolumes
+        /// Volumes are downloading or being indexed, and none is ready yet.
+        case preparing
+    }
+
+    /// Where the notice is shown, which decides what its sentence says the library is for.
+    enum Context: Equatable, Sendable {
+        /// A search that found nothing.
+        case search
+        /// The Subseries list, filtered to downloaded volumes.
+        case browse
+    }
+
+    /// Why nothing can be searched or listed.
+    let reason: Reason
+    /// Where the notice is shown.
+    let context: Context
+    /// Opens where volumes are downloaded, or `nil` for no button. Offered only for ``Reason/noVolumes``: while
+    /// volumes are on their way, the next step is to wait for them.
+    var onDownloadVolumes: (() -> Void)? = nil
+    /// Takes the downloaded-only filter off, for the Browse list, or `nil` for no button.
+    var onShowAll: (() -> Void)? = nil
+
+    /// The reason a search over `indexedVolumeCount` volumes finds nothing because of the library, or `nil` when
+    /// some volume is indexed and the search's own words and filters are what found nothing.
+    ///
+    /// - Parameters:
+    ///   - indexedVolumeCount: How many volumes the index holds.
+    ///   - isPreparing: Whether volumes are downloading or being indexed.
+    /// - Returns: The reason, or `nil`.
+    static func reason(indexedVolumeCount: Int, isPreparing: Bool) -> Reason? {
+        guard indexedVolumeCount == 0 else { return nil }
+        return isPreparing ? .preparing : .noVolumes
+    }
+
+    /// The notice's headline, which a finished search also says to VoiceOver (A11Y-2).
+    static func title(for reason: Reason) -> String {
+        switch reason {
+        case .noVolumes:
+            #if os(macOS)
+            return String(localized: "library.empty.title.mac", defaultValue: "No volumes on this Mac yet")
+            #else
+            return String(localized: "library.empty.title", defaultValue: "No volumes on this device yet")
+            #endif
+        case .preparing:
+            return String(localized: "library.preparing.title", defaultValue: "No volumes ready yet")
+        }
+    }
+
+    /// The sentence under the headline.
+    static func detail(for reason: Reason, in context: Context) -> String {
+        switch (reason, context) {
+        case (.noVolumes, .search):
+            #if os(macOS)
+            return String(localized: "library.empty.search.mac",
+                          defaultValue: "Search reads only the volumes downloaded to this Mac, so it cannot find anything yet. Download some, and search them here.")
+            #else
+            return String(localized: "library.empty.search",
+                          defaultValue: "Search reads only the volumes downloaded to this device, so it cannot find anything yet. Download some, and search them here.")
+            #endif
+        case (.noVolumes, .browse):
+            return String(localized: "library.empty.browse",
+                          defaultValue: "This list shows downloaded volumes only, and none is downloaded yet. Download some, or show every volume in the series.")
+        case (.preparing, .search):
+            return String(localized: "library.preparing.search",
+                          defaultValue: "Search finds the volumes you are downloading once each one is indexed.")
+        case (.preparing, .browse):
+            return String(localized: "library.preparing.browse",
+                          defaultValue: "The volumes you are downloading appear here as each one arrives.")
+        }
+    }
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(Self.title(for: reason), systemImage: "books.vertical")
+        } description: {
+            Text(Self.detail(for: reason, in: context))
+        } actions: {
+            if reason == .noVolumes, let onDownloadVolumes {
+                Button(String(localized: "library.empty.download", defaultValue: "Download Volumes…"),
+                       action: onDownloadVolumes)
+                    .buttonStyle(.borderedProminent)
+            }
+            if let onShowAll {
+                Button(String(localized: "library.empty.showAll", defaultValue: "Show All Volumes"),
+                       action: onShowAll)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("library.empty")
     }
 }

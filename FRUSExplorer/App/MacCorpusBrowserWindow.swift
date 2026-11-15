@@ -141,10 +141,14 @@ enum CorpusSidebarItem: Hashable {
 ///          consumes `AppState.pendingBrowseAnnotationLayer` (`consumePendingAnnotationLayer`): the
 ///          People and Person Analytics windows' "Volumes that tag people" select the axis and push
 ///          the page once the split view shows it, as a volume hand-off waits for its subseries
+///   1.14 — 2026-11-15: #1918 (L18, HCD-4 with MAC-12) — with Show downloaded only on and nothing downloaded, the
+///          Subseries section says so, with Download Volumes… and Show All Volumes, where it stood empty
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openWindow) private var openWindow
+    /// Opens the Settings window, for an empty Subseries section's Download Volumes… (HCD-4).
+    @Environment(\.openSettings) private var openSettings
 
     @State private var selection: CorpusSidebarItem? = nil
     @State private var searchText: String = ""
@@ -239,6 +243,11 @@ struct CorpusBrowserWindowView: View {
                         .tag(CorpusSidebarItem.workingCorpora)
                 }
                 Section(String(localized: "corpus.sidebar.subseries", defaultValue: "Subseries")) {
+                    // The review's MAC-12, with HCD-4: the downloaded-only filter over a library with nothing
+                    // downloaded left this section empty, with no word of why.
+                    if filterDownloaded, subseries.isEmpty {
+                        emptyDownloadedSubseriesRow
+                    }
                     ForEach(subseries, id: \.self) { sub in
                         subseriesRow(sub).tag(CorpusSidebarItem.subseries(sub))
                     }
@@ -556,6 +565,34 @@ struct CorpusBrowserWindowView: View {
     /// does not list.
     private func subseriesSelection(ofVolume volumeId: String) -> CorpusSidebarItem? {
         allEntries.first { $0.volumeId == volumeId }.map { .subseries($0.subseries) }
+    }
+
+    /// The Subseries section's word while Show downloaded only leaves it empty (MAC-12, with HCD-4): the library's
+    /// state in `EmptyLibraryNotice`'s words, with its two ways on, sized for a sidebar row. It carries no tag, so it
+    /// is not a selection.
+    private var emptyDownloadedSubseriesRow: some View {
+        let reason: EmptyLibraryNotice.Reason = appState.downloadQueue.isEmpty ? .noVolumes : .preparing
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(EmptyLibraryNotice.title(for: reason))
+                .font(.callout.weight(.medium))
+            Text(EmptyLibraryNotice.detail(for: reason, in: .browse))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if reason == .noVolumes {
+                Button(String(localized: "library.empty.download", defaultValue: "Download Volumes…")) {
+                    appState.pendingSettingsPaneRaw = SettingsPane.volumesStorage.rawValue
+                    openSettings()
+                }
+                .buttonStyle(.link)
+            }
+            Button(String(localized: "library.empty.showAll", defaultValue: "Show All Volumes")) {
+                filterDownloaded = false
+            }
+            .buttonStyle(.link)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("library.empty")
     }
 
     private func subseriesRow(_ sub: String) -> some View {

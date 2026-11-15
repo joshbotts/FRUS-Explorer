@@ -536,6 +536,9 @@ struct FacetPanelView: View {
 
     @State private var expanded: Set<FacetSection> = []
 
+    /// Whether the on-screen keyboard is up, which hides the pinned bar (#1070's trap, IPH-3). Never set on the Mac.
+    @State private var keyboardIsVisible = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
@@ -560,6 +563,17 @@ struct FacetPanelView: View {
         // footer, Apply was below the fold on a phone for any list longer than the sheet, and a
         // tapped row ticked while nothing on screen said what would make it narrow.
         .safeAreaInset(edge: .bottom, spacing: 0) { stagedSelectionBar }
+        #if os(iOS)
+        // A bottom inset rides up with the keyboard onto the accessory row where the panel's own
+        // `keyboardDismissBar` Done is drawn (#1070), so the bar waits out a typing session in a
+        // section's filter field, as the tab shell's banner does.
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardIsVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardIsVisible = false
+        }
+        #endif
         // **The panel's single requester** (#850). Fires on first disclosure *and* whenever a new
         // search empties the data under a section that is still open — which are the same
         // condition, "open with nothing in it", rather than two paths to keep in step.
@@ -1115,7 +1129,7 @@ struct FacetPanelView: View {
     @ViewBuilder
     private var stagedSelectionBar: some View {
         let staged = controller.stagedSelections
-        if !staged.isEmpty {
+        if !staged.isEmpty, !keyboardIsVisible {
             VStack(spacing: 0) {
                 Divider()
                 HStack(spacing: 12) {
@@ -1123,8 +1137,10 @@ struct FacetPanelView: View {
                             .joined(separator: "; "))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                        // No vertical `fixedSize`: outside the scroll view, in the Mac's inspector column, a
+                        // text that will not compress blanks the column (the memory of L15's volume page).
                         .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Spacer(minLength: 4)
                     Button(String(localized: "facets.selection.clear", defaultValue: "Clear")) {
                         controller.clearAllSelections()

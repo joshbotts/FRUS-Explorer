@@ -1354,7 +1354,9 @@ private struct DownloadedVolumesListView: View {
 ///
 /// Version history:
 ///   1.0 — S-2c: initial implementation, from `DownloadsSettingsView`'s Find Volumes section
-private struct DownloadVolumesBrowseView: View {
+///   1.1 — #1918 (L18, HCD-4): internal, so `DownloadVolumesSheet` can present it from an empty library's
+///          **Download Volumes…** in Search and Browse
+struct DownloadVolumesBrowseView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -1597,6 +1599,34 @@ private struct DownloadVolumesBrowseView: View {
             await dm.enqueueDownload(entry)
         }
         dismiss()
+    }
+}
+
+// MARK: - DownloadVolumesSheet
+
+/// The download browser in a sheet of its own, for **Download Volumes…** where an empty library is the reason a
+/// search found nothing or the downloaded-only Subseries list is blank (the review's HCD-4, with IPA-1).
+///
+/// The same view as Volumes & Storage ▸ Download from GitHub…, so there is one place that chooses what to download.
+/// Queueing closes the sheet (its `dismiss()`), and **Cancel** closes it with nothing queued.
+///
+/// Version history:
+///   1.0 — #1918 (L18, HCD-4): initial implementation
+struct DownloadVolumesSheet: View {
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            DownloadVolumesBrowseView()
+                .environment(appState)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(String(localized: "common.cancel", defaultValue: "Cancel")) { dismiss() }
+                    }
+                }
+        }
     }
 }
 

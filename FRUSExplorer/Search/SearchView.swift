@@ -271,6 +271,10 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          *Narrowed by* chip's ✕ runs the search again only when something is left to search
 ///   1.37 — 2026-11-15: #1918 (L18, IPS-1) — the Filters sheet's closing runs the search on screen again when its
 ///          filters changed (`filterSheetDismissed()`), where Done only closed it
+///   1.38 — 2026-11-15: #1918 (L18, IPH-3) — the facet panel's Apply sends every staged section, and the reader's own
+///          close (the sheet's Done, a swipe, the binoculars menu's Facets) applies them (`closeFacetPanelByHand()`)
+///   1.39 — 2026-11-15: #1918 (L18, HCD-4) — with no volume indexed a finished search shows `EmptyLibraryNotice`, with
+///          Download Volumes… opening `DownloadVolumesSheet`, where the zero-result state blamed a term
 
 struct SearchView: View {
 
@@ -420,6 +424,8 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     /// #265: the corpus-wide abbreviation lookup.
     @State private var showGlossaryLookup = false
+    /// HCD-4: the download browser, opened by an empty library's **Download Volumes…**.
+    @State private var showDownloadVolumes = false
     /// #1299: the Search Tips sheet, opened from More ▸ Search Tips, the pre-search link, the Query Inspector's link and
     /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
     @State private var showSearchTips = false
@@ -824,6 +830,11 @@ struct SearchView: View {
                         // #338 step 4: address THIS window for the sheet's open-document action.
                         .environment(\.sceneID, sceneID)
                 }
+                // HCD-4: an empty library's Download Volumes…, the download browser Volumes & Storage holds.
+                .sheet(isPresented: $showDownloadVolumes) {
+                    DownloadVolumesSheet()
+                        .environment(appState)
+                }
                 // #1576 lane 2: Add to Collection from a result row. iOS only for the same
                 // reason: the actions that set the request are the row's, inside `#if os(iOS)`.
                 // Lane 3: the outcome of a selection's add stays on screen, above the results.
@@ -986,6 +997,30 @@ struct SearchView: View {
         vm.endSearchOnScreen()
         showFacetSheet = false
         facetController.clear()
+    }
+
+    /// Why a finished search found nothing because of the library, or `nil` when the search's own words and filters
+    /// are what found nothing (HCD-4): no volume is indexed, and the run left no Meaning matches beyond the library or
+    /// need for the search model, each of which its own state says.
+    ///
+    /// While volumes are downloading or being indexed the reason is `.preparing`, so the notice does not say the
+    /// device has none while the queue banner counts them.
+    private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
+        guard vm.hasSearched, vm.results.isEmpty, vm.searchError == nil, vm.pinnedBase == nil,
+              vm.beyondLibraryHits.isEmpty, !vm.semanticNeedsModel else { return nil }
+        return EmptyLibraryNotice.reason(
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)
+    }
+
+    /// Where an empty library's **Download Volumes…** goes (HCD-4): the download browser, in a sheet. `nil` on the
+    /// Mac, whose Search window is `SearchSheet`.
+    private var downloadVolumesAction: (() -> Void)? {
+        #if os(iOS)
+        return { showDownloadVolumes = true }
+        #else
+        return nil
+        #endif
     }
 
     /// What the Filters sheet's closing does, by Done or by a swipe (IPS-1): the search on screen runs
@@ -1932,6 +1967,10 @@ struct SearchView: View {
             // #1577 lane 4: before both zero-states below, neither of which may show while a base is held (rule 7).
             // With no search model the Meaning empty state's download offer shows, and the base row stays.
             layerEmptyState(base)
+        } else if let reason = emptyLibraryReason {
+            // HCD-4: before both zero-states below. With no volume indexed the library is why nothing was found,
+            // and the keyword state blamed a term ("Berlin matches no document in your current scope").
+            EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: downloadVolumesAction)
         } else if vm.searchMode == .meaning && vm.hasSearched && vm.results.isEmpty {
             // The Meaning mode's empty surface: the keyword zero-state below diagnoses which
             // TERM is absent, which is the wrong claim twice over here — and a meaning search

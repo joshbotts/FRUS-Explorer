@@ -163,11 +163,16 @@ import SwiftUI
 ///   1.31 — #1758: the results list opens at its top for a new search's rows and for another page, re-identified
 ///          on `executedSearchVersion` and `currentPage`
 ///   1.32 — 2026-11-15: #1905 (L15) — the token help reads *Chosen in Subjects* and *Subject areas are chosen in the facet panel*
+///   1.33 — 2026-11-15: #1918 (L18) — the facet panel's Apply sends every staged section (IPH-3); with no volume
+///          indexed a finished search shows `EmptyLibraryNotice`, whose Download Volumes… opens Settings ▸ Library ▸
+///          Volumes & Storage, where the zero-result state blamed a term (HCD-4)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openWindow) private var openWindow
+    /// Opens the Settings window, for an empty library's Download Volumes… (HCD-4).
+    @Environment(\.openSettings) private var openSettings
 
     /// Opens Archival Analytics scoped to this result set's volumes (#833).
     ///
@@ -414,6 +419,10 @@ struct MacSearchWindowView: View {
                 // (rule 7). With no search model the Meaning empty state's download offer shows, and the row stays.
                 // A swap that has let go of the list keeps this until its first search runs (#1577 lane 7).
                 layerEmptyState(base)
+            } else if let reason = emptyLibraryReason {
+                // HCD-4: before both zero-states below, as on iPhone and iPad. With no volume indexed the library is
+                // why nothing was found, and the keyword state blamed a term.
+                EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: openVolumesAndStorage)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
                 // TERM is absent, the wrong claim twice over here, and beyond-library-only
@@ -1687,6 +1696,23 @@ struct MacSearchWindowView: View {
             && searchVM.results.isEmpty
             && !searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty
             && searchVM.searchError == nil
+    }
+
+    /// Why a finished search found nothing because of the library, or `nil` when the search's own words and filters
+    /// are what found nothing (HCD-4). The iOS twin is `SearchView.emptyLibraryReason`.
+    private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
+        guard hasZeroResults, searchVM.pinnedBase == nil, searchVM.swapUnderWay == nil,
+              searchVM.beyondLibraryHits.isEmpty, !searchVM.semanticNeedsModel else { return nil }
+        return EmptyLibraryNotice.reason(
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)
+    }
+
+    /// Opens Settings on Volumes & Storage, where a Mac downloads volumes: an empty library's Download Volumes…
+    /// (HCD-4). The pane is set before the window opens, as Manage Projects… sets its own.
+    private func openVolumesAndStorage() {
+        appState.pendingSettingsPaneRaw = SettingsPane.volumesStorage.rawValue
+        openSettings()
     }
 
     /// The Query Inspector strip: what the query became, between the control rows and the

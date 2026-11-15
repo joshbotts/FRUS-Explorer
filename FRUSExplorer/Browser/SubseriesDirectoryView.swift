@@ -30,6 +30,8 @@ import SwiftData
 ///          the list, groups restricted at manifest grain via `ScopeAxis.scopedGroups`
 ///          (a live `@Query` reference, so edits reflect immediately; `.empty` and
 ///          `.unavailable` show the explicit nothing, never the whole corpus — #258)
+///   1.2 — #1918 (L18, HCD-4 with IPA-1): with the downloaded-only filter on and nothing downloaded, the list says
+///          so (`EmptyLibraryNotice`), with Download Volumes… and Show All Volumes, where it stood blank
 struct SubseriesDirectoryView: View {
 
     let vm: BrowserViewModel
@@ -37,6 +39,8 @@ struct SubseriesDirectoryView: View {
     @Environment(AppState.self) private var appState
     /// The scopes, queried live so the Q-3 reference resolves at render.
     @Query private var scopes: [CustomVolumeScope]
+    /// The download browser, opened by an empty list's Download Volumes… (HCD-4).
+    @State private var showDownloadVolumes = false
 
     var body: some View {
         let filterState = ScopeAxis.filterState(
@@ -81,11 +85,37 @@ struct SubseriesDirectoryView: View {
         #else
         .listStyle(.inset)
         #endif
+        // The review's IPA-1, with HCD-4: the downloaded-only filter over a library with nothing downloaded left this
+        // list blank, with no word of why.
+        .overlay {
+            if vm.filterDownloadedOnly, vm.allSubseriesGroups.isEmpty {
+                EmptyLibraryNotice(reason: appState.downloadQueue.isEmpty ? .noVolumes : .preparing,
+                                   context: .browse,
+                                   onDownloadVolumes: downloadVolumesAction,
+                                   onShowAll: { appState.filterDownloadedOnly = false })
+            }
+        }
+        #if os(iOS)
+        .sheet(isPresented: $showDownloadVolumes) {
+            DownloadVolumesSheet()
+                .environment(appState)
+        }
+        #endif
         .navigationTitle(String(localized: "browser.subseriesIndex.title", defaultValue: "Subseries"))
         #if os(iOS)
         // Inline title at this depth, like every pushed level: the breadcrumb bar is the
         // single location label (the corpus root keeps its large title).
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+    }
+
+    /// Where an empty list's Download Volumes… goes (HCD-4): the download browser, in a sheet. `nil` on the Mac, whose
+    /// Corpus Browser draws its own Subseries list.
+    private var downloadVolumesAction: (() -> Void)? {
+        #if os(iOS)
+        return { showDownloadVolumes = true }
+        #else
+        return nil
         #endif
     }
 
