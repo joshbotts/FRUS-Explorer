@@ -558,6 +558,85 @@ struct CrossReferenceGraphTests {
         #expect(calendar.component(.day,  from: fullDate) == 25)
     }
 
+    // MARK: - #1893: the timeline at any width
+
+    /// Three dated neighbours over nine years and one undated, so the axis takes year ticks, whose labels are
+    /// the same in every locale. The first tick (1946) falls 160 days before the earliest date and the last
+    /// (1956) 361 days after the latest, so each end of the axis's visible range shows or hides one of them
+    /// as the canvas widens.
+    private func makeYearSpanGraph() -> CrossReferenceGraph {
+        var meta: [String: CrossReferenceNodeMetadata] = [:]
+        for (doc, date) in [("d0", "1950-03-15"), ("dA", "1946-06-10"), ("dB", "1948-09-20"), ("dC", "1955-01-05"),
+                            ("dU", nil)] as [(String, String?)] {
+            meta["vol1/\(doc)"] = CrossReferenceNodeMetadata(
+                documentId: doc, volumeId: "vol1", documentNumber: doc, header: "Document \(doc)", dateline: nil,
+                dateISO: date)
+        }
+        func edge(_ source: String, _ target: String) -> CrossReferenceEdge {
+            CrossReferenceEdge(sourceDocumentId: source, sourceVolumeId: "vol1", targetDocumentId: target,
+                               targetVolumeId: "vol1", context: nil, referenceType: .footnote)
+        }
+        return CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "vol1",
+            inboundEdges: [edge("dC", "d0"), edge("dU", "d0")], outboundEdges: [edge("d0", "dA"), edge("d0", "dB")],
+            hasUndownloadedSources: false, nodeMetadata: meta)
+    }
+
+    /// The year-span graph's nodes and date values, as the view model passes them to the layout.
+    private func yearSpanLayoutInput() -> (nodes: [DisplayNode], dateValues: [String: TimeInterval]) {
+        let (nodes, _) = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
+            graph: makeYearSpanGraph(), centralKey: "vol1/d0", expandedClusterKeys: [], downloadedVolumeIds: ["vol1"])
+        return (nodes, CrossReferenceGraphDisplay.buildDateValues(for: nodes))
+    }
+
+    @Test("Below 116 pt the timeline lays out without trapping: every node placed, and no tick, since none falls at x = 48 (#1893)",
+          arguments: [1.0, 50, 115])
+    func timelineLaysOutBelowTheAxisWidth(canvasWidth: Double) {
+        let (nodes, dateValues) = yearSpanLayoutInput()
+        let layout = CrossReferenceGraphDisplay.timelineLayout(
+            nodes: nodes, dateValues: dateValues, centralKey: "vol1/d0", canvasWidth: canvasWidth, canvasHeight: 600)
+        #expect(layout.positions.count == nodes.count, "\(layout.positions.keys.sorted())")
+        #expect(layout.hasParkedNodes, "the undated document parks")
+        #expect(layout.ticks.isEmpty, "\(layout.ticks)")
+    }
+
+    @Test("From 116 pt the timeline's ticks are those it drew before #1893's fix, at the widths the app gives the canvas")
+    func timelineTicksAreUnchangedFromTheAxisWidth() {
+        let (nodes, dateValues) = yearSpanLayoutInput()
+        // Taken from the layout at `db4f8236`, before the fix: each width's year labels and x positions. 116 and
+        // 152 are the narrowest widths whose range was well formed, at the plot's 1-pt floor; the rest are the
+        // canvases the app draws: the Mac window's minimum and default (640 and 900 pt) with the 321-pt reference
+        // list beside the canvas (319 and 579) and without it; an iPhone SE's and an iPhone 17's portrait width
+        // (375, 402); an iPad Pro 13-inch in landscape with the list and without it (1055, 1376). The dates are
+        // local midnights, so a time zone's offsets over the nine years move an x by a few hundredths of a
+        // point at most: hence 0.05.
+        let pinned: [Double: [(label: String, x: Double)]] = [
+            116: [],
+            152: [("1946", 55.949), ("1948", 56.182), ("1950", 56.416), ("1952", 56.649), ("1954", 56.882), ("1956", 57.115)],
+            319: [("1948", 86.404), ("1950", 125.394), ("1952", 164.329), ("1954", 203.319), ("1956", 242.255)],
+            375: [("1948", 96.600), ("1950", 148.663), ("1952", 200.655), ("1954", 252.719), ("1956", 304.711)],
+            402: [("1948", 101.515), ("1950", 159.882), ("1952", 218.170), ("1954", 276.537)],
+            579: [("1948", 133.740), ("1950", 233.431), ("1952", 332.986), ("1954", 432.677)],
+            640: [("1948", 144.846), ("1950", 258.779), ("1952", 372.555), ("1954", 486.488)],
+            900: [("1948", 192.182), ("1950", 366.816), ("1952", 541.212), ("1954", 715.847)],
+            1055: [("1948", 220.401), ("1950", 431.224), ("1952", 641.757), ("1954", 852.580)],
+            1376: [("1948", 278.843), ("1950", 564.609), ("1952", 849.983), ("1954", 1135.749)],
+        ]
+        for width in [116.0, 152, 319, 375, 402, 579, 640, 900, 1055, 1376] {
+            let layout = CrossReferenceGraphDisplay.timelineLayout(
+                nodes: nodes, dateValues: dateValues, centralKey: "vol1/d0", canvasWidth: width, canvasHeight: 600)
+            let drawn = layout.ticks.map { "\($0.label) at \(String(format: "%.3f", $0.x))" }
+            guard let expected = pinned[width] else {
+                Issue.record("No pin for \(width) pt, where the layout draws \(drawn)")
+                continue
+            }
+            #expect(layout.ticks.map(\.label) == expected.map(\.label), "\(width) pt: \(drawn)")
+            for (tick, pin) in zip(layout.ticks, expected) {
+                #expect(abs(tick.x - pin.x) < 0.05, "\(width): \(tick.label) at \(tick.x), pinned at \(pin.x)")
+            }
+        }
+    }
+
     // MARK: - DateClusterTest
 
     @Test("DateClusterTest: four-plus docs in one x-window collapse into an expandable cluster with rerouted, aggregated edges")
