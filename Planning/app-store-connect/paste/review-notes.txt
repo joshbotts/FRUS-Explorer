@@ -31,4 +31,4 @@ THE CONTENT
 The documents are historical government records: diplomatic correspondence and memoranda about war, weapons and political conflict as well as trade and treaties.
 
 MAC
-The app is sandboxed. Its entitlements are outgoing network connections (the downloads above), user-selected files (exports and imports through the system's panels) and iCloud.
+The app is sandboxed. Its entitlements are outgoing network connections (the downloads above), user-selected files (exports and imports through the system's panels), printing (File > Print) and iCloud.

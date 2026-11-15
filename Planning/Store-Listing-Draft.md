@@ -368,7 +368,7 @@ it; they were caught by running the counter. That is the whole argument for havi
 
 ## 7. App Review notes
 
-**4,000-byte field. This draft is 3,886 / 4,000 ✅**, counted as pasted. The field is on each
+**4,000-byte field. This draft is 3,911 / 4,000 ✅**, counted as pasted. The field is on each
 platform's version page, under App Review Information, and customers never see it. One text serves
 both pages. It is plain ASCII, so that bytes and characters agree and no symbol can be refused.
 
@@ -441,7 +441,8 @@ war, weapons and political conflict as well as trade and treaties.
 
 MAC
 The app is sandboxed. Its entitlements are outgoing network connections (the downloads above),
-user-selected files (exports and imports through the system's panels) and iCloud.
+user-selected files (exports and imports through the system's panels), printing (File > Print)
+and iCloud.
 ```
 
 **Two things the notes leave to the owner.** They do not offer App Review a National Archives key:

@@ -53,6 +53,12 @@ struct EntitlementsTests {
         #expect(plist["com.apple.security.network.client"] as? Bool == true)
     }
 
+    @Test("AppStore entitlements: print is true (File ▸ Print, #1917 ASR-4)")
+    func appStoreHasPrint() throws {
+        let plist = try loadEntitlements(named: "FRUSExplorer-AppStore")
+        #expect(plist["com.apple.security.print"] as? Bool == true)
+    }
+
     @Test("AppStore entitlements: icloud-container-identifiers references correct container")
     func appStoreHasCorrectICloudContainer() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-AppStore")
@@ -95,6 +101,12 @@ struct EntitlementsTests {
         #expect(plist["com.apple.security.network.client"] as? Bool == true)
     }
 
+    @Test("DirectDistribution entitlements: print is true (File ▸ Print, #1917 ASR-4)")
+    func directDistributionHasPrint() throws {
+        let plist = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
+        #expect(plist["com.apple.security.print"] as? Bool == true)
+    }
+
     @Test("DirectDistribution entitlements: icloud-container-identifiers references correct container")
     func directDistributionHasCorrectICloudContainer() throws {
         let plist = try loadEntitlements(named: "FRUSExplorer-DirectDistribution")
@@ -133,6 +145,8 @@ struct EntitlementsTests {
                 direct["com.apple.security.app-sandbox"] as? Bool)
         #expect(appStore["com.apple.security.network.client"] as? Bool ==
                 direct["com.apple.security.network.client"] as? Bool)
+        #expect(appStore["com.apple.security.print"] as? Bool ==
+                direct["com.apple.security.print"] as? Bool)
         #expect(appStore["com.apple.developer.icloud-container-identifiers"] as? [String] ==
                 direct["com.apple.developer.icloud-container-identifiers"] as? [String])
         #expect(appStore["com.apple.developer.icloud-services"] as? [String] ==

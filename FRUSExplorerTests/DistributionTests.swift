@@ -75,6 +75,20 @@ struct DistributionTests {
                 "DirectDistribution entitlements missing network.client")
     }
 
+    /// File ▸ Print (⌘P) prints the reader's document through `WKWebView.printOperation(with:)`, and
+    /// the App Sandbox lets an app reach a printer only with `com.apple.security.print` (#1917, ASR-4).
+    /// Read as property lists, so a key left in a comment does not count.
+    @Test("SandboxParityTest: both entitlement files let File ▸ Print reach a printer")
+    func bothEntitlementsGrantPrinting() throws {
+        for url in [Self.appStoreEntitlementsURL, Self.directDistEntitlementsURL] {
+            let data = try Data(contentsOf: url)
+            let plist = try #require(
+                try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+            #expect(plist["com.apple.security.print"] as? Bool == true,
+                    "\(url.lastPathComponent) does not grant com.apple.security.print")
+        }
+    }
+
     @Test("SandboxParityTest: DirectDistribution entitlements do not add extra capabilities beyond AppStore")
     func directDistributionHasNoExtraCapabilities() throws {
         let appStore = try String(contentsOf: Self.appStoreEntitlementsURL, encoding: .utf8)
