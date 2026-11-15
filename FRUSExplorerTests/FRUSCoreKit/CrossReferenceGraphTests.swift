@@ -722,6 +722,89 @@ struct CrossReferenceGraphTests {
         #expect(expanded.nodes.count == nodes.count)
     }
 
+    #if !SWIFT_PACKAGE // the view model, which lays the graph out on its canvas, is the app's
+    // MARK: - #1914: the timeline through a relayout
+
+    /// A graph four of whose five dated neighbours share one date, two days after the central document's, and
+    /// the fifth eleven weeks later. On the timeline the four fold into one date cluster. The fifth gives the
+    /// sweep the span it clusters over: neighbours of one date alone span nothing, so they never fold, and the
+    /// defect needs a fold.
+    private func makeSharedDateGraph() -> CrossReferenceGraph {
+        var meta: [String: CrossReferenceNodeMetadata] = [:]
+        meta["vol1/d0"] = CrossReferenceNodeMetadata(
+            documentId: "d0", volumeId: "vol1", documentNumber: "100", header: "Central Document", dateline: nil,
+            dateISO: "1962-10-22")
+        var inbound: [CrossReferenceEdge] = []
+        for index in 0..<4 {
+            let doc = "same\(index)"
+            inbound.append(CrossReferenceEdge(
+                sourceDocumentId: doc, sourceVolumeId: "vol1", targetDocumentId: "d0", targetVolumeId: "vol1",
+                context: nil, referenceType: .footnote))
+            meta["vol1/\(doc)"] = CrossReferenceNodeMetadata(
+                documentId: doc, volumeId: "vol1", documentNumber: "\(101 + index)", header: "Same-Day Document \(index)",
+                dateline: nil, dateISO: "1962-10-24")
+        }
+        let outbound = [CrossReferenceEdge(
+            sourceDocumentId: "d0", sourceVolumeId: "vol1", targetDocumentId: "later", targetVolumeId: "vol1",
+            context: nil, referenceType: .footnote)]
+        meta["vol1/later"] = CrossReferenceNodeMetadata(
+            documentId: "later", volumeId: "vol1", documentNumber: "200", header: "Later Document", dateline: nil,
+            dateISO: "1963-01-10")
+        return CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "vol1", inboundEdges: inbound, outboundEdges: outbound,
+            hasUndownloadedSources: false, nodeMetadata: meta)
+    }
+
+    @Test("A graph whose dated neighbours share one date stays on the timeline after a resize, a brushed range and its cluster expanded (#1914)")
+    func timelineSurvivesARelayout() throws {
+        let vm = CrossReferenceGraphViewModel(centralDocumentId: "d0", centralVolumeId: "vol1",
+                                              downloadedVolumeIds: ["vol1"])
+        vm.graph = makeSharedDateGraph()
+        vm.onCanvasSizeChanged(CGSize(width: 1055, height: 861), reduceMotion: true)
+        vm.rebuildDisplay()
+        let sameDay = (0..<4).map { "vol1/same\($0)" }
+
+        /// What the canvas draws: the timeline, its axis, the four folded into one cluster unless it is
+        /// expanded, and the picker and brush enabled (the view reads `timelineEligible` for both).
+        func expectTimeline(_ step: String, clusterExpanded: Bool = false) {
+            #expect(vm.layoutMode == .timeline, "\(step)")
+            #expect(!vm.timelineTicks.isEmpty, "\(step): the canvas draws the date axis only with ticks")
+            #expect(vm.timelineEligible, "\(step): the layout picker and the brush read this")
+            let clusters = vm.displayNodes.filter(\.isDateCluster)
+            if clusterExpanded {
+                #expect(clusters.isEmpty, "\(step)")
+                let xs = Set(sameDay.compactMap { vm.nodePositions[$0]?.x })
+                #expect(xs.count == 1, "\(step): the four share one date, so one x: \(xs)")
+            } else {
+                #expect(clusters.count == 1, "\(step): \(vm.displayNodes.map(\.id))")
+                #expect(sameDay.allSatisfy { key in !vm.displayNodes.contains { $0.id == key } }, "\(step)")
+            }
+            #expect(vm.nodePositions["vol1/d0"] != nil && vm.nodePositions["vol1/later"] != nil, "\(step)")
+        }
+
+        expectTimeline("the first layout")
+        let cluster = try #require(vm.displayNodes.first { $0.isDateCluster })
+
+        vm.onCanvasSizeChanged(CGSize(width: 900, height: 640), reduceMotion: true)
+        expectTimeline("after a resize")
+        vm.onCanvasSizeChanged(CGSize(width: 1055, height: 861), reduceMotion: true)
+        expectTimeline("after a second resize")
+
+        let calendar = Calendar(identifier: .gregorian)
+        let lower = try #require(CrossReferenceGraphDisplay.date(fromISO: "1962-10-01", calendar: calendar))
+        let upper = try #require(CrossReferenceGraphDisplay.date(fromISO: "1963-02-01", calendar: calendar))
+        vm.setTimelineBrush(lower.timeIntervalSinceReferenceDate...upper.timeIntervalSinceReferenceDate)
+        expectTimeline("with a brushed range")
+        vm.setTimelineBrush(nil)
+        expectTimeline("with the brush cleared")
+
+        vm.toggleDateCluster(cluster.id)
+        expectTimeline("with its cluster expanded", clusterExpanded: true)
+        vm.onCanvasSizeChanged(CGSize(width: 900, height: 640), reduceMotion: true)
+        expectTimeline("expanded, after a resize", clusterExpanded: true)
+    }
+    #endif
+
     // MARK: - AggregationTest
 
     @Test("AggregationTest: parallel references collapse into one weighted edge; node and edge IDs are unique")

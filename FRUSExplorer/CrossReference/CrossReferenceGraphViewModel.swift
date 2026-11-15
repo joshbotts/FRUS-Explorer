@@ -79,6 +79,11 @@ struct NavigationHistoryEntry: Sendable {
 ///          The sparse widening, the unit nodes, their attachment and `timelineEligible` call the
 ///          kit's rules where their code was inline; `precedesInReferenceList` forwards to the kit's;
 ///          `loadUnprintedUnits`' doc drops the gloss's paragraphs, which `classGloss` carries in the kit
+///   1.9 — 2026-11-15 (#1914, L16): `timelineEligible` asks the kit's rule of the built nodes
+///          (`baseDisplayNodes`, or `displayNodes` while the base is empty, as `rerunLayout` reads
+///          them), not the displayed ones, so a graph whose dated neighbours fold into one date
+///          cluster keeps its timeline, its layout picker and its brush through a resize, an expanded
+///          cluster or a brushed range
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -160,9 +165,18 @@ final class CrossReferenceGraphViewModel {
     /// Whether the current graph can be laid out chronologically: the central
     /// document and at least two other non-cluster nodes need parseable dates
     /// spanning a non-zero interval.
+    ///
+    /// Asked of the nodes the graph is built of (`baseDisplayNodes`), never of the
+    /// ones a timeline layout displays, whose date clusters have no date value of
+    /// their own here (#1914). Read over the displayed nodes, a graph whose dated
+    /// neighbours fold into one cluster counted fewer than two: as soon as the
+    /// timeline was drawn, the view disabled its layout picker and hid its brush,
+    /// which both read this, and the next relayout (a resize, an expanded cluster,
+    /// a brushed range) drew the network instead. Falls back to `displayNodes`
+    /// while the base is empty, as `rerunLayout` does.
     var timelineEligible: Bool {
         CrossReferenceGraphDisplay.isTimelineEligible(centralKey: centralKey, dateValues: nodeDateValues,
-                                                      nodes: displayNodes)
+                                                      nodes: baseDisplayNodes.isEmpty ? displayNodes : baseDisplayNodes)
     }
 
     /// Sets the layout mode from the toolbar picker and re-runs the layout.

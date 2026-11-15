@@ -371,6 +371,9 @@ public struct GraphPoint: Equatable, Sendable {
 ///   1.1 — 2026-11-15 (#1893, L16): `timelineLayout` keeps its axis's tick range in order on a canvas
 ///          narrower than 116 pt, where the range's ends crossed and the layout trapped; from 116 pt
 ///          every tick is unchanged
+///   1.2 — 2026-11-15 (#1914, L16): `isTimelineEligible`'s doc says to ask it of a graph's built nodes,
+///          as the view model now does, since a timeline's date clusters have no date value; the rule is
+///          unchanged
 public enum CrossReferenceGraphDisplay {
 
     // MARK: - Timeline eligibility
@@ -379,14 +382,17 @@ public enum CrossReferenceGraphDisplay {
     /// non-cluster nodes need parseable dates spanning a non-zero interval. The view model defaults to
     /// the timeline whenever this holds, until the reader picks a layout.
     ///
-    /// `nodes` is read only when the central document is dated, as the view model's
-    /// `timelineEligible` read its displayed nodes, so a view that reads that property observes what it
-    /// observed.
+    /// Ask it of the graph's nodes as built, before the timeline folds any into date clusters
+    /// (``dateClusteredDisplay(nodes:edges:dateValues:canvasWidth:expandedKeys:domain:)``): a date
+    /// cluster has no value in ``buildDateValues(for:)``'s dates, so over a timeline's displayed nodes a
+    /// graph whose dated nodes fold into one cluster counts too few (#1914). `nodes` is read only when
+    /// the central document is dated, as the view model's `timelineEligible` read its nodes when the
+    /// rule was inline there, so a view that reads that property observes what it observed.
     ///
     /// - Parameters:
     ///   - centralKey: The central document's node key.
     ///   - dateValues: Each node's date value (``buildDateValues(for:)``).
-    ///   - nodes: The nodes displayed.
+    ///   - nodes: The graph's nodes as built, with any unit nodes attached.
     /// - Returns: Whether the timeline layout can place the graph.
     public static func isTimelineEligible(centralKey: String, dateValues: [String: TimeInterval],
                                           nodes: @autoclosure () -> [DisplayNode]) -> Bool {
