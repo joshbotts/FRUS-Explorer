@@ -338,7 +338,7 @@ that does not change at launch, the two small ones hold what does, and the film 
 **On release day, change two things.**
 
 1. **Section 1:** delete it.
-2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “Not yet on the App Store” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
+2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “In final testing” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
 
 <!-- /generated:tour -->
 
@@ -348,7 +348,7 @@ What to expect:
 - **The first large block** opens with *Take one question through 553 volumes* and a table of
   contents whose entries jump down the page, and ends with the dark band that holds the map.
 - **The second** opens at step 14 and ends with step 20.
-- **The closing** reads *Not yet on the App Store*, with the two quick starts and the help
+- **The closing** reads *Not yet on the App Store*, with an outlined *In final testing*, the two quick starts and the help
   address beside it.
 - Each screenshot is a link: a click opens it at full size in a new tab.
 - Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
@@ -395,9 +395,9 @@ this table:
 | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 11,951 bytes | `e9b8ba22` |
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,052 bytes | `197820d9`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
-| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 66,707 bytes | `4c04035b` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,826 bytes | `4671c5d0` |
-| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,177 bytes | `8943be1b` |
+| [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,007 bytes | `d4bfa31d` |
+| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,169 bytes | `c05916d5` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
 <!-- /generated:kit -->

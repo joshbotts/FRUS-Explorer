@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint 4671c5d0 -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint d4bfa31d -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -61,10 +61,7 @@
 .frus-tour .fns { display: grid; gap: 4px; font-size: 14px; line-height: 1.5; color: var(--muted); }
 .frus-tour .fns::before { content: ""; width: 8rem; border-top: 1px solid var(--ink); margin-bottom: 8px; }
 .frus-tour .fns p .m { font-family: var(--sans); font-weight: 600; color: var(--red); margin-right: 6px; font-size: 12px; }
-.frus-tour .present { font-size: .95em; margin-bottom: 8px; }
 .frus-tour .sub-t { font-variant: small-caps; letter-spacing: .03em; margin-bottom: 6px; }
-.frus-tour .a-fn .elide { font-style: italic; color: var(--muted); }
-.frus-tour .a-ednote .ed-h { font-weight: 600; margin-bottom: 4px; }
 .frus-tour .part { padding-block: 72px 24px; }
 .frus-tour .part-open { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 32px; align-items: end; border-top: 2px solid var(--ink); padding-top: 26px; margin-bottom: 56px; }
 @media (max-width: 760px) {
@@ -146,25 +143,16 @@
 .frus-tour .anat { gap: 14px; }
 .frus-tour .anat-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 40px; border: 1px solid var(--rule); background: var(--tint); padding: 36px 40px 28px; border-radius: 2px; }
 .frus-tour .a-doc { position: relative; padding: 10px 0 10px 40px; font-size: 17px; line-height: 1.6; min-width: 0; }
-.frus-tour .a-doc p + p { margin-top: 10px; }
 .frus-tour .a-doc .mk { position: absolute; left: 0; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--red); color: var(--paper); font: 600 12px/24px var(--sans); text-align: center; }
-.frus-tour .a-doc sup { font-family: var(--sans); font-size: 0.6em; color: var(--link); }
-.frus-tour .a-doc .dh { font-size: 21px; line-height: 1.35; font-weight: 600; }
-.frus-tour .a-doc .dl { font-size: 15px; color: var(--muted); line-height: 1.5; }
-.frus-tour .a-doc .smc { font-variant: small-caps; letter-spacing: 0.03em; }
-.frus-tour .a-doc .pn { color: var(--link); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.frus-tour .a-rest { color: var(--muted); }
-.frus-tour .a-fn { font-size: 14.5px; line-height: 1.5; }
+.frus-tour .a-shot .zoom { background: var(--paper); padding: 10px 12px; }
+.frus-tour .a-shot .zoom + .zoom { margin-top: 10px; }
 .frus-tour .a-fn-first { border-top: 1px solid var(--ink); margin-top: 14px; padding-top: 18px; }
 .frus-tour .a-fn-first .mk { top: 20px; }
-.frus-tour .a-fn .fnm { font-family: var(--sans); font-weight: 600; color: var(--link); display: inline-block; min-width: 1.4em; }
-.frus-tour .a-fn .srcline { margin-bottom: 6px; }
 .frus-tour .a-note { padding: 10px 0 18px; border-left: 1px solid var(--rule); padding-left: 20px; display: grid; gap: 6px; align-content: start; font-family: var(--sans); font-size: 14px; line-height: 1.5; min-width: 0; }
 .frus-tour .a-note .nk { font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--red); }
 .frus-tour .a-note .q { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--muted); }
 .frus-tour .a-note .app { display: grid; gap: 4px; margin-top: 2px; }
 .frus-tour .a-note .app .ia { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.frus-tour .a-empty { padding: 0; }
 .frus-tour .a-fn-first + .a-note { margin-top: 14px; padding-top: 18px; }
 .frus-tour [hidden] { display: none !important; }
 .frus-tour .slip dl.cols { margin: 0; display: grid; }
@@ -180,9 +168,10 @@
 .frus-tour .figures-row .lbl { font-size: 15.5px; line-height: 1.45; color: var(--muted); }
 @media (max-width: 860px) {
   .frus-tour .anat-grid { grid-template-columns: 1fr; padding: 24px 18px 18px; }
-  .frus-tour .a-note { border-left: 2px solid var(--red); margin: 0 0 12px 40px; padding: 8px 0 8px 14px; }
+  .frus-tour .a-note { border-left: 2px solid var(--red); margin: 0 0 12px; padding: 8px 0 8px 14px; }
+  .frus-tour .a-shot { padding-left: 0; }
+  .frus-tour .a-shot .mk { position: static; display: block; margin-bottom: 8px; }
   .frus-tour .a-fn-first + .a-note { margin-top: 0; padding-top: 8px; }
-  .frus-tour .a-empty { display: none; }
   .frus-tour .figures-row { grid-template-columns: 1fr; gap: 18px; }
 }
 .frus-tour .inner { padding-left: 0; padding-right: 0; }
