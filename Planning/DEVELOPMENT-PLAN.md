@@ -11090,3 +11090,4 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - **The Tour's closing** is headed *Not yet on the App Store* and says the app "is in final testing. It will be free, when it is released, …"; its button reads *Not yet on the App Store*.
 - The Markdown mirrors, the review frame, the preview's shell and the plain-language Support draft follow. Only "will be free" still assumes approval.
 - `build_paste.py` rewrote four files: `home-coming-soon.txt`, `home-launch.txt` (its headline and paragraph; still not ready), `tour-coming-soon-line.txt` and `tour-closing-coming-soon.txt`. The guide opens *What the site holds* with the three blocks to paste again. Both scripts' `--check` pass, and `build_site.py` builds. Not seen on the site: the owner pastes.
+- **Opened as #1932** on the owner's word of 2026-11-15 ("Yes, open a PR"), against `v2` at `db4f8236`, on `claude/website-testing-wording`, ready for review, auto-merge off.
