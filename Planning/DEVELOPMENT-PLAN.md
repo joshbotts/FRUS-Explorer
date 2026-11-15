@@ -11077,4 +11077,6 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - the Mac's subject sheet drawing no *All «area» subjects* door;
   - the two UI tests that fail under iOS 27.0 on `v2`.
 - **A device check of the iOS volume page and the person sheet with the caption**, where no UI test reads it. On the Mac the walk read both.
-- **Nothing is committed.** The check copy built from three commits on no branch (`fd454106`, `0148aeb0`, `527c4729`), which git collects in time.
+- The check copy built from three commits on no branch (`fd454106`, `0148aeb0`, `527c4729`), which git collects in time.
+
+**Opened as #1930** on the owner's word of 2026-11-15 ("Open the PR"), against `v2` at `7918075f`, which had not moved since the branch was cut; not merged, auto-merge off.
