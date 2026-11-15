@@ -91,6 +91,8 @@ import notify
 ///          (`FRUS_UI_TEST_DELAY_PIPELINE`, `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`). The
 ///          walk to a compilation had outgrown both delays, and `BrowseNestedSectionTests`' two
 ///          tests of them failed on `v2`
+///   1.4 — #1918 (L18, A11Y-2): a sixth seam, a search Search runs on the test's signal
+///          (``searchesOnSignal``), so that VoiceOver can listen to a search no input the test synthesizes ran
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -105,6 +107,8 @@ enum UITestBrowseSeams {
         case attachPipeline = "bottsywattsy.FRUS-Explorer.uitest.attach-pipeline"
         /// Finish the seeded volume's download (``finishesSeededDownloadOnSignal``).
         case finishSeededDownload = "bottsywattsy.FRUS-Explorer.uitest.finish-seeded-download"
+        /// Hand Search a search for the armed words (``searchesOnSignal``).
+        case search = "bottsywattsy.FRUS-Explorer.uitest.search"
     }
 
     /// Runs `action` on the main actor the first time `signal` arrives, and not again.
@@ -381,6 +385,36 @@ enum UITestBrowseSeams {
                 await manager.replayFinishedTransferForUITest(volumeId: volumeId)
                 print("[UITestBrowseSeams] Finished \(volumeId)'s download: its automatic index runs now")
             }
+        }
+    }
+
+    // MARK: - 5. A search no synthesized input ran (#1918, A11Y-2)
+
+    /// Launch key for the search seam: the words Search is handed when the test sends ``Signal/search``.
+    static let searchOnSignalKey = "FRUS_UI_TEST_SEARCH_ON_SIGNAL"
+
+    /// The armed words, or `nil` when the seam is not armed.
+    static var searchesOnSignal: String? {
+        ProcessInfo.processInfo.environment[searchOnSignalKey].flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    /// Hands Search a keyword search for `words` when the test sends ``Signal/search``, as a hand-off does
+    /// (`AppState.openSearch(_:from:)`, consumed by the Search tab).
+    ///
+    /// `SearchResultVoiceOverTests` listens to VoiceOver while that search finishes. With VoiceOver on, a tap or
+    /// typing the test synthesized left VoiceOver on in the simulator after the service's `disable()` (measured
+    /// 2026-11-15, iPhone 17, iOS 27.0), and every test after it met VoiceOver's cursor; a search this signal runs
+    /// needs no input at all.
+    ///
+    /// - Parameters:
+    ///   - words: The words to search for.
+    ///   - appState: The app's state, whose pending search the Search tab runs.
+    @MainActor
+    static func searchOnSignal(_ words: String, in appState: AppState) {
+        print("[UITestBrowseSeams] Handing Search \"\(words)\" when the test asks for it")
+        onSignal(.search) {
+            appState.openSearch(SearchParameters(keywords: words), from: nil)
+            print("[UITestBrowseSeams] Handed Search \"\(words)\"")
         }
     }
 }

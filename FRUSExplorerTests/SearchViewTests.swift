@@ -636,6 +636,26 @@ struct EmptyLibraryNoticeTests {
         // Rows found say the header, whatever lies beyond the library.
         #expect(said("12 closest matches", rows: 12, beyond: 5) == "12 closest matches")
     }
+
+    /// The two hosts' wiring, read where it is written: the Mac's window compiles for the Mac only, and this target
+    /// runs on iOS. Until A11Y-2 each announced a finish behind `executedRoute.isLayer`, so only a search inside a held
+    /// list was spoken. `SearchResultVoiceOverTests.testAFinishedSearchSaysWhatItFound` hears it in the simulator.
+    @Test("Both search screens announce every finished search, and neither only a layer's (A11Y-2)")
+    func bothHostsAnnounceEveryFinishedSearch() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            #expect(source.contains(".modifier(SearchFinishAnnouncer("),
+                    "\(path) no longer observes each finished search through SearchFinishAnnouncer")
+            let header = "private func announceFinishedSearch() {"
+            let start = try #require(source.range(of: header), "\(path) no longer declares announceFinishedSearch()")
+            let end = try #require(source.range(of: "\n    }\n", range: start.upperBound..<source.endIndex))
+            let body = source[start.upperBound..<end.lowerBound]
+            #expect(!body.contains("isLayer"), "\(path) announces only a layer's finish again")
+            #expect(body.contains("SearchFinishAnnouncement.text("),
+                    "\(path) says something other than what its screen shows")
+        }
+    }
 }
 
 // MARK: - PersonFilterTests

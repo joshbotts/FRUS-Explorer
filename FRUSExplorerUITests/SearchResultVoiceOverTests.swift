@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import XCTest
+import notify
 
 // MARK: - SearchResultVoiceOverTests (#1684)
 
@@ -49,7 +50,9 @@ import XCTest
 /// ## Devices
 /// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`, with the iOS 27 timeout flags; four tests, none
 /// skipped there. Under iOS 26 three tests skip and the fourth reads the labels without listening: the
-/// service is iOS 27's.
+/// service is iOS 27's. Under Xcode 27.2, run them one at a time with the simulator shut down between:
+/// once the service's speech has been read, `disable()` leaves VoiceOver on for the rest of the run
+/// (`testAFinishedSearchSaysWhatItFound` says what was measured).
 ///
 /// Version history:
 ///   1.0 — #1684: initial implementation
@@ -85,6 +88,10 @@ final class SearchResultVoiceOverTests: XCTestCase {
     /// What a finished search of the three rows says (A11Y-2): the results header's words.
     private static let announcement = "3 results"
 
+    /// The signal on which the app hands Search a search for ``query`` (`UITestBrowseSeams.Signal.search`'s raw value,
+    /// repeated here because a UI suite cannot reference the app's constants).
+    private static let searchSignal = "bottsywattsy.FRUS-Explorer.uitest.search"
+
     /// The name of the row's action for the suite's tag.
     private static var filterAction: String { "Filter by " + tagName }
 
@@ -115,6 +122,8 @@ final class SearchResultVoiceOverTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_SPOKEN_VOLUME"] = "1"
+        // Armed for every test, and sent by one (A11Y-2's): the app waits for the signal and does nothing without it.
+        app.launchEnvironment["FRUS_UI_TEST_SEARCH_ON_SIGNAL"] = Self.query
         app.launchArguments = UITestLaunch.arguments(startingOn: .search)
         app.launch()
         XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
@@ -201,30 +210,37 @@ final class SearchResultVoiceOverTests: XCTestCase {
     /// A finished search says what it found as its rows arrive: the header's own words, "3 results"
     /// (#1918, the review's A11Y-2). Until then only a search inside a held list was announced, so a
     /// VoiceOver reader heard nothing when a list arrived, or came back empty.
+    ///
+    /// The search listened to is one the app is handed on the test's signal (`UITestBrowseSeams.searchOnSignal`),
+    /// as a hand-off hands it one, so nothing is tapped or typed while VoiceOver is on: with it on, a single tap
+    /// only moves VoiceOver to what it lands on (on Filters' Done it said "Done Button" and did nothing).
+    /// VoiceOver's speech is read six times at most, a second apart; the service returns the last utterance until
+    /// another replaces it.
+    ///
+    /// **Run it alone, on a simulator shut down before it** (measured 2026-11-15, Xcode 27.2, iPhone 17 under iOS
+    /// 27.0): once the service's speech has been read, `disable()` leaves VoiceOver on, and every later test of the
+    /// run meets its cursor and cannot open the Search tab. `testATagIsSaidAndOfferedAsAnActionThatFilters` does the
+    /// same, on `v2` at `f29a3710` too; forty reads with no search did it, an announcement with no read did not.
     func testAFinishedSearchSaysWhatItFound() throws {
         guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
         // The volume is indexed during launch, and a search that runs first lists nothing, so the rows are
-        // made sure of with VoiceOver off; the search listened to is the same words submitted again.
+        // made sure of with VoiceOver off.
         runTheSearch()
-        let field = app.searchFields.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field")
-        // The field takes the keyboard before VoiceOver is on, so that Return reaches it.
-        field.tap()
 
         let voiceOver = XCUIDevice.shared.voiceOverService
         try voiceOver.enable()
-        field.typeText("\n")
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        XCTAssertEqual(notify_post(Self.searchSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.searchSignal), so no search will run")
         var heard: [String] = []
-        let deadline = Date().addingTimeInterval(Self.patience)
-        while Date() < deadline, !heard.contains(where: { $0.contains(Self.announcement) }) {
+        for _ in 1...6 where !heard.contains(where: { $0.contains(Self.announcement) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(1))
             let spoken = try voiceOver.currentSpeech().utterance
             if heard.last != spoken { heard.append(spoken) }
-            Thread.sleep(forTimeInterval: 0.2)
         }
         try voiceOver.disable()
         XCTAssertTrue(heard.contains { $0.contains(Self.announcement) }, """
-            VoiceOver did not say what the search found ("\(Self.announcement)") within \(Int(Self.patience)) s. \
-            It said: \(heard)
+            VoiceOver did not say what the search found ("\(Self.announcement)") within six seconds. It said: \(heard)
             """)
     }
 
