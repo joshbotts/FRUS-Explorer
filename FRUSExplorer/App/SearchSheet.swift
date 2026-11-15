@@ -166,7 +166,8 @@ import SwiftUI
 ///   1.33 — 2026-11-15: #1918 (L18) — the facet panel's Apply sends every staged section (IPH-3); with no volume
 ///          indexed a finished search shows `EmptyLibraryNotice`, whose Download Volumes… opens Settings ▸ Library ▸
 ///          Volumes & Storage, where the zero-result state blamed a term (HCD-4); every finished search is announced,
-///          and a failed one says its error, where only a layer's finish was (A11Y-2)
+///          and a failed one says its error, where only a layer's finish was (A11Y-2); a snippet's matched words are
+///          drawn as the reader draws a highlight, where they were yellow text (A11Y-1)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -3055,6 +3056,16 @@ private struct SearchResultRow: View {
 /// `AttributedString.init(_:including:)` scope-filter initializer, which silently
 /// fails on macOS when attribute scopes are mixed (AppKit vs SwiftUI), causing the
 /// raw `<b>word</b>` fallback to render.
+///
+/// A matched word is drawn as the reader draws a highlight (the review's A11Y-1): bold, in full black (full white in
+/// dark mode) on the reader's yellow wash (`FRUSTheme.searchMatchText`, `.searchMatchBackground`). It was drawn in
+/// `Color.yellow` text, 1.51:1 on white. Not in the snippet's own grey, which is 4.0:1 on white and lower on the wash,
+/// the reason #1602 gave the reader's highlighted text its own colour; and not in the accent, whose light blue is
+/// about 3.5:1.
+///
+/// Version history:
+///   1.0 — initial implementation
+///   1.1 — #1918 (L18, A11Y-1): matched words drawn as a highlight, where they were yellow text
 private struct SnippetView: View {
     let snippet: String
 
@@ -3075,8 +3086,9 @@ private struct SnippetView: View {
 
                 let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
                 var span = AttributedString(highlighted)
-                span.swiftUI.foregroundColor = Color.yellow
-                span.swiftUI.font = .callout.weight(.medium)
+                span.swiftUI.foregroundColor = FRUSTheme.searchMatchText
+                span.swiftUI.backgroundColor = FRUSTheme.searchMatchBackground
+                span.swiftUI.font = .callout.weight(.bold)
                 result += span
 
                 remainder = String(remainder[closeRange.upperBound...])
