@@ -10951,4 +10951,4 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - L17 is #1917, L18 #1918, L19 #1919, L20 #1920 and L21 #1921.
   - The issues' bodies write every code attribute in backticks, so that none mentions a GitHub user.
   - Each ends with the session's footer.
-- This change's pull request was opened the same day, on the same word.
+- This change's pull request was opened the same day, on the same word, as #1922, against `v2` at `4a269a35`, which had not moved since the branch was cut.
