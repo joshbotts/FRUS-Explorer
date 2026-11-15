@@ -975,6 +975,8 @@ private struct SelectionMeaningStub: MeaningSearchRunning {
 ///   1.0 — #1576 lane 3: initial implementation
 ///   1.1 — #1683: why Add to Collection and Add Tags are dimmed is said under each in the Actions menu, and not
 ///          above the results
+///   1.2 — #1918 (IPH-5): Select Results is read from `moreMenuItems`, where More's items moved so that its hit twin
+///          draws them too; the help's key is still read from `moreMenu`
 @Suite("Result selection, the wiring")
 struct ResultSelectionWiringTests {
 
@@ -1027,7 +1029,9 @@ struct ResultSelectionWiringTests {
     /// and iPad only; and only where there are rows of the list reading to pick.
     @Test("Select Results is in the More menu after the save items, for the list reading")
     func moreMenuEntersSelection() throws {
-        let more = try Self.declaration("private var moreMenu: some View {", in: try Self.source(Self.view))
+        let source = try Self.source(Self.view)
+        let more = try Self.declaration("private var moreMenuItems: some View {", in: source)
+        let menu = try Self.declaration("private var moreMenu: some View {", in: source)
         let corpus = try #require(more.range(of: "\"search.corpus.save\""))
         let select = try #require(more.range(of: "ResultSelectionCopy.selectResults"))
         let saved = try #require(more.range(of: "\"search.savedSearches.a11y\""))
@@ -1047,8 +1051,8 @@ struct ResultSelectionWiringTests {
             runs, whose picks would last into the next list (#1683)
             """)
         // Re-keyed again by #1577 lane 4, for Search Within These Results.
-        #expect(more.contains("\"search.moreActions.help.v4\""), "the help names the menu's contents, so it is re-keyed")
-        #expect(!more.contains("\"search.moreActions.help.v2\"") && !more.contains("\"search.moreActions.help.v3\""))
+        #expect(menu.contains("\"search.moreActions.help.v4\""), "the help names the menu's contents, so it is re-keyed")
+        #expect(!menu.contains("\"search.moreActions.help.v2\"") && !menu.contains("\"search.moreActions.help.v3\""))
     }
 
     @Test("In selection a row's tap picks it, its swipe is off, and its menu opens it")

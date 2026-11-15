@@ -46,6 +46,8 @@ import Foundation
 ///   1.2 — #1299 round 2: `appStateRequestIsAHandoff` reads the stored hand-off inside the `AppState` class declaration
 ///         rather than across the whole file, which 1.1's "no presence check reads a whole file" did not hold for; and
 ///         the whole-file absence checks are counted as five, where 1.1 said three.
+///   1.3 — #1918 (IPH-5): `moreMenuOpensTips` reads the item from `moreMenuItems`, where More's items moved so that its
+///         hit twin draws them too, and the help's keys from `moreMenu`.
 @Suite("Search Tips are wired where the owner put them")
 struct SearchTipsWiringTests {
 
@@ -358,7 +360,8 @@ struct SearchTipsWiringTests {
     @Test("iOS: More ▸ Search Tips follows the abbreviation lookup, clear of the two save items")
     func moreMenuOpensTips() throws {
         let view = try Self.source(Self.searchView)
-        let more = try Self.declaration("private var moreMenu: some View {", in: view)
+        let more = try Self.declaration("private var moreMenuItems: some View {", in: view)
+        let menu = try Self.declaration("private var moreMenu: some View {", in: view)
         let item = try #require(more.range(of: "\"search.tips.open\""), "no Search Tips item in the More menu")
         let glossary = try #require(more.range(of: "\"search.glossaryLookup.a11y\""))
         #expect(glossary.upperBound < item.lowerBound, "Search Tips must come after Look up an abbreviation")
@@ -372,11 +375,11 @@ struct SearchTipsWiringTests {
         let corpus = try #require(more.range(of: "search.corpus.save"))
         #expect(!more[save.upperBound..<corpus.lowerBound].contains("search.tips.open"))
 
-        #expect(more.contains("\"search.moreActions.help.v4\""))
-        #expect(!more.contains("\"search.moreActions.help.v3\""),
+        #expect(menu.contains("\"search.moreActions.help.v4\""))
+        #expect(!menu.contains("\"search.moreActions.help.v3\""),
                 "the help text still omits Search Within These Results (#1577 lane 4)")
-        #expect(!more.contains("\"search.moreActions.help\""), "the help text still omits the lookup and the tips")
-        #expect(!more.contains("\"search.moreActions.help.v2\""), "the help text still omits Select Results (#1576)")
+        #expect(!menu.contains("\"search.moreActions.help\""), "the help text still omits the lookup and the tips")
+        #expect(!menu.contains("\"search.moreActions.help.v2\""), "the help text still omits Select Results (#1576)")
     }
 
     @Test("iOS: no sixth icon in the actions bar")

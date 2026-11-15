@@ -651,6 +651,8 @@ private final class QuestionGatedMeaningSearch: MeaningSearchRunning {
 ///   1.1 — #1688: a full Meaning list's trail row records its count as exact
 ///   1.2 — #1686: the Mac's facet panel narrows through the view model, and a change of project keeps a facet's volumes
 ///   1.3 — #1918 (IPH-3): the Mac's facet panel applies each staged choice of one Apply in turn
+///   1.4 — #1918 (IPH-5): the iOS readings' door is read from `examineMenuItems`, where the picker moved so that the
+///         menu's hit twin draws it too
 @Suite("Search results are described by the run that produced them")
 @MainActor
 struct SearchResultRouteTests {
@@ -1471,7 +1473,8 @@ struct SearchResultRouteTests {
     @Test("Both hosts dim the readings' control by the view model's rule, on the control itself")
     func bothHostsAskTheViewModelForTheReadingsDoor() throws {
         for (path, header, control, door) in [
-            ("FRUSExplorer/Search/SearchView.swift", "    private var examineMenu: some View {",
+            // The iOS picker is one of the Examine menu's items, which its hit twin draws too (IPH-5, #1918).
+            ("FRUSExplorer/Search/SearchView.swift", "    private var examineMenuItems: some View {",
              "selection: readingSelection) {", ".disabled(vm.results.isEmpty || !vm.offersReadings)"),
             ("FRUSExplorer/App/SearchSheet.swift", "    private var searchToolbar: some ToolbarContent {",
              "Picker(selection: readingSelection) {", ".disabled(searchVM.results.isEmpty || !searchVM.offersReadings)"),

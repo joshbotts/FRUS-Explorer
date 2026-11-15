@@ -131,6 +131,9 @@ struct ResultReadingTests {
 ///
 /// Version history:
 ///   1.0 — Q wave: initial implementation
+///   1.1 — #1918 (IPH-5): which items are in which menu is read from `examineMenuItems` and `moreMenuItems`, where the
+///         items moved so that each menu's hit twin draws them too; the glyph, the HUD's literal and the value stay the
+///         menu's. The slicer's test covers the four declarations, and each twin is pinned off when its menu is
 @Suite("Examine menu structure")
 struct ExamineMenuAuditTests {
 
@@ -142,9 +145,10 @@ struct ExamineMenuAuditTests {
 
     /// The body of a declaration, from its opening brace to the brace that matches it.
     ///
-    /// Brace matching rather than a line count: `examineMenu` and `moreMenu` are adjacent, so a
-    /// fixed window over one of them reaches into the other and every "is X absent from this
-    /// menu?" assertion would pass vacuously.
+    /// Brace matching rather than a line count: each menu sits right after its items' declaration
+    /// (`examineMenuItems`, then `examineMenu`; `moreMenuItems`, then `moreMenu`), so a fixed window
+    /// over one of them reaches into the next and every "is X absent from this menu?" assertion
+    /// would pass vacuously.
     private static func declaration(_ signature: String, in source: String) throws -> String {
         let start = try #require(source.range(of: signature), "no declaration: \(signature)")
         var depth = 0
@@ -171,15 +175,44 @@ struct ExamineMenuAuditTests {
         let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
         let examine = try Self.declaration("private var examineMenu: some View {", in: source)
         let more = try Self.declaration("private var moreMenu: some View {", in: source)
+        let examineItems = try Self.declaration("private var examineMenuItems: some View {", in: source)
+        let moreItems = try Self.declaration("private var moreMenuItems: some View {", in: source)
 
-        #expect(!examine.isEmpty)
-        #expect(!more.isEmpty)
-        // Bounded: neither slice may swallow the other, or the absence checks prove nothing.
+        for slice in [examine, more, examineItems, moreItems] {
+            #expect(!slice.isEmpty)
+        }
+        // Bounded: no slice may swallow the declaration after it, or the absence checks prove nothing.
         #expect(!examine.contains("private var moreMenu"))
         #expect(!more.contains("private var examineMenu"))
-        // Each is a real body, not just the signature line.
+        #expect(!examineItems.contains("private var examineMenu: some View"))
+        #expect(!moreItems.contains("private var moreMenu: some View"))
+        // Each menu is a real body, not just the signature line, and draws the declaration its items are read from.
         #expect(examine.contains("Menu {"))
         #expect(more.contains("Menu {"))
+        #expect(examine.contains("examineMenuItems"))
+        #expect(more.contains("moreMenuItems"))
+        #expect(examineItems.contains("Picker("))
+        #expect(moreItems.contains("Button {"))
+    }
+
+    /// A twin left on behind a menu that is off would open the menu's items from a tap beside its dimmed glyph, and
+    /// one left off behind a menu that is on would take back the hit area IPH-5 gave it (#1918).
+    @Test("Each menu's hit twin is off exactly when its menu is, and draws that menu's items")
+    func hitTwinsFollowTheirMenus() throws {
+        let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
+        let bar = try Self.declaration("private var searchActionsBar: some View {", in: source)
+        for (menu, items, gate) in [
+            ("private var examineMenu: some View {", "examineMenuItems", "!examineOffered && !showFacetSheet"),
+            ("private var sortMenu: some View {", "sortMenuItems", "vm.results.isEmpty"),
+        ] {
+            let declaration = try Self.declaration(menu, in: source)
+            #expect(declaration.contains(".disabled(\(gate))"), "`\(menu)` is no longer off by `\(gate)`")
+            #expect(bar.contains("menuHitTwin(disabled: \(gate)) { \(items) }"),
+                    "the twin behind `\(menu)` is not off by its menu's gate, or draws other items")
+        }
+        let more = try Self.declaration("private var moreMenu: some View {", in: source)
+        #expect(!more.contains(".disabled("), "More is never off, so its twin is not either")
+        #expect(bar.contains("menuHitTwin(disabled: false) { moreMenuItems }"))
     }
 
     // MARK: - Membership
@@ -187,7 +220,7 @@ struct ExamineMenuAuditTests {
     @Test("Save as Working Corpus is not among the readings")
     func saveIsNotAReading() throws {
         let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
-        let examine = try Self.declaration("private var examineMenu: some View {", in: source)
+        let examine = try Self.declaration("private var examineMenuItems: some View {", in: source)
         #expect(!examine.contains("showSaveCorpusSheet"),
                 "the capture action is back inside the examine menu")
         #expect(!examine.contains("search.corpus.save"))
@@ -196,7 +229,7 @@ struct ExamineMenuAuditTests {
     @Test("Save as Working Corpus sits in the overflow menu beside Save this search")
     func saveLivesInMoreMenu() throws {
         let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
-        let more = try Self.declaration("private var moreMenu: some View {", in: source)
+        let more = try Self.declaration("private var moreMenuItems: some View {", in: source)
         #expect(more.contains("showSaveCorpusSheet"))
         #expect(more.contains("search.corpus.save"))
         // Adjacency is the point: saving the results is the sibling of saving the query.
@@ -212,7 +245,7 @@ struct ExamineMenuAuditTests {
     @Test("The capture action keeps its own enablement rule after the move")
     func saveKeepsItsGate() throws {
         let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
-        let more = try Self.declaration("private var moreMenu: some View {", in: source)
+        let more = try Self.declaration("private var moreMenuItems: some View {", in: source)
         #expect(more.contains(".disabled(vm.displayedResults.isEmpty)"),
                 "Save must gate on displayedResults, not results — it captures what is retained")
     }
@@ -251,7 +284,7 @@ struct ExamineMenuAuditTests {
     @Test("The readings are a single-selection Picker")
     func readingsArePicker() throws {
         let source = try Self.source("FRUSExplorer/Search/SearchView.swift")
-        let examine = try Self.declaration("private var examineMenu: some View {", in: source)
+        let examine = try Self.declaration("private var examineMenuItems: some View {", in: source)
         #expect(examine.contains("Picker("))
         #expect(examine.contains("selection: readingSelection"))
         #expect(!examine.contains(#""checkmark""#), "state is back to a hand-swapped checkmark")
