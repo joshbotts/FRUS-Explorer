@@ -65,6 +65,10 @@ import FTS5Store
 ///          volume number reads the kit's `VolumeLabels`, where `ChronologyViewModel`'s label
 ///          grammar moved. The store's conformance to `RelatedCitationSource` is declared here;
 ///          `expandedGraph`'s doc drops the 20- and 15-node caps 1.2 removed
+///   1.11 — 2026-11-15 (#1892, L16): `expandedGraph` passes the degree-1 graph's
+///          `undownloadedCitingVolumeIds` on at two and three hops, where it left them empty, so a
+///          graph's banner counts the citing documents in undownloaded volumes at every depth; its
+///          doc drops the paragraph on the gap
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -292,10 +296,6 @@ public actor CrossReferenceStore {
     /// - **Degree 3**: extends further from every 2nd-degree node (the 20- and 15-node caps were
     ///   removed in 1.2).
     ///
-    /// At degree 2 and 3 the graph keeps the degree-1 graph's `hasUndownloadedSources` but not its
-    /// `undownloadedCitingVolumeIds`, which it leaves empty; a caller that names those volumes takes
-    /// them from the degree-1 graph.
-    ///
     /// Edges already present at a lower degree are deduplicated. All node metadata
     /// encountered during expansion is included in the returned `nodeMetadata` dictionary.
     ///
@@ -387,7 +387,8 @@ public actor CrossReferenceStore {
             hasUndownloadedSources: base.hasUndownloadedSources,
             nodeMetadata:      extendedMeta,
             extendedEdges:     extendedEdges,
-            fetchedDegree:     degree
+            fetchedDegree:     degree,
+            undownloadedCitingVolumeIds: base.undownloadedCitingVolumeIds
         )
     }
 

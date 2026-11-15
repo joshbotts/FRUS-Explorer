@@ -40,6 +40,8 @@ import CSQLite
 /// Version history:
 ///   1.0 — 2026-11-10 (FRUS Explorer Light, S23b): initial implementation, when the store moved into
 ///          FRUSCoreKit and took the two files from its host
+///   1.1 — 2026-11-15 (#1892, L16): the graph at two and three hops names the undownloaded volumes that
+///          cite the telegram, as at one (`everyDegreeNamesTheUndownloadedCitingVolumes`)
 @Suite("FRUSCoreKit — the cross-reference store, as a host opens it")
 @MainActor
 struct CrossReferenceHostTests {
@@ -164,6 +166,31 @@ struct CrossReferenceHostTests {
                                                resolvedEdgeIndex: edges, citedPageMap: pages)
             #expect(host.isImmutable)
             #expect(try await answers(host) == expected)
+        }
+    }
+
+    @Test("At two and three hops the graph names the volumes not downloaded that cite the document, as at one (#1892)")
+    func everyDegreeNamesTheUndownloadedCitingVolumes() async throws {
+        try await withTempDir { dir in
+            let store = try CrossReferenceStore(databaseURL: try buildIndex(in: dir), volumes: try crossReferenceTestCatalogue())
+            var graphs: [CrossReferenceGraph] = []
+            for degree in 1...3 {
+                graphs.append(try await store.expandedGraph(forDocumentId: "d475", volumeId: "frus1946v06", degree: degree,
+                                                            downloadedVolumeIds: ["frus1946v06"]))
+            }
+            let oneHop = graphs[0]
+            // The bundled index adds the telegram's citers from volumes the fixture does not hold.
+            #expect(oneHop.hasUndownloadedSources && !oneHop.undownloadedCitingVolumeIds.isEmpty,
+                    "\(oneHop.undownloadedCitingVolumeIds)")
+            for graph in graphs.dropFirst() {
+                #expect(graph.extendedEdges.count > 0, "degree \(graph.fetchedDegree) is two hops out or more")
+                #expect(graph.hasUndownloadedSources)
+                #expect(graph.undownloadedCitingVolumeIds == oneHop.undownloadedCitingVolumeIds,
+                        "degree \(graph.fetchedDegree): \(graph.undownloadedCitingVolumeIds)")
+                // The banner counts the inbound edges from those volumes, which every degree takes from one hop.
+                #expect(graph.inboundEdges.map { "\($0.sourceVolumeId)/\($0.sourceDocumentId)" }
+                        == oneHop.inboundEdges.map { "\($0.sourceVolumeId)/\($0.sourceDocumentId)" })
+            }
         }
     }
 
