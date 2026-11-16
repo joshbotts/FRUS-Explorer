@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+import notify
 
 /// The volume page's "Editors’ Annotations" section on a real page (the editors' annotations
 /// design, lane B, `Planning/Editors-Annotations-Design-2026-11-06.md` §5):
@@ -191,5 +192,212 @@ final class VolumeAnnotationsSectionTests: XCTestCase {
             """)
         liftAboveTheBanner(people)
         keepScreenshot(named: "Editors’ Annotations at AX5")
+    }
+}
+
+// MARK: - VolumeDownloadFailureTests (L20, #1920, HCD-3)
+
+/// A volume's download that fails with its retries spent shows on the volume's page, in Keeping
+/// Current's words, with **Retry** in Download Volume's place (L20, #1920, HCD-3).
+///
+/// The download seam's `fail` makes every attempt fail as with no connection, after a second and a
+/// half, so the page shows "Downloading…" first (`UITestBrowseSeams.downloadSeam`); nothing reaches
+/// the network. The volume is *Soviet Union* (1961–1963, Volume V), which no suite downloads. Before
+/// L20 the page offered Download Volume again with no word, so the test fails at the failure's line
+/// on that code. Retry is shown to queue the volume again by the "Downloading…" it brings back.
+///
+/// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0. It never skips. The Mac's
+/// Corpus Browser page, which before L20 stayed on "Downloading…" for good, is walked in the check copy.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-3): initial implementation
+@MainActor
+final class VolumeDownloadFailureTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DOWNLOADS"] = "fail"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments() + ["-frus.filterDownloadedOnly", "NO"]
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app = nil
+    }
+
+    func testAFailedDownloadIsShownWithRetry() throws {
+        app.launch()
+        UndownloadedVolumeWalk.open(in: app, navigator: navigator)
+
+        let download = app.buttons["Download Volume"].firstMatch
+        XCTAssertTrue(download.waitForExistence(timeout: 15), """
+            The volume's page offers no Download Volume: is \(UndownloadedVolumeWalk.volumeId) on this simulator?
+            """)
+        download.tap()
+        XCTAssertTrue(UndownloadedVolumeWalk.downloading(in: app).waitForExistence(timeout: 10),
+                      "Download Volume did not start the download")
+
+        let failure = app.descendants(matching: .any)["volume.download.failure"].firstMatch
+        XCTAssertTrue(failure.waitForExistence(timeout: 45), """
+            The page shows no failure after the download failed with its retries spent: before L20 it \
+            offered Download Volume again with no word.
+            """)
+        XCTAssertTrue(failure.label.contains(UndownloadedVolumeWalk.failureLine), "the failure reads \(failure.label)")
+        let retry = app.buttons["volume.download.retry"].firstMatch
+        XCTAssertTrue(retry.exists, "the failure is shown with no Retry")
+        XCTAssertFalse(app.buttons["Download Volume"].firstMatch.exists,
+                       "Download Volume is offered beside Retry")
+
+        retry.tap()
+        XCTAssertTrue(UndownloadedVolumeWalk.downloading(in: app).waitForExistence(timeout: 10),
+                      "Retry did not queue the volume again")
+        XCTAssertTrue(failure.waitForExistence(timeout: 45), "the second failure was not shown")
+    }
+}
+
+// MARK: - VolumeDownloadFailureAnnouncementTests (L20, #1920, HCD-3)
+
+/// The failure is said to VoiceOver as it arrives on the volume's page: "The download failed: no
+/// connection." (L20, #1920, HCD-3).
+///
+/// The test walks to the page with VoiceOver off, turns it on, and has the app start the download by a
+/// Darwin signal (`UITestBrowseSeams.downloadsOnSignal`), since with VoiceOver on a tap only moves its
+/// cursor. It then reads VoiceOver's speech four times a second for twenty seconds, which the download's
+/// three failing attempts take about five of. Before L20 nothing was said.
+///
+/// **Run it alone, on a simulator shut down before it**, on iPhone 17 and iPad Pro 13-inch (M5), both
+/// `OS=27.0`, with 600 s a test: under Xcode 27.2, once the VoiceOver service's speech has been read,
+/// `disable()` leaves VoiceOver on (`SearchResultVoiceOverTests`' entry in the runbook). It needs iOS 27's
+/// VoiceOver service and skips below it.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-3): initial implementation
+@MainActor
+final class VolumeDownloadFailureAnnouncementTests: XCTestCase {
+
+    /// `UITestBrowseSeams.Signal.startDownload`'s name.
+    private static let startDownloadSignal = "bottsywattsy.FRUS-Explorer.uitest.start-download"
+
+    var app: XCUIApplication!
+
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        // A run that ended inside a test could have left VoiceOver on.
+        turnVoiceOverOff()
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DOWNLOADS"] = "fail"
+        app.launchEnvironment["FRUS_UI_TEST_DOWNLOAD_ON_SIGNAL"] = UndownloadedVolumeWalk.volumeId
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments() + ["-frus.filterDownloadedOnly", "NO"]
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    func testAFailedDownloadIsSaidToVoiceOver() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        app.launch()
+        UndownloadedVolumeWalk.open(in: app, navigator: navigator)
+        XCTAssertTrue(app.buttons["Download Volume"].firstMatch.waitForExistence(timeout: 15), """
+            The volume's page offers no Download Volume: is \(UndownloadedVolumeWalk.volumeId) on this simulator?
+            """)
+
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        XCTAssertEqual(notify_post(Self.startDownloadSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.startDownloadSignal), so no download will start")
+        var heard: [String] = []
+        for _ in 1...80 where !heard.contains(where: { $0.contains(UndownloadedVolumeWalk.failureLine) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+        }
+        try voiceOver.disable()
+        XCTAssertTrue(heard.contains { $0.contains(UndownloadedVolumeWalk.failureLine) }, """
+            VoiceOver did not say "\(UndownloadedVolumeWalk.failureLine)" within twenty seconds of the \
+            download's start. It said: \(heard)
+            """)
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
+    }
+}
+
+// MARK: - The walk to a volume that is not on the device
+
+/// Browse ▸ the Subseries tile ▸ 1961–63 ▸ *Soviet Union*, the page `VolumeDownloadFailureTests` and
+/// `VolumeDownloadFailureAnnouncementTests` stand on, with every volume listed
+/// (`-frus.filterDownloadedOnly NO`).
+@MainActor
+enum UndownloadedVolumeWalk {
+
+    /// *Foreign Relations of the United States, 1961–1963, Volume V, Soviet Union*: no suite downloads it,
+    /// and it is the subseries' one title that names the Soviet Union.
+    static let volumeId = "frus1961-63v05"
+
+    /// What the page says when its download failed as with no connection: Keeping Current's words.
+    static let failureLine = "The download failed: no connection."
+
+    /// The page's "Downloading…" line.
+    static func downloading(in app: XCUIApplication) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Downloading")).firstMatch
+    }
+
+    /// Opens the volume's page, failing with a distinct message at each step.
+    ///
+    /// - Parameters:
+    ///   - app: The running app.
+    ///   - navigator: The suite's tab navigator.
+    static func open(in app: XCUIApplication, navigator: TabBarNavigator) {
+        _ = navigator.select(.browse).tapped
+        let tile = app.buttons["browse.root.subseriesTile"].firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 20), "The Browse root's Subseries tile did not appear.")
+        let subseries = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Subseries 1961-63")).firstMatch
+        for _ in 0..<3 {
+            scrollUntilHittable(tile, in: app, attempts: 4)
+            if tile.exists && tile.isHittable { tile.tap() }
+            if subseries.waitForExistence(timeout: 5) { break }
+        }
+        scrollUntilHittable(subseries, in: app, attempts: 12)
+        XCTAssertTrue(subseries.exists, "No 1961–63 subseries row after three taps on the Subseries tile.")
+        subseries.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+
+        let volume = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Soviet Union'")).firstMatch
+        if !volume.waitForExistence(timeout: 10) { scrollUntilHittable(volume, in: app, attempts: 8) }
+        XCTAssertTrue(volume.exists, "The Soviet Union volume's row did not appear in the subseries list.")
+        scrollUntilHittable(volume, in: app, attempts: 8)
+        volume.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+    }
+
+    /// Swipes up until `element` is present and hittable: a SwiftUI `List` is lazy.
+    private static func scrollUntilHittable(_ element: XCUIElement, in app: XCUIApplication, attempts: Int) {
+        for _ in 0..<attempts {
+            if element.exists && element.isHittable { return }
+            app.swipeUp(velocity: .slow)
+        }
     }
 }

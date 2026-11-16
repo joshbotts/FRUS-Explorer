@@ -317,6 +317,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.39 — L20 (#1920, HCD-2): `bootDownloadManager()` builds the download manager with a UI test's
 ///          download seam, which holds or fails every transfer (`UITestBrowseSeams.downloadSeam`), and
 ///          queues a test's downloads; DEBUG only
+///   4.40 — L20 (#1920, HCD-3): a transfer's end also reaches `AppState.recordDownloadOutcome(_:outcome:)`,
+///          which keeps a volume's failed download for its page; and a test's download starts by
+///          signal (DEBUG only)
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -3221,9 +3224,11 @@ struct FRUSExplorerApp: App {
             preferences: downloadPreferences,
             // #1660: how each transfer ended, for Keeping Current's rows. #1757: and for the indexing
             // queue's count, which takes in a volume that landed and lets go of one that never will.
+            // L20 (#1920, HCD-3): and a failure kept for its volume's page, with Retry.
             onTransferFinished: { @MainActor [appState] volumeId, outcome in
                 appState.keepingCurrent.transferDidFinish(volumeId, outcome: outcome)
                 appState.indexingQueueTransferDidFinish(volumeId, outcome: outcome)
+                appState.recordDownloadOutcome(volumeId, outcome: outcome)
             },
             retryBackoff: downloadRetryBackoff
         )
@@ -3263,11 +3268,15 @@ struct FRUSExplorerApp: App {
         if let words = UITestBrowseSeams.searchesOnSignal {
             UITestBrowseSeams.searchOnSignal(words, in: appState)
         }
-        // #1920 (L20): a queue of volumes for Cancel All to stop. Inert without
-        // FRUS_UI_TEST_QUEUE_DOWNLOADS.
+        // #1920 (L20): a queue of volumes for Cancel All to stop, and a download a VoiceOver test
+        // starts by signal. Inert without FRUS_UI_TEST_QUEUE_DOWNLOADS and
+        // FRUS_UI_TEST_DOWNLOAD_ON_SIGNAL.
         if let count = UITestBrowseSeams.downloadsToQueue {
             let entries = appState.manifestStore.bundledEntries
             Task { await UITestBrowseSeams.queueDownloads(count, of: entries, in: dm) }
+        }
+        if let volumeId = UITestBrowseSeams.downloadsOnSignal {
+            UITestBrowseSeams.downloadOnSignal(volumeId, in: appState)
         }
         #endif
 

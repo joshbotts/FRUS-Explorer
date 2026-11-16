@@ -95,6 +95,7 @@ import notify
 ///          (``searchesOnSignal``), so that VoiceOver can listen to a search no input the test synthesizes ran
 ///   1.5 — #1920 (L20, HCD-2): downloads that wait or fail, with no network (``downloadSeam``), and a
 ///          queue of volumes at launch (``downloadsToQueue``)
+///   1.6 — #1920 (L20, HCD-3): a download the test starts by signal (``downloadsOnSignal``)
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -111,6 +112,8 @@ enum UITestBrowseSeams {
         case finishSeededDownload = "bottsywattsy.FRUS-Explorer.uitest.finish-seeded-download"
         /// Hand Search a search for the armed words (``searchesOnSignal``).
         case search = "bottsywattsy.FRUS-Explorer.uitest.search"
+        /// Start the armed volume's download (``downloadsOnSignal``).
+        case startDownload = "bottsywattsy.FRUS-Explorer.uitest.start-download"
     }
 
     /// Runs `action` on the main actor the first time `signal` arrives, and not again.
@@ -506,6 +509,43 @@ enum UITestBrowseSeams {
             if await manager.enqueueDownload(entry) == .queued { queued += 1 }
         }
         print("[UITestBrowseSeams] Queued \(queued) downloads")
+    }
+
+    // MARK: - 7. A download the test starts by signal (#1920, L20, HCD-3)
+
+    /// Launch key: the volume whose download starts when the test sends ``Signal/startDownload``.
+    static let downloadOnSignalKey = "FRUS_UI_TEST_DOWNLOAD_ON_SIGNAL"
+
+    /// The armed volume, or `nil` when the seam is not armed.
+    static var downloadsOnSignal: String? {
+        ProcessInfo.processInfo.environment[downloadOnSignalKey].flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    /// Starts `volumeId`'s download when the test sends ``Signal/startDownload``, as its page's
+    /// Download Volume does.
+    ///
+    /// `VolumeDownloadFailureAnnouncementTests` listens to VoiceOver while that download fails, with
+    /// the volume's page on screen. With VoiceOver on a tap only moves its cursor, and a test that has
+    /// read speech leaves VoiceOver on under Xcode 27.2 (#1918's seam has why), so the download is
+    /// started with no input at all.
+    ///
+    /// - Parameters:
+    ///   - volumeId: A catalogue volume that is not on the device.
+    ///   - appState: The app's state, whose catalogue and download manager the download goes through.
+    @MainActor
+    static func downloadOnSignal(_ volumeId: String, in appState: AppState) {
+        print("[UITestBrowseSeams] Downloading \(volumeId) when the test asks for it")
+        onSignal(.startDownload) {
+            guard let manager = appState.downloadManager,
+                  let entry = appState.manifestStore.entry(forVolumeId: volumeId) else {
+                print("[UITestBrowseSeams] Could not download \(volumeId): no manager or no catalogue entry")
+                return
+            }
+            Task {
+                await manager.enqueueDownload(entry)
+                print("[UITestBrowseSeams] Queued \(volumeId)'s download")
+            }
+        }
     }
 }
 

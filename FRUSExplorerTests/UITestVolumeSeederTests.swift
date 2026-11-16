@@ -586,9 +586,14 @@ struct BrowseSeamSignalTests {
         let spoken = try String(
             contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/SearchResultVoiceOverTests.swift"),
             encoding: .utf8)
+        // #1920 (L20, HCD-3): the start-download signal is the failed download's VoiceOver suite's, in
+        // the volume page's file, which names it as a constant too.
+        let failing = try String(
+            contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/VolumeAnnotationsSectionTests.swift"),
+            encoding: .utf8)
 
-        #expect(UITestBrowseSeams.Signal.allCases.count == 3)
-        for signal in UITestBrowseSeams.Signal.allCases where signal != .search {
+        #expect(UITestBrowseSeams.Signal.allCases.count == 4)
+        for signal in UITestBrowseSeams.Signal.allCases where signal != .search && signal != .startDownload {
             #expect(suite.contains("case \(signal) = \"\(signal.rawValue)\""),
                     "the UI suite has no `\(signal)` signal named \(signal.rawValue)")
         }
@@ -596,8 +601,13 @@ struct BrowseSeamSignalTests {
                 "the VoiceOver suite does not send the search signal by its name")
         #expect(spoken.contains("\"\(UITestBrowseSeams.searchOnSignalKey)\""),
                 "the VoiceOver suite no longer arms \(UITestBrowseSeams.searchOnSignalKey)")
+        #expect(failing.contains("startDownloadSignal = \"\(UITestBrowseSeams.Signal.startDownload.rawValue)\""),
+                "the failed download's VoiceOver suite does not send the start-download signal by its name")
+        #expect(failing.contains("\"\(UITestBrowseSeams.downloadOnSignalKey)\""),
+                "the failed download's VoiceOver suite no longer arms \(UITestBrowseSeams.downloadOnSignalKey)")
         // And no other name the app would never hear.
-        let named = (suite + spoken).components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
+        let named = (suite + spoken + failing)
+            .components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
         #expect(named == UITestBrowseSeams.Signal.allCases.count)
 
         // Each seam is armed by its own key, and released by its own signal after it.

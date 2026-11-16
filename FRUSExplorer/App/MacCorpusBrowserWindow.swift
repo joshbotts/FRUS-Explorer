@@ -1201,6 +1201,9 @@ private struct BoundedSubjectsBlock: View {
 ///          room below them with the phase content
 ///   1.10 — 2026-11-06: lane C — a row of Editors’ Annotations pushes its layer's page
 ///          (`CorpusNavValue.annotationCategory`), with this volume marked in its lists
+///   1.11 — L20 (#1920, HCD-3): a download that failed with its retries spent returns the page from
+///          "Downloading…", where it stayed for good, to the download prompt, which shows the failure
+///          with Retry in Download Volume's place (`DownloadFailureNotice`), and VoiceOver hears it
 private struct CorpusVolumeDetailView: View {
     let volume: VolumeManifestEntry
     /// The window's detail-column path; opening a section pushes onto it.
@@ -1299,6 +1302,16 @@ private struct CorpusVolumeDetailView: View {
                 phase = .indexing
                 liveProgress = nil
             }
+        }
+        // L20 (#1920, HCD-3): a download that failed with its retries spent returns the page to the
+        // download prompt, which shows the failure with Retry, and is said. Until L20 the page stayed
+        // on "Downloading…" for good: nothing above leaves that phase when no file arrives. The
+        // failure, not the queue, is what is heard, since a failed attempt also leaves the queue while
+        // it waits for its retry.
+        .onChange(of: appState.downloadFailures[volume.volumeId]) { previous, failure in
+            guard previous == nil, let failure else { return }
+            if case .downloading = phase { phase = .notDownloaded }
+            AccessibilityNotification.Announcement(DownloadFailureNotice.announcement(for: failure)).post()
         }
         // Indexing progress: update display; when complete → show summary card.
         // Also handle external indexing: when a batch operation running outside this
@@ -1458,15 +1471,25 @@ private struct CorpusVolumeDetailView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
-            Button {
-                guard let dm = appState.downloadManager else { return }
-                phase = .downloading
-                Task { await dm.enqueueDownload(volume) }
-            } label: {
-                Label("Download Volume", systemImage: "arrow.down.circle")
+            if let failure = appState.downloadFailures[volume.volumeId] {
+                // L20 (#1920, HCD-3): the last download failed with its retries spent.
+                DownloadFailureNotice(failure: failure) {
+                    guard let dm = appState.downloadManager else { return }
+                    phase = .downloading
+                    Task { await dm.enqueueDownload(volume) }
+                }
+                .frame(maxWidth: 320)
+            } else {
+                Button {
+                    guard let dm = appState.downloadManager else { return }
+                    phase = .downloading
+                    Task { await dm.enqueueDownload(volume) }
+                } label: {
+                    Label("Download Volume", systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(appState.downloadManager == nil)
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(appState.downloadManager == nil)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()

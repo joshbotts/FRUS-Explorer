@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Accessibility
 import Testing
 import Foundation
 @testable import FRUSExplorer
@@ -785,5 +786,104 @@ struct DownloadCancelAllUnitTests {
             body.append(character)
         }
         return nil
+    }
+}
+
+// MARK: - A failed download on its volume's page (L20, #1920, HCD-3)
+
+/// A download that failed with its retries spent is kept for its volume's page, in memory, and the
+/// page shows it in Keeping Current's words with Retry and says it (L20, #1920, HCD-3). Until L20 it
+/// vanished: the queue stopped counting it, Keeping Current dropped it unless it was an update, and the
+/// page offered Download Volume again with no word.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-3): initial implementation
+@Suite("A failed download is kept for its volume's page, in Keeping Current's words (#1920)")
+@MainActor
+struct DownloadFailureMemoryTests {
+
+    private static let offline = DownloadFailure(urlErrorCode: .notConnectedToInternet,
+                                                 description: "The Internet connection appears to be offline.")
+
+    @Test("A failure is kept, a download that lands forgets it, a cancel leaves it, and queueing the volume again forgets it")
+    func theFailureIsKeptUntilTheVolumeIsQueuedOrLands() {
+        let appState = AppState()
+        appState.recordDownloadOutcome("frus1900", outcome: .failed(Self.offline))
+        appState.recordDownloadOutcome("frus1901", outcome: .failed(Self.offline))
+        #expect(appState.downloadFailures["frus1900"] == Self.offline)
+
+        appState.recordDownloadOutcome("frus1900", outcome: .cancelled)
+        #expect(appState.downloadFailures["frus1900"] == Self.offline, "a cancel forgot a failure")
+        appState.recordDownloadOutcome("frus1900", outcome: .succeeded)
+        #expect(appState.downloadFailures["frus1900"] == nil, "a download that landed kept its failure")
+
+        // Retry, Download Volume or a bulk download: the volume is in the queue again.
+        appState.downloadQueue = ["frus1902", "frus1901"]
+        #expect(appState.downloadFailures["frus1901"] == nil, "a volume queued again kept its failure")
+        #expect(appState.downloadFailures.isEmpty)
+    }
+
+    /// The download manager's own report reaches the list as the app wires it: a transfer that keeps
+    /// failing is reported once, after its retries.
+    @Test("A download that fails with its retries spent is kept, once its last retry has failed")
+    func aManagerReportIsKept() async throws {
+        try await withScratchVolumes { dir in
+            let appState = AppState()
+            let transfer = ScriptedTransfer(failures: .max)
+            let dm = DownloadManager(volumesDirectory: dir, downloadTask: transfer.task,
+                                     onStateChanged: { @MainActor state in
+                                         appState.downloadQueue = state.allQueuedVolumeIds
+                                     },
+                                     preferences: scratchDefaults(),
+                                     onTransferFinished: { @MainActor id, outcome in
+                                         appState.recordDownloadOutcome(id, outcome: outcome)
+                                     },
+                                     retryBackoff: .milliseconds(10))
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(catalogueEntry("frus1900"))
+            #expect(await eventually { appState.downloadFailures["frus1900"] != nil })
+            #expect(appState.downloadFailures["frus1900"]?.urlErrorCode == .timedOut)
+            #expect(await transfer.attempts == 1 + DownloadManager.maxRetryCount,
+                    "the failure was kept before the retries were spent")
+        }
+    }
+
+    @Test("The notice says what Keeping Current says for the same failure")
+    func theNoticeUsesKeepingCurrentsWords() {
+        #expect(DownloadFailureNotice.line(for: Self.offline) == "The download failed: no connection.")
+        #expect(DownloadFailureNotice.line(for: DownloadFailure(urlErrorCode: .timedOut, description: ""))
+                == "The download failed: it timed out.")
+        let disk = DownloadFailure(urlErrorCode: nil, description: "There isn’t enough space.")
+        #expect(DownloadFailureNotice.line(for: disk) == KeepingCurrentCopy.failure(.download(disk)))
+        #expect(DownloadFailureNotice.line(for: disk) == "The download failed: There isn’t enough space.")
+        #expect(KeepingCurrentCopy.retry == "Retry")
+    }
+
+    @Test("The announcement is the notice's line, at high priority")
+    func theAnnouncementIsTheLine() {
+        let announcement = DownloadFailureNotice.announcement(for: Self.offline)
+        #expect(String(announcement.characters) == "The download failed: no connection.")
+        #expect(announcement.accessibilitySpeechAnnouncementPriority == .high)
+    }
+
+    /// Read where it is drawn: a view's `onChange` cannot be run from a unit test. The iPhone and iPad
+    /// page is walked by `VolumeDownloadFailureTests`; the Mac's in the check copy.
+    @Test("The app keeps each transfer's end, and both volume pages show the failure and say it")
+    func theWiringIsInPlace() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let boot = try String(contentsOf: app.appendingPathComponent("App/FRUSExplorerApp.swift"), encoding: .utf8)
+        #expect(boot.contains("appState.recordDownloadOutcome(volumeId, outcome: outcome)"),
+                "the download manager's reports no longer reach AppState.downloadFailures")
+        for page in ["Browser/VolumeView.swift", "App/MacCorpusBrowserWindow.swift"] {
+            let source = try String(contentsOf: app.appendingPathComponent(page), encoding: .utf8)
+            #expect(source.contains("if let failure = appState.downloadFailures[volume.volumeId] {"),
+                    "\(page) does not show a failed download")
+            #expect(source.contains("DownloadFailureNotice(failure: failure) {"), "\(page) does not draw the notice")
+            #expect(source.contains(".onChange(of: appState.downloadFailures[volume.volumeId]) { previous, failure in"),
+                    "\(page) does not hear a failure arrive")
+            #expect(source.contains("AccessibilityNotification.Announcement(DownloadFailureNotice.announcement(for: failure)).post()"),
+                    "\(page) does not say the failure")
+        }
     }
 }
