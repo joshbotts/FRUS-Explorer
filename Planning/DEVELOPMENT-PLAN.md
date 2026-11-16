@@ -11362,3 +11362,5 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - **The build**: the test target compiled with no warning in the changed file, before and after the rebase; the one warning line before it is the AppIntents note, and the rebased build's others are L18's. `CodingStandardsAuditTests`, on the final file before the rebase: 63 tests passed.
 
 **Not done.** No device was used, and the suite was not run on the other iPads or at other text sizes. Why a selection landing after the lift leaves no menu under 27.0, and why the lookups were slow on those pages, is not known.
+
+**Opened as #1943** on 2026-11-16, as the brief from L19's session asked (one pull request against `v2`), against `v2` at `a9abec6d`; ready for review, Auto-fix on, auto-merge off. Found on the way and left alone: `v2`'s log repeats L18's *Opened as #1940* line before N1's entry, a leftover of N1's merge.
