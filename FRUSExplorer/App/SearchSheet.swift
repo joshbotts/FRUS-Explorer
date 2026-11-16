@@ -163,11 +163,18 @@ import SwiftUI
 ///   1.31 — #1758: the results list opens at its top for a new search's rows and for another page, re-identified
 ///          on `executedSearchVersion` and `currentPage`
 ///   1.32 — 2026-11-15: #1905 (L15) — the token help reads *Chosen in Subjects* and *Subject areas are chosen in the facet panel*
+///   1.33 — 2026-11-15: #1918 (L18) — the facet panel's Apply sends every staged section (IPH-3); with no volume
+///          indexed a finished search shows `EmptyLibraryNotice`, whose Download Volumes… opens Settings ▸ Library ▸
+///          Volumes & Storage, where the zero-result state blamed a term (HCD-4); every finished search is announced,
+///          and a failed one says its error, where only a layer's finish was (A11Y-2); a snippet's matched words are
+///          drawn as the reader draws a highlight, where they were yellow text (A11Y-1)
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openWindow) private var openWindow
+    /// Opens the Settings window, for an empty library's Download Volumes… (HCD-4).
+    @Environment(\.openSettings) private var openSettings
 
     /// Opens Archival Analytics scoped to this result set's volumes (#833).
     ///
@@ -414,6 +421,13 @@ struct MacSearchWindowView: View {
                 // (rule 7). With no search model the Meaning empty state's download offer shows, and the row stays.
                 // A swap that has let go of the list keeps this until its first search runs (#1577 lane 7).
                 layerEmptyState(base)
+            } else if let reason = emptyLibraryReason {
+                // HCD-4: before both zero-states below, as on iPhone and iPad. With no volume indexed the library is
+                // why nothing was found, and the keyword state blamed a term.
+                EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: openVolumesAndStorage)
+                    // Fills the results area, as `searchErrorView` does: nothing else in this column grows, so the
+                    // window centred its content on the notice, a blank band above the search row (L18's walk).
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
                 // TERM is absent, the wrong claim twice over here, and beyond-library-only
@@ -556,9 +570,13 @@ struct MacSearchWindowView: View {
                     // leaves it (#1686).
                     searchVM.applyFacetNarrowing(narrowing)
                 },
-                onApplySelection: { section, keys in
+                onApplySelection: { choices in
+                    // IPH-3: every staged section at once; the window's search task runs once for them.
+                    guard !choices.isEmpty else { return }
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    searchVM.applyFacetSelection(section, keys: keys)
+                    for choice in choices {
+                        searchVM.applyFacetSelection(choice.section, keys: choice.keys)
+                    }
                 },
                 onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                 onBrowseTopics: { browseTopics() },
@@ -711,10 +729,11 @@ struct MacSearchWindowView: View {
         .onChange(of: searchVM.offersReadings) { _, offered in
             if !offered { readingSelection.wrappedValue = .list }
         }
-        // #1577 lane 5: a layer's finish is announced, the header that says what it found.
-        .onChange(of: searchVM.executedSearchVersion) { _, _ in
-            announceLayerFinished()
-        }
+        // A11Y-2: every finished search is announced, what it found, where #1577 lane 5 announced a layer's
+        // alone; a failed one says its error, which a refused query sets with no search run.
+        .modifier(SearchFinishAnnouncer(version: searchVM.executedSearchVersion,
+                                        error: searchVM.searchError?.localizedDescription,
+                                        finished: { announceFinishedSearch() }))
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale
         // `documentIds` gate — otherwise a search picked to "this project's documents" for
@@ -1685,6 +1704,25 @@ struct MacSearchWindowView: View {
             && searchVM.searchError == nil
     }
 
+    /// Why a finished search found nothing because of the library, or `nil` when the search's own words and filters
+    /// are what found nothing (HCD-4), once the launch has read the indexed set. The iOS twin is
+    /// `SearchView.emptyLibraryReason`.
+    private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
+        guard hasZeroResults, searchVM.pinnedBase == nil, searchVM.swapUnderWay == nil,
+              searchVM.beyondLibraryHits.isEmpty, !searchVM.semanticNeedsModel, appState.hasReadIndexedVolumeIds
+        else { return nil }
+        return EmptyLibraryNotice.reason(
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)
+    }
+
+    /// Opens Settings on Volumes & Storage, where a Mac downloads volumes: an empty library's Download Volumes…
+    /// (HCD-4). The pane is set before the window opens, as Manage Projects… sets its own.
+    private func openVolumesAndStorage() {
+        appState.pendingSettingsPaneRaw = SettingsPane.volumesStorage.rawValue
+        openSettings()
+    }
+
     /// The Query Inspector strip: what the query became, between the control rows and the
     /// sort bar (Q-2).
     ///
@@ -2119,10 +2157,20 @@ struct MacSearchWindowView: View {
         AccessibilityNotification.Announcement(SearchLayerCopy.swapHelp(swap)).post()
     }
 
-    /// Announces a layer's finish to VoiceOver: the header that says what it found.
-    private func announceLayerFinished() {
-        guard searchVM.executedRoute.isLayer else { return }
-        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
+    /// Says to VoiceOver what a finished search found (the review's A11Y-2): the header's words, or the empty-library
+    /// notice's headline (`SearchFinishAnnouncement`). A failed search says its error instead, from the error's own
+    /// observer. Until A11Y-2 only a layer's finish was announced, behind `executedRoute.isLayer`.
+    ///
+    /// Nothing is said while another search is under way: it replaced this one, and says what it found when it
+    /// finishes. The window runs a search on each filter edit, so each edit's count is said, as the list shows it.
+    private func announceFinishedSearch() {
+        guard !searchVM.isSearching, searchVM.searchError == nil else { return }
+        AccessibilityNotification.Announcement(
+            SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          rowsFound: searchVM.results.count,
+                                          beyondLibrary: searchVM.beyondLibraryHits.count,
+                                          needsModel: searchVM.semanticNeedsModel,
+                                          emptyLibrary: emptyLibraryReason)).post()
     }
 
     /// Which set this window is showing: `MacSearchViewModel.resultSetScope`, which composes it from
@@ -2366,7 +2414,7 @@ struct MacSearchWindowView: View {
                     .labelsHidden()
                     .help(ResultSelectionCopy.rowHint)
                 }
-                SearchResultRow(result: result, userTags: allUserTags)
+                SearchResultRow(result: result, userTags: allUserTags, isHighlighted: selectedResultId == result.id)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selectedResultId = result.id
@@ -2875,6 +2923,9 @@ private struct SearchResultRow: View {
     /// All known user tags, supplied by the parent view's `@Query`. Used to
     /// resolve UUID strings in `result.userTagIds` to display names.
     let userTags: [UserTag]
+    /// Whether the list draws this row on its highlight, the accent fill or the grey one: its matched words then take
+    /// black text in both appearances (`SnippetView`). Not the Select mode's checkbox, which the row knows nothing of.
+    let isHighlighted: Bool
 
     /// Global default snippet length and this window's per-surface override (#189-C); observed so
     /// the row re-renders live when either is changed in Settings or the search filter popover's
@@ -2976,7 +3027,7 @@ private struct SearchResultRow: View {
             // dateline (A10b). Clamped to the user's chosen line count
             // (#189-C) — the global default, or this window's Result Preview override — so readers
             // can widen or tighten the preview just as on iOS.
-            SnippetView(snippet: result.snippet)
+            SnippetView(snippet: result.snippet, isOnHighlight: isHighlighted)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
@@ -3016,8 +3067,25 @@ private struct SearchResultRow: View {
 /// `AttributedString.init(_:including:)` scope-filter initializer, which silently
 /// fails on macOS when attribute scopes are mixed (AppKit vs SwiftUI), causing the
 /// raw `<b>word</b>` fallback to render.
+///
+/// A matched word is drawn as the reader draws a highlight (the review's A11Y-1): bold, in full black (full white in
+/// dark mode) on the reader's yellow wash (`FRUSTheme.searchMatchText`, `.searchMatchBackground`). It was drawn in
+/// `Color.yellow` text, 1.51:1 on white. Not in the snippet's own grey, which is 4.0:1 on white and lower on the wash,
+/// the reason #1602 gave the reader's highlighted text its own colour; and not in the accent, whose light blue is
+/// about 3.5:1.
+///
+/// On the list's highlight, a selected row's, the wash lies over the highlight's fill. White text there was 3.5:1 on
+/// dark mode's accent and 4.0:1 on its grey, measured in L18's walk, so a highlighted row's matched words are black
+/// in both appearances (5.9:1 and 5.3:1 in dark mode, 6.4:1 on light mode's accent).
+///
+/// Version history:
+///   1.0 — initial implementation
+///   1.1 — #1918 (L18, A11Y-1): matched words drawn as a highlight, where they were yellow text
+///   1.2 — #1918 (L18's Mac walk): black text on the list's highlight, in both appearances
 private struct SnippetView: View {
     let snippet: String
+    /// Whether the row is drawn on the list's highlight, which puts the highlight's fill under the wash.
+    let isOnHighlight: Bool
 
     var body: some View {
         Text(styledSnippet(snippet))
@@ -3036,8 +3104,9 @@ private struct SnippetView: View {
 
                 let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
                 var span = AttributedString(highlighted)
-                span.swiftUI.foregroundColor = Color.yellow
-                span.swiftUI.font = .callout.weight(.medium)
+                span.swiftUI.foregroundColor = isOnHighlight ? .black : FRUSTheme.searchMatchText
+                span.swiftUI.backgroundColor = FRUSTheme.searchMatchBackground
+                span.swiftUI.font = .callout.weight(.bold)
                 result += span
 
                 remainder = String(remainder[closeRange.upperBound...])

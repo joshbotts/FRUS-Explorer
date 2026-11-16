@@ -447,6 +447,8 @@ extension FeatureInfoButton where Footer == EmptyView {
 ///   1.4 — Session 2026-10-05 (FRUS Explorer Light, S8a): `cssVariables(colorScheme:textSize:)`
 ///         forwards to FRUSCoreKit's `ReaderPage.cssVariables(appearance:textSize:)`, where its body
 ///         moved, through `ReaderAppearance(_:)`
+///   1.5 — #1918 (L18, A11Y-1): `searchMatchText` and `searchMatchBackground`, a search snippet's matched
+///         words drawn as the reader draws a highlight
 enum FRUSTheme {
 
     // MARK: Typography
@@ -699,6 +701,21 @@ enum FRUSTheme {
     /// dark `#A78BFA`) so the editable headnote card and the exported headnote band read as
     /// their own editorial accent rather than the app's link-blue (Composer v2).
     static let headnotePurple = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA)
+
+    // MARK: Search matches (#1918, A11Y-1)
+
+    /// The text of a word a search matched in a result's snippet: full black, and full white in dark mode, as the reader
+    /// draws text inside one of its highlights (`ReaderPage`'s `--color-highlight-text`, #1602).
+    ///
+    /// The Mac drew matched words in `Color.yellow` text, 1.51:1 on white. Over the tint below this is 18.0:1 on a
+    /// white row and 5.0–5.7:1 on a dark one (#2B2B2B to #1C1C1E), computed as the reader computes its highlights; the
+    /// snippet's own grey (#7F7F7F, 4.0:1 on white) would be 3.4:1 there.
+    static let searchMatchText = adaptiveColor(lightHex: 0x000000, darkHex: 0xFFFFFF)
+
+    /// The wash behind a matched word: the reader's yellow highlight, `rgba(255, 214, 0, 0.40)` in both appearances
+    /// (`ReaderPage`'s `::highlight(frus-yellow)`).
+    static let searchMatchBackground = adaptiveColor(lightHex: 0xFFD600, darkHex: 0xFFD600,
+                                                     lightOpacity: 0.40, darkOpacity: 0.40)
     /// Soft fill behind the headnote card / preview band (`.07` light, `.14` dark).
     static let headnotePurpleFill = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA,
                                                   lightOpacity: 0.07, darkOpacity: 0.14)

@@ -269,6 +269,16 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.36 — #1758: emptying the field closes the facet panel and takes away the narrowings it made
 ///          (`endSearch()`); the binoculars menu's Facets is a toggle, offered while the panel is open; a
 ///          *Narrowed by* chip's ✕ runs the search again only when something is left to search
+///   1.37 — 2026-11-15: #1918 (L18, IPS-1) — the Filters sheet's closing runs the search on screen again when its
+///          filters changed (`filterSheetDismissed()`), where Done only closed it
+///   1.38 — 2026-11-15: #1918 (L18, IPH-3) — the facet panel's Apply sends every staged section, and the reader's own
+///          close (the sheet's Done, a swipe, the binoculars menu's Facets) applies them (`closeFacetPanelByHand()`)
+///   1.39 — 2026-11-15: #1918 (L18, HCD-4) — with no volume indexed a finished search shows `EmptyLibraryNotice`, with
+///          Download Volumes… opening `DownloadVolumesSheet`, where the zero-result state blamed a term
+///   1.40 — 2026-11-15: #1918 (L18, A11Y-2) — every finished search is announced (`announceFinishedSearch()`), and a
+///          failed one says its error, where only a layer's finish was
+///   1.41 — 2026-11-15: #1918 (L18, IPH-5) — the actions bar's five controls and the pager's two chevrons take 44-pt hit
+///          areas by an outset content shape (`minimumHitTarget()`), their layout unchanged
 
 struct SearchView: View {
 
@@ -366,13 +376,12 @@ struct SearchView: View {
                 if dismissesOnApply { showFacetSheet = false }
                 Task { await runSearch() }
             },
-            onApplySelection: { section, keys in
+            onApplySelection: { choices in
                 // #775: one search for the whole selection, and the sheet closes on the commit
                 // rather than on the first tap — staging is what makes a second row reachable.
-                facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
-                vm.applyFacetSelection(section, keys: keys)
+                // IPH-3: one search for every section that holds a choice.
+                applyFacetChoices(choices)
                 if dismissesOnApply { showFacetSheet = false }
-                Task { await runSearch() }
             },
             onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
             onBrowseTopics: { browseAllTopics() },
@@ -419,6 +428,8 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     /// #265: the corpus-wide abbreviation lookup.
     @State private var showGlossaryLookup = false
+    /// HCD-4: the download browser, opened by an empty library's **Download Volumes…**.
+    @State private var showDownloadVolumes = false
     /// #1299: the Search Tips sheet, opened from More ▸ Search Tips, the pre-search link, the Query Inspector's link and
     /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
     @State private var showSearchTips = false
@@ -436,6 +447,32 @@ struct SearchView: View {
     ) {
         _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
+    }
+
+    /// Applies the facet panel's staged choices, Years' and Volumes', and runs one search for them (#775, IPH-3).
+    ///
+    /// - Parameter choices: The resolved choices (`FacetPanelController.stagedChoices`); nothing runs when empty.
+    private func applyFacetChoices(_ choices: [FacetStagedChoice]) {
+        guard !choices.isEmpty else { return }
+        facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
+        for choice in choices {
+            vm.applyFacetSelection(choice.section, keys: choice.keys)
+        }
+        Task { await runSearch() }
+    }
+
+    /// Closes the facet panel by the reader's own hand — the sheet's Done, a swipe, the binoculars
+    /// menu's Facets — and applies what Years or Volumes has staged, as Apply does (the review's IPH-3).
+    ///
+    /// Until IPH-3 the sheet's Done closed it and left a choice staged, ticked in the rows and
+    /// applied to nothing until the next search cleared it, while the panel's tip said a selected
+    /// year narrows the search. A close the app makes on its way elsewhere (the Topic index, an
+    /// archival profile, a held list, an emptied field) applies nothing: those set
+    /// `showFacetSheet` themselves.
+    private func closeFacetPanelByHand() {
+        let staged = facetController.stagedChoices
+        showFacetSheet = false
+        applyFacetChoices(staged)
     }
 
     /// Opens the Topic index on the Browse tab (#1023, #1274).
@@ -628,9 +665,14 @@ struct SearchView: View {
                 // R-1c; this gives iPad the same container. The `!isPhone` guard matters: on compact
                 // width SwiftUI presents an inspector AS a sheet, which would collide with this
                 // view's other sheets — the same trap `DocumentView`'s rail documents.
+                // IPH-3: the reader's own close — Done, or a swipe, which reaches the binding's setter —
+                // applies what Years or Volumes has staged (`closeFacetPanelByHand()`).
                 .sheet(isPresented: Binding(
                     get: { isPhone && showFacetSheet },
-                    set: { if isPhone { showFacetSheet = $0 } }
+                    set: { isOpen in
+                        guard isPhone else { return }
+                        if isOpen { showFacetSheet = true } else if showFacetSheet { closeFacetPanelByHand() }
+                    }
                 )) {
                     NavigationStack {
                         facetPanel(dismissesOnApply: true)
@@ -639,7 +681,7 @@ struct SearchView: View {
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
                                     Button(String(localized: "search.done", defaultValue: "Done")) {
-                                        showFacetSheet = false
+                                        closeFacetPanelByHand()
                                     }
                                 }
                             }
@@ -648,7 +690,10 @@ struct SearchView: View {
                 }
                 .inspector(isPresented: Binding(
                     get: { !isPhone && showFacetSheet },
-                    set: { if !isPhone { showFacetSheet = $0 } }
+                    set: { isOpen in
+                        guard !isPhone else { return }
+                        if isOpen { showFacetSheet = true } else if showFacetSheet { closeFacetPanelByHand() }
+                    }
                 )) {
                     // No dismissal on apply: staying open beside the narrowing results is the
                     // entire point of the inspector container.
@@ -699,8 +744,9 @@ struct SearchView: View {
                 }
                 #endif
                 // Advanced filter sheet — iOS uses detents; macOS uses a fixed frame
-                // declared inside SearchFilterView.
-                .sheet(isPresented: $vm.showFilterPanel) {
+                // declared inside SearchFilterView. Its closing, by Done or a swipe, runs the
+                // search on screen again when the filters changed (IPS-1, `filterSheetDismissed()`).
+                .sheet(isPresented: $vm.showFilterPanel, onDismiss: filterSheetDismissed) {
                     // iOS's filter sheet shares this view model, so its parameters ARE the
                     // search's — but pass them explicitly anyway, because macOS's do not.
                     SearchFilterView(vm: vm, tagCountScope: vm.userTagCountScope,
@@ -712,8 +758,11 @@ struct SearchView: View {
                 // the History scope reflects documents engaged since the tab was shown (#377
                 // Phase 2a) — parity with the macOS Advanced panel, which reloads on open. The
                 // panel's volume list is read again for the same reason (`reloadAvailableVolumes`).
+                // The parameters are recorded first, so a scope those reads move under the list
+                // on screen also runs it again when the sheet closes (IPS-1).
                 .onChange(of: vm.showFilterPanel) { _, isOpen in
                     if isOpen {
+                        vm.filterSheetOpened()
                         refreshEngagedKeys()
                         reloadAvailableVolumes()
                     }
@@ -725,12 +774,10 @@ struct SearchView: View {
                 .onChange(of: vm.offersReadings) { _, offered in
                     if !offered { readingSelection.wrappedValue = .list }
                 }
-                // #1577 lane 4: a layer's finish is announced, the header that says what it found.
-                .onChange(of: vm.executedSearchVersion) { _, _ in
-                    if vm.executedRoute.isLayer {
-                        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
-                    }
-                }
+                // A11Y-2: every finished search is announced, what it found, where #1577 lane 4 announced a
+                // layer's alone; a failed one says its error, which a refused query sets with no search run.
+                .modifier(SearchFinishAnnouncer(version: vm.executedSearchVersion, error: vm.searchError,
+                                                finished: { announceFinishedSearch() }))
                 .sheet(item: $saveSearchRequest) { request in
                     SaveSearchSheet(request: request) { name in
                         modelContext.insert(SavedSearch(name: name, parameters: request.parameters))
@@ -784,6 +831,11 @@ struct SearchView: View {
                         .environment(appState)
                         // #338 step 4: address THIS window for the sheet's open-document action.
                         .environment(\.sceneID, sceneID)
+                }
+                // HCD-4: an empty library's Download Volumes…, the download browser Volumes & Storage holds.
+                .sheet(isPresented: $showDownloadVolumes) {
+                    DownloadVolumesSheet()
+                        .environment(appState)
                 }
                 // #1576 lane 2: Add to Collection from a result row. iOS only for the same
                 // reason: the actions that set the request are the row's, inside `#if os(iOS)`.
@@ -947,6 +999,67 @@ struct SearchView: View {
         vm.endSearchOnScreen()
         showFacetSheet = false
         facetController.clear()
+    }
+
+    /// Why a finished search found nothing because of the library, or `nil` when the search's own words and filters
+    /// are what found nothing (HCD-4): no volume is indexed, and the run left no Meaning matches beyond the library or
+    /// need for the search model, each of which its own state says.
+    ///
+    /// While volumes are downloading or being indexed the reason is `.preparing`, so the notice does not say the
+    /// device has none while the queue banner counts them; and until the launch has read the indexed set, there is
+    /// none (`AppState.hasReadIndexedVolumeIds`).
+    private var emptyLibraryReason: EmptyLibraryNotice.Reason? {
+        guard vm.hasSearched, vm.results.isEmpty, vm.searchError == nil, vm.pinnedBase == nil,
+              vm.beyondLibraryHits.isEmpty, !vm.semanticNeedsModel, appState.hasReadIndexedVolumeIds
+        else { return nil }
+        return EmptyLibraryNotice.reason(
+            indexedVolumeCount: appState.indexedVolumeIds.count,
+            isPreparing: !appState.downloadQueue.isEmpty || appState.indexingBatch != nil)
+    }
+
+    /// Where an empty library's **Download Volumes…** goes (HCD-4): the download browser, in a sheet. `nil` on the
+    /// Mac, whose Search window is `SearchSheet`.
+    private var downloadVolumesAction: (() -> Void)? {
+        #if os(iOS)
+        return { showDownloadVolumes = true }
+        #else
+        return nil
+        #endif
+    }
+
+    /// Says to VoiceOver what a finished search found (the review's A11Y-2): the results header's words, or the
+    /// empty-library notice's headline (`SearchFinishAnnouncement`). A failed search says its error instead, from the
+    /// error's own observer.
+    ///
+    /// Nothing is said while another search is under way: it replaced this one, as the second of a swap's two
+    /// searches replaces the first, and says what it found when it finishes.
+    private func announceFinishedSearch() {
+        guard !vm.isSearching, vm.searchError == nil else { return }
+        AccessibilityNotification.Announcement(
+            SearchFinishAnnouncement.text(header: resultSetScope.headerDescription,
+                                          rowsFound: vm.results.count,
+                                          beyondLibrary: vm.beyondLibraryHits.count,
+                                          needsModel: vm.semanticNeedsModel,
+                                          emptyLibrary: emptyLibraryReason)).post()
+    }
+
+    /// What the Filters sheet's closing does, by Done or by a swipe (IPS-1): the search on screen runs
+    /// again when the filters changed, or ends when they took away the last thing to search, by
+    /// ``removeNarrowing(_:)``'s rule (`SearchViewModel.filterSheetClosed()`).
+    ///
+    /// Until the review's IPS-1 the sheet's Done only closed it. The *Narrowed by* chips, the scope
+    /// banners and the filled filter glyph, which read the filters as they are edited, then described a
+    /// narrowing the list on screen did not have, and the manual told the reader to submit the search
+    /// again by hand.
+    private func filterSheetDismissed() {
+        switch vm.filterSheetClosed() {
+        case .runAgain:
+            Task { await runSearch() }
+        case .endSearch:
+            endSearch()
+        case .nothing:
+            break
+        }
     }
 
     /// Takes away one *Narrowed by* chip, and runs the search again when there is still something to
@@ -1184,6 +1297,8 @@ struct SearchView: View {
             Image(systemName: vm.hasActiveFilters
                   ? "line.3.horizontal.decrease.circle.fill"
                   : "line.3.horizontal.decrease.circle")
+                // IPH-5: 44 pt each way by declaration; without it a tap 6–8 pt off the glyph was taken too.
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.filters.toggle.a11y", defaultValue: "Toggle filters"),
@@ -1224,6 +1339,45 @@ struct SearchView: View {
         )
     }
 
+    /// The Examine menu's items, drawn by the menu and by its hit twin (`menuHitTwin`, IPH-5).
+    @ViewBuilder
+    private var examineMenuItems: some View {
+        Picker(String(localized: "search.mode.picker", defaultValue: "Read as"),
+               selection: readingSelection) {
+            ForEach(ResultReading.allCases) { reading in
+                // Two `Text`s in a `Label`'s title slot render as title + subtitle in a menu.
+                Label {
+                    Text(reading.title)
+                    if let denominator = reading.denominatorDescription {
+                        Text(denominator)
+                    }
+                } icon: {
+                    Image(systemName: reading.systemImage)
+                }
+                .tag(reading)
+            }
+        }
+        .pickerStyle(.inline)
+        .disabled(vm.results.isEmpty || !vm.offersReadings)
+
+        Divider()
+
+        // Closing the panel from here is the reader's own close, so it applies what is staged (IPH-3).
+        Toggle(isOn: Binding(get: { showFacetSheet },
+                             set: { isOn in
+                                 if isOn { showFacetSheet = true } else { closeFacetPanelByHand() }
+                             })) {
+            Label {
+                Text(String(localized: "search.mode.facets", defaultValue: "Facets"))
+                Text(ResultReading.facetsDenominatorDescription)
+            } icon: {
+                Image(systemName: "chart.bar.doc.horizontal")
+            }
+        }
+        // Open only over rows that offer it; closed whatever the rows.
+        .disabled(!examineOffered && !showFacetSheet)
+    }
+
     /// The actions-bar control for examining the result set as a whole (R-1c, R-3b, S-2, M-1).
     ///
     /// ## Why binoculars, and not a chart
@@ -1250,38 +1404,10 @@ struct SearchView: View {
     @ViewBuilder
     private var examineMenu: some View {
         Menu {
-            Picker(String(localized: "search.mode.picker", defaultValue: "Read as"),
-                   selection: readingSelection) {
-                ForEach(ResultReading.allCases) { reading in
-                    // Two `Text`s in a `Label`'s title slot render as title + subtitle in a menu.
-                    Label {
-                        Text(reading.title)
-                        if let denominator = reading.denominatorDescription {
-                            Text(denominator)
-                        }
-                    } icon: {
-                        Image(systemName: reading.systemImage)
-                    }
-                    .tag(reading)
-                }
-            }
-            .pickerStyle(.inline)
-            .disabled(vm.results.isEmpty || !vm.offersReadings)
-
-            Divider()
-
-            Toggle(isOn: $showFacetSheet) {
-                Label {
-                    Text(String(localized: "search.mode.facets", defaultValue: "Facets"))
-                    Text(ResultReading.facetsDenominatorDescription)
-                } icon: {
-                    Image(systemName: "chart.bar.doc.horizontal")
-                }
-            }
-            // Open only over rows that offer it; closed whatever the rows.
-            .disabled(!examineOffered && !showFacetSheet)
+            examineMenuItems
         } label: {
             Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
+                .minimumHitTarget()
         }
         // #597 Phase 1. Anchored on the menu LABEL: `.popoverTip` cannot attach to a Button inside
         // a Menu's content, because a menu row is not a popover host — which is also why the tip's
@@ -1326,6 +1452,7 @@ struct SearchView: View {
         } label: {
             Image(systemName: "checklist")
                 .foregroundStyle(vm.checklistMode ? Color.accentColor : Color.primary)
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
@@ -1343,116 +1470,123 @@ struct SearchView: View {
     }
     #endif
 
+    /// The More menu's items, drawn by the menu and by its hit twin (`menuHitTwin`, IPH-5).
+    @ViewBuilder
+    private var moreMenuItems: some View {
+        Button {
+            saveSearchRequest = SaveSearchRequest(words: vm.keywords, parameters: vm.searchParameters)
+        } label: {
+            Label {
+                Text(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"))
+                // #1577 lane 4: a layered search is not saved (the owner's decision 4). Its gate would be
+                // stored and dropped on recall, and a smart collection honours it, so one saved layered
+                // search would give two result sets. The second line says where the durable form is.
+                if vm.pinnedBase != nil {
+                    Text(SearchLayerCopy.saveSearchUnavailable)
+                }
+            } icon: {
+                Image(systemName: "bookmark")
+            }
+        }
+        .disabled(!vm.hasSearched || vm.pinnedBase != nil)
+        // Saving the RESULTS is the sibling of saving the QUERY, which is why it lives here
+        // and not among the readings. Every other item in the examine menu re-presents the set
+        // and leaves nothing behind; this one writes a CloudKit-synced `WorkingCorpus` whose
+        // consumer is a different control on a different surface. It also carried the only
+        // second enablement rule in that menu — `displayedResults`, where the readings gate on
+        // `results` — which is a further sign it was never the same kind of thing.
+        Button {
+            showSaveCorpusSheet = true
+        } label: {
+            Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
+                  systemImage: "tray.full")
+        }
+        .disabled(vm.displayedResults.isEmpty)
+        #if os(iOS)
+        // #1576 lane 3: selection, after the two save items, which
+        // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. The list reading only:
+        // the other readings have no rows to pick. And not under an error, which is drawn in
+        // the rows' place while `results` may still hold them, nor while a search runs (#1683).
+        Button {
+            vm.beginSelecting()
+        } label: {
+            Label(ResultSelectionCopy.selectResults, systemImage: "checkmark.circle")
+        }
+        .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil
+                  || vm.isSearching)
+        #endif
+        #if os(iOS)
+        // #1577 lane 4: Search Within These Results, after Select Results, and titled by what it will
+        // do: words found in a Meaning list, or a keyword list or browse ranked by a question. Not
+        // before it: at AX5 an iPhone SE's menu shows three items and scrolls to the rest, and
+        // Select Results keeps its place among them (`ResultSelectionBarFitTests`).
+        Button {
+            holdBase()
+        } label: {
+            Label(layerMenuDirection.startTitle,
+                  systemImage: layerMenuDirection == .rankByMeaning ? SemanticGlyph.feature : "text.magnifyingglass")
+        }
+        .disabled(vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == nil)
+        #endif
+        Button {
+            showSavedSearches = true
+        } label: {
+            Label(String(localized: "search.savedSearches.a11y", defaultValue: "Saved searches"),
+                  systemImage: "bookmark.fill")
+        }
+        Button {
+            showCitationLookup = true
+        } label: {
+            Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
+                  systemImage: "text.magnifyingglass")
+        }
+        // #265: sits beside citation lookup because they answer the same kind of question —
+        // "what does this reference in front of me mean?" — from the two directions a reader
+        // meets: a citation, and an abbreviation.
+        Button {
+            showGlossaryLookup = true
+        } label: {
+            Label(String(localized: "search.glossaryLookup.a11y",
+                         defaultValue: "Look up an abbreviation"),
+                  systemImage: "character.book.closed")
+        }
+        #if os(iOS)
+        // #1299: the search-syntax reference. After the two lookups and never between the save items, which
+        // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. Not mode-gated (owner decision Q3): in
+        // Meaning mode the sheet says why the syntax does not apply, which a disabled item could not.
+        Button {
+            showSearchTips = true
+        } label: {
+            Label(String(localized: "search.tips.open", defaultValue: "Search Tips"),
+                  systemImage: "questionmark.circle")
+        }
+        #endif
+        // Checklist mode (#189-D): hides results as you review them (open them, or tap
+        // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
+        // On iOS this now lives as a promoted control in `searchActionsBar` (#218), so the
+        // overflow toggle is retained only for the macOS `SearchView` surface to avoid two
+        // controls for one state; the shipping macOS search window (SearchSheet) has its own.
+        #if os(macOS)
+        Divider()
+        Toggle(isOn: Binding(
+            get: { vm.checklistMode },
+            set: { on in vm.setChecklistMode(on) }
+        )) {
+            Label(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
+                  systemImage: "checklist")
+        }
+        .disabled(vm.results.isEmpty)
+        #endif
+    }
+
     /// Save / Saved searches / Find by citation overflow menu.
     @ViewBuilder
     private var moreMenu: some View {
         Menu {
-            Button {
-                saveSearchRequest = SaveSearchRequest(words: vm.keywords, parameters: vm.searchParameters)
-            } label: {
-                Label {
-                    Text(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"))
-                    // #1577 lane 4: a layered search is not saved (the owner's decision 4). Its gate would be
-                    // stored and dropped on recall, and a smart collection honours it, so one saved layered
-                    // search would give two result sets. The second line says where the durable form is.
-                    if vm.pinnedBase != nil {
-                        Text(SearchLayerCopy.saveSearchUnavailable)
-                    }
-                } icon: {
-                    Image(systemName: "bookmark")
-                }
-            }
-            .disabled(!vm.hasSearched || vm.pinnedBase != nil)
-            // Saving the RESULTS is the sibling of saving the QUERY, which is why it lives here
-            // and not among the readings. Every other item in the examine menu re-presents the set
-            // and leaves nothing behind; this one writes a CloudKit-synced `WorkingCorpus` whose
-            // consumer is a different control on a different surface. It also carried the only
-            // second enablement rule in that menu — `displayedResults`, where the readings gate on
-            // `results` — which is a further sign it was never the same kind of thing.
-            Button {
-                showSaveCorpusSheet = true
-            } label: {
-                Label(String(localized: "search.corpus.save", defaultValue: "Save as Working Corpus…"),
-                      systemImage: "tray.full")
-            }
-            .disabled(vm.displayedResults.isEmpty)
-            #if os(iOS)
-            // #1576 lane 3: selection, after the two save items, which
-            // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. The list reading only:
-            // the other readings have no rows to pick. And not under an error, which is drawn in
-            // the rows' place while `results` may still hold them, nor while a search runs (#1683).
-            Button {
-                vm.beginSelecting()
-            } label: {
-                Label(ResultSelectionCopy.selectResults, systemImage: "checkmark.circle")
-            }
-            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil
-                      || vm.isSearching)
-            #endif
-            #if os(iOS)
-            // #1577 lane 4: Search Within These Results, after Select Results, and titled by what it will
-            // do: words found in a Meaning list, or a keyword list or browse ranked by a question. Not
-            // before it: at AX5 an iPhone SE's menu shows three items and scrolls to the rest, and
-            // Select Results keeps its place among them (`ResultSelectionBarFitTests`).
-            Button {
-                holdBase()
-            } label: {
-                Label(layerMenuDirection.startTitle,
-                      systemImage: layerMenuDirection == .rankByMeaning ? SemanticGlyph.feature : "text.magnifyingglass")
-            }
-            .disabled(vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == nil)
-            #endif
-            Button {
-                showSavedSearches = true
-            } label: {
-                Label(String(localized: "search.savedSearches.a11y", defaultValue: "Saved searches"),
-                      systemImage: "bookmark.fill")
-            }
-            Button {
-                showCitationLookup = true
-            } label: {
-                Label(String(localized: "search.citationLookup.a11y", defaultValue: "Find by citation"),
-                      systemImage: "text.magnifyingglass")
-            }
-            // #265: sits beside citation lookup because they answer the same kind of question —
-            // "what does this reference in front of me mean?" — from the two directions a reader
-            // meets: a citation, and an abbreviation.
-            Button {
-                showGlossaryLookup = true
-            } label: {
-                Label(String(localized: "search.glossaryLookup.a11y",
-                             defaultValue: "Look up an abbreviation"),
-                      systemImage: "character.book.closed")
-            }
-            #if os(iOS)
-            // #1299: the search-syntax reference. After the two lookups and never between the save items, which
-            // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. Not mode-gated (owner decision Q3): in
-            // Meaning mode the sheet says why the syntax does not apply, which a disabled item could not.
-            Button {
-                showSearchTips = true
-            } label: {
-                Label(String(localized: "search.tips.open", defaultValue: "Search Tips"),
-                      systemImage: "questionmark.circle")
-            }
-            #endif
-            // Checklist mode (#189-D): hides results as you review them (open them, or tap
-            // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
-            // On iOS this now lives as a promoted control in `searchActionsBar` (#218), so the
-            // overflow toggle is retained only for the macOS `SearchView` surface to avoid two
-            // controls for one state; the shipping macOS search window (SearchSheet) has its own.
-            #if os(macOS)
-            Divider()
-            Toggle(isOn: Binding(
-                get: { vm.checklistMode },
-                set: { on in vm.setChecklistMode(on) }
-            )) {
-                Label(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"),
-                      systemImage: "checklist")
-            }
-            .disabled(vm.results.isEmpty)
-            #endif
+            moreMenuItems
         } label: {
             Image(systemName: "ellipsis.circle")
+                .minimumHitTarget()
         }
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
@@ -1633,11 +1767,16 @@ struct SearchView: View {
             // Applied here rather than on the control vars, three of which the macOS toolbar
             // shares (`SearchView.swift`'s `ToolbarItem`s).
             filterButton.accessibilityIdentifier("search.actions.filter")
+            // IPH-5: each menu's hit twin is a background outside its identified element, so its frame, which
+            // `SearchActionsBarFitTests` measures, stays the glyph's (`menuHitTwin`).
             examineMenu.accessibilityIdentifier("search.actions.examine")
+                .background { menuHitTwin(disabled: !examineOffered && !showFacetSheet) { examineMenuItems } }
             checklistButton.accessibilityIdentifier("search.actions.checklist")
             sortMenu.accessibilityIdentifier("search.actions.sort")
+                .background { menuHitTwin(disabled: vm.results.isEmpty) { sortMenuItems } }
             Spacer()
             moreMenu.accessibilityIdentifier("search.actions.more")
+                .background { menuHitTwin(disabled: false) { moreMenuItems } }
         }
         // #1307: capped rather than `.title3`. The row cannot wrap, scroll or fold, so glyphs that
         // kept growing pushed it off BOTH screen edges — an over-wide HStack is centred — and at
@@ -1652,32 +1791,66 @@ struct SearchView: View {
         .overlay(alignment: .bottom) { Divider() }
     }
 
+    /// A hidden twin of one of the actions bar's menus, 44 points each way about the menu's centre and carrying
+    /// the menu's own items, drawn behind it (the review's IPH-5).
+    ///
+    /// A menu's label takes no hit area beyond its frame. Measured on an iPhone 17 under iOS 27.0: a tap 8 pt beside
+    /// More's glyph opened nothing with `minimumHitTarget()` on its label; nor did a tap below Examine's with the menu
+    /// drawn as a button; where Filter's and the pager's buttons took them even with no shape. The shape on the menu
+    /// itself, and a twin inside the menu's accessibility element, each grew that element's frame to 44 pt, which
+    /// `SearchActionsBarFitTests` measures. Behind the menu and outside its element, the twin takes a tap the glyph
+    /// does not, opens the same items from the same place, and leaves the frame and the layout alone. VoiceOver does
+    /// not see it: the menu in front is the one control.
+    ///
+    /// - Parameters:
+    ///   - disabled: Whether the menu it stands behind is off.
+    ///   - items: The menu's items.
+    /// - Returns: The twin.
+    private func menuHitTwin<Items: View>(disabled: Bool, @ViewBuilder items: () -> Items) -> some View {
+        Menu {
+            items()
+        } label: {
+            Color.clear
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .disabled(disabled)
+        .accessibilityHidden(true)
+    }
+
+    /// The Sort menu's items, drawn by the menu and by its hit twin (`menuHitTwin`, IPH-5).
+    @ViewBuilder
+    private var sortMenuItems: some View {
+        Picker(String(localized: "search.sort.title", defaultValue: "Sort results"),
+               selection: Binding(get: { vm.sortOrder }, set: { vm.sortOrder = $0 })) {
+            ForEach(SearchSortOrder.allCases, id: \.self) { order in
+                Text(order.label).tag(order)
+            }
+        }
+        .pickerStyle(.inline)
+        // #1577 lane 4: on a keyword list, an order by a question, the second way into a ranking.
+        if vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == .rankByMeaning {
+            Divider()
+            Button {
+                holdBase()
+            } label: {
+                Label(SearchLayerCopy.closestToAQuestion, systemImage: SemanticGlyph.feature)
+            }
+        }
+    }
+
     /// Sort control (#305): a compact menu to reorder results by relevance or document date, ported
     /// from the macOS sort bar. The icon fills when a non-default order is active.
     private var sortMenu: some View {
         Menu {
-            Picker(String(localized: "search.sort.title", defaultValue: "Sort results"),
-                   selection: Binding(get: { vm.sortOrder }, set: { vm.sortOrder = $0 })) {
-                ForEach(SearchSortOrder.allCases, id: \.self) { order in
-                    Text(order.label).tag(order)
-                }
-            }
-            .pickerStyle(.inline)
-            // #1577 lane 4: on a keyword list, an order by a question, the second way into a ranking.
-            if vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == .rankByMeaning {
-                Divider()
-                Button {
-                    holdBase()
-                } label: {
-                    Label(SearchLayerCopy.closestToAQuestion, systemImage: SemanticGlyph.feature)
-                }
-            }
+            sortMenuItems
         } label: {
             Label(String(localized: "search.sort.title", defaultValue: "Sort results"),
                   systemImage: vm.sortOrder == .relevance
                       ? "arrow.up.arrow.down"
                       : "arrow.up.arrow.down.circle.fill")
                 .labelStyle(.iconOnly)
+                .minimumHitTarget()
         }
         .disabled(vm.results.isEmpty)
         // #1307: Sort was the one capped control with no Large Content Viewer HUD, which is what
@@ -1870,6 +2043,10 @@ struct SearchView: View {
             // #1577 lane 4: before both zero-states below, neither of which may show while a base is held (rule 7).
             // With no search model the Meaning empty state's download offer shows, and the base row stays.
             layerEmptyState(base)
+        } else if let reason = emptyLibraryReason {
+            // HCD-4: before both zero-states below. With no volume indexed the library is why nothing was found,
+            // and the keyword state blamed a term ("Berlin matches no document in your current scope").
+            EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: downloadVolumesAction)
         } else if vm.searchMode == .meaning && vm.hasSearched && vm.results.isEmpty {
             // The Meaning mode's empty surface: the keyword zero-state below diagnoses which
             // TERM is absent, which is the wrong claim twice over here — and a meaning search
@@ -2177,7 +2354,9 @@ struct SearchView: View {
             Button {
                 if vm.currentPage > 0 { vm.currentPage -= 1 }
             } label: {
+                // IPH-5: the only way to page, a footnote glyph: 44 pt each way by declaration.
                 Image(systemName: "chevron.left")
+                    .minimumHitTarget()
             }
             .disabled(vm.currentPage == 0)
             .accessibilityLabel(String(localized: "search.page.previous",
@@ -2195,6 +2374,7 @@ struct SearchView: View {
                 if vm.currentPage < vm.totalPages - 1 { vm.currentPage += 1 }
             } label: {
                 Image(systemName: "chevron.right")
+                    .minimumHitTarget()
             }
             .disabled(vm.currentPage >= vm.totalPages - 1)
             .accessibilityLabel(String(localized: "search.page.next",
@@ -3062,3 +3242,31 @@ private struct SearchTipsPresenter: ViewModifier {
 }
 
 #endif
+
+// MARK: - SearchFinishAnnouncer (#1918, A11Y-2)
+
+/// Says a search's outcome to VoiceOver on both platforms' search screens (the review's A11Y-2): each completed search
+/// through the host's `finished`, which reads its own screen, and each error as it appears.
+///
+/// A modifier rather than two `onChange`s in each host's chain: the Mac window's chain is at the type checker's limit,
+/// and one of its two more observers would not type-check in reasonable time.
+///
+/// Version history:
+///   1.0 — #1918 (L18, A11Y-2): initial implementation
+struct SearchFinishAnnouncer: ViewModifier {
+
+    /// The host's `executedSearchVersion`, which moves once per completed search.
+    let version: Int
+    /// The error the host shows in place of results, or `nil`.
+    let error: String?
+    /// Says what the completed search found.
+    let finished: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: version) { _, _ in finished() }
+            .onChange(of: error) { _, error in
+                if let error { AccessibilityNotification.Announcement(error).post() }
+            }
+    }
+}

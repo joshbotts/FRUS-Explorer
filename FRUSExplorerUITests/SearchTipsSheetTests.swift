@@ -476,3 +476,132 @@ final class SearchActionsBarFitTests: XCTestCase {
                       "Could not open the Search tab, so this suite would read another screen")
     }
 }
+
+// MARK: - SearchHitAreaTests (#1918, IPH-5)
+
+/// Search's small controls answer a tap beside their glyphs: each one's hit area is 44 points each way.
+///
+/// ## The defect
+/// The actions bar's five controls were default buttons and menus in an `HStack(spacing: 20)` with no frame or content
+/// shape, Filter's glyph about 19 × 19 pt on an iPhone, and the pager's two `.footnote` chevrons, the only way to page,
+/// smaller still (the review's IPH-5). `minimumHitTarget()` grows a button's content shape to 44 pt about its centre and
+/// leaves its frame as it was, which `SearchActionsBarFitTests` above measures. A menu's label takes no hit area beyond
+/// its frame, whatever its shape, so each of the three menus stands in front of a hidden twin (`SearchView.menuHitTwin`).
+///
+/// ## What it requires
+/// A tap beside or below a control's frame, inside the 44 pt and outside the glyph, does what a tap on the glyph does:
+/// beside and below Filter, Filters opens; below Examine, Sort and More, and beside More, each one's menu opens (the
+/// menus' taps reach their hit twins, `SearchView.menuHitTwin`); below the pager's ›, page 2 shows.
+///
+/// ## The control
+/// On the code before the fix (iPhone 17, iOS 27.0, 2026-11-15) the four menu taps fail, each opening nothing. **The
+/// Filter and pager taps pass there too**: the system already takes a tap 6–8 pt off a button's frame, so those three
+/// hold the declared 44 pt's taps without guarding it. The menus' four are the guard.
+///
+/// ## Fixture and devices
+/// The bulk volume (`FRUS_UI_TEST_SEED_BULK_VOLUME`, which `SearchBulkActionsTests` describes): thirty results, two
+/// pages. iPhone 17 and iPhone SE (3rd generation), `OS=27.0`, at the default text size; nothing skips, and an iPad runs
+/// it too.
+///
+/// Version history:
+///   1.0 — #1918 (L18, IPH-5): initial implementation
+@MainActor
+final class SearchHitAreaTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private var screen: BulkActionsScreen { BulkActionsScreen(app: app) }
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// How far beside a frame each tap lands: inside the outset of a 20-pt glyph's 44-pt hit area (12 pt) and of the
+    /// bar's own padding (16 pt across, 8 pt down). On the code before the fix only the menus' taps opened nothing.
+    private static let besideAcross: CGFloat = 8
+    private static let besideDown: CGFloat = 6
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = BulkActionsScreen.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+        screen.runTheSearch()
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            if app.state == .runningForeground { UITestPresentation.dismissAnyPresentation(in: app) }
+            app.terminate()
+        }
+        app = nil
+    }
+
+    func testFilterAnswersATapBesideItsGlyph() throws {
+        let filter = try control("search.actions.filter")
+        tap(at: CGPoint(x: filter.frame.minX - Self.besideAcross, y: filter.frame.midY))
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideAcross) pt before Filter's glyph \(filter.frame) did not open Filters")
+    }
+
+    func testFilterAnswersATapBelowItsGlyph() throws {
+        let filter = try control("search.actions.filter")
+        tap(at: CGPoint(x: filter.frame.midX, y: filter.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below Filter's glyph \(filter.frame) did not open Filters")
+    }
+
+    func testMoreAnswersATapBesideItsGlyph() throws {
+        let more = try control("search.actions.more")
+        tap(at: CGPoint(x: more.frame.maxX + Self.besideAcross, y: more.frame.midY))
+        XCTAssertTrue(app.buttons["Select Results"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideAcross) pt after More's glyph \(more.frame) did not open its menu")
+    }
+
+    func testExamineAnswersATapBelowItsGlyph() throws {
+        let examine = try control("search.actions.examine")
+        tap(at: CGPoint(x: examine.frame.midX, y: examine.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.buttons["Timeline"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below Examine's glyph \(examine.frame) did not open its menu")
+    }
+
+    func testSortAnswersATapBelowItsGlyph() throws {
+        let sort = try control("search.actions.sort")
+        tap(at: CGPoint(x: sort.frame.midX, y: sort.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.buttons["Relevance"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below Sort's glyph \(sort.frame) did not open its menu")
+    }
+
+    func testMoreAnswersATapBelowItsGlyph() throws {
+        let more = try control("search.actions.more")
+        tap(at: CGPoint(x: more.frame.midX, y: more.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.buttons["Select Results"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below More's glyph \(more.frame) did not open its menu")
+    }
+
+    /// Below the chevron, not beside it. On the iPad Pro 13-inch (M5) under iOS 27.0, a tap 8 pt past › turned nothing,
+    /// though it fell inside the 44 pt: the chevron's frame was 1,006–1,016 of a 1,032-pt window, so the tap was 8 pt from
+    /// the window's edge. The same tap turned the page on the iPhone 17. What takes a tap at the edge was not found, and a
+    /// tap below the chevron is clear of every edge on both.
+    func testThePagerAnswersATapBelowItsChevron() throws {
+        let next = app.buttons["Next page"].firstMatch
+        XCTAssertTrue(next.waitForExistence(timeout: BulkActionsScreen.patience), "The results have no Next page control")
+        XCTAssertTrue(app.staticTexts["Page 1 of 2"].firstMatch.exists, "Thirty results should show page 1 of 2")
+        print("[#1918 IPH-5] Next page frame \(next.frame)")
+        tap(at: CGPoint(x: next.frame.midX, y: next.frame.maxY + Self.besideDown))
+        XCTAssertTrue(app.staticTexts["Page 2 of 2"].firstMatch.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "A tap \(Self.besideDown) pt below the › chevron \(next.frame) did not turn the page")
+    }
+
+    // MARK: Steps
+
+    /// A control of the actions bar, by its identifier, once it is hittable.
+    private func control(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) throws -> XCUIElement {
+        let element = screen.element(identifier)
+        XCTAssertTrue(element.waitForExistence(timeout: BulkActionsScreen.patience), "\(identifier) is not in the tree",
+                      file: file, line: line)
+        print("[#1918 IPH-5] \(identifier) frame \(element.frame)")
+        return element
+    }
+
+    /// Taps the screen at `point`, in the window's points.
+    private func tap(at point: CGPoint) {
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+    }
+}

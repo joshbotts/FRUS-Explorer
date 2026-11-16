@@ -32,13 +32,15 @@ Documents and your own summaries/notes are searched with different expressions, 
 
 <!-- END SOURCE: search.inspector.stemWarning -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.denominator -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.denominator %@ -->
 
-*Interpolated with the indexed-volume count.*
+*Interpolated with the indexed-volume count, written by `CountCopy` (“1 volume”, “552 volumes”). Keep the placeholder.*
 
-Counts are over the %lld volumes indexed on this device — not the whole published series.
+Counts are over the %@ indexed on this device — not the whole published series.
 
-<!-- END SOURCE: search.inspector.denominator -->
+<!-- END SOURCE: search.inspector.denominator %@ -->
+
+Note: re-keyed for #1918 (L18, HCD-4) from `search.inspector.denominator` (“Counts are over the %lld volumes indexed on this device — not the whole published series.”), which read “the 1 volumes” with one volume indexed.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.excludedDetail.v2 -->
 
@@ -100,13 +102,68 @@ Each of your terms matches something on its own — it is the combination that a
 
 <!-- END SOURCE: search.empty.oneEmpty -->
 
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.denominator -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.denominator %@ -->
 
-*Interpolated with the indexed-volume count.*
+*Interpolated with the indexed-volume count, written by `CountCopy` (“1 volume”, “552 volumes”). Keep the placeholder.*
 
-0 here means 0 in what you have indexed — %lld volumes on this device.
+0 here means 0 in what you have indexed — %@ on this device.
 
-<!-- END SOURCE: search.empty.denominator -->
+<!-- END SOURCE: search.empty.denominator %@ -->
+
+Note: re-keyed for #1918 (L18, HCD-4) from `search.empty.denominator` (“0 here means 0 in what you have indexed — %lld volumes on this device.”), which read “1 volumes”. With no volume indexed this line is not shown: the empty-library notice below takes the zero-result state’s place.
+
+#### The empty library (#1918, HCD-4)
+*Shown in place of the zero-result state when no volume is indexed, on iPhone, iPad and the Mac, and in place of a blank Subseries list when the downloaded-only filter leaves it empty. Its button, **Download Volumes…**, opens the download browser on iPhone and iPad and Settings ▸ Library ▸ Volumes & Storage on the Mac; **Show All Volumes** takes the filter off.*
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 500–501 | key: library.empty.title | shared: iOS only -->
+
+No volumes on this device yet
+
+<!-- END SOURCE: library.empty.title -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 498–499 | key: library.empty.title.mac | shared: macOS only -->
+
+No volumes on this Mac yet
+
+<!-- END SOURCE: library.empty.title.mac -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.title(for:) | lines: 503–504 | key: library.preparing.title | shared: iOS+macOS (single edit point) -->
+
+*Shown while volumes are downloading or being indexed and none is ready.*
+
+No volumes ready yet
+
+<!-- END SOURCE: library.preparing.title -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 515–516 | key: library.empty.search | shared: iOS only -->
+
+Search reads only the volumes downloaded to this device, so it cannot find anything yet. Download some, and search them here.
+
+<!-- END SOURCE: library.empty.search -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 512–513 | key: library.empty.search.mac | shared: macOS only -->
+
+Search reads only the volumes downloaded to this Mac, so it cannot find anything yet. Download some, and search them here.
+
+<!-- END SOURCE: library.empty.search.mac -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 519–520 | key: library.empty.browse | shared: iOS+macOS (single edit point) -->
+
+This list shows downloaded volumes only, and none is downloaded yet. Download some, or show every volume in the series.
+
+<!-- END SOURCE: library.empty.browse -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 522–523 | key: library.preparing.search | shared: iOS+macOS (single edit point) -->
+
+Search finds the volumes you are downloading once each one is indexed.
+
+<!-- END SOURCE: library.preparing.search -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | EmptyLibraryNotice.detail(for:in:) | lines: 525–526 | key: library.preparing.browse | shared: iOS+macOS (single edit point) -->
+
+The volumes you are downloading appear here as each one arrives.
+
+<!-- END SOURCE: library.preparing.browse -->
 
 ---
 
@@ -114,13 +171,13 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1293–1294 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1419–1420 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1225–1226 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1244–1245 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +193,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1876–1878 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1914–1916 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +201,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1881–1883 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1919–1921 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -444,7 +501,7 @@ Source notes parsed for %lld of %lld matches; %lld name a record group.
 #### Subject facet — footer
 
 <!-- The app shows the subject data's caption (`subjects.caption`, §16.4) before this sentence, where the old account stood (#1905). -->
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 959–960 | key: search.subject.facet.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 964–965 | key: search.subject.facet.footer -->
 
 Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
 
@@ -455,7 +512,7 @@ Choose a sub-category: categories themselves are headings, because each one reac
 #### Subject facet — picker footer
 
 <!-- The app shows the subject data's caption (`subjects.caption`, §16.4) before this sentence, where the old account stood (#1905). -->
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 1487–1488 | key: search.subject.facet.picker.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 1492–1493 | key: search.subject.facet.picker.footer -->
 
 A volume appears when any document in it carries the subject — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer subjects, browse the Subject index.
 
@@ -899,13 +956,13 @@ Opening a result does not hide it while Log Research Sessions is off in Settings
 
 <!-- END SOURCE: search.checklist.hiddenBanner.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 799–800 | key: search.corpus.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 804–805 | key: search.corpus.footer -->
 
 A working corpus is a fixed set of documents. Applying one searches only inside it. Manage them in Settings.
 
 <!-- END SOURCE: search.corpus.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 869–870 | key: search.corpus.noneIndexed %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 874–875 | key: search.corpus.noneIndexed %@ -->
 
 *Interpolated with the corpus name.*
 
@@ -1199,13 +1256,13 @@ the container is a finding or a filing-cabinet coincidence.*
 
 *The card's Download Search Model button starts the download (B4, 2026-10-15); through build 50 it opened the consent sheet, §1.4c, now retired with the Gemma Terms.*
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 146–147 | key: search.semantic.offer.body -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 148–149 | key: search.semantic.offer.body -->
 
 Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 149–150 | key: search.semantic.offer.body.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 151–152 | key: search.semantic.offer.body.meaning -->
 
 *The same card in Meaning mode, where no keyword search ran: shown when a Meaning search is submitted and the model is not on the device.*
 
@@ -1712,7 +1769,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1416–1417 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1467–1468 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1722,7 +1779,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1865–1865 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 2038–2038 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1735,28 +1792,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2962–2962 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3142–3142 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2951–2951 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3131–3131 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2958–2958 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3138–3138 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1434–1434 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenuItems | lines: 1560–1560 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1765,7 +1822,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1460–1461 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1594–1595 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -1984,7 +2041,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2935–2935 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3115–3115 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1993,7 +2050,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4356–4356, 4879–4879 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 4361–4361, 4884–4884 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -2002,14 +2059,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 835–835 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 854–854 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 842–843 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 861–862 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -2018,7 +2075,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2634–2634 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2682–2682 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -2690,28 +2747,28 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1120–1121 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1139–1140 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1618–1619 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1637–1638 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
 <!-- END SOURCE: search.filter.advanced.help -->
 
 #### This breakdown stopped at \(…) of \(…) values.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 851–852 | key: facets.bound -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 922–923 | key: facets.bound -->
 
 This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values.
 
 <!-- END SOURCE: facets.bound -->
 
 #### Subject data covers \(…) of \(…) matches.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1108–1109 | key: facets.subjects.coverage -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1218–1219 | key: facets.subjects.coverage -->
 
 Subject data covers \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
 
@@ -2730,63 +2787,63 @@ Detected topics from the Office of the Historian, matched by name — not the vo
 <!-- END SOURCE: facets.subjects.provenance -->
 
 #### Ranks the collections behind all %lld volumes these matches…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1207–1208 | key: facets.provenance.openProfile.detail %lld -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1317–1318 | key: facets.provenance.openProfile.detail %lld -->
 
 Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves.
 
 <!-- END SOURCE: facets.provenance.openProfile.detail %lld -->
 
 #### \(…) match no document in your current scope.
-<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | QueryZeroResultView.body | lines: 411–412 | key: search.empty.severalEmpty -->
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | QueryZeroResultView.body | lines: 417–418 | key: search.empty.severalEmpty -->
 
 \(emptyConjuncts.map(\.text).joined(separator: ", ")) match no document in your current scope.
 
 <!-- END SOURCE: search.empty.severalEmpty -->
 
 #### History limits results to the 1 document you’ve collected…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 369–370 | key: search.projectscope.footer.history.one -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 374–375 | key: search.projectscope.footer.history.one -->
 
 History limits results to the 1 document you’ve collected, annotated, or opened in this project.
 
 <!-- END SOURCE: search.projectscope.footer.history.one -->
 
 #### History limits results to the \(…) documents you’ve…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 371–372 | key: search.projectscope.footer.history.other -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 376–377 | key: search.projectscope.footer.history.other -->
 
 History limits results to the \(n) documents you’ve collected, annotated, or opened in this project.
 
 <!-- END SOURCE: search.projectscope.footer.history.other -->
 
 #### Choose History to search only what you’ve engaged, or Focus…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 395–396 | key: search.projectscope.footer.off -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.projectScopeFooter | lines: 400–401 | key: search.projectscope.footer.off -->
 
 Choose History to search only what you’ve engaged, or Focus to discover across the volumes your project’s subjects define.
 
 <!-- END SOURCE: search.projectscope.footer.off -->
 
 #### Documents without a parseable date are excluded. Documents…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.dateRangeSection | lines: 422–423 | key: search.daterange.help -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.dateRangeSection | lines: 427–428 | key: search.daterange.help -->
 
 Documents without a parseable date are excluded. Documents with only a year or month in their dateline are treated as January 1 of that period and may appear as false positives near range boundaries.
 
 <!-- END SOURCE: search.daterange.help -->
 
 #### Counts are how many of your closest matches carry that tag.
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.countFooterText | lines: 629–630 | key: search.usertags.countFooter.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.countFooterText | lines: 634–635 | key: search.usertags.countFooter.meaning -->
 
 Counts are how many of your closest matches carry that tag.
 
 <!-- END SOURCE: search.usertags.countFooter.meaning -->
 
 #### Footer — Applying a scope fills the volume picker with its indexed…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.customScopeSection | lines: 769–770 | key: search.scope.custom.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.customScopeSection | lines: 774–775 | key: search.scope.custom.footer -->
 
 Applying a scope fills the volume picker with its indexed members. Manage scopes in Settings.
 
 <!-- END SOURCE: search.scope.custom.footer -->
 
 #### Subseries and volumes combine: results include every…
-<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.volumeScopeFooter | lines: 1094–1095 | key: search.scope.volume.footer -->
+<!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | SearchFilterView.volumeScopeFooter | lines: 1099–1100 | key: search.scope.volume.footer -->
 
 Subseries and volumes combine: results include every document in the chosen subseries plus any individually chosen volumes. Only indexed volumes are listed.
 
@@ -2856,7 +2913,7 @@ Enter keywords to search the %@ you are searching within. *(%@ is the set's size
 <!-- END SOURCE: search.semantic.possibleMatches.many -->
 
 #### The model could not be downloaded. You can try again from…
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 211–212 | key: search.semantic.downloadFailed -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 213–214 | key: search.semantic.downloadFailed -->
 
 The model could not be downloaded. You can try again from the button above, or from Settings.
 
@@ -2867,14 +2924,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1535–1536 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1576–1577 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1537–1538 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1578–1579 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 

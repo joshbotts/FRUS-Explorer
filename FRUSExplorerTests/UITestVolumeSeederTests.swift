@@ -576,20 +576,28 @@ struct BrowseSeamSignalTests {
         #expect(attached.count == 1, "a second signal ran the action again")
     }
 
-    @Test("The UI suite sends the signals, and sets the launch keys, the app listens for")
+    @Test("The UI suites send the signals, and set the launch keys, the app listens for")
     func theUISuiteSendsTheSignalsTheAppListensFor() throws {
         let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let suite = try String(
             contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/BrowseNestedSectionTests.swift"),
             encoding: .utf8)
+        // #1918 (A11Y-2): the search signal is the VoiceOver suite's, which names it as a constant.
+        let spoken = try String(
+            contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/SearchResultVoiceOverTests.swift"),
+            encoding: .utf8)
 
-        #expect(UITestBrowseSeams.Signal.allCases.count == 2)
-        for signal in UITestBrowseSeams.Signal.allCases {
+        #expect(UITestBrowseSeams.Signal.allCases.count == 3)
+        for signal in UITestBrowseSeams.Signal.allCases where signal != .search {
             #expect(suite.contains("case \(signal) = \"\(signal.rawValue)\""),
                     "the UI suite has no `\(signal)` signal named \(signal.rawValue)")
         }
-        // And no third name the app would never hear.
-        let named = suite.components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
+        #expect(spoken.contains("searchSignal = \"\(UITestBrowseSeams.Signal.search.rawValue)\""),
+                "the VoiceOver suite does not send the search signal by its name")
+        #expect(spoken.contains("\"\(UITestBrowseSeams.searchOnSignalKey)\""),
+                "the VoiceOver suite no longer arms \(UITestBrowseSeams.searchOnSignalKey)")
+        // And no other name the app would never hear.
+        let named = (suite + spoken).components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
         #expect(named == UITestBrowseSeams.Signal.allCases.count)
 
         // Each seam is armed by its own key, and released by its own signal after it.

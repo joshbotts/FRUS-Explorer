@@ -866,7 +866,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 272
+    static let countCopyBaselineCeiling = 270
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -1102,9 +1102,7 @@ extension CodingStandardsAuditTests {
         #"Search/FacetPanelView.swift | facets.provenance.openProfile.detail %lld"#,
         #"Search/FacetPanelView.swift | facets.subjects.coverage"#,
         #"Search/FacetPanelView.swift | facets.undated"#,
-        #"Search/QueryInspectorView.swift | search.empty.denominator"#,
         #"Search/QueryInspectorView.swift | search.inspector.corpusOccurrences"#,
-        #"Search/QueryInspectorView.swift | search.inspector.denominator"#,
         #"Search/ResultSetScope.swift | search.kwic.count.paged %@ %lld"#,
         #"Search/SearchFilterView.swift | search.projectscope.focus.manual.other"#,
         #"Search/SearchFilterView.swift | search.projectscope.focus.subjects.other"#,

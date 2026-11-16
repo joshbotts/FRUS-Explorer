@@ -224,3 +224,48 @@ public extension View {
         modifier(TransientToastModifier(message: message))
     }
 }
+
+// MARK: - MinimumHitShape (#1918, IPH-5)
+
+/// A rectangle grown about its centre to at least `side` points each way, for a control's hit area (the review's
+/// IPH-5).
+///
+/// A content shape may reach past the view's frame, so the hit area grows while the layout, the accessibility frame
+/// and every capture stay as they were. A 44-point frame would grow the layout too: the actions bar's controls would
+/// stop measuring their glyphs, which is what `SearchActionsBarFitTests` reads to know an accessibility size took
+/// effect, and Search Tips' accessibility-size check of the bar would measure nothing.
+///
+/// Version history:
+///   1.0 — #1918 (L18, IPH-5): initial implementation
+struct MinimumHitShape: Shape {
+
+    /// The least width and height the shape takes, in points.
+    var side: CGFloat = 44
+
+    /// The view's own rectangle, outset about its centre where it is narrower or shorter than ``side``.
+    func path(in rect: CGRect) -> Path {
+        let dx = max(0, (side - rect.width) / 2)
+        let dy = max(0, (side - rect.height) / 2)
+        return Path(rect.insetBy(dx: -dx, dy: -dy))
+    }
+}
+
+extension View {
+
+    /// Grows this control's hit area to at least `side` points each way without moving anything (IPH-5): Apple's
+    /// 44 × 44 pt on iPhone and iPad (`MinimumHitShape`). Nothing on the Mac, whose pointer is not a fingertip and
+    /// where a click beside a control belongs to whatever is there.
+    ///
+    /// Apply it to a button's label, whose content shape is its hit area. A menu's label takes none (`menuHitTwin`).
+    ///
+    /// - Parameter side: The least width and height, in points.
+    /// - Returns: The view, with its content shape grown on iOS.
+    @ViewBuilder
+    func minimumHitTarget(_ side: CGFloat = 44) -> some View {
+        #if os(iOS)
+        contentShape(MinimumHitShape(side: side))
+        #else
+        self
+        #endif
+    }
+}

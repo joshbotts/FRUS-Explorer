@@ -650,6 +650,9 @@ private final class QuestionGatedMeaningSearch: MeaningSearchRunning {
 ///   1.0 — #1584, #1595, #1596, #1597, #1598: initial implementation
 ///   1.1 — #1688: a full Meaning list's trail row records its count as exact
 ///   1.2 — #1686: the Mac's facet panel narrows through the view model, and a change of project keeps a facet's volumes
+///   1.3 — #1918 (IPH-3): the Mac's facet panel applies each staged choice of one Apply in turn
+///   1.4 — #1918 (IPH-5): the iOS readings' door is read from `examineMenuItems`, where the picker moved so that the
+///         menu's hit twin draws it too
 @Suite("Search results are described by the run that produced them")
 @MainActor
 struct SearchResultRouteTests {
@@ -1470,7 +1473,8 @@ struct SearchResultRouteTests {
     @Test("Both hosts dim the readings' control by the view model's rule, on the control itself")
     func bothHostsAskTheViewModelForTheReadingsDoor() throws {
         for (path, header, control, door) in [
-            ("FRUSExplorer/Search/SearchView.swift", "    private var examineMenu: some View {",
+            // The iOS picker is one of the Examine menu's items, which its hit twin draws too (IPH-5, #1918).
+            ("FRUSExplorer/Search/SearchView.swift", "    private var examineMenuItems: some View {",
              "selection: readingSelection) {", ".disabled(vm.results.isEmpty || !vm.offersReadings)"),
             ("FRUSExplorer/App/SearchSheet.swift", "    private var searchToolbar: some ToolbarContent {",
              "Picker(selection: readingSelection) {", ".disabled(searchVM.results.isEmpty || !searchVM.offersReadings)"),
@@ -1614,7 +1618,9 @@ struct SearchResultRouteTests {
         let window = squeezed(Self.code(try Self.source("FRUSExplorer/App/SearchSheet.swift")))
         #expect(window.contains(squeezed("searchVM.applyFacetNarrowing(narrowing)")),
                 "a facet row's narrowing does not go through the view model")
-        #expect(window.contains(squeezed("searchVM.applyFacetSelection(section, keys: keys)")),
+        // #1918 (L18, IPH-3): one Apply sends every staged section, so the window applies each choice in turn; the
+        // call was `searchVM.applyFacetSelection(section, keys: keys)` for one section's selection.
+        #expect(window.contains(squeezed("searchVM.applyFacetSelection(choice.section, keys: choice.keys)")),
                 "a facet section's selection does not go through the view model")
         #expect(!window.contains(squeezed("&searchVM.parameters")),
                 "the window writes the parameters past the view model, which then cannot remember a facet's volumes")

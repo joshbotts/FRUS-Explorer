@@ -62,6 +62,7 @@ import SwiftUI
 ///   1.4 — #1757: the Guide's sheet and its auto-open move to the tab shell
 ///          (`IndexingGuideSheetModifier`); the link calls `onLearnAboutFRUS`. The total this
 ///          banner prints counts the whole queue, its downloads included (`IndexingBatch`).
+///   1.5 — #1918 (L18, IPH-5): the queue list's chevron takes a 44-pt hit area (`minimumHitTarget()`)
 struct IndexingQueueBannerView: View {
 
     /// Current volume's indexing progress.
@@ -163,6 +164,8 @@ struct IndexingQueueBannerView: View {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(FRUSTheme.captionSmallFont)
                         .foregroundStyle(.tertiary)
+                        // IPH-5: 44 pt each way by declaration; the banner's layout is unchanged.
+                        .minimumHitTarget()
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(

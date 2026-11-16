@@ -115,6 +115,8 @@ import Observation
 ///   2.14 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
 ///          from the filters they were found under, which a working corpus records
 ///   2.15 — 2026-11-15: #1905 (L15) — an unnamed subject chip reads *Subject filter*
+///   2.16 — 2026-11-15: #1918 (L18, IPS-1) — `filterSheetOpened()` and `filterSheetClosed()`: the Filters sheet's
+///          closing runs the search on screen again when the filters changed, or ends it when nothing is left to search
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -848,6 +850,55 @@ final class SearchViewModel {
     /// Set to `true` by the filter toolbar button; `false` when the sheet is dismissed.
     var showFilterPanel: Bool = false
     var navigationPath: [DocumentBrowserEntry] = []
+
+    // MARK: - The Filters sheet's dismissal (IPS-1)
+
+    /// The search's parameters as they stood when the Filters sheet opened, or `nil` while it is closed.
+    ///
+    /// The whole parameter set, not `advancedFilterSignature`: the sheet's Clear also takes away what that
+    /// signature does not sign — a subject narrowing from the facet panel, a restored phrase, prefix or excluded
+    /// terms — and a change the comparison could not see would leave the list unfiltered under chips that say it
+    /// was (the review's IPS-1). `SearchParameters` is `Equatable`, so nothing here has to be kept in step with
+    /// the fields the sheet edits.
+    @ObservationIgnored private var parametersWhenFiltersOpened: SearchParameters?
+
+    /// What closing the Filters sheet does to the search on screen (IPS-1).
+    enum FilterSheetDismissal: Equatable {
+        /// The filters are as they were when the sheet opened, or no search is on screen: nothing runs.
+        case nothing
+        /// The filters changed and there is something to search: the search runs again under them.
+        case runAgain
+        /// The filters changed and took away the last thing there was to search: the search on screen ends,
+        /// as it ends when a *Narrowed by* chip takes it away (`SearchView.removeNarrowing(_:)`).
+        case endSearch
+    }
+
+    /// Records the parameters as the Filters sheet opens, for ``filterSheetClosed()`` to compare with.
+    func filterSheetOpened() {
+        parametersWhenFiltersOpened = searchParameters
+    }
+
+    /// Says what the Filters sheet's closing does to the search on screen, and forgets the opening's parameters.
+    ///
+    /// The sheet edits the search's own fields as the reader changes them, so the *Narrowed by* chips, the scope
+    /// banners and the filled filter glyph all describe the new filters at once. Until the review's IPS-1 nothing
+    /// ran when the sheet closed, and the list went on showing the search the filters had just changed: "900
+    /// results" under a chip that said they were narrowed. The Mac applies each change as it is made
+    /// (`MacSearchViewModel.applyAdvancedFilters()`); this sheet applies them when it closes, by Done or by a
+    /// swipe, since either way the chips already say the filters are in force.
+    ///
+    /// The rule is `SearchView.removeNarrowing(_:)`'s: a search on screen runs again when there is still
+    /// something to search (inside a held list, its own rows count), and ends when there is not. A search the
+    /// reader has not run is left alone: the filters wait for it, as they always have.
+    ///
+    /// - Returns: What the view should do.
+    func filterSheetClosed() -> FilterSheetDismissal {
+        defer { parametersWhenFiltersOpened = nil }
+        guard let opened = parametersWhenFiltersOpened, hasSearched, opened != searchParameters else {
+            return .nothing
+        }
+        return pinnedBase != nil || hasRunnableQuery(in: searchMode) ? .runAgain : .endSearch
+    }
 
     // MARK: - Pagination
 

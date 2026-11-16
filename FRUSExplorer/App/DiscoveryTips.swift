@@ -168,9 +168,12 @@ struct FacetNarrowTip: Tip {
 
     /// What selecting a row does, and the denominator caveat that makes the panel readable. It
     /// says "select" because this tip's one anchor is shared, so the Mac shows it too (#1380).
+    ///
+    /// Years and Volumes stage what is selected, and Apply runs it (#775). Until the review's IPH-3
+    /// the tip said any year or volume narrowed the search when selected, which none does.
     var message: Text? {
         Text(String(localized: "tip.facetNarrow.message",
-                    defaultValue: "Select any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing."))
+                    defaultValue: "Select a person, a document type or a subject to narrow your search to it. In Years and Volumes, select rows and then Apply. Each narrowing becomes a chip you can clear; the counts always describe the whole match, before any narrowing."))
     }
 
     /// Matches the facet panel's own glyph.

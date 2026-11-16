@@ -887,6 +887,9 @@ struct MacResultSelectionWiringTests {
     /// window a click on the checkbox checked it and opened nothing, and a click on the row's
     /// title opened the document and left the checkbox as it was.
     ///
+    /// The row is told whether the list draws it on its highlight (`isHighlighted`, #1918's walk: its matched words are
+    /// black there), which is the list's selection and not the Select mode's checkbox.
+    ///
     /// The checkbox's name is its hidden label. Read with the accessibility API from the running
     /// window, its `AXAttributedDescription` is the result's heading; with an `.accessibilityLabel`
     /// of the heading added it was the heading twice over, which VoiceOver would say twice.
@@ -907,7 +910,7 @@ struct MacResultSelectionWiringTests {
                     .labelsHidden()
                     .help(ResultSelectionCopy.rowHint)
                 }
-                SearchResultRow(result: result, userTags: allUserTags)
+                SearchResultRow(result: result, userTags: allUserTags, isHighlighted: selectedResultId == result.id)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selectedResultId = result.id

@@ -514,6 +514,201 @@ struct SearchViewTests {
     }
 }
 
+// MARK: - FilterSheetDismissalTests (#1918, IPS-1)
+
+/// What closing the iPhone and iPad Filters sheet does to the search on screen (`SearchViewModel.filterSheetClosed()`).
+///
+/// The sheet edits the search's own fields, so the chips above the list describe a change at once; until the review's
+/// IPS-1 nothing ran when the sheet closed. `FilterSheetDoneTests` drives the sheet itself in the UI test target.
+@MainActor
+struct FilterSheetDismissalTests {
+
+    /// A view model over an empty index: the rule reads the fields, and runs no search.
+    private func makeViewModel() throws -> (vm: SearchViewModel, dir: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFilterSheet-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("filters.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        return (SearchViewModel(searchService: SearchService(fts5Store: store, pipeline: pipeline)), dir)
+    }
+
+    @Test("A changed filter runs a search on screen again; an unchanged one runs nothing")
+    func changedFilterRunsTheSearchAgain() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.hasSearched = true
+
+        vm.filterSheetOpened()
+        #expect(vm.filterSheetClosed() == .nothing, "Opened and closed with no change")
+
+        vm.filterSheetOpened()
+        vm.documentTypeFilter = .editorialNotesOnly
+        #expect(vm.filterSheetClosed() == .runAgain, "The list under the chips must be the filtered one")
+
+        // A change and its undoing inside one opening leave the list as it was.
+        vm.filterSheetOpened()
+        vm.dateRangeEnabled = true
+        vm.dateRangeEnabled = false
+        #expect(vm.filterSheetClosed() == .nothing)
+
+        // The opening's parameters are forgotten on closing: a close with no opening runs nothing.
+        vm.documentTypeFilter = .all
+        #expect(vm.filterSheetClosed() == .nothing)
+    }
+
+    @Test("Filters set before any search wait for it")
+    func noSearchOnScreenRunsNothing() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.filterSheetOpened()
+        vm.documentTypeFilter = .documentsOnly
+        #expect(vm.filterSheetClosed() == .nothing)
+    }
+
+    @Test("Clear takes away a facet panel's subject narrowing, which the Mac's signature does not sign, and the list follows")
+    func clearedSubjectNarrowingRunsTheSearchAgain() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "détente"
+        vm.subjectBucket = 3
+        vm.subjectBucketKey = "bucket-3"
+        vm.hasSearched = true
+
+        vm.filterSheetOpened()
+        let signature = vm.advancedFilterSignature
+        vm.clearFilters()
+        #expect(vm.advancedFilterSignature == signature,
+                "If the signature saw this change the comparison could read it; the test would then prove less")
+        #expect(vm.filterSheetClosed() == .runAgain)
+    }
+
+    @Test("A browse whose only term the sheet cleared ends, as a chip's ✕ ends it")
+    func clearedBrowseEnds() throws {
+        let (vm, dir) = try makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // A person's Find all mentions: no words, a person filter as the whole search.
+        vm.personRefText = "per_dulles"
+        vm.hasSearched = true
+        #expect(vm.hasRunnableQuery(in: .keywords))
+
+        vm.filterSheetOpened()
+        vm.clearFilters()
+        #expect(vm.filterSheetClosed() == .endSearch)
+    }
+}
+
+// MARK: - EmptyLibraryNoticeTests (#1918, HCD-4 and A11Y-2)
+
+/// When a search names the library as the reason it found nothing, and what VoiceOver hears then.
+struct EmptyLibraryNoticeTests {
+
+    @Test("The library is the reason only while no volume is indexed, and preparing while volumes are on their way")
+    func reasonFollowsTheIndexedCount() {
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 0, isPreparing: false) == .noVolumes)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 0, isPreparing: true) == .preparing)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 1, isPreparing: false) == nil)
+        #expect(EmptyLibraryNotice.reason(indexedVolumeCount: 552, isPreparing: true) == nil)
+    }
+
+    @Test("A finished search says what the screen shows at its head")
+    func announcementSaysWhatTheScreenSays() {
+        func said(_ header: String, rows: Int, beyond: Int = 0, needsModel: Bool = false,
+                  emptyLibrary: EmptyLibraryNotice.Reason? = nil) -> String {
+            SearchFinishAnnouncement.text(header: header, rowsFound: rows, beyondLibrary: beyond,
+                                          needsModel: needsModel, emptyLibrary: emptyLibrary)
+        }
+        #expect(said("3 results", rows: 3) == "3 results")
+        #expect(said("No results", rows: 0) == "No results")
+        // HCD-4's notice, in place of the zero-result state.
+        #expect(said("No results", rows: 0, emptyLibrary: .noVolumes) == "No volumes on this device yet")
+        #expect(said("No results", rows: 0, emptyLibrary: .preparing) == "No volumes ready yet")
+        // A Meaning search's own empty states: its matches beyond the library, and its model's offer.
+        #expect(said("No results", rows: 0, beyond: 5) == "In volumes you have not downloaded (5)")
+        #expect(said("No results", rows: 0, needsModel: true)
+                == SemanticModelOfferCard.offerText(followsKeywordSearch: false))
+        // Rows found say the header, whatever lies beyond the library.
+        #expect(said("12 closest matches", rows: 12, beyond: 5) == "12 closest matches")
+    }
+
+    /// The two hosts' wiring, read where it is written: the Mac's window compiles for the Mac only, and this target
+    /// runs on iOS. Until A11Y-2 each announced a finish behind `executedRoute.isLayer`, so only a search inside a held
+    /// list was spoken. `SearchResultVoiceOverTests.testAFinishedSearchSaysWhatItFound` hears it in the simulator.
+    @Test("Both search screens announce every finished search, and neither only a layer's (A11Y-2)")
+    func bothHostsAnnounceEveryFinishedSearch() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            #expect(source.contains(".modifier(SearchFinishAnnouncer("),
+                    "\(path) no longer observes each finished search through SearchFinishAnnouncer")
+            let header = "private func announceFinishedSearch() {"
+            let start = try #require(source.range(of: header), "\(path) no longer declares announceFinishedSearch()")
+            let end = try #require(source.range(of: "\n    }\n", range: start.upperBound..<source.endIndex))
+            let body = source[start.upperBound..<end.lowerBound]
+            #expect(!body.contains("isLayer"), "\(path) announces only a layer's finish again")
+            #expect(body.contains("SearchFinishAnnouncement.text("),
+                    "\(path) says something other than what its screen shows")
+        }
+    }
+
+    /// The Mac draws the notice where no test runs, and L18's walk in the check copy found two faults there. The Search
+    /// window centred its content on the notice, a blank band above the search row, until the notice took the results
+    /// area's height as `searchErrorView` does. The Corpus Browser's Subseries row cut its title and sentence to one
+    /// line each ("No volumes on this M…") until the row lifted the sidebar's line limit.
+    @Test("The Mac's notice fills the Search window's results area and wraps in the Corpus Browser's sidebar (HCD-4)")
+    func macNoticeFillsAndWraps() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let search = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/SearchSheet.swift"),
+                                encoding: .utf8)
+        let notice = "EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: openVolumesAndStorage)"
+        let call = try #require(search.range(of: notice), "the Mac Search window no longer shows the notice")
+        let branch = try #require(search.range(of: "} else if", range: call.upperBound..<search.endIndex))
+        let modifiers = search[call.upperBound..<branch.lowerBound]
+        #expect(modifiers.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"),
+                "the Mac's notice no longer fills the results area, and the window centres its content on it")
+
+        let browserPath = "FRUSExplorer/App/MacCorpusBrowserWindow.swift"
+        let browser = try String(contentsOf: root.appendingPathComponent(browserPath), encoding: .utf8)
+        let header = "private var emptyDownloadedSubseriesRow: some View {"
+        let start = try #require(browser.range(of: header), "the Corpus Browser no longer declares the empty row")
+        let end = try #require(browser.range(of: "\n    }\n", range: start.upperBound..<browser.endIndex))
+        #expect(browser[start.upperBound..<end.lowerBound].contains(".lineLimit(nil)"),
+                "the Subseries row's title and sentence are cut to one line each again")
+    }
+}
+
+// MARK: - MacMatchedWordTests (#1918, A11Y-1)
+
+/// How the Mac's Search window draws a snippet's matched words: as the reader draws a highlight, and black on a
+/// selected row.
+///
+/// L18's walk in the check copy measured a selected row, where the wash lies over the selection's fill: in dark mode
+/// white text was 3.5:1 on the accent fill and 4.0:1 on the grey one, and black 5.9:1 and 5.3:1. Nothing on the Mac
+/// runs a test of its own, so the rule is read from the source.
+struct MacMatchedWordTests {
+
+    @Test("A selected row's matched words are black; the rest are drawn as the reader draws a highlight")
+    func selectedRowsDrawMatchedWordsInBlack() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/SearchSheet.swift"),
+                                encoding: .utf8)
+        let row = "SearchResultRow(result: result, userTags: allUserTags, isHighlighted: selectedResultId == result.id)"
+        #expect(source.contains(row), "the list no longer tells a row whether it is on the highlight")
+        #expect(source.contains("SnippetView(snippet: result.snippet, isOnHighlight: isHighlighted)"),
+                "the row no longer tells its snippet whether it is on the highlight")
+        #expect(source.contains("span.swiftUI.foregroundColor = isOnHighlight ? .black : FRUSTheme.searchMatchText"),
+                "a selected row's matched words are no longer black, which white text over the fill is not readable at")
+        #expect(source.contains("span.swiftUI.backgroundColor = FRUSTheme.searchMatchBackground"),
+                "the matched words have lost the reader's wash")
+    }
+}
+
 // MARK: - PersonFilterTests
 
 @MainActor

@@ -3238,6 +3238,11 @@ struct FRUSExplorerApp: App {
         if let seededVolume, UITestBrowseSeams.finishesSeededDownloadOnSignal {
             UITestBrowseSeams.finishSeededDownloadOnSignal(seededVolume.volumeId, in: dm)
         }
+        // #1918 (A11Y-2): a search on the test's signal, which VoiceOver can listen to with no input synthesized.
+        // Inert without FRUS_UI_TEST_SEARCH_ON_SIGNAL.
+        if let words = UITestBrowseSeams.searchesOnSignal {
+            UITestBrowseSeams.searchOnSignal(words, in: appState)
+        }
         #endif
 
         if appState.isOnline {
