@@ -250,10 +250,14 @@ struct NotesEnhancementsTests {
 
         let vm = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
                                              activeProjectId: nil, noteToEdit: existing)
-        // `init` mirrors four fields off the note and NOT this one — `load` is what restores it, and
-        // both platform bodies call `load` from `.onAppear`. Nothing else could repopulate it: the
-        // editor's representable loads content once and its change callback fires only on a real
-        // edit, so a note reopened without this would come back unformatted.
+        // `init` restores it since L19 (#1919, IPA-2), beside the record of what the editor opened
+        // with; until then `load`, which both platform bodies call from `.onAppear`, did. Nothing
+        // else could repopulate it: the editor's representable loads content once and its change
+        // callback fires only on a real edit, so a note reopened without this would come back
+        // unformatted.
+        #expect(vm.richText == Data("{\\rtf1 saved}".utf8))
+        #expect(vm.opening.richText == Data("{\\rtf1 saved}".utf8))
+        // And the appearance leaves it as it was.
         vm.load(context: ctx)
         #expect(vm.richText == Data("{\\rtf1 saved}".utf8))
     }

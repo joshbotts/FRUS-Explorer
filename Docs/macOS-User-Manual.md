@@ -664,7 +664,7 @@ Your annotations are a personal layer of analysis over the primary sources — a
 
 ### 9.1 Research Notes
 
-A research note is freeform text attached to a specific document. To add one: open the Research rail (⌘⇧R), expand **Notes**, and click **Add Note** (or press **⇧⌘N**); type and **Save**. To edit, click any note row in the accordion — or open the Research window (⌘⌥R), choose **All Notes**, and click the note.
+A research note is freeform text attached to a specific document. To add one: open the Research rail (⌘⇧R), expand **Notes**, and click **Add Note** (or press **⇧⌘N**); type and **Save**. To edit, click any note row in the accordion — or open the Research window (⌘⌥R), choose **All Notes**, and click the note. Nothing is saved until you click **Save**: while the note holds something you have not saved, **Discard** (or Esc) and closing the note's window ask **Discard Changes?** first, and **Delete** asks before it deletes the note, as **All Notes** does — *This note will be permanently deleted.*
 
 Every note on a document is indexed for search, not only the newest. Deleting a note takes it out of search straight away on the Mac you deleted it on, and on your other devices a few seconds after each next syncs — or when it next opens, if it was closed. All of a document's notes are indexed together as one block, so an exact-phrase search can occasionally match a phrase that runs from the end of one note into the start of the next.
 

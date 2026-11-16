@@ -184,4 +184,114 @@ struct ResearchNoteEditorTests {
         #expect(docVM.crossProjectNoteCount == 0)
         #expect(docVM.crossProjectNotes.isEmpty)
     }
+
+    // MARK: - Unsaved changes (L19, #1919, IPA-2)
+
+    /// A new note's editor opens with nothing to lose — the active project it files the note under
+    /// is the editor's own doing, not the reader's — and typing is a change that undoing undoes.
+    @Test("A new note has changes once text is typed, and none once it is cleared again")
+    func newNoteChangesFollowTheText() {
+        let vm = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                             activeProjectId: UUID())
+        #expect(!vm.hasChanges, "a new note's editor asks before closing though nothing was done")
+        vm.setPlainBody("A first thought.")
+        #expect(vm.hasChanges)
+        vm.setPlainBody("")
+        #expect(!vm.hasChanges, "an emptied new note still counts as a change")
+    }
+
+    /// An existing note opens unchanged. Its tags, projects and inserted summaries are compared as
+    /// sets: a picker that takes a tag off and puts it back reorders the array and loses nothing.
+    @Test("An existing note's tags, projects and summaries are changes, and their order is not")
+    func existingNoteAssignmentsAreChanges() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let tagA = UUID(), tagB = UUID(), project = UUID()
+        let note = ResearchNote(documentId: "d1", volumeId: "frus1969-76v01", bodyText: "Body.",
+                                projectIds: [project], userTagIds: [tagA, tagB])
+        ctx.insert(note)
+        let vm = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                             activeProjectId: nil, noteToEdit: note)
+        #expect(!vm.hasChanges)
+
+        vm.userTagIds = [tagB]
+        #expect(vm.hasChanges, "taking a tag off is not a change")
+        vm.userTagIds = [tagB, tagA]
+        #expect(!vm.hasChanges, "the same tags in another order count as a change")
+
+        vm.projectIds = []
+        #expect(vm.hasChanges, "taking the note out of its project is not a change")
+        vm.projectIds = [project]
+        #expect(!vm.hasChanges)
+
+        vm.selectedSummaryIds = [UUID()]
+        #expect(vm.hasChanges, "an inserted summary's link is not a change")
+    }
+
+    /// Formatting alone is a change while there is text to carry it, and the record of what the
+    /// editor opened with does not move when the editor appears again.
+    @Test("Formatting alone is a change on a note with text, and none on an empty one")
+    func formattingAloneIsAChangeOnlyWithText() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let note = ResearchNote(documentId: "d1", volumeId: "frus1969-76v01", bodyText: "Body.")
+        note.richText = Data("{\\rtf1 plain}".utf8)
+        ctx.insert(note)
+        let vm = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                             activeProjectId: nil, noteToEdit: note)
+        vm.load(context: ctx)
+        #expect(!vm.hasChanges, "opening and appearing count as a change")
+        #expect(vm.opening.richText == Data("{\\rtf1 plain}".utf8))
+
+        vm.richText = Data("{\\rtf1 \\b bold}".utf8)   // what the rich editor reports for a bolded word
+        #expect(vm.hasChanges, "bolding a word is not a change")
+        vm.load(context: ctx)
+        #expect(vm.hasChanges, "appearing again put the stored formatting back")
+        #expect(vm.opening.richText == Data("{\\rtf1 plain}".utf8), "the opening record moved")
+
+        let empty = ResearchNoteEditorViewModel(documentId: "d2", volumeId: "frus1969-76v01",
+                                                activeProjectId: nil)
+        empty.richText = Data("{\\rtf1 }".utf8)   // a letter typed and deleted in the rich editor
+        #expect(!empty.hasChanges, "an empty new note asks before closing")
+    }
+
+    /// Inserting a summary changes the body and links the summary, and both are what Save writes.
+    @Test("Inserting a summary into a new note is a change")
+    func insertingASummaryIsAChange() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let summary = GeneratedSummary(documentId: "d1", volumeId: "frus1969-76v01",
+                                       promptId: UUID(), responseText: "A summary.")
+        ctx.insert(summary)
+        let vm = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                             activeProjectId: nil)
+        vm.promoteSummary(summary)
+        #expect(vm.hasChanges)
+    }
+
+    /// A note the editor has deleted is built into an editor once more as the sheet that showed it
+    /// closes. All Notes' sheet did so on the iPad Pro 13-inch (M5) under iOS 27.0, and the model's
+    /// reading the deleted note's `projectIds` trapped: the model must read such a note as none.
+    @Test("A deleted note is read as none, so building its editor again does not trap")
+    func deletedNoteIsReadAsNone() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let note = ResearchNote(documentId: "d1", volumeId: "frus1969-76v01", bodyText: "Body.",
+                                projectIds: [UUID()], userTagIds: [UUID()])
+        ctx.insert(note)
+        try ctx.save()
+        let editor = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                                 activeProjectId: nil, noteToEdit: note)
+        #expect(editor.noteToEdit === note, "a stored note is not read")
+        editor.delete(context: ctx)
+        try ctx.save()
+
+        let rebuilt = ResearchNoteEditorViewModel(documentId: "d1", volumeId: "frus1969-76v01",
+                                                  activeProjectId: nil, noteToEdit: note)
+        #expect(rebuilt.noteToEdit == nil)
+        #expect(rebuilt.bodyText.isEmpty && rebuilt.projectIds.isEmpty && rebuilt.userTagIds.isEmpty)
+        #expect(!rebuilt.hasChanges)
+        #expect(ResearchNoteEditorViewModel.readable(ResearchNote(documentId: "d1", volumeId: "v")) == nil,
+                "a note in no context is read")
+    }
 }

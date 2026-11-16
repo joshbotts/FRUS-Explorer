@@ -914,6 +914,8 @@ The note editor opens from the Research rail on any document, and from any note 
 
 **Insert into note**, beside each summary under **Generated Summaries**, adds that summary's text to the body (a structured prompt's fields as one *Name: text* paragraph each), where you can edit it as your own prose. The button then reads **Remove from note**, which only drops the note's link to that summary: the text already inserted stays in the body until you delete it yourself.
 
+**Leaving the editor.** Nothing is saved until you tap **Save**. While the note holds something you have not saved — its text, its formatting, its tags or projects — swiping the editor down asks **Discard Changes?** instead of closing, and so does **Discard**; **Keep Editing** takes you back to the note, and **Discard Changes** closes it as it was. On iPad a tap beside the editor leaves it open. **Delete** asks first too, as **All Notes** does: *This note will be permanently deleted.*
+
 **One limit worth knowing.** A note's formatting is kept on your devices and in iCloud, but a collection you export as a `.fruscollection` file carries its notes as plain text — so a colleague who imports it, or you reimporting it later, gets the words without the formatting. The plain text is never lost, and everything else that reads a note (search, the PDF/HTML/DOCX exports, Zotero) reads that plain text anyway.
 
 ### 9.3 Tags

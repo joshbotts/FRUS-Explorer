@@ -2389,6 +2389,33 @@ Choose a tag or All Research Documents from the sidebar.
 
 <!-- END SOURCE: research.empty.noSelection.detail.v2 -->
 
+#### Discard Changes?
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardTitle | lines: 482–482 | key: note.editor.discard.title -->
+
+*The title of the dialog the note editor shows before it closes a note that holds something unsaved — its text, its formatting, its tags, its projects or its summaries (L19, #1919): from the editor's Discard, and on iPhone and iPad from a swipe down on the editor (a tap beside an iPad's editor leaves it open); on the Mac from Discard, Esc and closing the note's window. Its buttons are Keep Editing and Discard Changes, and one of the two messages below follows the title.*
+
+Discard Changes?
+
+<!-- END SOURCE: note.editor.discard.title -->
+
+#### This note has not been saved.
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardMessage(isNewNote:) | lines: 497–498 | key: note.editor.discard.message.new -->
+
+*The dialog's message for a note being written, which has never been saved.*
+
+This note has not been saved.
+
+<!-- END SOURCE: note.editor.discard.message.new -->
+
+#### Your changes to this note have not been saved.
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardMessage(isNewNote:) | lines: 499–500 | key: note.editor.discard.message.edit -->
+
+*The dialog's message for a note saved before and changed since.*
+
+Your changes to this note have not been saved.
+
+<!-- END SOURCE: note.editor.discard.message.edit -->
+
 ### 18.12 Collections, Zotero and the trip packet
 
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
