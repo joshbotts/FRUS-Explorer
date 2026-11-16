@@ -178,6 +178,10 @@ extension NARACatalogKeyProvider {
 ///          which each answered call is told to in place of `NARAAPIKeyStore`; the app's
 ///          `init(keychainStore:urlSession:)` stays the app's, over this one; `searchCatalog(query:)`,
 ///          which the Mac's manual search runs, public with the other queries
+///   1.8 — 2026-11-16 (#1908, plan of record row N1): a record's record group falls back to its
+///          `recordGroup` ancestor (`recordGroupNumber(in:)`), where NARA's live answers carry it,
+///          so a lot lookup's acceptance test can pass; a 2xx body that is not JSON throws
+///          `decodingError` and is not counted, where it read as no records
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -787,17 +791,29 @@ public actor NARACatalogClient {
             }
         }
 
+        // A body that is not JSON is not an answer: thrown before the call is counted (#1908).
+        let results = try Self.decodeResults(from: data)
+
         // Record successful API hit for 30-day usage tracking displayed in Settings.
         await keyProvider.recordNARACatalogAPICall()
 
-        return decodeResults(from: data)
+        return results
     }
 
     // MARK: - JSON Decoding (handles both v1 and v2 response shapes)
 
-    private func decodeResults(from data: Data) -> [NARACatalogResult] {
+    /// The records of a search answer, or `NARACatalogError.decodingError` when the body is not
+    /// a JSON object.
+    ///
+    /// On 2026-11-16 `catalog.archives.gov/api/v2/records/search` answered every request, with
+    /// a key or without, with HTTP 200 and the Catalog website's HTML page (`x-cache: Error from
+    /// cloudfront`): the CDN's fallback when it could not reach the API. Read as "no records",
+    /// that showed "No matching records found" for a lot the bundled index resolves, and counted
+    /// the call as answered. A JSON object of a shape this does not know still reads as no
+    /// records, as before.
+    nonisolated static func decodeResults(from data: Data) throws -> [NARACatalogResult] {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            return []
+            throw NARACatalogError.decodingError
         }
 
         // v2 response: {"opaResponse": {"results": {"result": [...]}}}
@@ -905,6 +921,37 @@ public actor NARACatalogClient {
         return start == end ? "\(start)" : "\(start)–\(end)"
     }
 
+    /// A decoded record's record group: the record's own `recordGroupNumber`, then its
+    /// `description`'s, then the `recordGroup`-level member of its `ancestors` (#1908).
+    ///
+    /// NARA's live answers carry the field on the ancestor alone. Series 2839192, the S/S–NSC
+    /// Files (Lot 63 D 351), read on 2026-11-16, has no `recordGroupNumber` of its own and an
+    /// `ancestors` member `{"levelOfDescription": "recordGroup", "recordGroupNumber": 59, …}`,
+    /// as the generator's `CatalogAncestor` records of the bulk export. Reading the record alone
+    /// gave `nil`, which `LotResolutionAcceptance` refuses (#321), so every lot lookup found
+    /// nothing. The record's own fields are still read first, so an answer that carries one
+    /// reads as before, and a record with neither still reads `nil` and is still refused.
+    nonisolated static func recordGroupNumber(in record: [String: Any]) -> String? {
+        let description = record["description"] as? [String: Any]
+        func text(_ value: Any?) -> String? {
+            switch value {
+            case let number as Int: return String(number)
+            case let string as String where !string.isEmpty: return string
+            case let number as NSNumber: return number.stringValue
+            default: return nil
+            }
+        }
+        if let own = text(record["recordGroupNumber"]) ?? text(description?["recordGroupNumber"]) {
+            return own
+        }
+        let ancestors = (record["ancestors"] as? [[String: Any]])
+            ?? (description?["ancestors"] as? [[String: Any]])
+            ?? []
+        return ancestors
+            .first { $0["levelOfDescription"] as? String == "recordGroup" }
+            .flatMap { text($0["recordGroupNumber"]) }
+    }
+
     /// Decodes one search-response record.
     ///
     /// `nonisolated static` and internal so it is directly testable: a mutation that stops
@@ -932,8 +979,7 @@ public actor NARACatalogClient {
         let scopeNote = record["scopeContent"] as? String
             ?? (record["description"] as? [String: Any])?["scopeAndContentNote"] as? String
 
-        let rgNumber = record["recordGroupNumber"].flatMap { "\($0)" }
-            ?? (record["description"] as? [String: Any])?["recordGroupNumber"].flatMap { "\($0)" }
+        let rgNumber = Self.recordGroupNumber(in: record)
 
         let seriesTitle = record["seriesTitle"] as? String
             ?? (record["description"] as? [String: Any])?["seriesTitle"] as? String
