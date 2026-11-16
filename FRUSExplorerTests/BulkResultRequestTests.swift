@@ -234,11 +234,13 @@ struct CollectionPickerDocumentsModeTests {
 
         let bulk = Self.code(String(try Self.declaration(
             "private func addDocuments(_ documents: [CollectionDocumentRef], to collection: Collection) {", in: picker)))
+        // L19 (A11Y-3): the mark, and its announcement, follow a write that returned (`confirm`).
         #expect(Self.squeezed(bulk).contains(Self.squeezed("""
-            let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            let append = try CollectionDocumentDiscovery.appendDocuments(
                 documents, to: collection, modelContext: modelContext)
-            addedCollectionId = collection.id
-            """)), "the checkmark follows a write that returned")
+            onAdded?(append, collection)
+            confirm(CollectionPickerOutcome(insertedCount: append.insertedCount), in: collection)
+            """)), "the mark follows a write that returned")
         #expect(bulk.contains("addFailure = CollectionPickerCopy.addFailure(error)"), "a failed add is said, not swallowed")
         #expect(!bulk.contains("try?"), "the add's error must reach the catch")
         #expect(!bulk.contains("appendToCollection("), "documents mode has one writer")
@@ -295,6 +297,53 @@ struct CollectionPickerDocumentsModeTests {
                 if orderAtOpen == nil { orderAtOpen = collections.map(\\.id) }
             }
             """)), "the order is taken once, when the sheet appears")
+    }
+
+    // MARK: What a tap says (L19, #1919, A11Y-3)
+
+    @Test("A tap's outcome: already in when nothing was inserted, with the longer pause")
+    func outcomeOfATap() {
+        #expect(CollectionPickerOutcome(insertedCount: 0) == .alreadyIn)
+        #expect(CollectionPickerOutcome(insertedCount: 1) == .added)
+        #expect(CollectionPickerOutcome(insertedCount: 37) == .added, "a partial add is said as an add")
+        #expect(CollectionPickerOutcome.added.pause == 0.6)
+        #expect(CollectionPickerOutcome.alreadyIn.pause == 0.8)
+    }
+
+    @Test("VoiceOver hears where the document went, or that it was there already")
+    func announcementWords() {
+        #expect(CollectionPickerCopy.announcement(.added, collectionName: "Cold War Readers")
+                == "Added to “Cold War Readers”")
+        #expect(CollectionPickerCopy.announcement(.alreadyIn, collectionName: "Cold War Readers")
+                == "Already in “Cold War Readers”")
+        #expect(CollectionPickerCopy.alreadyInMark == "Already here")
+        #expect(CollectionPickerCopy.alreadyInMarkLabel == "Already in this collection")
+    }
+
+    /// Every add confirms through one function, which announces only where no host is told of the add: Search's
+    /// results say the outcome themselves with their Undo, and the reader's pickers have nothing else to say it.
+    @Test("Every add confirms through one function, which announces where no host will")
+    func everyAddAnnouncesOnce() throws {
+        let picker = try Self.source("FRUSExplorer/Collections/CollectionPickerSheet.swift")
+        let add = Self.code(String(try Self.declaration("private func addDocument(to collection: Collection) {", in: picker)))
+        #expect(add.contains("confirm(.alreadyIn, in: collection)"), "a document already there is not said as such")
+        #expect(add.components(separatedBy: "confirm(.added, in: collection)").count - 1 == 2,
+                "the excerpt and the document adds must both confirm")
+        #expect(!add.contains("asyncAfter"), "an add closes the sheet without confirming")
+        let confirm = Self.code(String(try Self.declaration(
+            "private func confirm(_ result: CollectionPickerOutcome, in collection: Collection) {", in: picker)))
+        #expect(Self.squeezed(confirm).contains(Self.squeezed("if onAdded == nil {")),
+                "the picker announces over a host that says the outcome itself")
+        #expect(confirm.contains("AccessibilityNotification.Announcement(TransientToast.announcement("),
+                "the announcement is not posted at high priority")
+        #expect(picker.contains("CollectionPickerOutcomeMark(outcome: outcome)"), "the row does not draw the outcome's mark")
+        // The reader's pickers pass no host: their mark and announcement are the whole of the feedback.
+        for path in ["FRUSExplorer/DocumentView/DocumentView.swift", "FRUSExplorer/DocumentView/ResearchRailView.swift",
+                     "FRUSExplorer/App/MacDocumentView.swift"] {
+            let text = try Self.source(path)
+            #expect(text.contains("CollectionPickerSheet(entry: entry") && !text.contains("onAdded:"),
+                    "\(path)'s picker has a host to say its outcome, so the picker would say nothing")
+        }
     }
 
     @Test("The picker's title is the documents title in documents mode")

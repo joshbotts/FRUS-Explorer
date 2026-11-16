@@ -13337,3 +13337,156 @@ struct CollectionDeletionTests {
                 "the menu's Delete deletes without asking")
     }
 }
+
+// MARK: - CollectionEntryDeletionTests (L19, #1919, MAC-2)
+
+/// A collection row that holds the reader's own writing or choices asks before it is deleted, on every route a row is
+/// deleted by, and every other row goes at once (L19, #1919, MAC-2).
+///
+/// Before L19 a Mac row's red trash and iOS's full swipe deleted any row at once: a note block's text, a heading's
+/// section defaults, a document's headnote draft, with no undo and on every synced device. The rule is driven here over
+/// the model; the editors' wiring is read from source, since the unit target cannot present a dialog, and the dialog
+/// itself is `CollectionRowDeleteTests`' (UI).
+@Suite("A collection row that holds the reader's work asks before it is deleted (L19, MAC-2)", .serialized)
+@MainActor
+struct CollectionEntryDeletionTests {
+
+    private func entry(_ kind: CollectionEntryKind, in context: ModelContext,
+                       documentId: String = "") -> CollectionEntry {
+        let e = CollectionEntry(collectionId: UUID(), documentId: documentId, volumeId: "frus1946v06", sortOrder: 0)
+        e.entryKind = kind
+        context.insert(e)
+        return e
+    }
+
+    @Test("A note block asks while it holds text, and an empty one goes at once")
+    func noteBlocks() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let block = entry(.prose, in: context)
+        #expect(CollectionEntryDeletion.holding(block, in: context) == nil, "a new, empty note block asks")
+        block.text = "   \n"
+        #expect(CollectionEntryDeletion.holding(block, in: context) == nil, "a block of spaces asks")
+        block.text = "The reader's own paragraph."
+        #expect(CollectionEntryDeletion.holding(block, in: context) == .noteBlockText)
+        // A block from before rich text: its JSON body, no plain projection yet.
+        let legacy = entry(.prose, in: context)
+        legacy.richText = Data("{\"runs\":[]}".utf8)
+        #expect(CollectionEntryDeletion.holding(legacy, in: context) == .noteBlockText,
+                "a block whose text is only in its formatted body goes without asking")
+    }
+
+    @Test("A heading asks while it sets a section default, and not for its title alone")
+    func headings() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let heading = entry(.heading, in: context)
+        heading.text = "The Long Telegram"
+        #expect(CollectionEntryDeletion.holding(heading, in: context) == nil,
+                "a heading with no defaults asks, though deleting it leaves its entries")
+        heading.applyHighlightsOverride = false
+        #expect(CollectionEntryDeletion.holding(heading, in: context) == .sectionDefaults)
+        heading.applyHighlightsOverride = nil
+        heading.bodyDepthOverride = CollectionBodyDepth.index.rawValue
+        #expect(CollectionEntryDeletion.holding(heading, in: context) == .sectionDefaults)
+    }
+
+    @Test("A document asks for its headnote draft or its own settings, and goes at once at its defaults")
+    func documents() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let plain = entry(.document, in: context, documentId: "d475")
+        #expect(CollectionEntryDeletion.holding(plain, in: context) == nil, "a document at its defaults asks")
+
+        let drafted = entry(.document, in: context, documentId: "d475")
+        let draft = GeneratedSummary(documentId: "d475", volumeId: "frus1946v06", promptId: UUID(),
+                                     responseText: "Kennan's case, in brief.", authorship: .userWritten,
+                                     isHeadnoteDraft: true)
+        context.insert(draft)
+        drafted.headnoteSummaryId = draft.id
+        #expect(CollectionEntryDeletion.holding(drafted, in: context) == .documentHeadnote)
+
+        // A headnote that is the document's own summary is a choice, not the reader's text: the summary stays.
+        let picked = entry(.document, in: context, documentId: "d476")
+        let summary = GeneratedSummary(documentId: "d476", volumeId: "frus1946v06", promptId: UUID(),
+                                       responseText: "The document's own summary.")
+        context.insert(summary)
+        picked.headnoteSummaryId = summary.id
+        #expect(CollectionEntryDeletion.holding(picked, in: context) == .documentSettings)
+
+        let titled = entry(.document, in: context, documentId: "d477")
+        titled.titleOverride = "  "
+        #expect(CollectionEntryDeletion.holding(titled, in: context) == nil, "a title of spaces asks")
+        titled.titleOverride = "Kennan to Byrnes"
+        #expect(CollectionEntryDeletion.holding(titled, in: context) == .documentSettings)
+
+        let chosen = entry(.document, in: context, documentId: "d478")
+        chosen.selectedNoteIds = [UUID()]
+        #expect(CollectionEntryDeletion.holding(chosen, in: context) == .documentSettings)
+        let overridden = entry(.document, in: context, documentId: "d479")
+        overridden.includeNotesOverride = false
+        #expect(CollectionEntryDeletion.holding(overridden, in: context) == .documentSettings)
+    }
+
+    @Test("An excerpt and an apparatus block go at once")
+    func excerptsAndApparatus() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let excerpt = entry(.excerpt, in: context, documentId: "d475")
+        excerpt.text = "a frozen quotation from the document"
+        #expect(CollectionEntryDeletion.holding(excerpt, in: context) == nil)
+        let block = entry(.generated, in: context)
+        block.generatedBlockType = CollectionGeneratedBlockType.bibliography.rawValue
+        #expect(CollectionEntryDeletion.holding(block, in: context) == nil)
+    }
+
+    @Test("Each dialog says what goes and what stays, and each row's trash names what it deletes")
+    func copy() {
+        let all: [CollectionEntryDeletion.Holding] = [.noteBlockText, .sectionDefaults, .documentHeadnote,
+                                                      .documentSettings]
+        for holding in all {
+            #expect(CollectionEntryDeletion.title(for: holding).hasSuffix("?"))
+            #expect(CollectionEntryDeletion.message(for: holding).contains("other devices too once they sync"))
+        }
+        #expect(CollectionEntryDeletion.message(for: .sectionDefaults).contains("The entries under it stay."))
+        #expect(CollectionEntryDeletion.message(for: .documentHeadnote).contains("headnote"))
+        #expect(!CollectionEntryDeletion.message(for: .documentSettings).contains("headnote"),
+                "a row with no headnote draft is said to lose one")
+        // Before L19 every row's trash said this, a note block's included.
+        let documentHelp = "Remove this document from the collection"
+        #expect(CollectionEntryDeletion.trashHelp(for: .document) == documentHelp)
+        for kind in [CollectionEntryKind.heading, .prose, .excerpt, .generated] {
+            #expect(CollectionEntryDeletion.trashHelp(for: kind) != documentHelp, "\(kind)'s trash calls it a document")
+            #expect(!CollectionEntryDeletion.trashLabel(for: kind).contains("entry"), "\(kind)'s trash is unnamed")
+        }
+    }
+
+    // MARK: The editors' wiring, read from source
+
+    private static func source(_ path: String) throws -> String {
+        try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent(path), encoding: .utf8)
+    }
+
+    @Test("Every route that deletes a row goes through the rule, and every row can ask")
+    func everyRowDeleteAsks() throws {
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        #expect(!mac.contains("onDelete: { deleteEntry("), "a Mac row's trash deletes without the rule")
+        #expect(mac.contains(".collectionEntryDeleteConfirmation(for: sortedEntries[row.index].id"),
+                "the Mac's rows hang no dialog")
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        #expect(!editor.contains("deleteHeadingOnly(") && !editor.contains("deleteVisibleRow("),
+                "the editor keeps a delete that skips the rule")
+        #expect(editor.contains(".collectionEntryDeleteConfirmation(for: sortedEntries[row.index].id"),
+                "the editor's rows hang no dialog")
+        for text in [mac, editor] {
+            let asks = text.components(separatedBy: "CollectionEntryDeletion.holding(").count - 1
+            #expect(asks >= 1, "an editor never asks the rule")
+        }
+        // The swipe and Edit's delete, which `.onDelete` delivers, ask before they delete.
+        let swipe = try #require(editor.range(of: "private func deleteVisibleRows("))
+        let body = editor[swipe.lowerBound...].prefix(1_400)
+        #expect(body.contains("CollectionEntryDeletion.holding(") && body.contains("pendingEntryDeletion ="),
+                "the swipe deletes a row that holds the reader's work")
+    }
+}

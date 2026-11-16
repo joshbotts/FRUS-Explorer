@@ -1416,3 +1416,287 @@ final class CollectionListManagementTests: XCTestCase {
         app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }.joined(separator: " | ")
     }
 }
+
+// MARK: - CollectionRowDeleteTests
+
+/// Deleting a collection row that holds the reader's text asks first, on a swipe, and a row that holds nothing goes at
+/// once (L19, #1919, MAC-2).
+///
+/// Before L19 a full swipe deleted any row at once — a note block's text, a heading's section defaults, a document's
+/// headnote — with no undo, on every synced device. `testASwipeOnANoteBlockAsksFirst` writes a note block, swipes it,
+/// and requires "Delete Note Block?" with the block still there; closes the dialog and requires the text intact; then
+/// deletes it through the dialog. `testASwipeOnAnUntouchedDocumentDeletesIt` requires the seeded document row, at its
+/// defaults, to go on its swipe with no dialog: the rule asks only where there is something to lose.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`.** Under iOS 27.0 the dialog is a popover pointing
+/// at the row on the iPhone as on the iPad, with no Cancel: a tap outside closes it (the helper takes an action sheet's
+/// Cancel too). A swipe either completes on its own, as it did in every run of this row's code, or stops at a revealed
+/// Delete, which the test taps when the cell holds it. On the code before L19 the note block's test fails at its
+/// dialog; the untouched document's fails too, but not as a guard: the swipe stopped at `.onDelete`'s Delete, which the
+/// cell does not hold, so nothing was tapped and the row stayed (iPhone 17, iOS 27.0, from the run's recording). The
+/// fixture is `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1` of `FRUS_UI_TEST_SEED_VOLUME`'s volume.
+///
+/// **What it caught.** Its first run, with the dialog but with the swipe still `.onDelete`'s, failed on the iPhone 17:
+/// the swipe's Delete took the note block off the list at once and no dialog showed, and the block came back when the
+/// collection was opened again. `.onDelete`'s Delete is a destructive swipe button, which animates its row away as if
+/// deleted and takes the row's dialog with it; each row now has a swipe button of its own, red by tint.
+///
+/// Version history:
+///   1.0 — L19 (#1919, MAC-2): initial implementation
+@MainActor
+final class CollectionRowDeleteTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The seeded document's header, from the seeded volume.
+    private static let documentHeader = "UI Test Document One"
+    /// What the test writes into its note block.
+    private static let blockText = "A note the test wrote"
+    /// See `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testASwipeOnANoteBlockAsksFirst() throws {
+        launchIntoTheCollection()
+        CollectionEditorAddMenu.open(in: app)
+        let addNote = app.buttons["Add Note Block"].firstMatch
+        XCTAssertTrue(addNote.waitForExistence(timeout: Self.patience), "The Add menu has no Add Note Block")
+        addNote.tap()
+        let block = app.textViews.firstMatch
+        XCTAssertTrue(block.waitForExistence(timeout: Self.patience), "Add Note Block added no row")
+        block.tap()
+        block.typeText(Self.blockText)
+        let done = app.toolbars.buttons["Done"].firstMatch
+        if done.waitForExistence(timeout: 5) { done.tap() }
+        Thread.sleep(forTimeInterval: 1)
+
+        try swipeToDelete(cell(holding: block))
+        let title = app.staticTexts["Delete Note Block?"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: Self.patience), """
+            The swipe did not ask "Delete Note Block?". Texts: \(texts())
+            """)
+        XCTAssertTrue(app.staticTexts["Its text goes with it, on your other devices too once they sync."].exists,
+                      "The dialog does not say what goes. Texts: \(texts())")
+        XCTAssertTrue(block.exists, "The note block went before its dialog was answered")
+        attachScreenshot("Delete Note Block?")
+        closeTheDialog(titled: title)
+        XCTAssertTrue(block.exists, "Closing the dialog deleted the note block")
+        XCTAssertTrue(((block.value as? String) ?? "").contains(Self.blockText), "Closing the dialog lost the text")
+
+        try swipeToDelete(cell(holding: block))
+        XCTAssertTrue(title.waitForExistence(timeout: Self.patience), "The second swipe did not ask")
+        try dialogButton("Delete Note Block").tap()
+        XCTAssertTrue(block.waitForNonExistence(timeout: Self.patience), "Delete Note Block left the row")
+    }
+
+    func testASwipeOnAnUntouchedDocumentDeletesIt() throws {
+        launchIntoTheCollection()
+        let header = documentRowText(in: app)
+        XCTAssertTrue(header.waitForExistence(timeout: Self.patience),
+                      "The seeded document's row is not in Contents. Texts: \(texts())")
+        try swipeToDelete(cell(holding: header))
+        XCTAssertTrue(header.waitForNonExistence(timeout: Self.patience),
+                      "A document at its defaults did not go on its swipe. Texts: \(texts())")
+        XCTAssertFalse(app.staticTexts["Remove Document?"].exists, "A document at its defaults asked before it went")
+    }
+
+    // MARK: - Steps
+
+    private func launchIntoTheCollection() {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
+                      "Could not open the Collections tab, so this suite would read another screen")
+        let row = app.collectionViews.staticTexts[Self.collectionName].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+        row.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                      "The seeded collection's editor did not open")
+    }
+
+    /// The list cell that holds `element`.
+    private func cell(holding element: XCUIElement) throws -> XCUIElement {
+        let middle = CGPoint(x: element.frame.midX, y: element.frame.midY)
+        let found = app.cells.allElementsBoundByIndex.first { $0.frame.contains(middle) }
+        return try XCTUnwrap(found, "No list cell holds the element at \(middle)")
+    }
+
+    /// Swipes `cell` left, fast, as a reader deletes a row. In this row's runs the swipe was a full one and acted at once:
+    /// the row went, or its dialog showed (iPhone 17 and iPad Pro 13-inch (M5), iOS 27.0). A swipe that stops at a Delete
+    /// the cell holds is followed by a tap on it; on the code before L19 the swipe stopped at `.onDelete`'s Delete, which
+    /// the cell does not hold, so nothing was tapped. A swipe over a note block still being typed in may only end the
+    /// typing, revealing nothing (seen by hand on the iPhone 17 under iOS 27.0), so a second swipe follows one that
+    /// revealed nothing and left the row and no dialog.
+    private func swipeToDelete(_ cell: XCUIElement) throws {
+        for _ in 0..<2 {
+            cell.swipeLeft(velocity: .fast)
+            let reveal = cell.buttons["Delete"].firstMatch
+            if reveal.waitForExistence(timeout: 2) {
+                reveal.tap()
+                return
+            }
+            // A full swipe acts without stopping at Delete: its dialog, or its row gone, is the swipe's answer.
+            if !cell.exists || app.popovers.count > 0 || app.sheets.count > 0 { return }
+        }
+    }
+
+    /// Closes the dialog choosing nothing: its Cancel where an action sheet draws one, else a tap outside
+    /// the popover, which is how iOS 27.0 shows it on iPhone and iPad. A note block's swipe has ended
+    /// its typing by the time the dialog shows, so the foot of the window is clear of a keyboard.
+    private func closeTheDialog(titled title: XCUIElement) {
+        let cancel = app.sheets.buttons["Cancel"].firstMatch
+        if cancel.waitForExistence(timeout: 3) {
+            cancel.tap()
+        } else {
+            let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+            XCTAssertGreaterThan(regions.count, 0, "The dialog has no Cancel and no popover to tap outside")
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.97)).tap()
+        }
+        XCTAssertTrue(title.waitForNonExistence(timeout: Self.patience), "The dialog did not close")
+        Thread.sleep(forTimeInterval: 1)
+    }
+
+    /// The open dialog's button `label`, in a popover, an action sheet or an alert, as the system drew it.
+    private func dialogButton(_ label: String) throws -> XCUIElement {
+        let candidates = [app.popovers.buttons[label], app.sheets.buttons[label], app.alerts.buttons[label]]
+        var found: XCUIElement?
+        let deadline = Date().addingTimeInterval(Self.patience)
+        repeat {
+            found = candidates.first { $0.exists }
+            if found == nil { Thread.sleep(forTimeInterval: 0.25) }
+        } while found == nil && Date() < deadline
+        return try XCTUnwrap(found, "The dialog offered no \"\(label)\" in a popover, sheet or alert")
+    }
+
+    private func texts() -> [String] {
+        app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+// MARK: - CollectionInspectorOpenDocumentTests
+
+/// A collection's document opens in the reader from the screen its row's tap opens (L19, #1919, IPA-4).
+///
+/// A row's tap, and its Configure pill, open the entry's settings — the iPhone's drill-in, the iPad's Configure sheet —
+/// and until L19 the reader was reached from a collection only by a row's long press, a context-menu item the main
+/// interface did not offer. `testOpenDocumentInTheEntrysSettingsOpensTheReader` taps the seeded document's row,
+/// requires **Open Document** in its settings, opens the reader with it, and goes Back: on the iPhone to the settings it
+/// came from, on the iPad to the editor, since the sheet closes before the document opens.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`**: the drill-in and the sheet are different code.
+/// The reader's oracle is its navigation bar, titled with the document's header or, until the document has loaded, its
+/// id. The fixture is `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1` of `FRUS_UI_TEST_SEED_VOLUME`'s volume.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-4): initial implementation
+@MainActor
+final class CollectionInspectorOpenDocumentTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The seeded document's header, from the seeded volume.
+    private static let documentHeader = "UI Test Document One"
+    /// See `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testOpenDocumentInTheEntrysSettingsOpensTheReader() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let collection = app.collectionViews.staticTexts[Self.collectionName].firstMatch
+        XCTAssertTrue(collection.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+        collection.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                      "The seeded collection's editor did not open")
+
+        let row = documentRowText(in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
+            The seeded document's row is not in Contents. Texts: \
+            \(app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty })
+            """)
+        row.tap()
+        let open = app.buttons["collection.inspector.openDocument"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: Self.patience), """
+            The row's settings offer no Open Document. Buttons: \
+            \(app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty })
+            """)
+        attachScreenshot("The entry's settings")
+        open.tap()
+
+        let reader = app.navigationBars.matching(NSPredicate(format: "identifier IN %@",
+                                                              [Self.documentHeader, "d1"])).firstMatch
+        XCTAssertTrue(reader.waitForExistence(timeout: Self.patience), """
+            Open Document did not open the reader. Bars: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))
+            """)
+        attachScreenshot("The reader")
+        let back = app.buttons["BackButton"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience), "The reader has no Back")
+        back.tap()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                          "Back did not return to the collection")
+            XCTAssertFalse(open.exists, "The Configure sheet is still up behind the reader")
+        } else {
+            XCTAssertTrue(open.waitForExistence(timeout: Self.patience),
+                          "Back did not return to the entry's settings it was opened from")
+        }
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+/// The seeded document's row text in a collection's Contents: the row speaks "Document UI Test Document One", the
+/// document's header from the index after "Document", or "Document d1" while the volume is not yet indexed (L19).
+@MainActor
+func documentRowText(in app: XCUIApplication) -> XCUIElement {
+    app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@ OR label ENDSWITH %@",
+                                         "UI Test Document One", "Document d1")).firstMatch
+}

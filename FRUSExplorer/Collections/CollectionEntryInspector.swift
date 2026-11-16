@@ -83,6 +83,8 @@ import SwiftData
 ///          card and the AI summary preview; Edit opens on the fields as *Label: text* paragraphs and saves plain
 ///          text, and Regenerate stores the format its prompt answers in, which it had dropped to `.general`
 ///          (`headnoteSeedText(_:)`)
+///   1.12 — L19 (#1919, IPA-4): **Open Document** at the head of a document's identity, where a host passes
+///          `onOpenDocument` (the iPhone drill-in and the iPad Configure sheet)
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -165,6 +167,13 @@ struct CollectionEntryInspector: View {
     /// button — the pushing stack's back button dismisses it. Defaults to `false` (sheet / macOS
     /// inspector column), which keeps the self-contained stack + Done.
     var isPushed: Bool = false
+
+    /// Opens the entry's document in the reader (L19, #1919, IPA-4), from an **Open Document** button
+    /// at the head of the document's identity. The iPhone drill-in and the iPad Configure sheet pass
+    /// it; `nil` (the Mac's column, whose row has its own Open button, and the heading variant) shows
+    /// no button. Until L19 the reader was reached from a collection on iPhone and iPad only by a
+    /// row's long press, a context-menu item the main interface did not offer.
+    var onOpenDocument: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
@@ -359,6 +368,14 @@ struct CollectionEntryInspector: View {
         Section {
             if let header, !header.isEmpty {
                 Text(header).font(.headline).textSelection(.enabled)
+            }
+            // L19 (IPA-4): the reader, from the screen a row's tap opens.
+            if let onOpenDocument {
+                Button(action: onOpenDocument) {
+                    Label(String(localized: "collection.entry.openDocument", defaultValue: "Open Document"),
+                          systemImage: "book.pages")
+                }
+                .accessibilityIdentifier("collection.inspector.openDocument")
             }
             LabeledContent(String(localized: "collection.inspector.document", defaultValue: "Document"),
                            value: entry.documentId)

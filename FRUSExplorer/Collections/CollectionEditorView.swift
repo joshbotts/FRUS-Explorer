@@ -252,6 +252,15 @@ struct CollectionEditorView: View {
     /// — set = show the entry inspector, `nil` = show the collection-metadata inspector
     /// (one inspector surface, either/or). On iPhone (compact) it drives the `.sheet`.
     @State private var inspectedEntryId: UUID?
+    /// A row's deletion waiting on its dialog, for a row that holds the reader's work (L19, MAC-2).
+    @State private var pendingEntryDeletion: PendingEntryDeletion?
+    /// The document read above the iPhone's per-entry drill-in, from its Open Document (L19, IPA-4). A
+    /// chain of its own: the editor's `readingChain` is presented from the editor, beneath the drill-in.
+    /// Declared on every platform, as the drill-in is; only iOS reads in place.
+    @State private var inspectorReadingChain: [DocumentBrowserEntry] = []
+    /// The entry whose document the iPad's Configure sheet asked to open, read once the sheet has
+    /// closed (L19, IPA-4).
+    @State private var openAfterInspectorCloses: UUID?
     #if os(iOS)
     /// The documents opened from this collection, read INSIDE the stack hosting the editor (2026-09-11):
     /// the Collections tab when pushed, the sheet's own stack otherwise. See `InPlaceDocumentReader`.
@@ -675,9 +684,11 @@ struct CollectionEditorView: View {
                 // Composer v2 §C: document-only — the collection's settings/composition live in the
                 // top Collection Settings drill-in now, so the per-document push omits the collection
                 // section (mirroring the iPad Configure sheet).
-                entryInspectorContent(entry, isPushed: true, documentOnly: true)
+                drillInInspector(entry)
             }
         }
+        // L19 (IPA-4): a reader opened from one entry's drill-in is not left for the next one's.
+        .onChange(of: inspectedEntryId) { _, _ in inspectorReadingChain = [] }
         // Inline note-create (Collections Manager M2, D5): the entry inspector's
         // "New Note…" affordance links the created note to its document entry.
         .sheet(item: $noteCreateContext) { ctx in
@@ -850,9 +861,12 @@ struct CollectionEditorView: View {
         .sheet(isPresented: Binding(
             get: { inspectedEntryId != nil && isRegularWidth },
             set: { if !$0 { inspectedEntryId = nil } }
-        )) {
+        ), onDismiss: openDocumentAfterInspector) {
             if let entry = inspectedEntry {
-                entryInspectorContent(entry, documentOnly: true)
+                // L19 (IPA-4): Open Document closes the sheet and reads the document in the editor's
+                // stack, where a row's long press reads it, rather than inside a form sheet.
+                entryInspectorContent(entry, documentOnly: true,
+                                      onOpenDocument: { openWhenInspectorCloses(entry) })
             }
         }
     }
@@ -1157,10 +1171,32 @@ struct CollectionEditorView: View {
                     outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
                                rows: rows)
                         .padding(.leading, outlineIndent(for: row))
+                        // L19 (MAC-2): the swipe's Delete, which asks first for a row that holds the
+                        // reader's work. Red by tint, NOT `role: .destructive`: a destructive swipe
+                        // button — the one `.onDelete` makes included — animates its row out of the
+                        // list as if deleted, and takes the row's dialog with it. Measured on iOS
+                        // 27.0: the note block vanished, no dialog showed, and the block came back
+                        // when the collection was opened again (`VolumesStorageHubView` met the same).
+                        .swipeActions(edge: .trailing) {
+                            Button {
+                                requestDelete(at: row.index)
+                            } label: {
+                                Label(String(localized: "common.delete", defaultValue: "Delete"),
+                                      systemImage: "trash")
+                            }
+                            .tint(.red)
+                        }
+                        // L19 (MAC-2): a row that holds the reader's work asks before a swipe, Edit's
+                        // delete or its trash deletes it.
+                        .collectionEntryDeleteConfirmation(for: sortedEntries[row.index].id,
+                                                           pending: $pendingEntryDeletion,
+                                                           delete: deleteConfirmed)
                 }
                 .onMove { indices, newOffset in
                     moveVisibleRows(indices, to: newOffset, visible: rows.map(\.index))
                 }
+                // What gives each row Edit mode's minus, which reveals the row's own swipe action above
+                // rather than this one's (measured on iOS 27.0, L19).
                 .onDelete { indexSet in
                     deleteVisibleRows(indexSet, visible: rows.map(\.index))
                 }
@@ -1506,7 +1542,7 @@ struct CollectionEditorView: View {
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
                 entry: $sortedEntries[row.index],
-                onDelete: { deleteHeadingOnly(at: row.index) },
+                onDelete: { requestDelete(at: row.index) },
                 showsInlineDelete: isMacOS,
                 depth: row.depth,
                 isCollapsed: collapsedHeadingIds.contains(row.id),
@@ -1528,7 +1564,7 @@ struct CollectionEditorView: View {
             // Movable/deletable like prose; iOS deletion stays on swipe (no inline trash).
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                 onDelete: isMacOS ? { requestDelete(at: row.index) } : nil,
                                  onMoveUp: moveUp,
                                  onMoveDown: moveDown)
         case .generated:
@@ -1539,7 +1575,7 @@ struct CollectionEditorView: View {
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: takesHandAddedEntries
                                             ? sortedEntries.count { $0.entryKind == .document } : nil,
-                                        onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                        onDelete: isMacOS ? { requestDelete(at: row.index) } : nil,
                                         onMoveUp: moveUp,
                                         onMoveDown: moveDown)
         case .unrecognized:
@@ -1549,15 +1585,35 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// Deletes the single entry at a full-outline index (the excerpt row's inline trash
-    /// on the macOS sheet editor; iOS deletion stays on swipe via `deleteVisibleRows`).
-    private func deleteVisibleRow(_ index: Int) {
+    /// One row's delete — a heading's Delete Heading Only, or a row's trash on the macOS sheet
+    /// editor — at a full-outline index: at once, or after the row's dialog when it holds the
+    /// reader's work (L19, MAC-2, ``CollectionEntryDeletion``). A heading deleted this way leaves its
+    /// entries, and its sub-headings bubble up (normalize's orphan clamp).
+    private func requestDelete(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
+        let entry = sortedEntries[index]
+        if let holding = CollectionEntryDeletion.holding(entry, in: modelContext) {
+            pendingEntryDeletion = PendingEntryDeletion(entryId: entry.id, holding: holding)
+        } else {
+            removeEntry(at: index)
+            finishOutlineMutation()
+        }
+    }
+
+    /// Deletes the entry the reader confirmed in its row's dialog, wherever the outline has it now.
+    private func deleteConfirmed(_ entryId: UUID) {
+        guard let index = sortedEntries.firstIndex(where: { $0.id == entryId }) else { return }
+        removeEntry(at: index)
+        finishOutlineMutation()
+    }
+
+    /// Removes the entry at a full-outline index, with the headnote draft it owns. The caller
+    /// finishes the outline mutation.
+    private func removeEntry(at index: Int) {
         collapsedHeadingIds.remove(sortedEntries[index].id)
         GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
-        finishOutlineMutation()
     }
 
     /// Whether this build renders the macOS sheet editor (its List has no swipe-to-delete,
@@ -1661,17 +1717,31 @@ struct CollectionEditorView: View {
         return fullIndex + 1
     }
 
-    /// Deletes the swiped visible rows (mapped to full-outline coordinates). Deleting a
-    /// heading this way removes the heading only — its entries stay and any sub-headings
-    /// bubble up via normalize.
+    /// Deletes the visible rows `.onDelete` names (mapped to full-outline coordinates). Deleting a
+    /// heading this way removes the heading only — its entries stay and any sub-headings bubble up
+    /// via normalize.
+    ///
+    /// L19 (MAC-2): since each row has a swipe action of its own, a swipe — a full one included —
+    /// and Edit mode's minus reach ``requestDelete(at:)`` through it, not this: `.onDelete`'s own
+    /// Delete is destructive, and the list took its row away before the row's dialog could show
+    /// (measured on iOS 27.0). Any route that still arrives here asks the same way: a row that holds
+    /// the reader's work is not deleted but asked about in its row's dialog
+    /// (``CollectionEntryDeletion``), and the rows that hold nothing go at once, as before.
     private func deleteVisibleRows(_ indices: IndexSet, visible: [Int]) {
         let full = indices.compactMap { visible.indices.contains($0) ? visible[$0] : nil }
-        for i in full.sorted(by: >) {
-            collapsedHeadingIds.remove(sortedEntries[i].id)
-            GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[i], in: modelContext)
-            modelContext.delete(sortedEntries[i])
-            sortedEntries.remove(at: i)
+        var going: [Int] = []
+        for i in full {
+            if let holding = CollectionEntryDeletion.holding(sortedEntries[i], in: modelContext) {
+                // One dialog at a time: a swipe deletes one row, and only Edit could pass more.
+                if pendingEntryDeletion == nil {
+                    pendingEntryDeletion = PendingEntryDeletion(entryId: sortedEntries[i].id, holding: holding)
+                }
+            } else {
+                going.append(i)
+            }
         }
+        guard !going.isEmpty else { return }
+        for i in going.sorted(by: >) { removeEntry(at: i) }
         finishOutlineMutation()
     }
 
@@ -1685,17 +1755,6 @@ struct CollectionEditorView: View {
     private func outdentSection(at index: Int) {
         CollectionOutline.outdentSection(at: index, in: sortedEntries)
         try? modelContext.save()
-    }
-
-    /// Deletes the heading at `index` ONLY — its contents stay and sub-headings bubble
-    /// up one level (normalize's orphan clamp).
-    private func deleteHeadingOnly(at index: Int) {
-        guard sortedEntries.indices.contains(index) else { return }
-        collapsedHeadingIds.remove(sortedEntries[index].id)
-        GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
-        modelContext.delete(sortedEntries[index])
-        sortedEntries.remove(at: index)
-        finishOutlineMutation()
     }
 
     /// Deletes the heading at `index` and every entry in its section range (the user
@@ -1911,15 +1970,47 @@ struct CollectionEditorView: View {
     /// document reads inside the stack hosting the editor, so Back returns to the collection — the
     /// tab the reader is working in — rather than unwinding Browse's history (2026-09-11).
     private func openInReader(_ entry: CollectionEntry) {
-        let browseEntry = DocumentBrowserEntry(
-            documentId: entry.documentId,
-            volumeId: entry.volumeId,
-            header: entry.titleOverride ?? entry.documentId)
+        let browseEntry = readerEntry(for: entry)
         #if os(macOS)
         appState.openDocument(browseEntry, from: .global, using: openWindow)
         #else
         readingChain = [browseEntry]
         #endif
+    }
+
+    /// The reader's entry for a collection entry's document.
+    private func readerEntry(for entry: CollectionEntry) -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: entry.documentId, volumeId: entry.volumeId,
+                             header: entry.titleOverride ?? entry.documentId)
+    }
+
+    /// The iPhone's per-entry drill-in (Composer redesign 4), with Open Document reading the document
+    /// above it, so Back returns to the entry's settings (L19, IPA-4). The reader is iOS's; the Mac's
+    /// sheet editor drills in with no Open Document, as its row has its own.
+    @ViewBuilder
+    private func drillInInspector(_ entry: CollectionEntry) -> some View {
+        #if os(iOS)
+        entryInspectorContent(entry, isPushed: true, documentOnly: true,
+                              onOpenDocument: { inspectorReadingChain = [readerEntry(for: entry)] })
+            .inPlaceReader($inspectorReadingChain)
+        #else
+        entryInspectorContent(entry, isPushed: true, documentOnly: true)
+        #endif
+    }
+
+    /// Open Document in the iPad's Configure sheet (L19, IPA-4): closes the sheet, which opens the
+    /// document once it has gone (``openDocumentAfterInspector()``).
+    private func openWhenInspectorCloses(_ entry: CollectionEntry) {
+        openAfterInspectorCloses = entry.id
+        inspectedEntryId = nil
+    }
+
+    /// The Configure sheet's `onDismiss`: reads the document Open Document asked for, if any, in the
+    /// editor's stack. After the sheet has gone, so the push is not made under a closing sheet.
+    private func openDocumentAfterInspector() {
+        guard let id = openAfterInspectorCloses else { return }
+        openAfterInspectorCloses = nil
+        if let entry = sortedEntries.first(where: { $0.id == id }) { openInReader(entry) }
     }
 
     private func presentEntryInspector(for entryId: UUID) {
@@ -1935,7 +2026,8 @@ struct CollectionEditorView: View {
     /// list in sync when a highlight is inserted as an excerpt.
     @ViewBuilder
     private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false,
-                                       documentOnly: Bool = false) -> some View {
+                                       documentOnly: Bool = false,
+                                       onOpenDocument: (() -> Void)? = nil) -> some View {
         CollectionEntryInspector(
             entry: entry,
             // #1619: no Insert as Excerpt into a smart collection, which leaves hand-added passages out of every export.
@@ -1958,7 +2050,9 @@ struct CollectionEditorView: View {
             onApplyPreset: { applyPreset($0) },
             // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
             // its own navigation stack + Done button.
-            isPushed: isPushed
+            isPushed: isPushed,
+            // L19 (IPA-4): the reader, from the screen a row's tap opens.
+            onOpenDocument: onOpenDocument
         )
         .id(entry.id)
         .environment(appState)

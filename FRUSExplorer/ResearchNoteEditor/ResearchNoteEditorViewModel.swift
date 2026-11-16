@@ -24,12 +24,21 @@ import SwiftData
 /// ID in `selectedSummaryIds`. `demoteSummary(summaryId:)` removes the ID without
 /// modifying `bodyText`; the text remains as the user's own content.
 ///
+/// ## Unsaved changes (L19, IPA-2)
+/// The editor keeps nothing before Save, so ``opening`` records what it opened with and
+/// ``hasChanges`` says whether leaving now would lose anything. The sheet's swipe and Discard ask
+/// first while it is `true`, and a tap beside an iPad's sheet leaves the editor open. The record
+/// lives here, never on the `ResearchNote` model: a stored property there would be a CloudKit
+/// schema change, which 1.0 takes none of.
+///
 /// Version history:
 ///   1.0 — Session 14: initial implementation
 ///   1.1 — #1791: a save is written to every stored copy of the note, and a delete removes every
 ///          copy
 ///   1.2 — 2026-10-31: Insert into note adds a structured summary as its fields, a *Label: text*
 ///          paragraph each (``GeneratedSummary/plainReaderText(separator:)``), not its stored JSON
+///   1.3 — L19 (#1919, IPA-2): ``opening`` and ``hasChanges``; the formatted body is read in `init`,
+///          where it is recorded, not in `load(context:)`
 @Observable
 @MainActor
 final class ResearchNoteEditorViewModel {
@@ -40,6 +49,51 @@ final class ResearchNoteEditorViewModel {
     var projectIds: [UUID] = []
     var userTagIds: [UUID] = []
     var selectedSummaryIds: [UUID] = []
+
+    // MARK: - Unsaved changes (L19, IPA-2)
+
+    /// What the editor holds that Save writes: the note's text, its formatted copy, and the ids it
+    /// is filed and tagged under. The ids are sets, since a picker that takes a tag off and puts it
+    /// back changes their order and nothing else.
+    struct Snapshot: Equatable {
+        /// The note's plain text.
+        let bodyText: String
+        /// The note's formatted text, or `nil` when it carries no formatting.
+        let richText: Data?
+        /// The projects the note is filed under.
+        let projectIds: Set<UUID>
+        /// The tags the note carries.
+        let userTagIds: Set<UUID>
+        /// The summaries inserted into the note.
+        let selectedSummaryIds: Set<UUID>
+    }
+
+    /// What the editor opened with: the note being edited, or a new note's starting state (empty,
+    /// filed under the active project). Recorded once, in `init`, and never written again, so an
+    /// appearance of the editor after a picker closes cannot move it.
+    let opening: Snapshot
+
+    /// What the editor holds now.
+    var current: Snapshot {
+        Snapshot(bodyText: bodyText, richText: richText, projectIds: Set(projectIds),
+                 userTagIds: Set(userTagIds), selectedSummaryIds: Set(selectedSummaryIds))
+    }
+
+    /// Whether leaving without saving would lose something the reader did here.
+    ///
+    /// The plain text, the projects, the tags and the inserted summaries are compared with
+    /// ``opening``. Formatting is compared only while there is text to carry it: the rich editor
+    /// serialises its whole storage on every edit, so typing a letter and deleting it leaves the
+    /// plain text as it was and a fresh formatted copy, which is counted as a change, as it would be
+    /// saved as one; an empty body has no formatting worth asking about.
+    var hasChanges: Bool {
+        let now = current
+        guard now.bodyText == opening.bodyText,
+              now.projectIds == opening.projectIds,
+              now.userTagIds == opening.userTagIds,
+              now.selectedSummaryIds == opening.selectedSummaryIds else { return true }
+        return !now.bodyText.isEmpty && now.richText != opening.richText
+    }
 
     // MARK: - New Tag Creation
 
@@ -67,8 +121,22 @@ final class ResearchNoteEditorViewModel {
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
-        self.noteToEdit = noteToEdit
-        if let note = noteToEdit {
+        // A note its editor has just deleted is built into an editor once more while the sheet that
+        // showed it closes: the presenting view's content runs again, and a view's
+        // `State(initialValue:)` builds its model each time. Measured on the iPad Pro 13-inch (M5)
+        // under iOS 27.0, All Notes' sheet did so after Delete, on the code before L19 as on L19's,
+        // and reading the deleted note's `projectIds` trapped in SwiftData. So a deleted or detached
+        // note is read as none; the view keeps the model it already has, and this one is never shown
+        // (L19, IPA-2).
+        let note = noteToEdit.flatMap(Self.readable)
+        self.noteToEdit = note
+        let startingProjects = note?.projectIds ?? activeProjectId.map { [$0] } ?? []
+        self.opening = Snapshot(bodyText: note?.bodyText ?? "",
+                                richText: note?.richText,
+                                projectIds: Set(startingProjects),
+                                userTagIds: Set(note?.userTagIds ?? []),
+                                selectedSummaryIds: Set(note?.selectedSummaryIds ?? []))
+        if let note {
             bodyText = note.bodyText
             projectIds = note.projectIds
             userTagIds = note.userTagIds
@@ -76,6 +144,19 @@ final class ResearchNoteEditorViewModel {
         } else if let pid = activeProjectId {
             projectIds = [pid]
         }
+        // Here, beside the opening record, rather than in `load(context:)`, which runs at each
+        // appearance: the record must agree with what the editor first shows, and a later read of
+        // the stored copy must not replace formatting the reader has changed since.
+        richText = note?.richText
+    }
+
+    /// `note`, or `nil` when it has been deleted or belongs to no context, when its stored values
+    /// may no longer be read (L19, IPA-2: see `init`).
+    ///
+    /// - Parameter note: The note an editor was asked to open.
+    /// - Returns: The note, if it can be read.
+    static func readable(_ note: ResearchNote) -> ResearchNote? {
+        note.isDeleted || note.modelContext == nil ? nil : note
     }
 
     // MARK: - Loading
@@ -83,7 +164,6 @@ final class ResearchNoteEditorViewModel {
     /// Populates `availableUserTags`, `availableProjects`, and `availableSummaries`
     /// from the SwiftData context. Call once on view appear.
     func load(context: ModelContext) {
-        richText = noteToEdit?.richText
         // **Sorted, which this was the one surface in the app not to do.** Both fetches were bare
         // descriptors, so the two lists came back in SwiftData's storage order — roughly creation
         // order, and stable only by accident. Every list that follows the reader's own order sorts

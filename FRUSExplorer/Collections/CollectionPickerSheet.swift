@@ -57,6 +57,9 @@ import SwiftData
 ///          row now takes a tap anywhere on it (it took one only on its name and caption), the
 ///          list keeps the order it opened in, and a presentation adds once
 ///   1.9 — #1576 lane 3: documents mode tells its host what an add did (`onAdded`)
+///   1.10 — L19 (#1919, A11Y-3): a tap says what it did to VoiceOver — "Added to “X”" or "Already in “X”" —
+///          wherever the picker's mark is the whole of the feedback, and a collection that already held the
+///          document draws its own mark (``CollectionPickerOutcome``)
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance), in the single-document
@@ -77,7 +80,8 @@ struct CollectionPickerSheet: View {
 
     /// Told what a documents-mode add did, and to which collection, before the sheet closes
     /// (#1576 lane 3): the host keeps the outcome on screen and offers its Undo. `nil` where the
-    /// row's checkmark is the whole of the feedback.
+    /// row's mark is the whole of the feedback, which the picker then also says to VoiceOver
+    /// (L19, A11Y-3).
     let onAdded: ((CollectionDocumentAppend, Collection) -> Void)?
 
     /// The picker for one document, or for an excerpt of it.
@@ -116,6 +120,8 @@ struct CollectionPickerSheet: View {
     @State private var searchText: String = ""
     @State private var showNewCollection = false
     @State private var addedCollectionId: UUID? = nil
+    /// What the tap on `addedCollectionId`'s row did (L19, A11Y-3).
+    @State private var outcome: CollectionPickerOutcome = .added
     /// Why a documents-mode add wrote nothing or could not be saved, while its alert is up.
     @State private var addFailure: String? = nil
     /// The collections' ids in the order the sheet opened with (#1576 lane 2), or `nil` before
@@ -199,10 +205,7 @@ struct CollectionPickerSheet: View {
                 }
                 Spacer()
                 if addedCollectionId == collection.id {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .accessibilityLabel(String(localized: "collection.picker.added.a11y",
-                                                   defaultValue: "Added"))
+                    CollectionPickerOutcomeMark(outcome: outcome)
                 }
             }
             // The whole row takes the tap (#1576 lane 2). A plain button is hit only where its
@@ -215,7 +218,7 @@ struct CollectionPickerSheet: View {
         // says why.
         .disabled(!row.takesEntries)
         // No explicit label override: let the button announce name + document count together (the
-        // count is meaningful post-D5), plus the "Added" checkmark when present (C1a review F2).
+        // count is meaningful post-D5), plus the outcome's mark when present (C1a review F2).
     }
 
     // MARK: - macOS Body
@@ -421,8 +424,7 @@ struct CollectionPickerSheet: View {
         if let excerpt {
             CollectionExcerpts.appendToCollection(excerpt, collection: collection,
                                                   modelContext: modelContext)
-            addedCollectionId = collection.id
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+            confirm(.added, in: collection)
             return
         }
 
@@ -435,8 +437,7 @@ struct CollectionPickerSheet: View {
             $0.entryKind == .document
                 && $0.documentId == entry.documentId && $0.volumeId == entry.volumeId
         }) else {
-            addedCollectionId = collection.id
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { dismiss() }
+            confirm(.alreadyIn, in: collection)
             return
         }
 
@@ -453,27 +454,92 @@ struct CollectionPickerSheet: View {
             modelContext: modelContext
         )
 
+        confirm(.added, in: collection)
+    }
+
+    /// Shows what a tap did, says it to VoiceOver where nothing else will, and closes the sheet after
+    /// the outcome's pause (L19, #1919, A11Y-3).
+    ///
+    /// Until L19 the picker drew a check that the sheet's own closing took away 0.6 s later (0.8 s for
+    /// a document the collection already held, under the same check) and said nothing. The picker now
+    /// says "Added to “X”" or "Already in “X”" wherever its mark is the whole of the feedback: one
+    /// document or an excerpt, from the reader, the rail or a Mac document window, and documents mode
+    /// with no host told of the add. A host that is told (`onAdded`, Search's results) keeps the outcome
+    /// on screen with its Undo and says it itself, so the picker does not say it twice. Posted at once,
+    /// with the mark, and at high priority (``TransientToast/announcement(_:)``), which the sheet's
+    /// closing and VoiceOver's move to the screen beneath it do not cut off.
+    private func confirm(_ result: CollectionPickerOutcome, in collection: Collection) {
         addedCollectionId = collection.id
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+        outcome = result
+        if onAdded == nil {
+            let name = CollectionEditorNaming.listName(savedName: collection.name)
+            AccessibilityNotification.Announcement(TransientToast.announcement(
+                CollectionPickerCopy.announcement(result, collectionName: name))).post()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + result.pause) { dismiss() }
     }
 
     /// Documents mode's add (#1576 lane 2): every document the collection does not hold, in the
     /// order given, saved before the sheet says so.
     ///
-    /// The row's checkmark is the confirmation, as it is for one document, and the sheet leaves
-    /// after the same pause: a little longer when every document was there already, which is
-    /// the pause the single-document add gives a duplicate.
+    /// The row's mark is the confirmation, as it is for one document, and the sheet leaves after the
+    /// same pause: a little longer when every document was there already, which is the pause the
+    /// single-document add gives a duplicate, and which draws the already-there mark (L19, A11Y-3).
     private func addDocuments(_ documents: [CollectionDocumentRef], to collection: Collection) {
         do {
-            let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            let append = try CollectionDocumentDiscovery.appendDocuments(
                 documents, to: collection, modelContext: modelContext)
-            addedCollectionId = collection.id
-            onAdded?(outcome, collection)
-            let pause = outcome.insertedCount == 0 ? 0.8 : 0.6
-            DispatchQueue.main.asyncAfter(deadline: .now() + pause) { dismiss() }
+            onAdded?(append, collection)
+            confirm(CollectionPickerOutcome(insertedCount: append.insertedCount), in: collection)
         } catch {
             // Said, and the sheet stays: the reader can pick another collection or cancel.
             addFailure = CollectionPickerCopy.addFailure(error)
+        }
+    }
+}
+
+// MARK: - CollectionPickerOutcome (L19, A11Y-3)
+
+/// What one tap in the Add to Collection picker did (L19, #1919, A11Y-3).
+///
+/// Version history:
+///   1.0 — L19 (#1919, A11Y-3): initial implementation
+enum CollectionPickerOutcome: Equatable, Sendable {
+    /// The document, the excerpt, or at least one of the documents went into the collection.
+    case added
+    /// The collection held the document, or every one of the documents, already; nothing was added.
+    case alreadyIn
+
+    /// Documents mode's outcome: already in when the add inserted nothing.
+    ///
+    /// - Parameter insertedCount: The entries the add inserted.
+    init(insertedCount: Int) {
+        self = insertedCount == 0 ? .alreadyIn : .added
+    }
+
+    /// How long, in seconds, the sheet stays after the tap: 0.6, and 0.8 for a collection that already
+    /// held the document, the pause the picker has always given a duplicate.
+    var pause: Double { self == .alreadyIn ? 0.8 : 0.6 }
+}
+
+/// The mark a picker row draws after its tap (L19, A11Y-3): a filled green check for an add, and for
+/// a collection that already held the document a hollow check in the secondary colour with the words
+/// "Already here", so that the two differ in shape, colour and words. They drew the same green check.
+private struct CollectionPickerOutcomeMark: View {
+    /// What the tap did.
+    let outcome: CollectionPickerOutcome
+
+    var body: some View {
+        switch outcome {
+        case .added:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+                .accessibilityLabel(String(localized: "collection.picker.added.a11y", defaultValue: "Added"))
+        case .alreadyIn:
+            Label(CollectionPickerCopy.alreadyInMark, systemImage: "checkmark.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel(CollectionPickerCopy.alreadyInMarkLabel)
         }
     }
 }
@@ -508,6 +574,31 @@ enum CollectionPickerCopy {
             many: String(localized: "collection.picker.title.documents.many",
                          defaultValue: "Add %@ Documents to Collection"),
             locale: locale)
+    }
+
+    /// What VoiceOver is told after a tap (L19, A11Y-3): "Added to “Cold War Readers”", or "Already in
+    /// “Cold War Readers”" when the collection held the document already.
+    ///
+    /// - Parameters:
+    ///   - outcome: What the tap did.
+    ///   - collectionName: The collection's name as its row shows it.
+    static func announcement(_ outcome: CollectionPickerOutcome, collectionName: String) -> String {
+        switch outcome {
+        case .added:
+            String(localized: "collection.picker.announce.added", defaultValue: "Added to “\(collectionName)”")
+        case .alreadyIn:
+            String(localized: "collection.picker.announce.alreadyIn", defaultValue: "Already in “\(collectionName)”")
+        }
+    }
+
+    /// The words beside the mark of a collection that held the document already (L19, A11Y-3).
+    static var alreadyInMark: String {
+        String(localized: "collection.picker.alreadyIn.mark", defaultValue: "Already here")
+    }
+
+    /// That mark's VoiceOver name (L19, A11Y-3).
+    static var alreadyInMarkLabel: String {
+        String(localized: "collection.picker.alreadyIn.a11y", defaultValue: "Already in this collection")
     }
 
     /// The title of the alert a failed documents-mode add shows.

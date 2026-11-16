@@ -240,6 +240,16 @@ extension GeneratedSummary {
         for draft in drafts { context.delete(draft) }
     }
 
+    /// Whether `entry` owns a headnote draft, the summary ``deleteHeadnoteDraft(for:in:)`` would
+    /// delete with it. Asked before a collection row is deleted, which asks first when it would take
+    /// the reader's headnote with it (L19, #1919, MAC-2).
+    static func headnoteDraftExists(for entry: CollectionEntry, in context: ModelContext) -> Bool {
+        guard let sid = entry.headnoteSummaryId else { return false }
+        let count = (try? context.fetchCount(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.id == sid && $0.isHeadnoteDraft }))) ?? 0
+        return count > 0
+    }
+
     /// Deletes the headnote drafts owned by every entry of `collection` — call before deleting the
     /// whole collection (its entries are deleted without individually routing through
     /// `deleteHeadnoteDraft`).

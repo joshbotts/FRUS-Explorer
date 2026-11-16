@@ -1225,3 +1225,627 @@ final class SelectionEditMenuTests: XCTestCase {
         return condition()
     }
 }
+
+// MARK: - NoteEditorUnsavedChangesTests
+
+/// The note editor loses nothing the reader typed without asking, and deletes a note only once asked
+/// (L19, #1919, IPA-2).
+///
+/// Before L19 the editor was an ordinary sheet: nothing is saved before Save, so a swipe down or
+/// Discard closed it and the typed text was gone, and its Delete erased the note at once, where All
+/// Notes asks "Delete Note?" first; on an iPad the app then trapped as All Notes' sheet closed.
+///
+/// ## What each test drives
+/// - `testASwipeAsksBeforeLosingTypedText` types into the seeded note, swipes the sheet down, and
+///   requires "Discard Changes?" with the editor still open; closes the dialog without discarding and
+///   requires the typed words still in the body; on an iPad taps beside the sheet and requires the
+///   editor still open with them, since UIKit ignores a touch outside a sheet it holds modal and
+///   reports no attempt, so that tap asks nothing and loses nothing; then Discard, which asks too,
+///   and Discard Changes, after which the list still shows the note as it was.
+/// - `testAnUntouchedNoteClosesOnASwipeAndSaveAsksNothing` swipes an untouched note away (nothing to
+///   lose, so no dialog), then types and saves: the editor closes with no dialog and the row reads the
+///   saved words. Save is the case the guard must stand aside for.
+/// - `testDeleteAsksAsAllNotesDoes` requires All Notes' dialog, its title and message, before the
+///   note is deleted, and the note still there after the dialog is closed without deleting; then
+///   deletes it through the dialog and requires All Notes empty. On an iPad that last step is where
+///   the code before L19 trapped, building the editor again around the deleted note as the sheet
+///   closed (iPad Pro 13-inch (M5), iOS 27.0; `ResearchNoteEditorViewModel.readable`).
+///
+/// ## Fixture and oracles
+/// `FRUS_UI_TEST_SEED_NOTE` puts one note, "UI Test Research Note", on a document no fixture holds;
+/// All Notes lists it and its row opens the editor, titled "Edit Note". A dialog is read by its title.
+/// Under iOS 27.0 each hangs from its button as a popover, on the iPhone as on the iPad, and draws no
+/// cancel button, so a tap outside it closes it; where an action sheet draws a cancel button, that
+/// button is tapped.
+///
+/// ## Running it
+/// The suite lives in this file but is not `ResearchReadingStaysInTabTests`: name
+/// `FRUSExplorerUITests/NoteEditorUnsavedChangesTests`. Run it on an iPhone and an iPad, under iOS 27
+/// with the allowance `CLAUDE.md` gives.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-2): initial implementation
+@MainActor
+final class NoteEditorUnsavedChangesTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestResearchSeeder.noteBody`, repeated because a UI-test target cannot import the app.
+    private static let seededBody = "UI Test Research Note"
+    /// What the tests type: words the keyboard leaves as they are.
+    private static let typed = "Typed in the test"
+    /// The editor's navigation title for an existing note.
+    private static let editorTitle = "Edit Note"
+    /// The dialog that asks before typed text is lost.
+    private static let discardTitle = "Discard Changes?"
+    /// How long a wait waits: long, for the slow queries `CollectionEditorTitleTests.patience` records.
+    private static let patience: TimeInterval = 30
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research)
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        // An editor a failure left open: Discard, and Discard Changes if it asks. The editor is view
+        // state no launch restores, but a dialog left up would hold this launch's screen.
+        if let app, app.state == .runningForeground, editorBar.exists {
+            editorButton("Discard").tap()
+            findDialogButton("Discard Changes", within: 3)?.tap()
+        }
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    /// A swipe asks before the typed words are lost, and on an iPad a tap beside the sheet leaves the
+    /// editor open with them; Discard asks too, and Discard Changes leaves the note as it was.
+    func testASwipeAsksBeforeLosingTypedText() throws {
+        openTheSeededNote()
+        typeIntoTheBody()
+
+        swipeTheEditorDown()
+        requireTheDiscardDialog("after a swipe down")
+        XCTAssertTrue(editorBar.exists, "The swipe closed the editor, and the typed words with it")
+        attachScreenshot("Discard Changes? after a swipe")
+        try closeTheDialogWithoutChoosing(Self.discardTitle)
+        XCTAssertTrue(editorBar.exists, "Closing the dialog closed the editor")
+        XCTAssertTrue(bodyHoldsTheTypedWords(), "Closing the dialog lost the typed words: \(bodyText())")
+
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // Beside the form sheet: the window's left edge, which the centred sheet does not reach. UIKit ignores a
+            // touch outside a sheet it holds modal and reports no attempt, so the tap asks nothing and the editor stays
+            // with the typed words (measured on the iPad Pro 13-inch (M5), iOS 27.0). A dialog, should a later iOS
+            // report the tap, is closed without choosing.
+            app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap()
+            Thread.sleep(forTimeInterval: 2)
+            attachScreenshot("The editor after a tap beside the sheet")
+            if app.staticTexts[Self.discardTitle].exists { try closeTheDialogWithoutChoosing(Self.discardTitle) }
+            XCTAssertTrue(editorBar.exists, "A tap beside the sheet closed the editor")
+            XCTAssertTrue(bodyHoldsTheTypedWords(), "The tap beside the sheet lost the typed words: \(bodyText())")
+        }
+
+        editorButton("Discard").tap()
+        requireTheDiscardDialog("after Discard")
+        XCTAssertTrue(editorBar.exists, "Discard closed the editor before its dialog was answered")
+        try dialogButton("Discard Changes").tap()
+        XCTAssertTrue(editorBar.waitForNonExistence(timeout: Self.patience), "Discard Changes left the editor open")
+        XCTAssertTrue(app.staticTexts[Self.seededBody].waitForExistence(timeout: Self.patience),
+                      "All Notes no longer lists the note as it was. Texts: \(visibleTexts())")
+        XCTAssertFalse(listShowsTheTypedWords(), "Discard Changes saved the typed words")
+    }
+
+    /// Nothing to lose closes on a swipe; Save closes without asking and keeps the words.
+    func testAnUntouchedNoteClosesOnASwipeAndSaveAsksNothing() throws {
+        openTheSeededNote()
+        swipeTheEditorDown()
+        XCTAssertTrue(editorBar.waitForNonExistence(timeout: Self.patience),
+                      "A swipe did not close an untouched note's editor")
+        XCTAssertFalse(app.staticTexts[Self.discardTitle].exists, "An untouched note asked before closing")
+
+        openTheSeededNote()
+        typeIntoTheBody()
+        editorButton("Save").tap()
+        XCTAssertTrue(editorBar.waitForNonExistence(timeout: Self.patience), "Save left the editor open")
+        XCTAssertFalse(app.staticTexts[Self.discardTitle].exists, "Save asked \"\(Self.discardTitle)\"")
+        XCTAssertTrue(waitUntil { self.listShowsTheTypedWords() },
+                      "After Save, All Notes does not show the typed words. Texts: \(visibleTexts())")
+    }
+
+    /// Delete asks All Notes' question, and closing the dialog without deleting keeps the note.
+    func testDeleteAsksAsAllNotesDoes() throws {
+        openTheSeededNote()
+        editorButton("Delete").tap()
+        XCTAssertTrue(app.staticTexts["Delete Note?"].waitForExistence(timeout: Self.patience), """
+            Delete did not ask "Delete Note?". Texts: \(visibleTexts())
+            """)
+        XCTAssertTrue(app.staticTexts["This note will be permanently deleted."].exists,
+                      "The dialog does not say what All Notes' says. Texts: \(visibleTexts())")
+        XCTAssertTrue(editorBar.exists, "Delete closed the editor before its dialog was answered")
+        attachScreenshot("Delete Note?")
+        try closeTheDialogWithoutChoosing("Delete Note?", cancel: "Cancel")
+        XCTAssertTrue(editorBar.exists, "Closing the dialog closed the editor")
+
+        editorButton("Delete").tap()
+        try dialogButton("Delete").tap()
+        XCTAssertTrue(editorBar.waitForNonExistence(timeout: Self.patience), "Delete left the editor open")
+        XCTAssertTrue(app.staticTexts["No Notes"].waitForExistence(timeout: Self.patience),
+                      "All Notes still lists the deleted note. Texts: \(visibleTexts())")
+    }
+
+    // MARK: - Steps
+
+    /// Research ▸ All Notes ▸ the seeded note, which opens the editor.
+    private func openTheSeededNote() {
+        if !app.staticTexts[Self.seededBody].exists {
+            XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+            let allNotes = app.cells.containing(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+            let row = allNotes.exists ? allNotes
+                : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "Research has no All Notes row")
+            row.tap()
+        }
+        let seeded = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", Self.seededBody)).firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: Self.patience),
+                      "All Notes does not list the seeded note. Texts: \(visibleTexts())")
+        seeded.tap()
+        XCTAssertTrue(editorBar.waitForExistence(timeout: Self.patience), "The note's row did not open its editor")
+    }
+
+    /// Types into the note's body, then puts the keyboard away with the formatting bar's Done.
+    private func typeIntoTheBody() {
+        XCTAssertTrue(noteBody.waitForExistence(timeout: Self.patience), "The editor has no note body")
+        noteBody.tap()
+        noteBody.typeText(" " + Self.typed)
+        let done = app.toolbars.buttons["Done"].firstMatch
+        if done.waitForExistence(timeout: 5) { done.tap() }
+        XCTAssertTrue(waitUntil { self.bodyHoldsTheTypedWords() }, "The body does not hold the typed words: \(bodyText())")
+        Thread.sleep(forTimeInterval: 1)
+    }
+
+    /// Drags the sheet down by its navigation bar, far and fast, as a reader closes a sheet.
+    private func swipeTheEditorDown() {
+        let start = editorBar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 600)),
+                    withVelocity: .fast, thenHoldForDuration: 0)
+        Thread.sleep(forTimeInterval: 1.5)
+    }
+
+    /// Requires "Discard Changes?" to be up.
+    private func requireTheDiscardDialog(_ when: String) {
+        XCTAssertTrue(app.staticTexts[Self.discardTitle].waitForExistence(timeout: Self.patience), """
+            No "\(Self.discardTitle)" \(when). Navigation bars: \
+            \(app.navigationBars.allElementsBoundByIndex.map(\.identifier)); texts: \(visibleTexts())
+            """)
+    }
+
+    /// Closes the dialog titled `titled` choosing nothing: its cancel button where an action sheet
+    /// draws one, else a tap outside the popover, which is how iOS 27.0 shows it on iPhone and iPad.
+    private func closeTheDialogWithoutChoosing(_ titled: String, cancel: String = "Keep Editing") throws {
+        let title = app.staticTexts[titled].firstMatch
+        let cancelButton = app.sheets.buttons[cancel].firstMatch
+        if cancelButton.waitForExistence(timeout: 3) {
+            cancelButton.tap()
+        } else {
+            let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+            XCTAssertGreaterThan(regions.count, 0, "The dialog has no \(cancel) and no popover to tap outside")
+            // The region spans the window. At its left edge and 45% down, the tap falls below a popover
+            // hanging from a bar button and above a keyboard the swipe left up: at the foot of the
+            // window it met the iPhone 17's keyboard in one run of three (iOS 27.0) and closed nothing.
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.45)).tap()
+        }
+        XCTAssertTrue(title.waitForNonExistence(timeout: Self.patience), "The dialog did not close")
+        Thread.sleep(forTimeInterval: 1)
+    }
+
+    // MARK: - Queries
+
+    /// The editor's navigation bar.
+    private var editorBar: XCUIElement { app.navigationBars[Self.editorTitle] }
+
+    /// The note's body: a rich-text view named for VoiceOver, and the editor's one text view.
+    private var noteBody: XCUIElement {
+        let named = app.textViews["Research note body"].firstMatch
+        return named.exists ? named : app.textViews.firstMatch
+    }
+
+    /// The editor's toolbar button `label`, wherever its placement drew it: the navigation bar, or a
+    /// toolbar.
+    private func editorButton(_ label: String) -> XCUIElement {
+        let inBar = editorBar.buttons[label].firstMatch
+        if inBar.exists { return inBar }
+        let inToolbar = app.toolbars.buttons[label].firstMatch
+        return inToolbar.exists ? inToolbar : app.buttons[label].firstMatch
+    }
+
+    /// The body's text.
+    private func bodyText() -> String { (noteBody.value as? String) ?? "" }
+
+    /// Whether the body holds the typed words.
+    private func bodyHoldsTheTypedWords() -> Bool { bodyText().contains(Self.typed) }
+
+    /// Whether a row of All Notes shows the typed words.
+    private func listShowsTheTypedWords() -> Bool {
+        app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", Self.typed)).count > 0
+    }
+
+    /// The open dialog's button `label`, in a popover, an action sheet or an alert, as the system drew it.
+    private func dialogButton(_ label: String) throws -> XCUIElement {
+        try XCTUnwrap(findDialogButton(label, within: Self.patience),
+                      "The dialog offered no \"\(label)\" in a popover, sheet or alert")
+    }
+
+    /// The open dialog's button `label`, or `nil` when none appears within `timeout`. Asserts nothing,
+    /// so `tearDown` can ask.
+    private func findDialogButton(_ label: String, within timeout: TimeInterval) -> XCUIElement? {
+        let candidates = [app.popovers.buttons[label], app.sheets.buttons[label], app.alerts.buttons[label]]
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if let found = candidates.first(where: { $0.exists }) { return found }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        return nil
+    }
+
+    /// The labels of the texts on screen, for a failure's message.
+    private func visibleTexts() -> [String] {
+        app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }
+    }
+
+    /// Attaches a screenshot the reviewer keeps.
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes.
+    private func waitUntil(_ timeout: TimeInterval = NoteEditorUnsavedChangesTests.patience,
+                           _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+}
+
+// MARK: - RailAtCompactWidthTests
+
+/// On an iPad at compact width the reader's rail is the iPhone's tap-to-open sheet, and closing it leaves the rail on
+/// for the next document read at full width (L19, #1919, IPA-6).
+///
+/// A document opened from Project Home reads inside a form sheet, which reports a compact width. Before L19 the rail's
+/// `.inspector` there showed nothing with its toggle on; toggled off and on it came up as a sheet of its own over the
+/// document, and that sheet's closing wrote the stored rail setting off, so the next document opened at full width had
+/// no rail (the check of 2026-11-16, iPad Pro 13-inch (M5), iOS 27.0).
+///
+/// ## What the test drives
+/// It opens the seeded note's document from Research at full width and turns the rail on there if it is off, so that
+/// the stored setting is on: the setting is read as stored, never pinned by a launch argument, since an argument-domain
+/// default cannot be overwritten and would hide the very write this guards against. Then Project Home ▸ Recently Read
+/// opens the same document in the form sheet, where no rail may show; a tap on the toggle must open the rail as a sheet,
+/// with its tiles; a swipe closes it. Back at full width the document must show its rail column again. Whether the
+/// toggle reads on is not asked: on the code before L19 XCUI reported it unselected while it was drawn on, in the run's
+/// own screenshot (iPad Pro 13-inch (M5), iOS 27.0).
+///
+/// ## Running it
+/// iPad only (an iPhone skips): name `FRUSExplorerUITests/RailAtCompactWidthTests` and run it on iPad Pro 13-inch (M5),
+/// `OS=27.0`, allowing 600 s. On the code before L19 it fails at that tap, which there turned the stored setting off and
+/// opened nothing.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-6): initial implementation
+@MainActor
+final class RailAtCompactWidthTests: XCTestCase {
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestProjectSeeder.projectIdString`.
+    private static let projectId = "14570000-B4B4-4B4B-8B4B-000000001457"
+    /// The fixture's first document.
+    private static let documentTitle = "UI Test Document One"
+    private static let patience: TimeInterval = 30
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        // The reading mode as the reader leaves it, so that a document's open writes no rail setting of its own.
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research, activeProjectId: Self.projectId)
+            + ["-frus.reading.defaultMode", "rememberLast"]
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    func testARailClosedInProjectHomesSheetLeavesTheColumnOn() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's rail is always a sheet")
+
+        // Full width: the seeded note's document, with its rail column on.
+        openTheSeededDocumentFromResearch()
+        if !railTiles.waitForExistence(timeout: 5) { try toggleRail() }
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience),
+                      "The rail column did not show at full width, so the stored setting is not on")
+        attachScreenshot("Full width, rail on")
+        goBackToTheResearchRoot()
+
+        // Compact width: the same document in Project Home's form sheet.
+        let home = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Project Home")).firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: Self.patience), "Research shows no Project Home row")
+        home.tap()
+        let visit = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", Self.documentTitle)).firstMatch
+        let found = scrollUntilHittable(visit)
+        XCTAssertTrue(found, "Project Home's Recently Read does not list \(Self.documentTitle)")
+        visit.tap()
+        let toggle = app.buttons["researchRailToggle"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: Self.patience), "The document in Project Home has no rail toggle")
+        Thread.sleep(forTimeInterval: 2)
+        attachScreenshot("Project Home's sheet, as it opens")
+        // The toggle's state is not read: XCUI's `isSelected` was false on the code before L19 while the toggle was drawn
+        // on, so it cannot tell on from off here. The tap below is the guard; there it turned the setting off.
+        XCTAssertFalse(railTiles.exists, "The rail opened by itself at compact width")
+
+        toggle.tap()
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), "The toggle opened no rail at compact width")
+        attachScreenshot("Project Home's sheet, rail sheet up")
+        // Closed by a swipe on the rail's own header.
+        let header = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Research")).firstMatch
+        let grip = header.exists ? header : railTiles
+        let start = grip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 700)),
+                    withVelocity: .fast, thenHoldForDuration: 0)
+        XCTAssertTrue(railTiles.waitForNonExistence(timeout: Self.patience), "A swipe did not close the rail's sheet")
+
+        // Back out of Project Home and read the document at full width again.
+        let back = app.buttons["BackButton"].firstMatch
+        if back.waitForExistence(timeout: 5) { back.tap() }
+        UITestPresentation.dismissAnyPresentation(in: app)
+        openTheSeededDocumentFromResearch()
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+            At full width the document opened with no rail column: closing the rail at compact width turned the \
+            stored setting off.
+            """)
+        attachScreenshot("Full width again")
+    }
+
+    // MARK: - Steps
+
+    /// The rail's Cite tile, which shows wherever the rail does.
+    private var railTiles: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cite")).firstMatch
+    }
+
+    /// Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's first document.
+    private func openTheSeededDocumentFromResearch() {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let category = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: Self.patience), "no All Research Documents row")
+        category.tap()
+        let seeded = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: Self.patience), "the seeded note is not listed")
+        seeded.tap()
+        XCTAssertTrue(app.navigationBars[Self.documentTitle].waitForExistence(timeout: Self.patience),
+                      "the seeded row did not open the fixture's first document")
+    }
+
+    /// Back to Research's root, where Project Home is.
+    private func goBackToTheResearchRoot() {
+        var backs = 0
+        let back = app.buttons["BackButton"].firstMatch
+        while back.exists && backs < 4 {
+            back.tap()
+            backs += 1
+            Thread.sleep(forTimeInterval: 1)
+        }
+    }
+
+    /// Turns the rail on from its toggle, in the toolbar or in its overflow menu.
+    private func toggleRail() throws {
+        let toggle = app.buttons["researchRailToggle"].firstMatch
+        if toggle.exists && toggle.isHittable {
+            toggle.tap()
+            return
+        }
+        let more = app.navigationBars.buttons["More"].firstMatch
+        XCTAssertTrue(more.waitForExistence(timeout: Self.patience), "The reader's toolbar has no rail toggle or overflow")
+        more.tap()
+        let item = app.buttons["Research panel"].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: Self.patience), "The toolbar's overflow has no Research panel")
+        item.tap()
+    }
+
+    /// Scrolls the frontmost scroll view up until `element` is hittable, eight times at most.
+    private func scrollUntilHittable(_ element: XCUIElement) -> Bool {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return true }
+            let window = app.windows.firstMatch
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+                .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4)))
+            Thread.sleep(forTimeInterval: 0.75)
+        }
+        return element.exists && element.isHittable
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+// MARK: - AddToCollectionAnnouncementTests
+
+/// Add to Collection says what it did to VoiceOver: "Added to “UI Test Unattached Collection”" (L19, #1919, A11Y-3).
+///
+/// Until L19 the picker drew a green check that the sheet's own closing took away 0.6 s later, and said nothing, so a
+/// VoiceOver reader heard no outcome at all. The test opens the seeded note's document, `d2`, which the seeded
+/// collection does not hold, and the rail's Collections ▸ Add to Collection. With VoiceOver on it moves VoiceOver's
+/// cursor to the collection's row and double-taps, as a VoiceOver reader activates a row: with VoiceOver on a single
+/// tap only moves its cursor (`SearchResultVoiceOverTests`). It then reads VoiceOver's speech four times a second for
+/// eight seconds and requires the announcement among it, which the sheet's closing and VoiceOver's move to the screen
+/// beneath must not cut off.
+///
+/// **Run it alone, on a simulator shut down before it**, on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`, with
+/// 600 s a test: under Xcode 27.2, once the VoiceOver service's speech has been read, `disable()` leaves VoiceOver on,
+/// and any later test of the run meets its cursor (`SearchResultVoiceOverTests`' entry in the runbook). It needs
+/// iOS 27's VoiceOver service and skips below it. The fixture is `FRUS_UI_TEST_SEED_VOLUME`'s volume, the seeded note
+/// on its `d2` (`FRUS_UI_TEST_SEED_NOTE_DOCUMENT`) and `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1`.
+///
+/// Version history:
+///   1.0 — L19 (#1919, A11Y-3): initial implementation
+@MainActor
+final class AddToCollectionAnnouncementTests: XCTestCase {
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The fixture's second document, which the seeded collection does not hold.
+    private static let documentTitle = "UI Test Document Two"
+    /// What the picker says once the document is in the collection.
+    private static let announcement = "Added to “\(collectionName)”"
+    private static let patience: TimeInterval = 30
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        // A run that ended inside a test could have left VoiceOver on.
+        turnVoiceOverOff()
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d2"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research)
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    func testAnAddIsSaidToVoiceOver() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        openTheSeededDocument()
+        openAddToCollection()
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.collectionName)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
+            Add to Collection does not list \(Self.collectionName). Buttons: \(labels(of: .button))
+            """)
+
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        var passed: [String] = []
+        var onTheRow = false
+        // The cursor stops on the last element and says it again, so a row not met in thirty steps is not on screen.
+        for _ in 1...30 {
+            let spoken = try voiceOver.moveForward().utterance
+            if spoken.hasPrefix(Self.collectionName) { onTheRow = true; break }
+            passed.append(spoken)
+        }
+        guard onTheRow else {
+            try voiceOver.disable()
+            XCTFail("VoiceOver never reached the \(Self.collectionName) row. It spoke: \(passed)")
+            return
+        }
+        // A VoiceOver reader's double tap activates the element under VoiceOver's cursor.
+        row.doubleTap()
+        var heard: [String] = []
+        for _ in 1...32 where !heard.contains(where: { $0.contains(Self.announcement) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+        }
+        try voiceOver.disable()
+        XCTAssertTrue(heard.contains { $0.contains(Self.announcement) }, """
+            VoiceOver did not say "\(Self.announcement)" within eight seconds of the row's activation. It said: \(heard)
+            """)
+    }
+
+    // MARK: - Steps
+
+    /// Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's second document.
+    private func openTheSeededDocument() {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let category = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        let row = category.exists ? category
+            : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "no All Research Documents row")
+        row.tap()
+        let seeded = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: Self.patience), "the seeded note is not listed")
+        seeded.tap()
+        XCTAssertTrue(app.navigationBars[Self.documentTitle].waitForExistence(timeout: Self.patience),
+                      "the seeded row did not open the fixture's second document")
+    }
+
+    /// The rail's Collections ▸ Add to Collection, the rail opened first where it is not showing.
+    private func openAddToCollection() {
+        let add = app.buttons["Add to Collection"].firstMatch
+        if !railHeader.waitForExistence(timeout: 5) {
+            let toggle = app.buttons["researchRailToggle"].firstMatch
+            XCTAssertTrue(toggle.waitForExistence(timeout: Self.patience), "The reader has no rail toggle")
+            toggle.tap()
+            XCTAssertTrue(railHeader.waitForExistence(timeout: Self.patience), "The toggle opened no rail")
+        }
+        if !add.waitForExistence(timeout: 3) {
+            let collections = app.scrollViews.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH 'Collections'")).firstMatch
+            XCTAssertTrue(collections.waitForExistence(timeout: Self.patience), """
+                The rail has no Collections accordion. Buttons: \(labels(of: .button))
+                """)
+            collections.tap()
+        }
+        XCTAssertTrue(add.waitForExistence(timeout: Self.patience), "The Collections accordion has no Add to Collection")
+        add.tap()
+    }
+
+    /// The rail's Cite tile, which shows wherever the rail does (`RailAtCompactWidthTests`' sign of the rail).
+    private var railHeader: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cite")).firstMatch
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
+    }
+
+    /// The labels of the elements of `type` on screen, for a failure message.
+    private func labels(of type: XCUIElement.ElementType) -> [String] {
+        app.descendants(matching: type).allElementsBoundByIndex.prefix(40).map(\.label).filter { !$0.isEmpty }
+    }
+}

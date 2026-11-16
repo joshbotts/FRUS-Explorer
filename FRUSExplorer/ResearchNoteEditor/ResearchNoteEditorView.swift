@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import OSLog
 
 // MARK: - ResearchNoteEditorView
 
@@ -20,9 +21,17 @@ import SwiftData
 /// 4. Generated Summaries — insert promoted summary text into the body
 ///
 /// ## Toolbar
-/// - Discard (cancellationAction): dismisses without saving
+/// - Discard (cancellationAction): dismisses without saving — after "Discard Changes?" when the
+///   editor holds changes (L19, IPA-2)
 /// - Save (confirmationAction): persists and dismisses
-/// - Delete (destructiveAction): deletes existing note and dismisses (edit mode only)
+/// - Delete (destructiveAction): deletes existing note and dismisses (edit mode only), after All
+///   Notes' "Delete Note?" (L19, IPA-2)
+///
+/// ## Nothing typed is lost to a swipe (L19, IPA-2)
+/// Nothing is saved before Save, so while the editor holds changes
+/// (``ResearchNoteEditorViewModel/hasChanges``) the sheet's swipe asks "Discard Changes?" before
+/// closing it, a tap beside an iPad's sheet leaves it open (``UnsavedNoteGuard``), and a Mac
+/// composer window's close asks too.
 ///
 /// ## Accessibility
 /// - TextEditor is labeled "Research note body"
@@ -39,6 +48,8 @@ import SwiftData
 ///          macOS list-management surfaces (Settings notes list, All Activity).
 ///   1.2 — 2026-10-31: a structured summary in Generated Summaries shows as its labelled fields
 ///          (``GeneratedSummary/readerText``), not its stored JSON
+///   1.3 — L19 (#1919, IPA-2): Discard and the sheet's swipe ask before losing changes, Delete asks
+///          as All Notes does, and on the Mac Save and Delete dismiss a main-queue turn later
 struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -46,6 +57,17 @@ struct ResearchNoteEditorView: View {
     @Environment(AppState.self) private var appState
 
     @State private var vm: ResearchNoteEditorViewModel
+
+    /// Whether "Discard Changes?" is up, from the Discard button (L19, IPA-2).
+    @State private var confirmingDiscard = false
+    /// Whether "Delete Note?" is up (L19, IPA-2).
+    @State private var confirmingDelete = false
+    /// Set as the editor leaves on purpose — Save, Delete, a confirmed Discard — so the guard on the
+    /// sheet's dismissal stands down for the dismissal the reader chose (``close()``).
+    @State private var isClosing = false
+
+    /// Whether leaving now asks first: the editor holds changes, and is not already leaving.
+    private var guardsChanges: Bool { vm.hasChanges && !isClosing }
 
     /// Whether the body is edited as rich text (#1275). Device-local on purpose — see
     /// ``noteBodySection``. Defaults ON, so the feature is discoverable without a settings visit.
@@ -97,15 +119,10 @@ struct ResearchNoteEditorView: View {
                 if vm.noteToEdit != nil {
                     Button(String(localized: "note.editor.toolbar.delete", defaultValue: "Delete"),
                            role: .destructive) {
-                        vm.delete(context: modelContext)
-                        try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
-                        // #1280: the index does not learn about a deletion by itself. Pushed AFTER
-                        // the save, so the re-read sees the note gone — and clears the column when
-                        // it was the document's last.
-                        pushNoteToFTS5()
-                        dismiss()
+                        confirmingDelete = true
                     }
                     .foregroundStyle(.red)
+                    .modifier(DeleteNoteConfirmation(isPresented: $confirmingDelete, delete: deleteNote))
                 }
             }
             .padding(.horizontal, 20)
@@ -128,9 +145,12 @@ struct ResearchNoteEditorView: View {
 
             HStack {
                 Button(String(localized: "note.editor.toolbar.discard", defaultValue: "Discard")) {
-                    dismiss()
+                    requestDiscard()
                 }
                 .keyboardShortcut(.cancelAction)
+                .modifier(DiscardChangesConfirmation(isPresented: $confirmingDiscard,
+                                                     isNewNote: vm.noteToEdit == nil,
+                                                     discard: close))
 
                 Spacer()
 
@@ -138,16 +158,7 @@ struct ResearchNoteEditorView: View {
                     // Wave R-2a / contract D2: the `.noteSave` research event is gone. It was
                     // redundant — `ResearchNote` carries `createdAt` and `lastModified` of its own
                     // — and nothing but the session log ever read it.
-                    if let noteId = vm.save(context: modelContext) {
-                        linkNoteToHighlight(noteId: noteId)
-                    }
-                    // Explicit save ensures the persistent store is updated before dismiss()
-                    // animates. Without this, the Research window's @Query (which uses a
-                    // different ModelContext on macOS) may not see the change until SwiftData's
-                    // auto-save fires — which can be several seconds later.
-                    try? modelContext.save()
-                    pushNoteToFTS5()
-                    dismiss()
+                    saveNote()
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -156,6 +167,10 @@ struct ResearchNoteEditorView: View {
         }
         .frame(minWidth: 520, minHeight: 440)
         .onAppear { vm.load(context: modelContext) }
+        // L19 (IPA-2): closing the composer window with changes asks first, as the sheet's swipe does.
+        .modifier(UnsavedNoteGuard(isActive: guardsChanges, isNewNote: vm.noteToEdit == nil,
+                                   onRefusedDismissal: requestDiscard))
+        .onChange(of: isClosing) { _, closing in dismissOnceStoodDown(closing) }
     }
     #endif
 
@@ -187,6 +202,10 @@ struct ResearchNoteEditorView: View {
             .toolbar { editorToolbar }
         }
         .onAppear { vm.load(context: modelContext) }
+        // L19 (IPA-2): the sheet's swipe asks before losing changes; a tap beside an iPad's sheet is refused.
+        .modifier(UnsavedNoteGuard(isActive: guardsChanges, isNewNote: vm.noteToEdit == nil,
+                                   onRefusedDismissal: requestDiscard))
+        .onChange(of: isClosing) { _, closing in dismissOnceStoodDown(closing) }
     }
 
     // MARK: - Note Body
@@ -368,19 +387,18 @@ struct ResearchNoteEditorView: View {
         ToolbarItem(placement: .cancellationAction) {
             Button(String(localized: "note.editor.toolbar.discard",
                           defaultValue: "Discard")) {
-                dismiss()
+                requestDiscard()
             }
+            // On the button, so that on an iPad the dialog hangs from it.
+            .modifier(DiscardChangesConfirmation(isPresented: $confirmingDiscard,
+                                                 isNewNote: vm.noteToEdit == nil,
+                                                 discard: close))
         }
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "note.editor.toolbar.save",
                           defaultValue: "Save")) {
                 // Wave R-2a / contract D2: no `.noteSave` event — see the macOS toolbar above.
-                if let noteId = vm.save(context: modelContext) {
-                    linkNoteToHighlight(noteId: noteId)
-                }
-                try? modelContext.save()   // ensure @Query in Research view updates promptly
-                pushNoteToFTS5()
-                dismiss()
+                saveNote()
             }
         }
         if vm.noteToEdit != nil {
@@ -390,15 +408,325 @@ struct ResearchNoteEditorView: View {
                            defaultValue: "Delete"),
                     role: .destructive
                 ) {
-                    vm.delete(context: modelContext)
-                    try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
-                    pushNoteToFTS5()   // #1280 — see the macOS Delete above
-                    dismiss()
+                    confirmingDelete = true
                 }
+                .modifier(DeleteNoteConfirmation(isPresented: $confirmingDelete, delete: deleteNote))
             }
         }
     }
+
+    // MARK: - Leaving (L19, IPA-2)
+
+    /// Discard: leaves at once when there is nothing to lose, and asks "Discard Changes?" when
+    /// there is.
+    private func requestDiscard() {
+        if guardsChanges {
+            confirmingDiscard = true
+        } else {
+            dismiss()
+        }
+    }
+
+    /// Saves the note, links it to the highlight it was written from, and leaves.
+    ///
+    /// The explicit context save puts the note in the store before the editor goes: the Research
+    /// window's `@Query`, on the Mac another `ModelContext`, may otherwise not see it until
+    /// SwiftData's own save, seconds later.
+    private func saveNote() {
+        if let noteId = vm.save(context: modelContext) {
+            linkNoteToHighlight(noteId: noteId)
+        }
+        try? modelContext.save()
+        pushNoteToFTS5()
+        close()
+    }
+
+    /// Deletes the note, once "Delete Note?" is confirmed, and leaves.
+    ///
+    /// The save flushes the removal so a cross-context `@Query` (the Research window, Project Home's
+    /// seed) sees it promptly, as Save's does. #1280: the index does not learn about a deletion by
+    /// itself, so the push comes AFTER the save, and the re-read sees the note gone — and clears the
+    /// column when it was the document's last.
+    private func deleteNote() {
+        vm.delete(context: modelContext)
+        try? modelContext.save()
+        pushNoteToFTS5()
+        close()
+    }
+
+    /// Leaves the editor on purpose. It stands the guard down first, and ``dismissOnceStoodDown(_:)``
+    /// dismisses after the update that draws it down: on the Mac the guard holds a programmatic
+    /// dismissal too (`dismissalConfirmationDialog`), and the dismissal the reader has just chosen
+    /// must go through.
+    private func close() {
+        isClosing = true
+    }
+
+    /// Dismisses once ``close()`` has stood the guard down. An `onChange` action runs after the
+    /// update that changed its value, so a sheet's guard is already drawn down when it dismisses.
+    ///
+    /// On the Mac that is not enough. Dismissed from the `onChange`, the composer window refused the
+    /// close and asked nothing, so Save and Delete left it open, Delete on the note it had just
+    /// deleted (the Mac check copy, L19's walk), while Discard Changes, in the window's own dialog,
+    /// closed it; most likely the window takes the guard's new `shouldPresent` only once that update
+    /// has reached AppKit. Dismissed by a task on the main actor, on a later turn of the main queue,
+    /// the window closes.
+    private func dismissOnceStoodDown(_ closing: Bool) {
+        guard closing else { return }
+        #if os(macOS)
+        Task { @MainActor in dismiss() }
+        #else
+        dismiss()
+        #endif
+    }
 }
+
+// MARK: - The note editor's dialogs (L19, IPA-2)
+
+/// The words of the note editor's two dialogs: "Discard Changes?", and All Notes' "Delete Note?",
+/// whose keys and words the editor's Delete shares so that both ask the same question.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-2): initial implementation
+enum NoteEditorDialogCopy {
+    /// "Discard Changes?"
+    static var discardTitle: String {
+        String(localized: "note.editor.discard.title", defaultValue: "Discard Changes?")
+    }
+    /// The dialog's destructive button.
+    static var discardAction: String {
+        String(localized: "note.editor.discard.confirm", defaultValue: "Discard Changes")
+    }
+    /// The dialog's way back to the editor.
+    static var keepEditing: String {
+        String(localized: "note.editor.discard.keepEditing", defaultValue: "Keep Editing")
+    }
+    /// What would be lost: a new note's text, or an existing note's changes.
+    ///
+    /// - Parameter isNewNote: Whether the editor was opened to write a new note.
+    static func discardMessage(isNewNote: Bool) -> String {
+        isNewNote
+            ? String(localized: "note.editor.discard.message.new",
+                     defaultValue: "This note has not been saved.")
+            : String(localized: "note.editor.discard.message.edit",
+                     defaultValue: "Your changes to this note have not been saved.")
+    }
+    /// All Notes' title (`AllNotesScreen`).
+    static var deleteTitle: String {
+        String(localized: "settings.notes.delete.title", defaultValue: "Delete Note?")
+    }
+    /// All Notes' destructive button.
+    static var deleteAction: String {
+        String(localized: "settings.notes.delete.confirm", defaultValue: "Delete")
+    }
+    /// All Notes' cancel button.
+    static var deleteCancel: String {
+        String(localized: "settings.notes.delete.cancel", defaultValue: "Cancel")
+    }
+    /// All Notes' message.
+    static var deleteMessage: String {
+        String(localized: "settings.notes.delete.message",
+               defaultValue: "This note will be permanently deleted.")
+    }
+}
+
+/// "Discard Changes?" from the editor's Discard button (L19, IPA-2).
+private struct DiscardChangesConfirmation: ViewModifier {
+    /// Whether the dialog is up.
+    @Binding var isPresented: Bool
+    /// Whether the editor was opened to write a new note.
+    let isNewNote: Bool
+    /// Leaves without saving.
+    let discard: () -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(NoteEditorDialogCopy.discardTitle, isPresented: $isPresented,
+                                   titleVisibility: .visible) {
+            Button(NoteEditorDialogCopy.discardAction, role: .destructive, action: discard)
+            Button(NoteEditorDialogCopy.keepEditing, role: .cancel) {}
+        } message: {
+            Text(NoteEditorDialogCopy.discardMessage(isNewNote: isNewNote))
+        }
+    }
+}
+
+/// "Delete Note?" from the editor's Delete button, in All Notes' words (L19, IPA-2).
+private struct DeleteNoteConfirmation: ViewModifier {
+    /// Whether the dialog is up.
+    @Binding var isPresented: Bool
+    /// Deletes the note and leaves.
+    let delete: () -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(NoteEditorDialogCopy.deleteTitle, isPresented: $isPresented,
+                                   titleVisibility: .visible) {
+            Button(NoteEditorDialogCopy.deleteAction, role: .destructive, action: delete)
+            Button(NoteEditorDialogCopy.deleteCancel, role: .cancel) {}
+        } message: {
+            Text(NoteEditorDialogCopy.deleteMessage)
+        }
+    }
+}
+
+/// Asks "Discard Changes?" before the editor is closed by the system rather than by its buttons
+/// (L19, IPA-2).
+///
+/// - **iPhone and iPad:** while there is something to lose the sheet refuses its swipe, and a tap
+///   beside an iPad's sheet (`interactiveDismissDisabled`). A refused swipe raises the Discard
+///   button's own dialog (``SheetDismissAttemptHook``). A refused tap beside the sheet raises
+///   nothing and the editor stays: UIKit ignores a touch outside a sheet it holds modal and reports
+///   no attempt (measured on the iPad Pro 13-inch (M5), iOS 27.0). SwiftUI's
+///   `dismissalConfirmationDialog` is not the tool here: on iOS it guards a window's dismissal, not
+///   a sheet's (Apple's documentation, read 2026-11-16).
+/// - **Mac:** closing the composer window asks, through `dismissalConfirmationDialog`. Its
+///   destructive button needs no action: every button but Cancel lets the dismissal proceed. It
+///   holds a programmatic dismissal too, which is why Save and Delete stand it down and dismiss a
+///   main-queue turn later (``ResearchNoteEditorView``'s `close()` and `dismissOnceStoodDown`).
+private struct UnsavedNoteGuard: ViewModifier {
+    /// Whether leaving now would lose changes.
+    let isActive: Bool
+    /// Whether the editor was opened to write a new note.
+    let isNewNote: Bool
+    /// What a refused swipe does: raises the Discard button's dialog.
+    let onRefusedDismissal: () -> Void
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .interactiveDismissDisabled(isActive)
+            .background(SheetDismissAttemptHook(onAttempt: onRefusedDismissal))
+        #else
+        content
+            .dismissalConfirmationDialog(Text(NoteEditorDialogCopy.discardTitle),
+                                         shouldPresent: isActive) {
+                Button(NoteEditorDialogCopy.discardAction, role: .destructive) {}
+                Button(NoteEditorDialogCopy.keepEditing, role: .cancel) {}
+            } message: {
+                Text(NoteEditorDialogCopy.discardMessage(isNewNote: isNewNote))
+            }
+        #endif
+    }
+}
+
+#if os(iOS)
+/// Hears a sheet refuse its swipe while `interactiveDismissDisabled` holds it (L19, IPA-2), which
+/// SwiftUI does not report.
+///
+/// UIKit does: it tells the presentation controller's delegate,
+/// `presentationControllerDidAttemptToDismiss(_:)`. SwiftUI is that delegate, for its own reasons,
+/// so this does not replace it: it puts ``SheetDismissAttemptRelay`` in its place, which passes every
+/// call on to SwiftUI's and also calls `onAttempt` for this one. Placed in the sheet's content as a
+/// background, from where its view's responder chain reaches the controller the sheet presents
+/// (``HookController``).
+private struct SheetDismissAttemptHook: UIViewControllerRepresentable {
+    /// Called when the sheet has refused a dismissal.
+    let onAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> HookController {
+        HookController(onAttempt: onAttempt)
+    }
+
+    func updateUIViewController(_ controller: HookController, context: Context) {
+        controller.onAttempt = onAttempt
+        controller.installRelay()
+    }
+
+    /// An empty view controller whose one job is to reach the sheet's presentation controller.
+    final class HookController: UIViewController {
+        /// Called when the sheet has refused a dismissal.
+        var onAttempt: () -> Void
+        /// The relay in the delegate's place, kept here because the delegate property is weak.
+        private var relay: SheetDismissAttemptRelay?
+
+        init(onAttempt: @escaping () -> Void) {
+            self.onAttempt = onAttempt
+            super.init(nibName: nil, bundle: nil)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            installRelay()
+        }
+
+        /// Puts the relay in the sheet's delegate slot, or puts it back if something has replaced it
+        /// since, wrapping whatever delegate is there now.
+        func installRelay() {
+            guard let presentation = presentedRoot()?.presentationController else { return }
+            if let relay, presentation.delegate === relay { return }
+            let relay = SheetDismissAttemptRelay(original: presentation.delegate) { [weak self] in
+                self?.onAttempt()
+            }
+            #if DEBUG
+            Self.log.debug("""
+                [SheetDismissAttemptHook] relay in place of \
+                \(String(describing: presentation.delegate.map { type(of: $0) }), privacy: .public)
+                """)
+            #endif
+            self.relay = relay
+            presentation.delegate = relay
+        }
+
+        /// The view controller the sheet presents: the first, walking up the responder chain from
+        /// this one, that has no parent and a presenter. SwiftUI hosts this controller's view without
+        /// making it a child of the sheet's controllers, so its own `presentationController` does not
+        /// lead to the sheet's; its view's responder chain does.
+        private func presentedRoot() -> UIViewController? {
+            var responder: UIResponder? = self
+            while let next = responder {
+                if let controller = next as? UIViewController, controller !== self,
+                   controller.parent == nil, controller.presentingViewController != nil {
+                    return controller
+                }
+                responder = next.next
+            }
+            return nil
+        }
+
+        #if DEBUG
+        /// The hook's debug log; XCUITest does not show the app's `print`.
+        private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "NoteEditorGuard")
+        #endif
+    }
+}
+
+/// Stands in a sheet's presentation-controller delegate slot for ``SheetDismissAttemptHook``:
+/// tells the hook of a refused dismissal and passes every call, that one included, to the delegate
+/// it replaced (SwiftUI's), which keeps the sheet's binding and its refusal working as before.
+private final class SheetDismissAttemptRelay: NSObject, UIAdaptivePresentationControllerDelegate {
+    /// The delegate this replaced. Weak, as UIKit holds a delegate, and read from the forwarding
+    /// overrides, which the Objective-C runtime calls without regard to actors.
+    nonisolated(unsafe) private weak var original: (any UIAdaptivePresentationControllerDelegate)?
+    /// Called on a refused dismissal.
+    private let onAttempt: @MainActor () -> Void
+
+    init(original: (any UIAdaptivePresentationControllerDelegate)?,
+         onAttempt: @escaping @MainActor () -> Void) {
+        self.original = original
+        self.onAttempt = onAttempt
+        super.init()
+    }
+
+    func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) {
+        original?.presentationControllerDidAttemptToDismiss?(presentationController)
+        #if DEBUG
+        Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "NoteEditorGuard")
+            .debug("[SheetDismissAttemptRelay] the sheet refused a dismissal")
+        #endif
+        onAttempt()
+    }
+
+    nonisolated override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || (original?.responds(to: aSelector) ?? false)
+    }
+
+    nonisolated override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        (original?.responds(to: aSelector) ?? false) ? original : nil
+    }
+}
+#endif
 
 // MARK: - NoteComposerRequest
 

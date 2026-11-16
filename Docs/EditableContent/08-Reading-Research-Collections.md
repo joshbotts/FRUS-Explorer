@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2292–2292 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2336–2336 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2293–2294 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2337–2338 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2598–2599 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2642–2643 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -2146,14 +2146,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 776–777 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 799–800 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 839–840 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 862–863 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2171,7 +2171,7 @@ You followed a link to page %lld of this volume, which isn’t downloaded.
 *Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1514–1515 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1551–1552 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -2389,6 +2389,33 @@ Choose a tag or All Research Documents from the sidebar.
 
 <!-- END SOURCE: research.empty.noSelection.detail.v2 -->
 
+#### Discard Changes?
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardTitle | lines: 494–494 | key: note.editor.discard.title -->
+
+*The title of the dialog the note editor shows before it closes a note that holds something unsaved — its text, its formatting, its tags, its projects or its summaries (L19, #1919): from the editor's Discard, and on iPhone and iPad from a swipe down on the editor (a tap beside an iPad's editor leaves it open); on the Mac from Discard, Esc and closing the note's window. Its buttons are Keep Editing and Discard Changes, and one of the two messages below follows the title.*
+
+Discard Changes?
+
+<!-- END SOURCE: note.editor.discard.title -->
+
+#### This note has not been saved.
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardMessage(isNewNote:) | lines: 509–510 | key: note.editor.discard.message.new -->
+
+*The dialog's message for a note being written, which has never been saved.*
+
+This note has not been saved.
+
+<!-- END SOURCE: note.editor.discard.message.new -->
+
+#### Your changes to this note have not been saved.
+<!-- SOURCE: FRUSExplorer/ResearchNoteEditor/ResearchNoteEditorView.swift | NoteEditorDialogCopy.discardMessage(isNewNote:) | lines: 511–512 | key: note.editor.discard.message.edit -->
+
+*The dialog's message for a note saved before and changed since.*
+
+Your changes to this note have not been saved.
+
+<!-- END SOURCE: note.editor.discard.message.edit -->
+
 ### 18.12 Collections, Zotero and the trip packet
 
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
@@ -2422,7 +2449,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1097–1098 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1111–1112 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2513,7 +2540,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2344–2344 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2438–2438 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2522,7 +2549,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2354–2355 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2449–2450 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2531,7 +2558,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2385–2386 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2480–2481 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -2540,7 +2567,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2399–2400 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2494–2495 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -2549,7 +2576,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2394–2395 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2489–2490 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -2558,7 +2585,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 358–358 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 367–367 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2568,7 +2595,7 @@ Couldn’t Add to Archives Visit
 <!-- END SOURCE: archiveVisit.collection.error.title -->
 
 #### Add %@ Documents to Collection
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 508–509 | key: collection.picker.title.documents.many -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 574–575 | key: collection.picker.title.documents.many -->
 
 *The Add to Collection sheet's title when a command on search results carries more than one document (#1576), on iPhone, iPad and Mac: "Add 37 Documents to Collection". `%@` is the count. For one document the sheet keeps its plain title, "Add to Collection".*
 
@@ -2577,7 +2604,7 @@ Add %@ Documents to Collection
 <!-- END SOURCE: collection.picker.title.documents.many -->
 
 #### Not Added
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 515–515 | key: collection.picker.addFailed.title -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 606–606 | key: collection.picker.addFailed.title -->
 
 *The title of the alert the Add to Collection sheet shows when documents from search results could not be added (#1576). One of the three messages below follows it, and the sheet stays open.*
 
@@ -2586,7 +2613,7 @@ Not Added
 <!-- END SOURCE: collection.picker.addFailed.title -->
 
 #### This is a smart collection. Its documents come from its saved search, so nothing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 527–528 | key: collection.picker.addFailed.smart -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 618–619 | key: collection.picker.addFailed.smart -->
 
 *The alert's message when the collection is a smart one. A smart collection's row takes no tap, so the sheet does not reach this today; it is what the add itself answers with if anything else asks.*
 
@@ -2595,7 +2622,7 @@ This is a smart collection. Its documents come from its saved search, so nothing
 <!-- END SOURCE: collection.picker.addFailed.smart -->
 
 #### A collection takes up to %2$@ at a time, and %1$@ were chosen.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 531–532 | key: collection.picker.addFailed.overLimit %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 622–623 | key: collection.picker.addFailed.overLimit %@ %@ -->
 
 *The alert's message when more documents were chosen than one add takes: "A collection takes up to 1,000 documents at a time, and 1,200 documents were chosen." `%1$@` is the number chosen and `%2$@` the limit, each with its noun. Keep both tokens and their numbers.*
 
@@ -2604,13 +2631,31 @@ A collection takes up to %2$@ at a time, and %1$@ were chosen.
 <!-- END SOURCE: collection.picker.addFailed.overLimit %@ %@ -->
 
 #### The collection could not be saved, so nothing was added. %@
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 537–538 | key: collection.picker.addFailed.save %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 628–629 | key: collection.picker.addFailed.save %@ -->
 
 *The alert's message when saving failed. The documents are taken back out of the collection, so the sentence is true as it stands. `%@` is the system's own description of the failure.*
 
 The collection could not be saved, so nothing was added. %@
 
 <!-- END SOURCE: collection.picker.addFailed.save %@ -->
+
+#### Added to “\(…)”
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.announcement(_:collectionName:) | lines: 588–588 | key: collection.picker.announce.added -->
+
+*What VoiceOver says when Add to Collection has put the document, or a passage of it, into the collection the reader chose (L19, #1919), as the collection's row shows its green check and the sheet closes. `\(collectionName)` is the collection's name as its row shows it. Search's results say what an add did themselves, with its Undo, so the picker says nothing there.*
+
+Added to “\(collectionName)”
+
+<!-- END SOURCE: collection.picker.announce.added -->
+
+#### Already in “\(…)”
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.announcement(_:collectionName:) | lines: 590–590 | key: collection.picker.announce.alreadyIn -->
+
+*What VoiceOver says when the collection held the document already, so nothing was added. The row shows "Already here" beside a hollow check, where an add shows the green one.*
+
+Already in “\(collectionName)”
+
+<!-- END SOURCE: collection.picker.announce.alreadyIn -->
 
 ### Adding tags to search results: the tag picker's adding mode (iOS and macOS)
 
@@ -2644,70 +2689,70 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1369–1370 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1406–1407 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1756–1757 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1816–1817 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 380–381 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 397–398 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 451–452 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 468–469 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 536–537 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 553–554 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 720–721 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 737–738 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 772–773 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 789–790 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 785–786 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 802–803 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 901–902 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 918–919 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 998–999 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1015–1016 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -2843,22 +2888,85 @@ Their section headings, note blocks and headnotes go with them, on your other de
 
 <!-- END SOURCE: collection.delete.confirm.message.many -->
 
+#### Delete Note Block?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 381–381 | key: collection.entry.delete.confirm.title.prose -->
+
+*The title of the dialog that asks before a note block with text is deleted from a collection's outline (L19, #1919), in the form of the collection's own delete dialog above: by a swipe or Edit's delete on iPhone and iPad, and by its trash on the Mac. A row that holds nothing of the reader's — an empty note block, a heading with no section defaults, a document at its defaults, a passage, an apparatus block — goes at once. Its button is Delete Note Block, and the first message below follows the title.*
+
+Delete Note Block?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.prose -->
+
+#### Delete Heading?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 383–383 | key: collection.entry.delete.confirm.title.heading -->
+
+*The title when the row is a heading that sets defaults for its section's documents, deleted alone: by a swipe or Edit's delete, Delete Heading Only, or the Mac's trash. Its button is Delete Heading.*
+
+Delete Heading?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.heading -->
+
+#### Remove Document?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 385–385 | key: collection.entry.delete.confirm.title.document -->
+
+*The title when the row is a document with a headnote, or with settings of its own in the collection: a title, a body depth, an override, a headnote setting, or a choice of its notes or highlights. Its button is Remove Document.*
+
+Remove Document?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.document -->
+
+#### Its text goes with it, on your other devices too…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 405–406 | key: collection.entry.delete.confirm.message.prose -->
+
+*The message under Delete Note Block?. Nothing undoes a collection row's deletion, and it reaches the reader's other devices, which is why the dialog asks.*
+
+Its text goes with it, on your other devices too once they sync.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.prose -->
+
+#### Its section defaults go with it, on your other devices…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 408–409 | key: collection.entry.delete.confirm.message.heading -->
+
+*The message under Delete Heading?.*
+
+Its section defaults go with it, on your other devices too once they sync. The entries under it stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.heading -->
+
+#### Its headnote and its settings in this collection go with it…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 411–412 | key: collection.entry.delete.confirm.message.headnote -->
+
+*The message under Remove Document? when the document has a headnote, which goes with its row.*
+
+Its headnote and its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.headnote -->
+
+#### Its settings in this collection go with it, on your other…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 414–415 | key: collection.entry.delete.confirm.message.settings -->
+
+*The message under Remove Document? when the document has settings of its own and no headnote.*
+
+Its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.settings -->
+
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1301–1302 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1303–1304 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1736–1737 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1763–1764 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2034–2035 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2061–2062 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

@@ -240,6 +240,12 @@ through › on one and from the row on the other. The suite skips on neither. Ex
 (measured on iPhone 17 and iPad Pro 13-inch (M5), iOS 26.5, with the iOS 27 timeout flags; iOS 27 itself is unmeasured).
 Its unit half is `FRUSExplorerTests/SelectionEditMenuItemTests`, which also pins the clear that follows a chosen item.
 
+**Under iOS 27.0 all four fail, on `v2`'s code as on L19's** (2026-11-16, the iPhone 17 and the iPad Pro 13-inch (M5),
+`v2` run from a detached worktree at `915bcb79`): the press selects nothing, so no menu opens (*On screen: []*). A long
+press by hand on L19's build (the simulator control tool, 1.2 s, on the iPad Pro 13-inch (M5)) selected the word and
+opened the menu with the four colours, Excerpt and Look Up in NARA, so the app's menu stands and it is the test's press
+that no longer selects under 27.0.
+
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
@@ -256,6 +262,85 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SelectionEditMenuTests
 ```
 
+**`NoteEditorUnsavedChangesTests` (#1919, IPA-2, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an
+iPad, and nothing skips.** It opens the seeded note (`FRUS_UI_TEST_SEED_NOTE=1`) from Research ▸ All Notes and types
+into its body. A swipe down on the editor must ask **Discard Changes?** and keep the editor and the typed words; on an
+iPad a tap beside the form sheet must leave the editor open with them, which only the iPad's run drives; Discard asks,
+and Discard Changes closes the note as it was. **The tap beside the sheet asks nothing**, measured on the iPad Pro
+13-inch (M5) under iOS 27.0, where the suite's first iPad run required the dialog there and failed: UIKit ignores a
+touch outside a sheet it holds modal (`interactiveDismissDisabled`) and reports no attempt, so the tap is refused
+silently, which loses nothing. Its second test requires Delete to ask All Notes' question, *This note will be
+permanently deleted.*, and its third that an untouched note closes on a swipe and that Save asks nothing. **The swipe's
+dialog comes through a relay**: `interactiveDismissDisabled` refuses the swipe, and UIKit then calls
+`presentationControllerDidAttemptToDismiss` on the sheet's delegate, SwiftUI's own, for which SwiftUI gives no callback;
+`SheetDismissAttemptHook` puts a relay in the delegate's place that forwards everything and hears that call (DEBUG
+builds log it under the `NoteEditorGuard` category). `dismissalConfirmationDialog` guards a window, not a sheet, so it
+is the Mac's alone. **Under iOS 27.0 both dialogs hang from their buttons as popovers on the iPhone too**, with no
+cancel button, so the suite closes one by a tap outside it, at the region's left edge and 45% down. At the window's foot
+that tap met a keyboard the swipe had left up (iPhone 17, one run of three) and closed nothing. **Measured on L19's
+final code, iOS 27.0:** 3 of 3 on the iPhone 17 (106, 147 and 63 s) and on the iPad Pro 13-inch (M5) (105, 169 and 65
+s). **On the code before L19** the swipe's test fails at its dialog, with the editor gone and All Notes showing, and
+Delete's at its dialog, with the note gone (iPhone 17); on the iPad Pro 13-inch (M5) Delete's crashes the app, which
+builds the editor again around the deleted note as All Notes' sheet closes and traps reading it
+(`ResearchNoteEditorViewModel.readable` is the fix); the untouched note's passes on that code, as it must (iPhone 17).
+**On a simulator just booted, run one test first**: on 2026-11-16 the first test launch after a boot crashed the runner
+or timed out.
+
+**`AddToCollectionAnnouncementTests` (#1919, A11Y-3, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an
+iPad under iOS 27, alone, on a simulator shut down before it.** It opens the seeded note's document, `d2`
+(`FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d2`), which the seeded collection does not hold, and the rail's Collections ▸ Add to
+Collection; then turns VoiceOver on through iOS 27's VoiceOver service, moves its cursor to the collection's row and
+double-taps, as a VoiceOver reader activates a row: the service moves VoiceOver and reads its speech but activates
+nothing, and with VoiceOver on a single tap only moves its cursor. It reads the speech four times a second for eight
+seconds and requires *Added to “UI Test Unattached Collection”*, which the sheet's closing must not cut off. Run it as
+`SearchResultVoiceOverTests`' cases are run, and for the same reason (its entry above): once the service's speech has
+been read, `disable()` leaves VoiceOver on under Xcode 27.2. **Measured on L19's code, iOS 27.0,** each run alone on a
+simulator shut down before it: passed on the iPhone 17 (128 s) and on the iPad Pro 13-inch (M5) (84 s). **On the code
+before L19** (iPhone 17) it fails: VoiceOver said the row's name, *UI Test Unattached Collection, 1 document*, and then
+the sheet's grabber, and nothing of the add.
+
+**`RailAtCompactWidthTests` (#1919, IPA-6, in `ResearchReadingStaysInTabTests.swift`) is iPad-only.** A document opened
+from Project Home reads inside a form sheet, which reports a compact width. The test opens the seeded note's document
+from Research at full width and turns the rail on there if it is off, so that the stored setting is on: the setting is
+read as stored, never pinned by a launch argument, since an argument-domain default cannot be overwritten and would hide
+the very write it guards against. Then Project Home ▸ Recently Read opens the same document in the sheet, where the
+toggle must read off with no rail shown; a tap opens the rail as a sheet, with its tiles; a swipe closes it; and back at
+full width the document must show its rail column again. **It leaves the simulator's stored rail setting on**, which
+`AuxWindowCloseTests`' rail cases and `TwoPaneDocumentTests` need (their entry above). An iPhone skips it. **Whether the
+toggle reads on is not asked**: on the code before L19 XCUI read the toggle unselected while it was drawn on, tinted, in
+the run's own screenshot, so an `isSelected` check there could not fail; the tap is the guard. **Measured on L19's
+code:** passed on the iPad Pro 13-inch (M5), iOS 27.0 (191 s, with the binding below; 149 s before it). **On the code
+before L19** it fails at the tap, which there turned the stored setting off and opened nothing.
+
+**It drives no window resize.** A window narrowed with the column on turned the column off for good until the
+inspector's binding wrote opens only: as the width turns compact SwiftUI shows the open inspector as a sheet for a
+moment and dismisses it through the binding, while the binding's size class still reads regular. That path is checked by
+hand, with a slow corner drag in Windowed Apps; a fast one has crashed the simulator's `backboardd`.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/NoteEditorUnsavedChangesTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/NoteEditorUnsavedChangesTests \
+  -only-testing FRUSExplorerUITests/RailAtCompactWidthTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/AddToCollectionAnnouncementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
 `UIObstructionTests` further up is scoped to that suite, so it never runs this one. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On
@@ -269,6 +354,15 @@ xcodebuild test \
   -destination "platform=iOS Simulator,name=iPad mini (A17 Pro)" \
   -only-testing FRUSExplorerUITests/ResearchReadingDepthTests
 ```
+
+**And in Full Screen Apps.** A simulator's multitasking mode is a setting of its own, and Windowed Apps is a fresh iOS
+27.0 simulator's default (`AuxWindowCloseTests`' entry below). On 2026-11-16 the iPad mini (A17 Pro) under 27.0
+(`22BCEC47`) was in Windowed Apps with the app's window at its 374-pt minimum, where a measurement of the day before had
+left it. Turning the device to landscape then never took the window across the gate, and this suite and
+`ResearchReadingStaysInTabTests.testReadingSurvivesTheWindowCrossingTheTwoPaneWidth` failed at their own guards, whose
+messages blame the tab sidebar; `TwoPaneDocumentTests` measured Browse at 375 pt. Settings ▸ Multitasking & Gestures ▸
+Full Screen Apps put the window back to the screen's size, and both passed on L19's next build, whose change (the note
+editor's) does not touch them.
 
 **The three keyboard/toolbar suites need iPad mini too, and #1279 is why.** Measured on `v2` at
 `69dfac7d`, `AnalyticsKeyboardTests` + `KeyboardDismissBarReachTests` +
@@ -379,6 +473,12 @@ Windowed Apps: all eleven fail under that mutant), and the document-window case 
 0's code, which fronted the main window instead. The mode is a simulator setting that persists per
 install and no launch argument sets it, so check it before reading a green run as a guard against
 the drop.
+
+**On 2026-11-16 its four rail cases could not be read on the iPad Pro 13-inch (M5) under 27.0, in Windowed Apps.** Each
+window a case opened aborted the simulator's `backboardd` on a Metal texture assertion (`MTLSimDevice`), which killed
+the test runner, on `v2`'s code as on L19's: seven reports between 11:50 and 12:43. The app then restored five window
+scenes at each launch and crashed `backboardd` at once, until its `.savedState` folder was moved out of the container,
+after which it launched cleanly. Whether a window opened from that clean state still crashes it was not measured.
 
 **Its four rail cases need the Research rail open, and so does `TwoPaneDocumentTests`** (found in
 A12, 2026-10-20). The rail's state is a persisted preference: on a simulator whose app holds
@@ -669,6 +769,51 @@ xcodebuild test \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
   -only-testing FRUSExplorerUITests/CollectionListManagementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+**`CollectionRowDeleteTests` (#1919, MAC-2, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** It writes a note block into the seeded collection (`FRUS_UI_TEST_SEED_PROJECT=1`'s, which holds `d1` of
+`FRUS_UI_TEST_SEED_VOLUME`'s volume), swipes it, and requires **Delete Note Block?** with the block and its text still
+there; closes the dialog and requires the text intact; then deletes the block through the dialog. Its second test
+requires the seeded document's row, at its defaults, to go on its swipe with no dialog, since the rule asks only where
+there is something to lose. **Under iOS 27.0 the dialog is a popover pointing at the row on the iPhone as on the iPad**,
+with no Cancel, which the test closes by a tap outside it; the collection list's own delete dialog, which hangs on no
+row, is an action sheet on the iPhone (`CollectionListManagementTests`, above). A swipe over a block still being typed
+in may only end the typing, so the test swipes a second time when the first revealed nothing. **What its first run
+caught:** with the dialog in place but the swipe still `.onDelete`'s, the note block left the list at once and no dialog
+showed (iPhone 17, iOS 27.0), and the block came back when the collection was opened again. A destructive swipe button,
+which `.onDelete` makes, animates its row out as if deleted and takes the row's dialog with it, as
+`VolumesStorageHubView` had found; each row now has a swipe action of its own, red by tint. **Measured on L19's code,
+iOS 27.0:** 2 of 2 on the iPhone 17 (191 s and 61 s) and on the iPad Pro 13-inch (M5) (218 s and 59 s). In every run of
+that code the swipe was a full one and acted at once. **On the code before L19** (iPhone 17) the note block's test fails
+at its dialog, which is its guard. The untouched document's test fails there too and guards nothing: the swipe stopped
+at `.onDelete`'s revealed Delete, which the cell does not hold, so the helper tapped nothing and the row stayed (the
+run's recording).
+
+**`CollectionInspectorOpenDocumentTests` (#1919, IPA-4, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an
+iPad, and nothing skips.** The iPhone's per-entry drill-in and the iPad's Configure sheet are different code. It taps
+the seeded document's row, requires **Open Document** (`collection.inspector.openDocument`) in the settings the tap
+opens, opens the reader with it, whose navigation bar the document's header or, before it has loaded, its id titles, and
+goes Back: on the iPhone to the settings it came from, on the iPad to the editor, since the sheet closes before the
+document opens. **Measured on L19's code, iOS 27.0:** 1 of 1 on the iPhone 17 (85 s) and on the iPad Pro 13-inch (M5)
+(57 s). **On the code before L19** (iPhone 17) it fails at its first check: the row's settings offer no Open Document.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionRowDeleteTests \
+  -only-testing FRUSExplorerUITests/CollectionInspectorOpenDocumentTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionRowDeleteTests \
+  -only-testing FRUSExplorerUITests/CollectionInspectorOpenDocumentTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 

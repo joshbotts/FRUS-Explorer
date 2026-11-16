@@ -862,6 +862,8 @@ private struct CollectionDetailPane: View {
     /// Distinct from `inspectedEntryId` — selection moves freely without opening
     /// the inspector column. View state only — never persisted.
     @State private var selectedEntryId: UUID? = nil
+    /// A row's deletion waiting on its dialog, for a row that holds the reader's work (L19, MAC-2).
+    @State private var pendingEntryDeletion: PendingEntryDeletion?
     /// The preview's "Render All" cap lift, hoisted here so hiding/showing the pane
     /// doesn't reset it (one detail-pane session = one lift).
     @State private var previewRenderAll = false
@@ -1315,6 +1317,11 @@ private struct CollectionDetailPane: View {
                         outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
                                    rows: rows)
                             .padding(.leading, outlineIndent(for: row))
+                            // L19 (MAC-2): a row that holds the reader's work asks before its trash
+                            // deletes it.
+                            .collectionEntryDeleteConfirmation(for: sortedEntries[row.index].id,
+                                                               pending: $pendingEntryDeletion,
+                                                               delete: deleteConfirmed)
                             // Selectable identity for A7 keyboard traversal — the
                             // Composition/Front Matter sections above carry no tag,
                             // so they stay unselectable.
@@ -1391,7 +1398,7 @@ private struct CollectionDetailPane: View {
                 isDuplicate: duplicateKeys.contains(nodeKey),
                 onInspect: { toggleInspector(for: entry.id) },
                 onOpenDocument: { openInReader(entry) },
-                onDelete: { deleteEntry(at: row.index) },
+                onDelete: { requestDelete(at: row.index) },
                 onMoveUp: moveUp,
                 onMoveDown: moveDown
             )
@@ -1413,7 +1420,7 @@ private struct CollectionDetailPane: View {
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
                 entry: $sortedEntries[row.index],
-                onDelete: { deleteEntry(at: row.index) },
+                onDelete: { requestDelete(at: row.index) },
                 showsInlineDelete: true,
                 depth: row.depth,
                 isCollapsed: collapsedHeadingIds.contains(row.id),
@@ -1430,13 +1437,13 @@ private struct CollectionDetailPane: View {
             )
         case .prose:
             CollectionProseRow(entry: $sortedEntries[row.index],
-                               onDelete: { deleteEntry(at: row.index) },
+                               onDelete: { requestDelete(at: row.index) },
                                onMoveUp: moveUp,
                                onMoveDown: moveDown)
         case .excerpt:
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: { deleteEntry(at: row.index) },
+                                 onDelete: { requestDelete(at: row.index) },
                                  onMoveUp: moveUp,
                                  onMoveDown: moveDown)
         case .generated:
@@ -1445,7 +1452,7 @@ private struct CollectionDetailPane: View {
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: takesHandAddedEntries
                                             ? sortedEntries.count { $0.entryKind == .document } : nil,
-                                        onDelete: { deleteEntry(at: row.index) },
+                                        onDelete: { requestDelete(at: row.index) },
                                         onMoveUp: moveUp,
                                         onMoveDown: moveDown)
         case .unrecognized:
@@ -1532,8 +1539,28 @@ private struct CollectionDetailPane: View {
         return fullIndex + 1
     }
 
+    /// A row's trash, or a heading's "Delete Heading Only": deletes the entry at once, or asks first
+    /// when it holds the reader's work — a note block's text, a heading's section defaults, a
+    /// document's headnote draft or settings (L19, MAC-2, ``CollectionEntryDeletion``).
+    private func requestDelete(at index: Int) {
+        guard sortedEntries.indices.contains(index) else { return }
+        let entry = sortedEntries[index]
+        if let holding = CollectionEntryDeletion.holding(entry, in: modelContext) {
+            pendingEntryDeletion = PendingEntryDeletion(entryId: entry.id, holding: holding)
+        } else {
+            deleteEntry(at: index)
+        }
+    }
+
+    /// Deletes the entry the reader confirmed in its row's dialog, wherever the outline has it now.
+    private func deleteConfirmed(_ entryId: UUID) {
+        guard let index = sortedEntries.firstIndex(where: { $0.id == entryId }) else { return }
+        deleteEntry(at: index)
+    }
+
     /// Deletes a single entry (a document/prose row's inline trash, or a heading's
-    /// "Delete Heading Only" — its contents stay and sub-headings bubble up).
+    /// "Delete Heading Only" — its contents stay and sub-headings bubble up). Reached through
+    /// ``requestDelete(at:)``, or once the reader confirms.
     private func deleteEntry(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
         collapsedHeadingIds.remove(sortedEntries[index].id)
@@ -2070,10 +2097,9 @@ private struct MacEntryRow: View {
                         .foregroundStyle(.red.opacity(0.6))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "collection.entry.delete.a11y",
-                                           defaultValue: "Remove entry"))
-                .help(String(localized: "collection.entry.delete.help",
-                             defaultValue: "Remove this document from the collection"))
+                // L19 (MAC-2): the row's own words, which every row's trash now takes by its kind.
+                .accessibilityLabel(CollectionEntryDeletion.trashLabel(for: .document))
+                .help(CollectionEntryDeletion.trashHelp(for: .document))
             }
             .padding(.top, 2)
         }
