@@ -236,28 +236,39 @@ different suite and none of these, while reporting green. Name the type.** It lo
 the system edit menu, which leads with the app's four colours, Excerpt, Look Up in NARA and Note. The menu shows what
 fits and puts the rest behind ›, and the two idioms split it differently: at the default text size an iPhone 17's row
 holds the dots and Excerpt, an iPad Pro 13-inch's the dots, Excerpt and Look Up in NARA, so Look Up in NARA is reached
-through › on one and from the row on the other. The suite skips on neither. Expect **4 tests, 0 skipped, on each**
-(measured on iPhone 17 and iPad Pro 13-inch (M5), iOS 26.5, with the iOS 27 timeout flags; iOS 27 itself is unmeasured).
-Its unit half is `FRUSExplorerTests/SelectionEditMenuItemTests`, which also pins the clear that follows a chosen item.
+through › on one and from the row on the other. The suite skips on neither. Expect **4 tests, 4 passed, on each**
+(measured 2026-11-16 on iPhone 17 and iPad Pro 13-inch (M5) under iOS 27.0 and on iPhone 17 under 26.5; #1540 measured
+both under 26.5). Its unit half is `FRUSExplorerTests/SelectionEditMenuItemTests`, which also pins the clear that follows
+a chosen item.
 
-**Under iOS 27.0 all four fail, on `v2`'s code as on L19's** (2026-11-16, the iPhone 17 and the iPad Pro 13-inch (M5),
-`v2` run from a detached worktree at `915bcb79`): the press selects nothing, so no menu opens (*On screen: []*). A long
-press by hand on L19's build (the simulator control tool, 1.2 s, on the iPad Pro 13-inch (M5)) selected the word and
-opened the menu with the four colours, Excerpt and Look Up in NARA, so the app's menu stands and it is the test's press
-that no longer selects under 27.0.
+**It holds its press 3 s, taps the word when the press raises no menu, and finds the › under either of UIKit's names
+(2026-11-16).** Under iOS 27.0 the edit menu comes only when WebKit's selection has landed before the press lifts; one
+that lands after it leaves the word selected, its handles drawn, with no menu, and a long press over that selection
+raises none either. The 1.2 s press the suite made until then lifted too soon on the iPhone 17 in all six runs, 12 s
+after the page rendered as at 1 s, so all four tests failed on *On screen: []*, on `v2` at `915bcb79` too, as L19
+(#1919) found with `v2` as its control. Held 2 s or 3 s it raised the menu in 3 of 3 runs each, the lookup opening on
+*Synthetic*. A 3 s press still raised none in 1 of 14 tries on the iPhone 17 and 2 of 19 on the iPad Pro 13-inch (M5),
+each on a slow page (the three lookups of the paragraph XCTest makes as it presses took 3.2 to 6.7 s each, against 1.4
+to 3.1 s where the press raised the menu), and pressing again did not help (twice on the iPad, once on the iPhone); a
+tap on the selected word raised the whole menu, which a probe (not kept) measured after a 1.2 s press had left the word
+selected and a 3 s press had raised nothing: 2 of 2 on the iPad and 1 of 1 on the iPhone, the lookup opening on
+*Synthetic*. So the suite presses 3 s, taps the word when no menu comes, and presses again, three presses at most; a
+run's log prints `press N of 3 raised no edit menu; tapping the word` each time it taps. L19's long press of 1.2 s by
+hand raised the menu, so the app's menu was never in question. The menu's › is `Next Page` under 27.0 (`Forward` under
+26.5), which is also the name of the floating tab bar's pager, so the suite takes the one level with the menu's items.
 
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/SelectionEditMenuTests
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/SelectionEditMenuTests
 ```
