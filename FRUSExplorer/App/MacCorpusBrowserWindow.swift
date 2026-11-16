@@ -591,6 +591,9 @@ struct CorpusBrowserWindowView: View {
             }
             .buttonStyle(.link)
         }
+        // A sidebar row draws each Text on one line and cuts the rest off ("No volumes on this M…", L18's walk). A
+        // vertical `fixedSize` did not lift that; `lineLimit(nil)` on the row does.
+        .lineLimit(nil)
         .padding(.vertical, 4)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("library.empty")

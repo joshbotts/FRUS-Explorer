@@ -656,6 +656,31 @@ struct EmptyLibraryNoticeTests {
                     "\(path) says something other than what its screen shows")
         }
     }
+
+    /// The Mac draws the notice where no test runs, and L18's walk in the check copy found two faults there. The Search
+    /// window centred its content on the notice, a blank band above the search row, until the notice took the results
+    /// area's height as `searchErrorView` does. The Corpus Browser's Subseries row cut its title and sentence to one
+    /// line each ("No volumes on this M…") until the row lifted the sidebar's line limit.
+    @Test("The Mac's notice fills the Search window's results area and wraps in the Corpus Browser's sidebar (HCD-4)")
+    func macNoticeFillsAndWraps() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let search = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/SearchSheet.swift"),
+                                encoding: .utf8)
+        let notice = "EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: openVolumesAndStorage)"
+        let call = try #require(search.range(of: notice), "the Mac Search window no longer shows the notice")
+        let branch = try #require(search.range(of: "} else if", range: call.upperBound..<search.endIndex))
+        let modifiers = search[call.upperBound..<branch.lowerBound]
+        #expect(modifiers.contains(".frame(maxWidth: .infinity, maxHeight: .infinity)"),
+                "the Mac's notice no longer fills the results area, and the window centres its content on it")
+
+        let browserPath = "FRUSExplorer/App/MacCorpusBrowserWindow.swift"
+        let browser = try String(contentsOf: root.appendingPathComponent(browserPath), encoding: .utf8)
+        let header = "private var emptyDownloadedSubseriesRow: some View {"
+        let start = try #require(browser.range(of: header), "the Corpus Browser no longer declares the empty row")
+        let end = try #require(browser.range(of: "\n    }\n", range: start.upperBound..<browser.endIndex))
+        #expect(browser[start.upperBound..<end.lowerBound].contains(".lineLimit(nil)"),
+                "the Subseries row's title and sentence are cut to one line each again")
+    }
 }
 
 // MARK: - PersonFilterTests

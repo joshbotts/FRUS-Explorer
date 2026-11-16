@@ -425,6 +425,9 @@ struct MacSearchWindowView: View {
                 // HCD-4: before both zero-states below, as on iPhone and iPad. With no volume indexed the library is
                 // why nothing was found, and the keyword state blamed a term.
                 EmptyLibraryNotice(reason: reason, context: .search, onDownloadVolumes: openVolumesAndStorage)
+                    // Fills the results area, as `searchErrorView` does: nothing else in this column grows, so the
+                    // window centred its content on the notice, a blank band above the search row (L18's walk).
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
                 // TERM is absent, the wrong claim twice over here, and beyond-library-only
