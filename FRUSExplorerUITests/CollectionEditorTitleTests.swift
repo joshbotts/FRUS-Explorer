@@ -1598,6 +1598,101 @@ final class CollectionRowDeleteTests: XCTestCase {
     }
 }
 
+// MARK: - CollectionInspectorOpenDocumentTests
+
+/// A collection's document opens in the reader from the screen its row's tap opens (L19, #1919, IPA-4).
+///
+/// A row's tap, and its Configure pill, open the entry's settings — the iPhone's drill-in, the iPad's Configure sheet —
+/// and until L19 the reader was reached from a collection only by a row's long press, a context-menu item the main
+/// interface did not offer. `testOpenDocumentInTheEntrysSettingsOpensTheReader` taps the seeded document's row,
+/// requires **Open Document** in its settings, opens the reader with it, and goes Back: on the iPhone to the settings it
+/// came from, on the iPad to the editor, since the sheet closes before the document opens.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`**: the drill-in and the sheet are different code.
+/// The reader's oracle is its navigation bar, titled with the document's header or, until the document has loaded, its
+/// id. The fixture is `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1` of `FRUS_UI_TEST_SEED_VOLUME`'s volume.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-4): initial implementation
+@MainActor
+final class CollectionInspectorOpenDocumentTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The seeded document's header, from the seeded volume.
+    private static let documentHeader = "UI Test Document One"
+    /// See `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testOpenDocumentInTheEntrysSettingsOpensTheReader() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let collection = app.collectionViews.staticTexts[Self.collectionName].firstMatch
+        XCTAssertTrue(collection.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+        collection.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                      "The seeded collection's editor did not open")
+
+        let row = documentRowText(in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
+            The seeded document's row is not in Contents. Texts: \
+            \(app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty })
+            """)
+        row.tap()
+        let open = app.buttons["collection.inspector.openDocument"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: Self.patience), """
+            The row's settings offer no Open Document. Buttons: \
+            \(app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty })
+            """)
+        attachScreenshot("The entry's settings")
+        open.tap()
+
+        let reader = app.navigationBars.matching(NSPredicate(format: "identifier IN %@",
+                                                              [Self.documentHeader, "d1"])).firstMatch
+        XCTAssertTrue(reader.waitForExistence(timeout: Self.patience), """
+            Open Document did not open the reader. Bars: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))
+            """)
+        attachScreenshot("The reader")
+        let back = app.buttons["BackButton"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience), "The reader has no Back")
+        back.tap()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                          "Back did not return to the collection")
+            XCTAssertFalse(open.exists, "The Configure sheet is still up behind the reader")
+        } else {
+            XCTAssertTrue(open.waitForExistence(timeout: Self.patience),
+                          "Back did not return to the entry's settings it was opened from")
+        }
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
 /// The seeded document's row text in a collection's Contents: the row speaks "Document UI Test Document One", the
 /// document's header from the index after "Document", or "Document d1" while the volume is not yet indexed (L19).
 @MainActor

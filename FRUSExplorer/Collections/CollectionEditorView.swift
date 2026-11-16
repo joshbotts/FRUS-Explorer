@@ -254,6 +254,13 @@ struct CollectionEditorView: View {
     @State private var inspectedEntryId: UUID?
     /// A row's deletion waiting on its dialog, for a row that holds the reader's work (L19, MAC-2).
     @State private var pendingEntryDeletion: PendingEntryDeletion?
+    /// The document read above the iPhone's per-entry drill-in, from its Open Document (L19, IPA-4). A
+    /// chain of its own: the editor's `readingChain` is presented from the editor, beneath the drill-in.
+    /// Declared on every platform, as the drill-in is; only iOS reads in place.
+    @State private var inspectorReadingChain: [DocumentBrowserEntry] = []
+    /// The entry whose document the iPad's Configure sheet asked to open, read once the sheet has
+    /// closed (L19, IPA-4).
+    @State private var openAfterInspectorCloses: UUID?
     #if os(iOS)
     /// The documents opened from this collection, read INSIDE the stack hosting the editor (2026-09-11):
     /// the Collections tab when pushed, the sheet's own stack otherwise. See `InPlaceDocumentReader`.
@@ -677,9 +684,11 @@ struct CollectionEditorView: View {
                 // Composer v2 §C: document-only — the collection's settings/composition live in the
                 // top Collection Settings drill-in now, so the per-document push omits the collection
                 // section (mirroring the iPad Configure sheet).
-                entryInspectorContent(entry, isPushed: true, documentOnly: true)
+                drillInInspector(entry)
             }
         }
+        // L19 (IPA-4): a reader opened from one entry's drill-in is not left for the next one's.
+        .onChange(of: inspectedEntryId) { _, _ in inspectorReadingChain = [] }
         // Inline note-create (Collections Manager M2, D5): the entry inspector's
         // "New Note…" affordance links the created note to its document entry.
         .sheet(item: $noteCreateContext) { ctx in
@@ -852,9 +861,12 @@ struct CollectionEditorView: View {
         .sheet(isPresented: Binding(
             get: { inspectedEntryId != nil && isRegularWidth },
             set: { if !$0 { inspectedEntryId = nil } }
-        )) {
+        ), onDismiss: openDocumentAfterInspector) {
             if let entry = inspectedEntry {
-                entryInspectorContent(entry, documentOnly: true)
+                // L19 (IPA-4): Open Document closes the sheet and reads the document in the editor's
+                // stack, where a row's long press reads it, rather than inside a form sheet.
+                entryInspectorContent(entry, documentOnly: true,
+                                      onOpenDocument: { openWhenInspectorCloses(entry) })
             }
         }
     }
@@ -1958,10 +1970,7 @@ struct CollectionEditorView: View {
     /// document reads inside the stack hosting the editor, so Back returns to the collection — the
     /// tab the reader is working in — rather than unwinding Browse's history (2026-09-11).
     private func openInReader(_ entry: CollectionEntry) {
-        let browseEntry = DocumentBrowserEntry(
-            documentId: entry.documentId,
-            volumeId: entry.volumeId,
-            header: entry.titleOverride ?? entry.documentId)
+        let browseEntry = readerEntry(for: entry)
         #if os(macOS)
         appState.openDocument(browseEntry, from: .global, using: openWindow)
         #else
@@ -1969,6 +1978,39 @@ struct CollectionEditorView: View {
         #endif
     }
 
+    /// The reader's entry for a collection entry's document.
+    private func readerEntry(for entry: CollectionEntry) -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: entry.documentId, volumeId: entry.volumeId,
+                             header: entry.titleOverride ?? entry.documentId)
+    }
+
+    /// The iPhone's per-entry drill-in (Composer redesign 4), with Open Document reading the document
+    /// above it, so Back returns to the entry's settings (L19, IPA-4). The reader is iOS's; the Mac's
+    /// sheet editor drills in with no Open Document, as its row has its own.
+    @ViewBuilder
+    private func drillInInspector(_ entry: CollectionEntry) -> some View {
+        #if os(iOS)
+        entryInspectorContent(entry, isPushed: true, documentOnly: true,
+                              onOpenDocument: { inspectorReadingChain = [readerEntry(for: entry)] })
+            .inPlaceReader($inspectorReadingChain)
+        #else
+        entryInspectorContent(entry, isPushed: true, documentOnly: true)
+        #endif
+    }
+
+    /// Open Document in the iPad's Configure sheet (L19, IPA-4): closes the sheet, which opens the
+    /// document once it has gone (``openDocumentAfterInspector()``).
+    private func openWhenInspectorCloses(_ entry: CollectionEntry) {
+        openAfterInspectorCloses = entry.id
+        inspectedEntryId = nil
+    }
+
+    /// The Configure sheet's `onDismiss`: reads the document Open Document asked for, if any, in the
+    /// editor's stack. After the sheet has gone, so the push is not made under a closing sheet.
+    private func openDocumentAfterInspector() {
+        guard let id = openAfterInspectorCloses else { return }
+        openAfterInspectorCloses = nil
+        if let entry = sortedEntries.first(where: { $0.id == id }) { openInReader(entry) }
     }
 
     private func presentEntryInspector(for entryId: UUID) {
@@ -1984,7 +2026,8 @@ struct CollectionEditorView: View {
     /// list in sync when a highlight is inserted as an excerpt.
     @ViewBuilder
     private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false,
-                                       documentOnly: Bool = false) -> some View {
+                                       documentOnly: Bool = false,
+                                       onOpenDocument: (() -> Void)? = nil) -> some View {
         CollectionEntryInspector(
             entry: entry,
             // #1619: no Insert as Excerpt into a smart collection, which leaves hand-added passages out of every export.
@@ -2007,7 +2050,9 @@ struct CollectionEditorView: View {
             onApplyPreset: { applyPreset($0) },
             // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
             // its own navigation stack + Done button.
-            isPushed: isPushed
+            isPushed: isPushed,
+            // L19 (IPA-4): the reader, from the screen a row's tap opens.
+            onOpenDocument: onOpenDocument
         )
         .id(entry.id)
         .environment(appState)

@@ -2449,7 +2449,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1099–1100 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1111–1112 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2540,7 +2540,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2393–2393 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2438–2438 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2549,7 +2549,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2404–2405 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2449–2450 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2558,7 +2558,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2435–2436 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2480–2481 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -2567,7 +2567,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2449–2450 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2494–2495 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -2576,7 +2576,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2444–2445 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2489–2490 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -2585,7 +2585,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 360–360 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 367–367 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2689,70 +2689,70 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1394–1395 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1406–1407 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1804–1805 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1816–1817 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 380–381 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 397–398 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 451–452 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 468–469 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 536–537 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 553–554 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 720–721 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 737–738 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 772–773 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 789–790 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 785–786 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 802–803 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 901–902 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 918–919 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 998–999 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1015–1016 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
