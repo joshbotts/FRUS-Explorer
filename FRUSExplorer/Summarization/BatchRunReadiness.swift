@@ -52,10 +52,11 @@ enum ScopeType: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — S-3c: initial implementation, replacing `BackgroundSummarizationSettingsView.canStart`
+///   1.1 — L20 (#1920, HCD-5): `.modelUnavailable` carries why, and its reason says what would help
 enum BatchRunBlocker: Equatable, Sendable {
 
-    /// Apple Intelligence is not usable on this device.
-    case modelUnavailable
+    /// Apple Intelligence is not usable on this device, and why (L20, #1920, HCD-5).
+    case modelUnavailable(AppleIntelligenceAvailability)
     /// The summarization service or the download manager has not been created yet.
     case notReady
     /// No prompts exist at all.
@@ -72,9 +73,11 @@ enum BatchRunBlocker: Equatable, Sendable {
     /// The footer sentence: what is wrong, and what to do about it.
     var reason: String {
         switch self {
-        case .modelUnavailable:
-            return String(localized: "bg.summarizer.blocked.model",
-                          defaultValue: "Apple Intelligence isn’t available on this device, so summaries can’t be generated here.")
+        case .modelUnavailable(let availability):
+            // L20 (#1920, HCD-5): why, where turning it on or waiting would do.
+            return availability.unavailableSentence(
+                notEligible: String(localized: "bg.summarizer.blocked.model",
+                                    defaultValue: "Apple Intelligence isn’t available on this device, so summaries can’t be generated here."))
         case .notReady:
             return String(localized: "bg.summarizer.blocked.notReady",
                           defaultValue: "Still starting up. Try again in a moment.")
@@ -124,10 +127,11 @@ enum BatchRunBlocker: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — S-3c: initial implementation
+///   1.1 — L20 (#1920, HCD-5): `model`, the availability with its reason, where `modelAvailable` was a Bool
 struct BatchRunReadiness: Equatable, Sendable {
 
-    /// Whether Apple Intelligence is usable here.
-    var modelAvailable: Bool
+    /// Whether Apple Intelligence is usable here, and why not (L20, #1920, HCD-5).
+    var model: AppleIntelligenceAvailability
     /// Whether the background summarization service exists.
     var serviceAvailable: Bool
     /// Whether the download manager exists.
@@ -151,7 +155,7 @@ struct BatchRunReadiness: Equatable, Sendable {
     /// reported before a half-filled scope picker, so the reader is not sent to fix a detail that
     /// would not have helped.
     var blocker: BatchRunBlocker? {
-        if !modelAvailable { return .modelUnavailable }
+        if !model.isAvailable { return .modelUnavailable(model) }
         if !serviceAvailable || !downloadManagerAvailable { return .notReady }
         if promptCount == 0 { return .noPrompts }
         if !selectedPromptExists { return .promptMissing }

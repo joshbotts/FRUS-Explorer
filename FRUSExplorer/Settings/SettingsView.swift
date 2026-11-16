@@ -1150,11 +1150,15 @@ private struct SummarizationPromptsSettingsView: View {
                     state: .ok
                 )
             } else {
+                // L20 (#1920, HCD-5): why, where turning it on or waiting would do.
                 SettingsStatusRow(
                     label: String(localized: "settings.summarization.availability.label",
                                   defaultValue: "Apple Intelligence"),
-                    detail: String(localized: "settings.summarization.availability.unavailable",
-                                   defaultValue: "Not available on this device. Prompts still edit and sync to your other devices, where they are used for generation."),
+                    detail: AppleIntelligenceAvailability.current.unavailableSentence(
+                        notEligible: String(localized: "settings.summarization.availability.unavailable",
+                                            defaultValue: "Not available on this device. Prompts still edit and sync to your other devices, where they are used for generation."),
+                        consequence: String(localized: "settings.summarization.availability.unavailable.prompts",
+                                            defaultValue: "Prompts still edit and sync to your other devices, where they are used for generation.")),
                     state: .warning
                 )
             }

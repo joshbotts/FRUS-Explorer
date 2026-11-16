@@ -554,7 +554,7 @@ struct BackgroundSummarizationSettingsView: View {
     /// silently returned. Deleting the selected prompt therefore left Start live and inert.
     private var readiness: BatchRunReadiness {
         BatchRunReadiness(
-            modelAvailable: AppleIntelligenceProvider.shared.isAvailable,
+            model: AppleIntelligenceAvailability.current,
             serviceAvailable: appState.backgroundSummarizationService != nil,
             downloadManagerAvailable: appState.downloadManager != nil,
             promptCount: allPrompts.count,

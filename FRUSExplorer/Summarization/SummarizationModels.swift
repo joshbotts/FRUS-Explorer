@@ -90,6 +90,7 @@ struct SummarizationPromptSnapshot: Sendable {
 ///          to stricter rules: they are answered as plain text on the same guardrails since that day
 ///   1.4 — 2026-11-01: `answerOverranWindow`, an answer that ran past the model's window, which
 ///          `SummarizationService` asks for once more
+///   1.5 — L20 (#1920, HCD-5): `providerUnavailable` says why (`AppleIntelligenceAvailability`)
 enum SummarizationError: Error, LocalizedError, Equatable {
     /// The device does not have Apple Intelligence hardware or model assets available.
     case providerUnavailable
@@ -126,10 +127,13 @@ enum SummarizationError: Error, LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .providerUnavailable:
-            return String(
-                localized: "summ.error.unavailable",
-                defaultValue: "Apple Intelligence is not available on this device."
-            )
+            // L20 (#1920, HCD-5): why, where turning it on or waiting would do; read as the error is
+            // shown, so it says what holds then.
+            return AppleIntelligenceAvailability.current.unavailableSentence(
+                notEligible: String(
+                    localized: "summ.error.unavailable",
+                    defaultValue: "Apple Intelligence is not available on this device."
+                ))
         case .emptyDocumentText:
             return String(
                 localized: "summ.error.empty",
