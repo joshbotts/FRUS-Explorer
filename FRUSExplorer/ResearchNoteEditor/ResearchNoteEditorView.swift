@@ -48,8 +48,8 @@ import OSLog
 ///          macOS list-management surfaces (Settings notes list, All Activity).
 ///   1.2 — 2026-10-31: a structured summary in Generated Summaries shows as its labelled fields
 ///          (``GeneratedSummary/readerText``), not its stored JSON
-///   1.3 — L19 (#1919, IPA-2): Discard and the sheet's swipe ask before losing changes, and Delete
-///          asks as All Notes does
+///   1.3 — L19 (#1919, IPA-2): Discard and the sheet's swipe ask before losing changes, Delete asks
+///          as All Notes does, and on the Mac Save and Delete dismiss a main-queue turn later
 struct ResearchNoteEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
@@ -455,17 +455,29 @@ struct ResearchNoteEditorView: View {
     }
 
     /// Leaves the editor on purpose. It stands the guard down first, and ``dismissOnceStoodDown(_:)``
-    /// dismisses after the update that draws it down: on the Mac a programmatic dismissal of a
-    /// guarded window asks too (`dismissalConfirmationDialog`), and the dismissal the reader has
-    /// just chosen must not be asked about again.
+    /// dismisses after the update that draws it down: on the Mac the guard holds a programmatic
+    /// dismissal too (`dismissalConfirmationDialog`), and the dismissal the reader has just chosen
+    /// must go through.
     private func close() {
         isClosing = true
     }
 
     /// Dismisses once ``close()`` has stood the guard down. An `onChange` action runs after the
-    /// update that changed its value, so the guard is already drawn down when it dismisses.
+    /// update that changed its value, so a sheet's guard is already drawn down when it dismisses.
+    ///
+    /// On the Mac that is not enough. Dismissed from the `onChange`, the composer window refused the
+    /// close and asked nothing, so Save and Delete left it open, Delete on the note it had just
+    /// deleted (the Mac check copy, L19's walk), while Discard Changes, in the window's own dialog,
+    /// closed it; most likely the window takes the guard's new `shouldPresent` only once that update
+    /// has reached AppKit. Dismissed by a task on the main actor, on a later turn of the main queue,
+    /// the window closes.
     private func dismissOnceStoodDown(_ closing: Bool) {
-        if closing { dismiss() }
+        guard closing else { return }
+        #if os(macOS)
+        Task { @MainActor in dismiss() }
+        #else
+        dismiss()
+        #endif
     }
 }
 
@@ -568,8 +580,8 @@ private struct DeleteNoteConfirmation: ViewModifier {
 ///   a sheet's (Apple's documentation, read 2026-11-16).
 /// - **Mac:** closing the composer window asks, through `dismissalConfirmationDialog`. Its
 ///   destructive button needs no action: every button but Cancel lets the dismissal proceed. It
-///   asks about a programmatic dismissal on the Mac too, which is why Save and Delete stand it
-///   down before they dismiss (``ResearchNoteEditorView``'s `close()`).
+///   holds a programmatic dismissal too, which is why Save and Delete stand it down and dismiss a
+///   main-queue turn later (``ResearchNoteEditorView``'s `close()` and `dismissOnceStoodDown`).
 private struct UnsavedNoteGuard: ViewModifier {
     /// Whether leaving now would lose changes.
     let isActive: Bool
