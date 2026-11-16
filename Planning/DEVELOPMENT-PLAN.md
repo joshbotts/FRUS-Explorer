@@ -11278,3 +11278,5 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
   - With Show downloaded only on, the Corpus Browser's Subseries section showed the notice with **Download Volumes…** and **Show All Volumes**, which brought the list back.
   - Two faults, fixed in `929bbfb3` and walked again there: the Search window's content centred on the notice, a blank band about 165 pt tall above the search row; and the Subseries row's title and sentence cut to one line each.
 - **Not walked:** *No volumes ready yet* while a download runs, which would have meant downloading a volume into the fresh home.
+
+**Opened as #1940** on the owner's word of 2026-11-16 ("Open the PR"), against `v2` at `f29a3710`, which had not moved since the row began, so nothing was merged in; `CodingStandardsAuditTests` and `EditableContentKeyTests` passed again on the final docs (84 tests); ready for review, Auto-fix on, auto-merge off. Its merge is L19's to record.
