@@ -28,6 +28,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-3: initial implementation
+///   1.1 — L20 (#1920, HCD-1): the onboarding caption's size on the device once indexed
 @Suite("R-3 — corpus-scale literals stay derived")
 struct CorpusScaleLiteralsTests {
 
@@ -54,6 +55,21 @@ struct CorpusScaleLiteralsTests {
         let caption = OnboardingView.captionCorpus(volumeCount: 553)
         #expect(caption.hasPrefix("553+"), "\(caption)")
         #expect(!caption.contains("552"))
+    }
+
+    /// L20 (#1920, HCD-1): Continue starts the whole download from this caption, so it gives what
+    /// the series takes on the device once indexed as well as the download. Both figures are
+    /// measured (`OnboardingView.captionCorpus(volumeCount:)` has the measurement); the review's 13 GB
+    /// came from the storage hub's figures of 2026-05-31, which the index had shrunk below.
+    @Test("The onboarding caption gives the download and the size on the device once indexed")
+    @MainActor
+    func onboardingCaptionGivesTheIndexedSize() {
+        let caption = OnboardingView.captionCorpus(volumeCount: 553)
+        #expect(caption.contains("≈ 3.5 GB to download"), "\(caption)")
+        #expect(caption.contains("about 7 GB once indexed"), "\(caption)")
+        #expect(!caption.contains("13 GB"), "\(caption)")
+        // The owner's default and its recommendation stay (C1, 2026-09-30).
+        #expect(caption.hasSuffix("Recommended for full functionality."), "\(caption)")
     }
 
     // MARK: - The scan

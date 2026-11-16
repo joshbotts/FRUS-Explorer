@@ -48,6 +48,8 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.4 — L20 (#1920, HCD-1): the Corpus caption gives the series' size on the device once
+///         indexed, about 7 GB, measured (`captionCorpus(volumeCount:)`)
 ///   4.3 — #1759: the backdrop takes the splash's lens seed, and fades its cloud in when the
 ///         vectors land (`WordCloudBackdropView.vectorsArrived`), under the splash, so the splash
 ///         fades into a cloud on its own lens rather than onto an empty backdrop.
@@ -611,10 +613,19 @@ struct OnboardingView: View {
     /// it makes the floor exact instead of merely honest. The `+` stays because the live manifest
     /// can list volumes the bundle does not know yet (`ManifestStore.newlyAvailable`).
     ///
+    /// L20 (#1920, HCD-1): the caption also gives what the series takes on the device once it is
+    /// indexed, since Continue starts the whole download from here. **About 7 GB** is measured, not
+    /// estimated: two full libraries at index version 74, kept from the retake sittings (an iPad Pro
+    /// 13-inch simulator's and the Mac check copy's), each held 3.34 GB of volume XML, 0.14 GB of
+    /// figure images, 0.16 GB of match files and a 3.57 GB index (2.88 GB as first built; a re-index
+    /// leaves the rest as free pages until Compact Database), 6.5 to 7.2 GB in all (2026-11-16).
+    /// The review proposed 13 GB from the storage hub's figures of 2026-05-31, when the index was
+    /// 8.8 to 10.1 GB; the owner chose the measured figure, with the hub's brought to it.
+    ///
     /// - Parameter volumeCount: `ManifestStore.bundledEntries.count`.
     static func captionCorpus(volumeCount: Int) -> String {
         String(format: String(localized: "onboarding.scope.caption.corpus.v2 %lld",
-                              defaultValue: "%lld+ volumes · ≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality."),
+                              defaultValue: "%lld+ volumes · ≈ 3.5 GB to download, about 7 GB once indexed — the entire series, fully offline. Recommended for full functionality."),
                Int64(volumeCount))
     }
     static let captionSubseries = String(localized: "onboarding.scope.caption.subseries",

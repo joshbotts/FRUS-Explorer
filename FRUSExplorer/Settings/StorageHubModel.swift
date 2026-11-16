@@ -85,8 +85,9 @@ struct StorageRemovalPlan: Equatable, Sendable {
 
         /// XML plus its estimated search-index contribution, plus its figure images.
         ///
-        /// The index factor is `StorageReport.indexOverheadFactor` (2.8×), the cross-platform mean
-        /// measured against a full 552-volume download. Always present this prefixed with "~".
+        /// The index factor is `StorageReport.indexOverheadFactor` (0.86×), the index in use against
+        /// the XML in a full 553-volume library (measured 2026-11-16; it was 2.8× until L20). Always
+        /// present this prefixed with "~".
         /// It multiplies the XML alone: an image is not indexed, so its bytes are counted once.
         var estimatedBytes: Int {
             volumeFileBytes + Int(Double(volumeFileBytes) * StorageReport.indexOverheadFactor) + figureBytes

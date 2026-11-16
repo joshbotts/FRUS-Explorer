@@ -2635,8 +2635,11 @@ extension CodingStandardsAuditTests {
         SettledKey(key: "document.crossref.download.message.mac %@",
                    text: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.",
                    declarations: 1, files: ["App/MacDocumentView.swift"]),
+        // L20 (#1920, HCD-1, the owner's word of 2026-11-16, "7 GB, hub too"): the index measured
+        // again in two full v74 libraries is 0.86 to 1.07 times the XML, not 2.8 times, so the
+        // owner's text gives it as about as much again; the key and its two declarations stay.
         SettledKey(key: "settings.hub.browse.corpus.detail",
-                   text: "%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.",
+                   text: "%@ · %@ of XML, plus about as much again in search index. Downloads run in the background and resume across launches.",
                    declarations: 2,
                    files: ["Settings/MacVolumesStorageHub.swift", "Settings/VolumesStorageHubView.swift"]),
         SettledKey(key: "glossNotFound.dismiss", text: "Done", declarations: 1,
