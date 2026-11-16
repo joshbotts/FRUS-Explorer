@@ -977,6 +977,8 @@ private struct SelectionMeaningStub: MeaningSearchRunning {
 ///          above the results
 ///   1.2 — #1918 (IPH-5): Select Results is read from `moreMenuItems`, where More's items moved so that its hit twin
 ///          draws them too; the help's key is still read from `moreMenu`
+///   1.3 — L19 (#1919, A11Y-3): the picker's documents-mode add is read as it now reads, its host told before
+///          `confirm(_:in:)`, which marks the row, says nothing where a host is told, and schedules the close
 @Suite("Result selection, the wiring")
 struct ResultSelectionWiringTests {
 
@@ -1292,13 +1294,14 @@ struct ResultSelectionWiringTests {
                 .id(vm.bulkOutcomeSerial)
             """)))
 
-        // The picker tells its host after an add that was saved, and before it closes.
+        // The picker tells its host after an add that was saved, and before it closes. Since L19 (A11Y-3) the
+        // close is `confirm(_:in:)`'s, which also marks the row and, with a host told, says nothing itself.
         let picker = Self.squeezedCode(try Self.source("FRUSExplorer/Collections/CollectionPickerSheet.swift"))
         #expect(picker.contains(Self.squeezed("""
-            let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            let append = try CollectionDocumentDiscovery.appendDocuments(
                 documents, to: collection, modelContext: modelContext)
-            addedCollectionId = collection.id
-            onAdded?(outcome, collection)
+            onAdded?(append, collection)
+            confirm(CollectionPickerOutcome(insertedCount: append.insertedCount), in: collection)
             """)))
     }
 

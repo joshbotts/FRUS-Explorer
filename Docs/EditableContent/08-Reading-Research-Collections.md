@@ -2595,7 +2595,7 @@ Couldn’t Add to Archives Visit
 <!-- END SOURCE: archiveVisit.collection.error.title -->
 
 #### Add %@ Documents to Collection
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 508–509 | key: collection.picker.title.documents.many -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 574–575 | key: collection.picker.title.documents.many -->
 
 *The Add to Collection sheet's title when a command on search results carries more than one document (#1576), on iPhone, iPad and Mac: "Add 37 Documents to Collection". `%@` is the count. For one document the sheet keeps its plain title, "Add to Collection".*
 
@@ -2604,7 +2604,7 @@ Add %@ Documents to Collection
 <!-- END SOURCE: collection.picker.title.documents.many -->
 
 #### Not Added
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 515–515 | key: collection.picker.addFailed.title -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 606–606 | key: collection.picker.addFailed.title -->
 
 *The title of the alert the Add to Collection sheet shows when documents from search results could not be added (#1576). One of the three messages below follows it, and the sheet stays open.*
 
@@ -2613,7 +2613,7 @@ Not Added
 <!-- END SOURCE: collection.picker.addFailed.title -->
 
 #### This is a smart collection. Its documents come from its saved search, so nothing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 527–528 | key: collection.picker.addFailed.smart -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 618–619 | key: collection.picker.addFailed.smart -->
 
 *The alert's message when the collection is a smart one. A smart collection's row takes no tap, so the sheet does not reach this today; it is what the add itself answers with if anything else asks.*
 
@@ -2622,7 +2622,7 @@ This is a smart collection. Its documents come from its saved search, so nothing
 <!-- END SOURCE: collection.picker.addFailed.smart -->
 
 #### A collection takes up to %2$@ at a time, and %1$@ were chosen.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 531–532 | key: collection.picker.addFailed.overLimit %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 622–623 | key: collection.picker.addFailed.overLimit %@ %@ -->
 
 *The alert's message when more documents were chosen than one add takes: "A collection takes up to 1,000 documents at a time, and 1,200 documents were chosen." `%1$@` is the number chosen and `%2$@` the limit, each with its noun. Keep both tokens and their numbers.*
 
@@ -2631,13 +2631,31 @@ A collection takes up to %2$@ at a time, and %1$@ were chosen.
 <!-- END SOURCE: collection.picker.addFailed.overLimit %@ %@ -->
 
 #### The collection could not be saved, so nothing was added. %@
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 537–538 | key: collection.picker.addFailed.save %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 628–629 | key: collection.picker.addFailed.save %@ -->
 
 *The alert's message when saving failed. The documents are taken back out of the collection, so the sentence is true as it stands. `%@` is the system's own description of the failure.*
 
 The collection could not be saved, so nothing was added. %@
 
 <!-- END SOURCE: collection.picker.addFailed.save %@ -->
+
+#### Added to “\(…)”
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.announcement(_:collectionName:) | lines: 588–588 | key: collection.picker.announce.added -->
+
+*What VoiceOver says when Add to Collection has put the document, or a passage of it, into the collection the reader chose (L19, #1919), as the collection's row shows its green check and the sheet closes. `\(collectionName)` is the collection's name as its row shows it. Search's results say what an add did themselves, with its Undo, so the picker says nothing there.*
+
+Added to “\(collectionName)”
+
+<!-- END SOURCE: collection.picker.announce.added -->
+
+#### Already in “\(…)”
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.announcement(_:collectionName:) | lines: 590–590 | key: collection.picker.announce.alreadyIn -->
+
+*What VoiceOver says when the collection held the document already, so nothing was added. The row shows "Already here" beside a hollow check, where an add shows the green one.*
+
+Already in “\(collectionName)”
+
+<!-- END SOURCE: collection.picker.announce.alreadyIn -->
 
 ### Adding tags to search results: the tag picker's adding mode (iOS and macOS)
 

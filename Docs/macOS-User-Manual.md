@@ -798,7 +798,7 @@ The window has no permanent sidebar; you switch collections from the **collectio
 
 Three routes:
 
-- **While reading**: the Research rail's **Collections** accordion adds the open document to a collection (or creates a new one). If the Collections window is showing that collection, the document appears at the end of its Contents right away, and the live preview and an export made from it include it.
+- **While reading**: the Research rail's **Collections** accordion adds the open document to a collection (or creates a new one). The collection's row shows a green check as the picker closes, and VoiceOver says *Added to* the collection; a collection that already holds the document shows *Already here* instead, VoiceOver says *Already in* it, and the document is not added a second time. If the Collections window is showing that collection, the document appears at the end of its Contents right away, and the live preview and an export made from it include it.
 - **From search results**: right-click a result in the Search window and choose **Add to Collection…**, then pick a collection. The result's document is added without being opened. A document the collection already holds is not added a second time. To add several results at once, select them first (Section 7.7a).
 - **In bulk**: **＋ Add → Add Documents…** (⇧⌘A) opens a picker with four ways in:
   - **Search** the full text of your indexed volumes — each result with a matched-text snippet and the archival source note, so you can judge it before adding.

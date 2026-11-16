@@ -1521,3 +1521,155 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
     }
 }
 
+// MARK: - AddToCollectionAnnouncementTests
+
+/// Add to Collection says what it did to VoiceOver: "Added to “UI Test Unattached Collection”" (L19, #1919, A11Y-3).
+///
+/// Until L19 the picker drew a green check that the sheet's own closing took away 0.6 s later, and said nothing, so a
+/// VoiceOver reader heard no outcome at all. The test opens the seeded note's document, `d2`, which the seeded
+/// collection does not hold, and the rail's Collections ▸ Add to Collection. With VoiceOver on it moves VoiceOver's
+/// cursor to the collection's row and double-taps, as a VoiceOver reader activates a row: with VoiceOver on a single
+/// tap only moves its cursor (`SearchResultVoiceOverTests`). It then reads VoiceOver's speech four times a second for
+/// eight seconds and requires the announcement among it, which the sheet's closing and VoiceOver's move to the screen
+/// beneath must not cut off.
+///
+/// **Run it alone, on a simulator shut down before it**, on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`, with
+/// 600 s a test: under Xcode 27.2, once the VoiceOver service's speech has been read, `disable()` leaves VoiceOver on,
+/// and any later test of the run meets its cursor (`SearchResultVoiceOverTests`' entry in the runbook). It needs
+/// iOS 27's VoiceOver service and skips below it. The fixture is `FRUS_UI_TEST_SEED_VOLUME`'s volume, the seeded note
+/// on its `d2` (`FRUS_UI_TEST_SEED_NOTE_DOCUMENT`) and `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1`.
+///
+/// Version history:
+///   1.0 — L19 (#1919, A11Y-3): initial implementation
+@MainActor
+final class AddToCollectionAnnouncementTests: XCTestCase {
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The fixture's second document, which the seeded collection does not hold.
+    private static let documentTitle = "UI Test Document Two"
+    /// What the picker says once the document is in the collection.
+    private static let announcement = "Added to “\(collectionName)”"
+    private static let patience: TimeInterval = 30
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        // A run that ended inside a test could have left VoiceOver on.
+        turnVoiceOverOff()
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d2"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research)
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    func testAnAddIsSaidToVoiceOver() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        openTheSeededDocument()
+        openAddToCollection()
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.collectionName)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
+            Add to Collection does not list \(Self.collectionName). Buttons: \(labels(of: .button))
+            """)
+
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        var passed: [String] = []
+        var onTheRow = false
+        // The cursor stops on the last element and says it again, so a row not met in thirty steps is not on screen.
+        for _ in 1...30 {
+            let spoken = try voiceOver.moveForward().utterance
+            if spoken.hasPrefix(Self.collectionName) { onTheRow = true; break }
+            passed.append(spoken)
+        }
+        guard onTheRow else {
+            try voiceOver.disable()
+            XCTFail("VoiceOver never reached the \(Self.collectionName) row. It spoke: \(passed)")
+            return
+        }
+        // A VoiceOver reader's double tap activates the element under VoiceOver's cursor.
+        row.doubleTap()
+        var heard: [String] = []
+        for _ in 1...32 where !heard.contains(where: { $0.contains(Self.announcement) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+        }
+        try voiceOver.disable()
+        XCTAssertTrue(heard.contains { $0.contains(Self.announcement) }, """
+            VoiceOver did not say "\(Self.announcement)" within eight seconds of the row's activation. It said: \(heard)
+            """)
+    }
+
+    // MARK: - Steps
+
+    /// Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's second document.
+    private func openTheSeededDocument() {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let category = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        let row = category.exists ? category
+            : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "no All Research Documents row")
+        row.tap()
+        let seeded = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: Self.patience), "the seeded note is not listed")
+        seeded.tap()
+        XCTAssertTrue(app.navigationBars[Self.documentTitle].waitForExistence(timeout: Self.patience),
+                      "the seeded row did not open the fixture's second document")
+    }
+
+    /// The rail's Collections ▸ Add to Collection, the rail opened first where it is not showing.
+    private func openAddToCollection() {
+        let add = app.buttons["Add to Collection"].firstMatch
+        if !railHeader.waitForExistence(timeout: 5) {
+            let toggle = app.buttons["researchRailToggle"].firstMatch
+            XCTAssertTrue(toggle.waitForExistence(timeout: Self.patience), "The reader has no rail toggle")
+            toggle.tap()
+            XCTAssertTrue(railHeader.waitForExistence(timeout: Self.patience), "The toggle opened no rail")
+        }
+        if !add.waitForExistence(timeout: 3) {
+            let collections = app.scrollViews.buttons.matching(
+                NSPredicate(format: "label BEGINSWITH 'Collections'")).firstMatch
+            XCTAssertTrue(collections.waitForExistence(timeout: Self.patience), """
+                The rail has no Collections accordion. Buttons: \(labels(of: .button))
+                """)
+            collections.tap()
+        }
+        XCTAssertTrue(add.waitForExistence(timeout: Self.patience), "The Collections accordion has no Add to Collection")
+        add.tap()
+    }
+
+    /// The rail's Cite tile, which shows wherever the rail does (`RailAtCompactWidthTests`' sign of the rail).
+    private var railHeader: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cite")).firstMatch
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
+    }
+
+    /// The labels of the elements of `type` on screen, for a failure message.
+    private func labels(of type: XCUIElement.ElementType) -> [String] {
+        app.descendants(matching: type).allElementsBoundByIndex.prefix(40).map(\.label).filter { !$0.isEmpty }
+    }
+}
