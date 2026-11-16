@@ -327,6 +327,35 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
+**`SearchHitAreaTests` (#1918, IPH-5, in `SearchTipsSheetTests.swift`) runs on an iPhone and an iPad, and nothing skips.**
+It taps Search's small controls beside or below their glyphs, inside the 44 points `minimumHitTarget()` gives each and
+outside the glyph's frame, and requires what a tap on the glyph does: 8 pt before Filter and 6 pt below it, Filters; 6 pt
+below Examine, Sort and More, and 8 pt after More, each one's menu; 6 pt below the pager's ›, page 2. Its fixture is the
+bulk volume (`FRUS_UI_TEST_SEED_BULK_VOLUME`, which `SearchBulkActionsTests`' entry describes), thirty results on two
+pages. Every run prints `[#1918 IPH-5]` lines with each control's frame; `SearchActionsBarFitTests`, above, holds the
+frames themselves, which the fix leaves as they were.
+
+**A menu's label takes no tap beyond its frame**, measured on the iPhone 17 under iOS 27.0 while the fix was built. With
+the outset shape on More's label, a tap 8 pt after its glyph opened nothing. Drawn as a button (`.menuStyle(.button)`),
+Examine took no tap below its glyph. The shape on the menu itself, or a twin inside the identified element, grew that
+element's frame to 44 pt, which `SearchActionsBarFitTests` reads as the glyph's. So each of the three menus' taps here
+reaches the hidden twin behind it (`SearchView.menuHitTwin`), and the Filter and pager taps reach their own outset shapes.
+**The pager is tapped below, not beside.** On the iPad Pro 13-inch (M5) a tap 8 pt after › turned nothing, though it was
+inside the 44 pt: the chevron's frame was 1,006–1,016 of a 1,032-pt window. The same tap passed on the iPhone 17.
+
+Measured on 2026-11-15 under iOS 27.0, each device alone under the heavy-job lock and warmed with `testAppLaunches`:
+**iPhone 17 (`80CF0F18`), iPhone SE (3rd generation) (`0D979960`) and iPad Pro 13-inch (M5) (`9AB3A0C9`): 7 tests, 7
+passed on each** (408, 413 and 451 s). **The control** (`minimumHitTarget()` drawing nothing and the menus' twins
+empty, iPhone 17): the four menu taps failed, each opening nothing ("A tap 6.0 pt below Examine's glyph … did not open
+its menu"), and the two Filter taps and the pager's passed. The system already takes a tap 6–8 pt off a button's frame,
+so the menus' four are the suite's guard, and it does not show a button's outset shape at work.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone SE (3rd generation),OS=27.0" \
+  -only-testing FRUSExplorerUITests/SearchHitAreaTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`AuxWindowCloseTests` (#1368) is iPad-only, and which of its cases guard against the Home Screen
 depends on the runtime and the multitasking mode.** It opens each Analysis Tools window, and — from a
 seeded document's Research rail, which the suite seeds itself — Source Explorer, the graph and the
@@ -938,6 +967,12 @@ launch without the flag removes the file and its index rows. The search is submi
   neither of the other two.
 - `testSelectionOffersNoActionForATag` tags the document, enters selection from More ▸ Select Results, and requires
   the row's actions, flicked through with VoiceOver, to hold Add Tags… and not Filter by.
+- `testAFinishedSearchSaysWhatItFound` (#1918, A11Y-2) runs the search with VoiceOver off, turns VoiceOver on, waits
+  two seconds and posts a Darwin signal on which the app runs the same search (`FRUS_UI_TEST_SEARCH_ON_SIGNAL`,
+  `UITestBrowseSeams.searchOnSignal`, as a hand-off hands it one). It reads VoiceOver's speech once a second, six times
+  at most, and requires "3 results", the results header's words. **Nothing is tapped or typed while VoiceOver is on**:
+  with it on, a single tap only moves VoiceOver to what it lands on (on Filters' Done it said "Done Button" and ran
+  nothing), so the test's first versions, which submitted the search from the keyboard or with Filters' Done, ran none.
 
 **Three things measured about the service** (iPhone 17, iOS 27.0, 2026-10-19), which the suite is written around.
 **It returns the first 64 characters of what VoiceOver speaks** ("Toggle filters Button Filter results by volume,
@@ -957,10 +992,24 @@ the file restored from the commit after each): **two of two caught**. The tags' 
 Measured at the final code under iOS 27.0, 2026-10-19, each device alone under the heavy-job lock: **iPhone 17 (`80CF0F18`): 3 tests, 3 passed** (61, 28 and 60 s), and **iPad Pro 13-inch (M5) (`9AB3A0C9`), built into its own build folder and warmed with one test first: 3 tests, 3 passed** (62, 27 and 59 s). A test spends most of its minute on VoiceOver: each flick waits about five seconds for the app to idle.
 
 **Warm the iPhone with one test too** (A10b, 2026-10-20). Twice on iPhone 17 (`80CF0F18`), each time the first test after the unit target had run on the same simulator and the simulator had restarted, `testATagIsSaidAndOfferedAsAnActionThatFilters` failed at its first step, "The row's menu has no Add Tags…": the long press opened no menu. Its recording shows the app indexing volumes under the rows (*Indexing frus1900…*, then *frus1902…*). Alone, or after one test, it passed. At A10b's final code, warmed with `testEachRowSaysWhatItDraws`: iPhone 17, 3 tests, 3 passed (60, 28 and 60 s); iPad Pro 13-inch (M5) (`9AB3A0C9`), 3 tests, 3 passed (60, 26 and 58 s).
+**Under Xcode 27.2, run a test at a time, on a simulator shut down before each** (2026-11-15, iPhone 17 `80CF0F18`, iOS
+27.0). Once the service's speech has been read, `disable()` leaves VoiceOver on in the simulator, and the service reports
+it off. A probe isolated the reads: forty with no search left VoiceOver on, and an announcement with none read did not.
+So `testATagIsSaidAndOfferedAsAnActionThatFilters` fails at its chip, whose tap only moves VoiceOver ("The tag's chip did
+not narrow the search…"), and the tests after it in the run fail at "Could not open the Search tab". The same happened
+on `v2` at `f29a3710`, on the same simulator. A test run alone after a shutdown starts with VoiceOver off. The tagging
+test fails so even as a run's first test, since it reads speech before its chip, and the plan of record's R5 bullet
+carries it.
+
+Measured on 2026-11-15 under iOS 27.0, each run alone under the heavy-job lock, on a simulator shut down before it and
+warmed with `testAppLaunches`: **`testAFinishedSearchSaysWhatItFound` passed on the iPhone 17 (`80CF0F18`, 79 s) and on
+the iPad Pro 13-inch (M5) (`9AB3A0C9`, 109 s)**, each having heard "3 results". **The control** (the `isLayer` guard put back on
+iPhone and iPad's announcement, iPhone 17): it failed, having heard only "FRUS Explorer xylograph Search field Double tap to
+edit."
 ```bash
 Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
-  -only-testing FRUSExplorerUITests/SearchResultVoiceOverTests \
+  -only-testing FRUSExplorerUITests/SearchResultVoiceOverTests/testAFinishedSearchSaysWhatItFound \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
@@ -1028,6 +1077,32 @@ xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
   -only-testing FRUSExplorerUITests/FilterVolumeListTests \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600
+```
+
+**`FilterSheetDoneTests` (#1918, IPS-1, in `MeaningResultsSeamTests.swift`) runs on an iPhone and an iPad, and nothing
+skips.** It guards what closing Filters does to the search on screen: `SearchViewModel.filterSheetClosed()` runs it
+again when its parameters changed while the sheet was open, and `FilterSheetDismissalTests` (unit) holds that rule. The
+fixture is the spoken-row volume (`FRUS_UI_TEST_SEED_SPOKEN_VOLUME`, which `SearchResultVoiceOverTests`' entry
+describes): a keyword search for "xylograph" lists three rows, its document, its editorial note and its preface. Each
+test chooses Filters ▸ Document Type ▸ Editorial notes only and closes the sheet, by Done in two tests and in one by a
+drag from its navigation bar to the window's foot, and requires "1 result" and the note's row alone. The second test
+then chooses Clear and Done, and requires "3 results" and all three rows. **The Document Type section is below the
+sheet's fold on both devices.** So the test first raises the sheet to its full height by a drag on its own navigation
+bar, then swipes the app up until the segment is hittable. Two ways failed on the iPad Pro 13-inch, each at "offers no
+Editorial notes only segment after 8 swipes". A drag from just below the sheet's bar moved nothing in all three tests,
+probably because it began on the Limit by date switch. A swipe at the app's centre, which landed at the medium sheet's
+top edge, moved nothing in two of three; the recording shows eight swipes and a sheet that never moved.
+
+Measured on 2026-11-15 under iOS 27.0, each device alone under the heavy-job lock and warmed with `testAppLaunches`:
+**iPhone 17 (`80CF0F18`): 3 tests, 3 passed (405 s)**; **iPad Pro 13-inch (M5) (`9AB3A0C9`): 3 tests, 3 passed
+(479 s)**. **The control** (the sheet's `onDismiss` taken out, iPhone 17): 3 tests, 3 failed, each at its first count
+after the sheet closed ("the results header does not read “1 result”: the list was not searched again under the filters
+the chips describe").
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/FilterSheetDoneTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
 **`SearchWithinResultsTests` (#1577 lane 4) runs on an iPhone and an iPad, and nothing skips on either.** It drives Search Within These Results end to end through lane 3's Meaning seam (`FRUS_UI_TEST_SEED_MEANING`; the `MeaningResultsSeamTests` entry above says what the seam answers and why): the near question's Meaning list of the fixture's three documents with vectors, Two, One and Three at 100, 32 and 3 percent, and the fixture's phrase, `"Synthetic UI-test content"`, which lists all six of its documents, the three with no vectors among them. Six tests, each reading the screen and not the model:
