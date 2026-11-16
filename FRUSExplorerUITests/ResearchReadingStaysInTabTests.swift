@@ -894,10 +894,11 @@ final class ResearchSidebarSelectionTests: XCTestCase {
 ///
 /// ## Oracles
 /// - `app.menuItems` is the edit menu's own accessibility tree — the names VoiceOver reads. Its row
-///   shows what fits (on iOS 26.5, the four dots and Excerpt on an iPhone 17; those and Look Up in NARA
-///   on an iPad Pro 13-inch) and ends in `Forward` (›), which opens the whole menu as a list of buttons.
-///   The row must open with the app's items in the decision's order, and the list must hold all seven
-///   first, under their spoken names, with Copy after them.
+///   shows what fits (on iOS 26.5 and 27.0, the four dots and Excerpt on an iPhone 17; those and Look
+///   Up in NARA on an iPad Pro 13-inch) and ends in › (`Forward` under iOS 26.5, `Next Page` under
+///   27.0), which opens the whole menu as a list of buttons. The row must open with the app's items in
+///   the decision's order, and the list must hold all seven first, under their spoken names, with Copy
+///   after them.
 /// - The retired bar drew its dots and verbs as BUTTONS named "Highlight Yellow", "Look Up" and so on. A
 ///   button of one of those names on screen while the menu is up is the bar, and fails.
 /// - A highlight is observed where a reader would find it: back on the Research root, whose "By
@@ -916,7 +917,24 @@ final class ResearchSidebarSelectionTests: XCTestCase {
 /// body reads "Synthetic UI-test content for frus1961-63v06, document 1.", so the row opens a real
 /// document with text to select. The suite long-presses the first word, "Synthetic", which lies inside
 /// one text node and so has document offsets: a press at the middle of the two-line paragraph on an
-/// iPhone 17 selected something with none, and the menu offered only Look Up in NARA and Note.
+/// iPhone 17 selected something with none, and the menu offered only Look Up in NARA and Note. The
+/// press is held 3 s, and a tap follows it when it raises no menu, for the reasons below.
+///
+/// ## Under iOS 27.0
+/// Measured 2026-11-16 on iPhone 17 and iPad Pro 13-inch (M5), iOS 27.0. XCTest's long press selects
+/// the word, and the edit menu comes only when the selection has landed before the press lifts: one
+/// that lands after it leaves the word selected, its handles drawn, with no menu, and a long press
+/// over that selection raises none either. The 1.2 s press this suite made until then lifted too soon
+/// on the iPhone 17 in all six runs, 12 s after the page rendered as at 1 s, so every test failed on
+/// "On screen: []", on `v2`'s code too; held 2 s or 3 s it raised the menu in 3 of 3 runs each, the
+/// lookup opening on "Synthetic". A 3 s press still lifted too soon in 1 of 14 tries on the iPhone and
+/// 2 of 19 on the iPad, each on a slow page (the three lookups of the paragraph XCTest makes as it
+/// presses took 3.2 to 6.7 s each, against 1.4 to 3.1 s where it raised the menu), and pressing again
+/// did not help. A tap on the selected word did: after a 1.2 s press had left the word selected with
+/// no menu, a 3 s press raised none and the tap raised the whole menu, the lookup opening on
+/// "Synthetic" (3 of 3 runs, on both devices). A long press of 1.2 s by hand (L19, the simulator
+/// control tool, #1919) raises the menu, so the app's menu stands. The menu's › is `Next Page` under
+/// 27.0, which the suite's `Forward` did not find.
 ///
 /// ## Where it fails
 /// Measured on iPhone 17 and iPad Pro 13-inch (M5), both iOS 26.5: before #1540 the first three tests
@@ -939,6 +957,8 @@ final class ResearchSidebarSelectionTests: XCTestCase {
 ///   1.0 — #1540: initial implementation
 ///   1.1 — #1540 review round 1: Excerpt and Note are driven to their sheets; the first page must open
 ///          with the app's first item; the colour test no longer claims to see the selection cleared
+///   1.2 — 2026-11-16: the press is held 3 s and followed by a tap on the word when it raises no
+///          menu, and the menu's › is found as `Next Page` too, so the suite runs under iOS 27.0
 @MainActor
 final class SelectionEditMenuTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
@@ -953,6 +973,19 @@ final class SelectionEditMenuTests: XCTestCase {
 
     /// The word the suite selects: the first of the fixture's body.
     private static let selectedWord = "Synthetic"
+
+    /// How long the suite holds its press on the word, in seconds. Under iOS 27.0 a press of 1.2 s
+    /// (this suite's until 2026-11-16) selects the word and raises no edit menu; 2 s raised it on an
+    /// iPhone 17 in 3 of 3 runs, and 3 s leaves a second to spare (see the suite's notes).
+    private static let pressDuration: TimeInterval = 3
+
+    /// How many presses ``selectTheFirstWord()`` makes, each followed by a tap when it raises no menu,
+    /// before it leaves the tests to report no menu (see the suite's notes).
+    private static let pressAttempts = 3
+
+    /// The names UIKit gives the edit menu's page-turn button (›): `Forward` under iOS 26.5, `Next
+    /// Page` under iOS 27.0. Matched exactly, since the app's own results pager is "Next page".
+    private static let pageTurnNames = ["Forward", "Next Page"]
 
     override func setUp() async throws {
         continueAfterFailure = false
@@ -1140,24 +1173,36 @@ final class SelectionEditMenuTests: XCTestCase {
     /// Long-presses the body's first word, which selects it and raises the edit menu.
     ///
     /// The press lands 30 pt into the paragraph's first line rather than at the element's centre: on
-    /// an iPhone the paragraph wraps to two lines, and its centre falls between them.
+    /// an iPhone the paragraph wraps to two lines, and its centre falls between them. It is held for
+    /// ``pressDuration``, since under iOS 27.0 a press of 1.2 s selects the word and raises no menu.
+    /// When no menu comes even so, the selection landed after the lift (see the suite's notes), and a
+    /// tap on the selected word raises it, as a reader's would; a press that selected nothing is made
+    /// again, up to ``pressAttempts`` presses in all. Any menu ends the steps, one without the app's
+    /// items included, so the tests' checks still see it.
     private func selectTheFirstWord() {
         let body = app.webViews.firstMatch.staticTexts
             .matching(NSPredicate(format: "label CONTAINS %@", Self.selectedWord)).firstMatch
         XCTAssertTrue(body.waitForExistence(timeout: 20), "the fixture's body text never rendered")
         Thread.sleep(forTimeInterval: 1)
-        body.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: 30, dy: 10))
-            .press(forDuration: 1.2)
-        Thread.sleep(forTimeInterval: 1)
+        let word = body.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 30, dy: 10))
+        let menu = app.menuItems.firstMatch
+        for press in 1...Self.pressAttempts {
+            word.press(forDuration: Self.pressDuration)
+            if menu.waitForExistence(timeout: 5) { return }
+            print("[SelectionEditMenuTests] press \(press) of \(Self.pressAttempts) raised no edit menu; "
+                  + "tapping the word")
+            word.tap()
+            if menu.waitForExistence(timeout: 5) { return }
+            print("[SelectionEditMenuTests] the tap after press \(press) raised no edit menu")
+        }
     }
 
     /// Every item of the menu, in its order.
     ///
-    /// A menu with more items than its row holds ends the row with `Forward` (›), which on iOS 26.5
-    /// opens the WHOLE menu as a vertical list, each item a button in a cell, from the first item
-    /// on (measured on iPhone 17 and iPad Pro 13-inch (M5)). With no `Forward` the row is the whole
-    /// menu.
+    /// A menu with more items than its row holds ends the row with › (``forward``), which opens the
+    /// WHOLE menu as a vertical list, each item a button in a cell, from the first item on (measured
+    /// on iPhone 17 and iPad Pro 13-inch (M5), under iOS 26.5 and 27.0). With no › the row is the
+    /// whole menu.
     private func wholeMenu() -> [String] {
         guard forward.exists && forward.isHittable else { return pageLabels() }
         forward.tap()
@@ -1190,8 +1235,19 @@ final class SelectionEditMenuTests: XCTestCase {
             .map(\.label)
     }
 
-    /// The menu's page-turn button.
-    private var forward: XCUIElement { app.buttons["Forward"].firstMatch }
+    /// The menu's page-turn button (›), under either of ``pageTurnNames``.
+    ///
+    /// The floating tab bar's pager is `Next Page` too (`TabBarNavigator`), so of the buttons so
+    /// named the one taken is the one level with the menu's items.
+    private var forward: XCUIElement {
+        let named = app.buttons.matching(NSPredicate(format: "label IN %@ OR identifier IN %@",
+                                                     Self.pageTurnNames, Self.pageTurnNames))
+        guard let row = app.menuItems.allElementsBoundByIndex.first(where: { $0.exists })?.frame else {
+            return named.firstMatch
+        }
+        return named.allElementsBoundByIndex
+            .first { $0.exists && abs($0.frame.midY - row.midY) < row.height } ?? named.firstMatch
+    }
 
     /// Buttons carrying the retired bar's names. The bar drew each dot and verb as a button; the menu
     /// draws them as menu items.
