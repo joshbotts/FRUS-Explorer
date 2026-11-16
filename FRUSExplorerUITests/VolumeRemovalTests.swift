@@ -832,6 +832,11 @@ final class DownloadCancelAllTests: XCTestCase {
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "Cancel All did not ask first")
         XCTAssertTrue(app.staticTexts["Stop downloading \(Self.queued) volumes?"].firstMatch.exists,
                       "the question does not name the \(Self.queued) volumes the seam queued")
+        // Kept for a reader of the result bundle: the question, and the button it hangs on.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "cancel-all-question"
+        shot.lifetime = .keepAlways
+        add(shot)
         confirm.tap()
 
         XCTAssertTrue(cancelAll.waitForNonExistence(timeout: 15), "Cancel All stayed after it emptied the queue")
@@ -996,6 +1001,10 @@ enum DownloadSeamWalk {
     /// Closes Cancel All's question without stopping anything: Keep Downloading where the question
     /// shows it, as an action sheet does, and otherwise a tap beside the popover, which iOS 27 shows
     /// in place of an action sheet on an iPhone too and which carries no cancel button.
+    ///
+    /// The tap is at the dismiss region's lower-left corner, as `VolumeRemovalTests` closes its
+    /// popovers: at the region's middle it met the popover itself, which hangs below Cancel All, and
+    /// the question stayed (iPhone 17, iOS 27.0, the suite's first run).
     static func dismissQuestion(in app: XCUIApplication?) {
         guard let app, app.state == .runningForeground else { return }
         let keep = app.buttons["Keep Downloading"].firstMatch
@@ -1006,7 +1015,7 @@ enum DownloadSeamWalk {
         let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
         if regions.count > 0 {
             regions.element(boundBy: regions.count - 1)
-                .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap()
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
             Thread.sleep(forTimeInterval: 0.5)
         }
     }

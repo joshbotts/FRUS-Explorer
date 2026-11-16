@@ -245,14 +245,23 @@ final class VolumeDownloadFailureTests: XCTestCase {
         XCTAssertTrue(UndownloadedVolumeWalk.downloading(in: app).waitForExistence(timeout: 10),
                       "Download Volume did not start the download")
 
-        let failure = app.descendants(matching: .any)["volume.download.failure"].firstMatch
+        // The identifier names two elements, the line and its warning glyph ("Warning"), so the line
+        // is found by identifier AND label (the iPad's first run read the glyph and failed).
+        let named = app.descendants(matching: .any).matching(identifier: "volume.download.failure")
+        let failure = named.matching(NSPredicate(format: "label CONTAINS %@",
+                                                 UndownloadedVolumeWalk.failureLine)).firstMatch
         XCTAssertTrue(failure.waitForExistence(timeout: 45), """
             The page shows no failure after the download failed with its retries spent: before L20 it \
-            offered Download Volume again with no word.
+            offered Download Volume again with no word. Elements named volume.download.failure: \
+            \(named.allElementsBoundByIndex.map(\.label))
             """)
-        XCTAssertTrue(failure.label.contains(UndownloadedVolumeWalk.failureLine), "the failure reads \(failure.label)")
         let retry = app.buttons["volume.download.retry"].firstMatch
         XCTAssertTrue(retry.exists, "the failure is shown with no Retry")
+        // Kept for a reader of the result bundle: the failure where Download Volume was.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "download-failure-notice"
+        shot.lifetime = .keepAlways
+        add(shot)
         XCTAssertFalse(app.buttons["Download Volume"].firstMatch.exists,
                        "Download Volume is offered beside Retry")
 
@@ -391,6 +400,12 @@ enum UndownloadedVolumeWalk {
         scrollUntilHittable(volume, in: app, attempts: 8)
         volume.tap()
         Thread.sleep(forTimeInterval: 0.8)
+
+        // On an iPhone the page's details, tags and subjects come first, and its Download Required
+        // section is below the fold, out of a lazy list's tree until it is scrolled to (the suite's
+        // first run, iPhone 17, iOS 27.0).
+        let download = app.buttons["Download Volume"].firstMatch
+        if !download.waitForExistence(timeout: 5) { scrollUntilHittable(download, in: app, attempts: 10) }
     }
 
     /// Swipes up until `element` is present and hittable: a SwiftUI `List` is lazy.
