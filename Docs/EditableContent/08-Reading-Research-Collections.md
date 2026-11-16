@@ -2449,7 +2449,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1097–1098 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1099–1100 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2540,7 +2540,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2344–2344 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2393–2393 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2549,7 +2549,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2354–2355 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2404–2405 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2558,7 +2558,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2385–2386 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2435–2436 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -2567,7 +2567,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2399–2400 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2449–2450 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -2576,7 +2576,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2394–2395 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2444–2445 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -2585,7 +2585,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 358–358 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 360–360 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2671,14 +2671,14 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1369–1370 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1394–1395 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1756–1757 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1804–1805 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -2870,22 +2870,85 @@ Their section headings, note blocks and headnotes go with them, on your other de
 
 <!-- END SOURCE: collection.delete.confirm.message.many -->
 
+#### Delete Note Block?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 381–381 | key: collection.entry.delete.confirm.title.prose -->
+
+*The title of the dialog that asks before a note block with text is deleted from a collection's outline (L19, #1919), in the form of the collection's own delete dialog above: by a swipe or Edit's delete on iPhone and iPad, and by its trash on the Mac. A row that holds nothing of the reader's — an empty note block, a heading with no section defaults, a document at its defaults, a passage, an apparatus block — goes at once. Its button is Delete Note Block, and the first message below follows the title.*
+
+Delete Note Block?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.prose -->
+
+#### Delete Heading?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 383–383 | key: collection.entry.delete.confirm.title.heading -->
+
+*The title when the row is a heading that sets defaults for its section's documents, deleted alone: by a swipe or Edit's delete, Delete Heading Only, or the Mac's trash. Its button is Delete Heading.*
+
+Delete Heading?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.heading -->
+
+#### Remove Document?
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 385–385 | key: collection.entry.delete.confirm.title.document -->
+
+*The title when the row is a document with a headnote, or with settings of its own in the collection: a title, a body depth, an override, a headnote setting, or a choice of its notes or highlights. Its button is Remove Document.*
+
+Remove Document?
+
+<!-- END SOURCE: collection.entry.delete.confirm.title.document -->
+
+#### Its text goes with it, on your other devices too…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 405–406 | key: collection.entry.delete.confirm.message.prose -->
+
+*The message under Delete Note Block?. Nothing undoes a collection row's deletion, and it reaches the reader's other devices, which is why the dialog asks.*
+
+Its text goes with it, on your other devices too once they sync.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.prose -->
+
+#### Its section defaults go with it, on your other devices…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 408–409 | key: collection.entry.delete.confirm.message.heading -->
+
+*The message under Delete Heading?.*
+
+Its section defaults go with it, on your other devices too once they sync. The entries under it stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.heading -->
+
+#### Its headnote and its settings in this collection go with it…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 411–412 | key: collection.entry.delete.confirm.message.headnote -->
+
+*The message under Remove Document? when the document has a headnote, which goes with its row.*
+
+Its headnote and its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.headnote -->
+
+#### Its settings in this collection go with it, on your other…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 414–415 | key: collection.entry.delete.confirm.message.settings -->
+
+*The message under Remove Document? when the document has settings of its own and no headnote.*
+
+Its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.
+
+<!-- END SOURCE: collection.entry.delete.confirm.message.settings -->
+
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1301–1302 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1303–1304 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1736–1737 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1763–1764 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2034–2035 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2061–2062 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

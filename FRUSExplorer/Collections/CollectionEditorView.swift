@@ -252,6 +252,8 @@ struct CollectionEditorView: View {
     /// — set = show the entry inspector, `nil` = show the collection-metadata inspector
     /// (one inspector surface, either/or). On iPhone (compact) it drives the `.sheet`.
     @State private var inspectedEntryId: UUID?
+    /// A row's deletion waiting on its dialog, for a row that holds the reader's work (L19, MAC-2).
+    @State private var pendingEntryDeletion: PendingEntryDeletion?
     #if os(iOS)
     /// The documents opened from this collection, read INSIDE the stack hosting the editor (2026-09-11):
     /// the Collections tab when pushed, the sheet's own stack otherwise. See `InPlaceDocumentReader`.
@@ -1157,10 +1159,32 @@ struct CollectionEditorView: View {
                     outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
                                rows: rows)
                         .padding(.leading, outlineIndent(for: row))
+                        // L19 (MAC-2): the swipe's Delete, which asks first for a row that holds the
+                        // reader's work. Red by tint, NOT `role: .destructive`: a destructive swipe
+                        // button — the one `.onDelete` makes included — animates its row out of the
+                        // list as if deleted, and takes the row's dialog with it. Measured on iOS
+                        // 27.0: the note block vanished, no dialog showed, and the block came back
+                        // when the collection was opened again (`VolumesStorageHubView` met the same).
+                        .swipeActions(edge: .trailing) {
+                            Button {
+                                requestDelete(at: row.index)
+                            } label: {
+                                Label(String(localized: "common.delete", defaultValue: "Delete"),
+                                      systemImage: "trash")
+                            }
+                            .tint(.red)
+                        }
+                        // L19 (MAC-2): a row that holds the reader's work asks before a swipe, Edit's
+                        // delete or its trash deletes it.
+                        .collectionEntryDeleteConfirmation(for: sortedEntries[row.index].id,
+                                                           pending: $pendingEntryDeletion,
+                                                           delete: deleteConfirmed)
                 }
                 .onMove { indices, newOffset in
                     moveVisibleRows(indices, to: newOffset, visible: rows.map(\.index))
                 }
+                // What gives each row Edit mode's minus, which reveals the row's own swipe action above
+                // rather than this one's (measured on iOS 27.0, L19).
                 .onDelete { indexSet in
                     deleteVisibleRows(indexSet, visible: rows.map(\.index))
                 }
@@ -1506,7 +1530,7 @@ struct CollectionEditorView: View {
             let range = CollectionOutline.sectionRange(of: row.index, in: outline)
             CollectionHeadingRow(
                 entry: $sortedEntries[row.index],
-                onDelete: { deleteHeadingOnly(at: row.index) },
+                onDelete: { requestDelete(at: row.index) },
                 showsInlineDelete: isMacOS,
                 depth: row.depth,
                 isCollapsed: collapsedHeadingIds.contains(row.id),
@@ -1528,7 +1552,7 @@ struct CollectionEditorView: View {
             // Movable/deletable like prose; iOS deletion stays on swipe (no inline trash).
             CollectionExcerptRow(entry: entry,
                                  volumeTitle: volumeTitle(for: entry),
-                                 onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                 onDelete: isMacOS ? { requestDelete(at: row.index) } : nil,
                                  onMoveUp: moveUp,
                                  onMoveDown: moveDown)
         case .generated:
@@ -1539,7 +1563,7 @@ struct CollectionEditorView: View {
             CollectionGeneratedEntryRow(entry: entry,
                                         documentCount: takesHandAddedEntries
                                             ? sortedEntries.count { $0.entryKind == .document } : nil,
-                                        onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
+                                        onDelete: isMacOS ? { requestDelete(at: row.index) } : nil,
                                         onMoveUp: moveUp,
                                         onMoveDown: moveDown)
         case .unrecognized:
@@ -1549,15 +1573,35 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// Deletes the single entry at a full-outline index (the excerpt row's inline trash
-    /// on the macOS sheet editor; iOS deletion stays on swipe via `deleteVisibleRows`).
-    private func deleteVisibleRow(_ index: Int) {
+    /// One row's delete — a heading's Delete Heading Only, or a row's trash on the macOS sheet
+    /// editor — at a full-outline index: at once, or after the row's dialog when it holds the
+    /// reader's work (L19, MAC-2, ``CollectionEntryDeletion``). A heading deleted this way leaves its
+    /// entries, and its sub-headings bubble up (normalize's orphan clamp).
+    private func requestDelete(at index: Int) {
         guard sortedEntries.indices.contains(index) else { return }
+        let entry = sortedEntries[index]
+        if let holding = CollectionEntryDeletion.holding(entry, in: modelContext) {
+            pendingEntryDeletion = PendingEntryDeletion(entryId: entry.id, holding: holding)
+        } else {
+            removeEntry(at: index)
+            finishOutlineMutation()
+        }
+    }
+
+    /// Deletes the entry the reader confirmed in its row's dialog, wherever the outline has it now.
+    private func deleteConfirmed(_ entryId: UUID) {
+        guard let index = sortedEntries.firstIndex(where: { $0.id == entryId }) else { return }
+        removeEntry(at: index)
+        finishOutlineMutation()
+    }
+
+    /// Removes the entry at a full-outline index, with the headnote draft it owns. The caller
+    /// finishes the outline mutation.
+    private func removeEntry(at index: Int) {
         collapsedHeadingIds.remove(sortedEntries[index].id)
         GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
         modelContext.delete(sortedEntries[index])
         sortedEntries.remove(at: index)
-        finishOutlineMutation()
     }
 
     /// Whether this build renders the macOS sheet editor (its List has no swipe-to-delete,
@@ -1661,17 +1705,31 @@ struct CollectionEditorView: View {
         return fullIndex + 1
     }
 
-    /// Deletes the swiped visible rows (mapped to full-outline coordinates). Deleting a
-    /// heading this way removes the heading only — its entries stay and any sub-headings
-    /// bubble up via normalize.
+    /// Deletes the visible rows `.onDelete` names (mapped to full-outline coordinates). Deleting a
+    /// heading this way removes the heading only — its entries stay and any sub-headings bubble up
+    /// via normalize.
+    ///
+    /// L19 (MAC-2): since each row has a swipe action of its own, a swipe — a full one included —
+    /// and Edit mode's minus reach ``requestDelete(at:)`` through it, not this: `.onDelete`'s own
+    /// Delete is destructive, and the list took its row away before the row's dialog could show
+    /// (measured on iOS 27.0). Any route that still arrives here asks the same way: a row that holds
+    /// the reader's work is not deleted but asked about in its row's dialog
+    /// (``CollectionEntryDeletion``), and the rows that hold nothing go at once, as before.
     private func deleteVisibleRows(_ indices: IndexSet, visible: [Int]) {
         let full = indices.compactMap { visible.indices.contains($0) ? visible[$0] : nil }
-        for i in full.sorted(by: >) {
-            collapsedHeadingIds.remove(sortedEntries[i].id)
-            GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[i], in: modelContext)
-            modelContext.delete(sortedEntries[i])
-            sortedEntries.remove(at: i)
+        var going: [Int] = []
+        for i in full {
+            if let holding = CollectionEntryDeletion.holding(sortedEntries[i], in: modelContext) {
+                // One dialog at a time: a swipe deletes one row, and only Edit could pass more.
+                if pendingEntryDeletion == nil {
+                    pendingEntryDeletion = PendingEntryDeletion(entryId: sortedEntries[i].id, holding: holding)
+                }
+            } else {
+                going.append(i)
+            }
         }
+        guard !going.isEmpty else { return }
+        for i in going.sorted(by: >) { removeEntry(at: i) }
         finishOutlineMutation()
     }
 
@@ -1685,17 +1743,6 @@ struct CollectionEditorView: View {
     private func outdentSection(at index: Int) {
         CollectionOutline.outdentSection(at: index, in: sortedEntries)
         try? modelContext.save()
-    }
-
-    /// Deletes the heading at `index` ONLY — its contents stay and sub-headings bubble
-    /// up one level (normalize's orphan clamp).
-    private func deleteHeadingOnly(at index: Int) {
-        guard sortedEntries.indices.contains(index) else { return }
-        collapsedHeadingIds.remove(sortedEntries[index].id)
-        GeneratedSummary.deleteHeadnoteDraft(for: sortedEntries[index], in: modelContext)
-        modelContext.delete(sortedEntries[index])
-        sortedEntries.remove(at: index)
-        finishOutlineMutation()
     }
 
     /// Deletes the heading at `index` and every entry in its section range (the user
@@ -1920,6 +1967,8 @@ struct CollectionEditorView: View {
         #else
         readingChain = [browseEntry]
         #endif
+    }
+
     }
 
     private func presentEntryInspector(for entryId: UUID) {

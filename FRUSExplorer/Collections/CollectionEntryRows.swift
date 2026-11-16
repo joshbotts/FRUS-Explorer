@@ -171,7 +171,7 @@ struct CollectionHeadingRow: View {
                 }
                 .help(String(localized: "collection.section.inspect.help",
                              defaultValue: "Set export defaults for every document in this section"))
-                structuralDeleteButton(showsInlineDelete ? onDelete : nil)
+                structuralDeleteButton(showsInlineDelete ? onDelete : nil, for: .heading)
             }
             // Section body depth — applied to documents under this heading (Phase 3c).
             Picker(selection: sectionDepth) {
@@ -264,11 +264,13 @@ struct CollectionHeadingRow: View {
     }
 }
 
-/// A trailing delete control shared by the heading and prose rows; renders nothing when
-/// `onDelete` is `nil`. Carries an explicit localized accessibility label (UI audit A10)
-/// so VoiceOver doesn't fall back to the SF Symbol's inferred name.
+/// A trailing delete control shared by the heading, prose, excerpt and apparatus rows; renders
+/// nothing when `onDelete` is `nil`. Carries an explicit localized accessibility label (UI audit
+/// A10) so VoiceOver doesn't fall back to the SF Symbol's inferred name, and a label and tooltip
+/// that name what it deletes (L19, MAC-2): it said "Remove this document from the collection" on
+/// every row, a note block's included.
 @MainActor @ViewBuilder
-func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
+func structuralDeleteButton(_ onDelete: (() -> Void)?, for kind: CollectionEntryKind) -> some View {
     if let onDelete {
         Button(role: .destructive) {
             onDelete()
@@ -276,10 +278,236 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
             Image(systemName: "trash").foregroundStyle(.red.opacity(0.6))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(String(localized: "collection.entry.delete.a11y",
-                                   defaultValue: "Remove entry"))
-        .help(String(localized: "collection.entry.delete.help",
-                     defaultValue: "Remove this document from the collection"))
+        .accessibilityLabel(CollectionEntryDeletion.trashLabel(for: kind))
+        .help(CollectionEntryDeletion.trashHelp(for: kind))
+    }
+}
+
+// MARK: - CollectionEntryDeletion (L19, MAC-2)
+
+/// What deleting one row of a collection's outline asks first (L19, #1919, MAC-2).
+///
+/// A row that holds the reader's own writing or choices asks, in the Delete Section dialog's form,
+/// before it goes: a note block's text, a heading's section defaults, and a document's headnote
+/// draft or its own settings in the collection. Every other row — a document at its defaults, an
+/// empty note block, a heading with no defaults, an excerpt, an apparatus block — goes at once, as
+/// before. Nothing registers undo for collection entries, and a deletion reaches the reader's other
+/// devices when they sync, which is why a section and a whole collection already asked
+/// (`CollectionHeadingRow`'s Delete Section, ``CollectionDeletion``).
+///
+/// One rule for every route a row is deleted by: the Mac's trash, iOS's swipe (a full swipe
+/// included), Edit's delete, VoiceOver's Delete, and a heading's Delete Heading Only. The editors
+/// hold the deletion as a ``PendingEntryDeletion`` while the dialog is up, and each row presents the
+/// dialog for itself (``SwiftUICore/View/collectionEntryDeleteConfirmation(for:pending:delete:)``).
+/// So iOS's swipe is each row's own `.swipeActions` button, red by tint: a destructive swipe
+/// button, `.onDelete`'s among them, animates its row out of the list as if deleted, and the
+/// row's dialog goes with it. Measured on iOS 27.0, the block vanished with no dialog and came back
+/// when the collection was opened again; Edit mode's minus reveals the row's own button.
+///
+/// Version history:
+///   1.0 — L19 (#1919, MAC-2): initial implementation
+enum CollectionEntryDeletion {
+
+    /// What a row holds that its deletion would take with it.
+    enum Holding: Equatable, Sendable {
+        /// A note block's text.
+        case noteBlockText
+        /// A heading's section defaults.
+        case sectionDefaults
+        /// A document's headnote draft, which ``GeneratedSummary/deleteHeadnoteDraft(for:in:)``
+        /// deletes with the row.
+        case documentHeadnote
+        /// A document's own settings in the collection.
+        case documentSettings
+    }
+
+    /// What `entry` holds of the reader's, or `nil` for a row that holds nothing and goes at once.
+    ///
+    /// - Parameters:
+    ///   - entry: The row's entry.
+    ///   - hasHeadnoteDraft: Whether the entry owns a headnote draft
+    ///     (``GeneratedSummary/headnoteDraftExists(for:in:)``).
+    /// - Returns: What the row holds, or `nil`.
+    @MainActor
+    static func holding(_ entry: CollectionEntry, hasHeadnoteDraft: Bool) -> Holding? {
+        switch entry.entryKind {
+        case .prose:
+            let plain = entry.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            // A block written before rich text kept a JSON body and no plain projection until it
+            // is migrated, so a body with no `text` counts as text.
+            return !plain.isEmpty || (entry.text == nil && entry.richText != nil) ? .noteBlockText : nil
+        case .heading:
+            return hasSectionDefaults(entry) ? .sectionDefaults : nil
+        case .document:
+            if hasHeadnoteDraft { return .documentHeadnote }
+            return hasDocumentSettings(entry) ? .documentSettings : nil
+        case .excerpt, .generated, .unrecognized:
+            return nil
+        }
+    }
+
+    /// ``holding(_:hasHeadnoteDraft:)``, with the headnote draft looked up in `context`.
+    @MainActor
+    static func holding(_ entry: CollectionEntry, in context: ModelContext) -> Holding? {
+        let hasDraft = entry.entryKind == .document
+            && GeneratedSummary.headnoteDraftExists(for: entry, in: context)
+        return holding(entry, hasHeadnoteDraft: hasDraft)
+    }
+
+    /// Whether a heading sets any default for the documents of its section.
+    @MainActor
+    private static func hasSectionDefaults(_ entry: CollectionEntry) -> Bool {
+        entry.bodyDepthOverride != nil || entry.applyHighlightsOverride != nil
+            || entry.includeNotesOverride != nil || entry.includeSourceNoteOverride != nil
+            || entry.includeFootnotesOverride != nil || entry.summaryPromptIdOverride != nil
+            || entry.includeRelatedDocuments != nil
+    }
+
+    /// Whether a document row carries a choice of the reader's: a title, a depth, an override, a
+    /// headnote setting or pick, or a selection of its notes or highlights.
+    @MainActor
+    private static func hasDocumentSettings(_ entry: CollectionEntry) -> Bool {
+        let title = entry.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !title.isEmpty || hasSectionDefaults(entry)
+            || entry.includeHeadnote != nil || entry.headnoteSummaryId != nil
+            || !entry.selectedNoteIds.isEmpty || entry.researchNoteId != nil
+            || !entry.selectedHighlightIds.isEmpty
+    }
+
+    /// The dialog's title.
+    static func title(for holding: Holding) -> String {
+        switch holding {
+        case .noteBlockText:
+            String(localized: "collection.entry.delete.confirm.title.prose", defaultValue: "Delete Note Block?")
+        case .sectionDefaults:
+            String(localized: "collection.entry.delete.confirm.title.heading", defaultValue: "Delete Heading?")
+        case .documentHeadnote, .documentSettings:
+            String(localized: "collection.entry.delete.confirm.title.document", defaultValue: "Remove Document?")
+        }
+    }
+
+    /// The dialog's destructive button.
+    static func action(for holding: Holding) -> String {
+        switch holding {
+        case .noteBlockText:
+            String(localized: "collection.entry.delete.confirm.action.prose", defaultValue: "Delete Note Block")
+        case .sectionDefaults:
+            String(localized: "collection.entry.delete.confirm.action.heading", defaultValue: "Delete Heading")
+        case .documentHeadnote, .documentSettings:
+            String(localized: "collection.entry.delete.confirm.action.document", defaultValue: "Remove Document")
+        }
+    }
+
+    /// The dialog's message: what goes with the row, and what stays.
+    static func message(for holding: Holding) -> String {
+        switch holding {
+        case .noteBlockText:
+            String(localized: "collection.entry.delete.confirm.message.prose",
+                   defaultValue: "Its text goes with it, on your other devices too once they sync.")
+        case .sectionDefaults:
+            String(localized: "collection.entry.delete.confirm.message.heading",
+                   defaultValue: "Its section defaults go with it, on your other devices too once they sync. The entries under it stay.")
+        case .documentHeadnote:
+            String(localized: "collection.entry.delete.confirm.message.headnote",
+                   defaultValue: "Its headnote and its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.")
+        case .documentSettings:
+            String(localized: "collection.entry.delete.confirm.message.settings",
+                   defaultValue: "Its settings in this collection go with it, on your other devices too once they sync. The document, and your notes and highlights on it, stay.")
+        }
+    }
+
+    /// The trash button's VoiceOver name, by the kind of row it deletes.
+    static func trashLabel(for kind: CollectionEntryKind) -> String {
+        switch kind {
+        case .heading:
+            String(localized: "collection.entry.delete.a11y.heading", defaultValue: "Delete heading")
+        case .prose:
+            String(localized: "collection.entry.delete.a11y.prose", defaultValue: "Delete note block")
+        case .excerpt:
+            String(localized: "collection.entry.delete.a11y.excerpt", defaultValue: "Remove excerpt")
+        case .generated:
+            String(localized: "collection.entry.delete.a11y.generated", defaultValue: "Remove block")
+        case .document, .unrecognized:
+            String(localized: "collection.entry.delete.a11y.document", defaultValue: "Remove document")
+        }
+    }
+
+    /// The trash button's tooltip, by the kind of row it deletes.
+    static func trashHelp(for kind: CollectionEntryKind) -> String {
+        switch kind {
+        case .heading:
+            String(localized: "collection.entry.delete.help.heading",
+                   defaultValue: "Delete this heading; the entries under it stay in the collection")
+        case .prose:
+            String(localized: "collection.entry.delete.help.prose",
+                   defaultValue: "Delete this note block and its text")
+        case .excerpt:
+            String(localized: "collection.entry.delete.help.excerpt",
+                   defaultValue: "Remove this excerpt from the collection")
+        case .generated:
+            String(localized: "collection.entry.delete.help.generated",
+                   defaultValue: "Remove this block from the collection")
+        case .document, .unrecognized:
+            String(localized: "collection.entry.delete.help",
+                   defaultValue: "Remove this document from the collection")
+        }
+    }
+}
+
+/// A row's deletion waiting on its dialog (L19, MAC-2): the row, by its entry's id rather than its
+/// position, which a deletion elsewhere in the outline moves, and what the row holds.
+struct PendingEntryDeletion: Equatable {
+    /// The row's entry.
+    let entryId: UUID
+    /// What the row holds, which the dialog names.
+    let holding: CollectionEntryDeletion.Holding
+}
+
+/// The Delete Section dialog's form, asked before a row that holds the reader's work is deleted
+/// (L19, MAC-2). Hung on each row, so that on an iPad the dialog points at the row; it is up while
+/// `pending` names this row's entry.
+private struct CollectionEntryDeleteConfirmation: ViewModifier {
+    /// The row's entry.
+    let entryId: UUID
+    /// The editor's pending deletion.
+    @Binding var pending: PendingEntryDeletion?
+    /// Deletes the entry with this id.
+    let delete: (UUID) -> Void
+
+    /// Up while the pending deletion is this row's; closing it clears the pending deletion.
+    private var isPresented: Binding<Bool> {
+        Binding(get: { pending?.entryId == entryId },
+                set: { if !$0, pending?.entryId == entryId { pending = nil } })
+    }
+
+    func body(content: Content) -> some View {
+        // The title is read again as the dialog closes, after the pending deletion is cleared, so it
+        // falls back to the note block's rather than to nothing.
+        content.confirmationDialog(CollectionEntryDeletion.title(for: pending?.holding ?? .noteBlockText),
+                                   isPresented: isPresented, titleVisibility: .visible,
+                                   presenting: pending) { deletion in
+            Button(CollectionEntryDeletion.action(for: deletion.holding), role: .destructive) {
+                delete(deletion.entryId)
+            }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+        } message: { deletion in
+            Text(CollectionEntryDeletion.message(for: deletion.holding))
+        }
+    }
+}
+
+extension View {
+    /// Asks the Delete Section dialog's question before the row whose entry is `entryId` is deleted,
+    /// while `pending` names it (L19, MAC-2). See ``CollectionEntryDeletion``.
+    ///
+    /// - Parameters:
+    ///   - entryId: The row's entry.
+    ///   - pending: The editor's pending deletion.
+    ///   - delete: Deletes the entry with the id it is given, once the reader confirms.
+    @MainActor
+    func collectionEntryDeleteConfirmation(for entryId: UUID, pending: Binding<PendingEntryDeletion?>,
+                                           delete: @escaping (UUID) -> Void) -> some View {
+        modifier(CollectionEntryDeleteConfirmation(entryId: entryId, pending: pending, delete: delete))
     }
 }
 
@@ -493,7 +721,7 @@ struct CollectionProseRow: View {
                 entry.richText = rtf
                 entry.text = plain
             }
-            structuralDeleteButton(onDelete)
+            structuralDeleteButton(onDelete, for: .prose)
         }
         .padding(.vertical, 4)
         .entryMoveControls(onMoveUp: onMoveUp, onMoveDown: onMoveDown)
@@ -563,7 +791,7 @@ struct CollectionExcerptRow: View {
                 }
             }
             Spacer(minLength: 8)
-            structuralDeleteButton(onDelete)
+            structuralDeleteButton(onDelete, for: .excerpt)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
@@ -655,7 +883,7 @@ struct CollectionGeneratedEntryRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 8)
-            structuralDeleteButton(onDelete)
+            structuralDeleteButton(onDelete, for: .generated)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
