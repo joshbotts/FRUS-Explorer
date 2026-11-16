@@ -683,6 +683,32 @@ struct EmptyLibraryNoticeTests {
     }
 }
 
+// MARK: - MacMatchedWordTests (#1918, A11Y-1)
+
+/// How the Mac's Search window draws a snippet's matched words: as the reader draws a highlight, and black on a
+/// selected row.
+///
+/// L18's walk in the check copy measured a selected row, where the wash lies over the selection's fill: in dark mode
+/// white text was 3.5:1 on the accent fill and 4.0:1 on the grey one, and black 5.9:1 and 5.3:1. Nothing on the Mac
+/// runs a test of its own, so the rule is read from the source.
+struct MacMatchedWordTests {
+
+    @Test("A selected row's matched words are black; the rest are drawn as the reader draws a highlight")
+    func selectedRowsDrawMatchedWordsInBlack() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/SearchSheet.swift"),
+                                encoding: .utf8)
+        let row = "SearchResultRow(result: result, userTags: allUserTags, isHighlighted: selectedResultId == result.id)"
+        #expect(source.contains(row), "the list no longer tells a row whether it is on the highlight")
+        #expect(source.contains("SnippetView(snippet: result.snippet, isOnHighlight: isHighlighted)"),
+                "the row no longer tells its snippet whether it is on the highlight")
+        #expect(source.contains("span.swiftUI.foregroundColor = isOnHighlight ? .black : FRUSTheme.searchMatchText"),
+                "a selected row's matched words are no longer black, which white text over the fill is not readable at")
+        #expect(source.contains("span.swiftUI.backgroundColor = FRUSTheme.searchMatchBackground"),
+                "the matched words have lost the reader's wash")
+    }
+}
+
 // MARK: - PersonFilterTests
 
 @MainActor

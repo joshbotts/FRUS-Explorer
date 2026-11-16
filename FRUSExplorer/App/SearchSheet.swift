@@ -2414,7 +2414,7 @@ struct MacSearchWindowView: View {
                     .labelsHidden()
                     .help(ResultSelectionCopy.rowHint)
                 }
-                SearchResultRow(result: result, userTags: allUserTags)
+                SearchResultRow(result: result, userTags: allUserTags, isHighlighted: selectedResultId == result.id)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selectedResultId = result.id
@@ -2923,6 +2923,9 @@ private struct SearchResultRow: View {
     /// All known user tags, supplied by the parent view's `@Query`. Used to
     /// resolve UUID strings in `result.userTagIds` to display names.
     let userTags: [UserTag]
+    /// Whether the list draws this row on its highlight, the accent fill or the grey one: its matched words then take
+    /// black text in both appearances (`SnippetView`). Not the Select mode's checkbox, which the row knows nothing of.
+    let isHighlighted: Bool
 
     /// Global default snippet length and this window's per-surface override (#189-C); observed so
     /// the row re-renders live when either is changed in Settings or the search filter popover's
@@ -3024,7 +3027,7 @@ private struct SearchResultRow: View {
             // dateline (A10b). Clamped to the user's chosen line count
             // (#189-C) — the global default, or this window's Result Preview override — so readers
             // can widen or tighten the preview just as on iOS.
-            SnippetView(snippet: result.snippet)
+            SnippetView(snippet: result.snippet, isOnHighlight: isHighlighted)
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
@@ -3071,11 +3074,18 @@ private struct SearchResultRow: View {
 /// the reason #1602 gave the reader's highlighted text its own colour; and not in the accent, whose light blue is
 /// about 3.5:1.
 ///
+/// On the list's highlight, a selected row's, the wash lies over the highlight's fill. White text there was 3.5:1 on
+/// dark mode's accent and 4.0:1 on its grey, measured in L18's walk, so a highlighted row's matched words are black
+/// in both appearances (5.9:1 and 5.3:1 in dark mode, 6.4:1 on light mode's accent).
+///
 /// Version history:
 ///   1.0 — initial implementation
 ///   1.1 — #1918 (L18, A11Y-1): matched words drawn as a highlight, where they were yellow text
+///   1.2 — #1918 (L18's Mac walk): black text on the list's highlight, in both appearances
 private struct SnippetView: View {
     let snippet: String
+    /// Whether the row is drawn on the list's highlight, which puts the highlight's fill under the wash.
+    let isOnHighlight: Bool
 
     var body: some View {
         Text(styledSnippet(snippet))
@@ -3094,7 +3104,7 @@ private struct SnippetView: View {
 
                 let highlighted = String(remainder[openRange.upperBound..<closeRange.lowerBound])
                 var span = AttributedString(highlighted)
-                span.swiftUI.foregroundColor = FRUSTheme.searchMatchText
+                span.swiftUI.foregroundColor = isOnHighlight ? .black : FRUSTheme.searchMatchText
                 span.swiftUI.backgroundColor = FRUSTheme.searchMatchBackground
                 span.swiftUI.font = .callout.weight(.bold)
                 result += span
