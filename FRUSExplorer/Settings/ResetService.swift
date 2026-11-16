@@ -21,6 +21,7 @@ import SwiftData
 /// local/full and iOS full reset paths.
 ///
 /// ## What this clears
+/// - Every download, running or queued, and the saved queue (`DownloadManager.cancelAll()`, L20).
 /// - Every downloaded volume `.xml` file (`DownloadManager.volumesDirectory`), and every
 ///   volume's figure images beside it (#1516, `FigureImageLibrary.removeAllImages()`).
 /// - The full-text search index (`frus.db`), via
@@ -47,6 +48,7 @@ import SwiftData
 ///          clearing the index, so an open session can't keep serving stale clouds
 ///   1.1 — Corpus Analytics cache fix: flushes `CorpusAnalyticsService`'s caches after
 ///          clearing the index, so an open session can't keep serving stale counts
+///   1.2 — L20 (#1920, HCD-2): stops every download and empties the saved queue first
 // MARK: - ResetInventory
 
 /// Which `@Model` types "Erase Everything" deletes, and which it deliberately keeps (#746).
@@ -140,9 +142,15 @@ struct ResetService {
 
     private init() {}
 
-    /// Deletes downloaded volume XML files and clears the search index, then
+    /// Stops every download, deletes downloaded volume XML files and clears the search index, then
     /// returns the app to onboarding.
     static func resetLocalData(appState: AppState) async {
+        // L20 (#1920, HCD-2): every download stops and the saved queue empties first. A reset used to
+        // leave the queue, which resumed at the next launch online, so neither Reset This Device's
+        // nor Erase Everything's "as if newly installed" held; and first, so that no transfer still
+        // running lands a volume after the sweep below has removed the rest.
+        await appState.downloadManager?.cancelAll()
+
         // Delete every .xml file in volumesDirectory directly via the filesystem.
         // Iterating manifest entries misses any file not in the manifest, which would
         // leave hasDownloadedVolumes() returning true and block OnboardingView.

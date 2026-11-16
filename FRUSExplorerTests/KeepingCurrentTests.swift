@@ -637,3 +637,153 @@ struct KeepingCurrentListingTests {
         }
     }
 }
+
+// MARK: - Cancel All (L20, #1920, HCD-2)
+
+/// `DownloadManager.cancelAll()`, which Reset This Device, Erase Everything, onboarding's Back from its
+/// Ready step and Cancel All in Volumes & Storage call (L20, #1920, HCD-2). Before it the one way to
+/// stop a download was a row's Cancel in iOS's Active Downloads, and a reset left the saved queue,
+/// which resumed at the next launch online.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-2): initial implementation
+@Suite("Cancel All: every download stops, each is reported once, and the saved queue empties (#1920)")
+@MainActor
+struct DownloadCancelAllUnitTests {
+
+    /// A transfer that waits until it is cancelled.
+    private static let held = ScriptedTransfer(delay: .seconds(600))
+
+    @Test("Cancel All stops what runs and what waits, reports each volume cancelled once, and empties the saved queue")
+    func cancelAllStopsEverything() async throws {
+        try await withScratchVolumes { dir in
+            let defaults = scratchDefaults()
+            let reports = TransferReports()
+            let dm = DownloadManager(volumesDirectory: dir, concurrencyLimit: 2, downloadTask: Self.held.task,
+                                     onStateChanged: { _ in }, preferences: defaults,
+                                     onTransferFinished: { @MainActor id, outcome in reports.record(id, outcome) })
+            await dm.resumeQueuedDownloads()
+            for volumeId in ["frus1900", "frus1901", "frus1902", "frus1903"] {
+                #expect(await dm.enqueueDownload(catalogueEntry(volumeId)) == .queued)
+            }
+            let before = await dm.currentState
+            #expect(before.activeVolumeIds.count == 2 && before.pendingVolumeIds.count == 2, "\(before)")
+
+            #expect(await dm.cancelAll() == 4)
+
+            let after = await dm.currentState
+            #expect(after.activeVolumeIds.isEmpty && after.pendingVolumeIds.isEmpty, "\(after)")
+            #expect(await eventually { reports.reports.count == 4 })
+            #expect(reports.reports.map { $0.volumeId } == ["frus1900", "frus1901", "frus1902", "frus1903"])
+            #expect(reports.reports.allSatisfy { $0.outcome == .cancelled })
+            // The held transfers' own ends say nothing more.
+            try await Task.sleep(for: .milliseconds(200))
+            #expect(reports.reports.count == 4, "a cancelled transfer was reported twice")
+
+            // The saved queue is empty, so a later launch resumes nothing.
+            let relaunched = DownloadManager(volumesDirectory: dir, downloadTask: Self.held.task,
+                                             onStateChanged: { _ in }, preferences: defaults)
+            #expect(await relaunched.currentState.pendingVolumeIds.isEmpty,
+                    "a manager built after Cancel All restored a queue")
+        }
+    }
+
+    /// Before L20 a cancel during a failed attempt's backoff did not hold: the scheduled retry put the
+    /// volume back in the queue, and the cancel reported nothing, since the volume was neither running
+    /// nor waiting in the queue.
+    @Test("A volume waiting for its retry is cancelled too, and the retry does not bring it back",
+          arguments: [true, false])
+    func aRetryWaitingIsCancelled(all: Bool) async throws {
+        try await withScratchVolumes { dir in
+            let reports = TransferReports()
+            let transfer = ScriptedTransfer(failures: .max, delay: .milliseconds(1))
+            let dm = DownloadManager(volumesDirectory: dir, downloadTask: transfer.task,
+                                     onStateChanged: { _ in }, preferences: scratchDefaults(),
+                                     onTransferFinished: { @MainActor id, outcome in reports.record(id, outcome) },
+                                     retryBackoff: .milliseconds(400))
+            await dm.resumeQueuedDownloads()
+            await dm.enqueueDownload(catalogueEntry("frus1900"))
+            // The first attempt has failed, and its retry is waiting out the backoff: the attempt is
+            // counted as it starts, and the volume leaves the queue once it has failed.
+            let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+            while ContinuousClock.now < deadline {
+                if await transfer.attempts >= 1, await dm.currentState.allQueuedVolumeIds.isEmpty { break }
+                try await Task.sleep(for: .milliseconds(5))
+            }
+            #expect(await transfer.attempts == 1)
+            #expect(await dm.currentState.allQueuedVolumeIds.isEmpty, "the volume was not waiting for its retry")
+
+            if all {
+                #expect(await dm.cancelAll() == 1)
+            } else {
+                await dm.cancelDownload(volumeId: "frus1900")
+            }
+
+            #expect(await eventually { reports.reports.count == 1 })
+            #expect(reports.reports.first?.outcome == .cancelled)
+            // Past the backoff: no retry ran, and nothing was queued again.
+            try await Task.sleep(for: .milliseconds(900))
+            #expect(await transfer.attempts == 1, "the retry ran after the cancel")
+            #expect(await dm.currentState.allQueuedVolumeIds.isEmpty, "the retry put the volume back in the queue")
+            #expect(reports.reports.count == 1)
+        }
+    }
+
+    @Test("Cancel All with nothing queued reports nothing, and an update's old copy stays on disk")
+    func cancelAllKeepsWhatIsOnDisk() async throws {
+        try await withScratchVolumes { dir in
+            let reports = TransferReports()
+            let dm = DownloadManager(volumesDirectory: dir, downloadTask: Self.held.task,
+                                     onStateChanged: { _ in }, preferences: scratchDefaults(),
+                                     onTransferFinished: { @MainActor id, outcome in reports.record(id, outcome) })
+            #expect(await dm.cancelAll() == 0)
+            try await Task.sleep(for: .milliseconds(100))
+            #expect(reports.reports.isEmpty)
+
+            try "<old/>".write(to: dm.volumeURL(for: "frus1900"), atomically: true, encoding: .utf8)
+            await dm.resumeQueuedDownloads()
+            #expect(await dm.enqueueDownload(catalogueEntry("frus1900"), force: true) == .queued)
+            #expect(await dm.cancelAll() == 1)
+            #expect(try String(contentsOf: dm.volumeURL(for: "frus1900"), encoding: .utf8) == "<old/>")
+        }
+    }
+
+    /// The three callers the issue names, read where they are: `resetLocalData` writes the app's own
+    /// defaults (`hasCompletedOnboarding`), so no unit test runs it in the test host. Reset This Device
+    /// and Erase Everything both go through it.
+    @Test("Reset stops every download before it deletes a file, and onboarding's Back from Ready stops them")
+    func theCallersCancelAll() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let reset = try String(contentsOf: app.appendingPathComponent("Settings/ResetService.swift"), encoding: .utf8)
+        let resetBody = try #require(Self.body(after: "static func resetLocalData(appState: AppState) async {", in: reset))
+        let cancel = try #require(resetBody.range(of: "await appState.downloadManager?.cancelAll()"),
+                                  "Reset no longer stops the downloads")
+        let sweep = try #require(resetBody.range(of: "FileManager.default.removeItem(at: file)"))
+        #expect(cancel.lowerBound < sweep.lowerBound, "Reset deletes volumes before it stops the downloads")
+
+        let onboarding = try String(contentsOf: app.appendingPathComponent("Onboarding/OnboardingView.swift"),
+                                    encoding: .utf8)
+        let ready = try #require(Self.body(after: "private var readyDock: some View {", in: onboarding))
+        #expect(ready.contains("plainButton(Self.backLabel) { backFromReady() }"),
+                "the Ready step's Back no longer goes through backFromReady()")
+        let back = try #require(Self.body(after: "private func backFromReady() {", in: onboarding))
+        #expect(back.contains("await dm.cancelAll()"), "Back from Ready no longer stops the downloads")
+    }
+
+    /// The text between `opening`, which ends in a `{`, and the brace that closes it.
+    private static func body(after opening: String, in source: String) -> String? {
+        guard let start = source.range(of: opening) else { return nil }
+        var depth = 0
+        var body = ""
+        for character in source[start.upperBound...] {
+            if character == "{" { depth += 1 }
+            if character == "}" {
+                if depth == 0 { return body }
+                depth -= 1
+            }
+            body.append(character)
+        }
+        return nil
+    }
+}

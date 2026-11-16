@@ -48,6 +48,7 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.5 — L20 (#1920, HCD-2): Back from Ready stops every download (`backFromReady()`)
 ///   4.4 — L20 (#1920, HCD-1): the Corpus caption gives the series' size on the device once
 ///         indexed, about 7 GB, measured (`captionCorpus(volumeCount:)`)
 ///   4.3 — #1759: the backdrop takes the splash's lens seed, and fades its cloud in when the
@@ -518,11 +519,24 @@ struct OnboardingView: View {
             },
             actions: {
                 HStack(spacing: 14) {
-                    plainButton(Self.backLabel) { if let prev = step.previous { step = prev } }
+                    plainButton(Self.backLabel) { backFromReady() }
                     primaryButton(step.continueLabel) { advance() }
                 }
             }
         )
+    }
+
+    /// Back from Ready (L20, #1920, HCD-2). Continue queued the chosen scope's downloads before it
+    /// showed this step, so Back stops every download as it returns to the choice: until L20 it only
+    /// changed the step, the whole series kept downloading behind it, and a Skip from there still read
+    /// "Your volumes will download…". It stops every download, as the plan and the issue have it, not
+    /// only Continue's: the one way into onboarding that keeps a queue from before it is Fix iCloud
+    /// Sync, which few readers take with downloads queued, and fewer then go Back from here.
+    private func backFromReady() {
+        if let dm = appState.downloadManager {
+            Task { await dm.cancelAll() }
+        }
+        if let prev = step.previous { step = prev }
     }
 
     // MARK: - Dock chrome

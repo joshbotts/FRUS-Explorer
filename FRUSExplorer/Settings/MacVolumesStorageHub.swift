@@ -62,6 +62,8 @@ import UniformTypeIdentifiers
 ///          them, and its VoiceOver name says "not yet fully indexed" (`.a11y.v2`)
 ///   1.2 — L20 (#1920, HCD-1): Storage & Index's footer and the Entire Corpus line give the index's size
 ///          measured again: about as much as the XML, not 2.8 times it
+///   1.3 — L20 (#1920, HCD-2): a queue line under the hero's buttons while anything is queued, with
+///          Cancel All, which asks first
 struct MacVolumesStorageHub: View {
 
     // MARK: - Batch tracking
@@ -149,6 +151,8 @@ struct MacVolumesStorageHub: View {
     @State private var reindexingInterruptedId: String? = nil
     /// Controls the "Rebuild From Scratch" confirmation alert.
     @State private var showRebuildConfirmation = false
+    /// Whether Cancel All's question is showing (L20, #1920, HCD-2).
+    @State private var showCancelAllConfirmation = false
 
     // MARK: - Sheets
 
@@ -263,6 +267,38 @@ struct MacVolumesStorageHub: View {
         }
     }
 
+    // MARK: - Queue line
+
+    /// While anything is queued, how many volumes are, and **Cancel All** (L20, #1920, HCD-2). Until
+    /// it the Mac had no way to stop a download: the status bar's "N downloads queued" does nothing
+    /// when clicked, and the hub listed none. A full Active Downloads list, with each volume's own
+    /// Cancel as iOS has, is after 1.0. Cancel All asks first, its question hung on the button.
+    private var queueLine: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityHidden(true)
+            Text(HubCopy.queueLine(appState.downloadQueue.count))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            Button(HubCopy.cancelAll, role: .destructive) {
+                showCancelAllConfirmation = true
+            }
+            .accessibilityIdentifier("settings.hub.active.cancelAll")
+            .confirmationDialog(HubCopy.cancelAllTitle(appState.downloadQueue.count),
+                                isPresented: $showCancelAllConfirmation,
+                                titleVisibility: .visible) {
+                Button(HubCopy.cancelAllConfirm, role: .destructive) {
+                    Task { await appState.downloadManager?.cancelAll() }
+                }
+                Button(HubCopy.cancelAllKeep, role: .cancel) {}
+            } message: {
+                Text(HubCopy.cancelAllMessage)
+            }
+        }
+    }
+
     // MARK: - Hero
 
     @ViewBuilder
@@ -324,6 +360,10 @@ struct MacVolumesStorageHub: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
+            }
+
+            if !appState.downloadQueue.isEmpty {
+                queueLine
             }
 
             if let outcome = sideloadOutcome {

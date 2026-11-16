@@ -52,6 +52,7 @@ import UniformTypeIdentifiers
 ///          while they run (`AppState.indexWorkInFlight`), so a run of the iOS background task waits for them
 ///   1.3 — L20 (#1920, HCD-1): Storage & Index's footer and the Entire Corpus line give the index's size
 ///          measured again: about as much as the XML, not 2.8 times it
+///   1.4 — L20 (#1920, HCD-2): Cancel All above Active Downloads' rows, which asks first
 struct VolumesStorageHubView: View {
 
     // MARK: - Batch tracking
@@ -139,6 +140,8 @@ struct VolumesStorageHubView: View {
     @State private var reindexingInterruptedId: String? = nil
     /// Controls the "Rebuild From Scratch" confirmation alert.
     @State private var showRebuildConfirmation = false
+    /// Whether Cancel All's question is showing (L20, #1920, HCD-2).
+    @State private var showCancelAllConfirmation = false
 
     // MARK: - Sheets
 
@@ -286,10 +289,32 @@ struct VolumesStorageHubView: View {
 
     // MARK: - Active Downloads
 
+    /// Every queued volume, each with its own Cancel, and above them, when there is more than one,
+    /// **Cancel All** (L20, #1920, HCD-2): until it, stopping the first run's default download took a
+    /// tap on each of 553 rows. It asks first, since one tap would otherwise drop the whole queue, and
+    /// its question hangs on the button, which iOS 27 points a popover at.
     @ViewBuilder
     private var activeDownloadsSection: some View {
         Section(String(localized: "settings.hub.active.header",
                        defaultValue: "Active Downloads")) {
+            if appState.downloadQueue.count > 1 {
+                Button(role: .destructive) {
+                    showCancelAllConfirmation = true
+                } label: {
+                    Label(HubCopy.cancelAll, systemImage: "xmark.circle")
+                }
+                .accessibilityIdentifier("settings.hub.active.cancelAll")
+                .confirmationDialog(HubCopy.cancelAllTitle(appState.downloadQueue.count),
+                                    isPresented: $showCancelAllConfirmation,
+                                    titleVisibility: .visible) {
+                    Button(HubCopy.cancelAllConfirm, role: .destructive) {
+                        Task { await appState.downloadManager?.cancelAll() }
+                    }
+                    Button(HubCopy.cancelAllKeep, role: .cancel) {}
+                } message: {
+                    Text(HubCopy.cancelAllMessage)
+                }
+            }
             ForEach(appState.downloadQueue, id: \.self) { volumeId in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {

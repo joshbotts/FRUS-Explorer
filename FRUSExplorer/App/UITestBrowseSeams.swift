@@ -93,6 +93,8 @@ import notify
 ///          tests of them failed on `v2`
 ///   1.4 — #1918 (L18, A11Y-2): a sixth seam, a search Search runs on the test's signal
 ///          (``searchesOnSignal``), so that VoiceOver can listen to a search no input the test synthesizes ran
+///   1.5 — #1920 (L20, HCD-2): downloads that wait or fail, with no network (``downloadSeam``), and a
+///          queue of volumes at launch (``downloadsToQueue``)
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -416,6 +418,94 @@ enum UITestBrowseSeams {
             appState.openSearch(SearchParameters(keywords: words), from: nil)
             print("[UITestBrowseSeams] Handed Search \"\(words)\"")
         }
+    }
+
+    // MARK: - 6. Downloads that wait, or fail (#1920, L20)
+
+    /// Launch key for the download seam: `hold` keeps every transfer waiting until it is cancelled;
+    /// `fail` fails every transfer, as with no connection, after ``failingAttemptDuration``, its
+    /// retries ``seamRetryBackoff`` apart. Either way nothing reaches the network.
+    ///
+    /// `DownloadCancelAllTests` holds a queue to cancel it; `VolumeDownloadFailureTests` fails a
+    /// download to read what the volume's page says. Before it, a UI test could neither keep a
+    /// download running nor make one fail: the app downloaded from GitHub.
+    static let downloadsKey = "FRUS_UI_TEST_DOWNLOADS"
+
+    /// What the download seam does with every transfer.
+    enum DownloadSeam: String {
+        /// Each transfer waits until it is cancelled.
+        case hold
+        /// Each transfer fails with `URLError(.notConnectedToInternet)`, after ``failingAttemptDuration``.
+        case fail
+    }
+
+    /// The armed download seam, or `nil` when it is not armed.
+    static var downloadSeam: DownloadSeam? {
+        ProcessInfo.processInfo.environment[downloadsKey].flatMap(DownloadSeam.init(rawValue:))
+    }
+
+    /// The wait before a failed transfer's retry under the seam, so a failure's retries are spent in
+    /// well under a second where the app's own wait is five seconds, then ten.
+    static let seamRetryBackoff: Duration = .milliseconds(200)
+
+    /// The transfer the seam puts where the network would be.
+    ///
+    /// - Parameter seam: The armed seam.
+    /// - Returns: A transfer that waits until cancelled, or one that fails.
+    static func transfer(for seam: DownloadSeam) -> DownloadManager.DownloadTask {
+        switch seam {
+        case .hold:
+            return { _ in
+                try await Task.sleep(for: .seconds(86_400))
+                throw URLError(.timedOut)
+            }
+        case .fail:
+            // Each attempt takes a moment before it fails, so that a test sees "Downloading…" on the
+            // volume's page before the failure, and so knows Retry queued the volume again.
+            return { _ in
+                try await Task.sleep(for: failingAttemptDuration)
+                throw URLError(.notConnectedToInternet)
+            }
+        }
+    }
+
+    /// How long each of `fail`'s attempts runs before it fails: three attempts, with the two retries'
+    /// waits, come to about five seconds.
+    static let failingAttemptDuration: Duration = .seconds(1.5)
+
+    /// The defaults the download manager keeps its queue in under the seam: a suite of the seam's
+    /// own, emptied at each launch that arms it. A queue a test leaves behind in the app's own
+    /// defaults would be downloaded from GitHub by the next launch without the seam, and every suite
+    /// after it would run beside those downloads.
+    ///
+    /// - Returns: The emptied suite.
+    static func seamPreferences() -> UserDefaults {
+        let name = "bottsywattsy.FRUS-Explorer.uitest.downloads"
+        UserDefaults.standard.removePersistentDomain(forName: name)
+        return UserDefaults(suiteName: name) ?? .standard
+    }
+
+    /// Launch key: how many catalogue volumes not on the device to queue once the download manager
+    /// is up, in the bundled manifest's order. With `hold`, the queue then stays as it is.
+    static let queueDownloadsKey = "FRUS_UI_TEST_QUEUE_DOWNLOADS"
+
+    /// How many volumes to queue, or `nil` when the key is absent or not a positive number.
+    static var downloadsToQueue: Int? {
+        ProcessInfo.processInfo.environment[queueDownloadsKey].flatMap(Int.init).flatMap { $0 > 0 ? $0 : nil }
+    }
+
+    /// Queues `count` catalogue volumes that are not on the device.
+    ///
+    /// - Parameters:
+    ///   - count: How many to queue.
+    ///   - entries: The catalogue, in the bundled manifest's order.
+    ///   - manager: The app's download manager.
+    static func queueDownloads(_ count: Int, of entries: [VolumeManifestEntry], in manager: DownloadManager) async {
+        var queued = 0
+        for entry in entries where queued < count && !manager.isVolumeDownloaded(entry.volumeId) {
+            if await manager.enqueueDownload(entry) == .queued { queued += 1 }
+        }
+        print("[UITestBrowseSeams] Queued \(queued) downloads")
     }
 }
 

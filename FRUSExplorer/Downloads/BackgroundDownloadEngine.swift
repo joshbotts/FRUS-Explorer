@@ -45,6 +45,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-09: initial implementation (Phase 3c download hardening)
+///   1.1 — L20 (#1920, HCD-2): `cancelAllDownloads()`, for `DownloadManager.cancelAll()`
 final class BackgroundDownloadEngine: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
 
     // MARK: - Shared Instance
@@ -134,6 +135,18 @@ final class BackgroundDownloadEngine: NSObject, URLSessionDownloadDelegate, @unc
     func cancelDownload(volumeId: String) {
         session.getAllTasks { tasks in
             for task in tasks where task.taskDescription == volumeId {
+                task.cancel()
+            }
+        }
+    }
+
+    /// Cancels every transfer registered with the session (L20, #1920, HCD-2): those this process
+    /// started, and those the background daemon kept from an earlier process, which
+    /// `DownloadManager` adopts only once the device is online. The session carries volume
+    /// downloads alone; figure images and match files are fetched on sessions of their own.
+    func cancelAllDownloads() {
+        session.getAllTasks { tasks in
+            for task in tasks {
                 task.cancel()
             }
         }
