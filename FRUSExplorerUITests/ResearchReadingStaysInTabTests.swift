@@ -1521,6 +1521,182 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
     }
 }
 
+// MARK: - RailAtCompactWidthTests
+
+/// On an iPad at compact width the reader's rail is the iPhone's tap-to-open sheet, and closing it leaves the rail on
+/// for the next document read at full width (L19, #1919, IPA-6).
+///
+/// A document opened from Project Home reads inside a form sheet, which reports a compact width. Before L19 the rail's
+/// `.inspector` there showed nothing with its toggle on; toggled off and on it came up as a sheet of its own over the
+/// document, and that sheet's closing wrote the stored rail setting off, so the next document opened at full width had
+/// no rail (the check of 2026-11-16, iPad Pro 13-inch (M5), iOS 27.0).
+///
+/// ## What the test drives
+/// It opens the seeded note's document from Research at full width and turns the rail on there if it is off, so that
+/// the stored setting is on: the setting is read as stored, never pinned by a launch argument, since an argument-domain
+/// default cannot be overwritten and would hide the very write this guards against. Then Project Home ▸ Recently Read
+/// opens the same document in the form sheet, where no rail may show; a tap on the toggle must open the rail as a sheet,
+/// with its tiles; a swipe closes it. Back at full width the document must show its rail column again. Whether the
+/// toggle reads on is not asked: on the code before L19 XCUI reported it unselected while it was drawn on, in the run's
+/// own screenshot (iPad Pro 13-inch (M5), iOS 27.0).
+///
+/// ## Running it
+/// iPad only (an iPhone skips): name `FRUSExplorerUITests/RailAtCompactWidthTests` and run it on iPad Pro 13-inch (M5),
+/// `OS=27.0`, allowing 600 s. On the code before L19 it fails at that tap, which there turned the stored setting off and
+/// opened nothing.
+///
+/// Version history:
+///   1.0 — L19 (#1919, IPA-6): initial implementation
+@MainActor
+final class RailAtCompactWidthTests: XCTestCase {
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestProjectSeeder.projectIdString`.
+    private static let projectId = "14570000-B4B4-4B4B-8B4B-000000001457"
+    /// The fixture's first document.
+    private static let documentTitle = "UI Test Document One"
+    private static let patience: TimeInterval = 30
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        // The reading mode as the reader leaves it, so that a document's open writes no rail setting of its own.
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research, activeProjectId: Self.projectId)
+            + ["-frus.reading.defaultMode", "rememberLast"]
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    func testARailClosedInProjectHomesSheetLeavesTheColumnOn() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's rail is always a sheet")
+
+        // Full width: the seeded note's document, with its rail column on.
+        openTheSeededDocumentFromResearch()
+        if !railTiles.waitForExistence(timeout: 5) { try toggleRail() }
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience),
+                      "The rail column did not show at full width, so the stored setting is not on")
+        attachScreenshot("Full width, rail on")
+        goBackToTheResearchRoot()
+
+        // Compact width: the same document in Project Home's form sheet.
+        let home = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Project Home")).firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: Self.patience), "Research shows no Project Home row")
+        home.tap()
+        let visit = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", Self.documentTitle)).firstMatch
+        let found = scrollUntilHittable(visit)
+        XCTAssertTrue(found, "Project Home's Recently Read does not list \(Self.documentTitle)")
+        visit.tap()
+        let toggle = app.buttons["researchRailToggle"].firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: Self.patience), "The document in Project Home has no rail toggle")
+        Thread.sleep(forTimeInterval: 2)
+        attachScreenshot("Project Home's sheet, as it opens")
+        // The toggle's state is not read: XCUI's `isSelected` was false on the code before L19 while the toggle was drawn
+        // on, so it cannot tell on from off here. The tap below is the guard; there it turned the setting off.
+        XCTAssertFalse(railTiles.exists, "The rail opened by itself at compact width")
+
+        toggle.tap()
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), "The toggle opened no rail at compact width")
+        attachScreenshot("Project Home's sheet, rail sheet up")
+        // Closed by a swipe on the rail's own header.
+        let header = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Research")).firstMatch
+        let grip = header.exists ? header : railTiles
+        let start = grip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 700)),
+                    withVelocity: .fast, thenHoldForDuration: 0)
+        XCTAssertTrue(railTiles.waitForNonExistence(timeout: Self.patience), "A swipe did not close the rail's sheet")
+
+        // Back out of Project Home and read the document at full width again.
+        let back = app.buttons["BackButton"].firstMatch
+        if back.waitForExistence(timeout: 5) { back.tap() }
+        UITestPresentation.dismissAnyPresentation(in: app)
+        openTheSeededDocumentFromResearch()
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+            At full width the document opened with no rail column: closing the rail at compact width turned the \
+            stored setting off.
+            """)
+        attachScreenshot("Full width again")
+    }
+
+    // MARK: - Steps
+
+    /// The rail's Cite tile, which shows wherever the rail does.
+    private var railTiles: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Cite")).firstMatch
+    }
+
+    /// Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's first document.
+    private func openTheSeededDocumentFromResearch() {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let category = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: Self.patience), "no All Research Documents row")
+        category.tap()
+        let seeded = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: Self.patience), "the seeded note is not listed")
+        seeded.tap()
+        XCTAssertTrue(app.navigationBars[Self.documentTitle].waitForExistence(timeout: Self.patience),
+                      "the seeded row did not open the fixture's first document")
+    }
+
+    /// Back to Research's root, where Project Home is.
+    private func goBackToTheResearchRoot() {
+        var backs = 0
+        let back = app.buttons["BackButton"].firstMatch
+        while back.exists && backs < 4 {
+            back.tap()
+            backs += 1
+            Thread.sleep(forTimeInterval: 1)
+        }
+    }
+
+    /// Turns the rail on from its toggle, in the toolbar or in its overflow menu.
+    private func toggleRail() throws {
+        let toggle = app.buttons["researchRailToggle"].firstMatch
+        if toggle.exists && toggle.isHittable {
+            toggle.tap()
+            return
+        }
+        let more = app.navigationBars.buttons["More"].firstMatch
+        XCTAssertTrue(more.waitForExistence(timeout: Self.patience), "The reader's toolbar has no rail toggle or overflow")
+        more.tap()
+        let item = app.buttons["Research panel"].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: Self.patience), "The toolbar's overflow has no Research panel")
+        item.tap()
+    }
+
+    /// Scrolls the frontmost scroll view up until `element` is hittable, eight times at most.
+    private func scrollUntilHittable(_ element: XCUIElement) -> Bool {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return true }
+            let window = app.windows.firstMatch
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+                .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4)))
+            Thread.sleep(forTimeInterval: 0.75)
+        }
+        return element.exists && element.isHittable
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
 // MARK: - AddToCollectionAnnouncementTests
 
 /// Add to Collection says what it did to VoiceOver: "Added to “UI Test Unattached Collection”" (L19, #1919, A11Y-3).
