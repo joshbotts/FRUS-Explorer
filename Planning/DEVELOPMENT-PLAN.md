@@ -11494,3 +11494,5 @@ FRUS Explorer Light's follow-up for a finding of S22e's cold review, Mac check 3
 - The copy was quit and its preferences put back from the same export (157 keys set and read back, none differing), so its installed version reads 74 again over an index at 75: its next launch of a build at 75 re-indexes once more.
 
 **Not done.** The record's other use, the Mac's corrections check reading the hash from the index instead of its preferences cache (the issue's "second use"), is not built. No running iOS app was checked: the Sources outline is shared, and its button on iOS is held by the unit test of the app's target alone. The hand-over notes for FRUS Explorer Light are filed after the merge, as each issue says.
+
+**Opened as #1948** on the owner's word of 2026-11-17 ("Open the PR"), after the walk, against `v2` at `b05b8a67`, which had not moved since the row began, so nothing was merged in. `CodingStandardsAuditTests`, `EditableContentKeyTests` and `UnconstructedViewAuditTests` passed again on the final docs, the walk's record included (87 tests in 3 suites). Ready for review, Auto-fix on, auto-merge off. Its merge is the next row's to record.
