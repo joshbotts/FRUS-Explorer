@@ -19,8 +19,9 @@ import Foundation
 /// collections, user-created prompts, projects, and the research trail — suitable
 /// for backup or as an exit ramp from the app.
 ///
-/// `formatVersion` exists so a future importer can detect and migrate older
-/// exports. Import itself is out of scope for Session 154.
+/// `formatVersion` says what a file can carry: Import from JSON's rules, `ResearchImportPlan`
+/// (#1915), read it to know which fields an older file could not say, and leave those as the
+/// library has them. (Import itself was out of scope for Session 154.)
 ///
 /// ## Why the trail is in here (Wave R-5)
 /// Through format version 2 this envelope carried no history at all: every document the user had
@@ -1390,9 +1391,11 @@ public struct SyncedPreferencesExport: Codable, Equatable, Sendable {
 extension ResearchDataEnvelope {
 
     /// Current `ResearchDataEnvelope.formatVersion`. Bump when making a breaking
-    /// change to the export schema; a future importer can branch on this value.
+    /// change to the export schema; the importer branches on this value.
     ///
-    /// (No importer exists yet. Every reader is nonetheless kept working in both directions: the
+    /// (`ResearchImportPlan` (#1915) reads it to know what a file could carry, and a bump owes its
+    /// `Fields` a case for each field the new version adds to a type an earlier one carried, and
+    /// its `ModelType` the version of each new type. Every reader is kept working in both directions: the
     /// Phase-4 header fields are optional and the Wave R-5 trail arrays default to empty, so a
     /// v1 or v2 file still decodes here — and a v3 file read by something that ignores the three
     /// new keys is unaffected. The bump to 3 is what lets such a reader tell "this file predates
