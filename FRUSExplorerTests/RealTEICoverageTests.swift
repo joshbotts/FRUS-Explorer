@@ -220,7 +220,9 @@ struct RealTEICoverageTests {
 /// children, and the audit §2.3 `POL 27 ARAB–ISR` class leaf — its Central Files
 /// 1967–69 outline cites it and 100+ of its documents carry it). The audit measured
 /// 14.5% of front-matter items keyed corpus-wide before Phase 3; these two volumes
-/// key ~59% after it, asserted with margin at ≥50%.
+/// key ~59% after it, asserted with margin at ≥50%. Since #1929 a row naming a CIA job
+/// reads back with it and keys through the job path, which the walk names first, as the
+/// matcher ranks it, and passes to the matcher.
 @Suite("Volume sources — real-TEI keying & match paths (Phase 3)",
        .enabled(if: RealTEICorpus.hasVolumes(["frus1961-63v17", "frus1964-68v20"]),
                 "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
@@ -244,8 +246,10 @@ struct RealTEIVolumeSourcesTests {
                 where entry.kind == .item {
                     items += 1
                     guard let t = VolumeSourcesView.makeNeighborsTarget(for: entry, volumeId: v) else { continue }
+                    // In `IndexingPipeline.neighborCountKey`'s order, the job first (#808, #1929).
                     let path: String
-                    if t.lotFile != nil { path = "lot" }
+                    if t.jobNumber != nil { path = "job" }
+                    else if t.lotFile != nil { path = "lot" }
                     else if t.decimalClass != nil { path = "class" }
                     else if t.repository != nil { path = "library" }
                     else { path = "rg+series" }
@@ -255,7 +259,7 @@ struct RealTEIVolumeSourcesTests {
                         let r = try await pipeline.archivalNeighbors(
                             forLotFile: t.lotFile, recordGroup: t.recordGroup,
                             series: t.series, repository: t.repository,
-                            decimalClass: t.decimalClass, limit: 1)
+                            decimalClass: t.decimalClass, jobNumber: t.jobNumber, limit: 1)
                         if r.totalCount > 0 { firstResolution[path] = r.totalCount }
                     }
                 }
@@ -272,6 +276,10 @@ struct RealTEIVolumeSourcesTests {
                 #expect(firstResolution[path] != nil,
                         "at least one \(path)-keyed item must resolve neighbors")
             }
+            // #1929: `frus1964-68v20`'s Sources name three CIA jobs, which read back from the index
+            // with their numbers and so key their rows. None resolves here: the documents citing
+            // them are in other volumes.
+            #expect(keyedByPath["job"] == 3, "the job path must key frus1964-68v20's three job rows")
 
             // The audit §2.3 known class leaf, queried in its TEI en-dash form, must
             // bridge to the hyphen form document notes store and resolve.

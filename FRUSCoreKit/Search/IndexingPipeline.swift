@@ -557,6 +557,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         bytes its store pass parsed and their length (`file_blob_sha1`, `file_size_bytes`), which the
 ///         pass reads once, hashes and parses (``IndexedVolumeFile``, ``indexedVolumeFiles()``,
 ///         ``indexedVolumeFile(forVolumeId:)``; see the v75 note)
+///  4.63 — 2026-11-17 (#1929): `volumeSources(forVolumeId:)` reads `job_number` and `job_number_norm`,
+///         written since #733, so a Sources row naming a CIA job reads back with its job and gets its
+///         Archival Neighbors target; nothing the indexer stores changes, so no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -4061,11 +4064,14 @@ public actor IndexingPipeline {
     /// Results are ordered by `sort_order` (insertion order from the TEI source list).
     /// Returns an empty array if the volume has not been indexed or has no sources list.
     ///
-    /// Used by `VolumeSourcesView` to display the front-matter sources section.
+    /// Used by `VolumeSourcesView` to display the front-matter sources section. Each entry carries
+    /// every key the store pass wrote, the CIA job's among them (#1929): the outline makes a row's
+    /// Archival Neighbors target from them, and a job read back as `nil` left a row whose only key
+    /// is its job with no button.
     public func volumeSources(forVolumeId volumeId: String) throws -> [VolumeSourceEntry] {
         let sql = """
             SELECT repository, record_group, lot_file, series_name, entry_text, kind, depth, is_heading,
-                   lot_file_norm, decimal_class, note
+                   lot_file_norm, decimal_class, note, job_number, job_number_norm
             FROM volume_sources
             WHERE volume_id = ?
             ORDER BY sort_order
@@ -4085,6 +4091,8 @@ public actor IndexingPipeline {
                 lotFileNorm:  auxColumnString(stmt, 8),
                 seriesName:   auxColumnString(stmt, 3),
                 decimalClass: auxColumnString(stmt, 9),
+                jobNumber:    auxColumnString(stmt, 11),
+                jobNumberNorm: auxColumnString(stmt, 12),
                 rawText:      auxColumnString(stmt, 4) ?? "",
                 note:         auxColumnString(stmt, 10)
             ))
