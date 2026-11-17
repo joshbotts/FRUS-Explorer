@@ -86,6 +86,8 @@ import SwiftData
 ///          going with the full width, and the grid's six tiles take the owner's order: All Volumes and
 ///          Administrations, Editors and Annotations, Archives and Clusters
 ///   2.10 — 2026-11-15: #1905 (L15) — the root's row is *Subjects*, with its VoiceOver label and tooltip
+///   2.11 — L21 (UI review A11Y-5, #1921): each "Browse by" tile is handed its VoiceOver label as
+///          `spokenLabel`, and the tile gives Voice Control its visible word as a name as well
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -377,6 +379,8 @@ struct CorpusView: View {
                     title: String(localized: "browser.corpus.tile.subseries", defaultValue: "Subseries"),
                     caption: subseriesTileCaption,
                     systemImage: "books.vertical",
+                    spokenLabel: String(localized: "browser.corpus.tile.subseries.a11y",
+                                        defaultValue: "Browse by subseries"),
                     accessibilityIdentifier: "browse.root.subseriesTile",
                     isOpen: isOpen(.subseriesIndex)
                 ) {
@@ -385,10 +389,6 @@ struct CorpusView: View {
                     print("[BrowserView] Navigate → subseries directory")
                     #endif
                 }
-                .accessibilityLabel(
-                    String(localized: "browser.corpus.tile.subseries.a11y",
-                           defaultValue: "Browse by subseries")
-                )
                 .help(String(localized: "browser.corpus.tile.subseries.help",
                              defaultValue: "Browse the series era by era — every subseries with its volumes"))
 
@@ -398,6 +398,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.catalogue",
                                       defaultValue: "All Volumes"),
                         systemImage: "line.3.horizontal.decrease.circle",
+                        spokenLabel: String(localized: "browser.corpus.tile.catalogue.a11y",
+                                            defaultValue: "Browse all volumes"),
                         accessibilityIdentifier: "browse.root.catalogueTile",
                         isOpen: isOpen(.catalogue)
                     ) {
@@ -406,10 +408,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → All Volumes catalogue")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.catalogue.a11y",
-                               defaultValue: "Browse all volumes")
-                    )
                     .help(String(localized: "browser.corpus.tile.catalogue.help",
                                  defaultValue: "One catalogue of every volume — search it, or arrange it by title, publication year, era, or length"))
 
@@ -417,6 +415,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.administrations",
                                       defaultValue: "Administrations"),
                         systemImage: "building.columns",
+                        spokenLabel: String(localized: "browser.corpus.tile.administrations.a11y",
+                                            defaultValue: "Browse by administration"),
                         accessibilityIdentifier: "browse.root.administrationsTile",
                         isOpen: isOpen(.administrations)
                     ) {
@@ -425,10 +425,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → administrations index")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.administrations.a11y",
-                               defaultValue: "Browse by administration")
-                    )
                     .help(String(localized: "browser.corpus.tile.administrations.help",
                                  defaultValue: "Volumes filed by the presidency their documents cover"))
 
@@ -436,6 +432,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.editors",
                                       defaultValue: "Editors"),
                         systemImage: "person.text.rectangle",
+                        spokenLabel: String(localized: "browser.corpus.tile.editors.a11y",
+                                            defaultValue: "Browse by editor"),
                         accessibilityIdentifier: "browse.root.editorsTile",
                         isOpen: isOpen(.editors)
                     ) {
@@ -444,10 +442,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → editors index")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.editors.a11y",
-                               defaultValue: "Browse by editor")
-                    )
                     .help(String(localized: "browser.corpus.tile.editors.help",
                                  defaultValue: "Volumes filed by the editors named on their title pages"))
 
@@ -461,6 +455,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.annotations",
                                       defaultValue: "Annotations"),
                         systemImage: "pencil.line",
+                        spokenLabel: String(localized: "browser.corpus.tile.annotations.a11y",
+                                            defaultValue: "Browse by editors' annotations"),
                         accessibilityIdentifier: "browse.root.annotationsTile",
                         isOpen: isOpen(.annotations)
                     ) {
@@ -469,10 +465,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → editors' annotations axis")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.annotations.a11y",
-                               defaultValue: "Browse by editors' annotations")
-                    )
                     .help(String(localized: "browser.corpus.tile.annotations.help",
                                  defaultValue: "Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
 
@@ -480,6 +472,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.archives",
                                       defaultValue: "Archives"),
                         systemImage: "archivebox",
+                        spokenLabel: String(localized: "browser.corpus.tile.archives.a11y",
+                                            defaultValue: "Browse by archival provenance"),
                         accessibilityIdentifier: "browse.root.archivesTile",
                         isOpen: isOpen(.archives)
                     ) {
@@ -488,10 +482,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → archives axis")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.archives.a11y",
-                               defaultValue: "Browse by archival provenance")
-                    )
                     .help(String(localized: "browser.corpus.tile.archives.help",
                                  defaultValue: "Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on"))
 
@@ -499,6 +489,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.clusters",
                                       defaultValue: "Clusters"),
                         systemImage: SemanticGlyph.clusters,
+                        spokenLabel: String(localized: "browser.corpus.tile.clusters.a11y",
+                                            defaultValue: "Browse by semantic cluster"),
                         accessibilityIdentifier: "browse.root.clustersTile",
                         isOpen: isOpen(.clusters)
                     ) {
@@ -507,10 +499,6 @@ struct CorpusView: View {
                         print("[BrowserView] Navigate → clusters axis")
                         #endif
                     }
-                    .accessibilityLabel(
-                        String(localized: "browser.corpus.tile.clusters.a11y",
-                               defaultValue: "Browse by semantic cluster")
-                    )
                     .help(String(localized: "browser.corpus.tile.clusters.help",
                                  defaultValue: "Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings"))
                 }
@@ -779,10 +767,10 @@ extension View {
 /// primacy (the trade Q-9 signed off). The action assigns the path via `vm.select` at the
 /// call site — root doors assign, never append.
 ///
-/// The caption is also the button's accessibility VALUE. Its call site overrides the label
-/// ("Browse by subseries"), and a label override replaces the children VoiceOver would otherwise
-/// read, so without the value the caption — and with it the "Browsing within" filter it reports —
-/// was on screen and silent.
+/// The caption is also the button's accessibility VALUE. The tile's label is its `spokenLabel`
+/// ("Browse by subseries"), and a label replaces the children VoiceOver would otherwise read, so
+/// without the value the caption — and with it the "Browsing within" filter it reports — was on
+/// screen and silent.
 ///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
@@ -791,10 +779,15 @@ extension View {
 ///   1.2 — #1364: the caption is the accessibility value
 ///   1.3 — #1431: `isOpen` paints the card with `BrowseOpenDoor.fill` and announces `.isSelected`
 ///          while the tile's level is open in the iPad two-pane's detail
+///   1.4 — L21 (UI review A11Y-5, #1921): `spokenLabel`, which the tile sets as its label with its
+///          title and that label as its input labels (`BrowseTileInputLabels`)
 struct BrowseAxisTile: View {
     let title: String
     let caption: String
     let systemImage: String
+    /// What VoiceOver says for the tile ("Browse by subseries"). Voice Control takes it as the
+    /// tile's second name, after the title it shows (`BrowseTileInputLabels`).
+    let spokenLabel: String
     var accessibilityIdentifier: String? = nil
     /// Whether the tile's level is the one open beside it in the iPad two-pane (#1431) — the card
     /// takes `BrowseOpenDoor.fill` and the button announces `.isSelected`. `false` everywhere else.
@@ -833,6 +826,8 @@ struct BrowseAxisTile: View {
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(spokenLabel)
+        .accessibilityInputLabels(BrowseTileInputLabels.names(title: title, spokenLabel: spokenLabel))
         .accessibilityValue(caption)
         .accessibilityAddTraits(isOpen ? .isSelected : [])
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
@@ -847,9 +842,13 @@ struct BrowseAxisTile: View {
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
 ///   1.1 — #1431: `isOpen`, as on `BrowseAxisTile`
+///   1.2 — L21 (UI review A11Y-5, #1921): `spokenLabel`, as on `BrowseAxisTile`
 struct BrowseAxisGridTile: View {
     let title: String
     let systemImage: String
+    /// What VoiceOver says for the tile ("Browse by archival provenance"). Voice Control takes it
+    /// as the tile's second name, after the title it shows (`BrowseTileInputLabels`).
+    let spokenLabel: String
     var accessibilityIdentifier: String? = nil
     /// Whether the tile's level is the one open beside it in the iPad two-pane (#1431) — the card
     /// takes `BrowseOpenDoor.fill` and the button announces `.isSelected`. `false` everywhere else.
@@ -880,8 +879,35 @@ struct BrowseAxisGridTile: View {
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(spokenLabel)
+        .accessibilityInputLabels(BrowseTileInputLabels.names(title: title, spokenLabel: spokenLabel))
         .accessibilityAddTraits(isOpen ? .isSelected : [])
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
+    }
+}
+
+// MARK: - BrowseTileInputLabels
+
+/// The names Voice Control and Full Keyboard Access know a Browse tile by (L21, UI review A11Y-5,
+/// #1921): the word on the tile, then what VoiceOver says.
+///
+/// A control's input labels default to its accessibility label, and four of the seven tiles' labels
+/// do not hold the word the tile shows: Administrations ("Browse by administration"), Editors
+/// ("Browse by editor"), Archives ("Browse by archival provenance") and Clusters ("Browse by
+/// semantic cluster"). So a reader who said "Tap Archives", the word on the screen, was answered
+/// with nothing (WCAG 2.5.3, Label in Name, Level A). The rule `ArchivesArrangementControls`' Sort
+/// menu already follows. The title comes first because Voice Control's *Show Names* draws the first
+/// input label; the spoken label stays a name, so "Tap Browse by archival provenance" still works.
+enum BrowseTileInputLabels {
+
+    /// The tile's input labels.
+    ///
+    /// - Parameters:
+    ///   - title: The word on the tile.
+    ///   - spokenLabel: What VoiceOver says for it.
+    /// - Returns: The title, then the spoken label when it differs.
+    static func names(title: String, spokenLabel: String) -> [String] {
+        spokenLabel == title ? [title] : [title, spokenLabel]
     }
 }
 
