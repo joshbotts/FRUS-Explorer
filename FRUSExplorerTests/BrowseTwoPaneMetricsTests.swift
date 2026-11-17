@@ -860,3 +860,61 @@ private struct SwiftSourceScan {
         return index
     }
 }
+
+// MARK: - BrowseTileVoiceControlTests
+
+/// Voice Control names each "Browse by" tile by the word on it (L21, UI review A11Y-5, #1921).
+///
+/// A control's input labels, the names Voice Control and Full Keyboard Access know it by, default to
+/// its accessibility label. Four of the seven tiles' labels lack the word the tile shows:
+/// Administrations ("Browse by administration"), Editors ("Browse by editor"), Archives ("Browse by
+/// archival provenance") and Clusters ("Browse by semantic cluster"), so "Tap Archives" was answered
+/// with nothing (WCAG 2.5.3, Label in Name). Each tile now owns its label (`spokenLabel`) and gives
+/// its title and that label as its input labels, so a tile added later takes the rule with its
+/// type. The scan reads the source; whether Voice Control hears it is a device's check, in the row's
+/// record.
+///
+/// Version history:
+///   1.0 — L21 (A11Y-5): initial implementation
+@Suite("Browse root — the tiles' names under Voice Control (A11Y-5)")
+struct BrowseTileVoiceControlTests {
+
+    private static let corpusView = "FRUSExplorer/Browser/CorpusView.swift"
+
+    @Test("a tile's input labels are its title, then what VoiceOver says")
+    func inputLabelsLeadWithTheTitle() {
+        #expect(BrowseTileInputLabels.names(title: "Archives", spokenLabel: "Browse by archival provenance")
+                == ["Archives", "Browse by archival provenance"])
+        #expect(BrowseTileInputLabels.names(title: "Editors", spokenLabel: "Browse by editor")
+                == ["Editors", "Browse by editor"])
+        // A label that is the title says it once.
+        #expect(BrowseTileInputLabels.names(title: "Subseries", spokenLabel: "Subseries") == ["Subseries"])
+    }
+
+    @Test("both tile types set their own label and give the title to Voice Control (A11Y-5)")
+    func tileTypesCarryInputLabels() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let scan = SwiftSourceScan(try String(contentsOf: root.appending(path: Self.corpusView), encoding: .utf8))
+        for tile in ["BrowseAxisTile", "BrowseAxisGridTile"] {
+            let body = try #require(scan.typeBody(named: tile), "\(Self.corpusView): no `\(tile)`")
+            let button = try #require(SwiftSourceScan(body).elements(named: ["Button"]).first, "\(tile) draws no button")
+            #expect(button.chain.contains(".accessibilityLabel(spokenLabel)"),
+                    "\(tile) does not set its own spoken label. Chain: \(button.chain)")
+            #expect(button.chain.contains(
+                ".accessibilityInputLabels(BrowseTileInputLabels.names(title: title, spokenLabel: spokenLabel))"),
+                    "\(tile) gives Voice Control no name but its spoken label, so \"Tap\" and the word it shows does nothing. Chain: \(button.chain)")
+        }
+
+        // Every tile on the root is handed its label, and none overrides it from outside.
+        let tiles = scan.elements(named: ["BrowseAxisTile", "BrowseAxisGridTile"])
+            .filter { !$0.arguments.isEmpty }
+        #expect(tiles.count == 7, "the root draws \(tiles.count) Browse-by tiles, not the seven the review counted")
+        for tile in tiles {
+            let line = scan.line(of: tile.range.lowerBound)
+            #expect(tile.arguments.contains("spokenLabel:"),
+                    "\(Self.corpusView):\(line) \(tile.name) is not handed its spoken label")
+            #expect(!tile.chain.contains(".accessibilityLabel("),
+                    "\(Self.corpusView):\(line) \(tile.name)'s label is set from outside the tile again: \(tile.chain)")
+        }
+    }
+}

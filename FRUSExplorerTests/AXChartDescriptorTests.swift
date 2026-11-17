@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SwiftUI
 @testable import FRUSExplorer
 
 // MARK: - AXChartNumericParsingTests
@@ -1133,3 +1134,56 @@ struct CategoricalAudioGraphPointTests {
     }
 }
 #endif
+
+// MARK: - CompareLinePatternTests
+
+/// Corpus Analytics' comparison tells its lines apart by a pattern as well as a colour (L21, UI
+/// review IPS-3, #1921).
+///
+/// Before L21 the comparison's `LineMark`s took `.foregroundStyle(by:)` and nothing else, so up to
+/// five terms were drawn blue, orange, green, purple and pink, with the table off while comparing
+/// (HIG `charts.md`: "Avoid relying solely on color to differentiate between different pieces of
+/// data"; WCAG 1.4.1). The patterns are a rule here; the source gate holds both comparison charts
+/// to drawing them by term, on every platform, the export's figure included, since each of those
+/// draws through the same two functions.
+///
+/// Version history:
+///   1.0 — L21 (IPS-3): initial implementation
+@Suite("Corpus Analytics' comparison lines (IPS-3)")
+struct CompareLinePatternTests {
+
+    @Test("five patterns, the first solid, no two alike, and wrapping past the fifth")
+    func fivePatternsNoTwoAlike() {
+        let patterns = ChartSeriesPalette.linePatterns
+        #expect(patterns.count == 5, "one pattern for each of the comparison's five terms")
+        #expect(patterns.first?.dash.isEmpty == true, "the first term's line is solid, as before L21")
+        #expect(Set(patterns.map(\.dash)).count == patterns.count, "two terms would share a pattern: \(patterns.map(\.dash))")
+        #expect(patterns.allSatisfy { $0.lineWidth == 2 }, "every line keeps Swift Charts' default width")
+        #expect(ChartSeriesPalette.linePattern(at: 5) == patterns[0])
+        #expect(ChartSeriesPalette.linePattern(at: 3) == patterns[3])
+    }
+
+    /// Both comparison charts give each line a pattern keyed by the value its colour is keyed by,
+    /// and a scale in the chips' order.
+    @Test("both comparison charts draw each term's line with its own pattern (IPS-3)")
+    func compareChartsDrawPatterns() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let code = NaturalLanguageReadinessScanTests.code(try String(
+            contentsOf: root.appending(path: "FRUSExplorer/Analytics/AnalyticsView.swift"), encoding: .utf8))
+        let flat = { (text: Substring) in text.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+        let byTerm = #".value( String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term)"#
+        for chart in ["private func compareIntChart(", "private func compareDateChart("] {
+            let start = try #require(code.range(of: chart), "AnalyticsView has no \(chart)")
+            let body = flat(code[try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: start.upperBound))])
+            #expect(body.contains(".foregroundStyle(by: \(byTerm)) .lineStyle(by: \(byTerm))"),
+                    "\(chart) draws its lines by colour alone: \(body.prefix(500))")
+            #expect(body.contains(".chartLineStyleScale(domain: compareLineStyleScale.domain, range: compareLineStyleScale.range)"),
+                    "\(chart) gives its lines no pattern scale, so a term's pattern follows Swift Charts' order")
+        }
+        let scale = try #require(code.range(of: "private var compareLineStyleScale: (domain: [String], range: [StrokeStyle])"),
+                                 "AnalyticsView has no compareLineStyleScale")
+        let scaleBody = flat(code[try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: scale.upperBound))])
+        #expect(scaleBody == "(committedTerms, committedTerms.indices.map { ChartSeriesPalette.linePattern(at: $0) })",
+                "the pattern scale is not the committed terms in chip order: \(scaleBody)")
+    }
+}

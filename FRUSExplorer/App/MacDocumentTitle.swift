@@ -45,14 +45,56 @@ import Foundation
 ///
 /// **A window too narrow for the whole label can still cut the tag.** `principalLabel` puts
 /// `" · Doc N"` after it, so the tag sits in the middle of "Topic · tag · Doc N", and
-/// `MacDocumentView` renders the centre item with `.truncationMode(.middle)`, which elides the
-/// middle of the string. Nothing has measured how often a real window is that narrow.
+/// `MacDocumentPrincipalTitle` renders the centre item with `.truncationMode(.middle)`, which elides
+/// the middle of the string. Nothing has measured how often a real window is that narrow.
+///
+/// ## Both document windows, since L21
+/// Until L21 (UI review MAC-1, #1921) only the standalone window used this type. The main window
+/// set no title, so the Window menu listed every main window as "FRUS Explorer", and its centre
+/// showed the raw id this type was written to replace. Both windows now take their title from
+/// ``windowTitle(header:documentId:)`` and draw their centre through `MacDocumentPrincipalTitle`,
+/// so the two cannot drift apart again.
 ///
 /// Version history:
 ///   1.0 — CW-10 (UI review M-8)
 ///   1.1 — #1491 review round 1: a document the volume prints without a number reads "… ·
 ///          Unnumbered (d710a-1)", where it read "… · Doc [Unnumbered document following …]"
+///   1.2 — L21 (MAC-1): ``windowTitle(header:documentId:)``, the title both document windows set,
+///          and ``principalNumber(stored:documentId:)``, the number the centre names
 enum MacDocumentTitle {
+
+    /// A document window's title: the document's printed head, or its id when it has none.
+    ///
+    /// The title is what the Window menu, Mission Control and the window's own title bar show,
+    /// so it names the document as the volume prints it. The volume and the document's number
+    /// are the centre's (``principalLabel(volumeLabel:documentNumber:documentId:)``).
+    ///
+    /// - Parameters:
+    ///   - header: The entry's head, as the producer that opened the document passed it.
+    ///   - documentId: The document's id, the title when the head is empty.
+    /// - Returns: The window's title.
+    static func windowTitle(header: String, documentId: String) -> String {
+        header.isEmpty ? documentId : header
+    }
+
+    /// The number the centre names: the one the entry carries, or, when the producer that opened
+    /// the document passed none, the one its id spells (`d475` → `475`).
+    ///
+    /// About half of the app's `DocumentBrowserEntry` constructions pass no number: Research's
+    /// rows and the Corpus Browser's among them. Without the id's number, the main window's centre
+    /// read the volume alone for those, so three same-headed telegrams opened from Research
+    /// (Documents 474, 475 and 476 of `frus1946v06`) read alike there too. The id stands in only
+    /// where it is the number (`CitableDocumentNumber.fromDocumentId(_:)`), the rule every list
+    /// that names a document follows; a stored number, a bracketed one included, wins.
+    ///
+    /// - Parameters:
+    ///   - stored: The entry's `documentNumber`, or `nil` when its producer passed none.
+    ///   - documentId: The document's id.
+    /// - Returns: The number to pass to ``principalLabel(volumeLabel:documentNumber:documentId:)``.
+    static func principalNumber(stored: String?, documentId: String) -> String? {
+        if let stored, !stored.isEmpty { return stored }
+        return CitableDocumentNumber.fromDocumentId(documentId)
+    }
 
     /// The toolbar centre's text.
     ///

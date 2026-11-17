@@ -1042,7 +1042,7 @@ Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archi
 <!-- END SOURCE: browse.analysisTools.help.v3 -->
 
 #### Corpus, Person, Cross-Reference, Archival, and Semantic a…
-<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 380–381 | key: mainwindow.tools.analytics.menu.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 418–419 | key: mainwindow.tools.analytics.menu.help.v3 -->
 
 Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, and Word Cloud
 
@@ -1058,7 +1058,7 @@ Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete 
 <!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
 #### Open Document
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1173–1174 | key: research.action.openDocument.v2 -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1183–1184 | key: research.action.openDocument.v2 -->
 
 Open Document
 
@@ -1904,13 +1904,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4910–4910 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4916–4916 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4382–4382 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4388–4388 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
 
 Search…
 

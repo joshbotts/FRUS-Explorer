@@ -53,7 +53,7 @@ While you wait, the **Learn** button beside the progress opens the **FRUS Resear
 
 ## 3. Know the Main Window
 
-The main window is where you read. Its toolbar shows the open document's identifier in the center (`frus1946v06/d475` is volume `frus1946v06`, document 475), and five controls at the right:
+The main window is where you read. It is titled with the open document's heading, the center of its toolbar says where the document is (*… · 1946 v6 · Doc 475*, the volume and the document's number), and five controls sit at the right:
 
 ![The main window's toolbar: the back button, the document identifier frus1946v06/d475 in the center, and at the right Search, Browse, the Analytics and My Research menus, and the Research rail button.](screenshots/macos/toolbar.png)
 
@@ -145,7 +145,7 @@ The **Tips** button beside the field has the full list, `NEAR` included.
 *The Search window, with the Facets panel open.*
 
 - **Open a result** by clicking it. It opens in the main window, and the Search window stays as it was: tools in their own windows, documents in the main one.
-- **Read the results another way.** The switch in the title bar shows them as a **List**, a **Timeline** by year, a **Concordance** (each occurrence lined up on your term) or **Collocates** (the words found near it). **Facets** breaks the whole match down by year, volume, people, document type, archival provenance and subject.
+- **Read the results another way.** The switch in the title bar shows them as a **List**, a **Timeline** by year, a **Concordance** (each occurrence lined up on your term) or **Collocates** (the words found near it). **Facets**, at the right end of the title bar, breaks the whole match down by year, volume, people, document type, archival provenance and subject.
 - **Narrow them.** **+ Filter** limits by date, volume, document type and more, and **Search in** chooses among documents and your own notes and summaries.
 - **Meaning**, the switch at the left of the field, ranks documents by what a question means rather than by the words in it. It is experimental, and needs a one-time 310 MB download of a search model that runs on the Mac.
 - **Save the search** with the bookmark button beside the field. The filled bookmark next to it lists your saved searches and runs them again.

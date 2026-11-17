@@ -470,7 +470,7 @@ Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences
 ### Corpus Analytics — Normalization Caption
 
 #### Share-of-corpus caveat (% of documents mode)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1937–1938 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1940–1941 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
 
 Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series.
 
@@ -484,7 +484,7 @@ word never appears" — the opposite of the truth. The distinction it teaches (A
 stem, Search filters to the exact word) must survive editing.*
 
 #### Title
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1698–1699 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1701–1702 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
 
 Exact-Word Charting Isn’t Available
 
@@ -494,7 +494,7 @@ Exact-Word Charting Isn’t Available
 <!-- Placeholder note: the leading interpolation renders the refused terms as a list ("=containment
      and =détente"). Keep `\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and)))`
      intact exactly as written. -->
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1702–1703 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1705–1706 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
 
 \(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell "containment" from "container". Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.
 
@@ -507,14 +507,14 @@ Mac, each under its own key: one key with two default values collides. Both are 
 prose rule, and are carried because the Mac's is new and an editor should see the pair.*
 
 #### Detail (iPhone and iPad)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2776–2777 | key: analytics.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2796–2797 | key: analytics.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
 
 Type a keyword and tap Search to chart its frequency across the FRUS corpus.
 
 <!-- END SOURCE: analytics.prompt.detail -->
 
 #### Detail (macOS)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2773–2774 | key: analytics.prompt.detail.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.promptDetail | lines: 2793–2794 | key: analytics.prompt.detail.mac | shared: macOS only -->
 
 Type a keyword and click Search to chart its frequency across the FRUS corpus.
 
@@ -1910,14 +1910,14 @@ Central file, not printed
 #### Tooltip — Switch to Search with this term — and, if you narrowed the…
 <!-- #1756: re-keyed from analytics.handoff.help.v2. The link now prints Search's own count of the
      search it opens, so the tooltip says how that count can differ from the chart's total. -->
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1362–1363 | key: analytics.handoff.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1365–1366 | key: analytics.handoff.help.v3 -->
 
 Switch to Search with this term — and, if you narrowed the years of a date-based view, those years — to see the matching documents. The count is Search’s: it takes in a document whose dates overlap the years, even one the chart places before them, and leaves out an undated one, which the chart places in its volume’s first year. Search opens over document text only, with your own notes and summaries left out.
 
 <!-- END SOURCE: analytics.handoff.help.v3 -->
 
 #### Tooltip — Plot raw matching-document counts, or each period’s matches…
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3025–3026 | key: analytics.normalize.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3045–3046 | key: analytics.normalize.help -->
 
 Plot raw matching-document counts, or each period’s matches as a share of the indexed documents in that period so a rising corpus size doesn’t masquerade as a rising term.
 

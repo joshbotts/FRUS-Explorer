@@ -183,6 +183,9 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///   1.15 — 2026-11-11 (FRUS Explorer Light, S24a): `AnalyticsNormalizationMode`, `AnalyticsChartAxis`,
 ///          `AnalyticsSearchHandoff` and the volume folding (`sourceColoring`) moved into FRUSCoreKit;
 ///          the folding's names forward to the kit's `AnalyticsSourceColoring`
+///   1.16 — L21 (UI review IPS-3, #1921): the comparison's lines take a pattern per term as well as
+///          a colour (`compareLineStyleScale`, `ChartSeriesPalette.linePattern(at:)`), so they are
+///          not told apart by colour alone
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -2104,6 +2107,10 @@ struct AnalyticsView: View {
                         LineMark(x: .value(xLabel, pt.period), y: .value(valueAxisLabel, y))
                             .foregroundStyle(by: .value(
                                 String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
+                            // L21 (IPS-3): a pattern as well as a colour, keyed by the same value so
+                            // the legend draws one entry per term with both.
+                            .lineStyle(by: .value(
+                                String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
                             .interpolationMethod(.catmullRom)
                             .accessibilityLabel(Text(verbatim: "\(series.term), \(pt.period)"))
                             .accessibilityValue(Text(sourceValueA11y(count: pt.count, plotted: y)))
@@ -2112,6 +2119,7 @@ struct AnalyticsView: View {
             }
         }
         .chartForegroundStyleScale(domain: compareColorScale.domain, range: compareColorScale.range)
+        .chartLineStyleScale(domain: compareLineStyleScale.domain, range: compareLineStyleScale.range)
         .chartLegend(.visible)
         .chartXScale(domain: xDomain)
         .chartYAxis { valueAxisMarks }
@@ -2128,6 +2136,14 @@ struct AnalyticsView: View {
         .padding(.horizontal)
     }
 
+    /// The per-term line pattern for the compare charts (L21, UI review IPS-3, #1921): domain = the
+    /// committed terms in chip order, as `compareColorScale`'s, range = the patterns at those
+    /// indices (`ChartSeriesPalette.linePattern(at:)`). Keyed explicitly, like the colours, so a
+    /// term keeps its pattern whichever order Swift Charts would infer, and the legend matches.
+    private var compareLineStyleScale: (domain: [String], range: [StrokeStyle]) {
+        (committedTerms, committedTerms.indices.map { ChartSeriesPalette.linePattern(at: $0) })
+    }
+
     /// Per-term line chart over a Date axis (By-Month / By-Day) for compare mode. These axes have no
     /// corpus denominator, so values are raw counts; one line per committed term, colored by term.
     private func compareDateChart(seriesByTerm: [(term: String, points: [(date: Date, count: Int)])],
@@ -2139,6 +2155,9 @@ struct AnalyticsView: View {
                              y: .value(valueAxisLabel, pt.count))
                         .foregroundStyle(by: .value(
                             String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
+                        // L21 (IPS-3): as in `compareIntChart`.
+                        .lineStyle(by: .value(
+                            String(localized: "analytics.chart.term.series", defaultValue: "Term"), series.term))
                         .interpolationMethod(.catmullRom)
                         .accessibilityLabel(Text(verbatim: series.term))
                         .accessibilityValue(Text(verbatim: "\(pt.count)"))
@@ -2146,6 +2165,7 @@ struct AnalyticsView: View {
             }
         }
         .chartForegroundStyleScale(domain: compareColorScale.domain, range: compareColorScale.range)
+        .chartLineStyleScale(domain: compareLineStyleScale.domain, range: compareLineStyleScale.range)
         .chartLegend(.visible)
         .chartXScale(domain: xDomain)
         .chartXAxisLabel(xLabel, alignment: .center)

@@ -2773,6 +2773,92 @@ struct ArchiveVisitMacToolbarFitTests {
     }
 }
 
+// MARK: - MacToolbarWindowFitTests
+
+/// Source gate for MAC-3 (L21, #1921): **the Search and Corpus Analytics windows open at least as wide
+/// as their toolbars**, as #1378 pinned the Archives Visits window (`ArchiveVisitMacToolbarFitTests`).
+///
+/// ## The defect it stops
+/// Search opened at 820 pt and Corpus Analytics at 760, and their toolbars needed more (the UI review
+/// put it at about 1,250 and 1,060), so a new window opened with Facets and Export behind the
+/// overflow chevron (») (HIG `toolbars.md`: "avoid layouts that cause toolbar items to overflow by
+/// default"). Both capture sittings had widened the two windows to 1,440 pt, which is why no frame
+/// showed it, and the Quick Start sent readers to Facets "in the title bar".
+///
+/// ## The widths, measured
+/// Measured on 2026-11-16 in the Mac check copy (macOS 27, a 1,710 × 1,107 pt screen), built at
+/// `1b5c5312`, the branch before this commit: each window was set 2 pt at a time through System
+/// Events, widening from below its fit and narrowing from above it, and its toolbar's items read at
+/// each width (`tools/mac-check-copy/README.md`, *Driving and reading the copy*). Search's toolbar is
+/// the Reading switch and five buttons; at 820 pt all five were in the » menu, and they came out one
+/// at a time from 940 pt, Facets last, at **1,342 pt** in both directions. Corpus Analytics opens on
+/// By Year, where its toolbar is widest (the Measure and Values switches show only on By Year and By
+/// Decade): nine items, of which seven were in the » menu at 760 pt, all of them out at **1,090 pt**
+/// in both directions. Each opens a little wider than its figure: Search at 1,380, Corpus Analytics
+/// at 1,120.
+///
+/// ## Where it can fail
+/// A source scan, as #1378's is: it fails when a window's `.defaultSize` is below the width its
+/// toolbar was measured to need, or wider than the narrowest screen it must fit, a 13-inch MacBook
+/// Air's at its default resolution. A saved window frame does not take a new default size, so a
+/// window a reader has narrowed still overflows, and its items are still in the » menu.
+///
+/// Version history:
+///   1.0 — L21 (MAC-3): initial implementation
+struct MacToolbarWindowFitTests {
+
+    /// A tool window whose toolbar was measured, by the scene id it is declared with.
+    struct MeasuredWindow {
+        /// The `Window` scene's id.
+        let id: String
+        /// The window's name, for the failure message.
+        let name: String
+        /// The narrowest width, in points, at which its toolbar showed every item with no » menu,
+        /// widening the window from its minimum (the figure #1378 recorded).
+        let measuredFit: Int
+    }
+
+    /// The two windows MAC-3 names.
+    static let windows: [MeasuredWindow] = [
+        MeasuredWindow(id: "frus.search", name: "Search", measuredFit: 1342),
+        MeasuredWindow(id: "frus.analytics", name: "Corpus Analytics", measuredFit: 1090),
+    ]
+
+    /// The width, in points, of a 13-inch MacBook Air's screen at its default resolution: 1,470 on
+    /// the M2 and later models, 1,440 on the M1. A default wider than the narrower of the two
+    /// opens clipped to the screen there.
+    static let narrowestDefaultScreenWidth = 1440
+
+    @Test("MAC-3: the Search and Corpus Analytics windows open at least as wide as their toolbars, and fit a 13-inch MacBook Air")
+    func theWindowsOpenWideEnoughForTheirToolbars() throws {
+        let raw = try ArchiveVisitMacToolbarFitTests.source(ArchiveVisitMacToolbarFitTests.appPath)
+        let rawBytes = Array(raw.utf8)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        for window in Self.windows {
+            let scenes = code.wordOffsets("Window")
+                .compactMap { code.call(named: "Window", at: $0) }
+                .filter { String(decoding: rawBytes[$0.start..<$0.end], as: UTF8.self).contains("\"\(window.id)\"") }
+            try #require(scenes.count == 1, "the Mac compiles \(scenes.count) Window scenes with id \(window.id)")
+            let sizes = code.modifierChain(after: scenes[0].end).filter { $0.name == "defaultSize" }
+            try #require(sizes.count == 1, "the \(window.name) window carries \(sizes.count) .defaultSize modifiers")
+            let width = try #require(sizes[0].arguments
+                .flatMap { code.topLevelArgument("width", in: $0) }
+                .flatMap { Int(ArchiveVisitMacToolbarFitTests.collapse(code.text($0))) },
+                "the \(window.name) window's .defaultSize passes no literal width:")
+            #expect(window.measuredFit > 900, "the \(window.name) toolbar's measured width must be recorded")
+            #expect(width >= window.measuredFit, """
+                The \(window.name) window opens \(width) pt wide, below the \(window.measuredFit) pt at which its \
+                toolbar was measured to show every item, so a new window opens with items behind the » menu \
+                (MAC-3, #1921).
+                """)
+            #expect(width <= Self.narrowestDefaultScreenWidth, """
+                The \(window.name) window opens \(width) pt wide, wider than a 13-inch MacBook Air's screen at its \
+                default resolution (\(Self.narrowestDefaultScreenWidth) pt).
+                """)
+        }
+    }
+}
+
 // MARK: - MacCollectionsWindowSourceTests
 
 /// Source gate for the Mac Collections window's polish lane (MACCOL): **the toolbar picker caps a long collection

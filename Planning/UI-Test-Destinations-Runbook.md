@@ -116,6 +116,8 @@ the maximum alone at 1,500 ("exceeded execution time allowance of 10 minutes"). 
 `-default-test-execution-time-allowance` with it, as the iPad's command above does. (A maximum under
 600, like the 300 other entries pass, does cap.)
 
+**On the iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`), `testASecondVolumeFromRootSearchLoadsItsOwnStructure` fails on `v2` itself (measured 2026-11-16, L21, #1921).** It stops at its premise, "The first volume did not open on its 'Download Required' placeholder", after it types `frus1945Malta` into the root's search and taps the result: twice on L21's branch and once on `v2` at `6a859422`, which no row of L21 touches. The simulator held three volumes, Malta not among them. The suite's other tests passed on that iPad, 7 with 3 skipped, `testLevelStateSurvivesBackInTwoPane` among them. On the iPhone 17 under 27.0 (`80CF0F18`), the late-pipeline test and `testNestedSectionsLoadOnPushPath` failed at their premises in the suite's full run, and each passed when run alone again with the Mac quiet (load average 4): the timing the late-pipeline note above describes. Not investigated further. R5's bullet in the plan of record has it.
+
 **`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so
 either destination alone reports green.** Its guard for the iPad's Back,
 `testBackFromAVolumeKeepsTheAreaAndTheSearch`, works only in Browse's two-pane. There a covering

@@ -1351,6 +1351,8 @@ private struct TrailingIconLabelStyle: LabelStyle {
 ///   1.1 — Session 2026-07-04 (macOS UI audit B3): the NARA Catalog Lookup sheet
 ///          replaced by the Source Explorer window's NARA Lookup segment
 ///          (`pendingNARALookup` hand-off, mirroring `MainWindowView`)
+///   1.2 — L21 (MAC-1): the title through `MacDocumentTitle.windowTitle(header:documentId:)` and
+///          the centre through `MacDocumentPrincipalTitle`, both shared with `MainWindowView`
 struct MacDocumentWindowView: View {
 
     /// The document this window opened for.
@@ -1390,21 +1392,6 @@ struct MacDocumentWindowView: View {
         navigationPath.last ?? rootEntry
     }
 
-    /// The current document's volume in the app's short form, or `nil` when the manifest has no
-    /// entry for it (UI review M-8).
-    ///
-    /// `nil` is a real state, not a defensive guard: a window restored from a previous session
-    /// can name a volume that has since been removed from the manifest, which is the same case
-    /// `MacDocumentView`'s restored-window empty state exists for.
-    private var currentVolumeLabel: String? {
-        guard let entry = appState.manifestStore.entry(forVolumeId: currentEntry.volumeId) else {
-            return nil
-        }
-        return ChronologyViewModel.distilledVolumeLabel(volumeId: entry.volumeId,
-                                                        subseries: entry.subseries,
-                                                        title: entry.title)
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             NavigationStack(path: $navigationPath) {
@@ -1424,8 +1411,10 @@ struct MacDocumentWindowView: View {
 
             StatusBarView()
         }
-        // Window/tab title — the document's heading, falling back to its id.
-        .navigationTitle(currentEntry.header.isEmpty ? currentEntry.documentId : currentEntry.header)
+        // Window/tab title — the document's heading, falling back to its id. The main window takes
+        // the same rule since L21 (MAC-1).
+        .navigationTitle(MacDocumentTitle.windowTitle(header: currentEntry.header,
+                                                      documentId: currentEntry.documentId))
         // D6: the research strip is retired (C1), so this standalone document window surfaces its
         // identity + the rail toggle in a minimal toolbar. NARA + the selection verbs now live on the
         // floating selection bar (Phase B2) and the rail's Sources tile, so the strip's `onNARALookup`
@@ -1435,19 +1424,10 @@ struct MacDocumentWindowView: View {
             // `frus1946v06/d475` repeating identity the window title above already gives in human
             // form, with a `.help` repeating the title a third time. It now says what the title
             // does not: which volume, and where in it. See `MacDocumentTitle` for why the
-            // finding's own remedy ("show the title") was the wrong one.
+            // finding's own remedy ("show the title") was the wrong one. The main window draws the
+            // same view since L21 (MAC-1).
             ToolbarItem(placement: .principal) {
-                let volumeLabel = currentVolumeLabel
-                Text(MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,
-                                                     documentNumber: currentEntry.documentNumber,
-                                                     documentId: currentEntry.documentId))
-                    .font(MacDocumentTitle.isFallback(volumeLabel: volumeLabel)
-                          ? .system(.body, design: .monospaced)
-                          : .body)
-                    .truncationMode(.middle)
-                    // The id is still one hover away for anyone who wants to cite or file a bug
-                    // against it — it moved out of the strip, it did not become unavailable.
-                    .help(currentEntry.documentId)
+                MacDocumentPrincipalTitle(entry: currentEntry)
             }
             ToolbarItem {
                 Button {
@@ -1513,6 +1493,64 @@ struct MacDocumentWindowView: View {
             if hostWindow?.isMiniaturized == true { hostWindow?.deminiaturize(nil) }
             openWindow(value: windowID)
         }
+    }
+}
+
+// MARK: - MacDocumentPrincipalTitle
+
+/// The centre of a document window's toolbar: which volume the document is in, and where in it
+/// (UI review M-8). `MacDocumentTitle` has why the centre names these and not the title.
+///
+/// Both document windows draw it: `MacDocumentWindowView` since M-8, and `MainWindowView` since
+/// L21 (UI review MAC-1, #1921). Until L21 the main window still drew the raw
+/// `frus1946v06/d475` in monospace, because M-8's fix reached the standalone window alone. One
+/// view, so the two centres cannot drift apart again.
+///
+/// The main window caps its width (`MainWindowView.pillBudget`) so that it yields to the tools
+/// beside it; the standalone window's toolbar holds one tool and does not need the cap.
+///
+/// Version history:
+///   1.0 — L21 (MAC-1): out of `MacDocumentWindowView`'s toolbar, for both windows; the number
+///          falls back to the one the id spells (`MacDocumentTitle.principalNumber`), and the
+///          tooltip is the volume and document id together
+struct MacDocumentPrincipalTitle: View {
+
+    @Environment(AppState.self) private var appState
+
+    /// The document the window shows.
+    let entry: DocumentBrowserEntry
+
+    /// The document's volume in the app's short form, or `nil` when the manifest has no entry for
+    /// it (UI review M-8).
+    ///
+    /// `nil` is a real state, not a defensive guard: a window restored from a previous session
+    /// can name a volume that has since been removed from the manifest, which is the same case
+    /// `MacDocumentView`'s restored-window empty state exists for.
+    private var volumeLabel: String? {
+        guard let manifest = appState.manifestStore.entry(forVolumeId: entry.volumeId) else {
+            return nil
+        }
+        return ChronologyViewModel.distilledVolumeLabel(volumeId: manifest.volumeId,
+                                                        subseries: manifest.subseries,
+                                                        title: manifest.title)
+    }
+
+    var body: some View {
+        let volumeLabel = volumeLabel
+        Text(MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,
+                                             documentNumber: MacDocumentTitle.principalNumber(
+                                                stored: entry.documentNumber,
+                                                documentId: entry.documentId),
+                                             documentId: entry.documentId))
+            .font(MacDocumentTitle.isFallback(volumeLabel: volumeLabel)
+                  ? .system(.body, design: .monospaced)
+                  : .body)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            // The id is still one hover away for anyone who wants to cite or file a bug against
+            // it: it moved out of the strip, it did not become unavailable. The volume's id and the
+            // document's together, as the main window's centre printed them before L21.
+            .help(entry.id)
     }
 }
 
