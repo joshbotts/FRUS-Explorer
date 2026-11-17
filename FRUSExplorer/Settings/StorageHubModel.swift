@@ -62,7 +62,7 @@ enum HubCopy {
 
     /// What the question says stays.
     static let cancelAllMessage = String(localized: "settings.hub.active.cancelAll.message",
-        defaultValue: "Volumes already on this device stay. To download the others later, use Download from GitHub…")
+        defaultValue: "Volumes already on this device stay. To download the others later, use “Download from GitHub…”.")
 
     /// The question's button that stops them.
     static let cancelAllConfirm = String(localized: "settings.hub.active.cancelAll.confirm",

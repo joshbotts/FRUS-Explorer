@@ -298,10 +298,10 @@ struct VolumesStorageHubView: View {
         Section(String(localized: "settings.hub.active.header",
                        defaultValue: "Active Downloads")) {
             if appState.downloadQueue.count > 1 {
-                Button(role: .destructive) {
+                // Text, as each row's own Cancel is: a destructive Label in a form draws its title
+                // red and its icon in the tint, blue (the first build's screenshot, iPhone 17).
+                Button(HubCopy.cancelAll, role: .destructive) {
                     showCancelAllConfirmation = true
-                } label: {
-                    Label(HubCopy.cancelAll, systemImage: "xmark.circle")
                 }
                 .accessibilityIdentifier("settings.hub.active.cancelAll")
                 .confirmationDialog(HubCopy.cancelAllTitle(appState.downloadQueue.count),
