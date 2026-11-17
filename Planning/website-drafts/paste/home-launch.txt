@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint e7e699ea -->
+<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint 2b2d7653 -->
 <style>
 .frus-home { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #5F5F67; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #22705F; --ok: #2F6B3A; --warn: #8A5300; --bad: #A61C2A; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; color-scheme: light; }
 .frus-home { font-family: var(--serif); font-size: 17px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -112,7 +112,7 @@
     <dt>Does it need the internet?</dt>
     <dd>Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity.</dd>
     <dt>How much space does it take?</dt>
-    <dd>The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later.</dd>
+    <dd>The whole series is about 3.3 GB. The search index the app builds takes about as much again, about 7 GB on the device in all. You can download only the volumes you need, and remove them later.</dd>
     <dt>Does it use AI?</dt>
     <dd>Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning relies on a downloaded embedding model to encode your queries. Nothing you type leaves your device for either of these features.</dd>
     <dt>Where do I start?</dt>

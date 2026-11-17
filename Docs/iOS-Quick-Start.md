@@ -28,7 +28,7 @@ This guide takes you from the first launch to a document you have read, marked u
 ## Before You Start
 
 - **iPadOS or iOS 26 or later.** AI summaries also need a device with **Apple Intelligence** turned on; everything else works without it.
-- **Storage.** One volume is a few megabytes. The whole series is about 3.5 GB to download and roughly 13 GB on the device once it is indexed for search.
+- **Storage.** One volume is a few megabytes. The whole series is about 3.5 GB to download and about 7 GB on the device once it is indexed for search.
 - **A network connection** for the downloads. After that, reading, searching and annotating work offline.
 
 ## 1. Choose What to Download

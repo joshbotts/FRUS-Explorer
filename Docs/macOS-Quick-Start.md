@@ -28,7 +28,7 @@ This guide takes you from the first launch to a document you have read, marked u
 ## Before You Start
 
 - **macOS 26 or later.** AI summaries also need an **Apple silicon** Mac with **Apple Intelligence** turned on in System Settings; everything else works without it.
-- **Storage.** One volume is a few megabytes. The whole series is about 3.5 GB to download and roughly 13 to 14 GB on the Mac once it is indexed for search.
+- **Storage.** One volume is a few megabytes. The whole series is about 3.5 GB to download and about 7 GB on the Mac once it is indexed for search.
 - **A network connection** for the downloads. After that, reading, searching and annotating work offline.
 
 ## 1. Choose What to Download

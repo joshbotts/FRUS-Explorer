@@ -405,11 +405,11 @@ this table:
 |---|---|---|---|
 | [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,143 bytes | `8c230dab` |
 | [paste/support.txt](paste/support.txt) | `/support` | 6,419 bytes | `64da46d0` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,485 bytes | `83dbaac0` |
-| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,972 bytes | `0b22502f` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,482 bytes | `e487f964` |
+| [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 26,963 bytes | `2bd9ab63` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
-| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,271 bytes | `3ee9e161` |
-| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,372 bytes | `e7e699ea`, not ready: it waits for the App Store address |
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,294 bytes | `4b2e6134` |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,007 bytes | `d4bfa31d` |
@@ -528,7 +528,7 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 | What does it cost? | It will be free. |
 | What do I need? | An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. |
 | Does it need the internet? | Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity. |
-| How much space does it take? | The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later. |
+| How much space does it take? | The whole series is about 3.3 GB. The search index the app builds takes about as much again, about 7 GB on the device in all. You can download only the volumes you need, and remove them later. |
 | Does it use AI? | Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning relies on a downloaded embedding model to encode your queries. Nothing you type leaves your device for either of these features. |
 | Where do I start? | The quick start for iPad and iPhone or for the Mac takes you through a first session, from the first download to a cited document. |
 | Which languages does it support? | English only, just like the FRUS series itself. |

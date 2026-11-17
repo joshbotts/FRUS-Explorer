@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/quick-start-mac · from Docs/Website/quick-start-mac.html · fingerprint 0b22502f -->
+<!-- frusexplorer.app/quick-start-mac · from Docs/Website/quick-start-mac.html · fingerprint 2bd9ab63 -->
 <style>
   .frus-quick-start a { text-decoration: underline; }
   .frus-quick-start img { max-width: 100%; height: auto; }
@@ -47,7 +47,7 @@
 
 <ul>
   <li><strong>macOS 26 or later.</strong> AI summaries also need an <strong>Apple silicon</strong> Mac with <strong>Apple Intelligence</strong> turned on in System Settings; everything else works without it.</li>
-  <li><strong>Storage.</strong> One volume is a few megabytes. The whole series is about 3.5 GB to download and roughly 13 to 14 GB on the Mac once it is indexed for search.</li>
+  <li><strong>Storage.</strong> One volume is a few megabytes. The whole series is about 3.5 GB to download and about 7 GB on the Mac once it is indexed for search.</li>
   <li><strong>A network connection</strong> for the downloads. After that, reading, searching and annotating work offline.</li>
 </ul>
 
