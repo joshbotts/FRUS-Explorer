@@ -1105,3 +1105,42 @@ extension WrappingFooterSection where Header == EmptyView {
         self.init(content: content, header: { EmptyView() }, footer: footer)
     }
 }
+
+// MARK: - ChartSeriesPalette: line patterns
+
+extension ChartSeriesPalette {
+
+    /// The line pattern for the compared series at rank `index` (L21, UI review IPS-3, #1921):
+    /// solid, dashed, dotted, dash-dot and dash-dot-dot, in that order.
+    ///
+    /// Corpus Analytics' comparison drew up to five terms as lines told apart by colour alone,
+    /// blue, orange, green, purple and pink, with its table off while comparing (HIG `charts.md`:
+    /// "Avoid relying solely on color to differentiate between different pieces of data";
+    /// WCAG 1.4.1). Each line now keeps its colour and takes a pattern too, which the chart's
+    /// legend draws beside the term.
+    ///
+    /// **A pattern, not a symbol at each point**, as Person Analytics' trajectories take
+    /// (`.symbol(by:)`): a comparison runs over every year of 1861–1992, or over months and days,
+    /// and a symbol at each of 130 yearly points, let alone a day's, piles into a band (measured
+    /// in an offscreen render of four compared terms, 2026-11-16). A pattern reads the same at any
+    /// density. The patterns are spelled out, not left to Swift Charts' default scale, whose second
+    /// and third were two dashes of nearly one length in the same render.
+    ///
+    /// Five, as many as the comparison's cap (`AnalyticsView.maxCompareTerms`); wraps past them.
+    /// Computed rather than stored: a stored static of `StrokeStyle` would have to be proved
+    /// `Sendable` under strict concurrency, and the array is five values.
+    static var linePatterns: [StrokeStyle] {
+        [
+            StrokeStyle(lineWidth: 2),
+            StrokeStyle(lineWidth: 2, dash: [8, 4]),
+            StrokeStyle(lineWidth: 2, dash: [2, 3]),
+            StrokeStyle(lineWidth: 2, dash: [10, 3, 2, 3]),
+            StrokeStyle(lineWidth: 2, dash: [10, 3, 2, 3, 2, 3]),
+        ]
+    }
+
+    /// The pattern for the compared series at rank `index`, wrapping past the five.
+    static func linePattern(at index: Int) -> StrokeStyle {
+        linePatterns[index % linePatterns.count]
+    }
+}
