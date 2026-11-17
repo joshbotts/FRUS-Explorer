@@ -16,6 +16,7 @@ import Testing
 /// Version history:
 ///   1.0 — CW-10b
 ///   1.1 — 2026-10-21: #1761 — the Search window's filter chip ✕
+///   1.2 — L21 (#1921): MAC-1 — the main window's title and centre, beside M-8's tests
 @Suite("Mac chrome honesty")
 struct MacChromeHonestyTests {
 
@@ -151,6 +152,79 @@ struct MacChromeHonestyTests {
         #expect(label.contains("Doc 475"))
     }
 
+    // MARK: - MAC-1 · the main window's title and centre (L21, #1921)
+
+    @Test("a document window is titled with the document's head, and with its id when it has none")
+    func windowTitleIsTheHead() {
+        #expect(MacDocumentTitle.windowTitle(
+            header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+            documentId: "d475") == "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        #expect(MacDocumentTitle.windowTitle(header: "", documentId: "d475") == "d475")
+    }
+
+    @Test("the centre names the number the entry carries, or the one its id spells")
+    func principalNumberFallsBackToTheId() {
+        // A stored number wins, the editors' bracketed description included, which the label
+        // turns into "Unnumbered (d710a-1)".
+        #expect(MacDocumentTitle.principalNumber(stored: "475", documentId: "d475") == "475")
+        let bracketed = "[Unnumbered document following Document 710 (#1)]"
+        #expect(MacDocumentTitle.principalNumber(stored: bracketed, documentId: "d710a-1") == bracketed)
+        // Research's rows and the Corpus Browser open documents with no number: the id stands in
+        // where it is the number, and nowhere else.
+        #expect(MacDocumentTitle.principalNumber(stored: nil, documentId: "d475") == "475")
+        #expect(MacDocumentTitle.principalNumber(stored: "", documentId: "d373a") == "373a")
+        #expect(MacDocumentTitle.principalNumber(stored: nil, documentId: "ch1") == nil)
+        #expect(MacDocumentTitle.principalNumber(stored: nil, documentId: "d710a-1") == nil)
+        // So three same-headed telegrams opened from Research no longer read alike in the centre.
+        let labels = ["d474", "d475", "d476"].map {
+            MacDocumentTitle.principalLabel(volumeLabel: "1946 v6",
+                                            documentNumber: MacDocumentTitle.principalNumber(stored: nil, documentId: $0),
+                                            documentId: $0)
+        }
+        #expect(labels == ["1946 v6 · Doc 474", "1946 v6 · Doc 475", "1946 v6 · Doc 476"])
+    }
+
+    /// The source gate for MAC-1 (#1921): the main window titles itself with the open document's
+    /// head and draws the standalone window's centre, by the same rule and the same view as the
+    /// standalone window.
+    ///
+    /// Before L21 the main window set no `.navigationTitle`, so every main window read "FRUS
+    /// Explorer" in the Window menu, and its centre was `Text(entry.id)`, the raw
+    /// `frus1946v06/d475`. The unit target runs no Mac code, so this reads the source, comments
+    /// blanked; the check copy shows the windows themselves.
+    @Test("both document windows take their title and their centre from one rule and one view (MAC-1)")
+    func bothWindowsShareTheTitleAndTheCentre() throws {
+        let main = NaturalLanguageReadinessScanTests.code(try Self.source("FRUSExplorer/App/MainWindowView.swift"))
+        let standalone = NaturalLanguageReadinessScanTests.code(try Self.source("FRUSExplorer/App/MacDocumentView.swift"))
+        let flat = { (text: String) in text.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+
+        // The main window: a title from the open document, the app's name only while none is open.
+        #expect(main.contains(".navigationTitle(windowTitle)"), "the main window sets no title of its own")
+        let title = try #require(main.range(of: "private var windowTitle: String"),
+                                 "MainWindowView has no windowTitle")
+        let titleBody = try #require(NaturalLanguageReadinessScanTests.braceBody(in: main, after: title.upperBound))
+        #expect(flat(String(main[titleBody])).contains(
+            "return MacDocumentTitle.windowTitle(header: entry.header, documentId: entry.documentId)"),
+                "the main window's title does not follow the standalone window's rule: \(main[titleBody])")
+
+        // Its centre: the shared view, capped by the width budget; never the raw id again.
+        let centre = try #require(main.range(of: "private var documentTitle: some View"),
+                                  "MainWindowView has no documentTitle")
+        let centreBody = flat(String(main[try #require(
+            NaturalLanguageReadinessScanTests.braceBody(in: main, after: centre.upperBound))]))
+        #expect(centreBody.contains("MacDocumentPrincipalTitle(entry: entry) .frame(maxWidth: pillBudget)"),
+                "the main window's centre is not the shared view under its width budget: \(centreBody)")
+        #expect(!centreBody.contains("Text(entry.id)"), "the main window's centre prints the raw id again")
+
+        // The standalone window takes the same two.
+        #expect(flat(standalone).contains(
+            ".navigationTitle(MacDocumentTitle.windowTitle(header: currentEntry.header, documentId: currentEntry.documentId))"),
+                "the standalone window's title no longer goes through MacDocumentTitle.windowTitle")
+        #expect(flat(standalone).contains(
+            "ToolbarItem(placement: .principal) { MacDocumentPrincipalTitle(entry: currentEntry) }"),
+                "the standalone window's centre is not the shared view")
+    }
+
     // MARK: - #1761 · the Search window's filter chip ✕
 
     /// S4 of the build-51 screenshot sweep measured the Date chip's *Clear Date filter* at 8 by 8 points by
@@ -190,9 +264,10 @@ struct MacChromeHonestyTests {
 /// the same styles smaller than iOS, so the iOS column would have shrunk the chrome). This
 /// suite is what stops the file list re-growing after the pass.
 ///
-/// ## The two survivors are pinned as EXACTLY present, not merely tolerated
+/// ## The survivor is pinned as EXACTLY present, not merely tolerated
 /// A ceiling alone goes vacuous when a refactor deletes the carve-out sites; asserting them
-/// present keeps the allowlist honest.
+/// present keeps the allowlist honest. There were two until L21 (MAC-1), when the main window's
+/// monospaced identity pill became prose and its file joined the zero-literal list.
 @Suite("Mac text scaling (W-11)")
 struct MacTextScalingAuditTests {
 
@@ -211,12 +286,15 @@ struct MacTextScalingAuditTests {
         }
     }
 
-    @Test("The converted files carry no fixed-point text sites beyond the two carve-outs")
+    @Test("The converted files carry no fixed-point text sites beyond the carve-out")
     func convertedFilesStayConverted() throws {
         // Zero-literal files: a new `.font(.system(size: N))` here is the debt returning —
-        // use the macOS column of FRUSTheme's size→style table instead.
+        // use the macOS column of FRUSTheme's size→style table instead. MainWindowView joined the
+        // list at L21 (MAC-1): its monospaced 12 pt pill, the carve-out it held, became the
+        // standalone window's `MacDocumentPrincipalTitle`, prose in `.body`.
         for file in ["App/SupportingViews.swift", "App/SearchSheet.swift",
-                     "Settings/FRUSSettingsView.swift", "App/HistoryWindowView.swift"] {
+                     "Settings/FRUSSettingsView.swift", "App/HistoryWindowView.swift",
+                     "App/MainWindowView.swift"] {
             let lines = try Self.fixedSizeLines(file)
             #expect(lines.isEmpty, """
                 \(file) gained a fixed-point text site after the W-11 conversion: \
@@ -226,12 +304,9 @@ struct MacTextScalingAuditTests {
                 """)
         }
 
-        // The two documented carve-outs, pinned as present so the allowlist cannot go vacuous:
-        // the width-budgeted monospaced identity pill, and the chevron centred in a fixed
-        // 34×34 hit circle. Each is LEAVE-FIXED with its reason at the site.
-        let main = try Self.fixedSizeLines("App/MainWindowView.swift")
-        #expect(main.count == 1, "MainWindowView allows exactly the monospaced pill: \(main)")
-        #expect(main.first?.contains("design: .monospaced") == true)
+        // The documented carve-out, pinned as present so the allowlist cannot go vacuous: the
+        // chevron centred in a fixed 34×34 hit circle, LEAVE-FIXED with its reason at the site.
+        // (The width-budgeted monospaced identity pill was the other until L21; see above.)
         let reader = try Self.fixedSizeLines("App/MacDocumentView.swift")
         #expect(reader.count == 1, "MacDocumentView allows exactly the 34×34 chevron: \(reader)")
         #expect(reader.first?.contains("weight: .semibold") == true)

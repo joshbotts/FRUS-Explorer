@@ -66,6 +66,9 @@ import AppKit
 ///   1.7 — Session 2026-08-09 (#795): **Archival Analytics** joins the toolbar Analytics
 ///          menu. The menu-bar Analytics menu has carried it since the feature shipped;
 ///          the toolbar menu — the discoverable door — never did. Tooltip re-keyed `.v2`.
+///   1.8 — L21 (UI review MAC-1, #1921): the window is titled with the open document's head
+///          (`MacDocumentTitle.windowTitle`), and its centre is the standalone window's
+///          `MacDocumentPrincipalTitle` in place of the raw `volumeId/documentId`
 @MainActor
 struct MainWindowView: View {
 
@@ -120,6 +123,18 @@ struct MainWindowView: View {
         navigationPath.last
     }
 
+    /// The window's title (L21, UI review MAC-1): the open document's printed head, by the rule
+    /// the standalone document window has always used, so the Window menu and Mission Control tell
+    /// two ⌘N windows apart. With no document open it is the app's name, as macOS titled the
+    /// window before: the HIG's "Don't title windows with your app name" is about a window that
+    /// shows something, and an empty window shows nothing.
+    private var windowTitle: String {
+        guard let entry = currentEntry else {
+            return String(localized: "mainwindow.title.empty", defaultValue: "FRUS Explorer")
+        }
+        return MacDocumentTitle.windowTitle(header: entry.header, documentId: entry.documentId)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -151,6 +166,9 @@ struct MainWindowView: View {
             // Status bar — always visible, reports background activity.
             StatusBarView()
         }
+        // L21 (MAC-1): the window had no title of its own, so it read "FRUS Explorer" whatever was
+        // open. Set here, outside the stack, as `MacDocumentWindowView` sets its own.
+        .navigationTitle(windowTitle)
         .toolbar { mainToolbar }
         // Provenance plumbing: every launcher mounted in this window (titlebar tools, rail tiles,
         // sheets) reads this window's identity from the environment to stamp tool provenance.
@@ -241,22 +259,21 @@ struct MainWindowView: View {
     private var documentTitle: some View {
         Group {
             if let entry = currentEntry, pillBudget >= 60 {
-                // Condensed "volumeId/documentId" identifier (e.g. "frus1977-1980v28/d217"). As the
-                // centred .principal item it must YIELD before the trailing tools under width
-                // pressure (handoff: "the identity pill yields first"). `pillBudget` caps its width
-                // so it truncates within the room the tools leave, and below ~60 pt it drops out
-                // entirely — freeing the whole flank so the buttons never collapse into the overflow
-                // chevron. (Default `.principal` layout inverts this, overflowing the tools first —
-                // the bug this replaces.) ("Info" removed Session 2026-06-08 — duplicated the rail's Cite.)
-                Text(entry.id)
-                    // LEAVE-FIXED (Mac W-11): the identity pill is width-budgeted (`pillBudget`)
-                    // and monospaced for grid-stable truncation — the worklist's designated
-                    // monospaced-tally carve-out. Scaling it would fight the budget arithmetic.
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                // The document's volume, in its short form, and its number ("… · 1946 v6 · Doc
+                // 475"), drawn by the standalone document window's own view (L21, MAC-1), where this
+                // showed the raw "frus1946v06/d475" in monospace. The head is the window's title,
+                // so the centre says what the title does not (`MacDocumentTitle`).
+                //
+                // As the centred .principal item it must YIELD before the trailing tools under
+                // width pressure (handoff: "the identity pill yields first"). `pillBudget` caps its
+                // width so it truncates within the room the tools leave, and below ~60 pt it drops
+                // out entirely — freeing the whole flank so the buttons never collapse into the
+                // overflow chevron. (Default `.principal` layout inverts this, overflowing the tools
+                // first — the bug this replaces.) ("Info" removed Session 2026-06-08 — duplicated
+                // the rail's Cite.) Its text follows the text-size setting now that it is prose:
+                // the budget caps the frame, whatever the face.
+                MacDocumentPrincipalTitle(entry: entry)
                     .frame(maxWidth: pillBudget)
-                    .help(entry.header.isEmpty ? entry.documentId : entry.header)
             } else if currentEntry == nil {
                 Text("FRUS Explorer")
                     .font(.body.weight(.medium))
