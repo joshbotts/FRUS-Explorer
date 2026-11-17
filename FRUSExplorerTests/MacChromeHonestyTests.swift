@@ -16,7 +16,8 @@ import Testing
 /// Version history:
 ///   1.0 — CW-10b
 ///   1.1 — 2026-10-21: #1761 — the Search window's filter chip ✕
-///   1.2 — L21 (#1921): MAC-1 — the main window's title and centre, beside M-8's tests
+///   1.2 — L21 (#1921): MAC-1, the main window's title and centre, beside M-8's tests; MAC-6, the
+///          empty main window's two ways in
 @Suite("Mac chrome honesty")
 struct MacChromeHonestyTests {
 
@@ -223,6 +224,49 @@ struct MacChromeHonestyTests {
         #expect(flat(standalone).contains(
             "ToolbarItem(placement: .principal) { MacDocumentPrincipalTitle(entry: currentEntry) }"),
                 "the standalone window's centre is not the shared view")
+    }
+
+    // MARK: - MAC-6 · the empty first window (L21, #1921)
+
+    /// The source gate for MAC-6 (#1921): the empty main window offers **Search** and **Browse the
+    /// Corpus** as buttons that run the toolbar's own actions, and its hint is `.secondary`.
+    ///
+    /// Before L21 the window said "Select a document to begin" with nothing to select, and its one
+    /// instruction was `.tertiary`, the grey the HIG reserves for what is unavailable (1.88:1 on
+    /// the `macos/research` capture). Each action is one function both doors call, so a click in
+    /// the window and a click in the toolbar cannot come to differ: the provenance bind, the
+    /// Search field's focus and the fronting of an open window go with both.
+    @Test("the empty main window offers Search and Browse the Corpus, the toolbar's own actions, under a secondary hint (MAC-6)")
+    func emptyWindowOffersTheTwoWaysIn() throws {
+        let main = NaturalLanguageReadinessScanTests.code(try Self.source("FRUSExplorer/App/MainWindowView.swift"))
+        let flat = { (text: String) in text.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+        let body = { (anchor: String) throws -> String in
+            let start = try #require(main.range(of: anchor), "MainWindowView has no \(anchor)")
+            return flat(String(main[try #require(NaturalLanguageReadinessScanTests.braceBody(in: main, after: start.upperBound))]))
+        }
+
+        let placeholder = try body("private struct DocumentPlaceholderView: View")
+        #expect(placeholder.contains(
+            #"defaultValue: "Use Search (⌥⌘F) or open the Corpus Browser (⇧⌘B)")) .font(.callout) .foregroundStyle(.secondary)"#),
+                "the hint is not drawn in .secondary: \(placeholder)")
+        #expect(!placeholder.contains(".font(.callout) .foregroundStyle(.tertiary)"),
+                "the hint is back in .tertiary, the grey for what is unavailable")
+        #expect(placeholder.contains("Button(action: onSearch)"), "the empty window offers no Search button")
+        #expect(placeholder.contains("Button(action: onBrowse)"), "the empty window offers no Browse the Corpus button")
+
+        // The window hands the placeholder the toolbar's own two actions.
+        #expect(flat(main).contains(
+            "DocumentPlaceholderView(onResume: { navigationPath.append($0) }, onSearch: openSearch, onBrowse: openCorpusBrowser)"),
+                "the placeholder is not handed the toolbar's actions")
+        let tools = try body("private var trailingTools: some View")
+        #expect(tools.contains("Button { openSearch() } label:"), "the toolbar's Search button runs another action")
+        #expect(tools.contains("Button { openCorpusBrowser() } label:"), "the toolbar's Browse button runs another action")
+        let search = try body("private func openSearch()")
+        #expect(search == "appState.bindTool(.search, to: hostID) appState.searchQueryFocusToken &+= 1 openWindow.fronting(id: \"frus.search\")",
+                "openSearch() no longer binds, focuses and fronts: \(search)")
+        let browse = try body("private func openCorpusBrowser()")
+        #expect(browse == "appState.bindTool(.corpusBrowser, to: hostID) openWindow.fronting(id: \"frus.corpusBrowser\")",
+                "openCorpusBrowser() no longer binds and fronts: \(browse)")
     }
 
     // MARK: - #1761 · the Search window's filter chip ✕

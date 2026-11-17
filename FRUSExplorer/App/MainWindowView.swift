@@ -153,7 +153,10 @@ struct MainWindowView: View {
 
             // Document body — NavigationStack owns the back/forward history.
             NavigationStack(path: $navigationPath) {
-                DocumentPlaceholderView { navigationPath.append($0) }
+                // L21 (MAC-6): the empty window offers the two ways in, each the toolbar's own action.
+                DocumentPlaceholderView(onResume: { navigationPath.append($0) },
+                                        onSearch: openSearch,
+                                        onBrowse: openCorpusBrowser)
                     .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                         MacDocumentView(
                             entry: entry,
@@ -283,6 +286,27 @@ struct MainWindowView: View {
         }
     }
 
+    // MARK: - The two ways in
+
+    /// Opens Search for this window: the toolbar's Search button, and the empty window's (L21,
+    /// MAC-6). Its shortcut, ⌥⌘F, is owned by the Find menu (`FindMenuContent`), not here.
+    ///
+    /// Every tool launch stamps this window's identity as the tool's provenance (`bindTool`), so
+    /// the tool's document opens route back HERE.
+    private func openSearch() {
+        appState.bindTool(.search, to: hostID)
+        appState.searchQueryFocusToken &+= 1   // put the caret in the query field (#749)
+        openWindow.fronting(id: "frus.search")
+    }
+
+    /// Opens the Corpus Browser for this window: the toolbar's Browse button, and the empty
+    /// window's Browse the Corpus (L21, MAC-6). Its shortcut, ⇧⌘B, is owned by the Find menu
+    /// (`FindMenuContent`), not here.
+    private func openCorpusBrowser() {
+        appState.bindTool(.corpusBrowser, to: hostID)
+        openWindow.fronting(id: "frus.corpusBrowser")
+    }
+
     // MARK: - Trailing Tools
 
     private var trailingTools: some View {
@@ -292,9 +316,7 @@ struct MainWindowView: View {
             // Every tool launch below stamps this window's identity as the tool's
             // provenance (bindTool), so the tool's document opens route back HERE.
             Button {
-                appState.bindTool(.search, to: hostID)
-                appState.searchQueryFocusToken &+= 1   // put the caret in the query field (#749)
-                openWindow.fronting(id: "frus.search")
+                openSearch()
             } label: {
                 Label(String(localized: "mainwindow.tools.search", defaultValue: "Search"),
                       systemImage: "magnifyingglass")
@@ -309,8 +331,7 @@ struct MainWindowView: View {
 
             // Browse (was "Corpus") — its shortcut, ⇧⌘B, is owned by the Find menu (`FindMenuContent`), not here.
             Button {
-                appState.bindTool(.corpusBrowser, to: hostID)
-                openWindow.fronting(id: "frus.corpusBrowser")
+                openCorpusBrowser()
             } label: {
                 Label(String(localized: "mainwindow.tools.browse", defaultValue: "Browse"),
                       systemImage: "books.vertical")
@@ -488,10 +509,22 @@ struct MainWindowView: View {
 // MARK: - DocumentPlaceholderView
 
 /// Shown in the document column when no document has been selected yet.
+///
+/// ## The two ways in (L21, UI review MAC-6, #1921)
+/// It said "Select a document to begin" with nothing to select, and its one instruction was in
+/// `.tertiary`, the grey Apple reserves for "an unavailable item or behavior" (HIG, `labels.md`),
+/// sampled at 1.88:1 on the `macos/research` capture. The ways in were two icon-only toolbar
+/// buttons. So the hint is `.secondary`, and **Search** and **Browse the Corpus** sit under it as
+/// buttons that run the toolbar's own actions (`MainWindowView.openSearch()` and
+/// `openCorpusBrowser()`), so a click here and a click in the toolbar cannot come to differ.
 private struct DocumentPlaceholderView: View {
 
     /// Opens the resumed document in this window's stack (#754).
     let onResume: (DocumentBrowserEntry) -> Void
+    /// Opens Search for this window, as the toolbar's Search button does (L21, MAC-6).
+    let onSearch: () -> Void
+    /// Opens the Corpus Browser for this window, as the toolbar's Browse button does (L21, MAC-6).
+    let onBrowse: () -> Void
 
     /// Hero-glyph scaling (Mac W-11): tracks the text-size setting, capped so an
     /// accessibility size does not blow the empty state off the column.
@@ -502,16 +535,39 @@ private struct DocumentPlaceholderView: View {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: FRUSTheme.cappedGlyphSize(heroGlyphSize, base: 40)))
                 .foregroundStyle(.tertiary)
-            Text("Select a document to begin")
+            Text(String(localized: "mainwindow.placeholder.title",
+                        defaultValue: "Select a document to begin"))
                 .font(.title3)
                 .foregroundStyle(.secondary)
             // ⌥⌘F: Search left ⌘F for ⌘S in #363 #5, when ⌘F became Find in Document, and left ⌘S
             // for ⌥⌘F at M-14. This string went on saying ⌘S until lane HYG; the two shortcuts it
             // names are the ones `FindMenuContent` registers, and `MacShortcutCopyTests` holds them.
+            // `.secondary` since L21 (MAC-6): `.tertiary` is for what is unavailable.
             Text(String(localized: "mainwindow.placeholder.hint",
                         defaultValue: "Use Search (⌥⌘F) or open the Corpus Browser (⇧⌘B)"))
                 .font(.callout)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
+
+            // L21 (MAC-6): the two ways in, as buttons. No key equivalents here: ⌥⌘F and ⇧⌘B are
+            // the Find menu's (#363 #2 removed a duplicate binding), and the hint above names them.
+            HStack(spacing: 12) {
+                Button(action: onSearch) {
+                    Label(String(localized: "mainwindow.placeholder.search", defaultValue: "Search"),
+                          systemImage: "magnifyingglass")
+                }
+                .help(String(localized: "mainwindow.tools.search.help",
+                             defaultValue: "Open the full-text search window (⌥⌘F)"))
+                Button(action: onBrowse) {
+                    Label(String(localized: "mainwindow.placeholder.browse",
+                                 defaultValue: "Browse the Corpus"),
+                          systemImage: "books.vertical")
+                }
+                .help(String(localized: "mainwindow.tools.browse.help",
+                             defaultValue: "Browse volumes by subseries in the Corpus Browser (⌘⇧B)"))
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .padding(.top, 4)
 
             // #754: resume the last document read, offered rather than auto-opened.
             ResumeReadingRow { entry in
