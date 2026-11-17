@@ -104,6 +104,13 @@ It is written from four sources:
       - Both merge after the 1861 upload (decision 129).
       - #1927 may share #1907's pull request, and #1928 another small kit change's, as the issues offer.
 
+**The owner's word of 2026-11-17**, on the Collections templates, after a session read the four recipes (`FRUSCoreKit/Collections/CollectionExporter.swift`, `CollectionPreset`) and proposed six in their place:
+
+139. **The Collections templates are renamed for what they do and widened from four to six, as row L25, after L23 and before R5.** The owner's words: "I like these recommendations. Include a new session in the plan of record to make these changes after L23 and before R5. Do not start implementing from a cloud session."
+    - Each name says how the documents are presented, then which apparatus comes with them. The intended uses go: no *Teaching reader*, *Briefing packet*, *Source dossier* or *Scholarly edition*.
+    - Between them the six use every body depth, every footnote and source-note combination but footnotes alone, both contents styles, and each of the five apparatus blocks in at least two templates besides *Everything included*. Under the four, Bibliography and the Thematic Index came only with everything on, footnotes were on only in *Scholarly edition*, and an Index body never kept the researcher's notes.
+    - L25 is built in a session on the owner's Mac, not a cloud session. It is the last row before R5: after L22 if C1 leaves #1915 for later, and after L23 and L24 if C1 takes it.
+
 **Rules carried from the earlier plans and `CLAUDE.md`.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
@@ -134,6 +141,7 @@ It is written from four sources:
 | L21 | The Mac's windows, a chart's lines and Browse's tile names: the main window's title, toolbars that fit their windows, numbered Research rows, the empty window's way in, comparison lines that differ by more than colour, and tile names Voice Control can say | #1921 (review MAC-1, MAC-3, MAC-5, MAC-6, IPS-3, A11Y-5) |
 | L22 | The research export names what it was made from: the index records each volume file's git blob SHA-1, at index version 75 (decision 131), and the Mac's Export Research Database… says which index version it carries; and a CIA job's row in a volume's Sources gets its Archival Neighbors button (decision 138) | #1909, #1910, #1929 |
 | N1 | Where NARA's live answers put a record's record group, read from one lookup with the owner's key; a fix in the kit only if the lookup shows one is owed | #1908 |
+| L25 | The Collections templates named for what they do, six in place of four: *Full text as printed*, *Full text with your annotations*, *Summaries with overview*, *Citations with your notes*, *Citations with archival sources* and *Everything included* (decision 139). The last row before R5, after L23 when C1 takes #1915; built on the owner's Mac | — |
 | C1 | The checkpoint for Import from JSON, Wednesday evening: the week's usage and the rows' pace decide whether #1915 is built for 1.0 (decision 132) | #1915 |
 | R5 | The release checklist on the frozen tree, the bump to 1.0 (1823), the fourth TestFlight build (decision 137), both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
 | R6 | 1.0 (1823) uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
@@ -148,13 +156,13 @@ It is written from four sources:
 | Mon 2026-11-16 | L15, L16, L17; N1's lookup | sessions; the owner merges each and makes the lookup |
 | Tue 2026-11-17 | L18, L19, L22 | sessions; the owner merges each |
 | Wed 2026-11-18 | L20, L21; C1, the checkpoint for #1915, in the evening | sessions; the owner merges each, then reads the week's usage and decides C1 |
-| Thu 2026-11-19 | R5: the freeze starts, the checklist runs, the tree goes to 1.0 (1823), sitting T2 retakes what the rows changed | a session; the owner archives and uploads that evening |
+| Thu 2026-11-19 | L25 in the morning (decision 139), if C1 left #1915 for later; then R5: the freeze starts, the checklist runs, the tree goes to 1.0 (1823), sitting T2 retakes what the rows changed | a session; the owner archives and uploads that evening |
 | Fri 2026-11-20 | R6, the device pass, in the morning; R7, the bump to 1861; R3: the website made public, the App Store Connect entry, the submission, the tag | the owner; a session for R7 |
 | Sat 2026-11-21 | Slack: R3, if Friday's pass or entry runs long | — |
 
-**If a day slips**, the rows give way in this order, each to the first update after 1.0: L21 first, then L20's S parts (Cancel All on the Mac, the failed download's line), then L19's IPA-6. L15 to L18, L22 and the rest of L19 and L20 stay: they are the owner's own issues and choices (decision 130), the store's checks, and the defects that mislead a researcher or lose their work. A defect R6 finds goes to a row on the owner's word. One that is not a crash, a loss of work or a store check may go to the first update instead, so that 1.0 (1861) keeps its week.
+**If a day slips**, the rows give way in this order, each to the first update after 1.0: L21 first, then L20's S parts (Cancel All on the Mac, the failed download's line), then L19's IPA-6. L25 gives way before L21 does: four templates that work are not a defect, and a slip moves the six to the first update. L15 to L18, L22 and the rest of L19 and L20 stay: they are the owner's own issues and choices (decision 130), the store's checks, and the defects that mislead a researcher or lose their work. A defect R6 finds goes to a row on the owner's word. One that is not a crash, a loss of work or a store check may go to the first update instead, so that 1.0 (1861) keeps its week.
 
-**If C1 takes #1915**, its two pull requests are rows L23 and L24 before R5: the kit's rules, then the screen. R5 then moves to Friday, R6 to Saturday, and the submission to Sunday 2026-11-22 at the earliest. If C1 does not take it, the calendar stands, and #1915 leads the release after 1.0.
+**If C1 takes #1915**, its two pull requests are rows L23 and L24 before R5: the kit's rules, then the screen. L25 follows them (decision 139). R5 then moves to Friday, R6 to Saturday, and the submission to Sunday 2026-11-22 at the earliest. If C1 does not take it, the calendar stands, L25 runs on Thursday morning before R5, and #1915 leads the release after 1.0.
 
 ### 1a. Where each issue filed from 2026-11-09 to 2026-11-14 goes
 
@@ -367,10 +375,35 @@ It is written from four sources:
     - Its two pull requests, as its issue lays them out, are rows L23 and L24:
       - L23, the kit's merge rules, Foundation only, with the issue's tests over format versions 1 to 7 and a file from the web edition;
       - L24, the **Import from JSON…** screen in Data & Recovery on both platforms, through `fileImporter`, with the plan's report shown before anything is written and saves made in batches.
+    - L25 follows L24 (decision 139).
     - R5 moves to Friday, R6 to Saturday, and the submission to Sunday 2026-11-22 at the earliest.
     - The TestFlight notes and R6 add an import on each platform: an export from 1.0 (1812), and one from the web edition.
     - No CloudKit change is expected, since imported records are the existing models. A row that finds one stops, by §0's rule.
   - **#1915 after 1.0.** It leads the release after it (§3). Its kit half may still be built beside the rows, and merges after the upload (decision 129).
+- **L25, the Collections templates** (decision 139). One fresh session **on the owner's Mac, not a cloud session**, from `v2` once L22 has merged, and after L23 and L24 if C1 takes #1915; the last row before R5. It has no issue unless the owner asks for one; this entry is its brief.
+  - **The six recipes**, in the grid's order, replacing `CollectionPreset`'s four cases. Fields as `CollectionPreset.Recipe` names them; apparatus in the order it is appended.
+
+    | | Card name | Subtitle | Body depth | Footnotes / source note | Notes | Headnotes | Highlights | Word cloud | Contents | Apparatus |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | 1 | Full text as printed | Footnotes · source notes · bibliography · archives | `.full` | on / on | off | off | off | off | `.citation` | Bibliography, Sources & Archives |
+    | 2 | Full text with your annotations | Notes · highlights · headnotes · chronology · persons | `.full` | off / on | on | on | on | off | `.headerAndDateline` | Chronology, Persons Index |
+    | 3 | Summaries with overview | AI summaries · notes · word cloud · chronology · themes | `.summaryOnly` | off / off | on | off | off | on | `.headerAndDateline` | Chronology, Thematic Index |
+    | 4 | Citations with your notes | Citation list · notes · bibliography · themes | `.index` | off / off | on | off | off | off | `.citation` | Bibliography, Thematic Index |
+    | 5 | Citations with archival sources | Citation list · source notes · archives · persons | `.index` | off / on | off | off | off | off | `.citation` | Sources & Archives, Persons Index |
+    | 6 | Everything included | Full text · all options · all five sections | `.full` | on / on | on | on | on | on | `.citation` | all five, in today's *Scholarly edition* order |
+
+  - **Short names and tags for the compact chip row**, which shows all six (`compactPresets` goes; the row already scrolls): *Printed* / full text, *Annotated* / full text, *Summaries* / AI, *Noted* / citations, *Archival* / citations, *Everything* / all on. The session may better these where a chip measures too wide, keeping each one descriptive.
+  - **What changes besides the recipes:**
+    - the case names, `displayName`, `subtitle`, `shortName`, `shortTag` and `systemImage`, each string under a new `collection.preset.*` key through `String(localized:)`; a symbol each that exists on iOS 26 and macOS 15;
+    - the regular-width grid goes from 2×2 to three rows of two (`CollectionCompositionRows.swift`), and the editor's caption that leads with the active template (`CollectionEditorView.swift`, `activePreset`) reads the new names;
+    - the type's doc comment, which describes four shapes and *Briefing packet*'s no-op highlights; summary-only templates now leave highlights off, so the note goes;
+    - `CollectionTests.presetApply`, brought to the six, with a test that no two recipes match the same fields, since `matches(_:)` compares fields and not apparatus, and one that each apparatus block is in at least two templates besides *Everything included*.
+  - **What does not change:** a template is never stored, only the fields it writes, so existing collections keep their composition, and renaming the cases needs no migration. Applying one still overwrites the fields and appends the apparatus without removing any. The colophon, the method appendix, the project provenance and a document's related documents stay outside the recipes. No index version and no CloudKit change; a row that finds one stops, by §0's rule.
+  - **Shared code.** `CollectionPreset` is FRUSCoreKit's, so `swift build --target FRUSCoreKit` and `swift test` are owed with the unit target and the Mac build. The cases are public and the web edition reads `recipe`; it follows the rename, as `CLAUDE.md`'s web-edition rules say, with nothing held back for it.
+  - **Docs:** the template tables and their lead-in (*offers all four… leaves Scholarly edition out*) in `Docs/iOS-User-Manual.md` §12.7 and `Docs/macOS-User-Manual.md` §12.6, and the two walkthroughs that name *Teaching reader* and *Source dossier*; `tools/marketing/shots.json`'s two `course-reader` sublines; `Planning/website-drafts/Tour-draft.md` and the tour block pasted from it, flagged for the owner if the page is already on the site; the *AI Generated* notice stays (decision 94). No EditableContent block names the template keys today; if the session adds the new strings to `Docs/EditableContent/`, one Amendment-Log bullet.
+  - **Captures:** the session's log entry names those it changes, for T2 (R5): `ipad/collections-editor` and `macos/collections` if they show the cards, and any frame composed under a renamed template. `Docs/screenshots/README.md`'s demo state, composed under *Teaching reader*, is a dated record and is left as written.
+  - **Checks:** the unit target's `CollectionTests` while developing, then the landing runs §0 names; a look at the grid on an iPad and the chip row on an iPhone, at the default text size and at AX3, and at the Mac's Collections window, each with every card applied once.
+
 - **R5, the release checklist and 1.0 (1823), the fourth TestFlight build.** One fresh session from `v2` when every row above has merged; the freeze starts when it does (decision 129).
   - **Two things the checklist would stop on, fixed first, test code only:**
     - **The third warning line.** A clean `build-for-testing` has printed three warning lines since Lane 2 (#1875): the two known residues and `FRUSOffsetEngineTests.swift:2736`'s ambiguous `#require(… as? Bool)` (L11's session found it; every session since counts "`v2`'s 3 warning lines"). The checklist allows the two residues and nothing else, so the value is read first and the cast required after (`:2736`, and `:2753`'s twin if it warns).
@@ -465,6 +498,7 @@ The repository holds a draft for each.
 **The seven questions are answered** (decisions 128 to 136, 2026-11-15). Five took §4's recommendation as it stood. Q3 added #1909 and #1910 to 1.0, with a checkpoint for #1915. Q6 took *Subjects*, with a caption on the owner's terms. What is left for the owner this week:
 - **N1**, the NARA lookup with the key, on Monday.
 - **C1**, the checkpoint for #1915, on Wednesday evening (decision 132).
+- **L25's session**, started on the Mac, not in the cloud (decision 139).
 - **The merges**, each row's in turn; the archives and uploads; and R6's device pass.
 
 **Carried:**
