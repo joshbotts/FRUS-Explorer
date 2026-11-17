@@ -57,6 +57,9 @@ import AppKit
 ///   1.4 — FRUS Explorer Light: the inventory counts the eight types the JSON export carries from
 ///          format version 7, and the JSON footer names them under a new key
 ///   1.5 — #1791: every **Contents** count is of distinct ids, the records the export writes
+///   1.6 — #1910: on the Mac, a line under Export Research Database… names the index version the
+///          copy will carry, or says the index is being updated, and the done line names it too
+///          (`DatabaseExportIndexVersion`)
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -93,6 +96,12 @@ struct DataExportSections: View {
     @State private var databaseExportRunning = false
     @State private var databaseExportResult: String?
     @State private var databaseExportProblem: String?
+    #if os(macOS)
+    /// The installed index version (#1910), observed, so the line under the button moves when a
+    /// re-index raises it (`IndexingPipeline.markDateReindexComplete()`), which may be after the
+    /// indexing batch has ended. Read only; the pipeline writes it.
+    @AppStorage(IndexingPipeline.dateIndexVersionKey) private var installedIndexVersion = 0
+    #endif
 
     private var userPromptCount: Int {
         DuplicateCopies.count(prompts.filter { !$0.isStandard }, id: \.id)
@@ -234,6 +243,14 @@ struct DataExportSections: View {
                       || appState.indexingBatch != nil
                       || appState.databaseURL == nil)
 
+            // #1910: the index version the copy will carry, which FRUS Explorer Light checks an
+            // export against before it serves one, so a reader can check it before copying
+            // gigabytes. While a batch runs the button is disabled, and the line says why.
+            Text(DatabaseExportIndexVersion.line(installed: installedIndexVersion,
+                                                 current: IndexingPipeline.currentDateIndexVersion,
+                                                 isUpdating: appState.indexingBatch != nil))
+                .foregroundStyle(.secondary)
+
             if let databaseExportResult {
                 Label(databaseExportResult, systemImage: "checkmark.circle")
                     .foregroundStyle(.secondary)
@@ -277,9 +294,9 @@ struct DataExportSections: View {
                 await MainActor.run {
                     databaseExportRunning = false
                     if report.integrityProblems.isEmpty {
-                        databaseExportResult = String(
-                            localized: "settings.export.database.done",
-                            defaultValue: "Exported \(size).")
+                        // The version the stamp inside the copy records, taken before the copy.
+                        databaseExportResult = DatabaseExportIndexVersion.doneLine(
+                            size: size, version: stamp.installedIndexVersion)
                     } else {
                         // A file that looks fine and is not is the one outcome worth shouting
                         // about, so the problems are surfaced rather than folded into success.
@@ -448,6 +465,63 @@ struct DataExportSections: View {
         #if DEBUG
         print("[DataExportSections] Markdown export prepared: \(urls.count) file(s)")
         #endif
+    }
+}
+
+// MARK: - The index version an export carries (#1910)
+
+/// What Export Research Database… says about the index version its copy will carry (#1910).
+///
+/// FRUS Explorer Light serves an export only at its own index version, and refuses any other once
+/// the copy has been made and imported: "This export is index version N; this server serves index
+/// version M". So the Mac names the version under the button, before the reader copies an index of
+/// several gigabytes: the installed one, the version the copy's `research_provenance` records as
+/// `installed_index_version`. While an indexing batch runs the button is disabled, and the line
+/// says the index is being updated, to the version this build writes when the installed one is
+/// older.
+///
+/// Pure, so a test reads every case without an index; only the Mac shows it, beside the button.
+///
+/// Version history:
+///   1.0 — 2026-11-17 (#1910): initial implementation
+enum DatabaseExportIndexVersion {
+
+    /// The line under the button.
+    ///
+    /// - Parameters:
+    ///   - installed: The installed index version (`IndexingPipeline.dateIndexVersionKey`), `0`
+    ///     before any was recorded.
+    ///   - current: The version this build writes (`IndexingPipeline.currentDateIndexVersion`).
+    ///   - isUpdating: Whether an indexing batch is running (`AppState.indexingBatch`).
+    static func line(installed: Int, current: Int, isUpdating: Bool) -> String {
+        if isUpdating {
+            if installed < current {
+                return String(localized: "settings.export.database.indexVersion.updatingTo",
+                              defaultValue: "The index is being updated to version \(current). You can export it when the update is done.")
+            }
+            return String(localized: "settings.export.database.indexVersion.updating",
+                          defaultValue: "The index is being updated. You can export it when the update is done.")
+        }
+        if installed <= 0 {
+            return String(localized: "settings.export.database.indexVersion.none",
+                          defaultValue: "The index has no version recorded yet.")
+        }
+        if installed < current {
+            return String(localized: "settings.export.database.indexVersion.older",
+                          defaultValue: "The copy will carry index version \(installed), not this build’s \(current).")
+        }
+        return String(localized: "settings.export.database.indexVersion",
+                      defaultValue: "The copy will carry index version \(installed).")
+    }
+
+    /// The line a copy that verified shows when it is done: its size and the index version the
+    /// stamp inside it records.
+    static func doneLine(size: String, version: Int) -> String {
+        guard version > 0 else {
+            return String(localized: "settings.export.database.done", defaultValue: "Exported \(size).")
+        }
+        return String(localized: "settings.export.database.done.withVersion",
+                      defaultValue: "Exported \(size), index version \(version).")
     }
 }
 

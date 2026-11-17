@@ -1449,6 +1449,56 @@ struct ResearchStateRecordTests {
     }
 }
 
+// MARK: - DatabaseExportIndexVersionTests
+
+/// The line under the Mac's Export Research Database… that names the index version its copy will
+/// carry (#1910), in each state the index can be in, and the line an export shows when it is done.
+///
+/// Version history:
+///   1.0 — 2026-11-17 (#1910): initial implementation
+@Suite("Export Research Database… names the index version its copy carries (#1910)")
+struct DatabaseExportIndexVersionTests {
+
+    @Test("An index at this build's version is the version the copy carries")
+    func anIndexAtThisBuildsVersion() {
+        #expect(DatabaseExportIndexVersion.line(installed: 75, current: 75, isUpdating: false)
+                == "The copy will carry index version 75.")
+        // A newer index than the build's, as an older build reading a newer build's index meets:
+        // the copy carries what is installed.
+        #expect(DatabaseExportIndexVersion.line(installed: 76, current: 75, isUpdating: false)
+                == "The copy will carry index version 76.")
+    }
+
+    @Test("An older index names its version and this build's")
+    func anOlderIndex() {
+        #expect(DatabaseExportIndexVersion.line(installed: 74, current: 75, isUpdating: false)
+                == "The copy will carry index version 74, not this build’s 75.")
+    }
+
+    @Test("While a batch runs, the line says the index is being updated, and to which version")
+    func whileABatchRuns() {
+        #expect(DatabaseExportIndexVersion.line(installed: 74, current: 75, isUpdating: true)
+                == "The index is being updated to version 75. You can export it when the update is done.")
+        #expect(DatabaseExportIndexVersion.line(installed: 0, current: 75, isUpdating: true)
+                == "The index is being updated to version 75. You can export it when the update is done.")
+        #expect(DatabaseExportIndexVersion.line(installed: 75, current: 75, isUpdating: true)
+                == "The index is being updated. You can export it when the update is done.")
+    }
+
+    @Test("An index with no version recorded says so")
+    func noVersionRecorded() {
+        #expect(DatabaseExportIndexVersion.line(installed: 0, current: 75, isUpdating: false)
+                == "The index has no version recorded yet.")
+    }
+
+    @Test("The done line names the size and the version the copy's stamp records")
+    func theDoneLine() {
+        #expect(DatabaseExportIndexVersion.doneLine(size: "2.8 GB", version: 75)
+                == "Exported 2.8 GB, index version 75.")
+        #expect(DatabaseExportIndexVersion.doneLine(size: "12 KB", version: 0) == "Exported 12 KB.")
+    }
+}
+
 // MARK: - Copies stored under one id (#1791)
 
 /// What reads notes, saved searches and the research trail reads one copy of each id, and what edits

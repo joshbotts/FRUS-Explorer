@@ -1088,32 +1088,76 @@ Digitized Scans
 *Footers, empty states and confirmations across Settings that §6 does not carry — Tags, Projects, Volume Scopes, Search, Display, Summarization, Connections (NARA and Zotero), Data & Recovery, the storage hubs, vector and model storage, index health and the research data export. Settings is assembled from more than one view file, so several strings are declared twice; the SOURCE line names every file that carries one.*
 
 #### Footer — Adds all \(…) generated summaries to the JSON export. Off…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 139–140 | key: settings.export.includeSummaries.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 148–149 | key: settings.export.includeSummaries.footer -->
 
 Adds all \(summaries.count) generated summaries to the JSON export. Off by default since AI output can be large.
 
 <!-- END SOURCE: settings.export.includeSummaries.footer -->
 
 #### Footer — One Markdown file per research note, with a citation and…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 172–173 | key: settings.export.markdown.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 181–182 | key: settings.export.markdown.footer -->
 
 One Markdown file per research note, with a citation and link back to the source document. Compatible with Obsidian and similar note-taking tools.
 
 <!-- END SOURCE: settings.export.markdown.footer -->
 
 #### Footer — A complete copy of the search index, for analysis with your…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 247–248 | key: settings.export.database.footer | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 264–265 | key: settings.export.database.footer | shared: macOS only -->
 
 A complete copy of the search index, for analysis with your own tools. With the switch off, your notes, summaries and tag names are removed from the copy and the freed space reclaimed, so the words are gone rather than merely unlinked. The copy is verified before it is handed over. It is roughly the size of the index on disk.
 
 <!-- END SOURCE: settings.export.database.footer -->
 
 #### Exported \(…), but the copy did not verify: \(…)
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 287–288 | key: settings.export.database.integrity | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 304–305 | key: settings.export.database.integrity | shared: macOS only -->
 
 Exported \(size), but the copy did not verify: \(report.integrityProblems.joined(separator: "; "))
 
 <!-- END SOURCE: settings.export.database.integrity -->
+
+*The line under Export Research Database… on the Mac (#1910): the index version the copy will carry, which a tool that reads the copy may require, or why the button waits. The Mac shows one of the five at a time, and the done line after a copy that verified.*
+
+#### The copy will carry index version \(…).
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 513–514 | key: settings.export.database.indexVersion | shared: macOS only -->
+
+The copy will carry index version \(installed).
+
+<!-- END SOURCE: settings.export.database.indexVersion -->
+
+#### The copy will carry index version \(…), not this build’s \(…).
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 510–511 | key: settings.export.database.indexVersion.older | shared: macOS only -->
+
+The copy will carry index version \(installed), not this build’s \(current).
+
+<!-- END SOURCE: settings.export.database.indexVersion.older -->
+
+#### The index is being updated to version \(…). You can export it…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 499–500 | key: settings.export.database.indexVersion.updatingTo | shared: macOS only -->
+
+The index is being updated to version \(current). You can export it when the update is done.
+
+<!-- END SOURCE: settings.export.database.indexVersion.updatingTo -->
+
+#### The index is being updated. You can export it when the update is done.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 502–503 | key: settings.export.database.indexVersion.updating | shared: macOS only -->
+
+The index is being updated. You can export it when the update is done.
+
+<!-- END SOURCE: settings.export.database.indexVersion.updating -->
+
+#### The index has no version recorded yet.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 506–507 | key: settings.export.database.indexVersion.none | shared: macOS only -->
+
+The index has no version recorded yet.
+
+<!-- END SOURCE: settings.export.database.indexVersion.none -->
+
+#### Exported \(…), index version \(…).
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.doneLine | lines: 523–524 | key: settings.export.database.done.withVersion | shared: macOS only -->
+
+Exported \(size), index version \(version).
+
+<!-- END SOURCE: settings.export.database.done.withVersion -->
 
 #### The included copy of the terms could not be loaded. The…
 
