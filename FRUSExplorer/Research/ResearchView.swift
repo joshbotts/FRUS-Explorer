@@ -183,6 +183,8 @@ struct ResearchDocumentEntry: Identifiable {
 ///          and the `.isSelected` trait, both from `selectedItem`), and every category row carries
 ///          `ResearchSidebarItem.rowAccessibilityIdentifier` on all three layouts.
 ///   1.9 — #1791: a document's notes are grouped one copy of each, however many are stored
+///   1.10 — L21 (UI review MAC-5, #1921): each document row prints the document's number above its
+///          head (`ResearchDocumentRowText`)
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -961,7 +963,15 @@ struct ResearchView: View {
             // editorial note resolves to "Editorial Note 304", which is final rather than a
             // placeholder and reads as `.primary` accordingly.
             let facts = documentHeaders[entry.id]
-            Text(DocumentDisplayTitle.text(facts, documentId: entry.documentId))
+            let naming = ResearchDocumentRowText.parts(facts: facts, documentId: entry.documentId)
+            // L21 (MAC-5): the document's number above its head, as the Mac collection manager's
+            // rows print it, so same-headed telegrams no longer read alike. One line, always
+            // drawn, so the row keeps its height when `loadHeaders` lands.
+            Text(naming.label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(naming.title)
                 .font(.body)
                 .foregroundStyle(facts == nil ? .secondary : .primary)
                 .lineLimit(2, reservesSpace: true)
@@ -1615,5 +1625,40 @@ extension ResearchDocumentAggregation.Summary {
     init(of summary: GeneratedSummary) {
         self.init(volumeId: summary.volumeId, documentId: summary.documentId,
                   isHeadnoteDraft: summary.isHeadnoteDraft)
+    }
+}
+
+// MARK: - ResearchDocumentRowText
+
+/// What a Research document row prints to name its document (L21, UI review MAC-5, #1921): a line
+/// with the document's number, and the title beneath it.
+///
+/// A row printed the head and the volume, so three same-headed telegrams, Documents 474, 475 and
+/// 476 of `frus1946v06`, each "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+/// read alike (`macos/research`, rows 1, 5 and 6). The number was loaded with the head and never
+/// drawn. The line is the Mac collection manager's row label
+/// (`CitableDocumentNumber.rowLabel(printed:documentId:)`): "Document 475"; "Unnumbered
+/// (d710a-1)" for a document the volume prints without a number; else the id. Search's rows name
+/// the number too, as "Doc 475" on the Mac and "475." on iPhone and iPad.
+///
+/// The title loses a leading number the line above already prints: #1391's rule for a row that
+/// draws the number as an element of its own (`DocumentHeaderDisplay.numberedRow(header:number:)`),
+/// since 79,496 of the corpus's 314,571 heads open with it ("81. Memorandum From…"), and the row
+/// would read "Document 81" over "81. Memorandum From…". The stored head is not changed: the
+/// document a row opens is titled with it in full.
+enum ResearchDocumentRowText {
+
+    /// The number line and the title of one row.
+    ///
+    /// - Parameters:
+    ///   - facts: What the index holds for the document, or `nil` until `loadHeaders` lands, or
+    ///     when its volume is not indexed.
+    ///   - documentId: The document's id.
+    /// - Returns: The line, which is never empty, and the title, which is never empty.
+    static func parts(facts: DocumentDisplayTitle.Facts?, documentId: String) -> (label: String, title: String) {
+        let label = CitableDocumentNumber.rowLabel(printed: facts?.documentNumber, documentId: documentId)
+        let title = DocumentDisplayTitle.text(facts, documentId: documentId)
+        let number = CitableDocumentNumber.resolve(printed: facts?.documentNumber, documentId: documentId)
+        return (label, DocumentHeaderDisplay.numberedRow(header: title, number: number).title)
     }
 }

@@ -518,3 +518,91 @@ struct ResearchSidebarOpenMarkSourceTests {
         #expect(sites.contains("\(Self.corpusView) body"), "the scan did not reach BrowseOpenDoorMark.body: \(sites)")
     }
 }
+
+// MARK: - ResearchDocumentRowTextTests
+
+/// A Research document row names its document by number above its head (L21, UI review MAC-5,
+/// #1921).
+///
+/// Before L21 a row printed the head and the volume, so Documents 474, 475 and 476 of
+/// `frus1946v06`, each "The Chargé in the Soviet Union (Kennan) to the Secretary of State", read
+/// alike on the `macos/research` capture. `ResearchView` is shared by iPhone, iPad and the Mac, so
+/// the rule's cases run here on every destination; the source gate holds the row to drawing it.
+///
+/// Version history:
+///   1.0 — L21 (MAC-5): initial implementation
+@Suite("Research rows — the document's number (MAC-5)")
+struct ResearchDocumentRowTextTests {
+
+    /// Facts as `CrossReferenceStore.documentTitleFacts(for:)` returns them for one document.
+    private func facts(_ header: String?, _ number: String?, note: Bool = false) -> DocumentDisplayTitle.Facts {
+        DocumentDisplayTitle.Facts(header: header, documentNumber: number, isEditorialNote: note)
+    }
+
+    @Test("three same-headed telegrams read apart by their numbers")
+    func sameHeadedTelegramsReadApart() {
+        let head = "The Chargé in the Soviet Union (Kennan) to the Secretary of State"
+        // Typed: an untyped literal is inferred as `[String?]` from `facts`' parameter, and the id
+        // would read `dOptional("474")`.
+        let numbers: [String] = ["474", "475", "476"]
+        let rows = numbers.map {
+            ResearchDocumentRowText.parts(facts: facts(head, $0), documentId: "d\($0)")
+        }
+        #expect(rows.map(\.label) == ["Document 474", "Document 475", "Document 476"])
+        #expect(rows.map(\.title) == [head, head, head], "the head is printed whole, as before")
+    }
+
+    @Test("a head that opens with its own number gives it to the line above")
+    func numberedHeadLosesItsNumber() {
+        let row = ResearchDocumentRowText.parts(
+            facts: facts("81. Memorandum From the Director of the Policy Planning Staff (Bowie) to the Secretary of State", "81"),
+            documentId: "d81")
+        #expect(row.label == "Document 81")
+        #expect(row.title == "Memorandum From the Director of the Policy Planning Staff (Bowie) to the Secretary of State")
+        // A head that opens with another number keeps it: there the number is part of the title.
+        let other = ResearchDocumentRowText.parts(facts: facts("1. Sir Edward Thornton to Mr. Fish.", "17"),
+                                                  documentId: "d17")
+        #expect(other == (label: "Document 17", title: "1. Sir Edward Thornton to Mr. Fish."))
+    }
+
+    @Test("before the head loads, the id names the number, and the row keeps both lines")
+    func provisionalRow() {
+        let row = ResearchDocumentRowText.parts(facts: nil, documentId: "d475")
+        #expect(row == (label: "Document 475", title: "d475"))
+        // An id that is not a number: the line is the id, as the Mac collection manager's row is.
+        let section = ResearchDocumentRowText.parts(facts: nil, documentId: "ch1")
+        #expect(section == (label: "ch1", title: "ch1"))
+    }
+
+    @Test("an unnumbered document and an editorial note are named as the other lists name them")
+    func unnumberedAndEditorialNote() {
+        let potsdam = ResearchDocumentRowText.parts(
+            facts: facts("The Secretary of State to the Acting Secretary of State",
+                         "[Unnumbered document following Document 710 (#1)]"),
+            documentId: "d710a-1")
+        #expect(potsdam == (label: "Unnumbered (d710a-1)",
+                            title: "The Secretary of State to the Acting Secretary of State"))
+        let note = ResearchDocumentRowText.parts(facts: facts("Editorial Note", "304", note: true),
+                                                 documentId: "d304")
+        #expect(note == (label: "Document 304", title: "Editorial Note 304"))
+    }
+
+    /// The row draws the rule: the number's line, then the title, where the title alone was drawn.
+    @Test("the Research row draws the number's line above the title (MAC-5)")
+    func rowDrawsTheNumber() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appending(path: "FRUSExplorer/Research/ResearchView.swift"),
+                                encoding: .utf8)
+        let code = NaturalLanguageReadinessScanTests.code(source)
+        let start = try #require(code.range(of: "private func documentRow(_ entry: ResearchDocumentEntry) -> some View"),
+                                 "ResearchView has no documentRow")
+        let range = try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: start.upperBound))
+        let row = code[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        #expect(row.contains("let naming = ResearchDocumentRowText.parts(facts: facts, documentId: entry.documentId) "
+                             + "Text(naming.label) .font(.caption.weight(.medium)) .foregroundStyle(.secondary) .lineLimit(1) "
+                             + "Text(naming.title) .font(.body)"),
+                "the row does not draw the number's line above the title: \(row.prefix(600))")
+        #expect(!row.contains("Text(DocumentDisplayTitle.text(facts, documentId: entry.documentId))"),
+                "the row draws the bare title again, with no number")
+    }
+}
