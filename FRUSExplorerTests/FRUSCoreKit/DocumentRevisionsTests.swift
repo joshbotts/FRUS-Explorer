@@ -45,6 +45,8 @@ import CSQLite
 ///          runs it too, since what it tests is the kit's indexer. Two pieces stay Xcode's: the test of
 ///          `updateSummary(_:)`, which takes the app's `GeneratedSummary`, and one assertion about the
 ///          app's `DocumentChangeBanner`, inside a test the package runs
+///   1.2 — 2026-11-17 (#1909): the file also holds `IndexedVolumeFileTests`, the record of the file
+///          each volume was indexed from, the per-volume half of what an index records about its TEI
 @Suite("Document revisions — the change set recorded at index time")
 struct DocumentRevisionsTests {
 
@@ -834,5 +836,334 @@ struct DocumentRevisionsTests {
         let reopened = try h.reopen()
         #expect((try await reopened.documentSourcesByKey([(volumeId: vol, documentId: "ghost")])).isEmpty, "swept")
         #expect(!(try await reopened.documentSourcesByKey([(volumeId: vol, documentId: "d1")])).isEmpty, "the real row stays")
+    }
+}
+
+// MARK: - IndexedVolumeFileTests
+
+/// The file each volume was indexed from (#1909, index version 75): the git blob SHA-1 of the
+/// bytes its store pass parsed and their length, on the `volume_structures` row that records the
+/// pass finished (#1566).
+///
+/// Every case indexes through the real `indexVolume(_:)` or `indexAllVolumes()` and reads the
+/// record back through the pipeline's own `indexedVolumeFiles()`, or through a read-only open of a
+/// copy made as an export's is, which is how FRUS Explorer Light reads it. The expected hashes are
+/// git's (`git hash-object` of the fixture's bytes), not the kit's function run a second time, so
+/// they also pin that the record is the hash GitHub reports for the same file.
+///
+/// Version history:
+///   1.0 — 2026-11-17 (#1909): initial implementation
+@Suite("FRUSCoreKit — the file each volume was indexed from (#1909)")
+struct IndexedVolumeFileTests {
+
+    /// The volume most cases index.
+    private static let volumeId = "frus1970v01"
+
+    /// A volume of `documents` documents, each holding `text`. One line after the XML
+    /// declaration, so the bytes, and the hashes pinned below, are the same on every platform.
+    private static func volumeBytes(_ text: String, documents: Int = 1) -> Data {
+        let divs = (1...documents).map { n in
+            "<div type=\"document\" xml:id=\"d\(n)\" n=\"\(n)\"><head>\(n). Telegram</head><p>\(text)</p></div>"
+        }.joined()
+        return Data(("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                     + "<TEI xmlns=\"http://www.tei-c.org/ns/1.0\"><text><body>"
+                     + "<div type=\"compilation\" xml:id=\"comp1\">\(divs)</div></body></text></TEI>\n").utf8)
+    }
+
+    /// `git hash-object` of `volumeBytes("First text.")`, 245 bytes.
+    private static let firstSHA = "a5f54507456b6fbca376afab4af69a1ba4e64604"
+    /// `git hash-object` of `volumeBytes("Second text, a little longer.")`, 263 bytes.
+    private static let secondSHA = "b66b8c9132b9c652c4b9f53bcc30e98996d1640a"
+
+    /// The record of `firstSHA`'s bytes as `volumeId`, or another volume.
+    private static func first(_ volumeId: String = volumeId) -> IndexedVolumeFile {
+        IndexedVolumeFile(volumeId: volumeId, blobSHA1: firstSHA, sizeBytes: 245)
+    }
+
+    /// The record of `secondSHA`'s bytes as `volumeId`, or another volume.
+    private static func second(_ volumeId: String = volumeId) -> IndexedVolumeFile {
+        IndexedVolumeFile(volumeId: volumeId, blobSHA1: secondSHA, sizeBytes: 263)
+    }
+
+    /// A folder holding a `volumes` folder and an index, with a read-write pipeline over them.
+    private struct Harness {
+        let volumes: URL
+        let database: URL
+        let pipeline: IndexingPipeline
+
+        init(dir: URL) throws {
+            volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+            database = dir.appendingPathComponent("built.db")
+            pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database),
+                                            databaseURL: database, volumesDirectory: volumes,
+                                            resources: .none, defaults: InMemoryIndexingStampStore())
+        }
+
+        /// Writes `bytes` as `volumeId`'s file, replacing it as a download or an update does.
+        func write(_ bytes: Data, as volumeId: String = IndexedVolumeFileTests.volumeId) throws {
+            try bytes.write(to: volumes.appendingPathComponent("\(volumeId).xml"), options: .atomic)
+        }
+    }
+
+    /// A temporary directory for `body`, removed after it.
+    private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexedFile-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        return try await body(dir)
+    }
+
+    /// Copies the index at `built` page for page with SQLite's backup API, out of write-ahead-log
+    /// mode, into a folder of its own, as Export Research Database… makes its copy before any strip.
+    private func exportCopy(of built: URL, in dir: URL) throws -> URL {
+        let folder = dir.appendingPathComponent("export", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let copy = folder.appendingPathComponent("frus.db")
+        var source: OpaquePointer?, target: OpaquePointer?
+        try #require(sqlite3_open_v2(built.path, &source, SQLITE_OPEN_READONLY, nil) == SQLITE_OK)
+        try #require(sqlite3_open_v2(copy.path, &target, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK)
+        let backup = try #require(sqlite3_backup_init(target, "main", source, "main"))
+        #expect(sqlite3_backup_step(backup, -1) == SQLITE_DONE)
+        sqlite3_backup_finish(backup)
+        #expect(sqlite3_exec(target, "PRAGMA journal_mode=DELETE", nil, nil, nil) == SQLITE_OK)
+        #expect(sqlite3_close(target) == SQLITE_OK && sqlite3_close(source) == SQLITE_OK)
+        try? FileManager.default.removeItem(at: folder.appendingPathComponent("frus.db-shm"))
+        return copy
+    }
+
+    /// Runs `sql` on its own connection to `database`.
+    private func exec(_ database: URL, _ sql: String) throws {
+        var db: OpaquePointer?
+        try #require(sqlite3_open_v2(database.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        var message: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(db, sql, nil, nil, &message)
+        let text = message.map { String(cString: $0) } ?? ""
+        sqlite3_free(message)
+        try #require(rc == SQLITE_OK, "\(text)")
+    }
+
+    @Test("A volume's record is git's blob SHA-1 of the file indexed and its size, which the corrections check computes too")
+    func theRecordIsTheGitBlobOfTheFileIndexed() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            let bytes = Self.volumeBytes("First text.")
+            try h.write(bytes)
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == nil, "nothing is indexed yet")
+            try await h.pipeline.indexVolume(Self.volumeId)
+
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == Self.first())
+            #expect(try h.pipeline.indexedVolumeFiles() == [Self.first()])
+            // The corrections check's own function over the file on disk gives the same hash, so
+            // the app may read the index for it, and a host hashing a mounted file compares the two.
+            let onDisk = try Data(contentsOf: h.volumes.appendingPathComponent("\(Self.volumeId).xml"))
+            #expect(onDisk == bytes)
+            #expect(VolumeUpdateChecker.gitBlobSHA1(for: onDisk) == Self.firstSHA)
+            #expect(try await h.pipeline.document(forDocumentId: "d1", inVolume: Self.volumeId)?.header
+                    == "1. Telegram", "the bytes hashed were parsed and stored")
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: "frus1970v99") == nil)
+        }
+    }
+
+    @Test("A changed file indexed again replaces its record, by one volume's pass or the whole index's")
+    func aChangedFileIndexedAgainReplacesItsRecord() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            try h.write(Self.volumeBytes("First text."))
+            try await h.pipeline.indexVolume(Self.volumeId)
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == Self.first())
+
+            try h.write(Self.volumeBytes("Second text, a little longer."))
+            try await h.pipeline.indexVolume(Self.volumeId)
+            #expect(try h.pipeline.indexedVolumeFiles() == [Self.second()], "one record a volume, the last pass's")
+
+            // The batch pass, the launch's re-index at a new version, records each volume it stores.
+            try h.write(Self.volumeBytes("First text."))
+            try h.write(Self.volumeBytes("Second text, a little longer."), as: "frus1970v02")
+            try await h.pipeline.indexAllVolumes()
+            #expect(try h.pipeline.indexedVolumeFiles() == [Self.first(), Self.second("frus1970v02")])
+        }
+    }
+
+    @Test("Removing a volume removes its record, and removing every volume removes every record")
+    func removingAVolumeRemovesItsRecord() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            try h.write(Self.volumeBytes("First text."))
+            try h.write(Self.volumeBytes("Second text, a little longer."), as: "frus1970v02")
+            try await h.pipeline.indexAllVolumes()
+            #expect(try h.pipeline.indexedVolumeFiles().count == 2)
+
+            try await h.pipeline.removeVolume(Self.volumeId)
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == nil)
+            #expect(try h.pipeline.indexedVolumeFiles() == [Self.second("frus1970v02")])
+
+            try await h.pipeline.removeAllVolumesFromIndex()
+            #expect(try h.pipeline.indexedVolumeFiles().isEmpty)
+        }
+    }
+
+    @Test("A pass cut short leaves no record, not the last pass's, and the pass that finishes it records the file")
+    func aPassCutShortLeavesNoRecord() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            try h.write(Self.volumeBytes("First text."))
+            try await h.pipeline.indexVolume(Self.volumeId)
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == Self.first())
+
+            // A corrected file of three documents, whose pass stops after its first batch, as a
+            // quit leaves one (#1566). The old record would name a file the index no longer holds
+            // whole, so it must go with the row that says the pass finished.
+            let corrected = Self.volumeBytes("Corrected text.", documents: 3)
+            try h.write(corrected)
+            await h.pipeline.setTestBatchSize(1)
+            await h.pipeline.setStopsBetweenBatchesWhenCancelled(true)
+            await h.pipeline.setDocumentBatchStoredTestHook { _, batch in
+                if batch == 1 { withUnsafeCurrentTask { $0?.cancel() } }
+            }
+            let pipeline = h.pipeline
+            let pass = Task { try await pipeline.indexVolume(Self.volumeId) }
+            await #expect(throws: CancellationError.self) { try await pass.value }
+            #expect(try h.pipeline.isStoreUnfinished(Self.volumeId))
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId) == nil)
+            #expect(try h.pipeline.indexedVolumeFiles().isEmpty)
+
+            await h.pipeline.setDocumentBatchStoredTestHook(nil)
+            #expect(await h.pipeline.finishIndexing(of: [Self.volumeId]) == [Self.volumeId])
+            #expect(try h.pipeline.indexedVolumeFile(forVolumeId: Self.volumeId)
+                    == IndexedVolumeFile(volumeId: Self.volumeId,
+                                         blobSHA1: VolumeUpdateChecker.gitBlobSHA1(for: corrected),
+                                         sizeBytes: corrected.count))
+        }
+    }
+
+    @Test("Both read-only opens read the records the index holds: an export's copy, immutable, and the live index beside its writer")
+    func theReadOnlyOpensReadTheRecords() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            try h.write(Self.volumeBytes("First text."))
+            try h.write(Self.volumeBytes("Second text, a little longer."), as: "frus1970v02")
+            try await h.pipeline.indexAllVolumes()
+            let written = try h.pipeline.indexedVolumeFiles()
+            #expect(written == [Self.first(), Self.second("frus1970v02")])
+
+            // FRUS Explorer Light's server, serving an export.
+            let copy = try exportCopy(of: h.database, in: dir)
+            let exported = try IndexingPipeline(readingIndexAt: copy, fts5Store: try FTS5Store(readingDatabaseAt: copy),
+                                                resources: .none)
+            #expect(exported.isReadOnly)
+            #expect(try exported.indexedVolumeFiles() == written)
+            #expect(try exported.indexedVolumeFile(forVolumeId: "frus1970v02") == Self.second("frus1970v02"))
+
+            // Its Standalone server, reading the index its indexing job writes.
+            let live = try IndexingPipeline(readingLiveIndexAt: h.database,
+                                            fts5Store: try FTS5Store(readingLiveDatabaseAt: h.database),
+                                            resources: .none)
+            #expect(try live.indexedVolumeFiles() == written)
+            try h.write(Self.volumeBytes("Second text, a little longer."))
+            try await h.pipeline.indexVolume(Self.volumeId)
+            #expect(try live.indexedVolumeFile(forVolumeId: Self.volumeId) == Self.second(),
+                    "the live open reads what the writer committed after it opened")
+        }
+    }
+
+    @Test("An index from before version 75 holds no record: read-only it answers with none, and a read-write open adds the columns empty")
+    func anIndexFromBeforeVersion75HoldsNoRecord() async throws {
+        try await withTempDir { dir in
+            let h = try Harness(dir: dir)
+            try h.write(Self.volumeBytes("First text."))
+            try await h.pipeline.indexVolume(Self.volumeId)
+            // The table as version 74 and earlier wrote it.
+            try exec(h.database, """
+                CREATE TABLE volume_structures_74 (volume_id TEXT PRIMARY KEY, structure_json TEXT NOT NULL);
+                INSERT INTO volume_structures_74 SELECT volume_id, structure_json FROM volume_structures;
+                DROP TABLE volume_structures;
+                ALTER TABLE volume_structures_74 RENAME TO volume_structures;
+                """)
+
+            // An export from before 75, opened read-only, where no migration runs: no record, and
+            // no error, so a host compares every volume as it did before.
+            let copy = try exportCopy(of: h.database, in: dir)
+            let exported = try IndexingPipeline(readingIndexAt: copy, fts5Store: try FTS5Store(readingDatabaseAt: copy),
+                                                resources: .none)
+            #expect(try exported.indexedVolumeFiles().isEmpty)
+            #expect(try exported.indexedVolumeFile(forVolumeId: Self.volumeId) == nil)
+            #expect(try !exported.isStoreUnfinished(Self.volumeId), "the volume's pass still reads as finished")
+
+            // The app's own open migrates the table: the columns are there, empty until the
+            // version's re-index writes the row again.
+            let reopened = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: h.database),
+                                                databaseURL: h.database, volumesDirectory: h.volumes,
+                                                resources: .none, defaults: InMemoryIndexingStampStore())
+            #expect(try reopened.indexedVolumeFiles().isEmpty)
+            try await reopened.indexVolume(Self.volumeId)
+            #expect(try reopened.indexedVolumeFiles() == [Self.first()])
+        }
+    }
+
+    @Test("A volume's bytes parse as its file does: the same documents, text, hashes, people, terms, sources and outline")
+    func theBytesParseAsTheFileDoes() async throws {
+        try await withTempDir { dir in
+            let url = dir.appendingPathComponent("frus1969-76v99.xml")
+            try Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                  <teiHeader><fileDesc><titleStmt><title>Fixture</title></titleStmt>
+                  <publicationStmt><date type="publication-date">2010</date></publicationStmt>
+                  <sourceDesc><p>Fixture</p></sourceDesc></fileDesc></teiHeader>
+                  <text>
+                    <front>
+                      <div type="section" subtype="sources" xml:id="sources"><head>Sources</head>
+                        <list><item><hi rend="strong">Central Intelligence Agency</hi>
+                          <list><item>Job 79–R01012A (Registry of National Intelligence Estimates)</item></list>
+                        </item></list>
+                      </div>
+                      <div type="section" subtype="terms" xml:id="terms"><head>Abbreviations and Terms</head>
+                        <list><item><term xml:id="t_NSC1">NSC</term>, National Security Council</item></list>
+                      </div>
+                      <div type="section" subtype="persons" xml:id="persons"><head>Persons</head>
+                        <list><item><persName xml:id="p_KHA1">Kissinger, Henry A.</persName>, Assistant to the President</item></list>
+                      </div>
+                    </front>
+                    <body><div type="compilation" xml:id="comp1"><head>Arms Control</head>
+                      <pb n="1" xml:id="pg_1"/>
+                      <div type="document" xml:id="d1" n="1"><head>1. Memorandum From <persName corresp="#p_KHA1">Kissinger</persName><note n="1" type="source" xml:id="d1fn1">Source: Central Intelligence Agency, Job 79–R01012A, Box 1. Secret.</note></head>
+                        <dateline><placeName>Washington</placeName>, <date when="1970-03-02">March 2, 1970</date>.</dateline>
+                        <p>The <gloss target="#t_NSC1">NSC</gloss> met; see <ref target="#d2">Document 2</ref>.<note n="2" xml:id="d1fn2">A footnote, “quoted” &amp; escaped.</note></p>
+                        <pb n="2" xml:id="pg_2"/>
+                        <p>Text continues on page 2.</p></div>
+                      <div type="document" xml:id="d2" n="2"><head>2. Telegram</head><p>Short.</p></div>
+                    </div></body>
+                  </text>
+                </TEI>
+                """.utf8).write(to: url)
+            let parser = FRUSDocumentParser()
+            let fromFile = try await parser.parseVolumeFull(volumeURL: url)
+            let fromBytes = try await parser.parseVolumeFull(volumeData: try Data(contentsOf: url),
+                                                             named: url.lastPathComponent)
+
+            func documents(_ result: VolumeFullParseResult) -> [String] {
+                result.documents.map { doc in
+                    [doc.documentId, doc.printedNumber ?? "-", doc.startPage.map(String.init(describing:)) ?? "-",
+                     doc.isFrontMatter ? "front" : "body",
+                     IndexingPipeline.extractHeader(from: doc.nodes),
+                     IndexingPipeline.extractDateline(from: doc.nodes) ?? "-",
+                     IndexingPipeline.extractSourceNote(from: doc.nodes) ?? "-",
+                     IndexingPipeline.extractBodyText(from: doc.nodes),
+                     IndexingPipeline.bodyHash(for: doc)].joined(separator: " | ")
+                }
+            }
+            // The two documents, and the front matter's sections the parse keeps as rows of their own.
+            #expect(Set(["d1", "d2"]).isSubset(of: fromFile.documents.map(\.documentId)),
+                    "\(fromFile.documents.map(\.documentId))")
+            #expect(documents(fromBytes) == documents(fromFile))
+            #expect(String(describing: fromBytes.persons) == String(describing: fromFile.persons))
+            #expect(String(describing: fromBytes.terms) == String(describing: fromFile.terms))
+            #expect(String(describing: fromBytes.volumeSources) == String(describing: fromFile.volumeSources))
+            #expect(fromFile.volumeSources.contains { $0.jobNumber != nil }, "the fixture's Sources hold a job")
+            #expect(fromBytes.structureSections == fromFile.structureSections)
+        }
     }
 }

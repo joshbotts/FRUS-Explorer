@@ -552,6 +552,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `extractBodyText(from:)` (`extractHeader(from:)` already was), for a host that compares a TEI file
 ///         with the revisions an export carries, and so is `isLibraryRepository(_:)`, for a host that draws a
 ///         volume's Sources outline; nothing the indexer stores or reads changes
+///  4.62 — 2026-11-17 (#1909, plan of record decision 131): `currentDateIndexVersion` → 75 — a volume's
+///         `volume_structures` row records the file the volume was indexed from, the git blob SHA-1 of the
+///         bytes its store pass parsed and their length (`file_blob_sha1`, `file_size_bytes`), which the
+///         pass reads once, hashes and parses (``IndexedVolumeFile``, ``indexedVolumeFiles()``,
+///         ``indexedVolumeFile(forVolumeId:)``; see the v75 note)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1671,7 +1676,23 @@ public actor IndexingPipeline {
     ///   Measured on two full indexes of the 553 catalogue volumes at that corpus, at 73 and at 74:
     ///   the six `persons` rows and that volume's outline are all that move, besides the stamp.
     ///   Without the bump an installed index keeps the six rows, and both views their six people.
-    public static let currentDateIndexVersion: Int = 74
+    /// - v74→75 — the file each volume was indexed from (#1909, plan of record decisions 130 and 131).
+    ///   A volume's `volume_structures` row, the record that its last store pass finished (#1566),
+    ///   also holds the git blob SHA-1 of the bytes the pass parsed and their length
+    ///   (`file_blob_sha1`, `file_size_bytes`; ``IndexedVolumeFile``). The pass reads the file once,
+    ///   hashes those bytes with `VolumeUpdateChecker.gitBlobSHA1(for:)`, the corrections check's own
+    ///   function, and parses the same bytes through a stream over them
+    ///   (`FRUSDocumentParser.parseVolumeFull(volumeData:named:)`), so the record names the file
+    ///   parsed, and the parse gives what a parse of the file gives. Export Research Database…'s copy
+    ///   carries the record, so an export names the files it was made from, and FRUS Explorer Light's
+    ///   import re-parses only the volumes whose file is not the one indexed. Measured at corpus
+    ///   `6170e4b32` on a full index of the 553 catalogue volumes at 75: each holds a record, and every
+    ///   record equals the blob SHA-1 and size git holds for its file at that commit. Against a full
+    ///   index at 74, every table the parse fills holds the same rows (321,749 documents with the same
+    ///   revision hashes, their dates, pages, people, terms and sources, and each volume's outline).
+    ///   Without the bump only the volumes indexed after the update would have a record, and an export
+    ///   could not name the rest.
+    public static let currentDateIndexVersion: Int = 75
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3779,6 +3800,75 @@ public actor IndexingPipeline {
             }
         }
         return ids
+    }
+
+    /// The file each volume was indexed from (#1909), in volume-id order: one record for each volume
+    /// whose last store pass finished at index version 75 or later.
+    ///
+    /// A volume with no record is left out: one whose pass has not finished, or did not finish
+    /// (`volumesWithUnfinishedStore()`), and every volume of an index from before version 75, whose
+    /// rows a version-75 re-index has not written again. An index from before 75 opened read-only,
+    /// which no migration runs on, has no such columns, and answers with none, as an index with no
+    /// record does. A host compares each volume it has no record of as one whose file differs.
+    ///
+    /// nonisolated: reads `auxDb` directly, as `allIndexedVolumeIds()` does — a read-only query, so
+    /// it answers through the read-only opens (`init(readingIndexAt:fts5Store:resources:volumesDirectory:userStore:)`,
+    /// `init(readingLiveIndexAt:fts5Store:resources:volumesDirectory:userStore:)`) as through the
+    /// read-write one.
+    public nonisolated func indexedVolumeFiles() throws -> [IndexedVolumeFile] {
+        try readIndexedVolumeFiles(volumeId: nil)
+    }
+
+    /// The file `volumeId` was indexed from (#1909), or `nil` when the index holds no record of it:
+    /// `indexedVolumeFiles()` for one volume.
+    ///
+    /// nonisolated: reads `auxDb` directly — a read-only query.
+    public nonisolated func indexedVolumeFile(forVolumeId volumeId: String) throws -> IndexedVolumeFile? {
+        try readIndexedVolumeFiles(volumeId: volumeId).first
+    }
+
+    /// The records `indexedVolumeFiles()` reads, of every volume or of `volumeId` alone.
+    private nonisolated func readIndexedVolumeFiles(volumeId: String?) throws -> [IndexedVolumeFile] {
+        guard try recordsIndexedVolumeFiles() else { return [] }
+        let sql = """
+            SELECT volume_id, file_blob_sha1, file_size_bytes FROM volume_structures
+             WHERE file_blob_sha1 IS NOT NULL AND file_size_bytes IS NOT NULL
+            \(volumeId == nil ? "" : "AND volume_id = ?1")
+             ORDER BY volume_id
+            """
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        if let volumeId { sqlite3_bind_text(s, 1, volumeId, -1, SQLITE_TRANSIENT_IP) }
+        var files: [IndexedVolumeFile] = []
+        while sqlite3_step(s) == SQLITE_ROW {
+            guard let volume = sqlite3_column_text(s, 0), let sha = sqlite3_column_text(s, 1) else { continue }
+            files.append(IndexedVolumeFile(volumeId: String(cString: volume), blobSHA1: String(cString: sha),
+                                           sizeBytes: Int(sqlite3_column_int64(s, 2))))
+        }
+        return files
+    }
+
+    /// Whether this index's `volume_structures` has the columns of the file record (#1909): one
+    /// written at version 75 or later does, and so does one from before that a read-write open
+    /// migrated; one from before 75 opened read-only does not.
+    private nonisolated func recordsIndexedVolumeFiles() throws -> Bool {
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, "PRAGMA table_info(volume_structures)", -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        var columns = Set<String>()
+        while sqlite3_step(s) == SQLITE_ROW {
+            if let name = sqlite3_column_text(s, 1) { columns.insert(String(cString: name)) }
+        }
+        return columns.isSuperset(of: ["file_blob_sha1", "file_size_bytes"])
     }
 
     /// The downloaded volumes a launch indexes without being asked, in id order (#1566): each one
@@ -6423,11 +6513,10 @@ public actor IndexingPipeline {
     // MARK: - Parsing (nonisolated — runs off the actor's executor for concurrency)
 
     nonisolated private func parseAndExtract(volumeId: String, url: URL) async throws -> VolumeIndexData {
-        let parser = FRUSDocumentParser()
         // Single-pass parse: documents, persons, and terms extracted in one XML read.
         // Replaces three sequential XMLParser(contentsOf:) calls (passes 1-3) that
         // previously each read the entire volume file from disk.
-        let fullResult = try await parser.parseVolumeFull(volumeURL: url)
+        let (fullResult, file) = try await Self.readAndParseVolume(volumeId: volumeId, url: url)
         let astDocs = fullResult.documents
 
         var crossRefs: [CrossReferenceRow] = []
@@ -6741,8 +6830,34 @@ public actor IndexingPipeline {
             documentSources: documentSourceRows,
             externalCitations: externalCitationRows,
             volumeSources: volumeSourceRows,
-            structureJSON: structureJSON
+            structureJSON: structureJSON,
+            file: file
         )
+    }
+
+    /// Reads a volume's file once, records which file it was, and parses those bytes (#1909).
+    ///
+    /// The record is `VolumeUpdateChecker.gitBlobSHA1(for:)` of the bytes read, the function the
+    /// corrections check hashes a file on disk with, so the two agree for the same file; and their
+    /// count. The parse reads the same bytes (`FRUSDocumentParser.parseVolumeFull(volumeData:named:)`),
+    /// not the file a second time, so a volume replaced between the parse and the hash can never be
+    /// recorded as the file it was not. The bytes are held for this call alone: at most 13.1 MB, the
+    /// largest catalogue volume (`frus1958-60v03mSupp`, by the bundled manifest), beside a parse
+    /// that holds far more.
+    ///
+    /// - Throws: `FRUSParserError.fileUnreadable` when the file cannot be read, as the parse of a
+    ///   file threw before; `FRUSParserError.xmlError` when its XML is malformed.
+    nonisolated private static func readAndParseVolume(
+        volumeId: String, url: URL
+    ) async throws -> (VolumeFullParseResult, IndexedVolumeFile) {
+        let bytes: Data
+        do { bytes = try Data(contentsOf: url) } catch { throw FRUSParserError.fileUnreadable(url) }
+        let file = IndexedVolumeFile(volumeId: volumeId,
+                                     blobSHA1: VolumeUpdateChecker.gitBlobSHA1(for: bytes),
+                                     sizeBytes: bytes.count)
+        let result = try await FRUSDocumentParser().parseVolumeFull(volumeData: bytes,
+                                                                    named: url.lastPathComponent)
+        return (result, file)
     }
 
     /// Flattens one harvested footnote citation into its storage row.
@@ -6954,8 +7069,10 @@ public actor IndexingPipeline {
         // leave stale trailing rows (sort_order ≥ new count) behind as phantom entries.
         try auxDeleteVolumeSources(forVolumeId: data.volumeId)
         try auxInsertVolumeSources(data.volumeSources)
-        // The pass's last write, and the record that it finished (#1566; see the delete above).
-        try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON)
+        // The pass's last write, and the record that it finished (#1566; see the delete above), with
+        // the file the pass parsed (#1909).
+        try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON,
+                                     file: data.file)
         // #308: this volume's subject rows, now that its `document_cache` rows exist. Placed HERE
         // rather than in `indexVolume` because there are two store paths — the single-volume index
         // and the batch `TaskGroup` one — and a hook added to one of them is the twin-drift this
@@ -8979,10 +9096,18 @@ public actor IndexingPipeline {
         // `VolumeStructure` per indexed volume so browsing never re-parses XML.
         try exec("""
             CREATE TABLE IF NOT EXISTS volume_structures (
-                volume_id      TEXT PRIMARY KEY,
-                structure_json TEXT NOT NULL
+                volume_id       TEXT PRIMARY KEY,
+                structure_json  TEXT NOT NULL,
+                file_blob_sha1  TEXT,
+                file_size_bytes INTEGER
             )
             """)
+        // #1909 (index version 75): the file each volume was indexed from (`IndexedVolumeFile`), on
+        // the row that records its pass finished. Additive, as every column this file adds after its
+        // table: `CREATE TABLE IF NOT EXISTS` is a no-op on an index from before 75, which gains
+        // the two columns empty here, and fills them as the version's re-index writes each row.
+        try? exec("ALTER TABLE volume_structures ADD COLUMN file_blob_sha1 TEXT")
+        try? exec("ALTER TABLE volume_structures ADD COLUMN file_size_bytes INTEGER")
 
         // --- External-content FTS5 sync (Session 2026-06-09) ---
         //
@@ -9215,13 +9340,19 @@ public actor IndexingPipeline {
     ///
     /// The row is also the record that the volume's store pass finished (#1566), so one is written
     /// for a `nil` payload too (encoding failed during parse), with an empty string that
-    /// `cachedVolumeStructure(forVolumeId:)` reads as no structure, as it read the missing row.
-    private func auxInsertVolumeStructure(volumeId: String, structureJSON: String?) throws {
-        let stmt = try auxPrepare(
-            "INSERT OR REPLACE INTO volume_structures (volume_id, structure_json) VALUES (?, ?)")
+    /// `cachedVolumeStructure(forVolumeId:)` reads as no structure, as it read the missing row. It
+    /// records the file the pass parsed (#1909), which `REPLACE` writes over the last pass's.
+    private func auxInsertVolumeStructure(volumeId: String, structureJSON: String?,
+                                          file: IndexedVolumeFile) throws {
+        let stmt = try auxPrepare("""
+            INSERT OR REPLACE INTO volume_structures
+                (volume_id, structure_json, file_blob_sha1, file_size_bytes) VALUES (?, ?, ?, ?)
+            """)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         sqlite3_bind_text(stmt, 2, structureJSON ?? "", -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 3, file.blobSHA1, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_int64(stmt, 4, Int64(file.sizeBytes))
         try auxStep(stmt)
     }
 
@@ -14331,6 +14462,46 @@ private struct VolumeIndexData: Sendable {
     let volumeSources: [VolumeSourceRow]
     /// JSON-encoded `VolumeStructure` for the Browser cache, or `nil` if encoding failed.
     let structureJSON: String?
+    /// The file the volume was indexed from (#1909), stored with `structureJSON` on the row that
+    /// records the pass finished.
+    let file: IndexedVolumeFile
+}
+
+/// The file a volume was indexed from: the git blob SHA-1 of the bytes its store pass parsed, and
+/// how many there were (#1909, index version 75).
+///
+/// Kept on the volume's `volume_structures` row, as `file_blob_sha1` and `file_size_bytes`. That
+/// row is the record that the volume's last store pass finished (#1566): the pass removes it before
+/// it writes anything and writes it, with this record, last. So a record names the file of a pass
+/// that finished, a pass cut short leaves none, re-indexing the volume replaces it, and removing
+/// the volume removes it. An index from before version 75 holds none.
+///
+/// `blobSHA1` is `VolumeUpdateChecker.gitBlobSHA1(for:)` of those bytes: the form GitHub's contents
+/// API reports for a file in a repository, and what the corrections check computes for a file on
+/// disk. So a host that hashes a TEI file the same way can tell, without parsing it, whether it is
+/// the file an index was built from: FRUS Explorer Light's import of an export re-parses only the
+/// volumes whose file differs. A volume with no record is compared as one whose file differs.
+///
+/// Read with `IndexingPipeline.indexedVolumeFiles()` and `indexedVolumeFile(forVolumeId:)`, through
+/// any of the pipeline's opens.
+///
+/// Version history:
+///   1.0 — 2026-11-17 (#1909): initial implementation
+public struct IndexedVolumeFile: Sendable, Equatable, Hashable {
+    /// The volume's id.
+    public let volumeId: String
+    /// The git blob SHA-1 of the bytes the volume was indexed from, as 40 lowercase hexadecimal
+    /// digits.
+    public let blobSHA1: String
+    /// How many bytes the volume was indexed from: the file's size.
+    public let sizeBytes: Int
+
+    /// A record of the file `volumeId` was indexed from.
+    public init(volumeId: String, blobSHA1: String, sizeBytes: Int) {
+        self.volumeId = volumeId
+        self.blobSHA1 = blobSHA1
+        self.sizeBytes = sizeBytes
+    }
 }
 
 /// One archival unit a document's footnote points at, as a reader sees it (#784).

@@ -643,6 +643,8 @@ struct ResearchDataExporterTests {
 ///          hand-over
 ///   1.2 — FRUS Explorer Light: a stripped copy's bytes searched for the words of its notes and
 ///          summaries, free pages included
+///   1.3 — 2026-11-17 (#1909): the copy carries the file each volume was indexed from, stripped or
+///          not, and the kit's read-only open reads it there
 @Suite("Index database export")
 struct IndexDatabaseExporterTests {
 
@@ -784,6 +786,36 @@ struct IndexDatabaseExporterTests {
     /// by a removed volume — so this test passes with the `frus_documents` rebuild removed. It was
     /// written believing otherwise and mutation-testing caught it. The fixture keeps the gap anyway,
     /// because it is the shape a real store has and the closest this suite can get to the hazard.
+    /// #1909: an export names the files it was made from, so a host can tell which of its own TEI
+    /// files are the ones indexed without parsing them. Through the strip as well as without it,
+    /// since the strip's `VACUUM` rewrites every page of the copy.
+    @Test("The copy carries the file each volume was indexed from, stripped or not, and a host's read-only open reads it")
+    func theCopyCarriesTheFilesItWasIndexedFrom() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // `vol1` is indexed; `vol0` was indexed and removed, and its record with it.
+        let bytes = try Data(contentsOf: dir.appendingPathComponent("volumes/vol1.xml"))
+        let expected = IndexedVolumeFile(volumeId: "vol1", blobSHA1: VolumeUpdateChecker.gitBlobSHA1(for: bytes),
+                                         sizeBytes: bytes.count)
+        #expect(try pipeline.indexedVolumeFiles() == [expected])
+
+        for includeMyWriting in [false, true] {
+            let out = dir.appendingPathComponent(includeMyWriting ? "kept.sqlite" : "stripped.sqlite")
+            let report = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: includeMyWriting,
+                                                          stamp: stamp(pipeline))
+            #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
+            // The way the guide teaches: plain SQL on the copy.
+            #expect(query(out, """
+                SELECT volume_id || ' ' || file_blob_sha1 || ' ' || file_size_bytes FROM volume_structures
+                 ORDER BY volume_id
+                """) == ["vol1 \(expected.blobSHA1) \(expected.sizeBytes)"], "includeMyWriting: \(includeMyWriting)")
+            // The way FRUS Explorer Light reads it: the kit's immutable open.
+            let exported = try IndexingPipeline(readingIndexAt: out, fts5Store: try FTS5Store(readingDatabaseAt: out),
+                                                resources: .none)
+            #expect(try exported.indexedVolumeFiles() == [expected], "includeMyWriting: \(includeMyWriting)")
+        }
+    }
+
     @Test("An exported copy's full-text matches resolve to the right documents")
     func exportedMatchesResolveCorrectly() async throws {
         let (dir, live, pipeline) = try await makeIndexed()

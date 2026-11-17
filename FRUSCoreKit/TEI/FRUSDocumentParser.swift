@@ -159,6 +159,10 @@ import SourceNoteKit
 ///          (`PersonsParserDelegate`), and makes that section an `index` in the outline
 ///          (`VolumeStructureParserDelegate`), so it opens as printed text. `frus1941-43`'s
 ///          "Index of Persons" is the only one in the 553 catalogue volumes
+///   2.16 — 2026-11-17 (#1909, index version 75): `parseVolumeFull(volumeData:named:)` parses a
+///          volume's bytes, which the indexer has read once to hash them, through a stream over them,
+///          so the delegates see the events a parse of the file gives (`parseVolumeFull(volumeURL:)`,
+///          whose body both now share). Nothing it parses changes
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -339,6 +343,33 @@ public actor FRUSDocumentParser {
         guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
             throw FRUSParserError.fileUnreadable(volumeURL)
         }
+        return try parseVolumeFull(with: xmlParser, name: volumeURL.lastPathComponent)
+    }
+
+    /// Parses documents, persons, terms, sources and the outline from a volume's bytes, in one
+    /// pass: what `parseVolumeFull(volumeURL:)` gives for a file holding the same bytes (#1909).
+    ///
+    /// The indexer reads a volume's file once, hashes the bytes for the record of the file it was
+    /// indexed from (`IndexedVolumeFile`), and parses the same bytes here, so the record can never
+    /// name a file other than the one parsed. They are read through a stream over `volumeData`, not
+    /// handed to `XMLParser(data:)`: a stream gives the parser its input in the chunks a file is
+    /// read in, and so the delegates the same events, where a whole buffer splits a text node's
+    /// characters at other places. Measured on 2026-11-17: on 44 catalogue volumes, the largest
+    /// among them, a parse of the file and a parse of a stream over its bytes gave the same events
+    /// in the same order, and `XMLParser(data:)` did not, on `frus1958-60v03mSupp`.
+    ///
+    /// - Parameters:
+    ///   - volumeData: The bytes of a volume's TEI XML file.
+    ///   - name: The file's name, for the debug log.
+    /// - Returns: A `VolumeFullParseResult` containing documents, persons, and terms.
+    /// - Throws: `FRUSParserError` if the XML is malformed.
+    public func parseVolumeFull(volumeData: Data, named name: String) async throws -> VolumeFullParseResult {
+        try parseVolumeFull(with: XMLParser(stream: InputStream(data: volumeData)), name: name)
+    }
+
+    /// The single pass both `parseVolumeFull` entry points run, over a parser already given its
+    /// input; `name` names the file in the debug log.
+    private func parseVolumeFull(with xmlParser: XMLParser, name: String) throws -> VolumeFullParseResult {
         let composite = FullVolumeParserDelegate()
         xmlParser.delegate = composite
         // `autoreleasepool` ensures the XMLParser's internal Objective-C allocations
@@ -358,7 +389,6 @@ public actor FRUSDocumentParser {
         composite.teiDelegate.finishParse()
 
         #if DEBUG
-        let name = volumeURL.lastPathComponent
         print("[TEIParser] parseVolumeFull: \(composite.teiDelegate.documents.count) docs, " +
               "\(composite.personsDelegate.entries.count) persons, " +
               "\(composite.termsDelegate.entries.count) terms, " +
