@@ -541,7 +541,7 @@ struct MacSearchWindowView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .frame(minWidth: 640, idealWidth: 820, maxWidth: .infinity,
+        .frame(minWidth: 640, idealWidth: 1380, maxWidth: .infinity,
                minHeight: 500, idealHeight: 680, maxHeight: .infinity)
         .animation(.easeInOut(duration: 0.15), value: searchVM.showTips)
         // The facet panel (R-1). `.inspector` is the macOS idiom the design asks for, and its

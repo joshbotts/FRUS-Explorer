@@ -1220,7 +1220,10 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
         }
-        .defaultSize(width: 820, height: 680)
+        // L21 (MAC-3): wide enough for the whole toolbar, measured at 1,342 pt in the check copy.
+        // At 820 every button but the Reading switch opened behind », Facets among them.
+        // `MacToolbarWindowFitTests` holds the width to the measurement and to a 13-inch Air.
+        .defaultSize(width: 1380, height: 680)
         // #363 #5: Search's key equivalent (⌥⌘F since M-14) is owned by the Find command menu
         // (FindMenuContent) — ⌘F was remapped to Find in Document. Removed from the scene so
         // there is a single owner (mirrors the #2 duplicate-binding fix).
@@ -1441,7 +1444,10 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
         }
-        .defaultSize(width: 760, height: 560)
+        // L21 (MAC-3): wide enough for the whole toolbar, measured at 1,090 pt. At 760 all but the
+        // view and Measure switches opened behind »: Values, the fit line, Chart colors, the star,
+        // the saved queries, Export and ⓘ.
+        .defaultSize(width: 1120, height: 560)
 
         // MARK: - Person Analytics Window (CA-5, CA-8)
         //
