@@ -524,7 +524,15 @@ A useful sanity check when a person's counts look low.
 **`terms`** — per-volume glossary entries (abbreviations and their definitions).
 
 **`volume_structures`** — one JSON blob per volume describing its section tree. Parse it in the
-client; don't try to query into it with SQL string functions.
+client; don't try to query into it with SQL string functions. From index version 75 the row also
+names the file the volume was indexed from: `file_blob_sha1`, the git blob SHA-1 of the TEI file's
+bytes, which is the hash GitHub reports for that file in the corpus repository and `git hash-object`
+gives for a copy of it, and `file_size_bytes`, their length. So `SELECT volume_id, file_blob_sha1
+FROM volume_structures` names the exact files a copy was made from, and a TEI file on your disk is
+the one a volume was indexed from when its blob SHA-1 is the row's. A volume indexed before 75 has
+`NULL` in both, and an index older than 75 has neither column. The row is the last thing a volume's
+indexing writes, so a volume with documents and no row was cut short, and its file record, like its
+outline, is missing rather than stale.
 
 ### 4.4 Archival provenance
 
@@ -2297,7 +2305,7 @@ The stack, and the question each artifact answers:
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,898 edges, 4,913 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 38,600 cross-volume edges into 20,273 documents from 513 volumes: 9,209 by a document's id (572 of them from a section's own text — an introduction, an errata list, a heading's footnote — whose id is the section's) and, since index version 71, 29,391 by a printed page of another volume under rule C (a single page, or a range within one document; "ff." and a range across documents are not here), resolved through `cited-page-map.json` exactly as a device's index resolves them. Its `volumes` array (537) is a shared vocabulary of target *and* citing volumes, not a target list, and 33 of its targets are sections printed on a cited page. 33,235 of its 35,901 citing pairs (92.6%) cite through a note |
 | `cited-page-map.json` | what a printed page of another volume names, so a page reference resolves whether or not you hold the volume (§4.3) | 16,364 pages in 380 volumes naming 18,832 documents, 3,938 of the pages naming several (with each one's printed number and day for the tie-break); an entry for every page a single-page reference cites and for both ends of each range within one document, none for a page naming nothing; regenerated with each build's corpus from a full index the generator builds, and a device resolves from it alone, so two devices store the same row |
-| `volume-annotations-index.json` | what editorial annotation each volume carries, whether or not you hold it: people tagged, abbreviations, source notes and their form, classification markings, numbered documents, references, editorial notes and more, as counts of documents, and from which era the series made each practice standard. **The categories the app reads are counted by the index's own rules, at the index version the file records**, so a volume's people count is the People browser's and its classification count the chips' | 553 volumes, 314,510 documents (index version 74): people tagged in 288 volumes, abbreviations linked in 310, source notes in 478, classification markings in 310, documents numbered in print in 229 |
+| `volume-annotations-index.json` | what editorial annotation each volume carries, whether or not you hold it: people tagged, abbreviations, source notes and their form, classification markings, numbered documents, references, editorial notes and more, as counts of documents, and from which era the series made each practice standard. **The categories the app reads are counted by the index's own rules, at the index version the file records**, so a volume's people count is the People browser's and its classification count the chips' | 553 volumes, 314,510 documents (index version 75): people tagged in 288 volumes, abbreviations linked in 310, source notes in 478, classification markings in 310, documents numbered in print in 229 |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
@@ -3372,6 +3380,13 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.49 — 2026-11-17: index version 75 (#1909, plan of record decision 131). §4.3's
+  `volume_structures` gains the file each volume was indexed from, `file_blob_sha1` and
+  `file_size_bytes`: the git blob SHA-1 of the TEI file's bytes and their length, `NULL` for a
+  volume indexed before 75. Measured on a full index of the 553 catalogue volumes at corpus
+  `6170e4b32`, every one of the 553 records equals the blob SHA-1 and size git holds for its file at
+  that commit. §14.11's row for `volume-annotations-index.json` gives the file's version, 75, its
+  counts unchanged.
 - 1.48 — 2026-11-06: index version 74. §4.3's `persons` says that a back-of-book index of persons
   (`frus1941-43`'s) gives no rows from 74, and §14.11's row for `volume-annotations-index.json`
   gives the file's version, 74, and abbreviations linked in 310 volumes, since a term a document

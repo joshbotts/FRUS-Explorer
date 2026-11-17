@@ -8571,6 +8571,11 @@ struct CitationDocNumberRegressionTests {
 /// indexed with `.ciaCollection` source notes in DIFFERENT dash spellings of one job, and
 /// the join must land on `document_sources.job_number_norm` — the corpus spells `79R01012A`
 /// four ways, so a raw-spelling join returns a fraction of each collection.
+///
+/// Version history:
+///   1.0 — #808: initial implementation
+///   1.1 — 2026-11-17 (#1929): a volume's own Sources row naming a job reads back with it, and
+///          its key counts what `document_sources` holds for the job
 @Suite("IndexingPipeline — CIA job neighbors")
 struct CIAJobNeighborTests {
 
@@ -8618,6 +8623,93 @@ struct CIAJobNeighborTests {
                 repository: nil, decimalClass: nil, jobNumber: "79R01012A")
             #expect(neighbors.totalCount == 2)
             #expect(neighbors.basis?.contains("CIA Job") == true)
+        }
+    }
+
+    /// #1929: a volume's own Sources outline keys a CIA job (#733), and `volumeSources(forVolumeId:)`
+    /// must give it back, since the outline makes a row's Archival Neighbors target from it. The
+    /// query left both job columns out, so every job row read back with no number, and a row whose
+    /// only key is its job (616 of the 618 job rows in a full index at version 74) had no button.
+    @Test("A Sources row naming a CIA job reads back with its number and normal form, and its key counts what document_sources holds for the job")
+    func volumeSourcesReadTheJob() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volumeId = "frus1969-76v99"
+            let note = { (job: String, box: Int) in
+                "<note n=\"1\" type=\"source\" xml:id=\"n\(box)\">Source: Central Intelligence Agency, "
+                    + "Job \(job), Box \(box). Secret.</note>"
+            }
+            try Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0">
+                  <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+                  <publicationStmt><date>2010</date></publicationStmt>
+                  <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+                  <text>
+                    <front>
+                      <div type="section" subtype="sources" xml:id="sources"><head>Sources</head>
+                        <list>
+                          <item><hi rend="strong">Central Intelligence Agency</hi>
+                            <list>
+                              <item>Job 79\u{2013}R01012A (Registry of National Intelligence Estimates)</item>
+                              <item>DDO/DDP Files: Job 64\u{2013}00352R</item>
+                            </list>
+                          </item>
+                        </list>
+                      </div>
+                    </front>
+                    <body><div type="compilation" xml:id="comp1"><head>Estimates</head>
+                      <div type="document" xml:id="d1" n="1"><head>1. Estimate\(note("79\u{2013}R01012A", 1))</head><p>A.</p></div>
+                      <div type="document" xml:id="d2" n="2"><head>2. Estimate\(note("79R01012A", 2))</head><p>B.</p></div>
+                      <div type="document" xml:id="d3" n="3"><head>3. Memorandum\(note("80B01285A", 3))</head><p>C.</p></div>
+                    </div></body>
+                  </text>
+                </TEI>
+                """.utf8).write(to: dir.appendingPathComponent("volumes/\(volumeId).xml"))
+            try await pipeline.indexVolume(volumeId)
+
+            let jobs = try await pipeline.volumeSources(forVolumeId: volumeId).filter { $0.jobNumber != nil }
+            #expect(jobs.map(\.jobNumber) == ["79\u{2013}R01012A", "64\u{2013}00352R"])
+            #expect(jobs.map(\.jobNumberNorm) == ["79R01012A", "6400352R"])
+            let row = try #require(jobs.first)
+            #expect(row.lotFile == nil && row.lotFileNorm == nil, "a job is not a lot")
+
+            // What the index holds for the job, read with SQL: the two documents citing it, in
+            // two spellings, and not the third.
+            var db: OpaquePointer?
+            try #require(sqlite3_open_v2(dir.appendingPathComponent("test.sqlite").path, &db,
+                                         SQLITE_OPEN_READONLY, nil) == SQLITE_OK)
+            defer { sqlite3_close(db) }
+            var stmt: OpaquePointer?
+            try #require(sqlite3_prepare_v2(db, """
+                SELECT COUNT(*) FROM document_sources WHERE job_number_norm = '79R01012A'
+                """, -1, &stmt, nil) == SQLITE_OK)
+            defer { sqlite3_finalize(stmt) }
+            try #require(sqlite3_step(stmt) == SQLITE_ROW)
+            let stored = Int(sqlite3_column_int(stmt, 0))
+            #expect(stored == 2)
+
+            // The row's own key, as the outline derives it, counts exactly those.
+            let key = try #require(IndexingPipeline.neighborCountKey(
+                forLotFile: row.lotFile, recordGroup: row.recordGroup, series: row.seriesName,
+                repository: row.repository, decimalClass: row.decimalClass, jobNumber: row.jobNumber))
+            #expect(key == .jobNumber(norm: "79R01012A"))
+            #expect(try await pipeline.archivalNeighborCounts(forKeys: [key])[key] == stored)
+            #expect(try await pipeline.archivalNeighbors(
+                forLotFile: row.lotFile, recordGroup: row.recordGroup, series: row.seriesName,
+                repository: row.repository, decimalClass: row.decimalClass,
+                jobNumber: row.jobNumber).totalCount == stored)
+
+            #if !SWIFT_PACKAGE
+            // The app's Sources outline: the row's Archival Neighbors target forms from the job,
+            // and derives the same key, so its button counts the same documents.
+            let target = try #require(VolumeSourcesView.makeNeighborsTarget(for: row, volumeId: volumeId))
+            #expect(target.jobNumber == "79\u{2013}R01012A")
+            #expect(IndexingPipeline.neighborCountKey(
+                forLotFile: target.lotFile, recordGroup: target.recordGroup, series: target.series,
+                repository: target.repository, decimalClass: target.decimalClass,
+                jobNumber: target.jobNumber) == key)
+            #endif
         }
     }
 }
