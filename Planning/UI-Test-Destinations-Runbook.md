@@ -538,6 +538,62 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/VolumeRemovalTests
 ```
 
+**Under iOS 27.0, 3 of 5 pass on the iPad Pro 13-inch (M5) (`9AB3A0C9`) and on the iPad Pro 11-inch (M5)
+(`27A97343`), on `v2` itself (measured 2026-11-16, L20, #1920).** Both failures are the suite's own timing: under
+iOS 27.0 and Xcode 27.2 the walks between its steps take longer than its holds allow, and each case read the right
+state when it read.
+- `testRemovalMarkSurvivesLeavingTheHub` drew the mark, then left the hub and came back 43.6 to 50.2 s after its
+  confirmation (four runs; `v2` at `914ccac8`, built in a detached worktree, 50.2 s), past its 40-s hold
+  (`removalHoldSeconds`). The removal had finished, the hub's *Show all* counted one volume fewer, and `requireRow`
+  found no row for `uitest-storage-04` before the test's own guard could say to raise the hold.
+- `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` read the sheet right (the volume still listed, selected, and no
+  *No Removable Volumes*) but in 18.2, 18.7 and 21.7 s on L20's code and 18.9 s on `v2`'s, against its guard of
+  18 s (`freeUpHoldSeconds` − 2), on the 13-inch; the last two back to back.
+- Twice, on `v2`'s 13-inch run and on the 11-inch, the Free Up Space test failed at its launch instead (*Failed to
+  get launch progress … No such process*), and in both the next test opened on the onboarding wizard and walked
+  through it. With `-test-iterations 2` each side gave one reading: after the guard failed the runner restarted, and
+  on one side it had aborted in XCTest's async tear-down (`_swift_task_dealloc_specific`).
+
+Raising the two holds is test code only, and R5 settles it (the plan of record's R5 bullet). Until then this suite's
+two timing cases are not a guard on these iPads under iOS 27.0; its two popover-anchor cases and its removed-row case are.
+
+**`DownloadCancelAllTests` and `OnboardingBackCancelsDownloadsTests` (#1920, L20, HCD-2, in
+`VolumeRemovalTests.swift`) run on an iPhone and an iPad, and nothing skips.** Both stand on the download
+seam (`UITestBrowseSeams.downloadSeam`, DEBUG only): `FRUS_UI_TEST_DOWNLOADS=hold` makes every transfer
+wait until it is cancelled, so nothing reaches the network, and the seam keeps its queue in a defaults
+suite of its own, emptied at each launch that arms it, so no queue a test leaves behind is downloaded by
+a later launch without the seam. `FRUS_UI_TEST_QUEUE_DOWNLOADS=6` queues six catalogue volumes not on the
+device at launch, four running and two waiting. `DownloadCancelAllTests`' first test requires **Cancel
+All** above Active Downloads' rows (`settings.hub.active.cancelAll`), its question naming the six
+(*Stop downloading 6 volumes?*), and, after **Cancel All Downloads**, no Cancel All and no row; the
+second dismisses the question and requires it to name the six again. The form is lazy, so the count is
+read from the question, not the rows. **Under iOS 27.0 the question is a popover on the iPhone as on the
+iPad**, with no Keep Downloading button; the suite closes it with a tap at its dismiss region's
+lower-left corner, as `VolumeRemovalTests` does: at the region's middle the tap met the popover itself,
+which hangs below the button, and the question stayed (the second test's first run, iPhone 17).
+`OnboardingBackCancelsDownloadsTests` launches with `-hasCompletedOnboarding 0`: Get Started, Continue
+with Corpus (the step's default, which queues every catalogue volume), Back from Ready, Skip, Finish, and
+Settings ▸ Volumes & Storage must list no Active Downloads. It reads the hub, not the Ready step's
+sentence, which also turns on volumes already on the simulator. Allow 600 s a test.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/DownloadCancelAllTests \
+  -only-testing FRUSExplorerUITests/OnboardingBackCancelsDownloadsTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/DownloadCancelAllTests \
+  -only-testing FRUSExplorerUITests/OnboardingBackCancelsDownloadsTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`ResearchSidebarSelectionTests` (#1362) needs an iPad whose Research tab is two-pane in BOTH
 tab-bar representations: iPad Pro 13-inch or iPad Air 13-inch, which the suite turns to landscape
 itself.** It asserts that the category open in the two-pane's detail is the only row in the list
@@ -1393,4 +1449,40 @@ Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExp
   -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
   -only-testing FRUSExplorerUITests/IndexSeeLinkTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600 -collect-test-diagnostics never
+```
+
+**`VolumeDownloadFailureTests` and `VolumeDownloadFailureAnnouncementTests` (#1920, L20, HCD-3, in
+`VolumeAnnotationsSectionTests.swift`) run on an iPhone and an iPad.** Both walk Browse ▸ Subseries ▸
+1961–63 ▸ *Soviet Union* (`frus1961-63v05`, the subseries' one title naming the Soviet Union, which no
+suite downloads) with `-frus.filterDownloadedOnly NO`, under the download seam's `fail`
+(`FRUS_UI_TEST_DOWNLOADS=fail`): each attempt runs 1.5 s and then fails as with no connection, its two
+retries 0.2 s and 0.4 s after, so a download fails for good about five seconds after it starts and the
+page shows "Downloading…" first. **The volume must not be on the simulator**: look in the app's
+container before a run, as the `VolumeRemovalTests` note on real volumes says. `VolumeDownloadFailureTests`
+taps Download Volume, requires "Downloading…", then the failure's line (`volume.download.failure`,
+*The download failed: no connection.*) with **Retry** (`volume.download.retry`) and no Download Volume;
+Retry must bring "Downloading…" back, which shows it queued the volume again, and then the failure
+again. `VolumeDownloadFailureAnnouncementTests` walks to the page with VoiceOver off, turns VoiceOver on,
+and has the app start the download by a Darwin signal (`FRUS_UI_TEST_DOWNLOAD_ON_SIGNAL`, the signal
+`bottsywattsy.FRUS-Explorer.uitest.start-download`), since with VoiceOver on a tap only moves its cursor;
+it then reads VoiceOver's speech four times a second for twenty seconds and requires the line. **Run the
+announcement test alone, on a simulator shut down before it**, as `SearchResultVoiceOverTests`' cases:
+under Xcode 27.2 a test that has read speech leaves VoiceOver on. It skips below iOS 27. Allow 600 s a
+test.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/VolumeDownloadFailureTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+# alone, on a simulator shut down before it
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/VolumeDownloadFailureAnnouncementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```

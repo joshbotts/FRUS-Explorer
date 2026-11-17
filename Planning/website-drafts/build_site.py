@@ -363,7 +363,9 @@ def figures():
     gb = sum(v.get("sizeBytes") or 0 for v in manifest) / 1e9
     cross = edges["documentEdges"] - edges["sameVolumeEdges"]
     hub = (REPO / "FRUSExplorer/Settings/MacVolumesStorageHub.swift").read_text()
-    ratio = "2.8" if "roughly 2.8× that in search index" in hub else "?"
+    # L20 (#1920): the hub states the index as about as much again as the XML, measured on two full
+    # libraries (0.86 times in use, 1.07 after a re-index), where it said 2.8 times until then.
+    ratio = "about as much again" if "plus about as much again in search index" in hub else "?"
     # People tagged, by the kit's rule (`VolumeAnnotations.carries`): at least half a volume's
     # documents link a name to its List of Persons.
     annotations = json.loads((RES / "volume-annotations-index.json").read_text())
@@ -379,8 +381,8 @@ def figures():
          "<code>manifest.json</code>, entries"),
         ("Corpus size", "about 3.3 GB", "{:.2f} GB".format(gb),
          "<code>manifest.json</code>, <code>sizeBytes</code> summed"),
-        ("Index, against the volumes", "about 2.8 times", ratio + "×",
-         "the app's own estimate, <code>MacVolumesStorageHub</code>; not a measurement"),
+        ("Index, against the volumes", "about as much again", ratio,
+         "<code>MacVolumesStorageHub</code>'s sentence, measured on two full libraries at index version 74 for L20 (#1920)"),
         ("Source notes paired with a document", "264,598", "{:,}".format(usage["noteCount"]),
          "<code>collection-usage-index.json</code>, <code>coverage.noteCount</code>"),
         ("Volumes with source notes", "502", "{:,}".format(usage["volumesWithNotes"]),

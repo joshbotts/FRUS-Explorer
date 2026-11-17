@@ -86,6 +86,8 @@ import OSLog
 ///          3,072 to 6,144, where it was 3,072 on every device; the window is logged once a launch
 ///   1.4 — 2026-11-01: an answer that ran past the window, where the prompt fitted, is thrown as
 ///          `SummarizationError.answerOverranWindow`
+///   1.5 — L20 (#1920, HCD-5): `AppleIntelligenceAvailability`, beside it in this file, says why it is
+///          unavailable; `isAvailable` is unchanged
 actor AppleIntelligenceProvider: SummarizationProvider {
 
     // MARK: - Shared Instance
@@ -299,4 +301,98 @@ actor AppleIntelligenceProvider: SummarizationProvider {
         let response = try await session.respond(to: promptText)
         return try Self.structuredJSON(fromAnswer: response.content, schema: schema)
     }
+}
+
+// MARK: - AppleIntelligenceAvailability
+
+/// Why Apple Intelligence can or cannot summarize on this device, and what a surface says when it
+/// cannot (L20, #1920, HCD-5).
+///
+/// Until L20 every surface read `SystemLanguageModel.default.isAvailable` alone, so a device that
+/// runs Apple Intelligence with it switched off, or whose model was still downloading, was told
+/// "Apple Intelligence is not available on this device": a dead end, where a setting or a wait would
+/// do. The seven surfaces that said so take their sentence from ``unavailableSentence(notEligible:consequence:)``:
+/// the iPhone and iPad rail's summary (`panel.summary.unavailable`), the Mac rail's
+/// (`summary.unavailable.explanation`), both Settings ▸ Summarization panes
+/// (`settings.summarization.availability.unavailable`), a batch run's blocker
+/// (`bg.summarizer.blocked.model`), the summarizer's error (`summ.error.unavailable`) and a
+/// collection headnote's Regenerate (`collection.inspector.headnote.regen.unavailable`).
+///
+/// A device that cannot run Apple Intelligence keeps each surface's sentence as it was; so does a
+/// reason this SDK does not name, since nothing is known of what would help.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-5): initial implementation
+enum AppleIntelligenceAvailability: Equatable, Sendable {
+
+    /// Apple Intelligence can summarize here.
+    case available
+    /// The device can run Apple Intelligence, and it is switched off in Settings.
+    case notEnabled
+    /// The device can run Apple Intelligence, and its model is not ready yet: still downloading, as a
+    /// rule, which the system does by itself as the network, the battery and the load allow.
+    case modelNotReady
+    /// The device cannot run Apple Intelligence, or the system gives a reason this SDK does not name.
+    case notEligible
+
+    /// The system's answer now: a live read, which no view observes, so a surface reads it as it draws.
+    static var current: AppleIntelligenceAvailability {
+        AppleIntelligenceAvailability(SystemLanguageModel.default.availability)
+    }
+
+    /// Reads the system's answer.
+    ///
+    /// - Parameter availability: `SystemLanguageModel`'s availability.
+    init(_ availability: SystemLanguageModel.Availability) {
+        switch availability {
+        case .available:
+            self = .available
+        case .unavailable(let reason):
+            switch reason {
+            case .appleIntelligenceNotEnabled: self = .notEnabled
+            case .modelNotReady: self = .modelNotReady
+            case .deviceNotEligible: self = .notEligible
+            @unknown default: self = .notEligible
+            }
+        }
+    }
+
+    /// Whether Apple Intelligence can summarize here.
+    var isAvailable: Bool { self == .available }
+
+    /// What a surface says when Apple Intelligence cannot summarize here.
+    ///
+    /// - Parameters:
+    ///   - notEligible: The surface's own sentence for a device that cannot run Apple Intelligence,
+    ///     the one every reason had until L20. It is also what an available device is told, which a
+    ///     surface asks only when something else is missing, as a headnote's Regenerate does.
+    ///   - consequence: What the surface adds after the reason when Apple Intelligence is switched
+    ///     off or not ready, where its own sentence said more than the reason; `nil` when it did not.
+    /// - Returns: For a device that is not eligible, `notEligible`; switched off, where to turn it on;
+    ///   not ready, to try again later; each of the last two followed by `consequence`.
+    func unavailableSentence(notEligible: String, consequence: String? = nil) -> String {
+        let reason: String
+        switch self {
+        case .available, .notEligible: return notEligible
+        case .notEnabled: reason = Self.notEnabledSentence
+        case .modelNotReady: reason = Self.modelNotReadySentence
+        }
+        guard let consequence else { return reason }
+        return reason + " " + consequence
+    }
+
+    /// The reason given when Apple Intelligence is switched off, with where to turn it on.
+    static let notEnabledSentence: String = {
+        #if os(macOS)
+        String(localized: "ai.availability.notEnabled.mac",
+               defaultValue: "Apple Intelligence is turned off on this Mac. Turn it on in System Settings ▸ Apple Intelligence & Siri to generate summaries here.")
+        #else
+        String(localized: "ai.availability.notEnabled",
+               defaultValue: "Apple Intelligence is turned off on this device. Turn it on in Settings ▸ Apple Intelligence & Siri to generate summaries here.")
+        #endif
+    }()
+
+    /// The reason given when Apple Intelligence's model is not ready.
+    static let modelNotReadySentence = String(localized: "ai.availability.modelNotReady",
+        defaultValue: "Apple Intelligence is not ready on this device yet: its model may still be downloading. Try again later.")
 }

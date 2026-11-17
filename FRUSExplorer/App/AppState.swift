@@ -191,6 +191,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          run of the iOS background task waits for
 ///   4.26 — #1918 (L18, HCD-4): `hasReadIndexedVolumeIds`, so an empty library's notice waits for the
 ///          launch's read of the indexed set
+///   4.27 — L20 (#1920, HCD-3): `downloadFailures` and `recordDownloadOutcome(_:outcome:)`, each volume's
+///          last failed download, in memory, for its page's notice with Retry
 
 // MARK: - CloudKitSyncState
 
@@ -1214,7 +1216,52 @@ final class AppState {
     /// subseries is still being queued when its first volume begins indexing, and every volume
     /// queued after that is part of the wait the banner reports.
     var downloadQueue: [String] = [] {
-        didSet { countInIndexingBatch(downloadQueue) }
+        didSet {
+            countInIndexingBatch(downloadQueue)
+            forgetDownloadFailures(of: downloadQueue)
+        }
+    }
+
+    // MARK: - Failed Downloads (L20, #1920, HCD-3)
+
+    /// Why each volume's last download failed, for the volumes whose download failed with its
+    /// retries spent this launch (L20, #1920, HCD-3).
+    ///
+    /// Until L20 such a download vanished: the queue stopped counting it, Keeping Current dropped any
+    /// volume that was not an update, and a volume's page offered Download Volume again with no word
+    /// of what had happened. The page now shows the failure in Keeping Current's words with Retry
+    /// (`DownloadFailureNotice`), and VoiceOver hears it. Kept in memory only: a stored property on a
+    /// `@Model` would change the CloudKit schema, which 1.0 takes no change to, and a failure is this
+    /// device's and this launch's. A volume's entry goes when it downloads, and when it enters the
+    /// queue again by any path (Retry, Download Volume, a bulk download).
+    private(set) var downloadFailures: [String: DownloadFailure] = [:]
+
+    /// A download has ended (L20, #1920, HCD-3): a failure is kept for its volume's page, and a
+    /// download that landed forgets its volume's. `DownloadManager`'s `onTransferFinished` calls
+    /// this, once for each transfer. A cancel changes nothing: a volume queued again has already
+    /// left this list.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume whose transfer ended.
+    ///   - outcome: How it ended.
+    func recordDownloadOutcome(_ volumeId: String, outcome: DownloadTransferOutcome) {
+        switch outcome {
+        case .failed(let failure):
+            downloadFailures[volumeId] = failure
+        case .succeeded:
+            if downloadFailures[volumeId] != nil { downloadFailures[volumeId] = nil }
+        case .cancelled:
+            break
+        }
+    }
+
+    /// Forgets the failures of volumes that are in the queue again. Writes only when one is
+    /// forgotten, so that a queue's every change does not redraw each page that reads the list.
+    private func forgetDownloadFailures(of queued: [String]) {
+        guard !downloadFailures.isEmpty else { return }
+        let requeued = queued.filter { downloadFailures[$0] != nil }
+        guard !requeued.isEmpty else { return }
+        for volumeId in requeued { downloadFailures[volumeId] = nil }
     }
 
     // MARK: - Person Rollup Signal

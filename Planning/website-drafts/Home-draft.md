@@ -11,7 +11,7 @@
 > **[Review note]**
 > - **Source:** `Planning/website-drafts/site-src/home.html`, from the home frame of `page-drafts.html` (2026-10-27).
 > - **Revised 2026-11-03:** the hero's second link and the closing links go to the two quick starts, which did not exist when this was drafted, in place of the iOS manual alone; every link goes to this site's own pages.
-> - **Figures:** 553 volumes and 3.3 GB recounted from the bundle; 2.8× is the app's own estimate (`MacVolumesStorageHub`). See the review sheet.
+> - **Figures:** 553 volumes and 3.3 GB recounted from the bundle; the index's size, about as much again and about 7 GB in all, measured on two full libraries for L20 (#1920), as the app now states it (`MacVolumesStorageHub`). See the review sheet.
 > - **Checked 2026-11-10 against 1.0 (1812)**, which the owner expects to ship as 1.0 (1861) with no further features: no sentence changed. 553 volumes, 3.3 GB and the system requirement recount the same, and the door to Editors’ Annotations, now the Browse grid's Annotations tile (#1884), is still “Browse lays out each kind of annotation”.
 > - **Owner's call:** “It will be free” assumes approval; App Review decides.
 
@@ -100,7 +100,7 @@ An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or late
 Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity.
 
 **How much space does it take?**
-The whole series is about 3.3 GB. The search index the app builds takes about 2.8 times as much again. You can download only the volumes you need, and remove them later.
+The whole series is about 3.3 GB. The search index the app builds takes about as much again, about 7 GB on the device in all. You can download only the volumes you need, and remove them later.
 
 **Does it use AI?**
 Two optional features use a model on your device. Apple Intelligence writes document summaries, and each one is labeled as generated. Search by meaning relies on a downloaded embedding model to encode your queries. Nothing you type leaves your device for either of these features.

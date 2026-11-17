@@ -50,6 +50,9 @@ import UniformTypeIdentifiers
 ///          them, and its detail line says "not yet fully indexed" (`.detail.v2`)
 ///   1.2 — L14 (plan of record decision 124): the import, the re-indexes, Index Remaining and Rebuild Index are counted
 ///          while they run (`AppState.indexWorkInFlight`), so a run of the iOS background task waits for them
+///   1.3 — L20 (#1920, HCD-1): Storage & Index's footer and the Entire Corpus line give the index's size
+///          measured again: about as much as the XML, not 2.8 times it
+///   1.4 — L20 (#1920, HCD-2): Cancel All above Active Downloads' rows, which asks first
 struct VolumesStorageHubView: View {
 
     // MARK: - Batch tracking
@@ -137,6 +140,8 @@ struct VolumesStorageHubView: View {
     @State private var reindexingInterruptedId: String? = nil
     /// Controls the "Rebuild From Scratch" confirmation alert.
     @State private var showRebuildConfirmation = false
+    /// Whether Cancel All's question is showing (L20, #1920, HCD-2).
+    @State private var showCancelAllConfirmation = false
 
     // MARK: - Sheets
 
@@ -284,10 +289,32 @@ struct VolumesStorageHubView: View {
 
     // MARK: - Active Downloads
 
+    /// Every queued volume, each with its own Cancel, and above them, when there is more than one,
+    /// **Cancel All** (L20, #1920, HCD-2): until it, stopping the first run's default download took a
+    /// tap on each of 553 rows. It asks first, since one tap would otherwise drop the whole queue, and
+    /// its question hangs on the button, which iOS 27 points a popover at.
     @ViewBuilder
     private var activeDownloadsSection: some View {
         Section(String(localized: "settings.hub.active.header",
                        defaultValue: "Active Downloads")) {
+            if appState.downloadQueue.count > 1 {
+                // Text, as each row's own Cancel is: a destructive Label in a form draws its title
+                // red and its icon in the tint, blue (the first build's screenshot, iPhone 17).
+                Button(HubCopy.cancelAll, role: .destructive) {
+                    showCancelAllConfirmation = true
+                }
+                .accessibilityIdentifier("settings.hub.active.cancelAll")
+                .confirmationDialog(HubCopy.cancelAllTitle(appState.downloadQueue.count),
+                                    isPresented: $showCancelAllConfirmation,
+                                    titleVisibility: .visible) {
+                    Button(HubCopy.cancelAllConfirm, role: .destructive) {
+                        Task { await appState.downloadManager?.cancelAll() }
+                    }
+                    Button(HubCopy.cancelAllKeep, role: .cancel) {}
+                } message: {
+                    Text(HubCopy.cancelAllMessage)
+                }
+            }
             ForEach(appState.downloadQueue, id: \.self) { volumeId in
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
@@ -555,7 +582,7 @@ struct VolumesStorageHubView: View {
                         defaultValue: "Storage & Index"))
         } footer: {
             Text(String(localized: "settings.hub.storageIndex.footer",
-                        defaultValue: "Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.4 GB of XML plus 9–10 GB of search index."))
+                        defaultValue: "Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.3 GB of XML plus 3 to 3.5 GB of search index."))
         }
     }
 
@@ -1541,7 +1568,7 @@ struct DownloadVolumesBrowseView: View {
             let bytes = allVolumes.reduce(0) { $0 + $1.sizeBytes }
             let xml = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
             return String(localized: "settings.hub.browse.corpus.detail",
-                          defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.")
+                          defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus about as much again in search index. Downloads run in the background and resume across launches.")
         case .subseries:
             return String(localized: "settings.hub.browse.subseries.detail",
                           defaultValue: "Choose one or more decades or diplomatic eras.")
@@ -1645,6 +1672,8 @@ struct DownloadVolumesSheet: View {
 ///          review, round 2: keeps its own removal's volumes until it closes, and Remove takes only
 ///          what the plan still offers
 ///   1.2 — #1432: its rows are disabled while its removal runs
+///   1.3 — L20 (#1920, HCD-1): the estimate's note gives the factor measured again, 0.86× where it
+///          said 2.8×
 private struct FreeUpSpaceSheet: View {
 
     /// What the hub may offer now, and in what order: its live plan, which leaves out every volume
@@ -1705,7 +1734,7 @@ private struct FreeUpSpaceSheet: View {
                                         defaultValue: "Least recently used first"))
                         } footer: {
                             Text(String(localized: "settings.hub.freeUp.estimateNote",
-                                        defaultValue: "Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate."))
+                                        defaultValue: "Each size is the XML file plus an estimate of its share of the search index, 0.86 times the XML. That ratio comes from the full corpus: about 2.9 GB of index for about 3.3 GB of XML. Per volume it runs from roughly 0.7 to 1 times, so treat these sizes as approximate."))
                         }
                     }
                 }

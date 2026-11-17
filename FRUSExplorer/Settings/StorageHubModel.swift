@@ -25,6 +25,7 @@ import SwiftData
 ///   1.0 — S-2b: initial implementation, private to the macOS hub
 ///   1.1 — S-2c: lifted here so the iOS hub says the same thing
 ///   1.2 — 2026-09-25: #1374 — through `CountCopy`, so a count of 1,000 or more is grouped
+///   1.3 — L20 (#1920, HCD-2): Cancel All's button, question and the Mac's queue line
 enum HubCopy {
 
     /// "1 volume" / "N volumes" — the app-wide phrase, since the hub's own two keys said the same.
@@ -40,6 +41,36 @@ enum HubCopy {
                          many: String(localized: "settings.hub.count.subseries.many",
                                       defaultValue: "%@ subseries"))
     }
+
+    // MARK: Cancel All (L20, #1920, HCD-2)
+
+    /// The button that stops every download: in iOS's Active Downloads, above the rows, and on the
+    /// Mac hub's queue line, which has no rows of its own.
+    static let cancelAll = String(localized: "settings.hub.active.cancelAll", defaultValue: "Cancel All")
+
+    /// The Mac hub's line while anything is queued: "553 volumes in the download queue".
+    static func queueLine(_ count: Int) -> String {
+        String(localized: "settings.hub.active.queueLine",
+               defaultValue: "\(volumes(count)) in the download queue")
+    }
+
+    /// The question Cancel All asks first, since one tap would otherwise drop a queue of hundreds.
+    static func cancelAllTitle(_ count: Int) -> String {
+        String(localized: "settings.hub.active.cancelAll.title",
+               defaultValue: "Stop downloading \(volumes(count))?")
+    }
+
+    /// What the question says stays.
+    static let cancelAllMessage = String(localized: "settings.hub.active.cancelAll.message",
+        defaultValue: "Volumes already on this device stay. To download the others later, use “Download from GitHub…”.")
+
+    /// The question's button that stops them.
+    static let cancelAllConfirm = String(localized: "settings.hub.active.cancelAll.confirm",
+                                         defaultValue: "Cancel All Downloads")
+
+    /// The question's button that keeps them.
+    static let cancelAllKeep = String(localized: "settings.hub.active.cancelAll.keep",
+                                      defaultValue: "Keep Downloading")
 }
 
 // MARK: - StorageRemovalPlan
@@ -85,8 +116,9 @@ struct StorageRemovalPlan: Equatable, Sendable {
 
         /// XML plus its estimated search-index contribution, plus its figure images.
         ///
-        /// The index factor is `StorageReport.indexOverheadFactor` (2.8×), the cross-platform mean
-        /// measured against a full 552-volume download. Always present this prefixed with "~".
+        /// The index factor is `StorageReport.indexOverheadFactor` (0.86×), the index in use against
+        /// the XML in a full 553-volume library (measured 2026-11-16; it was 2.8× until L20). Always
+        /// present this prefixed with "~".
         /// It multiplies the XML alone: an image is not indexed, so its bytes are counted once.
         var estimatedBytes: Int {
             volumeFileBytes + Int(Double(volumeFileBytes) * StorageReport.indexOverheadFactor) + figureBytes

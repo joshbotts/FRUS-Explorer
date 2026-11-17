@@ -768,3 +768,255 @@ final class VolumeRemovalTests: XCTestCase {
         if freeUpCancel.exists { freeUpCancel.tap() }
     }
 }
+
+// MARK: - DownloadCancelAllTests (L20, #1920, HCD-2)
+
+/// **Cancel All** above iOS's Active Downloads in Settings ▸ Volumes & Storage (L20, #1920, HCD-2).
+///
+/// Six catalogue volumes are queued at launch under the download seam's `hold`, so four run (the
+/// concurrency limit) and two wait, and none reaches the network (`UITestBrowseSeams.downloadSeam`).
+/// Cancel All asks first, naming how many; Cancel All Downloads empties the queue, and the section
+/// goes; dismissing the question keeps all six. Before L20 the section had a Cancel per row and
+/// nothing else, so the first test fails at its first check on that code.
+///
+/// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0 (the runbook's entry).
+/// Neither test skips. The Mac's Cancel All, on its hub's queue line, is walked in the check copy.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-2): initial implementation
+@MainActor
+final class DownloadCancelAllTests: XCTestCase {
+
+    /// How many volumes the seam queues.
+    private static let queued = 6
+
+    var app: XCUIApplication!
+
+    /// Resolves the Settings tab in whichever representation iPadOS has chosen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DOWNLOADS"] = "hold"
+        app.launchEnvironment["FRUS_UI_TEST_QUEUE_DOWNLOADS"] = String(Self.queued)
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .settings)
+    }
+
+    override func tearDown() async throws {
+        continueAfterFailure = true
+        DownloadSeamWalk.dismissQuestion(in: app)
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app = nil
+    }
+
+    /// Cancel All asks, naming the six, and its confirmation empties the queue.
+    func testCancelAllAsksThenEmptiesTheQueue() throws {
+        app.launch()
+        DownloadSeamWalk.settleAfterLaunch(in: app)
+        DownloadSeamWalk.openHub(in: app, navigator: navigator)
+
+        let cancelAll = app.buttons["settings.hub.active.cancelAll"].firstMatch
+        XCTAssertTrue(cancelAll.waitForExistence(timeout: 30), """
+            Active Downloads shows no Cancel All with \(Self.queued) volumes queued: before L20 it had a \
+            Cancel per row and nothing else.
+            """)
+        // A form is lazy, so the rows below the fold are not in the tree: the question's title is
+        // where the count is read.
+        XCTAssertTrue(DownloadSeamWalk.rowCancels(in: app).firstMatch.exists, "Active Downloads lists no volume")
+
+        cancelAll.tap()
+        let confirm = app.buttons["Cancel All Downloads"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "Cancel All did not ask first")
+        XCTAssertTrue(app.staticTexts["Stop downloading \(Self.queued) volumes?"].firstMatch.exists,
+                      "the question does not name the \(Self.queued) volumes the seam queued")
+        // Kept for a reader of the result bundle: the question, and the button it hangs on.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "cancel-all-question"
+        shot.lifetime = .keepAlways
+        add(shot)
+        confirm.tap()
+
+        XCTAssertTrue(cancelAll.waitForNonExistence(timeout: 15), "Cancel All stayed after it emptied the queue")
+        XCTAssertTrue(DownloadSeamWalk.rowCancels(in: app).firstMatch.waitForNonExistence(timeout: 15),
+                      "Active Downloads still lists a volume after Cancel All Downloads")
+    }
+
+    /// Dismissing the question stops nothing.
+    func testDismissingTheQuestionKeepsTheQueue() throws {
+        app.launch()
+        DownloadSeamWalk.settleAfterLaunch(in: app)
+        DownloadSeamWalk.openHub(in: app, navigator: navigator)
+
+        let cancelAll = app.buttons["settings.hub.active.cancelAll"].firstMatch
+        XCTAssertTrue(cancelAll.waitForExistence(timeout: 30), "Active Downloads shows no Cancel All")
+        cancelAll.tap()
+        let confirm = app.buttons["Cancel All Downloads"].firstMatch
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "Cancel All did not ask first")
+        DownloadSeamWalk.dismissQuestion(in: app)
+        XCTAssertTrue(confirm.waitForNonExistence(timeout: 10), "the question did not close")
+
+        // Asked again, the question still names all six.
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertTrue(cancelAll.waitForExistence(timeout: 5), "Cancel All went though nothing was cancelled")
+        cancelAll.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "Cancel All did not ask again")
+        XCTAssertTrue(app.staticTexts["Stop downloading \(Self.queued) volumes?"].firstMatch.exists,
+                      "dismissing Cancel All's question stopped downloads")
+        DownloadSeamWalk.dismissQuestion(in: app)
+    }
+}
+
+// MARK: - OnboardingBackCancelsDownloadsTests (L20, #1920, HCD-2)
+
+/// Back from onboarding's Ready step stops the downloads Continue queued (L20, #1920, HCD-2).
+///
+/// Corpus, the preselected scope, queues every catalogue volume on Continue, held by the download
+/// seam. Back, then Skip, then Finish reaches the app; Settings ▸ Volumes & Storage then lists no
+/// Active Downloads. Before L20 Back only changed the step, so the whole series stayed queued and the
+/// hub listed it: the test fails at its last check on that code. It reads the hub, not the Ready
+/// step's sentence, since the sentence also turns on volumes already on the simulator.
+///
+/// Devices: an iPhone 17 and an iPad Pro 13-inch (M5), both under iOS 27.0. It never skips.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-2): initial implementation
+@MainActor
+final class OnboardingBackCancelsDownloadsTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    /// Resolves the Settings tab in whichever representation iPadOS has chosen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DOWNLOADS"] = "hold"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        // Onboarding is the surface under test, so the launch says it has NOT been completed.
+        var arguments = UITestLaunch.arguments(startingOn: .settings)
+        if let flag = arguments.firstIndex(of: "-hasCompletedOnboarding") { arguments[flag + 1] = "0" }
+        app.launchArguments = arguments
+    }
+
+    override func tearDown() async throws {
+        continueAfterFailure = true
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app = nil
+    }
+
+    func testBackFromReadyStopsWhatContinueQueued() throws {
+        app.launch()
+
+        let getStarted = app.buttons["Get Started"].firstMatch
+        XCTAssertTrue(getStarted.waitForExistence(timeout: 30), "Onboarding's welcome step did not appear")
+        getStarted.tap()
+
+        // Corpus is the step's own default, so Continue queues every catalogue volume.
+        let continueButton = app.buttons["Continue"].firstMatch
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 10), "The Add Volumes step has no Continue")
+        continueButton.tap()
+
+        let finish = app.buttons["Finish"].firstMatch
+        XCTAssertTrue(finish.waitForExistence(timeout: 60), "Continue did not reach the Ready step")
+        let back = app.buttons["Back"].firstMatch
+        XCTAssertTrue(back.exists, "The Ready step has no Back")
+        back.tap()
+
+        let skip = app.buttons["Skip"].firstMatch
+        XCTAssertTrue(skip.waitForExistence(timeout: 10), "Back did not return to the Add Volumes step")
+        Thread.sleep(forTimeInterval: 1)
+        skip.tap()
+        XCTAssertTrue(finish.waitForExistence(timeout: 10), "Skip did not reach the Ready step")
+        finish.tap()
+
+        DownloadSeamWalk.settleAfterLaunch(in: app)
+        DownloadSeamWalk.openHub(in: app, navigator: navigator)
+        // Give the hub time to draw a queue, were there one.
+        Thread.sleep(forTimeInterval: 3)
+        XCTAssertFalse(app.staticTexts["Active Downloads"].firstMatch.exists, """
+            Volumes & Storage lists Active Downloads after Back from Ready: Back left the whole \
+            series queued, as it did before L20.
+            """)
+        XCTAssertEqual(DownloadSeamWalk.rowCancels(in: app).count, 0)
+    }
+}
+
+// MARK: - The walks the download seam's suites share
+
+/// Steps `DownloadCancelAllTests` and `OnboardingBackCancelsDownloadsTests` share.
+@MainActor
+enum DownloadSeamWalk {
+
+    /// Settings ▸ Volumes & Storage.
+    ///
+    /// - Parameters:
+    ///   - app: The running app.
+    ///   - navigator: The suite's tab navigator.
+    static func openHub(in app: XCUIApplication, navigator: TabBarNavigator) {
+        if !app.navigationBars["Settings"].waitForExistence(timeout: 20) {
+            let outcome = navigator.select(.settings, resolveTimeout: 20)
+            XCTAssertTrue(outcome.tapped, "The Settings tab could not be selected")
+        }
+        let pane = app.buttons["Volumes & Storage"].firstMatch
+        XCTAssertTrue(pane.waitForExistence(timeout: 10), "Settings has no Volumes & Storage row")
+        pane.tap()
+        XCTAssertTrue(app.navigationBars["Volumes & Storage"].waitForExistence(timeout: 10),
+                      "The Volumes & Storage hub never opened")
+    }
+
+    /// Waits out an indexing pass a launch starts, and pages through the FRUS Research Guide's sheet,
+    /// which opens by itself at a simulator's first index (`VolumeRemovalTests.settleAfterLaunch()`).
+    static func settleAfterLaunch(in app: XCUIApplication) {
+        let banner = app.staticTexts.matching(
+            NSPredicate(format: "label MATCHES %@", "Volume [0-9]+ of [0-9]+")).firstMatch
+        if banner.waitForExistence(timeout: 3) {
+            _ = banner.waitForNonExistence(timeout: 240)
+        }
+        Thread.sleep(forTimeInterval: 1)
+        let start = app.buttons["Start exploring"]
+        let next = app.buttons["Next"]
+        let firstPage = app.staticTexts["The Official Record of American Foreign Policy"]
+        guard start.exists || (next.exists && firstPage.exists) else { return }
+        var pages = 0
+        while !start.exists, pages < 20 {
+            guard next.waitForExistence(timeout: 2), next.isHittable else { break }
+            next.tap()
+            pages += 1
+            Thread.sleep(forTimeInterval: 0.8)
+        }
+        if start.waitForExistence(timeout: 2), start.isHittable { start.tap() }
+        _ = start.waitForNonExistence(timeout: 3)
+    }
+
+    /// Each queued volume's own Cancel, which VoiceOver names "Cancel download for <volume>".
+    static func rowCancels(in app: XCUIApplication) -> XCUIElementQuery {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Cancel download for"))
+    }
+
+    /// Closes Cancel All's question without stopping anything: Keep Downloading where the question
+    /// shows it, as an action sheet does, and otherwise a tap beside the popover, which iOS 27 shows
+    /// in place of an action sheet on an iPhone too and which carries no cancel button.
+    ///
+    /// The tap is at the dismiss region's lower-left corner, as `VolumeRemovalTests` closes its
+    /// popovers: at the region's middle it met the popover itself, which hangs below Cancel All, and
+    /// the question stayed (iPhone 17, iOS 27.0, the suite's first run).
+    static func dismissQuestion(in app: XCUIApplication?) {
+        guard let app, app.state == .runningForeground else { return }
+        let keep = app.buttons["Keep Downloading"].firstMatch
+        if keep.exists && keep.isHittable {
+            keep.tap()
+            return
+        }
+        let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+        if regions.count > 0 {
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+    }
+}

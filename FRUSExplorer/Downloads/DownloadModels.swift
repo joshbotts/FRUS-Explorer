@@ -150,6 +150,7 @@ public struct VolumeStorageEntry: Sendable {
 ///          measurements (552 volumes: macOS 10.09 GB index, iOS 8.77 GB index, ~3.4 GB XML)
 ///   1.2 — #1516: `totalFigureBytes`, the volumes' figure images — a figure of its own, drawn as
 ///          its own segment of the Volumes & Storage bar, and part of `grandTotalBytes`.
+///   1.3 — L20 (#1920, HCD-1): `indexOverheadFactor` measured again, 0.86 where it was 2.8
 public struct StorageReport: Sendable {
     /// Sum of all downloaded volume XML file sizes.
     public let totalVolumesBytes: Int
@@ -193,29 +194,33 @@ public struct StorageReport: Sendable {
 
     // MARK: - Index size estimation
 
-    /// Empirical ratio of search index bytes to volume XML bytes, calibrated against
-    /// a full 552-volume FRUS corpus download.
+    /// Empirical ratio of search index bytes to volume XML bytes, measured against a full
+    /// 553-volume library.
     ///
-    /// Measurements (all 552 volumes, ~3.4 GB XML):
-    /// - macOS: 10.09 GB index → factor ≈ 2.97
-    /// - iOS:    8.77 GB index → factor ≈ 2.58
-    /// - Cross-platform average used here: **2.8**
+    /// Measured 2026-11-16 (L20, #1920, HCD-1) on two full libraries at index version 74, kept from
+    /// the retake sittings: an iPad Pro 13-inch simulator's and the Mac check copy's. Each held
+    /// 3,339,186,418 bytes of volume XML. Of each index file, about 3.57 GB, 2.88 GB was in use and
+    /// the rest free pages a re-index leaves until Compact Database; an index as first built (index
+    /// version 71, kept from 2026-10-21) was 2.88 GB with almost none free. So:
+    /// - the index in use, against the XML: **0.86**, the factor used here;
+    /// - a file a re-index has left at full size: 1.07.
     ///
-    /// ## Why the index is so large
-    /// The index database stores document text in multiple forms to support fast
-    /// full-text search and TEI-faithful snippet rendering:
-    /// - **FTS5 posting lists** — token → document mapping (compressed but still large)
-    /// - **`document_cache.body_text`** — full unstemmed body text per document,
-    ///   used for snippet regeneration after FTS5 returns results
-    /// - **`document_cache` other columns** — header, dateline, source note, summaries
-    /// - **Auxiliary tables** — cross_references, page_ranges, person_mentions,
-    ///   persons, terms, document_dates
+    /// Per volume, the index in use apportioned by each volume's share of the stored text runs from
+    /// 0.71 to 1.01 times its XML (the 5th to the 95th percentile; 0.56 to 1.12 at the extremes,
+    /// median 0.87), as markup is denser in some volumes than in others.
     ///
-    /// XML files contain substantial tag markup that takes space but isn't indexed,
-    /// so the searchable text content per byte of XML is denser than the ratio suggests.
-    /// The actual factor ranges from ~2.5× for short volumes to ~3.0× for long ones.
+    /// **Until L20 this was 2.8**, from a measurement of 2026-05-31 (552 volumes, ~3.4 GB XML: a
+    /// 10.09 GB index on macOS, 8.77 GB on iOS), which overstated the index by about three times
+    /// once the index had shrunk; no figure had been taken again.
+    ///
+    /// ## What the index holds
+    /// - **`document_cache`** — each document's header, dateline, source note and full unstemmed
+    ///   body text, for snippets: 1.63 GB of the 2.88 GB as first built;
+    /// - **FTS5's posting lists** (`frus_documents_data`): 0.68 GB;
+    /// - **Auxiliary tables** — sources, revisions, cross-references, page ranges, person mentions,
+    ///   subjects and their indexes: the rest.
     ///
     /// Use `indexOverheadFactor` for pre-download estimates and removal size
     /// calculations. Always prefix displayed estimates with "~" and note the variance.
-    public static let indexOverheadFactor: Double = 2.8
+    public static let indexOverheadFactor: Double = 0.86
 }

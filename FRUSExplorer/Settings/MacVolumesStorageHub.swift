@@ -60,6 +60,10 @@ import UniformTypeIdentifiers
 ///   1.1 — 2026-10-20: #1689, plan of record A14 — Index Remaining takes the volumes
 ///          `IndexRemainingSelection` picks, a volume whose last store pass was cut short among
 ///          them, and its VoiceOver name says "not yet fully indexed" (`.a11y.v2`)
+///   1.2 — L20 (#1920, HCD-1): Storage & Index's footer and the Entire Corpus line give the index's size
+///          measured again: about as much as the XML, not 2.8 times it
+///   1.3 — L20 (#1920, HCD-2): a queue line under the hero's buttons while anything is queued, with
+///          Cancel All, which asks first
 struct MacVolumesStorageHub: View {
 
     // MARK: - Batch tracking
@@ -147,6 +151,8 @@ struct MacVolumesStorageHub: View {
     @State private var reindexingInterruptedId: String? = nil
     /// Controls the "Rebuild From Scratch" confirmation alert.
     @State private var showRebuildConfirmation = false
+    /// Whether Cancel All's question is showing (L20, #1920, HCD-2).
+    @State private var showCancelAllConfirmation = false
 
     // MARK: - Sheets
 
@@ -261,6 +267,38 @@ struct MacVolumesStorageHub: View {
         }
     }
 
+    // MARK: - Queue line
+
+    /// While anything is queued, how many volumes are, and **Cancel All** (L20, #1920, HCD-2). Until
+    /// it the Mac had no way to stop a download: the status bar's "N downloads queued" does nothing
+    /// when clicked, and the hub listed none. A full Active Downloads list, with each volume's own
+    /// Cancel as iOS has, is after 1.0. Cancel All asks first, its question hung on the button.
+    private var queueLine: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityHidden(true)
+            Text(HubCopy.queueLine(appState.downloadQueue.count))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 8)
+            Button(HubCopy.cancelAll, role: .destructive) {
+                showCancelAllConfirmation = true
+            }
+            .accessibilityIdentifier("settings.hub.active.cancelAll")
+            .confirmationDialog(HubCopy.cancelAllTitle(appState.downloadQueue.count),
+                                isPresented: $showCancelAllConfirmation,
+                                titleVisibility: .visible) {
+                Button(HubCopy.cancelAllConfirm, role: .destructive) {
+                    Task { await appState.downloadManager?.cancelAll() }
+                }
+                Button(HubCopy.cancelAllKeep, role: .cancel) {}
+            } message: {
+                Text(HubCopy.cancelAllMessage)
+            }
+        }
+    }
+
     // MARK: - Hero
 
     @ViewBuilder
@@ -322,6 +360,10 @@ struct MacVolumesStorageHub: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
+            }
+
+            if !appState.downloadQueue.isEmpty {
+                queueLine
             }
 
             if let outcome = sideloadOutcome {
@@ -538,7 +580,7 @@ struct MacVolumesStorageHub: View {
                         defaultValue: "Storage & Index"))
         } footer: {
             Text(String(localized: "settings.hub.storageIndex.footer",
-                        defaultValue: "Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.4 GB of XML plus 9–10 GB of search index."))
+                        defaultValue: "Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.3 GB of XML plus 3 to 3.5 GB of search index."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1576,7 +1618,7 @@ private struct MacDownloadVolumesSheet: View {
         let bytes = allVolumes.reduce(0) { $0 + $1.sizeBytes }
         let xml = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
         return String(localized: "settings.hub.browse.corpus.detail",
-                      defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.")
+                      defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus about as much again in search index. Downloads run in the background and resume across launches.")
     }
 
     private var selectionSummary: String {
@@ -1640,11 +1682,11 @@ private struct MacDownloadVolumesSheet: View {
 /// the read-only-store reopen (#275) on the same terms.
 ///
 /// ## Index size estimates
-/// Per-volume index contribution is estimated at **2.8×** the XML file size
-/// (`StorageReport.indexOverheadFactor`) — the cross-platform mean measured against a full
-/// 552-volume download; individual volumes range from roughly 2.5× (short) to 3.0× (long).
-/// The 552 is the corpus that measurement ran over, not today's 553: a ratio re-stated against a
-/// denominator nobody re-measured would be a different claim wearing the same number.
+/// Per-volume index contribution is estimated at **0.86×** the XML file size
+/// (`StorageReport.indexOverheadFactor`): the index in use against the XML in a full 553-volume
+/// library, measured 2026-11-16 (L20, #1920); per volume it runs from roughly 0.7× to 1×. Until
+/// L20 it was 2.8×, from a 552-volume measurement of 2026-05-31; the index has shrunk since, and
+/// nobody had measured it again.
 /// The UI prefixes every estimate with "~" and explains the methodology.
 ///
 /// Version history:
@@ -1657,6 +1699,8 @@ private struct MacDownloadVolumesSheet: View {
 ///          `StorageRemovalPlan`; removal moves to the hub. The sheet is now only the rendering.
 ///   1.4 — #1356 review, round 2: keeps its own removal's volumes until it closes, and Remove
 ///          takes only what the plan still offers
+///   1.5 — L20 (#1920, HCD-1): the estimate's note gives the factor measured again, 0.86× where it
+///          said 2.8×
 private struct MacManageStorageSheet: View {
 
     /// What the hub may offer now, and in what order: its live plan, which leaves out every volume
@@ -1737,7 +1781,7 @@ private struct MacManageStorageSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "settings.hub.freeUp.estimateNote",
-                                defaultValue: "Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate."))
+                                defaultValue: "Each size is the XML file plus an estimate of its share of the search index, 0.86 times the XML. That ratio comes from the full corpus: about 2.9 GB of index for about 3.3 GB of XML. Per volume it runs from roughly 0.7 to 1 times, so treat these sizes as approximate."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

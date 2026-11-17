@@ -177,7 +177,7 @@ FRUS Explorer is an independent research tool. It is not an official product of 
   *The long labels are macOS; iOS uses the short ones, because three full labels cannot
   share an iPhone’s segment width without truncating.*
 
-- `onboarding.scope.caption.corpus.v2 %lld` — %lld+ volumes · ≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality. *(the count is the bundled manifest’s — R-3)*
+- `onboarding.scope.caption.corpus.v2 %lld` — %lld+ volumes · ≈ 3.5 GB to download, about 7 GB once indexed — the entire series, fully offline. Recommended for full functionality. *(the count is the bundled manifest’s — R-3; the size once indexed is measured, two full libraries at index version 74 holding 6.5 to 7.2 GB — L20, #1920)*
 - `onboarding.scope.caption.subseries` — A coherent editorial era — recommended if you want to start smaller.
 - `onboarding.scope.caption.volume` — One volume to explore — typically a few MB.
 - `onboarding.scope.sheet.volumeCount` — *N* volume / volumes
@@ -189,6 +189,9 @@ FRUS Explorer is an independent research tool. It is not an official product of 
 - `onboarding.ready.body.empty` — Nothing is downloading yet — browse the corpus and add volumes whenever you like. If you have no project yet, one named “My Research” is ready.
   Shown instead of the line above when the reader reaches Finish with nothing downloading (Skip,
   or a scope that enqueued no volumes), where that line’s two promises would both be false.
+  Back from this step stops every download Continue queued (L20, #1920), so a Skip after it reads
+  this line when nothing is on the device yet; until then it read the one above, with the whole
+  series still downloading behind it.
 
 **Shared** — `onboarding.action.back` (Back), `onboarding.action.skip` (Skip),
 `onboarding.offline.banner` (You are offline. Showing bundled catalog only.).

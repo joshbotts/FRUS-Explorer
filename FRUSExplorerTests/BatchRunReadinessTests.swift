@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import FoundationModels
 import Testing
 @testable import FRUSExplorer
 
@@ -23,7 +24,7 @@ struct BatchRunReadinessTests {
     /// A run that can start: every precondition satisfied.
     private func ready(scope: ScopeType = .volume) -> BatchRunReadiness {
         BatchRunReadiness(
-            modelAvailable: true,
+            model: .available,
             serviceAvailable: true,
             downloadManagerAvailable: true,
             promptCount: 3,
@@ -68,11 +69,13 @@ struct BatchRunReadinessTests {
 
     // MARK: - Each obstacle
 
-    @Test("An unavailable model blocks Start")
-    func modelUnavailable() {
+    /// L20 (#1920, HCD-5): the blocker carries why, whichever reason it is.
+    @Test("An unavailable model blocks Start, for each reason", arguments: [
+        AppleIntelligenceAvailability.notEligible, .notEnabled, .modelNotReady])
+    func modelUnavailable(reason: AppleIntelligenceAvailability) {
         var r = ready()
-        r.modelAvailable = false
-        #expect(r.blocker == .modelUnavailable)
+        r.model = reason
+        #expect(r.blocker == .modelUnavailable(reason))
     }
 
     @Test("No prompts blocks Start")
@@ -123,16 +126,16 @@ struct BatchRunReadinessTests {
     @Test("The most fundamental obstacle is reported first")
     func ordering() {
         var everythingWrong = ready()
-        everythingWrong.modelAvailable = false
+        everythingWrong.model = .notEnabled
         everythingWrong.serviceAvailable = false
         everythingWrong.promptCount = 0
         everythingWrong.selectedPromptExists = false
         everythingWrong.downloadedVolumeCount = 0
         everythingWrong.scopeSelectionComplete = false
-        #expect(everythingWrong.blocker == .modelUnavailable)
+        #expect(everythingWrong.blocker == .modelUnavailable(.notEnabled))
 
         var noModelProblem = everythingWrong
-        noModelProblem.modelAvailable = true
+        noModelProblem.model = .available
         #expect(noModelProblem.blocker == .notReady)
 
         var ready2 = noModelProblem
@@ -147,7 +150,8 @@ struct BatchRunReadinessTests {
     @Test("Every blocker carries a non-empty reason")
     func everyBlockerExplains() {
         let all: [BatchRunBlocker] = [
-            .modelUnavailable, .notReady, .noPrompts, .promptMissing, .nothingDownloaded,
+            .modelUnavailable(.notEligible), .modelUnavailable(.notEnabled), .modelUnavailable(.modelNotReady),
+            .notReady, .noPrompts, .promptMissing, .nothingDownloaded,
             .customScopeNotDownloaded,
         ] + ScopeType.allCases.map { BatchRunBlocker.scopeIncomplete($0) }
         for blocker in all {
@@ -161,5 +165,79 @@ struct BatchRunReadinessTests {
     func scopeReasonsAreDistinct() {
         let reasons = ScopeType.allCases.map { BatchRunBlocker.scopeIncomplete($0).reason }
         #expect(Set(reasons).count == ScopeType.allCases.count)
+    }
+}
+
+// MARK: - AppleIntelligenceAvailabilityTests (L20, #1920, HCD-5)
+
+/// Why Apple Intelligence cannot summarize, said at the seven surfaces that said only "not available on
+/// this device" (L20, #1920, HCD-5): an eligible device with Apple Intelligence switched off, or its model
+/// still downloading, was told the same as one that cannot run it.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-5): initial implementation
+@Suite("Apple Intelligence: why it cannot summarize, at the seven surfaces that say so (#1920)")
+struct AppleIntelligenceAvailabilityTests {
+
+    @Test("The system's availability maps to the four cases")
+    func mapping() {
+        #expect(AppleIntelligenceAvailability(.available) == .available)
+        #expect(AppleIntelligenceAvailability(.unavailable(.appleIntelligenceNotEnabled)) == .notEnabled)
+        #expect(AppleIntelligenceAvailability(.unavailable(.modelNotReady)) == .modelNotReady)
+        #expect(AppleIntelligenceAvailability(.unavailable(.deviceNotEligible)) == .notEligible)
+        #expect(AppleIntelligenceAvailability.available.isAvailable)
+        #expect(!AppleIntelligenceAvailability.notEnabled.isAvailable)
+        #expect(!AppleIntelligenceAvailability.modelNotReady.isAvailable)
+        #expect(!AppleIntelligenceAvailability.notEligible.isAvailable)
+    }
+
+    @Test("A device that cannot run it keeps the surface's own sentence; switched off says where to turn it on; not ready says to try later")
+    func sentences() {
+        let own = "Apple Intelligence is not available on this device."
+        let after = "Summaries from your other devices still appear here via iCloud."
+        #expect(AppleIntelligenceAvailability.notEligible.unavailableSentence(notEligible: own, consequence: after) == own)
+        #expect(AppleIntelligenceAvailability.available.unavailableSentence(notEligible: own) == own)
+
+        let off = AppleIntelligenceAvailability.notEnabled.unavailableSentence(notEligible: own, consequence: after)
+        #expect(off.contains("Apple Intelligence & Siri"), "\(off)")
+        #expect(off.contains("turned off"), "\(off)")
+        #expect(off.hasSuffix(" " + after), "\(off)")
+        #expect(!off.contains("not available on this device"), "\(off)")
+
+        let waiting = AppleIntelligenceAvailability.modelNotReady.unavailableSentence(notEligible: own)
+        #expect(waiting.contains("Try again later."), "\(waiting)")
+        #expect(waiting == AppleIntelligenceAvailability.modelNotReadySentence)
+    }
+
+    @Test("A batch run's blocker says why")
+    func batchBlocker() {
+        #expect(BatchRunBlocker.modelUnavailable(.notEligible).reason
+                == "Apple Intelligence isn’t available on this device, so summaries can’t be generated here.")
+        #expect(BatchRunBlocker.modelUnavailable(.notEnabled).reason == AppleIntelligenceAvailability.notEnabledSentence)
+        #expect(BatchRunBlocker.modelUnavailable(.modelNotReady).reason == AppleIntelligenceAvailability.modelNotReadySentence)
+    }
+
+    /// The seven sites the review lists, each read where it is: each passes its own sentence to the
+    /// helper as the not-eligible case, so none can say "not available" alone again.
+    @Test("Each of the seven surfaces takes its sentence from the helper")
+    func theSevenSites() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let sites: [(file: String, key: String)] = [
+            ("DocumentView/ResearchRailView.swift", "panel.summary.unavailable"),
+            ("App/SupportingViews.swift", "summary.unavailable.explanation"),
+            ("Settings/SettingsView.swift", "settings.summarization.availability.unavailable"),
+            ("Settings/FRUSSettingsView.swift", "settings.summarization.availability.unavailable"),
+            ("Summarization/BatchRunReadiness.swift", "bg.summarizer.blocked.model"),
+            ("Summarization/SummarizationModels.swift", "summ.error.unavailable"),
+            ("Collections/CollectionEntryInspector.swift", "collection.inspector.headnote.regen.unavailable"),
+        ]
+        for site in sites {
+            let source = try String(contentsOf: app.appendingPathComponent(site.file), encoding: .utf8)
+            let call = try Regex(#"unavailableSentence\(\s*notEligible:\s*String\(\s*localized:\s*""#
+                                 + site.key + "\"")
+            #expect(source.ranges(of: call).count == 1,
+                    "\(site.file) does not pass \(site.key) to AppleIntelligenceAvailability's sentence")
+        }
     }
 }

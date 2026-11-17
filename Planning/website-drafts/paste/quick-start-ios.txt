@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/quick-start-ios · from Docs/Website/quick-start-ios.html · fingerprint 83dbaac0 -->
+<!-- frusexplorer.app/quick-start-ios · from Docs/Website/quick-start-ios.html · fingerprint e487f964 -->
 <style>
   .frus-quick-start a { text-decoration: underline; }
   .frus-quick-start img { max-width: 100%; height: auto; }
@@ -47,7 +47,7 @@
 
 <ul>
   <li><strong>iPadOS or iOS 26 or later.</strong> AI summaries also need a device with <strong>Apple Intelligence</strong> turned on; everything else works without it.</li>
-  <li><strong>Storage.</strong> One volume is a few megabytes. The whole series is about 3.5 GB to download and roughly 13 GB on the device once it is indexed for search.</li>
+  <li><strong>Storage.</strong> One volume is a few megabytes. The whole series is about 3.5 GB to download and about 7 GB on the device once it is indexed for search.</li>
   <li><strong>A network connection</strong> for the downloads. After that, reading, searching and annotating work offline.</li>
 </ul>
 

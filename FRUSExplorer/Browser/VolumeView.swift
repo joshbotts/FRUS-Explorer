@@ -69,6 +69,9 @@ import SwiftUI
 ///          section (`VolumeAnnotationsSection`) right after the metadata header
 ///   2.11 — 2026-11-06: lane C — a row of that section opens its layer's page on the axis
 ///          (`.annotationCategory`), with this volume marked in its lists
+///   2.12 — L20 (#1920, HCD-3): a download that failed with its retries spent shows its failure in
+///          Keeping Current's words with Retry, in Download Volume's place, and VoiceOver hears it
+///          (`DownloadFailureNotice`)
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -170,6 +173,12 @@ struct VolumeView: View {
                   !newQueue.contains(volume.volumeId) else { return }
             downloadRequested = false
             Task { await vm.loadVolumeStructure(for: volume) }
+        }
+        // L20 (#1920, HCD-3): a download that failed with its retries spent is said, as its notice
+        // takes Download Volume's place; nothing else on the page changes that VoiceOver would hear.
+        .onChange(of: appState.downloadFailures[volume.volumeId]) { previous, failure in
+            guard previous == nil, let failure else { return }
+            AccessibilityNotification.Announcement(DownloadFailureNotice.announcement(for: failure)).post()
         }
         // #1766: the page a link was to is named on the visit that link made, and not on a later one.
         // On iPad this view can take another volume in place (#1301), which is a departure too.
@@ -274,6 +283,13 @@ struct VolumeView: View {
                                         defaultValue: "Downloading… Contents will appear when the download completes."))
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
+                        }
+                    } else if let failure = appState.downloadFailures[volume.volumeId] {
+                        // L20 (#1920, HCD-3): the last download failed with its retries spent.
+                        DownloadFailureNotice(failure: failure) {
+                            guard let dm = vm.downloadManager else { return }
+                            downloadRequested = true
+                            Task { await dm.enqueueDownload(volume) }
                         }
                     } else {
                         Button {
@@ -608,5 +624,65 @@ struct SectionRowLabel: View {
         default:
             return section.divType
         }
+    }
+}
+
+// MARK: - DownloadFailureNotice
+
+/// A volume's failed download on its page, in Keeping Current's words, with **Retry**
+/// (L20, #1920, HCD-3).
+///
+/// Until L20 a download that failed with its retries spent vanished: the page offered Download
+/// Volume again with no word of what had happened, and on the Mac its Corpus Browser kept saying
+/// "Downloading…". The notice takes the place of Download Volume while the failure stands
+/// (`AppState.downloadFailures`), and its line is Keeping Current's for the same failure
+/// (`KeepingCurrentCopy.failure(_:)`): "The download failed: no connection.", and so on. Retry queues
+/// the volume again, which forgets the failure. The page that shows it posts ``announcement(for:)``
+/// as the failure arrives.
+///
+/// Version history:
+///   1.0 — L20 (#1920, HCD-3): initial implementation
+struct DownloadFailureNotice: View {
+
+    /// Why the download failed.
+    let failure: DownloadFailure
+    /// Queues the volume again.
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label {
+                Text(Self.line(for: failure))
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+            .font(.callout)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("volume.download.failure")
+
+            Button(action: onRetry) {
+                Label(KeepingCurrentCopy.retry, systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("volume.download.retry")
+        }
+    }
+
+    /// The notice's line: Keeping Current's for the same failure.
+    ///
+    /// - Parameter failure: Why the download failed.
+    /// - Returns: The line.
+    static func line(for failure: DownloadFailure) -> String {
+        KeepingCurrentCopy.failure(.download(failure))
+    }
+
+    /// What VoiceOver hears as the failure arrives: the line, at high priority, since the page's own
+    /// change of state is silent.
+    ///
+    /// - Parameter failure: Why the download failed.
+    /// - Returns: The announcement.
+    static func announcement(for failure: DownloadFailure) -> AttributedString {
+        TransientToast.announcement(line(for: failure))
     }
 }

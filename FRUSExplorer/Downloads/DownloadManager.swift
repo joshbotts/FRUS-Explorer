@@ -95,6 +95,8 @@ import Foundation
 ///   2.6 — Session 2026-11-08 (FRUS Explorer Light, S21a): `gitBlobSHA1(for:)` forwards to
 ///          FRUSCoreKit's `VolumeUpdateChecker.gitBlobSHA1(for:)`, which moved there with the check,
 ///          and the manager conforms to the kit's `DownloadedVolumeFiles`, which the check reads
+///   2.7 — L20 (#1920, HCD-2): `cancelAll()` cancels every download and empties the saved queue;
+///          a cancel during a failed attempt's backoff now holds, where the retry came back after it
 ///
 /// ## Figure Images (#1516)
 /// When a volume's download finishes, `fetchFigureImages(for:)` reads the names its `<figure>`s
@@ -425,8 +427,13 @@ public actor DownloadManager {
     /// which the reader keeps, or the one a transfer that finished first has just put there and
     /// `onVolumeDownloaded` is indexing. Removing it, as this did until #1660, left the index
     /// holding a volume whose documents could no longer open.
+    ///
+    /// A volume waiting out a failed attempt's backoff is queued too (L20, #1920): its address is
+    /// still held for the retry, so the cancel drops the address, which the retry checks for, and
+    /// reports the volume cancelled. Before L20 the retry came back after the cancel.
     public func cancelDownload(volumeId: String) {
         let wasQueued = activeVolumeIds.contains(volumeId) || pendingQueue.contains(volumeId)
+            || pendingUrls[volumeId] != nil
         // Cancel the running transfer.
         if usesBackgroundEngine {
             BackgroundDownloadEngine.shared.cancelDownload(volumeId: volumeId)
@@ -448,6 +455,50 @@ public actor DownloadManager {
         #if DEBUG
         print("[DownloadManager] Cancelled \(volumeId).")
         #endif
+    }
+
+    /// Cancels every download, running, waiting in the queue or waiting to be tried again, and
+    /// empties the saved queue (L20, #1920, HCD-2).
+    ///
+    /// Reset This Device, Erase Everything and onboarding's Back from its Ready step call this, and
+    /// Cancel All in Volumes & Storage. Until it existed the one way to stop a download was a row's
+    /// Cancel in iOS's Active Downloads, about 553 taps for the first run's default, and none on a
+    /// Mac; and a reset left the saved queue, which resumed at the next launch online, so Erase
+    /// Everything's "as if newly installed" did not hold.
+    ///
+    /// Each volume that was queued is reported `.cancelled` once, as ``cancelDownload(volumeId:)``
+    /// reports one, so Keeping Current's rows and the indexing queue's count let go of it. Nothing on
+    /// disk is touched, for the reason ``cancelDownload(volumeId:)`` gives. In production every
+    /// transfer the background session holds is cancelled too, a transfer an earlier process
+    /// started among them, which this manager adopts only once it is online
+    /// (``resumeQueuedDownloads()``).
+    ///
+    /// - Returns: How many volumes were queued, and are now cancelled.
+    @discardableResult
+    public func cancelAll() -> Int {
+        // `pendingUrls` holds every volume running or waiting, a retry's wait included.
+        let queued = Set(activeVolumeIds).union(pendingQueue).union(pendingUrls.keys)
+        if usesBackgroundEngine {
+            BackgroundDownloadEngine.shared.cancelAllDownloads()
+        }
+        for task in testTasks.values { task.cancel() }
+        testTasks.removeAll()
+        activeVolumeIds.removeAll()
+        pendingQueue.removeAll()
+        pendingUrls.removeAll()
+        retryCounts.removeAll()
+        updatingVolumeIds.removeAll()
+
+        persistQueue()
+        notifyStateChanged()
+        for volumeId in queued.sorted() {
+            notifyTransferFinished(volumeId: volumeId, outcome: .cancelled)
+        }
+
+        #if DEBUG
+        print("[DownloadManager] Cancelled all: \(queued.count) volumes.")
+        #endif
+        return queued.count
     }
 
     /// Deletes a fully downloaded volume XML file from disk.
@@ -1158,9 +1209,11 @@ public actor DownloadManager {
     /// its retry count.
     ///
     /// Declines a volume another path has put on disk meanwhile — unless the transfer is an update
-    /// (`updatingVolumeIds`), whose old copy is always on disk (#1660).
+    /// (`updatingVolumeIds`), whose old copy is always on disk (#1660) — and a volume cancelled
+    /// during the wait, whose address a cancel has dropped (L20, #1920).
     private func retryDownload(volumeId: String, downloadUrl: String) {
-        guard updatingVolumeIds.contains(volumeId) || !isVolumeDownloaded(volumeId),
+        guard pendingUrls[volumeId] != nil,
+              updatingVolumeIds.contains(volumeId) || !isVolumeDownloaded(volumeId),
               !activeVolumeIds.contains(volumeId),
               !pendingQueue.contains(volumeId) else { return }
         pendingQueue.append(volumeId)

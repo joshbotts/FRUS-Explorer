@@ -557,8 +557,12 @@ struct ResearchRailView: View {
                 } else {
                     HStack(spacing: 8) {
                         Image(systemName: "sparkles").foregroundStyle(.tertiary)
-                        Text(String(localized: "panel.summary.unavailable",
-                                    defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud."))
+                        // L20 (#1920, HCD-5): why, where turning it on or waiting would do.
+                        Text(AppleIntelligenceAvailability.current.unavailableSentence(
+                            notEligible: String(localized: "panel.summary.unavailable",
+                                                defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud."),
+                            consequence: String(localized: "panel.summary.unavailable.otherDevices",
+                                                defaultValue: "Summaries from your other devices still appear here via iCloud.")))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }

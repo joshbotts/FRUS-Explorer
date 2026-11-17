@@ -130,7 +130,8 @@ struct StorageRemovalPlanTests {
 
     // MARK: - Size estimates
 
-    /// XML plus the 2.8× index estimate — the figure the sheet shows, prefixed with "~".
+    /// XML plus the index estimate (`StorageReport.indexOverheadFactor`, 0.86× since L20's
+    /// measurement; 2.8× before it) — the figure the sheet shows, prefixed with "~".
     @Test("A candidate's estimate is its XML plus the index overhead factor")
     func candidateEstimateIncludesIndexOverhead() {
         let plan = StorageRemovalPlan.make(

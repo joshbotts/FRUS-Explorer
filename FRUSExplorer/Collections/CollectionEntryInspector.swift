@@ -85,6 +85,7 @@ import SwiftData
 ///          (`headnoteSeedText(_:)`)
 ///   1.12 — L19 (#1919, IPA-4): **Open Document** at the head of a document's identity, where a host passes
 ///          `onOpenDocument` (the iPhone drill-in and the iPad Configure sheet)
+///   1.13 — L20 (#1920, HCD-5): Regenerate's unavailable error says why (`AppleIntelligenceAvailability`)
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -1174,10 +1175,12 @@ struct CollectionEntryInspector: View {
     /// never pollutes the document's summary carousel. Failures surface inline via `regenError`.
     private func regenerateHeadnote() async {
         guard !isRegenerating else { return }
-        guard let service = appState.summarizationService,
-              AppleIntelligenceProvider.shared.isAvailable else {
-            regenError = String(localized: "collection.inspector.headnote.regen.unavailable",
-                                defaultValue: "On-device summarization isn’t available on this device.")
+        let availability = AppleIntelligenceAvailability.current
+        guard let service = appState.summarizationService, availability.isAvailable else {
+            // L20 (#1920, HCD-5): why, where turning it on or waiting would do.
+            regenError = availability.unavailableSentence(
+                notEligible: String(localized: "collection.inspector.headnote.regen.unavailable",
+                                    defaultValue: "On-device summarization isn’t available on this device."))
             return
         }
         guard let prompt = resolveHeadnotePrompt() else {

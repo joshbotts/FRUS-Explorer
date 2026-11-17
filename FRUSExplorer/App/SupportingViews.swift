@@ -91,6 +91,8 @@ final class HighlightCoordinator {
 ///   1.0 — New UI scaffolding
 ///   1.1 — R-5 P3b-6: Regenerate runs the summary's own prompt; the prompt is named rather than
 ///         asserted "custom"; seven literals keyed; the four silent failure paths closed
+///   1.2 — L20 (#1920, HCD-5): the sentence for no summary says why Apple Intelligence cannot make one
+///         (`AppleIntelligenceAvailability`)
 struct SummaryBlockView: View {
     @Bindable var vm: DocumentViewModel
     @Environment(AppState.self) private var appState
@@ -277,12 +279,18 @@ struct SummaryBlockView: View {
                     .foregroundStyle(.tertiary)
                     .disabled(vm.documentPlainText.isEmpty)
             } else {
-                // No summary and no way to make one on this hardware — explain
-                // instead of offering a button that fails silently.
-                Text(String(
-                    localized: "summary.unavailable.explanation",
-                    defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries created on your other devices still appear here via iCloud."
-                ))
+                // No summary and no way to make one here — explain instead of offering a button
+                // that fails silently, and why (L20, #1920, HCD-5): turning Apple Intelligence on, or
+                // waiting for its model, would do, where only a device that cannot run it is stuck.
+                Text(AppleIntelligenceAvailability.current.unavailableSentence(
+                    notEligible: String(
+                        localized: "summary.unavailable.explanation",
+                        defaultValue: "Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries created on your other devices still appear here via iCloud."
+                    ),
+                    consequence: String(
+                        localized: "summary.unavailable.explanation.otherDevices",
+                        defaultValue: "Summaries created on your other devices still appear here via iCloud."
+                    )))
                 .font(.callout)
                 .foregroundStyle(.tertiary)
             }
