@@ -45,6 +45,9 @@ import SwiftData
 ///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b): the watermark, `SavedSearchFreshness`, is
 ///         FRUSCoreKit's, and `freshness` and `recordRun` read and write it through the kit. No stored
 ///         property changed.
+///   1.4 — #1915 (L24): `storeParameters(_:)`, the one writer of a search's columns, which the
+///         initialiser and Import from JSON share; it clears a date range the search no longer has.
+///         No stored property changed.
 @Model final class SavedSearch {
 
     // MARK: - Identity
@@ -119,6 +122,18 @@ import SwiftData
     init(name: String, parameters: SearchParameters) {
         self.id = UUID()
         self.name = name
+        storeParameters(parameters)
+        self.createdAt = .now
+        self.lastModified = .now
+    }
+
+    /// Writes `parameters` into the record: the scalar columns an older build reads, and the
+    /// complete snapshot (``parametersData``) this one reads first. The one writer of a search's
+    /// columns, for a new record and for Import from JSON's write of a file's copy (#1915), so the
+    /// two cannot store a search differently.
+    ///
+    /// - Parameter parameters: The search to store.
+    func storeParameters(_ parameters: SearchParameters) {
         self.queryText = parameters.keywords ?? ""
         self.phraseText = parameters.phrase ?? ""
         self.prefixWildcard = parameters.prefixWildcard ?? ""
@@ -134,6 +149,10 @@ import SwiftData
             fmt.formatOptions = [.withFullDate]
             self.dateRangeStart = range.earliest.flatMap { fmt.date(from: $0) }
             self.dateRangeEnd   = range.latest.flatMap   { fmt.date(from: $0) }
+        } else {
+            // Written over a record that had a range, none is left behind; a new record has none.
+            self.dateRangeStart = nil
+            self.dateRangeEnd = nil
         }
         self.subjectTagIdsCSV = parameters.subjectTagIds.joined(separator: ",")
         switch parameters.documentTypeFilter {
@@ -143,8 +162,6 @@ import SwiftData
         }
         self.personRef = parameters.personRef ?? ""
         self.sortOrder = "relevance"
-        self.createdAt = .now
-        self.lastModified = .now
         // The complete snapshot (#756). Encoding cannot realistically fail for this value type, and
         // a nil here degrades to exactly the old behaviour rather than losing the record.
         self.parametersData = try? JSONEncoder().encode(parameters)

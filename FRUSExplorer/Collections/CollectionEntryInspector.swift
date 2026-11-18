@@ -947,8 +947,11 @@ struct CollectionEntryInspector: View {
     }
 
     /// Reserved `promptId` stamped on a dedicated headnote draft — it has no producing prompt, and
-    /// `isHeadnoteDraft` already excludes it from every prompt-aware query.
-    private static let headnoteDraftPromptId = UUID(uuidString: "0EAD0000-0000-4000-8000-000000000001")!
+    /// `isHeadnoteDraft` already excludes it from every prompt-aware query. FRUSCoreKit's
+    /// `GeneratedSummaryExport.headnoteDraftPromptId`, the one id Import from JSON reads a draft by
+    /// in a file before format version 7 (#1915), so the drafts made here and the import's reading
+    /// of them cannot drift apart.
+    private static let headnoteDraftPromptId = GeneratedSummaryExport.headnoteDraftPromptId
 
     /// The `GeneratedSummary` backing this entry's headnote: the explicit pick (including a
     /// dedicated draft, fetched by id), else the resolver's fallback (the collection prompt's

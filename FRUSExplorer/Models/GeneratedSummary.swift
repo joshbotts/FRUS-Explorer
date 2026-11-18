@@ -55,6 +55,8 @@ import SwiftData
 ///          A NEW mirrored field: it boards the ninth Production promotion.
 ///   1.6 — FRUS Explorer Light: `SummaryAuthorship` moved to FRUSCoreKit, unchanged but `public`; no
 ///          stored property changed
+///   1.7 — #1915 (L24): `reconcileSummaryText(container:pipeline:)`, the launch replay's summary
+///          pass, which Import from JSON runs too; no stored property changed
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -324,6 +326,41 @@ extension GeneratedSummary {
             if !s.isHeadnoteDraft { hasLive.insert(key) }
         }
         return seen.keys.sorted().filter { !hasLive.contains($0) }.map { (seen[$0]!.0, seen[$0]!.1) }
+    }
+
+    /// Brings the index's `summary_text` column level with the summaries in `container`: each
+    /// document's newest non-draft summary (``newestNonDraftPerDocument(_:)``), as the text the index
+    /// holds for it (`indexedText`), and a clear for each document whose every summary is a headnote
+    /// draft (``draftOnlyDocuments(_:)``). Value-guarded in the pipeline, so a row that already
+    /// holds its text costs a zero-row update.
+    ///
+    /// The launch's replay and Import from JSON's pass after it writes summaries (#1915, L24) call
+    /// this one rule; until L24 the launch's loop was written out in `FRUSExplorerApp`.
+    ///
+    /// - Parameters:
+    ///   - container: The model container to read the summaries from.
+    ///   - pipeline: The index to write through.
+    /// - Returns: How many documents' rows were written.
+    @discardableResult
+    nonisolated static func reconcileSummaryText(container: ModelContainer,
+                                                 pipeline: IndexingPipeline) async -> Int {
+        let context = ModelContext(container)
+        let all = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+        // Read every value before the first suspension, as the note reconcile reads its own.
+        let writes = newestNonDraftPerDocument(all).map {
+            (volumeId: $0.volumeId, documentId: $0.documentId, text: $0.indexedText)
+        }
+        let clears = draftOnlyDocuments(all)
+        for row in writes {
+            try? await pipeline.updateSummaryText(volumeId: row.volumeId, documentId: row.documentId,
+                                                  responseText: row.text)
+        }
+        // A document whose only summaries are drafts had its draft text pushed by the old loops;
+        // skipping it would freeze that text in the column. Clear it.
+        for row in clears {
+            try? await pipeline.clearSummaryText(volumeId: row.volumeId, documentId: row.documentId)
+        }
+        return writes.count
     }
 
     /// Strict "a should replace b" order for the selection above.
