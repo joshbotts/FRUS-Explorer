@@ -32,6 +32,9 @@ import SwiftData
 ///          (Document content / Your annotations / Analysis & apparatus) with a one-line
 ///          helper each. The view now OWNS its sections, so hosts place it directly rather
 ///          than wrapping it in their own Section/DisclosureGroup. Bindings are unchanged.
+///   1.4 — 2026-11-18 (L25, decision 139): six templates in place of four, so the grid has three
+///          rows of two, and the compact chip row shows all six (it scrolls; `compactPresets`, which
+///          left Scholarly edition out, is gone)
 struct CollectionCompositionRows: View {
 
     /// The collection whose persisted composition is being edited.
@@ -43,9 +46,9 @@ struct CollectionCompositionRows: View {
     var onApplyPreset: ((CollectionPreset) -> Void)?
 
     /// Overrides the automatic compact-vs-regular preset layout choice (Composer v2). `nil` = auto
-    /// (from the horizontal size class); `false` forces the 2×2 grid; `true` forces the short-chip
+    /// (from the horizontal size class); `false` forces the card grid; `true` forces the short-chip
     /// row. The iPad ⚙ Collection sheet passes `false` because an iPadOS form sheet reports a compact
-    /// size class yet is wide enough for the grid — and the chip row omits Scholarly edition.
+    /// size class yet is wide enough for the grid, whose cards give each template's name and subtitle.
     var presetsCompact: Bool?
 
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
@@ -53,7 +56,7 @@ struct CollectionCompositionRows: View {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var hSizeClass
     #endif
-    /// Whether to render presets as the compact (iPhone) short-chip row rather than the 2×2 grid.
+    /// Whether to render presets as the compact (iPhone) short-chip row rather than the card grid.
     /// A host override wins; otherwise the horizontal size class decides.
     private var isCompactPresets: Bool {
         if let presetsCompact { return presetsCompact }
@@ -99,8 +102,8 @@ struct CollectionCompositionRows: View {
     var body: some View {
         // Composer v2: the three content-source sections carry colored icon-tile headers (blue
         // document / green annotations / orange analysis) with a one-line caption, and presets
-        // render as a selectable card grid (2×2 regular / short-chip row compact) that marks the
-        // active preset. Every underlying binding is unchanged; only the presentation is new.
+        // render as a selectable card grid (three rows of two regular / short-chip row compact) that
+        // marks the active preset. Every underlying binding is unchanged; only the presentation is new.
         // Because this view emits its own `Section`s, hosts place it directly.
 
         // MARK: Presets — a one-tap starting composition. Applying one overwrites the composition
@@ -230,15 +233,16 @@ struct CollectionCompositionRows: View {
 
     // MARK: - Presets (Composer v2)
 
-    /// The preset picker — a 2×2 selectable card grid on regular width, a horizontal short-chip
-    /// row on compact (iPhone). The active preset (its recipe == the collection's current
-    /// composition) is marked with the accent border.
+    /// The preset picker — a selectable card grid of two columns on regular width (the six templates
+    /// in three rows), a horizontal short-chip row on compact (iPhone), which shows all six and
+    /// scrolls. The active preset (its recipe == the collection's current composition) is marked
+    /// with the accent border.
     @ViewBuilder
     private func presetPicker(onApplyPreset: @escaping (CollectionPreset) -> Void) -> some View {
         if isCompactPresets {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(compactPresets) { preset in
+                    ForEach(CollectionPreset.allCases) { preset in
                         presetChip(preset, onApplyPreset: onApplyPreset)
                     }
                 }
@@ -254,12 +258,7 @@ struct CollectionCompositionRows: View {
         }
     }
 
-    /// The compact (iPhone) preset subset — Scholarly is omitted (too dense for the phone chip row).
-    private var compactPresets: [CollectionPreset] {
-        [.teachingReader, .briefingPacket, .sourceDossier]
-    }
-
-    /// One 2×2 preset card (regular width): name + subtitle, accent border/fill when active.
+    /// One preset card (regular width): name + subtitle, accent border/fill when active.
     @ViewBuilder
     private func presetCard(_ preset: CollectionPreset,
                             onApplyPreset: @escaping (CollectionPreset) -> Void) -> some View {

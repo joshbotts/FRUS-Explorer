@@ -911,6 +911,225 @@ Web page
 
 <!-- END SOURCE: export.grid.html.caption.v2 -->
 
+### Collections — the six templates (L25, decision 139)
+
+*Under **Start from a template — optional** in Collection settings (12.7 of the iOS manual, 12.6 of the Mac's). On iPad and the Mac each template is a card, its name over a line saying what it includes; on iPhone, and in a narrow iPad window, it is a chip in a row that scrolls, a one-word name over a short tag. A template's name is also what VoiceOver says for its card or chip, and on iPhone the Collection settings row's caption while the template is in force. Each name says how the documents are presented, then what comes with them (the owner's decision 139). All 24 strings are in FRUSCoreKit, one edit point for iOS, macOS and FRUS Explorer Light, which compiles the kit too.*
+
+#### Full text as printed
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 95–96 | key: collection.preset.fullTextAsPrinted | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 1 of 6.*
+
+Full text as printed
+
+<!-- END SOURCE: collection.preset.fullTextAsPrinted -->
+
+#### Footnotes · source notes · bibliography · archives
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 119–120 | key: collection.preset.fullTextAsPrinted.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 1 of 6.*
+
+Footnotes · source notes · bibliography · archives
+
+<!-- END SOURCE: collection.preset.fullTextAsPrinted.subtitle -->
+
+#### Printed
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 157–157 | key: collection.preset.fullTextAsPrinted.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 1 of 6.*
+
+Printed
+
+<!-- END SOURCE: collection.preset.fullTextAsPrinted.short -->
+
+#### full text
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 176–176 | key: collection.preset.fullTextAsPrinted.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 1 of 6.*
+
+full text
+
+<!-- END SOURCE: collection.preset.fullTextAsPrinted.tag -->
+
+#### Full text with your annotations
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 98–99 | key: collection.preset.fullTextWithAnnotations | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 2 of 6.*
+
+Full text with your annotations
+
+<!-- END SOURCE: collection.preset.fullTextWithAnnotations -->
+
+#### Notes · highlights · headnotes · chronology · persons
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 122–123 | key: collection.preset.fullTextWithAnnotations.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 2 of 6.*
+
+Notes · highlights · headnotes · chronology · persons
+
+<!-- END SOURCE: collection.preset.fullTextWithAnnotations.subtitle -->
+
+#### Annotated
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 159–159 | key: collection.preset.fullTextWithAnnotations.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 2 of 6.*
+
+Annotated
+
+<!-- END SOURCE: collection.preset.fullTextWithAnnotations.short -->
+
+#### full text
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 178–178 | key: collection.preset.fullTextWithAnnotations.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 2 of 6.*
+
+full text
+
+<!-- END SOURCE: collection.preset.fullTextWithAnnotations.tag -->
+
+#### Summaries with overview
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 101–102 | key: collection.preset.summariesWithOverview | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 3 of 6.*
+
+Summaries with overview
+
+<!-- END SOURCE: collection.preset.summariesWithOverview -->
+
+#### AI summaries · notes · word cloud · chronology · themes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 125–126 | key: collection.preset.summariesWithOverview.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 3 of 6.*
+
+AI summaries · notes · word cloud · chronology · themes
+
+<!-- END SOURCE: collection.preset.summariesWithOverview.subtitle -->
+
+#### Summaries
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 161–161 | key: collection.preset.summariesWithOverview.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 3 of 6.*
+
+Summaries
+
+<!-- END SOURCE: collection.preset.summariesWithOverview.short -->
+
+#### AI
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 180–180 | key: collection.preset.summariesWithOverview.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 3 of 6.*
+
+AI
+
+<!-- END SOURCE: collection.preset.summariesWithOverview.tag -->
+
+#### Citations with your notes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 104–105 | key: collection.preset.citationsWithNotes | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 4 of 6.*
+
+Citations with your notes
+
+<!-- END SOURCE: collection.preset.citationsWithNotes -->
+
+#### Citation list · notes · bibliography · themes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 128–129 | key: collection.preset.citationsWithNotes.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 4 of 6.*
+
+Citation list · notes · bibliography · themes
+
+<!-- END SOURCE: collection.preset.citationsWithNotes.subtitle -->
+
+#### Noted
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 163–163 | key: collection.preset.citationsWithNotes.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 4 of 6.*
+
+Noted
+
+<!-- END SOURCE: collection.preset.citationsWithNotes.short -->
+
+#### citations
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 182–182 | key: collection.preset.citationsWithNotes.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 4 of 6.*
+
+citations
+
+<!-- END SOURCE: collection.preset.citationsWithNotes.tag -->
+
+#### Citations with archival sources
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 107–108 | key: collection.preset.citationsWithArchivalSources | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 5 of 6.*
+
+Citations with archival sources
+
+<!-- END SOURCE: collection.preset.citationsWithArchivalSources -->
+
+#### Citation list · source notes · archives · persons
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 131–132 | key: collection.preset.citationsWithArchivalSources.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 5 of 6.*
+
+Citation list · source notes · archives · persons
+
+<!-- END SOURCE: collection.preset.citationsWithArchivalSources.subtitle -->
+
+#### Archival
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 165–165 | key: collection.preset.citationsWithArchivalSources.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 5 of 6.*
+
+Archival
+
+<!-- END SOURCE: collection.preset.citationsWithArchivalSources.short -->
+
+#### citations
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 184–184 | key: collection.preset.citationsWithArchivalSources.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 5 of 6.*
+
+citations
+
+<!-- END SOURCE: collection.preset.citationsWithArchivalSources.tag -->
+
+#### Everything included
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.displayName | lines: 110–111 | key: collection.preset.everythingIncluded | shared: iOS+macOS (single edit point) -->
+
+*The card's name, template 6 of 6.*
+
+Everything included
+
+<!-- END SOURCE: collection.preset.everythingIncluded -->
+
+#### Full text · all options · all five sections
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.subtitle | lines: 134–135 | key: collection.preset.everythingIncluded.subtitle | shared: iOS+macOS (single edit point) -->
+
+*The line under the card's name, template 6 of 6.*
+
+Full text · all options · all five sections
+
+<!-- END SOURCE: collection.preset.everythingIncluded.subtitle -->
+
+#### Everything
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortName | lines: 167–167 | key: collection.preset.everythingIncluded.short | shared: iOS+macOS (single edit point) -->
+
+*The chip's name on iPhone, template 6 of 6.*
+
+Everything
+
+<!-- END SOURCE: collection.preset.everythingIncluded.short -->
+
+#### all on
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionPreset.shortTag | lines: 186–186 | key: collection.preset.everythingIncluded.tag | shared: iOS+macOS (single edit point) -->
+
+*The word under the chip, template 6 of 6.*
+
+all on
+
+<!-- END SOURCE: collection.preset.everythingIncluded.tag -->
 ---
 
 *End of editable content. Source locations span the About screen (§1), Onboarding (§2),
@@ -2466,7 +2685,7 @@ Each line is resolved against the FRUS manifest and your local index — footnot
 <!-- END SOURCE: collection.addDocs.citations.hint -->
 
 #### Summaries are generated on demand for documents that don’t…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 134–135 | key: composition.summaryPrompt.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 137–138 | key: composition.summaryPrompt.hint -->
 
 Summaries are generated on demand for documents that don’t already have one for this prompt. Requires Apple Intelligence.
 
@@ -2480,7 +2699,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1111–1112 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1113–1114 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2571,7 +2790,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2438–2438 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2440–2440 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2580,7 +2799,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2449–2450 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2451–2452 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2589,7 +2808,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2480–2481 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2482–2483 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -2598,7 +2817,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2494–2495 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2496–2497 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -2607,7 +2826,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2489–2490 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2491–2492 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -2616,7 +2835,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 367–367 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 369–369 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2720,14 +2939,14 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1406–1407 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1408–1409 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1816–1817 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1818–1819 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -2806,7 +3025,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1542–1543 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1605–1606 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2826,7 +3045,7 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 964–965 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1027–1028 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 

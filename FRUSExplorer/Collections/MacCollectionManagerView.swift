@@ -1167,8 +1167,8 @@ private struct CollectionDetailPane: View {
     /// The ⚙ Collection settings popover content: the collection's metadata (name / subtitle /
     /// author / note), title-page front matter (rich-text introduction + colophon), and the presets
     /// + three grouped composition sections. Replaces the fixed header + inline Composition/Front-
-    /// Matter disclosures (removed in Step 4). `presetsCompact: false` renders the 2×2 preset grid —
-    /// a popover is wide enough. Each control commits its own field as it is edited (`committing`, `commitNote`).
+    /// Matter disclosures (removed in Step 4). `presetsCompact: false` renders the preset grid, three
+    /// rows of two — a popover is wide enough. Each control commits its own field as it is edited (`committing`, `commitNote`).
     private var macCollectionSettingsForm: some View {
         Form {
             Section {

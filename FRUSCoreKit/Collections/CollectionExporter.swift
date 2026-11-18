@@ -36,17 +36,21 @@ public enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - CollectionPreset
 
-/// A one-tap starting composition for a `Collection` (Composer redesign 4a). Applying a preset
-/// **overwrites** the collection's export-composition *fields* (body depth, footnotes, source note,
-/// notes, headnotes, highlights, word cloud, ToC style) and **appends** the apparatus blocks the
-/// preset calls for — non-destructively: existing apparatus and all document entries are left
-/// untouched, and everything stays fully editable afterward.
+/// A one-tap starting composition for a `Collection`, which the app calls a **template** (Composer
+/// redesign 4a). Applying a template **overwrites** the collection's export-composition *fields*
+/// (body depth, footnotes, source note, notes, headnotes, highlights, word cloud, ToC style) and
+/// **appends** the apparatus blocks the template calls for — non-destructively: existing apparatus
+/// and all document entries are left untouched, and everything stays fully editable afterward.
 ///
-/// The field mappings are opinionated (they encode the editor's intent for four common shapes) but
-/// not locked. Note: `applyHighlights` only renders over a **full** body, so on the summary-only
-/// Briefing packet it is a deliberate no-op unless a document overrides its depth to full.
+/// Six templates, each named for how it presents the documents and then for the apparatus that
+/// comes with them (decision 139 of the plan of record from 2026-11-15). Between them they use every
+/// body depth, every footnote and source-note combination but footnotes alone, both contents styles,
+/// and each of the five apparatus blocks in at least two templates besides `everythingIncluded`. No
+/// two recipes write the same fields, since `matches(_:)` compares the fields and not the apparatus:
+/// two such templates would both be marked active. A template is never stored, only the fields it
+/// writes, so renaming or changing one leaves every existing collection's composition as it was.
 ///
-/// Applying a preset has two parts with different owners: `applyFields(to:)` overwrites the
+/// Applying a template has two parts with different owners: `applyFields(to:)` overwrites the
 /// collection's composition fields directly (safe — every host reads them live via `@Bindable`),
 /// while the apparatus blocks (`apparatusBlocks`) must be inserted through the **host's** entry
 /// management (which keeps its `sortedEntries` mirror + `sortOrder` consistent), so the host drives
@@ -60,75 +64,126 @@ public enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 ///   1.0 — Composer redesign 4a: the four presets
 ///   1.1 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, with `recipe` and
 ///          `Recipe` public; `applyFields(to:)` and `matches(_:)` stay in the app
+///   1.2 — 2026-11-18 (L25, decision 139): six templates named for what they do replace the four
+///          (`teachingReader`, `briefingPacket`, `sourceDossier`, `scholarlyEdition`), each string
+///          under a new `collection.preset.*` key; a summary-only template now leaves highlights off
 public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
-    /// Full text with the researcher's notes, an archival source note, and an opening persons index
-    /// + chronology — a classroom reader.
-    case teachingReader
-    /// AI summaries with key-takeaway headnotes and a thematic word-cloud overview — a policy brief.
-    case briefingPacket
-    /// Index/outline entries with archival source notes and a Sources & Archives appendix.
-    case sourceDossier
-    /// Everything on, full apparatus — a scholarly edition.
-    case scholarlyEdition
+    /// The full text as the volume prints it, with its footnotes and source notes, and a
+    /// Bibliography and Sources & Archives appended.
+    case fullTextAsPrinted
+    /// The full text with the researcher's notes, highlights and headnotes and each document's source
+    /// note, under a header-and-dateline contents list, with a Chronology and a Persons Index.
+    case fullTextWithAnnotations
+    /// AI summaries in place of the text, with the researcher's notes, a word-cloud overview, a
+    /// Chronology and a Thematic Index.
+    case summariesWithOverview
+    /// A citation list, with no body, carrying the researcher's notes, with a Bibliography and a
+    /// Thematic Index.
+    case citationsWithNotes
+    /// A citation list, with no body, carrying each document's archival source note, with Sources &
+    /// Archives and a Persons Index.
+    case citationsWithArchivalSources
+    /// Everything on: the full text, every option and all five apparatus blocks.
+    case everythingIncluded
 
     public var id: String { rawValue }
 
-    /// The preset's display name.
+    /// The template's display name: how it presents the documents, then what comes with them.
     public var displayName: String {
         switch self {
-        case .teachingReader:   return String(localized: "collection.preset.teachingReader",
-                                              defaultValue: "Teaching reader")
-        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket",
-                                              defaultValue: "Briefing packet")
-        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier",
-                                              defaultValue: "Source dossier")
-        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition",
-                                              defaultValue: "Scholarly edition")
+        case .fullTextAsPrinted:
+            return String(localized: "collection.preset.fullTextAsPrinted",
+                          defaultValue: "Full text as printed")
+        case .fullTextWithAnnotations:
+            return String(localized: "collection.preset.fullTextWithAnnotations",
+                          defaultValue: "Full text with your annotations")
+        case .summariesWithOverview:
+            return String(localized: "collection.preset.summariesWithOverview",
+                          defaultValue: "Summaries with overview")
+        case .citationsWithNotes:
+            return String(localized: "collection.preset.citationsWithNotes",
+                          defaultValue: "Citations with your notes")
+        case .citationsWithArchivalSources:
+            return String(localized: "collection.preset.citationsWithArchivalSources",
+                          defaultValue: "Citations with archival sources")
+        case .everythingIncluded:
+            return String(localized: "collection.preset.everythingIncluded",
+                          defaultValue: "Everything included")
         }
     }
 
-    /// A one-line summary of what the preset composes.
+    /// A one-line summary of what the template composes, under its name on the card.
     public var subtitle: String {
         switch self {
-        case .teachingReader:   return String(localized: "collection.preset.teachingReader.subtitle",
-                                              defaultValue: "Full text · notes · chronology")
-        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.subtitle",
-                                              defaultValue: "Summaries · headnotes · word cloud")
-        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.subtitle",
-                                              defaultValue: "Outline · source notes · sources")
-        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.subtitle",
-                                              defaultValue: "Everything · full apparatus")
+        case .fullTextAsPrinted:
+            return String(localized: "collection.preset.fullTextAsPrinted.subtitle",
+                          defaultValue: "Footnotes · source notes · bibliography · archives")
+        case .fullTextWithAnnotations:
+            return String(localized: "collection.preset.fullTextWithAnnotations.subtitle",
+                          defaultValue: "Notes · highlights · headnotes · chronology · persons")
+        case .summariesWithOverview:
+            return String(localized: "collection.preset.summariesWithOverview.subtitle",
+                          defaultValue: "AI summaries · notes · word cloud · chronology · themes")
+        case .citationsWithNotes:
+            return String(localized: "collection.preset.citationsWithNotes.subtitle",
+                          defaultValue: "Citation list · notes · bibliography · themes")
+        case .citationsWithArchivalSources:
+            return String(localized: "collection.preset.citationsWithArchivalSources.subtitle",
+                          defaultValue: "Citation list · source notes · archives · persons")
+        case .everythingIncluded:
+            return String(localized: "collection.preset.everythingIncluded.subtitle",
+                          defaultValue: "Full text · all options · all five sections")
         }
     }
 
-    /// The row/menu icon (SF Symbol).
+    /// The row/menu icon (SF Symbol). Each exists from macOS 14 and iOS 17 at the latest, so on every
+    /// system the app runs on (`book.pages` is the newest, from 2023).
     public var systemImage: String {
         switch self {
-        case .teachingReader:   return "book"
-        case .briefingPacket:   return "doc.text.magnifyingglass"
-        case .sourceDossier:    return "archivebox"
-        case .scholarlyEdition: return "books.vertical"
+        case .fullTextAsPrinted:            return "book.pages"
+        case .fullTextWithAnnotations:      return "highlighter"
+        case .summariesWithOverview:        return "sparkles"
+        case .citationsWithNotes:           return "list.bullet.clipboard"
+        case .citationsWithArchivalSources: return "archivebox"
+        case .everythingIncluded:           return "books.vertical"
         }
     }
 
-    /// A one-word name for the compact (iPhone) preset chip, where the full `displayName`
-    /// ("Briefing packet") is too wide (Composer v2 §C preset row).
+    /// A one-word name for the compact (iPhone) template chip, where the full `displayName`
+    /// ("Citations with archival sources") is too wide (Composer v2 §C preset row).
     public var shortName: String {
         switch self {
-        case .teachingReader:   return String(localized: "collection.preset.teachingReader.short", defaultValue: "Teaching")
-        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.short", defaultValue: "Briefing")
-        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.short", defaultValue: "Dossier")
-        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.short", defaultValue: "Scholarly")
+        case .fullTextAsPrinted:
+            return String(localized: "collection.preset.fullTextAsPrinted.short", defaultValue: "Printed")
+        case .fullTextWithAnnotations:
+            return String(localized: "collection.preset.fullTextWithAnnotations.short", defaultValue: "Annotated")
+        case .summariesWithOverview:
+            return String(localized: "collection.preset.summariesWithOverview.short", defaultValue: "Summaries")
+        case .citationsWithNotes:
+            return String(localized: "collection.preset.citationsWithNotes.short", defaultValue: "Noted")
+        case .citationsWithArchivalSources:
+            return String(localized: "collection.preset.citationsWithArchivalSources.short", defaultValue: "Archival")
+        case .everythingIncluded:
+            return String(localized: "collection.preset.everythingIncluded.short", defaultValue: "Everything")
         }
     }
 
-    /// A one-word descriptor under the compact preset chip ("full text" / "summaries" / …).
+    /// A short descriptor under the compact template chip: how the documents are presented
+    /// ("full text" / "AI" / "citations" / "all on").
     public var shortTag: String {
         switch self {
-        case .teachingReader:   return String(localized: "collection.preset.teachingReader.tag", defaultValue: "full text")
-        case .briefingPacket:   return String(localized: "collection.preset.briefingPacket.tag", defaultValue: "summaries")
-        case .sourceDossier:    return String(localized: "collection.preset.sourceDossier.tag", defaultValue: "sources")
-        case .scholarlyEdition: return String(localized: "collection.preset.scholarlyEdition.tag", defaultValue: "everything")
+        case .fullTextAsPrinted:
+            return String(localized: "collection.preset.fullTextAsPrinted.tag", defaultValue: "full text")
+        case .fullTextWithAnnotations:
+            return String(localized: "collection.preset.fullTextWithAnnotations.tag", defaultValue: "full text")
+        case .summariesWithOverview:
+            return String(localized: "collection.preset.summariesWithOverview.tag", defaultValue: "AI")
+        case .citationsWithNotes:
+            return String(localized: "collection.preset.citationsWithNotes.tag", defaultValue: "citations")
+        case .citationsWithArchivalSources:
+            return String(localized: "collection.preset.citationsWithArchivalSources.tag", defaultValue: "citations")
+        case .everythingIncluded:
+            return String(localized: "collection.preset.everythingIncluded.tag", defaultValue: "all on")
         }
     }
 
@@ -164,23 +219,31 @@ public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
         public let apparatus: [CollectionGeneratedBlockType]
     }
 
-    /// The preset's recipe: the fields `applyFields(to:)` writes and `matches(_:)` compares, and the
-    /// apparatus `apparatusBlocks` lists.
+    /// The template's recipe: the fields `applyFields(to:)` writes and `matches(_:)` compares, and the
+    /// apparatus `apparatusBlocks` lists. The six are decision 139's table, in the grid's order.
     public var recipe: Recipe {
         switch self {
-        case .teachingReader:
-            return Recipe(bodyDepth: .full, footnotes: false, sourceNote: true, notes: true,
+        case .fullTextAsPrinted:
+            return Recipe(bodyDepth: .full, footnotes: true, sourceNote: true, notes: false,
                           headnotes: false, highlights: false, wordCloud: false,
-                          toc: .headerAndDateline, apparatus: [.personsIndex, .chronology])
-        case .briefingPacket:
-            return Recipe(bodyDepth: .summaryOnly, footnotes: false, sourceNote: false, notes: false,
-                          headnotes: true, highlights: true, wordCloud: true,
-                          toc: .headerAndDateline, apparatus: [])
-        case .sourceDossier:
+                          toc: .citation, apparatus: [.bibliography, .archivalSources])
+        case .fullTextWithAnnotations:
+            return Recipe(bodyDepth: .full, footnotes: false, sourceNote: true, notes: true,
+                          headnotes: true, highlights: true, wordCloud: false,
+                          toc: .headerAndDateline, apparatus: [.chronology, .personsIndex])
+        case .summariesWithOverview:
+            return Recipe(bodyDepth: .summaryOnly, footnotes: false, sourceNote: false, notes: true,
+                          headnotes: false, highlights: false, wordCloud: true,
+                          toc: .headerAndDateline, apparatus: [.chronology, .thematicIndex])
+        case .citationsWithNotes:
+            return Recipe(bodyDepth: .index, footnotes: false, sourceNote: false, notes: true,
+                          headnotes: false, highlights: false, wordCloud: false,
+                          toc: .citation, apparatus: [.bibliography, .thematicIndex])
+        case .citationsWithArchivalSources:
             return Recipe(bodyDepth: .index, footnotes: false, sourceNote: true, notes: false,
                           headnotes: false, highlights: false, wordCloud: false,
-                          toc: .citation, apparatus: [.archivalSources])
-        case .scholarlyEdition:
+                          toc: .citation, apparatus: [.archivalSources, .personsIndex])
+        case .everythingIncluded:
             return Recipe(bodyDepth: .full, footnotes: true, sourceNote: true, notes: true,
                           headnotes: true, highlights: true, wordCloud: true,
                           toc: .citation,
