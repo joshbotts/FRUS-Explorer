@@ -11646,5 +11646,42 @@ The owner took the six ("I like these recommendations. Include a new session in 
 
 **Not done.** The three §5 findings are not filed. The free pages a re-index leaves (20% of a library's index) are reported, not reclaimed (Compact Database does that). The shared Mac check copy's extracted source still carries S4's inert chip patch until its next `setup.sh`. Nothing is owed to FRUS Explorer Light: R5 changed no shared code (its chart fix is in app files, and the rest is test code and records).
 
-**Opened as #1953** on the owner's word of 2026-11-18 ("Open the PR", decision 144), asked once the checklist, T2 and the walk were done, against `v2` at `82d3a403`, which had not moved, so nothing was merged in. Ready for review with the `Mac` label and "Mac verification requested" (five look-only steps in the check copy), a line for the web edition, no issue closed; Auto-fix on, auto-merge off.
+**Opened as #1953** on the owner's word of 2026-11-18 ("Open the PR", decision 144), asked once the checklist, T2 and the walk were done, against `v2` at `82d3a403`, which had not moved, so nothing was merged in. Ready for review with the `Mac` label and "Mac verification requested" (five look-only steps in the check copy), a line for the web edition, no issue closed; Auto-fix on, auto-merge off. **Merged as `75364cec`** by the owner on 2026-11-18 at 11:52:53 UTC, auto-merge off. The owner uploaded 1.0 (1823) for both platforms that day, and it was tagged `build-54` (`c882b64e`, pushed at 12:13 UTC). At the owner's word, R5's session pasted the website's two quick starts and the tour's block 2 again, the last save at 23:18 UTC; afterwards its branch was deleted and the session archived. Recorded in R6's entry, below.
 
+## Session 2026-11-18 — R6: the device pass of 1.0 (1823) on an iPhone, an iPad and the Mac: the checklist, R5's merge record, and the results by ID
+
+**What and why.** Row R6 of the plan of record from 2026-11-15: the owner's device pass of 1.0 (1823), the fourth TestFlight build (`build-54`). The plan's session started it at the owner's request ("give me a checklist for the R6 pass. i will report the results and note any issues…"), from `v2` at `75364cec` (R5's merge, recorded here), on `claude/r6-device-pass-489eee`. The session drives no device: the owner tests and reports by ID, and the session records each result. Records only: nothing is built or run. Under the freeze (decision 129), a docs-only record is part of the row.
+
+**The checklist** (`Planning/R6-Device-Pass-2026-11-18.md`, `a4ca832e`) holds 80 checks by ID:
+- PH1–PH30 on the iPhone;
+- PD1–PD25 on the iPad;
+- MC1–MC18 on the Mac;
+- X1–X7 for Import from JSON across the three.
+
+Each says where to go, what to do and what to expect, and has a Result column. They were written from:
+- the R6 bullet;
+- R2c's pass (`Completed/Plan-Of-Record-2026-10-21.md` §4);
+- the review's §6 (IPH-7, IPH-8, IPH-9, A11Y-5);
+- the log entries of L11 to R5;
+- both TestFlight notes;
+- T2's four findings in §5.
+
+The owner's answers that shaped it (2026-11-18):
+- **The devices:** an iPhone and an iPad on 27.2, and the Mac on macOS 27.2. All three were already on 1823 and on one Apple Account, with a printer at the Mac. There is no small iPhone and no iPad mini.
+- **No library dates from 1.0 (1787) or earlier.** So every library's 74 → 75 re-index had run before the pass, which reads what it left. The 71 → 75 path rests on R5's simulator census (727 s).
+- **"Use an 1823 export"** in place of one from 1812. Both builds write format version 7, and `git diff build-53 75364cec` touches only the envelope's doc comments: L24 changed how the exporter is built, not the records it writes.
+- **"My own web export"** for the FRUS Explorer Light file.
+- **"Skip it"** for a file whose synced settings are newer than the library's.
+
+So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboarding opens again only through a reset or Fix iCloud Sync), #1835 (an iPad mini), and a file's synced settings taken at once. The owner declined a page to tick on a device ("No, list is fine").
+
+**R5's merge, recorded.** These items are written into the plan's R5 bullet, §2 and §4, R5's entry above, and *What the site holds* in `Planning/website-drafts/Squarespace-Entry.md`, which still read as of 10 November:
+- #1953 merged as `75364cec` at 11:52:53 UTC;
+- the upload, for both platforms;
+- `build-54` (`c882b64e`, 12:13 UTC);
+- the website pasted again (the two quick starts and the tour's block 2, last save at 23:18 UTC), after which every live block held its file;
+- the cleanup.
+
+**Results**, by ID as the owner reports them; the checklist's Result column holds each one:
+- **PH1, PH2 and PH3 passed.** The iPhone's index reads format version 75 with nothing pending, and its research is all there. The re-index at its first launch of 1823 ran and finished in about 5–6 minutes.
+- **PD1, PD2 and PD3 passed.** The same on the iPad, whose re-index took about 7–10 minutes. R5's census had 904 s for an 1812 library on a simulator iPad, concurrency 1, on a Mac running other jobs.

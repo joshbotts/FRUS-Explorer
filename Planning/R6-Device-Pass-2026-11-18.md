@@ -50,9 +50,9 @@ Tags:
 
 | ID | Check | Result |
 |---|---|---|
-| PH1 | **Settings ▸ Library ▸ Volumes & Storage ▸ Advanced:** Index Health reads *Format version 75*, nothing pending. The storage figures: roughly 3.3 GB of XML and 3 to 3.5 GB of index, though R5's freshly re-indexed library read 3.88 GB, 0.7 GB of it free pages that Compact Database gives back. | |
-| PH2 | **Research tab:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPad and the Mac. | |
-| PH3 | *From memory:* at the iPhone's first launch of 1823, did the re-index run (the banner, the Live Activity) and finish, about how long did it take, and did anything look wrong? The same for its update to 1812, the re-index to 74 that R2c's pass still owes. "Not watched" is an answer. | |
+| PH1 | **Settings ▸ Library ▸ Volumes & Storage ▸ Advanced:** Index Health reads *Format version 75*, nothing pending. The storage figures: roughly 3.3 GB of XML and 3 to 3.5 GB of index, though R5's freshly re-indexed library read 3.88 GB, 0.7 GB of it free pages that Compact Database gives back. | **Pass** (2026-11-18) |
+| PH2 | **Research tab:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPad and the Mac. | **Pass** (2026-11-18) |
+| PH3 | *From memory:* at the iPhone's first launch of 1823, did the re-index run (the banner, the Live Activity) and finish, about how long did it take, and did anything look wrong? The same for its update to 1812, the re-index to 74 that R2c's pass still owes. "Not watched" is an answer. | **Pass** (2026-11-18): the re-index ran and finished in about 5–6 minutes, against R5's 904 s for an 1812 library on a simulator iPad under load |
 
 ### Downloads, and a queue left in the background (start these first)
 
@@ -104,9 +104,9 @@ Tags:
 
 | ID | Check | Result |
 |---|---|---|
-| PD1 | **Settings ▸ Library ▸ Volumes & Storage ▸ Advanced:** Index Health reads *Format version 75*, nothing pending; the storage figures, as in PH1. | |
-| PD2 | **Research tab:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPhone and the Mac. | |
-| PD3 | *From memory:* the iPad's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass), as in PH3. | |
+| PD1 | **Settings ▸ Library ▸ Volumes & Storage ▸ Advanced:** Index Health reads *Format version 75*, nothing pending; the storage figures, as in PH1. | **Pass** (2026-11-18) |
+| PD2 | **Research tab:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPhone and the Mac. | **Pass** (2026-11-18) |
+| PD3 | *From memory:* the iPad's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass), as in PH3. | **Pass** (2026-11-18): the re-index ran and finished in about 7–10 minutes |
 
 ### What changed since 1812: R5's Mac walk, on the iPad
 
