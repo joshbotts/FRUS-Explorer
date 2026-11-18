@@ -162,6 +162,9 @@ import notify
 ///          the proof now rests on, checks that the subchapter's rows are not up while its load is
 ///          held, where it checked for the sentence, which the subchapter (it lists the twin) cannot
 ///          draw now
+///   1.8 — R5 (1.0 (1823)): ``testASecondVolumeFromRootSearchLoadsItsOwnStructure`` scrolls the
+///          first volume's page to its Download Required placeholder, which the page's Editors'
+///          Annotations (#1860), tags and top subjects (#1905) put below the fold on a 13-inch iPad
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -620,8 +623,13 @@ final class BrowseNestedSectionTests: XCTestCase {
                           + "this one.")
         undownloadedRow.tap()
 
+        // The volume's page opens on its Editors' Annotations (#1860), its tags and its top subjects
+        // (#1905), which on a 13-inch iPad fill the pane, so the placeholder below them is not in
+        // the tree until it is scrolled to: the failure's tree ended in the subjects (R5, 2026-11-18).
+        let placeholder = app.staticTexts[Self.downloadRequiredLabel]
+        scrollDownUntil(placeholder, attempts: 8)
         XCTAssertTrue(
-            app.staticTexts[Self.downloadRequiredLabel].waitForExistence(timeout: 20),
+            placeholder.waitForExistence(timeout: 20),
             "The first volume did not open on its 'Download Required' placeholder, so this run is "
                 + "not standing on a `.volume` level and the step below would prove nothing."
         )

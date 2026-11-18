@@ -101,6 +101,8 @@ import UIKit
 ///          Space tests open the sheet through one helper
 ///   1.3 — #1432, and two fold-ins of lane STOR: a tap mid-removal, the row's title at launch, and
 ///          no asterisks in a confirmation
+///   1.4 — R5 (1.0 (1823)): `removalHoldSeconds` 40 → 90 and `freeUpHoldSeconds` 20 → 45, the fix
+///          each timing guard names, after L20 measured both walks past their holds under Xcode 27.2
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -124,15 +126,19 @@ final class VolumeRemovalTests: XCTestCase {
     /// How long `testRemovalMarkSurvivesLeavingTheHub` holds the removal open, in seconds. Leaving
     /// and re-entering takes Back, Back, the Volumes & Storage row and Show all at XCUITest's pace:
     /// measured, 13.8 s on iPad Pro 11-inch at iOS 26.4 and 17.1 s at iOS 27.0, so 25 s left too
-    /// little room for a loaded machine. The test checks that the re-entry finished inside the
-    /// hold rather than assuming it.
-    private static let removalHoldSeconds = 40
+    /// little room for a loaded machine. Under Xcode 27.2 the same walk took 43.6 to 50.2 s on the
+    /// iPad Pro 13-inch and 11-inch (M5) at iOS 27.0 (L20, 2026-11-16), past the 40 s it had then,
+    /// so R5 raised it to 90. The test checks that the re-entry finished inside the hold rather
+    /// than assuming it.
+    private static let removalHoldSeconds = 90
 
     /// How long `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` holds the removal open, in seconds.
     /// The test reads the sheet once, within a few seconds of the confirmation, and checks that it
     /// did so inside the hold. Removing the catalogue volume costs the suite nothing: every launch
-    /// writes the fixture again and re-indexes it before the pipeline is published.
-    private static let freeUpHoldSeconds = 20
+    /// writes the fixture again and re-indexes it before the pipeline is published. Under Xcode
+    /// 27.2 the read came 18.2 to 21.7 s after the confirmation on the iPad Pro 13-inch (M5) at
+    /// iOS 27.0 (L20, 2026-11-16), past the 18 s the 20-s hold allowed, so R5 raised it to 45.
+    private static let freeUpHoldSeconds = 45
 
     /// What Free Up Space says when it has nothing to offer — its title, and the start of its
     /// explanation, which blames notes, collections and summaries.

@@ -118,6 +118,8 @@ the maximum alone at 1,500 ("exceeded execution time allowance of 10 minutes"). 
 
 **On the iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`), `testASecondVolumeFromRootSearchLoadsItsOwnStructure` fails on `v2` itself (measured 2026-11-16, L21, #1921).** It stops at its premise, "The first volume did not open on its 'Download Required' placeholder", after it types `frus1945Malta` into the root's search and taps the result: twice on L21's branch and once on `v2` at `6a859422`, which no row of L21 touches. The simulator held three volumes, Malta not among them. The suite's other tests passed on that iPad, 7 with 3 skipped, `testLevelStateSurvivesBackInTwoPane` among them. On the iPhone 17 under 27.0 (`80CF0F18`), the late-pipeline test and `testNestedSectionsLoadOnPushPath` failed at their premises in the suite's full run, and each passed when run alone again with the Mac quiet (load average 4): the timing the late-pipeline note above describes. Not investigated further. R5's bullet in the plan of record has it.
 
+**Settled by R5 (2026-11-18), in test code.** The 13-inch iPad's failure is the page, not the walk: the volume's page opens on its Editors' Annotations (#1860), its tags and its top subjects (#1905), which fill that iPad's pane, so the placeholder below them is out of the lazy List's tree until it is scrolled to. The failure's saved tree ended in the subjects, Malta's sixteen editorial notes above them. The test now scrolls to the placeholder, up to eight swipes, before it requires it. Measured after on the same iPad, warmed and given 600 s: passed (99 s).
+
 **`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so
 either destination alone reports green.** Its guard for the iPad's Back,
 `testBackFromAVolumeKeepsTheAreaAndTheSearch`, works only in Browse's two-pane. There a covering
@@ -151,6 +153,8 @@ xcodebuild test \
 ```
 
 **Under iOS 27.0 on the iPhone 17 (`80CF0F18`), two of the three fail on `v2` itself (measured 2026-11-15, L15, #1905).** `testAreaDoorReplacesTheSearchEveryTime` and `testBackFromAVolumeKeepsTheAreaAndTheSearch` stop in `revealTopicSearch()`: the index is open and listing its rows, but the screen has no search field and no Search button in a navigation bar ("Search fields: none"), with the tab shell's *Local Only* banner up. The same two failed with the same message on `v2` at `7918075f`, before L15, warmed and given 600 s; `testTopicsRowAfterAHandOffOpensTheWholeIndex` passed on both. The iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`) passed 3 of 3. So the iPhone's half of the guard does not run under iOS 27.0 until the test finds the field where iOS 27 puts it; it was measured green on an iPhone 17e under iOS 26.3. Not investigated further.
+
+**Settled by R5 (2026-11-18), in test code.** Under iOS 27.0 a phone keeps the pushed index's search field in the navigation bar's drawer, out of the accessibility tree, until the list is pulled down, as Mail's is: a probe on the iPhone 17 (`80CF0F18`) found no field on arrival, *Search subjects* after one pull of the list, and none again after a scroll up, and its screenshots show the field above the caption once pulled. So a reader has the field; the test did not pull. `revealTopicSearch()` now pulls the list down on a phone before it looks for the iPad's bar button. After the fix, on the iPhone 17 under 27.0, warmed and given 600 s: **3 tests, 3 passed** (309, 256 and 126 s); and on the iPad Pro 13-inch (M5) two-pane (`9AB3A0C9`), which the pull never reaches, 3 passed (339, 328 and 285 s). The plan of record's R6 still looks for the field on a device.
 
 **`CollectionEditorTitleTests` (#1359, #1415, #1413) must run on an iPhone AND an iPad, and only the iPhone guards the
 push-over and the Collections-tab exit.** On a compact width Collection settings is PUSHED over the editor; on a regular
@@ -559,6 +563,17 @@ state when it read.
 Raising the two holds is test code only, and R5 settles it (the plan of record's R5 bullet). Until then this suite's
 two timing cases are not a guard on these iPads under iOS 27.0; its two popover-anchor cases and its removed-row case are.
 
+**Settled by R5 (2026-11-18), in test code:** `removalHoldSeconds` 40 → 90 and `freeUpHoldSeconds` 20 → 45. Measured
+after, each iPad warmed and given 600 s, the suite in one run:
+- `testRemovalMarkSurvivesLeavingTheHub` re-entered the list 49.0 s after its confirmation on the 11-inch and 54.6 s
+  on the 13-inch, each row reading *removing…*, and passed; the removed row left at 93.6 and 92.3 s.
+- The two popover-anchor cases and the removed-row case passed on both (the row left 2.9 and 3.4 s after its confirmation).
+- `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` failed at its launch on both, again right after
+  `testFreeUpSpaceConfirmationPointsAtItsButton` (*Failed to get launch progress … No such process*, 9.6 and 8.3 s).
+  CoreSimulator's launch "did not return a process handle nor launch error", and no crash report was written. The
+  13-inch's run before the change launched it in the same order and read it at 19.0 s, so the failure comes and
+  goes: L20's twice, R5's twice. R5 runs it alone on both iPads after the suite, in its checklist, and its bullet in the plan of record gives the reading.
+
 **`DownloadCancelAllTests` and `OnboardingBackCancelsDownloadsTests` (#1920, L20, HCD-2, in
 `VolumeRemovalTests.swift`) run on an iPhone and an iPad, and nothing skips.** Both stand on the download
 seam (`UITestBrowseSeams.downloadSeam`, DEBUG only): `FRUS_UI_TEST_DOWNLOADS=hold` makes every transfer
@@ -653,6 +668,8 @@ xcodebuild test \
 ```
 
 **On the iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`), 3 of 4 pass and the Continue reading test fails on `v2` itself (measured 2026-11-15, L15, #1905).** `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` stops at "the seeded compilation's row is absent", after it taps the fixture volume's row, on `v2` at `7918075f` as on L15's branch, warmed and given 600 s; the simulator held the fixture `frus1961-63v06` (six documents). Not investigated further. The other three, the doors' titles among them, passed; the first run of that day, on a simulator just booted and given 300 s, timed out on its first test and passed it when the simulator was warmed first and given 600 s.
+
+**Settled by R5 (2026-11-18), in test code.** The fixture volume's page opens on its Editors' Annotations (#1860), which in a 13-inch iPad's landscape detail pane fill it, so the compilation's row starts below the fold, out of the lazy List's tree: the failure's saved tree ended in the annotations' rows (*Marked editorial omissions*, two documents). The test now scrolls to the row, up to eight swipes, before it requires it. Measured after on the same iPad, warmed and given 600 s: passed (274 s).
 
 **`WordCloudLensTests` (#1373) is a guard only on an iOS 27.0 simulator.** On iOS 27.0 an
 `NLTagger` scheme whose first use in a process fails stays failed for that process; the app's
@@ -1214,6 +1231,18 @@ not narrow the search…"), and the tests after it in the run fail at "Could not
 on `v2` at `f29a3710`, on the same simulator. A test run alone after a shutdown starts with VoiceOver off. The tagging
 test fails so even as a run's first test, since it reads speech before its chip, and the plan of record's R5 bullet
 carries it.
+
+**Settled by R5 as far as test code can (2026-11-18, iPhone 17 `80CF0F18`, iOS 27.0, Xcode 27.2).** A probe read five
+utterances, then tried four ways back, each checked by a tap on the Research tab: `disable()`; `enable()` then
+`disable()` with nothing read; `disable()` again; and `enable()`, `currentSpeech()`, `disable()`. After each the service
+read `isEnabled` false and the tap only moved VoiceOver's cursor, so no call of the service turns it off once speech has
+been read. So the tagging test now taps its chip, and reads "1 result", before it listens (the row offers its tag's
+action whether or not the search is filtered by it), and a test whose Search tab will not open after an earlier test of
+its run has listened skips, saying why (`listenedThisRun`), where it failed at "Could not open the Search tab". Measured
+after: the whole suite in one run, 1 passed (`testAFinishedSearchSaysWhatItFound`, which runs first) and 3 skipped; each
+test alone on a simulator shut down before it, warmed and given 600 s: the tagging test passed (199 s), the rows' labels
+(127 s), selection's actions (171 s) and the announcement (119 s). **So run each test alone, on a simulator shut
+down before it**; a run of the whole suite is a guard for its first test only.
 
 Measured on 2026-11-15 under iOS 27.0, each run alone under the heavy-job lock, on a simulator shut down before it and
 warmed with `testAppLaunches`: **`testAFinishedSearchSaysWhatItFound` passed on the iPhone 17 (`80CF0F18`, 79 s) and on

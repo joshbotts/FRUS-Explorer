@@ -384,6 +384,8 @@ final class TwoPaneDocumentTests: XCTestCase {
 ///   1.2 — #1694: the resume-row test opens the fixture's subseries by name; the first test still opens
 ///          the first subseries row, which any subseries answers
 ///   1.3 — 2026-11-15: #1905 (L15) — the root's subject door is titled *Subjects*
+///   1.4 — R5 (1.0 (1823)): the resume-row test scrolls the volume's page to its compilation, which
+///          the page's Editors' Annotations (#1860) put below the fold on a 13-inch iPad
 @MainActor
 final class BrowseRootSelectionTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -648,6 +650,10 @@ final class BrowseRootSelectionTests: XCTestCase {
         volume.tap()
         let compilation = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] 'UI Test Compilation'")).firstMatch
+        // The volume's page opens on its Editors' Annotations (#1860), which on a 13-inch iPad in
+        // landscape fill the pane, so its contents start below the fold, and a List row there is not
+        // in the tree until it is scrolled to (R5, 2026-11-18).
+        scrollDownUntil(compilation, attempts: 8)
         XCTAssertTrue(compilation.waitForExistence(timeout: 15), "the seeded compilation's row is absent")
         compilation.tap()
         let indexNow = app.buttons["Index Now"]
@@ -872,6 +878,17 @@ final class BrowseRootSelectionTests: XCTestCase {
     /// The detail pane's own Back row, drawn where there is a parent level beside the list pane.
     private var backControl: XCUIElement {
         app.buttons.matching(NSPredicate(format: "label == 'Back'")).firstMatch
+    }
+
+    /// Swipes up until `element` is present and hittable. SwiftUI `List` is lazy, so a row below
+    /// the fold is absent from the accessibility tree, not merely invisible. The swipe is at the
+    /// app's centre, which in Browse's landscape two-pane is the detail pane.
+    private func scrollDownUntil(_ element: XCUIElement, attempts: Int) {
+        for _ in 0..<attempts {
+            if element.exists && element.isHittable { return }
+            app.swipeUp(velocity: .slow)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
     }
 
     /// Attaches a screenshot the reviewer keeps — the only check on the fill, which no assertion here
