@@ -146,9 +146,9 @@ Tags:
 
 | ID | Check | Result |
 |---|---|---|
-| MC1 | **Settings ▸ Library ▸ Volumes & Storage:** Index Health reads *Format version 75*, nothing pending. | |
-| MC2 | **The Research window:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPhone and the iPad. | |
-| MC3 | *From memory:* the Mac's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass). R5 timed the owner's Mac library, copied into the check copy, at 1,001 s. | |
+| MC1 | **Settings ▸ Library ▸ Volumes & Storage:** Index Health reads *Format version 75*, nothing pending. | **Pass** (2026-11-18) |
+| MC2 | **The Research window:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPhone and the iPad. | **Pass** (2026-11-18) |
+| MC3 | *From memory:* the Mac's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass). R5 timed the owner's Mac library, copied into the check copy, at 1,001 s. | **Pass** (2026-11-18): about 3 minutes. The session read the installed app's index read-only afterwards: 553 volumes, every one with its file record (#1909), and 321,749 documents, R5's census figures; installed version 75, last written at 07:27 Eastern |
 | MC4 | **Settings ▸ System ▸ Data & Recovery:** under Export Research Database…, *The copy will carry index version 75.* **Import from JSON…** sits under Export as JSON. (L22, #1910; L24) | |
 | MC5 | `printer` Open Console (Applications ▸ Utilities), start streaming and search *sandbox*. In FRUS Explorer, open a document and print it to the printer with **File ▸ Print**. It prints, and Console shows no sandbox *deny* naming FRUS Explorer. (L17, ASR-4: the check copy is unsandboxed and could not make it) | |
 | MC6 | **A document in the main window:** the title bar shows its head, and the toolbar's centre the volume and number (*Eastern Europe, The Soviet Union · 1946 v6 · Doc 475* for `frus1946v06` d475). **⌘N** and another document: the Window menu tells the two apart. (L21, MAC-1) | |
