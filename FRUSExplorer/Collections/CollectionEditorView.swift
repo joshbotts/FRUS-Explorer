@@ -171,6 +171,8 @@ import UIKit
 ///          popover mounts too; on the Mac the dimmed button's line names the Search window, not the Search tab
 ///   2026-10-25 — #1791: the editor reads one copy of each note and saved search, however many are stored under one
 ///          id, so an entry's notes, the exports and Link to Saved Search… list each once
+///   2026-11-18 — L25 (decision 139): the iPhone's Collection settings row names the template in force by its name
+///          alone, which now says how the documents are presented, where it added the chip's tag
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -766,10 +768,10 @@ struct CollectionEditorView: View {
     /// and the composition-only drill-in — one clearly labeled collection-scope entry, the compact
     /// equivalent of the iPad ⚙ Collection sheet.
     private var collectionSettingsDrillInSection: some View {
-        // Caption leads with the active preset when one matches (canvas: "Briefing packet ·
-        // summaries"), else the plain-language composition summary for a customized composition.
+        // Caption names the active template when one matches, by its name alone, which says how the
+        // documents are presented (L25, the owner's choice), else the plain-language composition summary.
         let activePreset = CollectionPreset.allCases.first { $0.matches(collection) }
-        let caption = activePreset.map { "\($0.displayName) · \($0.shortTag)" }
+        let caption = activePreset.map(\.displayName)
             ?? collection.compositionSummarySentence
         return Section {
             NavigationLink {
@@ -798,7 +800,7 @@ struct CollectionEditorView: View {
     /// composition sections, then the smart-collection link (#309 — matches the macOS manager and
     /// the iPad ⚙ Collection sheet, both realigned to name-first ordering in the same change).
     /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
-    /// 2×2 preset grid for the wide iPad sheet) so its presets render as the compact 3-chip row here.
+    /// preset grid for the wide iPad sheet) so its presets render as the compact chip row here.
     /// This screen COVERS the editor, which — pushed, as the Collections tab shows it — runs no `onChange` meanwhile,
     /// so every field on it commits from its own binding as it is edited (`committing`, #1415), however it is left.
     private var iPhoneCollectionSettingsScreen: some View {
@@ -1134,9 +1136,9 @@ struct CollectionEditorView: View {
     /// as the three labeled Composer groups. `CollectionCompositionRows` owns its own Sections, so
     /// this host places it directly rather than wrapping it in one Composition section.
     private var compositionSection: some View {
-        // The iPad ⚙ Collection sheet is wide enough for the 2×2 preset grid even though an iPadOS
-        // form sheet reports a compact size class — force the grid so all four presets (including
-        // Scholarly edition) are reachable.
+        // The iPad ⚙ Collection sheet is wide enough for the preset grid even though an iPadOS
+        // form sheet reports a compact size class — force the grid, whose cards give each of the
+        // six templates its full name and subtitle (L25), where the chip row gives a short name.
         CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
                                   presetsCompact: false)
     }

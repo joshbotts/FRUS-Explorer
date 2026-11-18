@@ -299,7 +299,7 @@
       "order": 8,
       "preset": "ipad-13-landscape",
       "headline": "Build a course reader in an afternoon.",
-      "subline": "Section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, apply the Teaching reader preset, export PDF or Word.",
+      "subline": "Start from a template, section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, export PDF or Word.",
       "capture": "Docs/screenshots/ipad/collections-editor.png",
       "status": "build 1861"
     },
@@ -309,7 +309,7 @@
       "order": 8,
       "preset": "mac",
       "headline": "Build a course reader in an afternoon.",
-      "subline": "Section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, apply the Teaching reader preset, export PDF or Word.",
+      "subline": "Start from a template, section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, export PDF or Word.",
       "capture": "Docs/screenshots/macos/collections.png",
       "status": "build 1861"
     },

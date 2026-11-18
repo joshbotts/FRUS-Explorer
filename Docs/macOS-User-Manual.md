@@ -784,7 +784,7 @@ The window has no permanent sidebar; you switch collections from the **collectio
 |---------|--------------|
 | **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts; the Collection menu calls it **Add Highlighted Passages…**), an **Apparatus ▸** submenu of the five generated blocks (**Insert Apparatus** in the Collection menu), and **Add to Archives Visit…** — seeds a plan from this collection's documents (14.8) |
 | **Sort** | Re-order documents chronologically, in one of two modes (12.4) |
-| **⚙ Collection** | The collection-settings popover — name, a note that prints under the title of an export, title-page front matter, composition presets and settings (12.6), and the **Smart Collection** section: **Link to Saved Search…**, or a smart collection's link with **Unlink** (12.8) |
+| **⚙ Collection** | The collection-settings popover — name, a note that prints under the title of an export, title-page front matter, composition templates and settings (12.6), and the **Smart Collection** section: **Link to Saved Search…**, or a smart collection's link with **Unlink** (12.8) |
 | **Export…** | The export sheet — format + destination (12.9) |
 | **Document inspector** | Show or hide the trailing inspector for the selected document (12.5) |
 
@@ -840,7 +840,7 @@ Open the **inspector** with the **Configure** pill, a double-click, or Return �
 
 **Section defaults**: right-click a heading → **Section Defaults…** (or click the heading row's **Section defaults** pill) applies the same six export overrides to every document in that section; the section's body depth is set on the heading row itself, in its **Section body** menu, and headnotes have no section default. The effective value anywhere is always the most specific: the document's own override, else its section's default, else the collection composition.
 
-### 12.6 Composition Settings and Presets
+### 12.6 Composition Settings and Templates
 
 Composition lives in the **⚙ Collection** popover and is **saved on the collection** — it always exports the same way, in any format:
 
@@ -855,16 +855,18 @@ Composition lives in the **⚙ Collection** popover and is **saved on the collec
 | **Summary prompt** | Which prompt drives summary-only bodies — the menu appears once **Body depth** is *Summary only* |
 | **Headnotes** | The collection-wide default for Key takeaway cards |
 
-**Presets.** Under **Start from a template — optional**, below the popover's name, note and title-page sections, four one-click presets set the composition fields (all but the summary prompt) for a common kind of artifact:
+**Templates.** Under **Start from a template — optional**, below the popover's name, note and title-page sections, six one-click templates, as cards in three rows of two, set the composition fields (all but the summary prompt). Each is named for how it presents the documents, then for what comes with them, with a line under the name saying what it includes, and the one whose settings are in force is drawn with an accent-colored border:
 
-| Preset | What it builds |
+| Template | What it builds |
 |--------|----------------|
-| **Teaching reader** | Full document text with source notes and your research notes, footnotes off, a header-and-dateline table of contents, and a **Persons Index** and **Chronology** appended — built for close reading in a classroom |
-| **Briefing packet** | **AI summaries** in place of full text, **Key takeaway** headnotes switched on, and a word-cloud overview — a fast, skimmable read |
-| **Source dossier** | A compact index/outline body with each document's archival source note, footnotes and highlights off, a citation-style table of contents, and a **Sources & Archives** block appended — an archival finding aid |
-| **Scholarly edition** | Full text, citation-style table of contents, and the complete apparatus |
+| **Full text as printed** | Each document's full text with its **footnotes** and archival **source note**, a citation-style table of contents, and a **Bibliography** and **Sources & Archives** appended; your notes, highlights and headnotes stay out — the documents as the volume prints them |
+| **Full text with your annotations** | Full text with your **research notes**, **highlights** and **Key takeaway** headnotes, each document's source note (footnotes off), a header-and-dateline table of contents, and a **Chronology** and **Persons Index** appended — built for close reading, in a classroom or a seminar |
+| **Summaries with overview** | **AI summaries** in place of full text (choose its **Summary prompt** yourself), with your research notes, a word-cloud overview, a header-and-dateline table of contents, and a **Chronology** and **Thematic Index** appended — a fast, skimmable read |
+| **Citations with your notes** | An index/outline body — each document's citation and date, no text — with your research notes, a citation-style table of contents, and a **Bibliography** and **Thematic Index** appended — an annotated bibliography |
+| **Citations with archival sources** | An index/outline body with each document's archival source note, a citation-style table of contents, and **Sources & Archives** and a **Persons Index** appended — an archival finding aid |
+| **Everything included** | Full text with every option on and the complete apparatus (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index), under a citation-style table of contents |
 
-Applying a preset overwrites the composition fields but is **non-destructive**: it adds any apparatus it calls for without removing blocks you've placed, and never touches your documents, sections, or prose. Adjust anything afterward — a preset is a starting point.
+Applying a template overwrites the composition fields but is **non-destructive**: it adds any apparatus it calls for without removing blocks you've placed, and never touches your documents, sections, or prose. Adjust anything afterward — a template is a starting point. The collection keeps the settings a template writes, not the template itself.
 
 ### 12.7 Live Preview
 
@@ -1357,14 +1359,14 @@ Before travel to College Park or a presidential library:
 3. Read the **Access:** lines in the packet's target list before booking anything — only a target whose citation names a lot file can carry one, and only where the app's bundled snapshot of NARA's catalog records an access status for the lot's series; a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead of the visit (the packet does not say how far ahead — check the repository's visit-planning pages), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
 5. For anything you want to dig into beyond the packet: **Divided at NARA** (14.5) lists every claiming series for a divided lot; **Archival Neighbors** windows (14.3) — one per source, side by side — show what else came from the same boxes; **Unprinted pointers** in Archival Analytics (15.5) maps what the editors cited but did not print; and the **outside-NARA repositories** (14.1) cover holdings elsewhere.
-6. Build a **Source dossier** collection (12.6) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's target list (shared as PDF) rides beside it.
+6. Build a collection of your target documents under the **Citations with archival sources** template (12.6) and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's target list (shared as PDF) rides beside it.
 
 ### 18.4 Building a Course Reader
 
 1. **Create a collection**; add documents by search, by browsing, or — fastest from an existing syllabus — by pasting its citations into the **Citations** tab of Add Documents (12.2).
 2. **Section it by week or theme** with nested headings (12.3), and write short **prose blocks** framing each section.
 3. **Excerpt** the passages you want discussion to center on (12.3) — they render as styled block quotes with automatic citations.
-4. Apply the **Teaching reader** preset (12.6): full text with source notes, a header-and-dateline table of contents, and a Persons Index and Chronology appended.
+4. Apply the **Full text with your annotations** template (12.6): full text with source notes, your notes, highlights and headnotes, a header-and-dateline table of contents, and a Chronology and Persons Index appended.
 5. Add **headnotes** (12.5) — a one-line Key takeaway above each document. Write them yourself or seed them with AI and edit; exports attribute AI-drafted text explicitly, so your reader is honest about authorship.
 6. Add **front matter** (12.3): a subtitle, your name, an introduction.
 7. **Check the preview** (12.7), then **export PDF** for the course site or **Word** if you want to restyle it (12.9). The **excerpt check** (12.10) verifies every quotation against its source on the way out.

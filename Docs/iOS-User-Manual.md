@@ -1038,7 +1038,7 @@ Collections work in two halves, and the split keeps you honest about where decis
 
 Open the **Collections** tab and tap **＋** (**New Collection**) in its toolbar — while you have no collections, the empty screen offers a **New Collection** button too. The editor is its own screen, titled with the collection's name (**New Collection** until you give it one), and every edit **saves as you go** — there is no Save button. That holds in **Collection settings** and in a heading's **Section defaults** too, and a description, subtitle or author line changed in one shows in the other. Collection settings saves each edit as you make it, and Section defaults saves each change to the collection's description, subtitle, author line and three export switches the same way, so leaving by Back, by another tab, or by closing the app loses none of them. Section defaults puts its other changes on the collection at once too, and the app saves them with its regular saves. (Backing out of a brand-new collection you never touched discards it.)
 
-On iPad the manager keeps **two permanent columns** — the **Contents** outline and the **live preview** — with settings summoned on demand: the **⚙ Collection** toolbar button opens the **Collection settings** sheet (name, a note that prints under the title of an export, title-page front matter, composition presets and settings, and the smart-collection link), and each document row's **Configure** pill opens *that document's* settings (12.6). On iPhone, a segmented control switches between **Outline** and **Preview**, with a **Collection settings** row at the top of the outline opening the same settings on its own screen.
+On iPad the manager keeps **two permanent columns** — the **Contents** outline and the **live preview** — with settings summoned on demand: the **⚙ Collection** toolbar button opens the **Collection settings** sheet (name, a note that prints under the title of an export, title-page front matter, composition templates and settings, and the smart-collection link), and each document row's **Configure** pill opens *that document's* settings (12.6). On iPhone, a segmented control switches between **Outline** and **Preview**, with a **Collection settings** row at the top of the outline opening the same settings on its own screen.
 
 The editor's toolbar carries the authoring verbs. On iPad it shows four buttons: the gear (**Collection** — the settings sheet), **＋** (**Add** — a menu of **Add Documents…**, **Add Section Heading**, **Add Note Block**, **Add Highlighted Passages…**, **Add to Archives Visit…**, and an **Apparatus** submenu), the sort arrows (**Sort**), and the share icon (**Export…**). Where the bar has no room for all four, iPadOS puts the ones that do not fit in the bar's **•••** menu: on an 11-inch iPad held upright at the default text size, the gear stays and **Add** is inside that menu. On iPhone a single **＋** menu holds the same items and **Sort by Date**; **Export…** is not in it — it is a row under **Actions** at the foot of the outline, a section shown once the collection has content or a linked saved search, where **Sort by Date** is repeated when the collection has content. An **Add Documents…** button sits under the outline on both, except in a smart collection (12.10).
 
@@ -1101,7 +1101,7 @@ Each document row is a scannable report — the document's title over its identi
 
 **Section defaults**: long-press a heading → **Section Defaults…** (or tap the heading row's **Section defaults** pill) opens a sheet whose **Section Defaults** group applies the same six export overrides to every document in that section; the section's body depth is set on the heading row itself, in its **Section body** menu, and headnotes have no section default. The effective value anywhere is always the most specific: the document's own override, else its section's default, else the collection composition.
 
-### 12.7 Composition Settings and Presets
+### 12.7 Composition Settings and Templates
 
 Composition is **saved on the collection** — it always exports the same way, in any format, without re-choosing. In the **Collection settings** surface:
 
@@ -1114,16 +1114,18 @@ Composition is **saved on the collection** — it always exports the same way, i
 - **Summary prompt** — which prompt makes the summaries. The menu appears once **Body depth** is *Summary only*, and until you choose one an export of summaries stops with a message asking for it.
 - **Headnotes** — the collection-wide default for the Key takeaway cards (12.6).
 
-**Presets.** Under **Start from a template — optional**, above the composition settings, one-tap presets set the fields above (all but the summary prompt) for a common kind of artifact; the one whose settings are in force is drawn with an accent-colored border. The iPad's settings sheet offers all four; the iPhone's settings screen, and a narrow iPad window's, offers three — **Teaching**, **Briefing** and **Dossier** — and leaves **Scholarly edition** out:
+**Templates.** Under **Start from a template — optional**, above the composition settings, six one-tap templates set the fields above (all but the summary prompt). Each is named for how it presents the documents, then for what comes with them, and the one whose settings are in force is drawn with an accent-colored border. The iPad's settings sheet shows them as cards, three rows of two, each with a line saying what it includes; the iPhone's settings screen, and a narrow iPad window's, shows all six as a row of short chips that scrolls sideways — **Printed**, **Annotated**, **Summaries**, **Noted**, **Archival** and **Everything** — and on iPhone the **Collection settings** row names the template in force:
 
-| Preset | What it builds |
+| Template | What it builds |
 |--------|----------------|
-| **Teaching reader** | Full document text with source notes and your research notes, footnotes off, a header-and-dateline table of contents, and a **Persons Index** and **Chronology** appended — built for close reading in a classroom |
-| **Briefing packet** | **AI summaries** in place of full text, **Key takeaway** headnotes switched on, and a word-cloud overview — a fast, skimmable read (choose its **Summary prompt** yourself) |
-| **Source dossier** | A compact index/outline body with each document's archival source note, footnotes and highlights off, a citation-style table of contents, and a **Sources & Archives** block appended — an archival finding aid |
-| **Scholarly edition** | Full text, citation-style table of contents, and the complete apparatus (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index) |
+| **Full text as printed** | Each document's full text with its **footnotes** and archival **source note**, a citation-style table of contents, and a **Bibliography** and **Sources & Archives** appended; your notes, highlights and headnotes stay out — the documents as the volume prints them |
+| **Full text with your annotations** | Full text with your **research notes**, **highlights** and **Key takeaway** headnotes, each document's source note (footnotes off), a header-and-dateline table of contents, and a **Chronology** and **Persons Index** appended — built for close reading, in a classroom or a seminar |
+| **Summaries with overview** | **AI summaries** in place of full text (choose its **Summary prompt** yourself), with your research notes, a word-cloud overview, a header-and-dateline table of contents, and a **Chronology** and **Thematic Index** appended — a fast, skimmable read |
+| **Citations with your notes** | An index/outline body — each document's citation and date, no text — with your research notes, a citation-style table of contents, and a **Bibliography** and **Thematic Index** appended — an annotated bibliography |
+| **Citations with archival sources** | An index/outline body with each document's archival source note, a citation-style table of contents, and **Sources & Archives** and a **Persons Index** appended — an archival finding aid |
+| **Everything included** | Full text with every option on and the complete apparatus (Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index), under a citation-style table of contents |
 
-Applying a preset overwrites the composition fields but is **non-destructive**: it adds any apparatus blocks it calls for without removing ones you've placed, and never touches your documents, sections, or prose. It's a starting point — adjust anything afterward.
+Applying a template overwrites the composition fields but is **non-destructive**: it adds any apparatus blocks it calls for without removing ones you've placed, and never touches your documents, sections, or prose. It's a starting point — adjust anything afterward. The collection keeps the settings a template writes, not the template itself.
 
 ### 12.8 Front Matter
 
@@ -1575,14 +1577,14 @@ Before travel to College Park or a presidential library:
 3. Read the **Access:** lines in the packet's target list before booking anything — only a target whose citation names a lot file can carry one, and only where the app's bundled snapshot of NARA's catalog records an access status for the lot's series; a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead of the visit (the packet does not say how far ahead — check the repository's visit-planning pages), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
 5. For anything you want to dig into beyond the packet: **Divided at NARA** (14.6) lists every claiming series for a divided lot; **Archival Neighbors** (14.4) shows what else came from the same boxes; **Unprinted pointers** in Archival Analytics (15.5) maps what the editors cited but did not print; and **Where These Records Are** (14.2) covers holdings outside NARA.
-6. Build a **Source dossier** collection (12.7) of your target documents and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's target list (shared as PDF) rides beside it.
+6. Build a collection of your target documents under the **Citations with archival sources** template (12.7) and export it — a finding aid you can carry into the reading room, with each document's source note attached; the packet's target list (shared as PDF) rides beside it.
 
 ### 18.4 Building a Course Reader
 
 1. **Create a collection**; add documents by search, by browsing, or — fastest from an existing syllabus — by pasting its citations into the **Citations** tab of Add Documents (12.2).
 2. **Section it by week or theme** with nested headings (12.3), and write short **prose blocks** framing each section.
 3. **Excerpt** the passages you want discussion to center on (12.4) — they render as styled block quotes with automatic citations.
-4. Apply the **Teaching reader** preset (12.7): full text with source notes, a header-and-dateline table of contents, and a Persons Index and Chronology appended.
+4. Apply the **Full text with your annotations** template (12.7): full text with source notes, your notes, highlights and headnotes, a header-and-dateline table of contents, and a Chronology and Persons Index appended.
 5. Add **headnotes** (12.6) — a one-line Key takeaway above each document. Write them yourself or seed them with AI and edit; exports attribute AI-drafted text explicitly, so your reader is honest about authorship.
 6. Add **front matter** (12.8): a subtitle, your name, an introduction.
 7. **Check the preview** (12.9), then **export PDF** for the course site or **Word** if you want to restyle it (12.10). The **excerpt check** (12.11) verifies every quotation against its source on the way out.

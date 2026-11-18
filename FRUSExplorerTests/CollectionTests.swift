@@ -3443,7 +3443,45 @@ struct CollectionTests {
         #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOff, includeHeadnote: nil)) == false)
     }
 
-    @Test("Preset composition: applyFields overwrites every field per the recipe; apparatusBlocks(notAlreadyIn:) is append-only")
+    /// One template's recipe as decision 139's table states it (the plan of record from 2026-11-15, row
+    /// L25), the fields in the order `applyFields(to:)` writes them and the apparatus in the order the
+    /// template appends it.
+    private struct ExpectedTemplate {
+        let preset: CollectionPreset
+        let bodyDepth: CollectionBodyDepth
+        let footnotes: Bool
+        let sourceNote: Bool
+        let notes: Bool
+        let headnotes: Bool
+        let highlights: Bool
+        let wordCloud: Bool
+        let toc: CollectionToCStyle
+        let apparatus: [CollectionGeneratedBlockType]
+    }
+
+    /// Decision 139's six templates, in the grid's order.
+    private static let expectedTemplates: [ExpectedTemplate] = [
+        ExpectedTemplate(preset: .fullTextAsPrinted, bodyDepth: .full, footnotes: true, sourceNote: true,
+                         notes: false, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
+                         apparatus: [.bibliography, .archivalSources]),
+        ExpectedTemplate(preset: .fullTextWithAnnotations, bodyDepth: .full, footnotes: false, sourceNote: true,
+                         notes: true, headnotes: true, highlights: true, wordCloud: false, toc: .headerAndDateline,
+                         apparatus: [.chronology, .personsIndex]),
+        ExpectedTemplate(preset: .summariesWithOverview, bodyDepth: .summaryOnly, footnotes: false, sourceNote: false,
+                         notes: true, headnotes: false, highlights: false, wordCloud: true, toc: .headerAndDateline,
+                         apparatus: [.chronology, .thematicIndex]),
+        ExpectedTemplate(preset: .citationsWithNotes, bodyDepth: .index, footnotes: false, sourceNote: false,
+                         notes: true, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
+                         apparatus: [.bibliography, .thematicIndex]),
+        ExpectedTemplate(preset: .citationsWithArchivalSources, bodyDepth: .index, footnotes: false, sourceNote: true,
+                         notes: false, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
+                         apparatus: [.archivalSources, .personsIndex]),
+        ExpectedTemplate(preset: .everythingIncluded, bodyDepth: .full, footnotes: true, sourceNote: true,
+                         notes: true, headnotes: true, highlights: true, wordCloud: true, toc: .citation,
+                         apparatus: [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex])
+    ]
+
+    @Test("Preset composition: each of the six templates writes decision 139's fields and appends its apparatus; apparatusBlocks(notAlreadyIn:) is append-only")
     @MainActor
     func presetApply() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -3451,52 +3489,84 @@ struct CollectionTests {
         let coll = Collection(name: "Preset")
         context.insert(coll)
 
-        // Teaching reader: full text, notes + source note on, Header & Dateline ToC, +persons/chronology.
-        CollectionPreset.teachingReader.applyFields(to: coll)
-        #expect(coll.defaultBodyDepth == CollectionBodyDepth.full.rawValue)
-        #expect(coll.includeNotes == true)
-        #expect(coll.effectiveIncludeSourceNote == true)
-        #expect(coll.effectiveIncludeFootnotes == false)
-        #expect(coll.defaultIncludeHeadnote == false)
-        #expect(coll.applyHighlights == false)
-        #expect(coll.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
-        #expect(CollectionPreset.teachingReader.apparatusBlocks == [.personsIndex, .chronology])
+        // The grid's order is the table's (L25).
+        #expect(CollectionPreset.allCases == Self.expectedTemplates.map(\.preset))
 
-        // Briefing packet: summary-only, headnotes + word cloud on; highlights on (inert with
-        // summary-only body, by design); no apparatus.
-        CollectionPreset.briefingPacket.applyFields(to: coll)
-        #expect(coll.defaultBodyDepth == CollectionBodyDepth.summaryOnly.rawValue)
-        #expect(coll.defaultIncludeHeadnote == true)
-        #expect(coll.includeWordCloud == true)
-        #expect(coll.applyHighlights == true)
-        #expect(coll.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
-        #expect(CollectionPreset.briefingPacket.apparatusBlocks.isEmpty)
+        // Each template overwrites every field, whatever the one before it wrote: the same collection
+        // takes all six in turn, so a field a template forgot to write would keep the last one's value.
+        for expected in Self.expectedTemplates {
+            let preset = expected.preset
+            preset.applyFields(to: coll)
+            #expect(coll.defaultBodyDepth == expected.bodyDepth.rawValue, "\(preset) body depth")
+            #expect(coll.effectiveIncludeFootnotes == expected.footnotes, "\(preset) footnotes")
+            #expect(coll.effectiveIncludeSourceNote == expected.sourceNote, "\(preset) source note")
+            #expect(coll.includeNotes == expected.notes, "\(preset) notes")
+            #expect(coll.defaultIncludeHeadnote == expected.headnotes, "\(preset) headnotes")
+            #expect(coll.applyHighlights == expected.highlights, "\(preset) highlights")
+            #expect(coll.includeWordCloud == expected.wordCloud, "\(preset) word cloud")
+            #expect(coll.tocStyle == expected.toc.rawValue, "\(preset) contents list")
+            #expect(preset.apparatusBlocks == expected.apparatus, "\(preset) apparatus")
+            #expect(preset.matches(coll), "\(preset) is not marked active on the collection it just composed")
+        }
 
-        // Source dossier: index/outline body, footnotes off, source note on, Citation ToC.
-        CollectionPreset.sourceDossier.applyFields(to: coll)
-        #expect(coll.defaultBodyDepth == CollectionBodyDepth.index.rawValue)
-        #expect(coll.effectiveIncludeFootnotes == false)
-        #expect(coll.effectiveIncludeSourceNote == true)
-        #expect(coll.tocStyle == CollectionToCStyle.citation.rawValue)
-        #expect(CollectionPreset.sourceDossier.apparatusBlocks == [.archivalSources])
+        // A summary-only template leaves highlights off: they draw only over a full body, so the
+        // four's Briefing packet turned on a switch that did nothing (decision 139).
+        for preset in CollectionPreset.allCases where preset.recipe.bodyDepth != .full {
+            #expect(preset.recipe.highlights == false, "\(preset) turns on highlights its body cannot draw")
+        }
 
-        // Scholarly edition: everything on; all five apparatus.
-        CollectionPreset.scholarlyEdition.applyFields(to: coll)
-        #expect(coll.effectiveIncludeFootnotes == true)
-        #expect(coll.effectiveIncludeSourceNote == true)
-        #expect(coll.includeNotes == true)
-        #expect(coll.defaultIncludeHeadnote == true)
-        #expect(coll.applyHighlights == true)
-        #expect(coll.includeWordCloud == true)
-        #expect(coll.tocStyle == CollectionToCStyle.citation.rawValue)
-        #expect(Set(CollectionPreset.scholarlyEdition.apparatusBlocks) == Set(CollectionGeneratedBlockType.allCases))
+        // Every card and chip says something of its own; the tags may repeat ("full text", "citations").
+        let presets = CollectionPreset.allCases
+        #expect(Set(presets.map(\.displayName)).count == presets.count)
+        #expect(Set(presets.map(\.subtitle)).count == presets.count)
+        #expect(Set(presets.map(\.shortName)).count == presets.count)
+        #expect(presets.allSatisfy { !$0.shortTag.isEmpty })
+        #if canImport(UIKit)
+        for preset in presets {
+            #expect(UIImage(systemName: preset.systemImage) != nil, "\(preset)'s symbol \(preset.systemImage) does not exist")
+        }
+        #endif
 
         // Append-only, non-destructive: apparatusBlocks(notAlreadyIn:) drops blocks already present.
-        #expect(CollectionPreset.teachingReader.apparatusBlocks(notAlreadyIn: []) == [.personsIndex, .chronology])
-        #expect(CollectionPreset.teachingReader.apparatusBlocks(
-            notAlreadyIn: [CollectionGeneratedBlockType.personsIndex.rawValue]) == [.chronology])
+        #expect(CollectionPreset.fullTextWithAnnotations.apparatusBlocks(notAlreadyIn: []) == [.chronology, .personsIndex])
+        #expect(CollectionPreset.fullTextWithAnnotations.apparatusBlocks(
+            notAlreadyIn: [CollectionGeneratedBlockType.chronology.rawValue]) == [.personsIndex])
         let allPresent = Set(CollectionGeneratedBlockType.allCases.map(\.rawValue))
-        #expect(CollectionPreset.scholarlyEdition.apparatusBlocks(notAlreadyIn: allPresent).isEmpty)
+        #expect(CollectionPreset.everythingIncluded.apparatusBlocks(notAlreadyIn: allPresent).isEmpty)
+    }
+
+    /// `matches(_:)` compares a template's fields and not its apparatus, so two templates whose fields
+    /// agree would both be drawn active on every collection either composes. Written over `allCases`
+    /// (no case named) so that it compiles against any set of templates.
+    @Test("No two templates write the same fields: the collection a template composes matches that template alone")
+    @MainActor
+    func presetsMatchOnlyThemselves() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        for preset in CollectionPreset.allCases {
+            let coll = Collection(name: "Composed by \(preset.rawValue)")
+            context.insert(coll)
+            preset.applyFields(to: coll)
+            let active = CollectionPreset.allCases.filter { $0.matches(coll) }
+            #expect(active == [preset], "\(preset)'s composition is matched by \(active.map(\.rawValue))")
+        }
+    }
+
+    /// Decision 139: each of the five apparatus blocks comes with at least two templates besides the
+    /// one that includes everything, so none is reached only with every option on. Written over
+    /// `allCases`, the template that includes everything found as the one carrying every block, so
+    /// that it compiles against any set of templates (the four before L25 fail it: their Bibliography
+    /// and Thematic Index came only with Scholarly edition).
+    @Test("Each apparatus block comes with at least two templates besides the one that includes everything")
+    func everyApparatusBlockInTwoTemplates() {
+        let everyBlock = Set(CollectionGeneratedBlockType.allCases)
+        let includesEverything = CollectionPreset.allCases.filter { Set($0.apparatusBlocks) == everyBlock }
+        #expect(includesEverything.count == 1, "templates that carry every block: \(includesEverything.map(\.rawValue))")
+        let others = CollectionPreset.allCases.filter { !includesEverything.contains($0) }
+        for block in CollectionGeneratedBlockType.allCases {
+            let carriers = others.filter { $0.apparatusBlocks.contains(block) }
+            #expect(carriers.count >= 2, "\(block.rawValue) comes with \(carriers.map(\.rawValue)) besides everything")
+        }
     }
 
     @Test("Composition summary sentence: leads with the body-depth phrasing and lists the enabled content")
