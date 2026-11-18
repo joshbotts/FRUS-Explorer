@@ -323,14 +323,14 @@ struct ResearchImportReport: View {
         if hasReadings {
             Section {
                 if report.inertEntries > 0 {
-                    LabeledContent(ResearchImportCopy.inertLabel, value: "\(report.inertEntries)")
+                    LabeledContent(ResearchImportCopy.inertLabel, value: report.inertEntries.formatted())
                 }
                 if report.summariesWithoutAuthorship > 0 {
                     LabeledContent(ResearchImportCopy.noAuthorshipLabel,
-                                   value: "\(report.summariesWithoutAuthorship)")
+                                   value: report.summariesWithoutAuthorship.formatted())
                 }
                 if showsHeadnoteDrafts {
-                    LabeledContent(ResearchImportCopy.headnotesLabel, value: "\(report.headnoteDrafts)")
+                    LabeledContent(ResearchImportCopy.headnotesLabel, value: report.headnoteDrafts.formatted())
                 }
                 if !report.unlinkedCollections.isEmpty {
                     LabeledContent(ResearchImportCopy.unlinkedLabel,
@@ -381,15 +381,15 @@ struct ResearchImportDone: View {
 
     var body: some View {
         Section {
-            LabeledContent(ResearchImportCopy.addedLabel, value: "\(outcome.added)")
-            LabeledContent(ResearchImportCopy.replacedLabel, value: "\(outcome.replaced)")
-            LabeledContent(ResearchImportCopy.keptLabel, value: "\(outcome.kept)")
+            LabeledContent(ResearchImportCopy.addedLabel, value: outcome.added.formatted())
+            LabeledContent(ResearchImportCopy.replacedLabel, value: outcome.replaced.formatted())
+            LabeledContent(ResearchImportCopy.keptLabel, value: outcome.kept.formatted())
             if outcome.notesMadePlain > 0 {
-                LabeledContent(ResearchImportCopy.plainNotesLabel, value: "\(outcome.notesMadePlain)")
+                LabeledContent(ResearchImportCopy.plainNotesLabel, value: outcome.notesMadePlain.formatted())
             }
             if outcome.summariesMadeAIGenerated > 0 {
                 LabeledContent(ResearchImportCopy.aiSummariesLabel,
-                               value: "\(outcome.summariesMadeAIGenerated)")
+                               value: outcome.summariesMadeAIGenerated.formatted())
             }
         } header: {
             Text(ResearchImportCopy.doneHeader)
@@ -499,7 +499,7 @@ enum ResearchImportCopy {
                           defaultValue: "a collection’s front matter and export settings")
         case .collectionEntryContent:
             return String(localized: "settings.import.field.collectionEntryContent",
-                          defaultValue: "a collection’s headings, prose and section blocks, and each entry’s own settings")
+                          defaultValue: "a collection entry’s kind, text and own settings")
         case .projectFocus:
             return String(localized: "settings.import.field.projectFocus",
                           defaultValue: "a project’s focus tags and Suggested Next weights")

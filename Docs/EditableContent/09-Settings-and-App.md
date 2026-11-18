@@ -663,10 +663,10 @@ a collection’s front matter and export settings
 
 <!-- END SOURCE: settings.import.field.collectionSettings -->
 
-#### Import from JSON — a collection’s headings, prose and section blocks, and each…
+#### Import from JSON — a collection entry’s kind, text and own settings
 <!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 501–502 | key: settings.import.field.collectionEntryContent | shared: iOS+macOS (single edit point) -->
 
-a collection’s headings, prose and section blocks, and each entry’s own settings
+a collection entry’s kind, text and own settings
 
 <!-- END SOURCE: settings.import.field.collectionEntryContent -->
 
