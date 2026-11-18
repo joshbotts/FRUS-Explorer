@@ -2685,7 +2685,7 @@ Each line is resolved against the FRUS manifest and your local index — footnot
 <!-- END SOURCE: collection.addDocs.citations.hint -->
 
 #### Summaries are generated on demand for documents that don’t…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 137–138 | key: composition.summaryPrompt.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 138–139 | key: composition.summaryPrompt.hint -->
 
 Summaries are generated on demand for documents that don’t already have one for this prompt. Requires Apple Intelligence.
 

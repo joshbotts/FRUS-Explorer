@@ -34,7 +34,8 @@ import SwiftData
 ///          than wrapping it in their own Section/DisclosureGroup. Bindings are unchanged.
 ///   1.4 — 2026-11-18 (L25, decision 139): six templates in place of four, so the grid has three
 ///          rows of two, and the compact chip row shows all six (it scrolls; `compactPresets`, which
-///          left Scholarly edition out, is gone)
+///          left Scholarly edition out, is gone). The grid is rows of two held to their taller card's
+///          height, and a card's subtitle takes up to three lines, which the Mac's popover needs
 struct CollectionCompositionRows: View {
 
     /// The collection whose persisted composition is being edited.
@@ -249,13 +250,30 @@ struct CollectionCompositionRows: View {
                 .padding(.vertical, 2)
             }
         } else {
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
-                                GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                ForEach(CollectionPreset.allCases) { preset in
-                    presetCard(preset, onApplyPreset: onApplyPreset)
+            // Rows of two, each an `HStack` held to its ideal height, which is its taller card's at the
+            // card's own width; each card's frame then fills the row, so both boxes of a row are one
+            // height (L25). A `LazyVGrid` sized each card to its own text, so a one-line name beside a
+            // two-line one drew boxes of 76 and 89 pt in one row on the Mac; a `Grid` evened the rows
+            // but settled their height before a name wrapped at the column's width, and cut the name.
+            VStack(spacing: 8) {
+                ForEach(Self.presetRows, id: \.self) { row in
+                    HStack(alignment: .top, spacing: 8) {
+                        ForEach(row) { preset in
+                            presetCard(preset, onApplyPreset: onApplyPreset)
+                        }
+                        if row.count == 1 {
+                            Color.clear.frame(maxWidth: .infinity)
+                        }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
+    }
+
+    /// The templates in the grid's rows of two, in `CollectionPreset.allCases`' order.
+    private static let presetRows: [[CollectionPreset]] = stride(from: 0, to: CollectionPreset.allCases.count, by: 2).map {
+        Array(CollectionPreset.allCases[$0..<min($0 + 2, CollectionPreset.allCases.count)])
     }
 
     /// One preset card (regular width): name + subtitle, accent border/fill when active.
@@ -270,14 +288,16 @@ struct CollectionCompositionRows: View {
                 Text(preset.displayName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(active ? Color.accentColor : .primary)
+                // Three lines: the Mac's ⚙ popover, 420 pt wide, gives a card about 155 pt of text, and
+                // "Notes · highlights · headnotes · chronology · persons" needs three there (L25).
                 Text(preset.subtitle)
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, minHeight: 52, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 52, maxHeight: .infinity, alignment: .topLeading)
             .padding(12)
             .background(active ? Color.accentColor.opacity(0.07) : Color.clear,
                         in: RoundedRectangle(cornerRadius: 10))
