@@ -81,6 +81,8 @@ import XCTest
 ///          search; the Topics row is also tapped beside a narrowed index in the two-pane
 ///   1.3 — 2026-11-15: #1905 — the index is the Subject index: the row's label, the search prompt
 ///          and the area chip read as the app now does
+///   1.4 — R5 (1.0 (1823)): on a phone the search field is pulled out of the navigation bar's
+///          drawer, where iOS 27 keeps it until the list is pulled down
 @MainActor
 final class TopicIndexArrivalTests: XCTestCase {
 
@@ -274,6 +276,14 @@ final class TopicIndexArrivalTests: XCTestCase {
     private func revealTopicSearch() -> XCUIElement {
         let field = topicSearchField
         if field.waitForExistence(timeout: 2) { return field }
+        // A phone under iOS 27: the pushed index keeps its search field in the navigation bar's
+        // drawer, out of the tree, until the list is pulled down, as Mail's is. Measured on the
+        // iPhone 17 under iOS 27.0 (R5, 2026-11-18): no field on arrival, "Search subjects" after
+        // one pull, hidden again after a scroll; under iOS 26.3 the field was there on arrival.
+        if !isTwoPane {
+            app.collectionViews.firstMatch.swipeDown()
+            if field.waitForExistence(timeout: 3) { return field }
+        }
         // The iPad two-pane on iOS 27: the outer bar shows the index's search as a magnifier
         // button. Scoped to the navigation bars, because the floating tab bar's Search tab is also
         // a button labelled "Search".

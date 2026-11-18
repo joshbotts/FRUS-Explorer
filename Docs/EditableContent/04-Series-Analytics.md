@@ -137,35 +137,35 @@ A document counts toward an administration if its dates overlap that president�
 ### Geographic Emphasis dashboard
 
 #### Intro paragraph
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 161–162 | key: series.geography.intro -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 164–165 | key: series.geography.intro -->
 
 Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department’s six regional bureaus. These charts show how the series’ geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most.
 
 <!-- END SOURCE: series.geography.intro -->
 
 #### Chart 1 caption — Regional emphasis over time
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 198–199 | key: series.geography.trend.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 201–202 | key: series.geography.trend.caption -->
 
 Each decade’s volumes divided among the regions they cover. A volume spanning several regions splits evenly between them, so every decade totals 100%. A volume’s decade is set by the midpoint of its coverage.
 
 <!-- END SOURCE: series.geography.trend.caption -->
 
 #### Chart 2 caption — Overall regional emphasis
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTotalsChart | lines: 260–261 | key: series.geography.totals.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTotalsChart | lines: 263–264 | key: series.geography.totals.caption -->
 
 How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap.
 
 <!-- END SOURCE: series.geography.totals.caption -->
 
 #### Chart 3 caption — Most-covered countries
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.topCountriesChart | lines: 312–313 | key: series.geography.countries.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.topCountriesChart | lines: 315–316 | key: series.geography.countries.caption -->
 
 The individual place tags carried by the most volumes — the concrete detail behind the regional picture.
 
 <!-- END SOURCE: series.geography.countries.caption -->
 
 #### Regional-bureau mapping footnote
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 371–372 | key: series.geography.caveats.body.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 388–389 | key: series.geography.caveats.body.v2 %lld %lld -->
 
 Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department’s six current regional bureaus, with dependencies and territories folded into “Other.” %1$lld of the %2$lld cataloged volumes carry a place tag that maps to a region. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
 

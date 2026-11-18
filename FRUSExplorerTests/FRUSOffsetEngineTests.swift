@@ -2733,8 +2733,13 @@ struct IndexEntryLandingWebKitTests {
         try await harness.load(indexPage())
         let before = try #require(try await harness.webView.evaluateJavaScript("window.scrollY") as? Double)
         #expect(before == 0)
-        let found = try #require(try await harness.webView.evaluateJavaScript(
-            #require(IndexEntryLanding.script(anchor: "in50"))) as? Bool)
+        // The value is read first and the cast required after: Swift Testing calls
+        // `#require(try await … as? Bool)` ambiguous (an optional to unwrap, or a Boolean to
+        // check?) and warns, while `#require(value as? Bool)` over a plain name it reads as the
+        // unwrap. R5 measured both spellings with the toolchain's macro (Xcode 27.2).
+        let foundValue = try await harness.webView.evaluateJavaScript(
+            #require(IndexEntryLanding.script(anchor: "in50")))
+        let found = try #require(foundValue as? Bool)
         #expect(found)
         // The scroll crosses into the web content process; read it until it has moved, two
         // seconds at most (`env_wkwebview_harness_scroll_two_processes`).

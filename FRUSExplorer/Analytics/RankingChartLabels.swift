@@ -6,8 +6,10 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Charts
 import CoreGraphics
 import Foundation
+import SwiftUI
 
 // MARK: - Heat-matrix column codes
 
@@ -386,4 +388,94 @@ enum RankingChartAxis {
         let share = min(max(chartWidth * labelShare, minimumLabelWidth), maximumLabelWidth)
         return max(min(share, chartWidth - minimumPlotWidth), 0)
     }
+}
+
+// MARK: - Category axis titles (R5, decision 141)
+
+/// A bar chart's category titles, each drawn centred on its own bar.
+///
+/// Four charts name their bars on a categorical y-axis: Cross-Reference Analytics' Most-Referenced
+/// Documents, Person Analytics' ranking, About the Series' Most-covered countries and Archival
+/// Analytics' ranking. Swift Charts drew those names as the axis's labels, and iOS 27.2 and
+/// macOS 27.2 moved them: a label of `AxisMarks(preset: .aligned)` or `.extended` is centred on
+/// its band's top edge, half a row above its bar, where 27.0 centred it on the bar. So every name
+/// sat on the line between two bars, and the top one's first line fell above the chart.
+/// `AxisValueLabel(centered: true)` changed neither system's drawing; an explicit `anchor:` drew
+/// alike on both, but centred a label only when its box was its band's height, which the x-axis
+/// leaves at a fraction of a row more than the chart's row height. Measured in `ImageRenderer`
+/// drawings on iOS 27.0 and 27.2 and on macOS 27.2.1.
+///
+/// So each chart keeps its axis's labels, hidden, for the label column's width, and draws its titles
+/// with this in `.chartBackground`, each at `ChartProxy.position(forY:)`, its bar's own centre,
+/// in the font and colour Swift Charts gives an axis label. Under iOS 27.0 the Most-Referenced
+/// chart drawn so is the chart drawn by Swift Charts, pixel for pixel. A title is hidden from
+/// VoiceOver: each chart's bar says its name.
+///
+/// Version history:
+///   1.0 — R5 (1.0 (1823)): initial implementation, for the four charts
+struct CategoryAxisTitles<Title: View>: View {
+
+    /// The chart's proxy.
+    let chart: ChartProxy
+
+    /// The y-axis's categories, as the bars are keyed.
+    let categories: [String]
+
+    /// Where a title sits across the label column.
+    let placement: CategoryAxisTitlePlacement
+
+    /// A category's title, as the chart's hidden axis label draws it.
+    @ViewBuilder let title: (String) -> Title
+
+    var body: some View {
+        GeometryReader { geometry in
+            if let anchor = chart.plotFrame {
+                let plot = geometry[anchor]
+                ForEach(Array(categories.enumerated()), id: \.offset) { _, category in
+                    if let y = chart.position(forY: category) {
+                        placed(title(category), plot: plot, y: plot.minY + y)
+                    }
+                }
+            }
+        }
+    }
+
+    /// One title at its bar's height, its trailing edge before the plot or its leading edge at the
+    /// chart's. It takes its own width: the hidden axis label made the column that wide.
+    private func placed(_ title: Title, plot: CGRect, y: CGFloat) -> some View {
+        let column: CGFloat
+        let alignment: Alignment
+        switch placement {
+        case .beforePlot(let spacing):
+            column = max(plot.minX - spacing, 0)
+            alignment = .trailing
+        case .atLeadingEdge:
+            column = max(plot.minX, 0)
+            alignment = .leading
+        }
+        return title
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: true, vertical: false)
+            .frame(width: column, alignment: alignment)
+            .position(x: column / 2, y: y)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Where ``CategoryAxisTitles`` sets a title across its chart's label column.
+///
+/// Version history:
+///   1.0 — R5 (1.0 (1823)): initial implementation
+enum CategoryAxisTitlePlacement {
+
+    /// Its trailing edge `spacing` points before the plot.
+    case beforePlot(spacing: CGFloat)
+
+    /// Its leading edge at the chart's, where `AxisMarks(preset: .extended)` sets a label.
+    case atLeadingEdge
+
+    /// Where `AxisMarks(preset: .aligned)` sets a label: 4 pt before the plot, Swift Charts' own
+    /// spacing, measured against its drawing under iOS 27.0 and macOS 27.2.1.
+    static var aligned: CategoryAxisTitlePlacement { .beforePlot(spacing: 4) }
 }

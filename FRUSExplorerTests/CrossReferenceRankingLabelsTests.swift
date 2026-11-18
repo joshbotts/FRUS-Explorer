@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Charts
 import Foundation
 import SwiftUI
 import Testing
@@ -677,6 +678,9 @@ struct HeatMatrixRowAxisTests {
 ///   1.2 — Build 49 on iOS 27.0: a title's second line must hold a word of three letters or more.
 ///          Vision on iOS 27.0 reads the bar count "39", crossed by the dashed gridline, as "m-",
 ///          and counting that as a second line failed a chart that draws every title whole.
+///   1.3 — R5 (1.0 (1823)): `everyTitleSitsBesideItsBar`. Under iOS 27.2 Swift Charts drew each
+///          title on its band's top edge, half a row above its bar, and the first one cut, which
+///          `everyTitleIsDrawn` caught only by that cut; the chart now draws its titles itself.
 @Suite("Ranking chart axis")
 @MainActor
 struct RankingChartAxisTests {
@@ -866,6 +870,238 @@ struct RankingChartAxisTests {
                 && line.split(whereSeparator: { !$0.isLetter }).contains { $0.count >= 3 }
         }
         #expect(wrapped.count == ranking.count, "\(wrapped.count) titles take a second line, not \(ranking.count): \(lines)")
+    }
+
+    /// Each title is centred on its own bar: the middle of its two lines within 4 pt of the bar's.
+    ///
+    /// Under iOS 27.2 Swift Charts drew an `AxisMarks(preset: .aligned)` label centred on its band's
+    /// top edge, about 15 pt above its bar, where iOS 27.0 centred it on the bar: every title
+    /// straddled two bars, and the first one's first line fell above the chart. The chart now draws
+    /// each title at its bar's own position (`CrossReferenceRankingChart.titles`). On the code
+    /// before R5 this fails under iOS 27.2 and passes under 27.0, which drew them centred.
+    @Test("At 720 pt every title is centred on its own bar")
+    func everyTitleSitsBesideItsBar() throws {
+        let ranking = try fixtureRanking()
+        let inspector = AnalyticsChartTables.crossRefRankingTable(
+            title: "Most-Referenced Documents",
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId, label: $0.label, inDegree: $0.inDegree) })
+        let scale: CGFloat = 4
+        let image = try RenderedText.image(
+            of: CrossReferenceRankingChart(ranking: ranking, inspector: inspector).padding(4), width: 728, scale: scale)
+
+        // The bars' centres, top to bottom: bands of pixel rows in the accent colour across the plot.
+        let pixels = try RenderedText.pixels(of: image)
+        var barCentres: [CGFloat] = []
+        var bandStart: Int? = nil
+        for y in 0..<image.height {
+            var blue = 0
+            for x in stride(from: image.width / 2, to: image.width, by: 4) {
+                let i = (y * image.width + x) * 4
+                if pixels[i] < 40, pixels[i + 1] > 100, pixels[i + 1] < 145, pixels[i + 2] > 235 { blue += 1 }
+            }
+            if blue > 10 {
+                if bandStart == nil { bandStart = y }
+            } else if let start = bandStart {
+                barCentres.append(CGFloat(start + y - 1) / 2 / scale)
+                bandStart = nil
+            }
+        }
+        try #require(barCentres.count == ranking.count, "found \(barCentres.count) bars for \(ranking.count) rows")
+
+        // The titles' lines, read with their places: a first line opens "Document 1", and a second
+        // line is the next line with a word of three letters or more (`everyTitleIsDrawn`).
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: image).perform([request])
+        let lines = (request.results ?? [])
+            .compactMap { observation -> (text: String, midY: CGFloat)? in
+                guard let text = observation.topCandidates(1).first?.string else { return nil }
+                return (text, (1 - observation.boundingBox.midY) * CGFloat(image.height) / scale)
+            }
+            .sorted { $0.midY < $1.midY }
+        let firsts = lines.filter { $0.text.hasPrefix("Document 1") }
+        let seconds = lines.filter { line in
+            !line.text.hasPrefix("Document 1")
+                && line.text.split(whereSeparator: { !$0.isLetter }).contains { $0.count >= 3 }
+        }
+        try #require(firsts.count == ranking.count && seconds.count == ranking.count, """
+            Vision read \(firsts.count) first lines and \(seconds.count) second lines for \(ranking.count) titles: \
+            \(lines.map(\.text))
+            """)
+        for (row, bar) in barCentres.enumerated() {
+            let title = (firsts[row].midY + seconds[row].midY) / 2
+            #expect(abs(title - bar) <= 4, """
+                Row \(row + 1)'s title is centred \(String(format: "%.1f", bar - title)) pt above its bar \
+                (bar at \(String(format: "%.1f", bar)) pt, title at \(String(format: "%.1f", title)) pt).
+                """)
+        }
+    }
+}
+
+// MARK: - CategoryAxisTitlesTests (R5)
+
+/// `CategoryAxisTitles`, which draws the names of the four charts that name their bars on a
+/// categorical y-axis: each name centred on its own bar, where the axis would set it across.
+///
+/// Under iOS 27.2 and macOS 27.2 Swift Charts drew an `AxisMarks(preset: .aligned)` or `.extended`
+/// label centred on its band's top edge, about 15 pt above its bar, where iOS 27.0 centred it, so
+/// every name sat on the line between two bars (decision 141). The fixture is spelled as the charts
+/// spell their axes: Person Analytics' and the Most-covered countries' `.aligned`, and Archival
+/// Analytics' `.extended` at 8 pt. Drawn by Swift Charts alone, the names fail the first test
+/// under iOS 27.2 and pass it under 27.0.
+///
+/// Version history:
+///   1.0 — R5 (1.0 (1823)): initial implementation
+@Suite("Category axis titles")
+@MainActor
+struct CategoryAxisTitlesTests {
+
+    private static let names = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel",
+                                "India", "Juliett", "Kilo", "Lima", "Mike", "November", "Oscar"]
+
+    /// Fifteen bars, 30 pt a row as the charts are, named on an axis spelled as `extended` says.
+    private struct Fixture: View {
+        let extended: Bool
+        var body: some View {
+            Chart(Array(CategoryAxisTitlesTests.names.enumerated()), id: \.offset) { index, name in
+                BarMark(x: .value("Count", 50 - index), y: .value("Name", name))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .chartYScale(domain: CategoryAxisTitlesTests.names)
+            .chartYAxis {
+                if extended {
+                    AxisMarks(preset: .extended, position: .leading) { value in
+                        AxisValueLabel(horizontalSpacing: 8) {
+                            if let name = value.as(String.self) { Text(name).hidden() }
+                        }
+                    }
+                } else {
+                    AxisMarks(preset: .aligned) { value in
+                        AxisValueLabel {
+                            if let name = value.as(String.self) { Text(name).hidden() }
+                        }
+                    }
+                }
+            }
+            .chartBackground { proxy in
+                CategoryAxisTitles(chart: proxy, categories: CategoryAxisTitlesTests.names,
+                                   placement: extended ? .atLeadingEdge : .aligned) { Text($0) }
+            }
+            .frame(width: 600, height: CGFloat(CategoryAxisTitlesTests.names.count) * 30 + 40)
+        }
+    }
+
+    /// The fixture drawn at 4x, read back: each bar's centre and the plot's leading edge, and each
+    /// name's place, in points from the drawing's top left (which a 4 pt padding moves in).
+    private func drawn(extended: Bool) throws
+        -> (bars: [CGFloat], plotMinX: CGFloat, names: [String: (midY: CGFloat, minX: CGFloat, maxX: CGFloat)]) {
+        // A name's horizontal extent is read from its ink, not from Vision's box, which for a short
+        // word at the image's edge can start at the edge itself (Golf, Hotel and Mike did).
+        let scale: CGFloat = 4
+        let image = try RenderedText.image(of: Fixture(extended: extended).padding(4), width: 608, scale: scale)
+        let pixels = try RenderedText.pixels(of: image)
+        func isAccent(_ x: Int, _ y: Int) -> Bool {
+            let i = (y * image.width + x) * 4
+            return pixels[i] < 40 && pixels[i + 1] > 100 && pixels[i + 1] < 145 && pixels[i + 2] > 235
+        }
+        var bars: [CGFloat] = []
+        var bandStart: Int? = nil
+        for y in 0..<image.height {
+            let accent = stride(from: image.width / 2, to: image.width, by: 4).filter { isAccent($0, y) }.count
+            if accent > 10 {
+                if bandStart == nil { bandStart = y }
+            } else if let start = bandStart {
+                bars.append(CGFloat(start + y - 1) / 2 / scale)
+                bandStart = nil
+            }
+        }
+        let firstBarRow = Int(((bars.first ?? 0) * scale).rounded())
+        let plotMinX = CGFloat((0..<image.width).first { isAccent($0, firstBarRow) } ?? -1) / scale
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: image).perform([request])
+        // Ink: a pixel left of the plot that is not white, in the 8 pt band around a name's middle.
+        func inkExtent(midY: CGFloat) -> (minX: CGFloat, maxX: CGFloat) {
+            let rows = max(Int((midY - 4) * scale), 0)..<min(Int((midY + 4) * scale), image.height)
+            let columns = 0..<max(Int((plotMinX - 1) * scale), 0)
+            var low = Int.max, high = Int.min
+            for y in rows {
+                for x in columns {
+                    let i = (y * image.width + x) * 4
+                    if pixels[i] < 220 || pixels[i + 1] < 220 || pixels[i + 2] < 220 { low = min(low, x); high = max(high, x) }
+                }
+            }
+            return low <= high ? (CGFloat(low) / scale, CGFloat(high + 1) / scale) : (-1, -1)
+        }
+        var names: [String: (midY: CGFloat, minX: CGFloat, maxX: CGFloat)] = [:]
+        for observation in request.results ?? [] {
+            guard let text = observation.topCandidates(1).first?.string.trimmingCharacters(in: .whitespaces),
+                  Self.names.contains(text) else { continue }
+            let midY = (1 - observation.boundingBox.midY) * CGFloat(image.height) / scale
+            let ink = inkExtent(midY: midY)
+            names[text] = (midY, ink.minX, ink.maxX)
+        }
+        return (bars, plotMinX, names)
+    }
+
+    @Test("Each name is centred on its own bar, with either axis spelling", arguments: [false, true])
+    func eachNameIsCentredOnItsBar(extended: Bool) throws {
+        let (bars, _, names) = try drawn(extended: extended)
+        try #require(bars.count == Self.names.count, "found \(bars.count) bars for \(Self.names.count) names")
+        try #require(names.count == Self.names.count, "Vision read \(names.count) of the \(Self.names.count) names: \(names.keys.sorted())")
+        for (row, name) in Self.names.enumerated() {
+            let place = try #require(names[name])
+            #expect(abs(place.midY - bars[row]) <= 3, """
+                \(name) is centred \(String(format: "%.1f", bars[row] - place.midY)) pt above its bar \
+                (\(extended ? ".extended" : ".aligned")).
+                """)
+        }
+    }
+
+    @Test("A name sits across the column where the axis would set it", arguments: [false, true])
+    func eachNameSitsWhereTheAxisWouldSetIt(extended: Bool) throws {
+        let (_, plotMinX, names) = try drawn(extended: extended)
+        try #require(plotMinX > 0, "no plot found")
+        try #require(names.count == Self.names.count, "Vision read \(names.count) of the \(Self.names.count) names")
+        for (name, place) in names {
+            if extended {
+                // `.extended`: from the chart's leading edge, which the drawing's padding puts at
+                // 4 pt, and a letter's side bearing; its anti-aliased edge may read a little less.
+                #expect(place.minX >= 3.5 && place.minX <= 6, "\(name)'s ink starts at \(place.minX) pt, not at the chart's edge")
+            } else {
+                // `.aligned`: ending 4 pt before the plot, less a letter's side bearing.
+                #expect(place.maxX <= plotMinX - 3.5 && place.maxX >= plotMinX - 6,
+                        "\(name)'s ink ends at \(place.maxX) pt; the plot starts at \(plotMinX) pt")
+            }
+        }
+    }
+
+    /// The four charts that name their bars draw their names with `CategoryAxisTitles`, each over
+    /// an axis whose own label is hidden; read from their source, since each is a member of a view.
+    @Test("The four charts that name their bars draw their names beside their bars")
+    func theFourChartsDrawTheirNamesBesideTheirBars() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let charts = ["FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift",
+                      "FRUSExplorer/Analytics/PersonAnalyticsView.swift",
+                      "FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift",
+                      "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift"]
+        for path in charts {
+            let code = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+                .joined(separator: "\n")
+            #expect(HeatMatrixRowAxisTests.count("CategoryAxisTitles(chart: proxy", in: code) == 1,
+                    "\(path) should draw its bars' names with CategoryAxisTitles once")
+            // The y-axis the names belong to: the last `.chartYAxis` before the titles are drawn.
+            let titles = try #require(code.range(of: "CategoryAxisTitles(chart: proxy"), "\(path) draws no titles")
+            let axisStart = try #require(code[..<titles.lowerBound].range(of: ".chartYAxis {", options: .backwards),
+                                         "\(path) has no y-axis before its titles")
+            let axis = try HeatMatrixRowAxisTests.braces(after: ".chartYAxis {", in: String(code[axisStart.lowerBound...]))
+            #expect(HeatMatrixRowAxisTests.count(".hidden()", in: axis) == 1,
+                    "\(path)'s named axis should hide its own label, which iOS 27.2 sets half a row up:\n\(axis)")
+        }
     }
 }
 

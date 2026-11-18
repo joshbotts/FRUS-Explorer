@@ -107,7 +107,7 @@
       "headline": "Search 553 volumes of the U.S. diplomatic record. Offline.",
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/macos/search.png",
-      "status": "build 1787",
+      "status": "build 1823",
       "foot": "FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -140,7 +140,7 @@
       "headline": "Read it as printed. Keep what you find.",
       "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
       "capture": "Docs/screenshots/ipad/research-rail.png",
-      "status": "build 1861"
+      "status": "build 1823"
     },
     {
       "id": "reader",
@@ -150,7 +150,7 @@
       "headline": "Read it as printed. Keep what you find.",
       "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
       "capture": "Docs/screenshots/macos/research-strip.png",
-      "status": "build 1861"
+      "status": "build 1823"
     },
     {
       "id": "reader",
@@ -281,7 +281,7 @@
       "headline": "Cite as you write.",
       "subline": "The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library. Every search you run can be logged for a method appendix.",
       "capture": "Docs/screenshots/ipad/cite-sheet.png",
-      "status": "build 1861"
+      "status": "build 1823"
     },
     {
       "id": "cite",
@@ -291,7 +291,7 @@
       "headline": "Cite as you write.",
       "subline": "The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library. Every search you run can be logged for a method appendix.",
       "capture": "Docs/screenshots/macos/cite-popover.png",
-      "status": "build 1861"
+      "status": "build 1823"
     },
     {
       "id": "course-reader",
@@ -341,7 +341,7 @@
       "headline": "Why raw counts mislead, shown live.",
       "subline": "Chart a term by year, switch to share of documents, then narrow the years to the spike and open its documents in Search. The chart exports as a figure or a CSV with its method stated.",
       "capture": "Docs/screenshots/ipad/analytics.png",
-      "status": "build 1861"
+      "status": "build 1823"
     },
     {
       "id": "corpus-analytics",

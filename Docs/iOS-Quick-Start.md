@@ -43,7 +43,7 @@ The first launch has three steps. **Welcome** introduces the series: tap **Get S
 
 **Subseries** and **Volume** open a list, and **Continue** stays dimmed until you pick a row. Tap **Continue** to start the downloads, or **Skip** to download nothing yet.
 
-![The Add Volumes step on iPad — "What would you like to download?" with Corpus, Subseries and Volume, the line 553+ volumes · ≈ 3.5 GB under the control, and Back, Skip and Continue — over a word cloud of the series' vocabulary.](screenshots/ipad/onboarding-volumes.png)
+![The Add Volumes step on iPad — "What would you like to download?" with Corpus, Subseries and Volume, the line 553+ volumes · ≈ 3.5 GB to download, about 7 GB once indexed under the control, and Back, Skip and Continue — over a word cloud of the series' vocabulary.](screenshots/ipad/onboarding-volumes.png)
 
 *The Add Volumes step. The word cloud behind it is drawn from the series itself, and changes to preview the era you pick.*
 
@@ -73,7 +73,7 @@ The app has five tabs. On iPad they sit in a tab strip at the top of the screen,
 | **Collections** | Ordered sets of documents with your own headings and prose, exported as PDF, HTML or Word |
 | **Settings** | Volumes and storage, display, projects and tags, connections to Zotero and the National Archives, iCloud sync, About |
 
-![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Topics, the Browse by tiles, Annotations among them, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
+![Browse on iPad with the sidebar open — the five tabs, a saved search and the active project beneath them — and the Browse root: Continue reading, the volume search field, People and Subjects, the Browse by tiles, Annotations among them, and Your sets, with the Subseries list open on the right.](screenshots/ipad/browse-root.png)
 
 *The Browse tab, with the Subseries list open. Saved searches and projects appear in the sidebar under the tabs once you have some.*
 
@@ -106,7 +106,7 @@ If an action is not on the menu's first page, tap **›**. A highlight is kept a
 
 The second button at the top right of a document (a page with a magnifying glass) shows and hides the **Research rail**, the panel for everything you do *about* a document. On iPad it sits beside the text; on a new install documents open with it showing.
 
-![A document on iPad with the Research rail open beside the text: the RESEARCH header, the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Topics, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection.](screenshots/ipad/research-rail.png)
+![A document on iPad with the Research rail open beside the text: the RESEARCH header, the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Subjects, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection.](screenshots/ipad/research-rail.png)
 
 *The Research rail beside the Long Telegram, with a note, a tag and a collection already on it.*
 

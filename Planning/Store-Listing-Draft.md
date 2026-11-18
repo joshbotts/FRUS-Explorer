@@ -31,7 +31,18 @@ contradicts no sentence of the description. What changed here that day:
   one and writes it ready to paste (§6). **The description's block here is wrapped for reading, and
   App Store Connect keeps a pasted line break: paste `paste/description.txt`, never the block.**
 
-`Planning/app-store-connect/App-Store-Connect-Entry.md` walks through the submission page by page.
+**Read against 1.0 (1823) on 2026-11-18** (R5), the tree that ships as 1.0 (1861) with only its
+build number raised (the plan of record's R7). Its bundle differs from 1.0 (1812)'s in two files,
+`cited-page-map.json` and `volume-annotations-index.json`, regenerated with index version 75 (L22),
+and each differs only in its `indexVersion` stamp; §5's figures recount the same from the frozen tree (553 volumes,
+107 subseries, published since 1861; 314,616 documents on the map in 140 regions, 226,557 in a region
+and 88,059 between). The index figure holds at version 75: the check copy's library, the owner's Mac
+library as copied on 2026-11-06, re-indexed from 74 and holds 321,749 rows, 1,103 of them front
+matter. (It counts 8,476 editorial notes among the others, as that copy did at 74; the copy of
+2026-11-10 counted 8,477. No field uses either.) No field changes: of the 47 strings whose wording
+changed since 1.0 (1812) and the 20 the app no longer has, by a diff of every localized string in the
+app and the kit, none is quoted by a field, §7's notes or a file in `paste/`. Most are *detected
+topics* becoming *Subjects* (L15) and the four Collections templates L25 replaced with six.
 
 **Every field below is counted, not estimated.** The plan's headline correction for this step is a
 length failure — a candidate subtitle 83 characters over a 30-character field — so the counts are

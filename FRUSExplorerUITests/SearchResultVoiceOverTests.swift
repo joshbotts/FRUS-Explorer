@@ -52,11 +52,17 @@ import notify
 /// skipped there. Under iOS 26 three tests skip and the fourth reads the labels without listening: the
 /// service is iOS 27's. Under Xcode 27.2, run them one at a time with the simulator shut down between:
 /// once the service's speech has been read, `disable()` leaves VoiceOver on for the rest of the run
-/// (`testAFinishedSearchSaysWhatItFound` says what was measured).
+/// (`testAFinishedSearchSaysWhatItFound` says what was measured), and no call of the service turns it
+/// off again (R5 tried four: `disable()`, `enable()` then `disable()` with nothing read, `disable()`
+/// twice, and `currentSpeech()` between; after each a tap on a tab moved VoiceOver's cursor and
+/// selected nothing). So each test does every tap before it listens, and a test that finds the Search
+/// tab will not open after an earlier test of its run has listened skips, saying why.
 ///
 /// Version history:
 ///   1.0 — #1684: initial implementation
 ///   1.1 — #1918 (L18, A11Y-2): `testAFinishedSearchSaysWhatItFound`, a finished search's announcement
+///   1.2 — R5 (1.0 (1823)): the tagging test taps its chip before it listens, and a test that meets
+///          VoiceOver left on by an earlier test of its run skips, naming Xcode 27.2's service
 @MainActor
 final class SearchResultVoiceOverTests: XCTestCase {
 
@@ -126,8 +132,30 @@ final class SearchResultVoiceOverTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_SEARCH_ON_SIGNAL"] = Self.query
         app.launchArguments = UITestLaunch.arguments(startingOn: .search)
         app.launch()
-        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
-                      "Could not open the Search tab, so this suite would read another screen")
+        let opened = navigator.select(.search, resolveTimeout: 15).tapped
+        if !opened, Self.listenedThisRun {
+            throw XCTSkip("""
+                VoiceOver is still on from an earlier test of this run, so a tap only moves its cursor and \
+                the Search tab will not open. Under Xcode 27.2, once the service's speech has been read, its \
+                disable() leaves VoiceOver on and reports it off, and no call of the service turns it off \
+                again (R5 measured four, 2026-11-18). Run each test alone, on a simulator shut down before it.
+                """)
+        }
+        XCTAssertTrue(opened, "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    /// Whether a test of this run has turned VoiceOver on and read its speech, after which, under
+    /// Xcode 27.2, VoiceOver stays on for the rest of the run whatever the service is told (R5).
+    private static var listenedThisRun = false
+
+    /// Turns VoiceOver on through the service, for a test that will read its speech, and notes that
+    /// this run has listened.
+    @available(iOS 27.0, *)
+    private func listen() throws -> XCUIVoiceOverService {
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        Self.listenedThisRun = true
+        return voiceOver
     }
 
     override func tearDown() async throws {
@@ -153,8 +181,7 @@ final class SearchResultVoiceOverTests: XCTestCase {
         }
 
         guard #available(iOS 27.0, *) else { return }
-        let voiceOver = XCUIDevice.shared.voiceOverService
-        try voiceOver.enable()
+        let voiceOver = try listen()
         var heard: [String: String] = [:]
         for _ in 1...40 where heard.count < Self.labels.count {
             let spoken = try voiceOver.moveForward().utterance
@@ -182,16 +209,10 @@ final class SearchResultVoiceOverTests: XCTestCase {
             "\(Self.taggedDocumentLabel)"
             """)
 
-        let voiceOver = XCUIDevice.shared.voiceOverService
-        try voiceOver.enable()
-        try moveVoiceOver(to: Self.taggedDocumentLabel)
-        let actions = try flickThroughTheActions(until: Self.filterAction)
-        XCTAssertEqual(actions, ["Add to Collection…", "Add Tags…", Self.filterAction],
-                       "The row's actions, in the order VoiceOver reads them")
-        try voiceOver.disable()
-
         // What the action does is what the chip does: the search keeps the tagged document and loses
-        // the two the tag is not on.
+        // the two the tag is not on. Checked before VoiceOver is turned on: under Xcode 27.2 it stays
+        // on once its speech has been read, and a tap after that only moves its cursor (R5). The row
+        // offers its tag's action whether or not the search is filtered by the tag.
         tapTheTagChip(of: row)
         let one = app.staticTexts["1 result"].firstMatch
         if !one.waitForExistence(timeout: Self.patience) { attachTheScreen(named: "After the tag chip") }
@@ -205,6 +226,13 @@ final class SearchResultVoiceOverTests: XCTestCase {
             XCTAssertFalse(resultRow(heading).exists,
                            "Filtering by \(Self.tagName) left the row of \(heading), which does not carry the tag")
         }
+
+        let voiceOver = try listen()
+        try moveVoiceOver(to: Self.taggedDocumentLabel)
+        let actions = try flickThroughTheActions(until: Self.filterAction)
+        XCTAssertEqual(actions, ["Add to Collection…", "Add Tags…", Self.filterAction],
+                       "The row's actions, in the order VoiceOver reads them")
+        try voiceOver.disable()
     }
 
     /// A finished search says what it found as its rows arrive: the header's own words, "3 results"
@@ -227,8 +255,7 @@ final class SearchResultVoiceOverTests: XCTestCase {
         // made sure of with VoiceOver off.
         runTheSearch()
 
-        let voiceOver = XCUIDevice.shared.voiceOverService
-        try voiceOver.enable()
+        let voiceOver = try listen()
         RunLoop.current.run(until: Date().addingTimeInterval(2))
         XCTAssertEqual(notify_post(Self.searchSignal), UInt32(NOTIFY_STATUS_OK),
                        "The system refused to post \(Self.searchSignal), so no search will run")
@@ -257,8 +284,7 @@ final class SearchResultVoiceOverTests: XCTestCase {
                        "Once tagged, the row's label reads \"\(row.label)\"")
         enterSelection()
 
-        let voiceOver = XCUIDevice.shared.voiceOverService
-        try voiceOver.enable()
+        _ = try listen()
         try moveVoiceOver(to: Self.taggedDocumentLabel)
         let actions = try flickThroughTheActions(until: Self.filterAction)
         XCTAssertFalse(actions.contains(Self.filterAction), "In selection the row offers \(Self.filterAction): \(actions)")

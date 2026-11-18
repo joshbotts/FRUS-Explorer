@@ -18,7 +18,7 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 *Shown under the Mode control on both platforms.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 398–399 | key: archival.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 400–401 | key: archival.mode.help.v2 -->
 
 Switch between the era rankings, the co-citation network, the reference hand-off diagram, and the archival profile of your own indexed volumes.
 
@@ -28,7 +28,7 @@ Switch between the era rankings, the co-citation network, the reference hand-off
 
 #### Network mode is unavailable
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 470–471 | key: archival.network.unavailable -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 472–473 | key: archival.network.unavailable -->
 
 The bundled collection authority is unavailable in this build, so the network cannot be drawn.
 
@@ -38,7 +38,7 @@ The bundled collection authority is unavailable in this build, so the network ca
 
 #### Flows mode is unavailable
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 494–495 | key: archival.flows.unavailable -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 496–497 | key: archival.flows.unavailable -->
 
 The bundled reference-flow index is unavailable in this build, so hand-offs cannot be shown. This is not the same as the series having none.
 
@@ -48,7 +48,7 @@ The bundled reference-flow index is unavailable in this build, so hand-offs cann
 
 #### Document counts are unavailable, so only the volume weight is offered
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1307–1308 | key: archival.caveats.noUsageIndex -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1321–1322 | key: archival.caveats.noUsageIndex -->
 
 Document counts are unavailable in this build — the bundled usage index did not load — so only the volume weight is offered.
 
@@ -75,7 +75,7 @@ Most central-file citations name the file the citing document itself came from �
 
 #### While the archival authority loads
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 528–529 | key: archival.collections.loading -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 530–531 | key: archival.collections.loading -->
 
 Reading the archival authority…
 
@@ -97,7 +97,7 @@ Volumes covering %1$@ — %2$@ of them — draw on %3$@. Bars are colored by who
 
 #### Nothing to rank in this era
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1121–1122 | key: archival.ranking.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1123–1124 | key: archival.ranking.empty -->
 
 No archival units resolved in this era under the current unit and weight.
 
@@ -107,7 +107,7 @@ No archival units resolved in this era under the current unit and weight.
 
 #### The caveat block — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1626–1626 | key: archival.caveats.measured -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1640–1640 | key: archival.caveats.measured -->
 
 Measured here
 
@@ -704,7 +704,7 @@ Footnotes naming unprinted material in this collection
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1369–1370 | key: archival.library.intro %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1383–1384 | key: archival.library.intro %lld %lld -->
 
 The archival profile of **your** library — computed from the %1$lld source notes across the %2$lld indexed volumes that carry them, not from the bundled corpus-wide aggregates.
 
@@ -714,7 +714,7 @@ The archival profile of **your** library — computed from the %1$lld source not
 
 #### While your source notes are counted
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1362–1363 | key: archival.library.loading -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1376–1377 | key: archival.library.loading -->
 
 Counting your indexed source notes…
 
@@ -724,7 +724,7 @@ Counting your indexed source notes…
 
 #### Composition card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1379–1380 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1393–1394 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Where your documents come from
 
@@ -734,7 +734,7 @@ Where your documents come from
 
 #### Composition card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1388–1389 | key: archival.library.composition.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1402–1403 | key: archival.library.composition.caption -->
 
 Every source note in your index, divided among the kinds of archival collection they cite.
 
@@ -744,7 +744,7 @@ Every source note in your index, divided among the kinds of archival collection 
 
 #### Citation-forms card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1452–1453 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1466–1467 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Citation forms across your volumes
 
@@ -754,7 +754,7 @@ Citation forms across your volumes
 
 #### Citation-forms card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1461–1462 | key: archival.library.bands.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1475–1476 | key: archival.library.bands.caption -->
 
 The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department’s decimal file, through the postwar bureau lot files, to the presidential libraries.
 
@@ -764,7 +764,7 @@ The same composition, split by the era your volumes cover. Read left to right it
 
 #### Your collections card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1541–1542 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1555–1556 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Your most-cited collections
 
@@ -776,7 +776,7 @@ Your most-cited collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1551–1552 | key: archival.library.collections.caption.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1565–1566 | key: archival.library.collections.caption.v2 %lld %lld -->
 
 Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are filing systems rather than collections. Another %2$lld name something the list does not recognize. Neither group is listed here.
 
@@ -786,7 +786,7 @@ Matched from your own source notes against the archival authority list in the ap
 
 #### Your collections card — nothing resolved
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1562–1563 | key: archival.library.collections.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1576–1577 | key: archival.library.collections.empty -->
 
 None of your volumes’ source notes name a collection the bundled authority recognizes.
 
@@ -796,7 +796,7 @@ None of your volumes’ source notes name a collection the bundled authority rec
 
 #### Your collections card — row hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1595–1596 | key: archival.library.collections.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1609–1610 | key: archival.library.collections.hint -->
 
 Shows the documents in your index drawn from this collection
 
@@ -808,7 +808,7 @@ Shows the documents in your index drawn from this collection
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1630–1631 | key: archival.library.footer %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1644–1645 | key: archival.library.footer %lld %lld -->
 
 Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series.
 
@@ -822,7 +822,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
 
 <!-- #838(2) moved the "a source note is not a document" explanation off the page into the ⓘ
      (archival.info.library.detail); the footer keeps only the two measured counts. -->
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1637–1638 | key: archival.library.footer.detail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1651–1652 | key: archival.library.footer.detail %lld %lld -->
 
 %1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s archival authority list does not recognize.
 
@@ -832,7 +832,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
 
 #### Nothing indexed yet — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1650–1650 | key: archival.library.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1664–1664 | key: archival.library.empty.title -->
 
 No Source Notes Yet
 
@@ -842,7 +842,7 @@ No Source Notes Yet
 
 #### Nothing indexed yet — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1652–1653 | key: archival.library.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1666–1667 | key: archival.library.empty.detail -->
 
 Download and index a volume and this page will show where its documents came from. The Collections mode works without any downloads.
 
@@ -2285,28 +2285,28 @@ The Central Files umbrella record is withheld here too, so this list and the cha
 <!-- END SOURCE: archival.allUnits.footer.umbrella -->
 
 #### Most of this era’s sourcing names a central-file number…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 891–892 | key: archival.denominator.tryClasses -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 893–894 | key: archival.denominator.tryClasses -->
 
 Most of this era’s sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.
 
 <!-- END SOURCE: archival.denominator.tryClasses -->
 
 #### Most of this era’s sourcing names a collection rather than…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 894–895 | key: archival.denominator.tryCollections -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 896–897 | key: archival.denominator.tryCollections -->
 
 Most of this era’s sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.
 
 <!-- END SOURCE: archival.denominator.tryCollections -->
 
 #### Related file numbers are ranked together. Open one for the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 1005–1006 | key: archival.families.caption.documents -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 1007–1008 | key: archival.families.caption.documents -->
 
 Related file numbers are ranked together. Open one for the exact designator a pull slip needs; its parts add up to the bar above.
 
 <!-- END SOURCE: archival.families.caption.documents -->
 
 #### Related file numbers are ranked together. Open one for the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 1007–1008 | key: archival.families.caption.volumes -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 1009–1010 | key: archival.families.caption.volumes -->
 
 Related file numbers are ranked together. Open one for the exact designator a pull slip needs. Each line counts the volumes citing that designator, so they overlap and do not add up to the bar: a volume citing two of them counts once for the group.
 
@@ -2329,21 +2329,21 @@ Footnotes in the volumes covering %1$@ — %2$@ of them — point at unprinted m
 <!-- END SOURCE: archival.ranking.caption.pointers %@ %@ %@ -->
 
 #### When one collection entered the published record, and how…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.perCollectionTimingPointer | lines: 1276–1277 | key: archival.collections.timingPointer -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.perCollectionTimingPointer | lines: 1290–1291 | key: archival.collections.timingPointer -->
 
 When one collection entered the published record, and how long the editors kept returning to it, is on that collection’s own record, under Cited Over Time.
 
 <!-- END SOURCE: archival.collections.timingPointer -->
 
 #### Unprinted pointers are unavailable in this build — the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.collectionsConditionalCaveats | lines: 1325–1326 | key: archival.caveats.noExternalIndex -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.collectionsConditionalCaveats | lines: 1339–1340 | key: archival.caveats.noExternalIndex -->
 
 Unprinted pointers are unavailable in this build — the bundled external-citation index did not load.
 
 <!-- END SOURCE: archival.caveats.noExternalIndex -->
 
 #### Where these figures come from, what each count measures…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.methodPointer | lines: 1337–1338 | key: archival.caveats.pointer -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.methodPointer | lines: 1351–1352 | key: archival.caveats.pointer -->
 
 Where these figures come from, what each count measures, and how coverage changes by era — in About These Figures, above.
 

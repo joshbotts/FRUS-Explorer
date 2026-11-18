@@ -17,6 +17,20 @@ against it ahead of the submission (*What the review owes*, below). The steps fo
 pages into Squarespace, given in chat on 2026-11-07 and held by no file, are now
 `Squarespace-Entry.md`.
 
+**Read against 1.0 (1823) on 2026-11-18** (R5), the tree 1.0 (1861) ships with only its build
+number raised (the plan of record from 2026-11-15, R7). 1861 took the rows L15 to L25 after all, so
+the pages were read against it again, as #1888 asked. A diff of every localized string in the app
+and the kit since `f179c1bd`, by key (47 values changed, 20 keys gone), finds no page quoting one
+but the quick starts' alt text: three captures L15 retitled (*Topics* to *Subjects*: `browse-root`
+and `research-rail` on iOS, `research-strip` on the Mac) and the iOS guide's onboarding size line
+(L20). That text follows T2's retakes (`Docs/screenshots/README.md`), and the four tour screens
+that showed *Topics* (`truman.jpg`, `browse.jpg`, `rail.jpg`, `related.jpg`) were re-cut from them.
+The home page, the tour's text, Support and Privacy name nothing those rows changed: the tour
+already names L25's templates, and every storage figure is L20's (*about 7 GB* once indexed). The
+bundle's figures are 1812's, since its two regenerated files differ only in their index-version
+stamp. **Owed by the owner after the merge:** paste `paste/quick-start-ios.txt` and
+`quick-start-mac.txt` again; the tour's images load from GitHub and change with the merge.
+
 ## What is here
 
 | File | What it is | What it becomes |

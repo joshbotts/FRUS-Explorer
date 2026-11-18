@@ -161,7 +161,7 @@ Below the tiles sit expandable accordions — **Subjects** (the document's subje
 
 The rail header's **ⓘ** button opens a **Document tools** popover explaining each of the seven tiles — and, at the bottom of that popover, carries the document's **Classification**: whether the app treats what you're reading as a *document* or an *editorial note*, with the control to correct it. FRUS's own tagging is occasionally wrong — a substantive document marked as an editorial note, or the reverse — and because the app trusts that tagging, the mistake reaches the type badge, search's document-type filter, counts, and exports. **Reclassify as Document…** / **Reclassify as Editorial Note…** records your correction: the body restyles immediately, every filter and badge follows it on all your devices, and the popover then shows what FRUS tags it as so the disagreement stays visible. Both track FRUS's own later corrections: if the Office of the Historian fixes the same tagging, the popover says so — *FRUS now tags this the same way, so your correction no longer changes anything* — and **Restore FRUS's Classification** puts the new value back, not the reading recorded on the day you disagreed. The correction is fully reversible — **Restore FRUS's Classification** in the same popover, or manage all of your corrections (with per-row Undo) under **Settings → Reading & Search → Search → Classification Corrections…**. One caveat the confirmation dialog also states: the bundled series-analytics dashboards are computed from the published corpus and cannot see your corrections.
 
-![A document on iPad in landscape with the Research rail open as a trailing inspector — the RESEARCH header, the seven-tile grid (Cite · Word Cloud · Sources · Graph · Related · On the Map · Share), and the Topics, Summary, Notes, Tags and Collections accordions beside the text.](screenshots/ipad/research-rail.png)
+![A document on iPad in landscape with the Research rail open as a trailing inspector — the RESEARCH header, the seven-tile grid (Cite · Word Cloud · Sources · Graph · Related · On the Map · Share), and the Subjects, Summary, Notes, Tags and Collections accordions beside the text.](screenshots/ipad/research-rail.png)
 
 ### 4.3 Actions on a Selection
 
@@ -314,7 +314,7 @@ The **Browse** tab navigates the series by its own structure: subseries (publica
 
 On an iPad with room for two panes — in landscape, for instance — the root stays on the left as a list while the level you open fills the right. The row or tile you opened it from stays highlighted in the list, however deep you go inside it, and VoiceOver reads it as selected. That includes **Continue reading**: while the document it reopened is open beside the list, the row keeps naming that document, even after you follow a reference out of it or read something else in another tab. A document is the exception: it takes the whole width unless the window also has room for the Research rail beside it (Section 4.2), which on a 13-inch iPad means landscape with the tabs as a floating bar. With the tabs in the sidebar, the navigation bar across the panes names the level you opened, with your project's research question beneath it (Section 10.2). **Back** brings the level beneath back with what you set on it: in Archives, the lens you chose, the eras and groups you closed, and the collection search; in a collection, the lists you expanded with **Show all**; in All Volumes and Editors, the search. The list on the left keeps its search too, when a document has taken its place. Turning the iPad across the width where the panes appear keeps all of these. The level itself is drawn again, though: it opens at the top of its list, and a collection whose sub-series you opened in Archives' Collections list shows them closed again. Choosing a door again from the list on the left opens that level afresh.
 
-![The Browse root — Continue reading, the volume search field, the People and Topics rows, the "Browse by" tiles, Annotations among them, and Your sets.](screenshots/ipad/browse-root.png)
+![The Browse root — Continue reading, the volume search field, the People and Subjects rows, the "Browse by" tiles, Annotations among them, and Your sets.](screenshots/ipad/browse-root.png)
 
 ### 6.1 The Browse Root
 
@@ -463,7 +463,7 @@ Where Section 6.2 shows the subjects *one volume* is most characteristic of, the
 
 Each row shows the subject, its `Category · Sub-category`, and its reach — how many documents and volumes carry it.
 
-![The Topic Index narrowed to one topic area — the area chip with its ✕, and each topic with its reach across the series.](screenshots/ipad/topic-index.png)
+![The Subject index narrowed to one subject area — the area chip with its ✕, and each subject with its reach across the series.](screenshots/ipad/topic-index.png)
 
 **Those figures describe the whole series, not your library.** A subject can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. So a subject's own page shows both numbers, labeled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device*. If the last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a subject your library may be full of.
 
@@ -1320,7 +1320,7 @@ All open from the Browse tab's **Analysis Tools** menu, where the Word Cloud is 
 
 Corpus Analytics charts how often terms appear across your indexed corpus — the fastest way to see when a topic rose or fell in official attention, or to compare two terms against each other. Open it from Analysis Tools, by tapping any word in a word cloud, or via the **Visualize in Corpus Analytics** handoff from a search.
 
-![Corpus Analytics on iPad — four terms charted by year as a share of documents, the controls inline in the toolbar: while terms are compared the chart-or-table control, the Measure picker, the fit line and Chart colors are dimmed, and the value control and Export are not.](screenshots/ipad/analytics.png)
+![Corpus Analytics on iPad — four terms charted by year as a share of documents, each line in its own pattern (solid, dashed, dotted, dash-dot) as well as its colour, the controls inline in the toolbar: while terms are compared the chart-or-table control, the Measure picker, the fit line and Chart colors are dimmed, and the value control and Export are not.](screenshots/ipad/analytics.png)
 
 Enter one or more terms (the search syntax applies, including quoted phrases; a term marked exact-word with `=` cannot be charted, and the screen says why) and chart them:
 
@@ -1526,7 +1526,7 @@ Two outside services, neither required — each card shows its connection state 
 
 **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both files, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's own model where a search by meaning is listed.
 
-![Settings → Data & Recovery on iPad — Export as JSON, Export Notes as Markdown and Export Query Log as a Method Appendix, each with a line saying what the file holds.](screenshots/ipad/data-recovery-export.png)
+![Settings → Data & Recovery on iPad — Export as JSON, Import from JSON…, Export Notes as Markdown and Export Query Log as a Method Appendix, each with a line saying what it does.](screenshots/ipad/data-recovery-export.png)
 
 The reason to keep it is the zeros. *"I searched for this and found nothing"* is an assertion; the same sentence with a date, a scope, and a denominator is evidence — the only form of it a reader can check. Counts that hit the app's row ceiling are written as **"at least 1,000"** on iPad and iPhone (the ceiling is 7,500 on a Mac, and one synced trail can hold both), never as the bare number — a ceiling-capped fetch is a floor, not a total. A Meaning search's list is the whole of its ranking, so its count is written as it is: *100*, not *at least 100*. The CSV carries a `count_basis` column saying which each row is, because a spreadsheet will otherwise sum a column of floors into a number nobody measured. Searches recorded before the app kept this detail print marked *"as reported"* rather than being dropped.
 

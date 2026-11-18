@@ -23,16 +23,33 @@ It describes **version 1.0 (1861)**, taken to be what 1.0 (1812), TestFlight bui
 does (the owner's word of 2026-11-10). The listing's text was read against that build on the same
 day, and its figures recounted from the bundle.
 
+**Since then (R5, 2026-11-18):** 1.0 (1861) is the tree of 1.0 (1823), the fourth TestFlight build,
+with its build number raised and nothing else (the plan of record from 2026-11-15, R7). Beyond
+1.0 (1812) it adds the plan's rows: *Subjects* in place of detected topics, with one caption that
+credits the Office of the Historian (L15); the cross-reference graph's three fixes (L16); what App
+Review checks, among them the privacy policy and support page linked from About and the Mac's Help
+menu, the Photos usage string, the in-app browser kept to the site it opened, and printing on the
+Mac (L17); Search saying what it did (L18); nothing the researcher wrote lost without asking (L19);
+downloads, the first run and Apple Intelligence saying what is happening, with Cancel All and a
+failed download's Retry (L20); the Mac's window titles, toolbars that fit their windows, a chart's
+lines told apart by more than colour, and tile names Voice Control can say (L21); the index's record
+of the file each volume was indexed from, at index version 75, so every library re-indexes once at
+launch, and the Mac export's index-version line (L22); **Import from JSON…** (L23, L24); six
+Collections templates in place of four (L25); and, under iOS 27.2 and macOS 27.2, four bar charts'
+names drawn beside their bars (R5). Read against that tree on 2026-11-18, the listing's text, the
+App Review notes and the rest of the paste kit name nothing those rows changed, so no field changes;
+the screenshots that rows changed are retaken (the plan's T2).
+
 ## What is ready, and what is not
 
-| | On 2026-11-10 |
-|---|---|
-| The listing's text | **Ready.** Seven files in [paste/](paste/), each counted against Apple's limit. |
-| The screenshots | **Ready.** 25 frames in `~/Desktop/store/upload/`, numbered in the listing's order, composed that day, and the iPhone's five again at a second size, in case they are asked for. Eleven of the 34 frames changed since the set of 2026-11-02, which that day's run replaced in the same folder. |
-| The App Review notes | **Ready**, and new: [paste/review-notes.txt](paste/review-notes.txt). |
-| The build | **Not yet.** The tree is at 1.0 (1812). R3 restores 1861, and then both apps are archived and uploaded (the plan of record's §1, and `CLAUDE.md`'s list for a bump). |
-| The website | **Not public.** `frusexplorer.app/`, `/privacy` and `/support` each answered 401 at 19:59 UTC. App Review opens the Privacy and Support addresses, so they have to be public before you submit. |
-| Your decisions | **Four**, in the next section, and two wordings on offer. |
+| | On 2026-11-10 | On 2026-11-18 (R5) |
+|---|---|---|
+| The listing's text | **Ready.** Seven files in [paste/](paste/), each counted against Apple's limit. | **Ready, unchanged.** Read against 1.0 (1823)'s tree: no sentence names anything the rows since 1.0 (1812) changed, and its figures recount the same (553 volumes). |
+| The screenshots | **Ready.** 25 frames in `~/Desktop/store/upload/`, numbered in the listing's order, composed that day, and the iPhone's five again at a second size, in case they are asked for. Eleven of the 34 frames changed since the set of 2026-11-02, which that day's run replaced in the same folder. | **Ready, recomposed.** T2 retook the frames the rows changed (30 on the iPad, 9 on the Mac), and the composer, run again on 2026-11-18, changed 11 frames: the five in the upload folders are the iPad's 02 and 07 and the Mac's 01, 02 and 07; the other 52 files are as they were. |
+| The App Review notes | **Ready**, and new: [paste/review-notes.txt](paste/review-notes.txt). | **Ready, unchanged** (3,990 bytes). Every label, path, shortcut and entitlement they name is in 1.0 (1823)'s source as written: onboarding's *Corpus* and *Volume* (*Entire Corpus* and *A Single Volume* on the Mac), the Corpus Browser and Shift-Command-B, the rail's five tiles, Browse ▸ Annotations, Settings ▸ System ▸ Connections, Download Search Model, and the Mac's four entitlements, none added since L17. |
+| The build | **Not yet.** The tree is at 1.0 (1812). R3 restores 1861, and then both apps are archived and uploaded (the plan of record's §1, and `CLAUDE.md`'s list for a bump). | **1.0 (1823)**, the fourth TestFlight build (R5). R6 is the owner's device pass of it; R7 raises it to 1861 and changes nothing else. |
+| The website | **Not public.** `frusexplorer.app/`, `/privacy` and `/support` each answered 401 at 19:59 UTC. App Review opens the Privacy and Support addresses, so they have to be public before you submit. | **Public.** `www.frusexplorer.app/`, `/privacy` and `/support` each answered 200 with its page at 06:16 UTC; the bare domain redirects (301) to `www`. |
+| Your decisions | **Four**, in the next section, and two wordings on offer. | **Three.** The age rating stays 13+ (the plan of record's decision 136, 2026-11-15); the other three and the two wordings wait. |
 
 ## Four decisions, and two offers
 
