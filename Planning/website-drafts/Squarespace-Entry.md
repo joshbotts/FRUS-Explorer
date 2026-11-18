@@ -412,7 +412,7 @@ this table:
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,007 bytes | `d4bfa31d` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,033 bytes | `f6d1ee65` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,169 bytes | `c05916d5` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 

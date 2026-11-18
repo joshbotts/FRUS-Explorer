@@ -430,7 +430,7 @@ Caption — Source: The app's own citation for this document, as it appears in a
 ### 16. Build your own curated document collections
 *Collections · iPad*
 
-Create your own document collections from the documents you select. Use presets such as **Teaching reader** and **Briefing packet** to configure what information to include for each document in one step, or customize settings for each document. Add section headings or your own notes to curate your selections and share your interpretive findings. Incorporate document excerpts, a bibliography, a timeline, a list of people, or other apparatus elements that the app can generate directly from the documents.
+Create your own document collections from the documents you select. Use templates such as **Full text with your annotations** and **Summaries with overview** to configure what information to include for each document in one step, or customize settings for each document. Add section headings or your own notes to curate your selections and share your interpretive findings. Incorporate document excerpts, a bibliography, a timeline, a list of people, or other apparatus elements that the app can generate directly from the documents.
 
 Export to PDF, Word or HTML. You can also share a native `.fruscollection` file with other FRUS Explorer users so they can build off your collection. Your research notes stay out of exports unless you add them.
 
