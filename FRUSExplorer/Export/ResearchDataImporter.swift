@@ -854,7 +854,9 @@ extension ArchiveVisitPlan: ResearchImportable {
     var importId: UUID { id }
     var importCopyDate: Date? { lastModified }
     static func newForImport(_ record: ArchiveVisitPlanExport) -> ArchiveVisitPlan {
-        let plan = ArchiveVisitPlan(name: record.name)
+        // Through the factory every plan is made by (#1366), with no project: the file's projects
+        // and inquiry are written over what the factory seeds.
+        let plan = ArchiveVisitPlan.make(name: record.name, activeProject: nil)
         plan.writeImport(record)
         return plan
     }
