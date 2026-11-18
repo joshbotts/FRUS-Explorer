@@ -11646,3 +11646,5 @@ The owner took the six ("I like these recommendations. Include a new session in 
 
 **Not done.** The three §5 findings are not filed. The free pages a re-index leaves (20% of a library's index) are reported, not reclaimed (Compact Database does that). The shared Mac check copy's extracted source still carries S4's inert chip patch until its next `setup.sh`. Nothing is owed to FRUS Explorer Light: R5 changed no shared code (its chart fix is in app files, and the rest is test code and records).
 
+**Opened as #1953** on the owner's word of 2026-11-18 ("Open the PR", decision 144), asked once the checklist, T2 and the walk were done, against `v2` at `82d3a403`, which had not moved, so nothing was merged in. Ready for review with the `Mac` label and "Mac verification requested" (five look-only steps in the check copy), a line for the web edition, no issue closed; Auto-fix on, auto-merge off.
+
