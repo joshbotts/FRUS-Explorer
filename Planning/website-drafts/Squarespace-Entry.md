@@ -405,7 +405,7 @@ this table:
 |---|---|---|---|
 | [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,143 bytes | `8c230dab` |
 | [paste/support.txt](paste/support.txt) | `/support` | 6,419 bytes | `64da46d0` |
-| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,482 bytes | `e487f964` |
+| [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,523 bytes | `bb9f168e` |
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 27,034 bytes | `a58835c8` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
 | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,294 bytes | `4b2e6134` |
