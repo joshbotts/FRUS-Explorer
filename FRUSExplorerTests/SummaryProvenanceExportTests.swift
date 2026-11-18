@@ -33,6 +33,8 @@ import Testing
 ///   1.0 — provenance-leak fix: initial implementation
 ///   1.1 — FRUS Explorer Light: the DTO is read from FRUSCoreKit, where the envelope moved; the
 ///          mapping site is still the app's exporter
+///   1.2 — #1915 (L24): the mapping site is found as `GeneratedSummaryExport.init(_:)`, which the
+///          export and Import from JSON share
 @Suite("Summary provenance survives export")
 struct SummaryProvenanceExportTests {
 
@@ -122,7 +124,9 @@ struct SummaryProvenanceExportTests {
         #expect(dtoBody.contains("var authorship: SummaryAuthorship?"),
                 "the DTO lost the field")
         let source = try Self.exporterSource()
-        let mapRange = try #require(source.range(of: "GeneratedSummaryExport("))
+        // The mapping site is an initialiser since L24 (#1915), which the export and Import from
+        // JSON both read a summary through.
+        let mapRange = try #require(source.range(of: "init(_ summary: GeneratedSummary)"))
         // A generous window: the mapping site carries ten fields plus the comment explaining
         // why the legacy nil is coerced rather than passed through.
         #expect(source[mapRange.upperBound...].prefix(1_400).contains("authorship:"),

@@ -68,6 +68,8 @@ import Testing
 ///          `sameQueryRuleFoldsOnlyQuotationMarks` pins that rule, `SearchHistoryWriter.isSameQuery(_:_:)`
 ///   1.5 — FRUSCoreKit, part 1: the preference key's one-declaration scan reads `FRUSCoreKit/` as
 ///          well as `FRUSExplorer/`, through `AppSourceTree`
+///   1.6 — #1915 (L24): `ResearchDataImporter` is listed as the producer guard's deliberate
+///          non-writer, Import from JSON restoring a file's trail ungated
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -724,9 +726,12 @@ struct ResearchLoggingGateTests {
     /// third; R-2a's export recorder is the fourth, and both are gated. A fifth fails this test
     /// until it is listed here, which is the moment to check that it consults the gate.
     ///
-    /// The list carries one deliberate non-writer: `ResearchTrailMigration`, which constructs both
-    /// migrated types and must **not** be gated. The comment beside it is the record of that
-    /// decision, which is the point of asserting on an exact set rather than a lower bound.
+    /// The list carries one deliberate non-writer: `ResearchDataImporter`, Import from JSON (#1915,
+    /// L24), which constructs all three types from a file's trail and must **not** be gated. The
+    /// switch stops the app recording what the reader does; an import records nothing the reader
+    /// does, and writes rows the reader already made and exported. `ResearchTrailMigration` was the
+    /// first such non-writer, until R-2b retired it. The comment beside each entry is the record of
+    /// that decision, which is the point of asserting on an exact set rather than a lower bound.
     @Test("Every producer of a history entry is a known, gated writer")
     func noUngatedHistoryWriterExists() throws {
         let expected: Set<String> = [
@@ -739,6 +744,9 @@ struct ResearchLoggingGateTests {
             // `ExportSheetView` call sites route through that recorder precisely so the gate is
             // written once rather than copied four times into a view.
             "ExportHistoryEntry.swift",
+            // All three — a deliberate NON-writer, not gated: Import from JSON (#1915, L24) restores
+            // the trail a file carries, which the reader made and exported; it records nothing new.
+            "ResearchDataImporter.swift",
         ]
 
         let enumerator = try #require(

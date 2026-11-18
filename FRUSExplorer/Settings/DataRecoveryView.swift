@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - DataRecoveryView
 
@@ -43,6 +44,8 @@ import SwiftData
 ///   1.5 — #1539: a read-only **Language Analysis** row in Diagnostics (``LanguageAnalysisRow``).
 ///   1.6 — #1608: under it, **Copy Language Analysis Record**, which copies what this session's
 ///          language check logged (``LanguageAnalysisRecordReport``).
+///   1.7 — #1915 (L24): Import from JSON's file picker and its report (``ResearchImportSheet``),
+///          opened by the row `DataExportSections` draws beside Export as JSON.
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -57,6 +60,12 @@ struct DataRecoveryView: View {
     @State private var showRelaunchNotice = false
     /// macOS presents the two sub-screens as sheets; iOS pushes.
     @State private var sheet: SubScreen? = nil
+    /// Import from JSON's file picker, opened by `DataExportSections`' row (#1915).
+    @State private var isPickingImportFile = false
+    /// The picked file, which presents the import's report (`ResearchImportSheet`).
+    @State private var importRequest: ResearchImportRequest?
+    /// How many imports have closed, which prepares the export sections again.
+    @State private var importGeneration = 0
 
     /// The screens this door leads to.
     enum SubScreen: String, Identifiable {
@@ -66,7 +75,8 @@ struct DataRecoveryView: View {
 
     var body: some View {
         Form {
-            DataExportSections()
+            DataExportSections(onImportJSON: { isPickingImportFile = true },
+                               importGeneration: importGeneration)
 
             if BrokenRefsIndexStore.shared != nil {
                 Section {
@@ -113,6 +123,19 @@ struct DataRecoveryView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .task { await loadSyncSummary() }
+        // Import from JSON (#1915): the picker and the report hang here, on the one `Form`, never on
+        // `DataExportSections`, whose sections would each repeat a presenter.
+        .fileImporter(isPresented: $isPickingImportFile, allowedContentTypes: [.json]) { result in
+            switch result {
+            case .success(let url):
+                importRequest = ResearchImportRequest(source: .file(url))
+            case .failure(let error):
+                importRequest = ResearchImportRequest(source: .problem(error.localizedDescription))
+            }
+        }
+        .sheet(item: $importRequest, onDismiss: { importGeneration += 1 }) { request in
+            ResearchImportSheet(request: request)
+        }
         #if os(macOS)
         .sheet(item: $sheet) { screen in
             VStack(spacing: 0) {

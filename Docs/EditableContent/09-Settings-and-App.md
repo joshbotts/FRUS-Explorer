@@ -475,7 +475,7 @@ Send FRUS documents to your Zotero library with your tags and research notes att
 
 #### Recovery ladder footer
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | recoverySection footer | lines: 313–314 | key: settings.dataRecovery.recovery.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | recoverySection footer | lines: 336–337 | key: settings.dataRecovery.recovery.footer | shared: iOS+macOS (single edit point) -->
 
 In order of how much they take away. Try the first one first — it is the one that deletes nothing.
 
@@ -485,7 +485,7 @@ In order of how much they take away. Try the first one first — it is the one t
 
 *Added by lane SYNC (#1531). Shown in place of the footer above while an upload from this device has failed and none has succeeded since: then Fix iCloud Sync, the first rung, would discard the changes that never reached iCloud, so “the one that deletes nothing” would be untrue. Reset This Device does not touch them.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.recoveryFooter | lines: 316–317 | key: settings.dataRecovery.recovery.footer.unrecovered | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.recoveryFooter | lines: 339–340 | key: settings.dataRecovery.recovery.footer.unrecovered | shared: iOS+macOS (single edit point) -->
 
 In order of how much they take away. While this device holds changes that have not reached iCloud, Fix iCloud Sync would discard them too.
 
@@ -493,7 +493,7 @@ In order of how much they take away. While this device holds changes that have n
 
 #### Fix iCloud Sync — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 288–289 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 311–312 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
 
 This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
 
@@ -503,7 +503,7 @@ This clears the local copy of your synced data and downloads it again. Nothing i
 
 *Added by lane SYNC (#1531). While an upload from this device has failed and none has succeeded since, the confirmation opens with this paragraph and then shows the message above, unchanged. %@ is the date and time of the first failed upload, as the device writes dates. It shows whether the failure began in this session or an earlier one.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncMessage | lines: 292–293 | key: settings.dataRecovery.fixSync.warning %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncMessage | lines: 315–316 | key: settings.dataRecovery.fixSync.warning %@ | shared: iOS+macOS (single edit point) -->
 
 Warning: no upload from this device has succeeded since %@, so it holds changes that are not in iCloud yet. Fix iCloud Sync would discard them.
 
@@ -513,7 +513,7 @@ Warning: no upload from this device has succeeded since %@, so it holds changes 
 
 *Added by lane SYNC (#1531). Replaces “Re-download from iCloud at next launch” under the Fix iCloud Sync row in the same state, so the cost shows before the row is tapped.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncRowDetail | lines: 305–306 | key: settings.dataRecovery.fixSync.detail.unrecovered | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncRowDetail | lines: 328–329 | key: settings.dataRecovery.fixSync.detail.unrecovered | shared: iOS+macOS (single edit point) -->
 
 Would discard changes not yet in iCloud
 
@@ -521,7 +521,7 @@ Would discard changes not yet in iCloud
 
 #### Reset This Device — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | resetDevice confirmation | lines: 174–175 | key: settings.dataRecovery.resetDevice.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | resetDevice confirmation | lines: 197–198 | key: settings.dataRecovery.resetDevice.message | shared: iOS+macOS (single edit point) -->
 
 Downloaded volumes and the search index go; your notes, highlights, tags, collections and projects stay in iCloud and come back on the next launch. You will need to download volumes again.
 
@@ -529,7 +529,7 @@ Downloaded volumes and the search index go; your notes, highlights, tags, collec
 
 #### Broken Cross-References report footer
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | reports section footer | lines: 618–619 | key: settings.export.brokenRefs.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | reports section footer | lines: 641–642 | key: settings.export.brokenRefs.footer | shared: iOS+macOS (single edit point) -->
 
 Every cross-reference in the printed FRUS volumes that points to a document, page, or volume the corpus does not contain. The list covers the whole corpus. The CSV names each broken target once, not once for every occurrence. A fuller spreadsheet, with one row per occurrence and its source line number, is produced by a separate tool rather than in the app.
 
@@ -548,6 +548,617 @@ Every cross-reference in the printed FRUS volumes that points to a document, pag
 One JSON file with your notes, tags, highlights, collections, custom prompts, projects, archive visit plans, saved searches, working corpora, volume scopes, corrections, reviewed changes, Suggested Next leads, and synced settings. It also holds your research trail: every document you opened, every search you ran and how many results it returned, and every collection you exported.
 
 <!-- END SOURCE: settings.export.json.footer.searches -->
+
+<!-- #1915 (L24), NEW keys: Import from JSON… in Data & Recovery, the report it shows before anything is written, its progress and its done line. One declaration on both platforms (`ResearchImportCopy`), so each block is a single edit point. -->
+
+#### Import from JSON — Import from JSON…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.rowAction | lines: 417–417 | key: settings.import.json.action | shared: iOS+macOS (single edit point) -->
+
+Import from JSON…
+
+<!-- END SOURCE: settings.import.json.action -->
+
+#### Import from JSON — Brings back a file from Export as JSON, written by this app…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.rowFooter | lines: 422–423 | key: settings.import.json.footer | shared: iOS+macOS (single edit point) -->
+
+Brings back a file from Export as JSON, written by this app on any device or by FRUS Explorer Light. Before anything is written, you see what importing it will add and replace.
+
+<!-- END SOURCE: settings.import.json.footer -->
+
+#### Import from JSON — Import from JSON
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.title | lines: 430–430 | key: settings.import.title | shared: iOS+macOS (single edit point) -->
+
+Import from JSON
+
+<!-- END SOURCE: settings.import.title -->
+
+#### Import from JSON — Reading the file…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.reading | lines: 435–435 | key: settings.import.reading | shared: iOS+macOS (single edit point) -->
+
+Reading the file…
+
+<!-- END SOURCE: settings.import.reading -->
+
+#### Import from JSON — Import
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.importAction | lines: 439–439 | key: settings.import.action.import | shared: iOS+macOS (single edit point) -->
+
+Import
+
+<!-- END SOURCE: settings.import.action.import -->
+
+#### Import from JSON — Cancel
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.cancel | lines: 443–443 | key: settings.import.action.cancel | shared: iOS+macOS (single edit point) -->
+
+Cancel
+
+<!-- END SOURCE: settings.import.action.cancel -->
+
+#### Import from JSON — Done
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.done | lines: 447–447 | key: settings.import.action.done | shared: iOS+macOS (single edit point) -->
+
+Done
+
+<!-- END SOURCE: settings.import.action.done -->
+
+#### Import from JSON — File
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fileHeader | lines: 453–453 | key: settings.import.file.header | shared: iOS+macOS (single edit point) -->
+
+File
+
+<!-- END SOURCE: settings.import.file.header -->
+
+#### Import from JSON — Name
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fileNameLabel | lines: 457–457 | key: settings.import.file.name | shared: iOS+macOS (single edit point) -->
+
+Name
+
+<!-- END SOURCE: settings.import.file.name -->
+
+#### Import from JSON — Exported
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.exportedLabel | lines: 461–461 | key: settings.import.file.exported | shared: iOS+macOS (single edit point) -->
+
+Exported
+
+<!-- END SOURCE: settings.import.file.exported -->
+
+#### Import from JSON — Format version
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.versionLabel | lines: 465–465 | key: settings.import.file.version | shared: iOS+macOS (single edit point) -->
+
+Format version
+
+<!-- END SOURCE: settings.import.file.version -->
+
+#### Import from JSON — Exported under the project
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.projectLabel | lines: 469–469 | key: settings.import.file.project | shared: iOS+macOS (single edit point) -->
+
+Exported under the project
+
+<!-- END SOURCE: settings.import.file.project -->
+
+#### Import from JSON — This file is from an earlier version of the export, which…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.olderFileFooter | lines: 479–480 | key: settings.import.fieldsNotCarried | shared: iOS+macOS (single edit point) -->
+
+This file is from an earlier version of the export, which cannot carry \(list). A record the import replaces keeps them as they are here, and a new record takes the app’s defaults.
+
+<!-- END SOURCE: settings.import.fieldsNotCarried -->
+
+#### Import from JSON — An export of this version cannot hold \(…), so the file…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.olderFileFooter | lines: 485–486 | key: settings.import.typesNotCarried | shared: iOS+macOS (single edit point) -->
+
+An export of this version cannot hold \(list), so the file brings none.
+
+<!-- END SOURCE: settings.import.typesNotCarried -->
+
+#### Import from JSON — a note’s formatting
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 495–496 | key: settings.import.field.noteFormatting | shared: iOS+macOS (single edit point) -->
+
+a note’s formatting
+
+<!-- END SOURCE: settings.import.field.noteFormatting -->
+
+#### Import from JSON — a collection’s front matter and export settings
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 498–499 | key: settings.import.field.collectionSettings | shared: iOS+macOS (single edit point) -->
+
+a collection’s front matter and export settings
+
+<!-- END SOURCE: settings.import.field.collectionSettings -->
+
+#### Import from JSON — a collection entry’s kind, text and own settings
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 501–502 | key: settings.import.field.collectionEntryContent | shared: iOS+macOS (single edit point) -->
+
+a collection entry’s kind, text and own settings
+
+<!-- END SOURCE: settings.import.field.collectionEntryContent -->
+
+#### Import from JSON — a project’s focus tags and Suggested Next weights
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 504–505 | key: settings.import.field.projectFocus | shared: iOS+macOS (single edit point) -->
+
+a project’s focus tags and Suggested Next weights
+
+<!-- END SOURCE: settings.import.field.projectFocus -->
+
+#### Import from JSON — a recorded search’s scope and counts
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 507–508 | key: settings.import.field.searchCaptureProvenance | shared: iOS+macOS (single edit point) -->
+
+a recorded search’s scope and counts
+
+<!-- END SOURCE: settings.import.field.searchCaptureProvenance -->
+
+#### Import from JSON — who wrote a summary
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.fieldsName | lines: 510–511 | key: settings.import.field.summaryAuthorship | shared: iOS+macOS (single edit point) -->
+
+who wrote a summary
+
+<!-- END SOURCE: settings.import.field.summaryAuthorship -->
+
+#### Import from JSON — Made by FRUS Explorer Light
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webHeader | lines: 518–518 | key: settings.import.web.header | shared: iOS+macOS (single edit point) -->
+
+Made by FRUS Explorer Light
+
+<!-- END SOURCE: settings.import.web.header -->
+
+#### Import from JSON — Summaries
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webSummariesLabel | lines: 522–522 | key: settings.import.web.summaries | shared: iOS+macOS (single edit point) -->
+
+Summaries
+
+<!-- END SOURCE: settings.import.web.summaries -->
+
+#### Import from JSON — Corrections
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webCorrectionsLabel | lines: 526–526 | key: settings.import.web.corrections | shared: iOS+macOS (single edit point) -->
+
+Corrections
+
+<!-- END SOURCE: settings.import.web.corrections -->
+
+#### Import from JSON — Included
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webValue | lines: 533–533 | key: settings.import.web.included | shared: iOS+macOS (single edit point) -->
+
+Included
+
+<!-- END SOURCE: settings.import.web.included -->
+
+#### Import from JSON — Left out
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webValue | lines: 535–535 | key: settings.import.web.leftOut | shared: iOS+macOS (single edit point) -->
+
+Left out
+
+<!-- END SOURCE: settings.import.web.leftOut -->
+
+#### Import from JSON — Not said
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webValue | lines: 537–537 | key: settings.import.web.unsaid | shared: iOS+macOS (single edit point) -->
+
+Not said
+
+<!-- END SOURCE: settings.import.web.unsaid -->
+
+#### Import from JSON — FRUS Explorer Light says what its export leaves out by…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.webFooter | lines: 542–543 | key: settings.import.web.footer | shared: iOS+macOS (single edit point) -->
+
+FRUS Explorer Light says what its export leaves out by choice. Its corrections come only in a curator’s export.
+
+<!-- END SOURCE: settings.import.web.footer -->
+
+#### Import from JSON — What the Import Does
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.recordsHeader | lines: 549–549 | key: settings.import.records.header | shared: iOS+macOS (single edit point) -->
+
+What the Import Does
+
+<!-- END SOURCE: settings.import.records.header -->
+
+#### Import from JSON — In all
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.totalLabel | lines: 553–553 | key: settings.import.total | shared: iOS+macOS (single edit point) -->
+
+In all
+
+<!-- END SOURCE: settings.import.total -->
+
+#### Import from JSON — This library already holds every record in the file, as new…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.nothingToDo | lines: 557–558 | key: settings.import.nothingToDo | shared: iOS+macOS (single edit point) -->
+
+This library already holds every record in the file, as new or newer, so importing it would change nothing.
+
+<!-- END SOURCE: settings.import.nothingToDo -->
+
+#### Import from JSON — A record already here is replaced only by a newer copy, and…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.recordsFooter | lines: 564–565 | key: settings.import.records.footer | shared: iOS+macOS (single edit point) -->
+
+A record already here is replaced only by a newer copy, and only in what this file’s version can carry. Nothing here is deleted, so a record you have deleted since this file was made comes back.
+
+<!-- END SOURCE: settings.import.records.footer -->
+
+#### Import from JSON — This device takes the file’s synced settings as they are…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.settingsApplied | lines: 572–573 | key: settings.import.settings.applied | shared: iOS+macOS (single edit point) -->
+
+This device takes the file’s synced settings as they are imported, since Sync Settings Across Devices is on.
+
+<!-- END SOURCE: settings.import.settings.applied -->
+
+#### Import from JSON — The file’s synced settings are kept with your library. This…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.settingsKept | lines: 578–579 | key: settings.import.settings.kept | shared: iOS+macOS (single edit point) -->
+
+The file’s synced settings are kept with your library. This device takes them when Sync Settings Across Devices is turned on.
+
+<!-- END SOURCE: settings.import.settings.kept -->
+
+#### Import from JSON — \(…) set aside
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.counts | lines: 589–590 | key: settings.import.count.setAside | shared: iOS+macOS (single edit point) -->
+
+\(count.setAside) set aside
+
+<!-- END SOURCE: settings.import.count.setAside -->
+
+#### Import from JSON — \(…) repeated
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.counts | lines: 593–594 | key: settings.import.count.repeated | shared: iOS+macOS (single edit point) -->
+
+\(count.repeated) repeated
+
+<!-- END SOURCE: settings.import.count.repeated -->
+
+#### Import from JSON — \(…) to add
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.added | lines: 605–605 | key: settings.import.count.add | shared: iOS+macOS (single edit point) -->
+
+\(count) to add
+
+<!-- END SOURCE: settings.import.count.add -->
+
+#### Import from JSON — \(…) to replace
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.replaced | lines: 609–609 | key: settings.import.count.replace | shared: iOS+macOS (single edit point) -->
+
+\(count) to replace
+
+<!-- END SOURCE: settings.import.count.replace -->
+
+#### Import from JSON — \(…) already here
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.kept | lines: 613–613 | key: settings.import.count.keep | shared: iOS+macOS (single edit point) -->
+
+\(count) already here
+
+<!-- END SOURCE: settings.import.count.keep -->
+
+#### Import from JSON — Research Notes
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 621–621 | key: settings.import.type.researchNote | shared: iOS+macOS (single edit point) -->
+
+Research Notes
+
+<!-- END SOURCE: settings.import.type.researchNote -->
+
+#### Import from JSON — Tags
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 623–623 | key: settings.import.type.userTag | shared: iOS+macOS (single edit point) -->
+
+Tags
+
+<!-- END SOURCE: settings.import.type.userTag -->
+
+#### Import from JSON — Tag Assignments
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 625–625 | key: settings.import.type.documentTagAssignment | shared: iOS+macOS (single edit point) -->
+
+Tag Assignments
+
+<!-- END SOURCE: settings.import.type.documentTagAssignment -->
+
+#### Import from JSON — Highlights
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 627–627 | key: settings.import.type.documentHighlight | shared: iOS+macOS (single edit point) -->
+
+Highlights
+
+<!-- END SOURCE: settings.import.type.documentHighlight -->
+
+#### Import from JSON — Collections
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 629–629 | key: settings.import.type.collection | shared: iOS+macOS (single edit point) -->
+
+Collections
+
+<!-- END SOURCE: settings.import.type.collection -->
+
+#### Import from JSON — Collection Entries
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 631–631 | key: settings.import.type.collectionEntry | shared: iOS+macOS (single edit point) -->
+
+Collection Entries
+
+<!-- END SOURCE: settings.import.type.collectionEntry -->
+
+#### Import from JSON — Custom Prompts
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 633–633 | key: settings.import.type.summarizationPrompt | shared: iOS+macOS (single edit point) -->
+
+Custom Prompts
+
+<!-- END SOURCE: settings.import.type.summarizationPrompt -->
+
+#### Import from JSON — Projects
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 635–635 | key: settings.import.type.project | shared: iOS+macOS (single edit point) -->
+
+Projects
+
+<!-- END SOURCE: settings.import.type.project -->
+
+#### Import from JSON — Summaries
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 637–637 | key: settings.import.type.generatedSummary | shared: iOS+macOS (single edit point) -->
+
+Summaries
+
+<!-- END SOURCE: settings.import.type.generatedSummary -->
+
+#### Import from JSON — Documents Visited
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 639–639 | key: settings.import.type.readingHistoryEntry | shared: iOS+macOS (single edit point) -->
+
+Documents Visited
+
+<!-- END SOURCE: settings.import.type.readingHistoryEntry -->
+
+#### Import from JSON — Searches Executed
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 641–641 | key: settings.import.type.searchHistoryEntry | shared: iOS+macOS (single edit point) -->
+
+Searches Executed
+
+<!-- END SOURCE: settings.import.type.searchHistoryEntry -->
+
+#### Import from JSON — Collections Exported
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 643–643 | key: settings.import.type.exportHistoryEntry | shared: iOS+macOS (single edit point) -->
+
+Collections Exported
+
+<!-- END SOURCE: settings.import.type.exportHistoryEntry -->
+
+#### Import from JSON — Archives Visits
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 645–645 | key: settings.import.type.archiveVisitPlan | shared: iOS+macOS (single edit point) -->
+
+Archives Visits
+
+<!-- END SOURCE: settings.import.type.archiveVisitPlan -->
+
+#### Import from JSON — Archives Visit Documents
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 647–647 | key: settings.import.type.archiveVisitDocument | shared: iOS+macOS (single edit point) -->
+
+Archives Visit Documents
+
+<!-- END SOURCE: settings.import.type.archiveVisitDocument -->
+
+#### Import from JSON — Archives Visit Targets
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 649–649 | key: settings.import.type.archiveVisitTarget | shared: iOS+macOS (single edit point) -->
+
+Archives Visit Targets
+
+<!-- END SOURCE: settings.import.type.archiveVisitTarget -->
+
+#### Import from JSON — Saved Searches
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 651–651 | key: settings.import.type.savedSearch | shared: iOS+macOS (single edit point) -->
+
+Saved Searches
+
+<!-- END SOURCE: settings.import.type.savedSearch -->
+
+#### Import from JSON — Working Corpora
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 653–653 | key: settings.import.type.workingCorpus | shared: iOS+macOS (single edit point) -->
+
+Working Corpora
+
+<!-- END SOURCE: settings.import.type.workingCorpus -->
+
+#### Import from JSON — Volume Scopes
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 655–655 | key: settings.import.type.customVolumeScope | shared: iOS+macOS (single edit point) -->
+
+Volume Scopes
+
+<!-- END SOURCE: settings.import.type.customVolumeScope -->
+
+#### Import from JSON — Classification Corrections
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 657–657 | key: settings.import.type.documentClassificationOverride | shared: iOS+macOS (single edit point) -->
+
+Classification Corrections
+
+<!-- END SOURCE: settings.import.type.documentClassificationOverride -->
+
+#### Import from JSON — Person Corrections
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 659–659 | key: settings.import.type.personClusterOverride | shared: iOS+macOS (single edit point) -->
+
+Person Corrections
+
+<!-- END SOURCE: settings.import.type.personClusterOverride -->
+
+#### Import from JSON — Reviewed Changes
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 661–661 | key: settings.import.type.annotationReview | shared: iOS+macOS (single edit point) -->
+
+Reviewed Changes
+
+<!-- END SOURCE: settings.import.type.annotationReview -->
+
+#### Import from JSON — Suggested Next Leads
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 663–663 | key: settings.import.type.projectLeadEntry | shared: iOS+macOS (single edit point) -->
+
+Suggested Next Leads
+
+<!-- END SOURCE: settings.import.type.projectLeadEntry -->
+
+#### Import from JSON — Synced Settings
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.typeName | lines: 665–665 | key: settings.import.type.syncedPreferences | shared: iOS+macOS (single edit point) -->
+
+Synced Settings
+
+<!-- END SOURCE: settings.import.type.syncedPreferences -->
+
+#### Import from JSON — From an Earlier Export
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.readingsHeader | lines: 672–672 | key: settings.import.readings.header | shared: iOS+macOS (single edit point) -->
+
+From an Earlier Export
+
+<!-- END SOURCE: settings.import.readings.header -->
+
+#### Import from JSON — Collection entries with no document
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.inertLabel | lines: 676–676 | key: settings.import.inert | shared: iOS+macOS (single edit point) -->
+
+Collection entries with no document
+
+<!-- END SOURCE: settings.import.inert -->
+
+#### Import from JSON — Summaries that name no author
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.noAuthorshipLabel | lines: 680–680 | key: settings.import.noAuthorship | shared: iOS+macOS (single edit point) -->
+
+Summaries that name no author
+
+<!-- END SOURCE: settings.import.noAuthorship -->
+
+#### Import from JSON — Headnote drafts
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.headnotesLabel | lines: 684–684 | key: settings.import.headnotes | shared: iOS+macOS (single edit point) -->
+
+Headnote drafts
+
+<!-- END SOURCE: settings.import.headnotes -->
+
+#### Import from JSON — Collections whose saved search is not here
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.unlinkedLabel | lines: 688–688 | key: settings.import.unlinked | shared: iOS+macOS (single edit point) -->
+
+Collections whose saved search is not here
+
+<!-- END SOURCE: settings.import.unlinked -->
+
+#### Import from JSON — An earlier export wrote a heading, a prose block and a…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.readingsFooter | lines: 695–696 | key: settings.import.inert.detail | shared: iOS+macOS (single edit point) -->
+
+An earlier export wrote a heading, a prose block and a section block alike, without saying which, so these come in as entries the collection editor leaves untouched and no export prints.
+
+<!-- END SOURCE: settings.import.inert.detail -->
+
+#### Import from JSON — A summary that names no author comes in as AI-generated, as…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.readingsFooter | lines: 699–700 | key: settings.import.noAuthorship.detail | shared: iOS+macOS (single edit point) -->
+
+A summary that names no author comes in as AI-generated, as the app reads any such summary.
+
+<!-- END SOURCE: settings.import.noAuthorship.detail -->
+
+#### Import from JSON — A headnote draft is a summary a collection keeps for a…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.readingsFooter | lines: 703–704 | key: settings.import.headnotes.detail | shared: iOS+macOS (single edit point) -->
+
+A headnote draft is a summary a collection keeps for a headnote, which no list or search shows; an earlier export marks it by its prompt.
+
+<!-- END SOURCE: settings.import.headnotes.detail -->
+
+#### Import from JSON — A collection keeps its link to a saved search this library…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.readingsFooter | lines: 707–708 | key: settings.import.unlinked.detail | shared: iOS+macOS (single edit point) -->
+
+A collection keeps its link to a saved search this library does not hold, and shows it as it shows a link to a deleted search.
+
+<!-- END SOURCE: settings.import.unlinked.detail -->
+
+#### Import from JSON — Importing %2$@ of %1$@ record…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.progress | lines: 719–720 | key: settings.import.progress.one %@ %@ | shared: iOS+macOS (single edit point) -->
+
+Importing %2$@ of %1$@ record…
+
+<!-- END SOURCE: settings.import.progress.one %@ %@ -->
+
+#### Import from JSON — Importing %2$@ of %1$@ records…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.progress | lines: 721–722 | key: settings.import.progress.many %@ %@ | shared: iOS+macOS (single edit point) -->
+
+Importing %2$@ of %1$@ records…
+
+<!-- END SOURCE: settings.import.progress.many %@ %@ -->
+
+#### Import from JSON — Imported
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.doneHeader | lines: 727–727 | key: settings.import.done.header | shared: iOS+macOS (single edit point) -->
+
+Imported
+
+<!-- END SOURCE: settings.import.done.header -->
+
+#### Import from JSON — Added
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.addedLabel | lines: 731–731 | key: settings.import.done.added | shared: iOS+macOS (single edit point) -->
+
+Added
+
+<!-- END SOURCE: settings.import.done.added -->
+
+#### Import from JSON — Replaced
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.replacedLabel | lines: 735–735 | key: settings.import.done.replaced | shared: iOS+macOS (single edit point) -->
+
+Replaced
+
+<!-- END SOURCE: settings.import.done.replaced -->
+
+#### Import from JSON — Already here
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.keptLabel | lines: 739–739 | key: settings.import.done.kept | shared: iOS+macOS (single edit point) -->
+
+Already here
+
+<!-- END SOURCE: settings.import.done.kept -->
+
+#### Import from JSON — Notes now in plain text
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.plainNotesLabel | lines: 743–743 | key: settings.import.done.plainNotes | shared: iOS+macOS (single edit point) -->
+
+Notes now in plain text
+
+<!-- END SOURCE: settings.import.done.plainNotes -->
+
+#### Import from JSON — Summaries now AI-generated
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.aiSummariesLabel | lines: 747–747 | key: settings.import.done.aiSummaries | shared: iOS+macOS (single edit point) -->
+
+Summaries now AI-generated
+
+<!-- END SOURCE: settings.import.done.aiSummaries -->
+
+#### Import from JSON — An earlier export cannot carry a note’s formatting or say…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.doneFooter | lines: 754–755 | key: settings.import.done.textChanged | shared: iOS+macOS (single edit point) -->
+
+An earlier export cannot carry a note’s formatting or say who wrote a summary, so a note or summary whose text it replaced reads as plain text or as AI-generated.
+
+<!-- END SOURCE: settings.import.done.textChanged -->
+
+#### Import from JSON — The imported records reach your other devices through…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.doneFooter | lines: 758–759 | key: settings.import.done.sync | shared: iOS+macOS (single edit point) -->
+
+The imported records reach your other devices through iCloud, as your own changes do.
+
+<!-- END SOURCE: settings.import.done.sync -->
+
+#### Import from JSON — Can’t Import This File
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.failedHeader | lines: 767–767 | key: settings.import.failed.header | shared: iOS+macOS (single edit point) -->
+
+Can’t Import This File
+
+<!-- END SOURCE: settings.import.failed.header -->
+
+#### Import from JSON — Import Stopped
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.stoppedHeader | lines: 771–771 | key: settings.import.stopped.header | shared: iOS+macOS (single edit point) -->
+
+Import Stopped
+
+<!-- END SOURCE: settings.import.stopped.header -->
+
+#### Import from JSON — This file was exported by a newer version of FRUS Explorer,…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.problem | lines: 778–779 | key: settings.import.error.newer | shared: iOS+macOS (single edit point) -->
+
+This file was exported by a newer version of FRUS Explorer, at format version \(version). Update the app to import it.
+
+<!-- END SOURCE: settings.import.error.newer -->
+
+#### Import from JSON — This file names format version \(…), which no version…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.problem | lines: 781–782 | key: settings.import.error.unknownVersion | shared: iOS+macOS (single edit point) -->
+
+This file names format version \(version), which no version of FRUS Explorer has written.
+
+<!-- END SOURCE: settings.import.error.unknownVersion -->
+
+#### Import from JSON — This file is not a research export from Export as JSON, or…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.problem | lines: 786–787 | key: settings.import.error.notAnExport | shared: iOS+macOS (single edit point) -->
+
+This file is not a research export from Export as JSON, or it is damaged.
+
+<!-- END SOURCE: settings.import.error.notAnExport -->
+
+#### Import from JSON — The file could not be read: \(…)
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.unreadable | lines: 795–795 | key: settings.import.error.unreadable | shared: iOS+macOS (single edit point) -->
+
+The file could not be read: \(detail)
+
+<!-- END SOURCE: settings.import.error.unreadable -->
+
+#### Import from JSON — The import stopped: \(…) What it saved before it…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataImportView.swift | ResearchImportCopy.stopped | lines: 800–801 | key: settings.import.error.stopped | shared: iOS+macOS (single edit point) -->
+
+The import stopped: \(detail) What it saved before it stopped is kept, and importing the file again adds the rest.
+
+<!-- END SOURCE: settings.import.error.stopped -->
 
 #### Erase Everything — warning
 
@@ -593,7 +1204,7 @@ This deletes every downloaded volume and the search index. It deletes all of you
 
 #### When iCloud has not been told about a record type yet
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | lines: 554–555 | key: settings.dataRecovery.schema.about.pending -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | lines: 577–578 | key: settings.dataRecovery.schema.about.pending -->
 
 iCloud has to be told about each kind of record the app saves before it will accept one. Some additions in this version have not been published yet. Records that use them will not upload until they are. Everything else keeps syncing. This is a problem with the app, not with your account. There is nothing you can do here except report it.
 
@@ -615,37 +1226,37 @@ This usually happens when your stored data does not match the build you are runn
 
 *Added by #1539. A read-only row in Data & Recovery's Diagnostics section, on iPhone, iPad and Mac (one shared view), saying what this device's language analysis can do in this session. The row's title, then its trailing value and detail line for each state: while the app is still checking, when all three parts work, and when one or more does not.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 722–723 | key: settings.dataRecovery.languageAnalysis | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 745–746 | key: settings.dataRecovery.languageAnalysis | shared: iOS+macOS (single edit point) -->
 
 Language Analysis
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 879–880 | key: settings.dataRecovery.languageAnalysis.value.checking | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 902–903 | key: settings.dataRecovery.languageAnalysis.value.checking | shared: iOS+macOS (single edit point) -->
 
 Checking
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.checking -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 881–882 | key: settings.dataRecovery.languageAnalysis.detail.checking | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 904–905 | key: settings.dataRecovery.languageAnalysis.detail.checking | shared: iOS+macOS (single edit point) -->
 
 Finding out what this device’s language analysis can do.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.checking -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 886–887 | key: settings.dataRecovery.languageAnalysis.value.working | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 909–910 | key: settings.dataRecovery.languageAnalysis.value.working | shared: iOS+macOS (single edit point) -->
 
 Working
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.working -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 888–889 | key: settings.dataRecovery.languageAnalysis.detail.working | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 911–912 | key: settings.dataRecovery.languageAnalysis.detail.working | shared: iOS+macOS (single edit point) -->
 
 Dictionary forms, parts of speech and names all work on this device.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.working -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 891–892 | key: settings.dataRecovery.languageAnalysis.value.limited | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 914–915 | key: settings.dataRecovery.languageAnalysis.value.limited | shared: iOS+macOS (single edit point) -->
 
 Limited
 
@@ -653,25 +1264,25 @@ Limited
 
 *Interpolated with the parts that are not working, joined as a list from the three names below — for example “dictionary forms” or “dictionary forms and names”.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 894–895 | key: settings.dataRecovery.languageAnalysis.detail.limited %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 917–918 | key: settings.dataRecovery.languageAnalysis.detail.limited %@ | shared: iOS+macOS (single edit point) -->
 
 Not working right now: %@. FRUS Explorer checks again each time you come back to it.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.limited %@ -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 907–908 | key: settings.dataRecovery.languageAnalysis.capability.lemmas | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 930–931 | key: settings.dataRecovery.languageAnalysis.capability.lemmas | shared: iOS+macOS (single edit point) -->
 
 dictionary forms
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.lemmas -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 911–912 | key: settings.dataRecovery.languageAnalysis.capability.classes | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 934–935 | key: settings.dataRecovery.languageAnalysis.capability.classes | shared: iOS+macOS (single edit point) -->
 
 parts of speech
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.classes -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 915–916 | key: settings.dataRecovery.languageAnalysis.capability.names | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 938–939 | key: settings.dataRecovery.languageAnalysis.capability.names | shared: iOS+macOS (single edit point) -->
 
 names
 
@@ -681,19 +1292,19 @@ names
 
 *Added by #1608. The row under Language Analysis, on iPhone, iPad and Mac (one shared view). It copies what the language check has logged since the app opened, so a tester can paste it into a report: an iPhone’s own log held those lines for about nine hours when it was read on 2026-10-11, and reading that log takes a Mac. Three strings: the button’s title; its title for two seconds after it is pressed, which is also what VoiceOver is told; and its explanation, which is the pointer’s tooltip on the Mac and VoiceOver’s hint on iPhone and iPad. The copied text is not in these files. It is the log’s own lines, each with its time, under the app’s version and build, the system’s version and the device’s model, and it is not translated.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copyLabel | lines: 741–742 | key: settings.dataRecovery.languageAnalysis.copy | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copyLabel | lines: 764–765 | key: settings.dataRecovery.languageAnalysis.copy | shared: iOS+macOS (single edit point) -->
 
 Copy Language Analysis Record
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.copy -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copiedLabel | lines: 747–747 | key: settings.dataRecovery.languageAnalysis.copied | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copiedLabel | lines: 770–770 | key: settings.dataRecovery.languageAnalysis.copied | shared: iOS+macOS (single edit point) -->
 
 Copied
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.copied -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 734–735 | key: settings.dataRecovery.languageAnalysis.copy.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 757–758 | key: settings.dataRecovery.languageAnalysis.copy.help | shared: iOS+macOS (single edit point) -->
 
 Copies what the language check has found since the app opened, with the app’s and the system’s versions. Paste it into a bug report.
 
@@ -1088,28 +1699,28 @@ Digitized Scans
 *Footers, empty states and confirmations across Settings that §6 does not carry — Tags, Projects, Volume Scopes, Search, Display, Summarization, Connections (NARA and Zotero), Data & Recovery, the storage hubs, vector and model storage, index health and the research data export. Settings is assembled from more than one view file, so several strings are declared twice; the SOURCE line names every file that carries one.*
 
 #### Footer — Adds all \(…) generated summaries to the JSON export. Off…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 148–149 | key: settings.export.includeSummaries.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 165–166 | key: settings.export.includeSummaries.footer -->
 
 Adds all \(summaries.count) generated summaries to the JSON export. Off by default since AI output can be large.
 
 <!-- END SOURCE: settings.export.includeSummaries.footer -->
 
 #### Footer — One Markdown file per research note, with a citation and…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 181–182 | key: settings.export.markdown.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 211–212 | key: settings.export.markdown.footer -->
 
 One Markdown file per research note, with a citation and link back to the source document. Compatible with Obsidian and similar note-taking tools.
 
 <!-- END SOURCE: settings.export.markdown.footer -->
 
 #### Footer — A complete copy of the search index, for analysis with your…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 264–265 | key: settings.export.database.footer | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 295–296 | key: settings.export.database.footer | shared: macOS only -->
 
 A complete copy of the search index, for analysis with your own tools. With the switch off, your notes, summaries and tag names are removed from the copy and the freed space reclaimed, so the words are gone rather than merely unlinked. The copy is verified before it is handed over. It is roughly the size of the index on disk.
 
 <!-- END SOURCE: settings.export.database.footer -->
 
 #### Exported \(…), but the copy did not verify: \(…)
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 304–305 | key: settings.export.database.integrity | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 335–336 | key: settings.export.database.integrity | shared: macOS only -->
 
 Exported \(size), but the copy did not verify: \(report.integrityProblems.joined(separator: "; "))
 
@@ -1118,42 +1729,42 @@ Exported \(size), but the copy did not verify: \(report.integrityProblems.joined
 *The line under Export Research Database… on the Mac (#1910): the index version the copy will carry, which a tool that reads the copy may require, or why the button waits. The Mac shows one of the five at a time, and the done line after a copy that verified.*
 
 #### The copy will carry index version \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 513–514 | key: settings.export.database.indexVersion | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 544–545 | key: settings.export.database.indexVersion | shared: macOS only -->
 
 The copy will carry index version \(installed).
 
 <!-- END SOURCE: settings.export.database.indexVersion -->
 
 #### The copy will carry index version \(…), not this build’s \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 510–511 | key: settings.export.database.indexVersion.older | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 541–542 | key: settings.export.database.indexVersion.older | shared: macOS only -->
 
 The copy will carry index version \(installed), not this build’s \(current).
 
 <!-- END SOURCE: settings.export.database.indexVersion.older -->
 
 #### The index is being updated to version \(…). You can export it…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 499–500 | key: settings.export.database.indexVersion.updatingTo | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 530–531 | key: settings.export.database.indexVersion.updatingTo | shared: macOS only -->
 
 The index is being updated to version \(current). You can export it when the update is done.
 
 <!-- END SOURCE: settings.export.database.indexVersion.updatingTo -->
 
 #### The index is being updated. You can export it when the update is done.
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 502–503 | key: settings.export.database.indexVersion.updating | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 533–534 | key: settings.export.database.indexVersion.updating | shared: macOS only -->
 
 The index is being updated. You can export it when the update is done.
 
 <!-- END SOURCE: settings.export.database.indexVersion.updating -->
 
 #### The index has no version recorded yet.
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 506–507 | key: settings.export.database.indexVersion.none | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 537–538 | key: settings.export.database.indexVersion.none | shared: macOS only -->
 
 The index has no version recorded yet.
 
 <!-- END SOURCE: settings.export.database.indexVersion.none -->
 
 #### Exported \(…), index version \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.doneLine | lines: 523–524 | key: settings.export.database.done.withVersion | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.doneLine | lines: 554–555 | key: settings.export.database.done.withVersion | shared: macOS only -->
 
 Exported \(size), index version \(version).
 
@@ -1229,28 +1840,28 @@ Scopes sync to your other devices via iCloud. Deleting a scope does not affect s
 <!-- END SOURCE: settings.scopes.editor.footer %lld %lld -->
 
 #### Alert message — Your local copy will be cleared and re-downloaded from…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.body | lines: 158–159 | key: settings.dataRecovery.fixSync.relaunch.message -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.body | lines: 181–182 | key: settings.dataRecovery.fixSync.relaunch.message -->
 
 Your local copy will be cleared and re-downloaded from iCloud the next time FRUS Explorer starts. Nothing has been deleted yet, and nothing in iCloud is affected.
 
 <!-- END SOURCE: settings.dataRecovery.fixSync.relaunch.message -->
 
 #### Footer — Records that use these will fail to upload until the…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 496–497 | key: settings.dataRecovery.schema.awaiting.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 519–520 | key: settings.dataRecovery.schema.awaiting.footer -->
 
 Records that use these will fail to upload until the developer publishes the schema update in the CloudKit Dashboard. Everything else syncs normally.
 
 <!-- END SOURCE: settings.dataRecovery.schema.awaiting.footer -->
 
 #### Footer — Fields the app declares but nothing writes yet. They cannot…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 516–517 | key: settings.dataRecovery.schema.reserved.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 539–540 | key: settings.dataRecovery.schema.reserved.footer -->
 
 Fields the app declares but nothing writes yet. They cannot be published until a future version records one, and nothing syncs differently because of them.
 
 <!-- END SOURCE: settings.dataRecovery.schema.reserved.footer -->
 
 #### iCloud has to be told about each kind of record the app…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.explanation | lines: 551–552 | key: settings.dataRecovery.schema.about.current -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.explanation | lines: 574–575 | key: settings.dataRecovery.schema.about.current -->
 
 iCloud has to be told about each kind of record the app saves before it will accept one. Everything this version saves has been published, so nothing is being held back for this reason.
 
@@ -1948,13 +2559,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4916–4916 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4909–4909 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4388–4388 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4381–4381 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
 
 Search…
 

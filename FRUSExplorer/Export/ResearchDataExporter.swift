@@ -44,6 +44,9 @@ import SQLite3
 ///   1.6 — 2026-10-27 (FRUS Explorer Light, S18b): a collection and its entries map to their records through
 ///          `CollectionExport.init(_:entries:)` and `CollectionEntryExport.init(_:)`, which FRUSCoreKit's
 ///          collection code reads the same values through; the records written are unchanged
+///   1.7 — #1915 (L24): every other type maps to its record through an initialiser of its own
+///          ("The records the models map to"), which Import from JSON reads a library's copy
+///          through too; the records written are unchanged
 @MainActor
 enum ResearchDataExporter {
 
@@ -160,52 +163,14 @@ enum ResearchDataExporter {
             exportedAt: .now,
             exportedForProjectName: activeProject?.name,
             exportedForProjectResearchQuestion: activeProject?.researchQuestion,
+            // Each record as the importer reads the library's copy of it too (#1915, L24): one
+            // mapping per type, in "The records the models map to" below.
             notes: notes.map { note in
-                ResearchNoteExport(
-                    id: note.id,
-                    documentId: note.documentId,
-                    volumeId: note.volumeId,
-                    bodyText: note.bodyText,
-                    projectIds: note.projectIds,
-                    userTagIds: note.userTagIds,
-                    selectedSummaryIds: note.selectedSummaryIds,
-                    linkedHighlightIds: (highlightsByNoteId[note.id] ?? []).map(\.id),
-                    createdAt: note.createdAt,
-                    lastModified: note.lastModified,
-                    richText: note.richText
-                )
+                ResearchNoteExport(note, linkedHighlightIds: (highlightsByNoteId[note.id] ?? []).map(\.id))
             },
-            tags: tags.map { tag in
-                UserTagExport(
-                    id: tag.id,
-                    name: tag.name,
-                    createdAt: tag.createdAt,
-                    lastModified: tag.lastModified
-                )
-            },
-            tagAssignments: tagAssignments.map { assignment in
-                DocumentTagAssignmentExport(
-                    id: assignment.id,
-                    volumeId: assignment.volumeId,
-                    documentId: assignment.documentId,
-                    tagId: assignment.tagId,
-                    createdAt: assignment.createdAt
-                )
-            },
-            highlights: highlights.map { highlight in
-                DocumentHighlightExport(
-                    id: highlight.id,
-                    volumeId: highlight.volumeId,
-                    documentId: highlight.documentId,
-                    startOffset: highlight.startOffset,
-                    endOffset: highlight.endOffset,
-                    colorTag: highlight.colorTag,
-                    noteId: highlight.noteId,
-                    selectedText: highlight.selectedText,
-                    renderingVersion: highlight.renderingVersion,
-                    createdAt: highlight.createdAt
-                )
-            },
+            tags: tags.map(UserTagExport.init),
+            tagAssignments: tagAssignments.map(DocumentTagAssignmentExport.init),
+            highlights: highlights.map(DocumentHighlightExport.init),
             collections: collections.map { collection in
                 // Format version 7: the whole collection and the whole of each entry, as stored
                 // (`CollectionExport.init(_:entries:)` and `CollectionEntryExport.init(_:)`, which
@@ -214,241 +179,32 @@ enum ResearchDataExporter {
                     .sorted { $0.sortOrder < $1.sortOrder }
                     .map(CollectionEntryExport.init))
             },
-            prompts: prompts.filter { !$0.isStandard }.map { prompt in
-                SummarizationPromptExport(
-                    id: prompt.id,
-                    name: prompt.name,
-                    promptText: prompt.promptText,
-                    responseFormat: prompt.responseFormat,
-                    schema: prompt.schema,
-                    createdAt: prompt.createdAt,
-                    lastModified: prompt.lastModified
-                )
-            },
-            projects: projects.map { project in
-                ProjectExport(
-                    id: project.id,
-                    name: project.name,
-                    researchQuestion: project.researchQuestion,
-                    defaultDateRangeStart: project.defaultDateRangeStart,
-                    defaultDateRangeEnd: project.defaultDateRangeEnd,
-                    defaultSubjectTagIds: project.defaultSubjectTagIds,
-                    defaultCountryTagIds: project.defaultCountryTagIds,
-                    createdAt: project.createdAt,
-                    lastModified: project.lastModified,
-                    defaultUserTagIds: project.defaultUserTagIds,
-                    leadAxisWeights: project.leadAxisWeights
-                )
-            },
-            summaries: summaries.map { summary in
-                GeneratedSummaryExport(
-                    id: summary.id,
-                    documentId: summary.documentId,
-                    volumeId: summary.volumeId,
-                    promptId: summary.promptId,
-                    responseText: summary.responseText,
-                    responseFormat: summary.responseFormat,
-                    wasChunked: summary.wasChunked,
-                    projectId: summary.projectId,
-                    createdAt: summary.createdAt,
-                    lastModified: summary.lastModified,
-                    // Coerced, not passed through: a legacy NULL *means* `.aiGenerated` everywhere
-                    // else in the app, and exporting `null` would tell a reader the provenance was
-                    // unknown when the app treats it as known. Never write an ambiguity the reader
-                    // has to resolve with a rule they do not have.
-                    authorship: summary.authorship ?? .aiGenerated,
-                    isHeadnoteDraft: summary.isHeadnoteDraft
-                )
-            },
-            readingHistory: readingHistory.map { visit in
-                ReadingHistoryEntryExport(
-                    id: visit.id,
-                    documentId: visit.documentId,
-                    volumeId: visit.volumeId,
-                    displayTitle: visit.displayTitle,
-                    projectId: visit.projectId,
-                    accessedAt: visit.accessedAt
-                )
-            },
-            searchHistory: searchHistory.map { search in
-                SearchHistoryEntryExport(
-                    id: search.id,
-                    queryText: search.queryText,
-                    resultCount: search.resultCount,
-                    projectId: search.projectId,
-                    executedAt: search.executedAt,
-                    loadedCount: search.loadedCount,
-                    matchCount: search.matchCount,
-                    fetchLimit: search.fetchLimit,
-                    indexedVolumeCount: search.indexedVolumeCount,
-                    scopeSignature: search.scopeSignature,
-                    appliedCorpusId: search.appliedCorpusId,
-                    renderedExpression: search.renderedExpression
-                )
-            },
-            exportHistory: exportHistory.map { export in
-                ExportHistoryEntryExport(
-                    id: export.id,
-                    format: export.format,
-                    documentCount: export.documentCount,
-                    collectionName: export.collectionName,
-                    projectId: export.projectId,
-                    exportedAt: export.exportedAt
-                )
-            },
+            prompts: prompts.filter { !$0.isStandard }.map(SummarizationPromptExport.init),
+            projects: projects.map(ProjectExport.init),
+            summaries: summaries.map(GeneratedSummaryExport.init),
+            readingHistory: readingHistory.map(ReadingHistoryEntryExport.init),
+            searchHistory: searchHistory.map(SearchHistoryEntryExport.init),
+            exportHistory: exportHistory.map(ExportHistoryEntryExport.init),
             archiveVisits: archiveVisits.map { plan in
                 ArchiveVisitPlanExport(
-                    id: plan.id,
-                    name: plan.name,
-                    inquiryText: plan.inquiryText,
-                    projectIds: plan.projectIds,
-                    tiers: plan.tiers,
-                    deliverables: plan.deliverables,
+                    plan,
                     documents: (documentsByVisit[plan.id] ?? [])
                         .sorted { $0.documentKey < $1.documentKey }
-                        .map { document in
-                            ArchiveVisitDocumentExport(
-                                id: document.id,
-                                documentKey: document.documentKey,
-                                includeSource: document.includeSource,
-                                includeExternalRefs: document.includeExternalRefs,
-                                createdAt: document.createdAt,
-                                lastModified: document.lastModified
-                            )
-                        },
+                        .map(ArchiveVisitDocumentExport.init),
                     // EVERY stored row, orphans included: whether a key still derives from the
                     // seeds is a render-time question this export deliberately does not ask.
                     targets: (targetsByVisit[plan.id] ?? [])
                         .sorted { $0.targetKey < $1.targetKey }
-                        .map { target in
-                            ArchiveVisitTargetExport(
-                                id: target.id,
-                                targetKey: target.targetKey,
-                                tierId: target.tierId,
-                                included: target.included,
-                                userNote: target.userNote,
-                                createdAt: target.createdAt,
-                                lastModified: target.lastModified
-                            )
-                        },
-                    createdAt: plan.createdAt,
-                    lastModified: plan.lastModified
-                )
+                        .map(ArchiveVisitTargetExport.init))
             },
-            savedSearches: savedSearches.map(savedSearchExport),
-            workingCorpora: workingCorpora.map { corpus in
-                WorkingCorpusExport(
-                    id: corpus.id,
-                    name: corpus.name,
-                    documentKeys: corpus.documentKeys,
-                    capturedAt: corpus.capturedAt,
-                    sourceQuery: corpus.sourceQuery,
-                    sourceDescription: corpus.sourceDescription,
-                    indexedVolumeCountAtCapture: corpus.indexedVolumeCountAtCapture,
-                    wasTruncatedAtCapture: corpus.wasTruncatedAtCapture,
-                    totalMatchCountAtCapture: corpus.totalMatchCountAtCapture,
-                    createdAt: corpus.createdAt,
-                    lastModified: corpus.lastModified
-                )
-            },
-            customVolumeScopes: customVolumeScopes.map { scope in
-                CustomVolumeScopeExport(
-                    id: scope.id,
-                    name: scope.name,
-                    volumeIds: scope.volumeIds,
-                    createdAt: scope.createdAt,
-                    lastModified: scope.lastModified
-                )
-            },
-            classificationOverrides: classificationOverrides.map { override in
-                DocumentClassificationOverrideExport(
-                    id: override.id,
-                    volumeId: override.volumeId,
-                    documentId: override.documentId,
-                    isEditorialNote: override.isEditorialNote,
-                    parsedIsEditorialNote: override.parsedIsEditorialNote,
-                    createdAt: override.createdAt
-                )
-            },
-            personClusterOverrides: personClusterOverrides.map { override in
-                PersonClusterOverrideExport(
-                    id: override.id,
-                    kind: override.kind,
-                    volumeIdA: override.volumeIdA,
-                    refA: override.refA,
-                    volumeIdB: override.volumeIdB,
-                    refB: override.refB,
-                    createdAt: override.createdAt
-                )
-            },
-            annotationReviews: annotationReviews.map { review in
-                AnnotationReviewExport(
-                    id: review.id,
-                    annotationType: review.annotationType,
-                    annotationId: review.annotationId,
-                    volumeId: review.volumeId,
-                    documentId: review.documentId,
-                    contentHash: review.contentHash,
-                    changeKind: review.changeKind,
-                    reviewedAt: review.reviewedAt
-                )
-            },
-            projectLeads: projectLeads.map(projectLeadExport),
-            syncedPreferences: syncedPreferences.map { preferences in
-                SyncedPreferencesExport(
-                    createdAt: preferences.createdAt,
-                    updatedAt: preferences.updatedAt,
-                    wcMinLength: preferences.wcMinLength,
-                    wcMinCount: preferences.wcMinCount,
-                    wcFoldPlurals: preferences.wcFoldPlurals,
-                    wcFilterMarkings: preferences.wcFilterMarkings,
-                    wcExcludeBoilerplate: preferences.wcExcludeBoilerplate,
-                    wcGlobalStopwordsJSON: preferences.wcGlobalStopwordsJSON,
-                    wcLensStopwordsJSON: preferences.wcLensStopwordsJSON,
-                    citationStyleRaw: preferences.citationStyleRaw,
-                    defaultDocumentModeRaw: preferences.defaultDocumentModeRaw,
-                    researchLoggingEnabled: preferences.researchLoggingEnabled,
-                    listOrderJSON: preferences.listOrderJSON
-                )
-            }
-        )
-    }
-
-    /// A saved search's record (format version 7): the search as the app runs it,
-    /// `SavedSearch.searchParameters`, and the run watermark's three values.
-    private static func savedSearchExport(_ search: SavedSearch) -> SavedSearchExport {
-        let freshness = search.freshness
-        return SavedSearchExport(
-            id: search.id,
-            name: search.name,
-            parameters: search.searchParameters,
-            lastRunAt: freshness?.lastRunAt,
-            matchCountAtLastRun: freshness?.matchCountAtLastRun,
-            indexedVolumeCountAtLastRun: freshness?.indexedVolumeCountAtLastRun,
-            createdAt: search.createdAt,
-            lastModified: search.lastModified
-        )
-    }
-
-    /// A Suggested Next lead's record (format version 7).
-    ///
-    /// A score that is not a finite number is written as 0: `JSONEncoder` refuses NaN and the
-    /// infinities, so one such score would fail the whole export, and the score is recomputed
-    /// whenever Suggested Next refreshes, where the dismissal and the dates are the researcher's.
-    private static func projectLeadExport(_ lead: ProjectLeadEntry) -> ProjectLeadEntryExport {
-        ProjectLeadEntryExport(
-            id: lead.id,
-            projectId: lead.projectId,
-            volumeId: lead.volumeId,
-            documentId: lead.documentId,
-            aggregateScore: lead.aggregateScore.isFinite ? lead.aggregateScore : 0,
-            contributingSeedKeys: lead.contributingSeedKeys,
-            header: lead.header,
-            documentNumber: lead.documentNumber,
-            isEditorialNote: lead.isEditorialNote,
-            firstSurfacedAt: lead.firstSurfacedAt,
-            lastComputedAt: lead.lastComputedAt,
-            dismissed: lead.dismissed
+            savedSearches: savedSearches.map(SavedSearchExport.init),
+            workingCorpora: workingCorpora.map(WorkingCorpusExport.init),
+            customVolumeScopes: customVolumeScopes.map(CustomVolumeScopeExport.init),
+            classificationOverrides: classificationOverrides.map(DocumentClassificationOverrideExport.init),
+            personClusterOverrides: personClusterOverrides.map(PersonClusterOverrideExport.init),
+            annotationReviews: annotationReviews.map(AnnotationReviewExport.init),
+            projectLeads: projectLeads.map(ProjectLeadEntryExport.init),
+            syncedPreferences: syncedPreferences.map(SyncedPreferencesExport.init)
         )
     }
 
@@ -705,6 +461,367 @@ enum ResearchDataExporter {
             lastModified: note.lastModified,
             citation: citation,
             tagNamesById: tagNamesById
+        )
+    }
+}
+
+// MARK: - The records the models map to (#1915, L24)
+//
+// Each model as the research data export writes it: `ResearchDataExporter.makeEnvelope` maps every
+// record through these, and Import from JSON maps the library's copy of a record through the same
+// ones before it writes a file's newer copy over it (`ResearchImportPlan.Item.written(over:)`), so a
+// field the import keeps is read as the export reads it. A collection and its entries map in
+// `Collection.swift` (`CollectionExport.init(_:entries:)`, `CollectionEntryExport.init(_:)`). Until
+// L24 these were inline in `makeEnvelope`; the records written are unchanged.
+
+extension ResearchNoteExport {
+    /// The note's record, with the highlights that name it (`DocumentHighlight.noteId`), which the
+    /// note itself does not store.
+    init(_ note: ResearchNote, linkedHighlightIds: [UUID]) {
+        self.init(
+            id: note.id,
+            documentId: note.documentId,
+            volumeId: note.volumeId,
+            bodyText: note.bodyText,
+            projectIds: note.projectIds,
+            userTagIds: note.userTagIds,
+            selectedSummaryIds: note.selectedSummaryIds,
+            linkedHighlightIds: linkedHighlightIds,
+            createdAt: note.createdAt,
+            lastModified: note.lastModified,
+            richText: note.richText
+        )
+    }
+}
+
+extension UserTagExport {
+    /// The tag's record.
+    init(_ tag: UserTag) {
+        self.init(id: tag.id, name: tag.name, createdAt: tag.createdAt, lastModified: tag.lastModified)
+    }
+}
+
+extension DocumentTagAssignmentExport {
+    /// The assignment's record.
+    init(_ assignment: DocumentTagAssignment) {
+        self.init(
+            id: assignment.id,
+            volumeId: assignment.volumeId,
+            documentId: assignment.documentId,
+            tagId: assignment.tagId,
+            createdAt: assignment.createdAt
+        )
+    }
+}
+
+extension DocumentHighlightExport {
+    /// The highlight's record.
+    init(_ highlight: DocumentHighlight) {
+        self.init(
+            id: highlight.id,
+            volumeId: highlight.volumeId,
+            documentId: highlight.documentId,
+            startOffset: highlight.startOffset,
+            endOffset: highlight.endOffset,
+            colorTag: highlight.colorTag,
+            noteId: highlight.noteId,
+            selectedText: highlight.selectedText,
+            renderingVersion: highlight.renderingVersion,
+            createdAt: highlight.createdAt
+        )
+    }
+}
+
+extension SummarizationPromptExport {
+    /// The prompt's record. The export writes the researcher's own prompts alone.
+    init(_ prompt: SummarizationPrompt) {
+        self.init(
+            id: prompt.id,
+            name: prompt.name,
+            promptText: prompt.promptText,
+            responseFormat: prompt.responseFormat,
+            schema: prompt.schema,
+            createdAt: prompt.createdAt,
+            lastModified: prompt.lastModified
+        )
+    }
+}
+
+extension ProjectExport {
+    /// The project's record.
+    init(_ project: Project) {
+        self.init(
+            id: project.id,
+            name: project.name,
+            researchQuestion: project.researchQuestion,
+            defaultDateRangeStart: project.defaultDateRangeStart,
+            defaultDateRangeEnd: project.defaultDateRangeEnd,
+            defaultSubjectTagIds: project.defaultSubjectTagIds,
+            defaultCountryTagIds: project.defaultCountryTagIds,
+            createdAt: project.createdAt,
+            lastModified: project.lastModified,
+            defaultUserTagIds: project.defaultUserTagIds,
+            leadAxisWeights: project.leadAxisWeights
+        )
+    }
+}
+
+extension GeneratedSummaryExport {
+    /// The summary's record.
+    init(_ summary: GeneratedSummary) {
+        self.init(
+            id: summary.id,
+            documentId: summary.documentId,
+            volumeId: summary.volumeId,
+            promptId: summary.promptId,
+            responseText: summary.responseText,
+            responseFormat: summary.responseFormat,
+            wasChunked: summary.wasChunked,
+            projectId: summary.projectId,
+            createdAt: summary.createdAt,
+            lastModified: summary.lastModified,
+            // Coerced, not passed through: a legacy NULL *means* `.aiGenerated` everywhere
+            // else in the app, and exporting `null` would tell a reader the provenance was
+            // unknown when the app treats it as known. Never write an ambiguity the reader
+            // has to resolve with a rule they do not have.
+            authorship: summary.authorship ?? .aiGenerated,
+            isHeadnoteDraft: summary.isHeadnoteDraft
+        )
+    }
+}
+
+extension ReadingHistoryEntryExport {
+    /// The recorded visit's record.
+    init(_ visit: ReadingHistoryEntry) {
+        self.init(
+            id: visit.id,
+            documentId: visit.documentId,
+            volumeId: visit.volumeId,
+            displayTitle: visit.displayTitle,
+            projectId: visit.projectId,
+            accessedAt: visit.accessedAt
+        )
+    }
+}
+
+extension SearchHistoryEntryExport {
+    /// The recorded search's record.
+    init(_ search: SearchHistoryEntry) {
+        self.init(
+            id: search.id,
+            queryText: search.queryText,
+            resultCount: search.resultCount,
+            projectId: search.projectId,
+            executedAt: search.executedAt,
+            loadedCount: search.loadedCount,
+            matchCount: search.matchCount,
+            fetchLimit: search.fetchLimit,
+            indexedVolumeCount: search.indexedVolumeCount,
+            scopeSignature: search.scopeSignature,
+            appliedCorpusId: search.appliedCorpusId,
+            renderedExpression: search.renderedExpression
+        )
+    }
+}
+
+extension ExportHistoryEntryExport {
+    /// The recorded export's record.
+    init(_ export: ExportHistoryEntry) {
+        self.init(
+            id: export.id,
+            format: export.format,
+            documentCount: export.documentCount,
+            collectionName: export.collectionName,
+            projectId: export.projectId,
+            exportedAt: export.exportedAt
+        )
+    }
+}
+
+extension ArchiveVisitPlanExport {
+    /// The plan's record with `documents` and `targets`, which the plan's own relationships hold.
+    init(_ plan: ArchiveVisitPlan, documents: [ArchiveVisitDocumentExport],
+         targets: [ArchiveVisitTargetExport]) {
+        self.init(
+            id: plan.id,
+            name: plan.name,
+            inquiryText: plan.inquiryText,
+            projectIds: plan.projectIds,
+            tiers: plan.tiers,
+            deliverables: plan.deliverables,
+            documents: documents,
+            targets: targets,
+            createdAt: plan.createdAt,
+            lastModified: plan.lastModified
+        )
+    }
+}
+
+extension ArchiveVisitDocumentExport {
+    /// The seeded document's record.
+    init(_ document: ArchiveVisitDocument) {
+        self.init(
+            id: document.id,
+            documentKey: document.documentKey,
+            includeSource: document.includeSource,
+            includeExternalRefs: document.includeExternalRefs,
+            createdAt: document.createdAt,
+            lastModified: document.lastModified
+        )
+    }
+}
+
+extension ArchiveVisitTargetExport {
+    /// The stored target's record.
+    init(_ target: ArchiveVisitTarget) {
+        self.init(
+            id: target.id,
+            targetKey: target.targetKey,
+            tierId: target.tierId,
+            included: target.included,
+            userNote: target.userNote,
+            createdAt: target.createdAt,
+            lastModified: target.lastModified
+        )
+    }
+}
+
+extension SavedSearchExport {
+    /// A saved search's record (format version 7): the search as the app runs it,
+    /// `SavedSearch.searchParameters`, and the run watermark's three values.
+    init(_ search: SavedSearch) {
+        let freshness = search.freshness
+        self.init(
+            id: search.id,
+            name: search.name,
+            parameters: search.searchParameters,
+            lastRunAt: freshness?.lastRunAt,
+            matchCountAtLastRun: freshness?.matchCountAtLastRun,
+            indexedVolumeCountAtLastRun: freshness?.indexedVolumeCountAtLastRun,
+            createdAt: search.createdAt,
+            lastModified: search.lastModified
+        )
+    }
+}
+
+extension WorkingCorpusExport {
+    /// The working corpus's record.
+    init(_ corpus: WorkingCorpus) {
+        self.init(
+            id: corpus.id,
+            name: corpus.name,
+            documentKeys: corpus.documentKeys,
+            capturedAt: corpus.capturedAt,
+            sourceQuery: corpus.sourceQuery,
+            sourceDescription: corpus.sourceDescription,
+            indexedVolumeCountAtCapture: corpus.indexedVolumeCountAtCapture,
+            wasTruncatedAtCapture: corpus.wasTruncatedAtCapture,
+            totalMatchCountAtCapture: corpus.totalMatchCountAtCapture,
+            createdAt: corpus.createdAt,
+            lastModified: corpus.lastModified
+        )
+    }
+}
+
+extension CustomVolumeScopeExport {
+    /// The volume scope's record.
+    init(_ scope: CustomVolumeScope) {
+        self.init(
+            id: scope.id,
+            name: scope.name,
+            volumeIds: scope.volumeIds,
+            createdAt: scope.createdAt,
+            lastModified: scope.lastModified
+        )
+    }
+}
+
+extension DocumentClassificationOverrideExport {
+    /// The classification correction's record.
+    init(_ override: DocumentClassificationOverride) {
+        self.init(
+            id: override.id,
+            volumeId: override.volumeId,
+            documentId: override.documentId,
+            isEditorialNote: override.isEditorialNote,
+            parsedIsEditorialNote: override.parsedIsEditorialNote,
+            createdAt: override.createdAt
+        )
+    }
+}
+
+extension PersonClusterOverrideExport {
+    /// The person correction's record.
+    init(_ override: PersonClusterOverride) {
+        self.init(
+            id: override.id,
+            kind: override.kind,
+            volumeIdA: override.volumeIdA,
+            refA: override.refA,
+            volumeIdB: override.volumeIdB,
+            refB: override.refB,
+            createdAt: override.createdAt
+        )
+    }
+}
+
+extension AnnotationReviewExport {
+    /// The reviewed change's record.
+    init(_ review: AnnotationReview) {
+        self.init(
+            id: review.id,
+            annotationType: review.annotationType,
+            annotationId: review.annotationId,
+            volumeId: review.volumeId,
+            documentId: review.documentId,
+            contentHash: review.contentHash,
+            changeKind: review.changeKind,
+            reviewedAt: review.reviewedAt
+        )
+    }
+}
+
+extension ProjectLeadEntryExport {
+    /// A Suggested Next lead's record (format version 7).
+    ///
+    /// A score that is not a finite number is written as 0: `JSONEncoder` refuses NaN and the
+    /// infinities, so one such score would fail the whole export, and the score is recomputed
+    /// whenever Suggested Next refreshes, where the dismissal and the dates are the researcher's.
+    init(_ lead: ProjectLeadEntry) {
+        self.init(
+            id: lead.id,
+            projectId: lead.projectId,
+            volumeId: lead.volumeId,
+            documentId: lead.documentId,
+            aggregateScore: lead.aggregateScore.isFinite ? lead.aggregateScore : 0,
+            contributingSeedKeys: lead.contributingSeedKeys,
+            header: lead.header,
+            documentNumber: lead.documentNumber,
+            isEditorialNote: lead.isEditorialNote,
+            firstSurfacedAt: lead.firstSurfacedAt,
+            lastComputedAt: lead.lastComputedAt,
+            dismissed: lead.dismissed
+        )
+    }
+}
+
+extension SyncedPreferencesExport {
+    /// The set of synced preferences' record.
+    init(_ preferences: SyncedPreferences) {
+        self.init(
+            createdAt: preferences.createdAt,
+            updatedAt: preferences.updatedAt,
+            wcMinLength: preferences.wcMinLength,
+            wcMinCount: preferences.wcMinCount,
+            wcFoldPlurals: preferences.wcFoldPlurals,
+            wcFilterMarkings: preferences.wcFilterMarkings,
+            wcExcludeBoilerplate: preferences.wcExcludeBoilerplate,
+            wcGlobalStopwordsJSON: preferences.wcGlobalStopwordsJSON,
+            wcLensStopwordsJSON: preferences.wcLensStopwordsJSON,
+            citationStyleRaw: preferences.citationStyleRaw,
+            defaultDocumentModeRaw: preferences.defaultDocumentModeRaw,
+            researchLoggingEnabled: preferences.researchLoggingEnabled,
+            listOrderJSON: preferences.listOrderJSON
         )
     }
 }

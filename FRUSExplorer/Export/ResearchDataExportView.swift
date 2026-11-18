@@ -60,6 +60,9 @@ import AppKit
 ///   1.6 — #1910: on the Mac, a line under Export Research Database… names the index version the
 ///          copy will carry, or says the index is being updated, and the done line names it too
 ///          (`DatabaseExportIndexVersion`)
+///   1.7 — #1915 (L24): an **Import from JSON…** row beside Export as JSON, which asks the host to
+///          open the file picker (`DataRecoveryView` presents it and the report,
+///          `ResearchImportSheet`); a closed import prepares the export again
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -102,6 +105,20 @@ struct DataExportSections: View {
     /// indexing batch has ended. Read only; the pipeline writes it.
     @AppStorage(IndexingPipeline.dateIndexVersionKey) private var installedIndexVersion = 0
     #endif
+
+    /// Opens Import from JSON's file picker, which the host holds (#1915): a view of several
+    /// sections carries no presentation modifier, since each section would repeat it.
+    private let onImportJSON: () -> Void
+
+    /// How many imports the host has closed. A change prepares the export again, so **Contents**
+    /// and the file on offer count what an import brought.
+    private let importGeneration: Int
+
+    /// The sections, with the host's Import from JSON… action and its count of closed imports.
+    init(onImportJSON: @escaping () -> Void = {}, importGeneration: Int = 0) {
+        self.onImportJSON = onImportJSON
+        self.importGeneration = importGeneration
+    }
 
     private var userPromptCount: Int {
         DuplicateCopies.count(prompts.filter { !$0.isStandard }, id: \.id)
@@ -170,6 +187,19 @@ struct DataExportSections: View {
                 ))
             }
 
+            // #1915 (L24): the way back in, beside the way out. The host presents the picker and
+            // the report (`DataRecoveryView`).
+            Section {
+                Button {
+                    onImportJSON()
+                } label: {
+                    Label(ResearchImportCopy.rowAction, systemImage: "arrow.down.doc")
+                }
+                .accessibilityIdentifier("settings.import.json")
+            } footer: {
+                Text(ResearchImportCopy.rowFooter)
+            }
+
             #if os(macOS)
             databaseExportSection
             #endif
@@ -193,7 +223,8 @@ struct DataExportSections: View {
             }
 
         }
-        .task(id: includeGeneratedSummaries) {
+        .task(id: ExportPreparation(includeGeneratedSummaries: includeGeneratedSummaries,
+                                    importGeneration: importGeneration)) {
             prepareJSONExport()
             prepareAppendixExport()
         }
@@ -522,6 +553,17 @@ enum DatabaseExportIndexVersion {
         }
         return String(localized: "settings.export.database.done.withVersion",
                       defaultValue: "Exported \(size), index version \(version).")
+    }
+}
+
+// MARK: - What prepares the export again (#1915)
+
+extension DataExportSections {
+    /// The preparation task's identity: the summaries switch, and the count of imports the host has
+    /// closed, so an import's records reach **Contents** and the file on offer.
+    struct ExportPreparation: Equatable {
+        var includeGeneratedSummaries: Bool
+        var importGeneration: Int
     }
 }
 

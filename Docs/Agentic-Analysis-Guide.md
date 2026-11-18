@@ -132,6 +132,13 @@ section is what to do by hand — on iOS, where there is no route to the file, o
 copy somewhere the panel cannot reach. A hand-made copy is the same database **without** the stamp
 and the views: `.backup` copies what is in the file, and neither exists in the live index.
 
+The copy goes one way: nothing in it comes back into the app, and nothing an agent writes into it
+reaches your library. Your research itself (notes, tags, highlights, collections, summaries, the
+research trail) moves between devices, and to and from FRUS Explorer Light, as the JSON file
+**Export as JSON** writes and **Import from JSON…** reads, both under Settings ▸ System ▸ Data &
+Recovery. An import adds what the file holds and the library lacks, replaces a record only with a
+newer copy of it, and deletes nothing.
+
 ### Copy it properly
 
 Quit FRUS Explorer first. Then use SQLite's backup API, which produces a byte-faithful copy with
@@ -3380,6 +3387,10 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.50 — 2026-11-18: Import from JSON (#1915, plan of record decision 140). §2 says the research
+  database copy goes one way, and that research moves between devices and FRUS Explorer Light as
+  the JSON file Export as JSON writes and Import from JSON… reads, which adds, replaces only with a
+  newer copy, and deletes nothing.
 - 1.49 — 2026-11-17: index version 75 (#1909, plan of record decision 131). §4.3's
   `volume_structures` gains the file each volume was indexed from, `file_blob_sha1` and
   `file_size_bytes`: the git blob SHA-1 of the TEI file's bytes and their length, `NULL` for a

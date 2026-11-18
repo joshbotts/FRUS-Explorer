@@ -320,6 +320,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.40 — L20 (#1920, HCD-3): a transfer's end also reaches `AppState.recordDownloadOutcome(_:outcome:)`,
 ///          which keeps a volume's failed download for its page; and a test's download starts by
 ///          signal (DEBUG only)
+///   4.41 — L24 (#1915): the launch replay's summary pass is `GeneratedSummary.reconcileSummaryText`,
+///          the rule Import from JSON runs too; what it writes is unchanged
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -3005,23 +3007,12 @@ struct FRUSExplorerApp: App {
             // without touching `appState` from off-main.
             let cloudKitOn = containerSetup.cloudKitEnabled
             Task {
-                let context = ModelContext(container)
-
                 // R-5 P3b-1 (design Q-8 g): one text per document goes into `summary_text`, so push
-                // the newest non-draft summary rather than every row in fetch order.
-                let allSummaries = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
-                let summaries = GeneratedSummary.newestNonDraftPerDocument(allSummaries)
-                for summary in summaries {
-                    let vid = summary.volumeId
-                    let did = summary.documentId
-                    let text = summary.indexedText
-                    try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
-                }
-                // A document whose only summaries are drafts had its draft text pushed by the old
-                // loop; skipping it would freeze that text in the column. Clear it.
-                for doc in GeneratedSummary.draftOnlyDocuments(allSummaries) {
-                    try? await pipeline.clearSummaryText(volumeId: doc.volumeId, documentId: doc.documentId)
-                }
+                // the newest non-draft summary rather than every row in fetch order, and clear a
+                // document whose only summaries are drafts. The rule Import from JSON runs too
+                // (#1915, L24).
+                let summaryCount = await GeneratedSummary.reconcileSummaryText(
+                    container: container, pipeline: pipeline)
 
                 // #1280: ONE text per document, like the summary pass above — `note_text` is a
                 // per-document column and a document can carry many notes, so a loop over rows wrote
@@ -3059,7 +3050,9 @@ struct FRUSExplorerApp: App {
                 if reviewOutcome.changedAnything { appState.revisionReviewToken += 1 }
 
                 #if DEBUG
-                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(overrides.count) classification overrides pushed to FTS5; note text reconciled (sweeping: \(!cloudKitOn)); reviews stamped \(reviewOutcome.stamped), backfilled \(reviewOutcome.backfilled)")
+                print("[FRUSExplorer] Boot sync: \(summaryCount) summaries, \(overrides.count) classification overrides pushed to FTS5; note text reconciled (sweeping: \(!cloudKitOn)); reviews stamped \(reviewOutcome.stamped), backfilled \(reviewOutcome.backfilled)")
+                #else
+                _ = summaryCount
                 #endif
             }
         }

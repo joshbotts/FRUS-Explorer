@@ -17,6 +17,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-5 P2: initial implementation
+///   1.1 — #1915 (L24): P3b-1's scan follows the launch's summary push into
+///          `GeneratedSummary.reconcileSummaryText`, which Import from JSON runs too
 @Suite("Volume update review — the hub's per-volume change set")
 struct VolumeUpdateReviewTests {
 
@@ -197,8 +199,21 @@ struct VolumeUpdateReviewTests {
         #expect(research.contains("case .reviewSheet:\n            reviewEntry = entry\n            return"))
         #expect(research.contains("vanishedDocumentKeys()"))
         let app = try Self.source("App/FRUSExplorerApp.swift")
-        #expect(app.components(separatedBy: "GeneratedSummary.newestNonDraftPerDocument(").count - 1 == 2)
-        #expect(app.components(separatedBy: "GeneratedSummary.draftOnlyDocuments(").count - 1 == 2)
+        // Both pushes select. The post-download push selects in place; the launch's is
+        // `GeneratedSummary.reconcileSummaryText` since L24 (#1915), which Import from JSON runs too,
+        // and which selects inside `GeneratedSummary.swift`.
+        #expect(app.components(separatedBy: "GeneratedSummary.newestNonDraftPerDocument(").count - 1 == 1)
+        #expect(app.components(separatedBy: "GeneratedSummary.draftOnlyDocuments(").count - 1 == 1)
+        #expect(app.components(separatedBy: "GeneratedSummary.reconcileSummaryText(").count - 1 == 1,
+                "the launch's push must run the shared pass")
+        let summary = try Self.source("Models/GeneratedSummary.swift")
+        let passStart = try #require(summary.range(of: "static func reconcileSummaryText(")).upperBound
+        let pass = summary[passStart...].prefix(1_600)
+        #expect(pass.contains("newestNonDraftPerDocument(all)") && pass.contains("draftOnlyDocuments(all)"),
+                "the shared pass must push the newest non-draft summary and clear draft-only documents")
+        let importer = try Self.source("Export/ResearchDataImporter.swift")
+        #expect(importer.contains("GeneratedSummary.reconcileSummaryText("),
+                "an import that writes summaries must run the same pass")
         // Through `markVolumeUnindexed` since #1526, so a re-read of the index in flight keeps it.
         #expect(app.contains("appState.markVolumeUnindexed(volumeId)\n                        // R-5 P3b-1"), "removal must signal the readers")
         let export = try Self.source("Collections/CollectionExportSheet.swift")
