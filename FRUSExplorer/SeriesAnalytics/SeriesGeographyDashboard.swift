@@ -45,6 +45,9 @@ import Charts
 ///   1.6 — 2026-09-30: #1483 — the region-totals figure is titled "Overall regional emphasis",
 ///          the card's own title, on the plate, the CSV's Figure line and the file name; the
 ///          trend's AreaMark names its value "Share of volumes", the axis's text
+///   1.7 — R5 (1.0 (1823), decision 141): Most-covered countries' names are drawn beside their
+///          bars (`CategoryAxisTitles`); under iOS 27.2 and macOS 27.2 Swift Charts drew them half
+///          a row up
 struct SeriesGeographyDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead
@@ -341,8 +344,22 @@ struct SeriesGeographyDashboard: View {
                 }
             }
             .chartYAxis {
-                AxisMarks(preset: .aligned) {
-                    AxisValueLabel()
+                AxisMarks(preset: .aligned) { value in
+                    // The axis's own label holds the name column at the name's width and draws
+                    // nothing: `CategoryAxisTitles` draws each name beside its bar, where iOS 27.2
+                    // and macOS 27.2 drew the axis's half a row up (R5).
+                    AxisValueLabel {
+                        if let name = value.as(String.self) {
+                            Text(name).hidden()
+                        }
+                    }
+                }
+            }
+            .chartBackground { proxy in
+                CategoryAxisTitles(chart: proxy,
+                                   categories: data.topCountries.map { displayName(forSlug: $0.slug) },
+                                   placement: .aligned) { name in
+                    Text(name)
                 }
             }
             .chartXAxisLabel(String(localized: "series.geography.countries.x", defaultValue: "Volumes"))

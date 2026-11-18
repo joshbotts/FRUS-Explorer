@@ -134,6 +134,8 @@ enum PersonAnalyticsMode: String, CaseIterable, Codable, Hashable {
 ///         `PersonTrajectoryPoint`, `PersonAnalyticsMath`, `PersonRelationshipPoint` and
 ///         `PersonRelationshipMath` moved into FRUSCoreKit (`FRUSCoreKit/Analytics/PersonAnalyticsMath.swift`),
 ///         unchanged but for access
+///   1.8 — R5 (1.0 (1823), decision 141): the ranking's names are drawn beside their bars
+///         (`CategoryAxisTitles`); under iOS 27.2 and macOS 27.2 Swift Charts drew them half a row up
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -891,11 +893,19 @@ struct PersonAnalyticsView: View {
         .chartYScale(domain: ranking.map(rowKey))
         .chartYAxis {
             AxisMarks(preset: .aligned) { value in
+                // The axis's own label holds the name column at the name's width and draws
+                // nothing: `CategoryAxisTitles` draws each name beside its bar, where iOS 27.2 and
+                // macOS 27.2 drew the axis's half a row up (R5).
                 AxisValueLabel {
                     if let id = value.as(String.self) {
-                        Text(axisLabels[id] ?? id)
+                        Text(axisLabels[id] ?? id).hidden()
                     }
                 }
+            }
+        }
+        .chartBackground { proxy in
+            CategoryAxisTitles(chart: proxy, categories: ranking.map(rowKey), placement: .aligned) { id in
+                Text(axisLabels[id] ?? id)
             }
         }
     }

@@ -1552,6 +1552,8 @@ struct CrossReferenceAnalyticsView: View {
 ///          its graph (`AnalyticsChartTables.crossRefRankingTable`), where its Document column
 ///          was read and two documents of one title were one category
 ///   1.3 — #1797: ``onOpen`` — a bar or its title opens its document, and VoiceOver can open it too
+///   1.4 — R5 (1.0 (1823)): each title is drawn beside its own bar (`CategoryAxisTitles`); under
+///          iOS 27.2 and macOS 27.2 Swift Charts drew the axis's labels half a row up, the first cut
 struct CrossReferenceRankingChart: View {
 
     /// The ranked rows, highest in-degree first.
@@ -1624,22 +1626,40 @@ struct CrossReferenceRankingChart: View {
                            labelColumn: 1, valueColumn: 4)
         .chartYAxis {
             AxisMarks(preset: .aligned) { value in
+                // The axis's own label holds the title column at the title's width and draws
+                // nothing: `CategoryAxisTitles` draws each title beside its bar (R5).
                 AxisValueLabel {
                     if let id = value.as(String.self) {
-                        RankingAxisLabelLayout(maximumWidth: labelWidth) {
-                            Text(axisLabels[id] ?? id)
-                                .lineLimit(RankingChartAxis.labelLines)
-                                .truncationMode(.tail)
-                                .multilineTextAlignment(.trailing)
-                        }
+                        Self.title(axisLabels[id] ?? id, maximumWidth: labelWidth)
+                            .hidden()
                     }
                 }
+            }
+        }
+        // Each title beside its own bar, which Swift Charts no longer draws on every system (R5).
+        .chartBackground { proxy in
+            CategoryAxisTitles(chart: proxy, categories: ranking.map(\.id), placement: .aligned) { id in
+                Self.title(axisLabels[id] ?? id, maximumWidth: labelWidth)
             }
         }
         .chartOverlay { proxy in
             if let onOpen {
                 openTargets(proxy, axisLabels: axisLabels, onOpen: onOpen)
             }
+        }
+    }
+
+    /// One row's title: at most `maximumWidth` wide, wrapped to two lines and cut at its tail (#1473).
+    ///
+    /// - Parameters:
+    ///   - text: The title.
+    ///   - maximumWidth: The widest it may be.
+    private static func title(_ text: String, maximumWidth: CGFloat) -> some View {
+        RankingAxisLabelLayout(maximumWidth: maximumWidth) {
+            Text(text)
+                .lineLimit(RankingChartAxis.labelLines)
+                .truncationMode(.tail)
+                .multilineTextAlignment(.trailing)
         }
     }
 

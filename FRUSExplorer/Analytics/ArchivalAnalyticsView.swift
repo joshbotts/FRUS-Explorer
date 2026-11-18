@@ -64,6 +64,8 @@ import Charts
 ///   1.12 — 2026-10-02 (#1543, landing round 2): the two Your Library charts take their colours
 ///         from `provenanceCategoryColorScale()`, and the composition chart keeps a plot of 40
 ///         points under a legend of any height (`libraryCompositionChart(_:)`)
+///   1.13 — R5 (1.0 (1823), decision 141): the ranking's names are drawn beside their bars
+///         (`CategoryAxisTitles`); under iOS 27.2 and macOS 27.2 Swift Charts drew them half a row up
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
@@ -1199,8 +1201,20 @@ struct ArchivalAnalyticsView: View {
             domain: ArchivalRepositoryCategory.ordered.map(\.displayName),
             range: ArchivalRepositoryCategory.ordered.map(\.color))
         .chartYAxis {
-            AxisMarks(preset: .extended, position: .leading) { _ in
-                AxisValueLabel(horizontalSpacing: 8)
+            AxisMarks(preset: .extended, position: .leading) { value in
+                // The axis's own label holds the name column at the name's width and draws
+                // nothing: `CategoryAxisTitles` draws each name beside its bar, where iOS 27.2 and
+                // macOS 27.2 drew the axis's half a row up (R5).
+                AxisValueLabel(horizontalSpacing: 8) {
+                    if let label = value.as(String.self) {
+                        Text(label).hidden()
+                    }
+                }
+            }
+        }
+        .chartBackground { proxy in
+            CategoryAxisTitles(chart: proxy, categories: ranking.rows.map(\.label), placement: .atLeadingEdge) { label in
+                Text(label)
             }
         }
         .chartXAxisLabel(weight.title)
