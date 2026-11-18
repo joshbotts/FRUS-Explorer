@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/quick-start-mac · from Docs/Website/quick-start-mac.html · fingerprint a58835c8 -->
+<!-- frusexplorer.app/quick-start-mac · from Docs/Website/quick-start-mac.html · fingerprint 42253095 -->
 <style>
   .frus-quick-start a { text-decoration: underline; }
   .frus-quick-start img { max-width: 100%; height: auto; }
@@ -80,7 +80,7 @@
 
 <p>The main window is where you read. It is titled with the open document's heading, the center of its toolbar says where the document is (<em>… · 1946 v6 · Doc 475</em>, the volume and the document's number), and five controls sit at the right:</p>
 
-<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/toolbar.png" alt="The main window&#x27;s toolbar: the back button, the document identifier frus1946v06/d475 in the center, and at the right Search, Browse, the Analytics and My Research menus, and the Research rail button." width="2880" height="104" loading="lazy"></p>
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/toolbar.png" alt="The main window&#x27;s toolbar: the back button, the window&#x27;s title (the document&#x27;s head), the centre naming the volume and number, Eastern Europe, The Soviet Union · 1946 v6 · Doc 475, and at the right Search, Browse, the Analytics and My Research menus, and the Research rail button." width="2880" height="104" loading="lazy"></p>
 
 <table>
   <thead>
@@ -133,7 +133,7 @@
 
 <p>The <strong>Research rail</strong> is the panel beside the document, for everything you do <em>about</em> a document. It is open the first time you read one; ⇧⌘R hides it and brings it back.</p>
 
-<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/research-strip.png" alt="The Long Telegram in the main window with the Research rail open: the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Topics, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection; a yellow highlight in the text, and the Doc 474 and Doc 476 buttons under it." width="2880" height="1800" loading="lazy"></p>
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/research-strip.png" alt="The Long Telegram in the main window with the Research rail open: the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Subjects, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection; a yellow highlight in the text, and the Doc 474 and Doc 476 buttons under it." width="2880" height="1800" loading="lazy"></p>
 
 <p><em>The Research rail beside the Long Telegram, with a highlight in the text and a note, a tag and a collection on the rail.</em></p>
 
@@ -210,7 +210,7 @@
 
 <p><strong>The Research window</strong> (⌥⌘R, or <strong>My Research ▾ → Research</strong>) gathers every document you have annotated, grouped by collection, tag or highlight color, with <strong>All Notes</strong> beside them. <strong>My Research ▾ → Complete History…</strong> lists everything you have read.</p>
 
-<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/research.png" alt="The Research window: All Research Documents, Contains Notes and All Notes in the sidebar, with groups By Collection, By Tag and By Highlight, and the list of annotated documents, one showing its yellow highlight, its note, its tag and its collection." width="2680" height="1760" loading="lazy"></p>
+<p class="shots"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Docs/screenshots/macos/research.png" alt="The Research window: All Research Documents, Contains Notes and All Notes in the sidebar, with groups By Collection, By Tag and By Highlight, and the list of annotated documents, each opening with its number (Document 475 above the Long Telegram&#x27;s title), one showing its yellow highlight, its note, its tag and its collection." width="2680" height="1760" loading="lazy"></p>
 
 <p><em>The Research window.</em></p>
 

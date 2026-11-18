@@ -1546,6 +1546,143 @@ in both manuals from the bundled files (#1762).
   - **Left**: `~/Desktop/store` holds the 34 frames, the four sheets and `upload/` (40 MB, outside the
     repository). The owner uploads from `upload/`;
     `Planning/app-store-connect/App-Store-Connect-Entry.md` has the steps.
+- **T2 — run 2026-11-18, 03:39 to 04:55 (Eastern) on the iPads and 05:47 to 06:01 on the Mac; the 1.0 (1823)
+  retakes, for L15 to L25 (R5).** The plan of record's R5 bullet lists every capture a row since `build-53` changed: L15's 30
+  (*Topics* became *Subjects*: 27 on the iPad, 3 on the Mac), L18's two Mac frames, L20's
+  `ipad/onboarding-volumes`, L21's four Mac frames and `ipad/analytics`, and L24's
+  `ipad/data-recovery-export`, 39 in all. The owner chose that the session captures (decision 142).
+  Built from `9c616cd6`, the tree at 1.0 (1823): the `AppStore` configuration for the simulator under
+  `Scripts/heavy.sh` (03:03:21 to 03:06:27), with build 48's local-only banner patch, never committed and
+  reverted as the build ended. Scripts: T1's, copied to `~/Library/Caches/FRUS-Explorer/t2/`.
+  - **No simulator grant.** The session drove each iPad through a remote-control UI test, never committed:
+    a test target built from S2's rotator that acts on FRUS Explorer, and on the Settings app, by bundle
+    identifier, reading one command at a time from a folder and answering in another, one session per
+    device under the heavy-job lock. Taps, drags and typing went through XCUITest; each capture was
+    `simctl io … screenshot`, read back scaled before it was taken.
+  - **The iPad, S1's `3D2607D9` under iOS 27.0**: restored from `q1/snapshot-A74`, 1.0 (1812)'s library,
+    and re-indexed once to version 75 at the build's first launch (R5's census: 553 volumes in 904 s,
+    then cloned to `t2/snapshot-75` before the sitting and put back after it); landscape by S2's rotator;
+    the demo status bar, flags first and the 2020 ISO time last; every launch with
+    `-hasCompletedOnboarding 1 -FRUSScreenshotHideSyncBanner YES`. The snapshot's last read was already
+    the Long Telegram, so *Continue reading* named it.
+  - **The iPad Pro 13-inch (M5) under iOS 27.2, `6F46E6FA`, for `related-documents` and `analytics`.**
+    Under iOS 27.0 the Related window could not be opened: twice, as it opened from the Long Telegram's
+    rail, S1's render server (`backboardd`) aborted in Metal's texture validation (03:42 and 03:54), and
+    the simulator's accessibility did not come back until it was rebooted (*Found by T2*, 1). S1's clone
+    was copied into the 27.2 iPad, the build installed, and the app uninstalled again afterwards (it held
+    none before). That launch's language assets timed out, so Related compared shared words as printed;
+    the frames are the second launch's, whose warm-up had the lemmatiser.
+  - **The iPad under iOS 26.5, `5ED7E25B`, for `stage-manager`**: its own library, re-indexed in place from
+    71 to 75 (R5's census, 727 s), cloned before the sitting and put back after it. Stage Manager on, then
+    Windowed Apps again; `backboardd` lived throughout. The composition is R1's: the main window behind on
+    Browse ▸ Subseries, shortened to end behind the Related window, the Long Telegram's window in front at
+    the left edge with its toggle lit, the Related window beside it scrolled so 26.5's *Shared words
+    compared as printed* line is out of view. As R1 found, the popped-out window drew its rail black until
+    it was moved.
+  - **The iPad erased, S2's `A913C7F8`, for `onboarding-volumes`**: the app uninstalled and installed so the
+    launch was its first, `-FRUSScreenshotHideSyncBanner YES` alone; Get Started ▸ Add Volumes, Corpus, the
+    Concepts view. The frame is the 21st of a 24-frame burst, the nearest of 72 in two bursts to R1's by the
+    mean difference over the cloud, since its words drift; the app was quit on that step and nothing was
+    downloaded. Its pre-T2 container is kept under `t2/pre-t2/`.
+  - **Retaken (30)**, each at its earlier sitting's route and framing: `browse-root`, `sidebar-landscape`,
+    `browse-all-volumes`, `browse-administrations`, `browse-administrations-truman`, `browse-editors`,
+    `browse-annotations`, `browse-archives-provenance`, `-collections`, `-collection-detail`,
+    `-collection-citing`, `browse-archives`, `browse-clusters`, `browse-clusters-detail`, `browse-scopes`,
+    `browse-scopes-editor`, `browse-scopes-banner`, `browse-working-corpora`, `browse-corpus-drill`,
+    `topic-index`, `people-list`, `people-detail`, `people-detail-records`, `research-rail`, `cite-sheet`,
+    `related-documents`, `stage-manager`, `onboarding-volumes`, `analytics` and `data-recovery-export`. For
+    the drill, `frus1948v01p2` was removed through Settings ▸ Volumes & Storage ▸ Show all, and S1's clone
+    put back after.
+  - **Compared pixel by pixel with the frames they replace**:
+    - In 18 frames exactly 2,048 pixels changed: the root's row, now *Subjects*, and the status bar's Wi-Fi
+      glyph (a 1 px shift). `people-detail-records`, scrolled to 0 px of T1's framing, differs in the same
+      places under its sheet's dimming.
+    - `browse-root`: the Subjects row, and the subseries list's *1951-54* before *1951*, where T1's frame had
+      them the other way round, in both of T2's launches: T1's finding, seen again.
+    - `browse-archives-collection-citing` and `people-detail` sit within 1 and 2 points of their old framing
+      (each scrolled with a slow drag); the second's caption under Subjects is L15's longer one.
+    - `research-rail` and `cite-sheet`: the rail's SUBJECTS header, the note's age (*27 days, 14 hr*, where R1's
+      read *1 day, 3 hr*) and *FRUS Explorer* 4 px to the right, since the erased date was a Wednesday,
+      wider than R1's Thursday.
+    - `topic-index`: L15's title, search prompt, caption, chip (*Subject area: Cold War — 6 subjects*) and
+      row; the six subjects and their counts as before.
+    - `related-documents`: *Shared subjects* and the *subjects:* chips; the weights as S1's. The list now
+      opens on Matthews's memorandum (*cited 1×*), as R1's `stage-manager` already showed on 2026-10-22,
+      where S1's opened on Kennan's telegram of February 7.
+    - `stage-manager`: within 3 points of R1's composition; the SUBJECTS header, the *subjects:* chips and
+      the note's age.
+    - `onboarding-volumes`: the cloud's words drifted a few points, and the card's line is L20's: *553+
+      volumes · ≈ 3.5 GB to download, about 7 GB once indexed — the entire series, fully offline.*
+    - `analytics`: the four lines drawn solid, dashed, dotted and dash-dot (L21's IPS-3), with the legend;
+      the toolbar and the chips read as S1's, a few hundred pixels of glyph edges apart under 27.2.
+    - `data-recovery-export`: **Import from JSON…** between Export as JSON and Export Notes as Markdown
+      (L24), scrolled so *Include AI-Generated Summaries* heads the frame as before.
+  - **The time and date erased** by S1's script unchanged (SHA-256 `58d052de…`): every changed pixel inside
+    the box. In `stage-manager` the wallpaper's grain measured 0.44 there, under the 0.5 at which the script
+    adds grain, so the fill carries none, as in R1's (0.45).
+  - **The tour**: `truman.jpg`, `browse.jpg`, `rail.jpg` and `related.jpg` re-cut from the new
+    `browse-administrations-truman`, `browse-working-corpora`, `research-rail` and `related-documents`,
+    each at its old crop's box, found by matching the old crop against its capture: full width from the
+    top for the first two (1,939 and 1,800 px tall), from 60 px down for the rail (1,860 px) and from
+    150 px down for Related (1,914 px), scaled to the old width (1,500 px, and 1,400 for Related);
+    progressive JPEG with the old files' quantization tables (quality 84) and sampling.
+  - **The alt text** of the frames whose content changed: both quick starts and the iOS manual, for
+    `browse-root`, `research-rail` and `topic-index` (*Subjects*), `onboarding-volumes` (the size line),
+    `analytics` (the line patterns) and `data-recovery-export` (Import from JSON…).
+  - **The Mac's nine**, in the check copy, 05:47 to 06:01, on the owner's word (decision 143): `setup.sh --ref HEAD
+    --no-fetch` at `20d22a84` and `build.sh --no-launch` under the lock (`** BUILD SUCCEEDED **`, the copy's nine
+    expected warning lines), with S4's status-chip patch in the extracted source only (inert without its launch
+    argument); the product copied to `t2/mac/app` and launched with `open -n --env CFFIXED_USER_HOME=…` on an APFS
+    clone of Q1's home, which R5's census had re-indexed from 74 to 75; the 16 sitting preferences set, and the
+    domain's 157 keys put back with `prefs-restore` after the copy quit, read back identical (it reads 74 again, so it
+    re-indexes once at its next launch); the copy unregistered from Launch Services. Windows by `screencapture -o -x -l`
+    at S4's sizes (a capture wider than its window, where a popover reached past its edge, cut back to the window), the
+    Search frames the caret-off frame of a ten-frame burst:
+    - `search` and `search-tips` (*Berlin blockade*): only the matched words differ, each now drawn as a highlight (L18's
+      A11Y-1), and `search-tips`' caret.
+    - `toolbar`, `research-strip`, `document` and `cite-popover`: the title bar names the document by its head and the
+      centre its volume and number (L21's MAC-1); `toolbar` is `research-strip`'s top 104 rows, as before. The rail's
+      SUBJECTS header (L15) and the note's age (*27 days, 16 hr*) besides; the reader's text unchanged, 2 points higher.
+      The Long Telegram was opened from Search, so its strip reads *Document 475 · frus1946v06* as before: opened from a
+      Research row, the strip read *frus1946v06* alone (the title bar's centre names the number either way).
+    - `research`: each row opens with its number, *Document 475* above its title (L21's MAC-5).
+    - `topic-index`: L15's title, prompt, caption and chip (*Subject area: Cold War — 6 subjects*), Berlin crisis's sheet
+      open with its longer caption.
+    - `browser`: the caption under Top subjects (L15).
+    - **The alt text** of each in the Mac manual and quick start brought to it, and the quick start's web copy and paste
+      file built again.
+  - **The store frames**: `shots.json`'s six captures retaken read *build 1823*; `SCALE=1 STAMP=0
+    OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py` under the lock (06:15:51 to 06:18:21), then the drafts
+    (to 06:19:22). By SHA-256 against the set of 2026-11-10, kept under `t2/store-before/`, 11 frames and three contact
+    sheets changed and the other 52 files are as they were: frame 01 on the Mac; 02 on the iPad and the Mac; 07, the
+    cite frame, on both; 08, the course reader, on both, for L25's subline; and 10, Corpus Analytics, on the iPad. The
+    upload folders took the five of them the listing holds (`ipad-13-landscape/02-reader` and `07-course-reader`;
+    `mac/01-search`, `02-reader` and `07-course-reader`).
+  - **Left**: no simulator is booted. `3D2607D9` holds 1.0 (1812)'s library re-indexed to 75 with T2's
+    build; `5ED7E25B` holds its own library at 75; `6F46E6FA` holds no FRUS Explorer; `A913C7F8` holds T2's
+    build quit on Add Volumes. The pre-T2 containers, the build, the raw, erased and old frames, the bursts
+    and the two clones are under `~/Library/Caches/FRUS-Explorer/t2/` until the owner says.
+
+### Found by T2 — for the owner
+
+Seen in the sitting and the walk; not fixed and not filed. They go to the plan of record's §5 (decision 82's rule).
+
+1. **Under iOS 27.0 the simulator's render server aborts as the Related Documents window opens.** On
+   `3D2607D9`, twice in a row, tapping Related on the Long Telegram's rail killed `backboardd`
+   (`MTLReportFailure` in `-[MTLTextureDescriptorInternal validateWithDevice:]`, under
+   `CA::OGL::FlattenNode::retain_surface`), the stack #1620 recorded for Stage Manager, and the device's
+   accessibility stayed down until a reboot. The iPad Pro 13-inch under 27.2 opened the same window
+   cleanly, and so did the 26.5 twin in Stage Manager. *The simulator*; not tried on a device.
+2. **The tab sidebar's toggle drew no icon after a search in Archives' Collections lens.** On `3D2607D9`
+   under 27.0, after *Bohlen* was typed into the lens's search field, the toggle at the sidebar's top
+   showed a blank circle, and it stayed blank after the search was cleared and the sidebar shown again; a
+   relaunch drew it. Seen once. *The app or the system.*
+3. **On the Mac, the Research window's rows read their ids until the sidebar's selection changed.** In the check copy,
+   about two minutes after launch, Research ▸ Research listed *Document 475* over *d475* (and so for each row), and
+   closing and reopening the window kept it; choosing Contains Notes and then All Research Documents again drew every
+   title. By the code, `ResearchView.loadHeaders()` keeps nothing when `appState.crossReferenceStore` is still nil or its
+   query throws (`try?`), and runs again only when the selection's documents or the newest note change; which of the
+   two happened was not measured. Seen once. *The app.*
 
 ### Found by R1 — for the owner
 

@@ -131,7 +131,7 @@ The Mac app is built around one **main window** (the document reader) surrounded
 | **My Research ▾** | — | **Research** (⌘⌥R — every annotated document), **Collections** (⇧⌘K), **Archives Visits** (Section 14.8), and **Complete History…** (Section 16.2) |
 | **Research rail** | ⌘⇧R | Show or hide the per-document Research rail (4.2); dimmed until a document is open |
 
-![The macOS main-window toolbar — the centered volumeId/documentId title and the trailing Search, Browse, Analytics, My Research and Research-panel controls.](screenshots/macos/toolbar.png)
+![The macOS main-window toolbar — the window titled with the document's head, the centre naming its volume and number (Eastern Europe, The Soviet Union · 1946 v6 · Doc 475), and the trailing Search, Browse, Analytics, My Research and Research-panel controls.](screenshots/macos/toolbar.png)
 
 ### 4.1a The Menu Bar
 
@@ -168,7 +168,7 @@ The rail header's **ⓘ** button opens a **Document tools** popover describing e
 
 **Highlighting is not a rail button.** To highlight, **select text in the document body**: the **floating selection bar** (a dark pill) appears at the selection with four color dots — click one to save the highlight — plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up in NARA** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up in NARA and Note remain available. A list's own heading and the numbers the volume printed beside its items — **SUBJECT**, **PARTICIPANTS:**, **(1)**, **a.** — are drawn on the page but are not part of the text a highlight is anchored to: a selection that starts on one begins at the item's first word, one that ends on one stops just before that item, and a highlight or excerpt of numbered paragraphs keeps their words without the numbers. A table's caption — the title or units line the volume printed above it, such as *Millions of Dollars* — works the same way: a selection that starts on it begins at the table's first cell, and one that ends on it stops just before the table. iPad and iPhone have no bar: there the same actions, under the same names, come first in the system edit menu that appears beside a selection.
 
-![The Research panel beside the Long Telegram — the tile grid and the Topics, Summary, Notes, Tags and Collections accordions, here holding a note and a "Containment" tag.](screenshots/macos/research-strip.png)
+![The Research panel beside the Long Telegram — the tile grid and the Subjects, Summary, Notes, Tags and Collections accordions, here holding a note and a "Containment" tag.](screenshots/macos/research-strip.png)
 
 ### 4.3 The Document View
 
@@ -348,7 +348,7 @@ The **Subjects** window (beside People in the Window menu) lists every subject i
 
 Each row shows the subject, its `Category · Sub-category`, and its reach in documents and volumes.
 
-![The Topics window narrowed to the Cold War area (its chip reads "Topic area: Cold War — 6 topics"), with Berlin crisis open: its documents and volumes in the series and on this Mac, and its covering volumes.](screenshots/macos/topic-index.png)
+![The Subjects window narrowed to the Cold War area (its chip reads "Subject area: Cold War — 6 subjects"), with Berlin crisis open: its documents and volumes in the series and on this Mac, and its covering volumes.](screenshots/macos/topic-index.png)
 
 **Those figures describe the whole series, not your library.** A subject can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. A subject's page shows both, labeled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device* — and if that last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a subject your library may be full of.
 
@@ -682,7 +682,7 @@ Many researchers assign meanings to the colors — evidence for chapter 2 in yel
 
 **Writing a note.** The body takes formatted text — a formatting bar sits above the field, and the **Formatting** switch in the section header turns it off if you prefer plain text (a per-Mac preference that changes nothing already stored). Whatever you write is also kept as plain text, which is what search, the exports and your Zotero library read. **Tags** and **Projects** are pickers rather than long lists of switches: the row shows what is applied, and opening it gives you a searchable list you can drag to reorder — put the tags and projects you are working with now at the top. It is the same order as **Settings → Research → Tags** and **Projects**, so setting it in either place sets it in both. That order follows you to your other devices, and it rearranges the alphabetical list rather than replacing it — anything you have not placed stays in alphabetical order behind the ones you have. Note formatting is kept on your devices and in iCloud, but a `.fruscollection` file carries its notes as plain text, so formatting does not survive sharing a collection and reimporting it.
 
-![The Research window — every annotated document, with highlight strips and the grouping sidebar.](screenshots/macos/research.png)
+![The Research window — every annotated document, each row opening with its document's number above its title, with highlight strips and the grouping sidebar.](screenshots/macos/research.png)
 
 ### 9.3 Tags
 

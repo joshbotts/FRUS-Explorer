@@ -55,7 +55,7 @@ While you wait, the **Learn** button beside the progress opens the **FRUS Resear
 
 The main window is where you read. It is titled with the open document's heading, the center of its toolbar says where the document is (*… · 1946 v6 · Doc 475*, the volume and the document's number), and five controls sit at the right:
 
-![The main window's toolbar: the back button, the document identifier frus1946v06/d475 in the center, and at the right Search, Browse, the Analytics and My Research menus, and the Research rail button.](screenshots/macos/toolbar.png)
+![The main window's toolbar: the back button, the window's title (the document's head), the centre naming the volume and number, Eastern Europe, The Soviet Union · 1946 v6 · Doc 475, and at the right Search, Browse, the Analytics and My Research menus, and the Research rail button.](screenshots/macos/toolbar.png)
 
 | Control | Shortcut | Opens |
 |---------|----------|-------|
@@ -99,7 +99,7 @@ A highlight is kept at once and syncs to your other devices through iCloud; a no
 
 The **Research rail** is the panel beside the document, for everything you do *about* a document. It is open the first time you read one; ⇧⌘R hides it and brings it back.
 
-![The Long Telegram in the main window with the Research rail open: the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Topics, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection; a yellow highlight in the text, and the Doc 474 and Doc 476 buttons under it.](screenshots/macos/research-strip.png)
+![The Long Telegram in the main window with the Research rail open: the seven tiles — Cite, Word Cloud, Sources, Graph, Related, On the Map, Share — and the Subjects, Summary, Notes, Tags and Collections sections, here holding a note, the tag Containment and one collection; a yellow highlight in the text, and the Doc 474 and Doc 476 buttons under it.](screenshots/macos/research-strip.png)
 
 *The Research rail beside the Long Telegram, with a highlight in the text and a note, a tag and a collection on the rail.*
 
@@ -164,7 +164,7 @@ Much of this is answered offline from data that ships with the app. A free NARA 
 
 **The Research window** (⌥⌘R, or **My Research ▾ → Research**) gathers every document you have annotated, grouped by collection, tag or highlight color, with **All Notes** beside them. **My Research ▾ → Complete History…** lists everything you have read.
 
-![The Research window: All Research Documents, Contains Notes and All Notes in the sidebar, with groups By Collection, By Tag and By Highlight, and the list of annotated documents, one showing its yellow highlight, its note, its tag and its collection.](screenshots/macos/research.png)
+![The Research window: All Research Documents, Contains Notes and All Notes in the sidebar, with groups By Collection, By Tag and By Highlight, and the list of annotated documents, each opening with its number (Document 475 above the Long Telegram's title), one showing its yellow highlight, its note, its tag and its collection.](screenshots/macos/research.png)
 
 *The Research window.*
 
