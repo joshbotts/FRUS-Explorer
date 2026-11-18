@@ -30,6 +30,7 @@ import Foundation
 /// Version history:
 ///   1.0 — FRUS Explorer Light: initial implementation, versions 1 to 6
 ///   1.1 — FRUS Explorer Light: version 7
+///   1.2 — #1915 (L23): `webEditionVersion7`, version 7 as FRUS Explorer Light writes it, with its key
 enum ResearchDataFixtures {
 
     /// The fixtures' ids: `id(1)` is the project, 2 the tag, 3 the note, 4 the highlight, 5 the
@@ -42,6 +43,24 @@ enum ResearchDataFixtures {
     static func id(_ number: Int) -> UUID {
         UUID(uuidString: "10000000-0000-4000-8000-" + String(format: "%012x", number))!
     }
+
+    /// The version-7 file as FRUS Explorer Light writes it (its `ResearchExport.file`): the
+    /// envelope written by the kit's encoder, with the web's one key more, `frusExplorerLight`,
+    /// which sorts after `formatVersion`. Its records are `version7`'s, since the web's export of
+    /// the same records is held to the app's by its own parity tests. The key is a curator's export
+    /// with the summaries, which carries the two corrections `version7` holds.
+    static let webEditionVersion7 = version7.replacingOccurrences(
+        of: "\n  \"formatVersion\" : 7,\n",
+        with: """
+
+              "formatVersion" : 7,
+              "frusExplorerLight" : {
+                "formatVersion" : 1,
+                "includesCorrections" : true,
+                "includesGeneratedSummaries" : true
+              },
+
+            """)
 
     /// Every earlier version's file, by version.
     static let earlierVersions: [(version: Int, json: String)] = [
