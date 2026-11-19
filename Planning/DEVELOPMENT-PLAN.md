@@ -11834,3 +11834,6 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - A destructive swipe button animates its row away as if deleted, and takes the row's dialog with it. That is the trap L19 measured and fixed for a collection's entries (a red tint, no destructive role; `CollectionRowDeleteTests`), which the list of collections did not take.
   - Unchanged since `build-53`. The row's long-press menu has a Delete of its own, which leaves the row in place.
   - It is not a crash, a loss of work or a store check.
+- **F10 joins R6a** on the owner's word ("Before R7, in R6a"). Its brief asks for L19's fix applied to the collections list's swipe: a red tint without the destructive role, so the row and its dialog stay. It also asks for a search of the app for the same pattern, a destructive swipe button whose row carries the dialog it raises, with each such row fixed or recorded, and a UI test beside `CollectionListManagementTests` that fails on `v2` first.
+  - **R6a now holds F8, F1, F3, F4, F5, F6, F9 and F10**; F2 and F7 go to the first update, and R6b runs before R6a.
+  - **All 80 checks are accounted for:** 67 passed, 3 seen, 7 failed in full or in part, and 3 not checked.
