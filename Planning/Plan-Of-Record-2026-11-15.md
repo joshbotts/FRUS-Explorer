@@ -165,6 +165,7 @@ It is written from four sources:
 | L25 | The Collections templates named for what they do, six in place of four: *Full text as printed*, *Full text with your annotations*, *Summaries with overview*, *Citations with your notes*, *Citations with archival sources* and *Everything included* (decision 139). The last row before R5, after L23 and L24 (decision 140); built on the owner's Mac | — |
 | R5 | The release checklist on the frozen tree, the bump to 1.0 (1823), the fourth TestFlight build (decision 137), both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
 | R6 | 1.0 (1823) uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
+| R6a | Found by R6 (finding F1), before R7 on the owner's word: the tab shell's banner and the room it sets aside kept equal through a re-index or a queue, on iPhone and iPad; then a TestFlight build numbered between 1823 and 1861 | — |
 | R7 | The bump to 1.0 (1861) | — |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
@@ -574,6 +575,7 @@ It is written from four sources:
     - **The FRUS Explorer Light file is the owner's own** ("My own web export").
     - **Not checked, by those answers:** IPH-9 (there is no small iPhone, and onboarding opens again only through a reset), #1835 (there is no iPad mini), and a file's synced settings ("Skip it").
     - **The results, by ID** (the checklist has each one). **PH1–PH3, PD1–PD3 and MC1–MC3 passed** (2026-11-18): each index reads format version 75 with nothing pending, and each device's research is all there. At its first launch of 1823 the re-index took about 5–6 minutes on the iPhone, 7–10 on the iPad and 3 on the Mac. On the Mac, the installed index, read read-only, holds all 553 volumes with their file records and 321,749 documents.
+    - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session").
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
   - **What changed since 1812:** R5's Mac walk, on the iPad and the iPhone too; and, on iOS, a queue left to index while the app is away (L11 to L14, which 1812 was the first to carry).
   - **Each row's own surface**, from its log entry, and the review's checks that only a device can make (its §6), where the device is at hand:
@@ -587,7 +589,37 @@ It is written from four sources:
   - **On an iPhone under iOS 27:** Browse ▸ Subjects, and the Subject index's search field. L15's UI runs found none on the iPhone 17 simulator under 27.0, on `v2` too (R5, above). If a device has no field either, the index cannot be searched on an iPhone, which is a defect to put to the owner. *R5 found the field (2026-11-18): iOS 27 keeps it in the navigation bar's drawer until the list is pulled down, as Mail's, so on a device the pass checks that a pull shows it, and whether a reader would find it there; and that the index's large title reads plainly, which the simulator's screenshots, taken with animations off, drew blurred.*
   - **If the iPad is an iPad mini on iOS 27:** a search field with the keyboard up on the Browse root, for #1835, which fails only in the iPad mini simulator under 27.0.
   - **A defect the pass finds** goes to a row on the owner's word, and the next upload takes a number above 1823 and below 1861, with the calendar's Saturday as its slack. One that is not a crash, a loss of work or a store check may go to the first update instead (§1's calendar).
-- **R7, the bump to 1.0 (1861).** One session, one pull request, when R6 has passed: `CURRENT_PROJECT_VERSION` 1861 by the same procedure, the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes' release-candidate line. No other change: the tree that goes to App Review is R6's but for its build number.
+- **R6a, the tab shell's banner and the room it sets aside.** Found by R6 (F1, during PD3), and placed before R7 on the owner's word of 2026-11-18: "make this one issue for the pre-R7 session." It is one fresh session from `v2`, once R6's records have merged. A later finding the owner places before R7 joins this row, unless the owner splits it off.
+  - **What the owner saw,** on an iPad Pro 13-inch under iPadOS 27.2, landscape, during 1.0 (1823)'s re-index to 75 at its first launch. The screenshot is `R6-Device-Pass-2026-11-18-PD3-banner.webp`.
+    - **On Browse, two-pane,** with `frus1977-80v24`'s *Argentina* chapter listing its 66 documents, the indexing banner hung across both columns about a third of the way up the window. It held *Indexing frus1969-76ve01…* with its counts and progress, the *Learn about FRUS while you wait* strip, and the volume's card (title, years, series, Key Persons, *88 cross-references to other volumes*). Documents 57 and 58 were behind it, 59 and 60 showed below it, and below it the sidebar column was empty. Read from the screenshot, the banner is about 189 pt tall, with about 155 pt of the list showing beneath it. So the room the tab set aside was taller than the banner, which hangs at the top of that room.
+    - **In the reader,** a blank band lay between the end of the document's text and the banner: the text did not use the height it had. Opening the Research rail put it right.
+  - **The code,** in `FRUSExplorer/App/MainTabView.swift`, iOS only. It is unchanged since `build-53`, so 1.0 (1812) had the same behaviour.
+    - Each tab's root draws `indexingBanner` through `tabShellBanner` (`TabShellBannerModifier`, #1565). The banner hangs from the safe area's bottom edge as an overlay.
+    - `onGeometryChange` measures the banner's stack into `bannerHeight`. `TabShellBannerReserve` then writes that height into the tab hosting controller's `additionalSafeAreaInsets.bottom`, on a later main-queue turn.
+    - The banner's states change with `.move(edge: .bottom)` transitions. During a re-index the single-volume banner's card changes at each volume, and its height with it: about one volume a second on the owner's iPad.
+  - **Readings to test, none settled:**
+    - the reserve lags the banner: a write for an earlier, taller height (two states stacked during a transition, or a longer card) lands after the banner has shrunk, and nothing writes again until the height next changes;
+    - the reserve is right, but the list's or the web view's scroll inset keeps an earlier safe area until something lays it out again, as opening the rail did;
+    - the measured stack keeps a leaving view's height through its transition.
+
+    Memory's `swiftui_bottom_inset_does_not_reach_stack_content` and `swiftui_overtall_view_is_centred_moves_insets` hold #1565's measurements.
+  - **To reproduce:**
+    - Use the iPad Pro 13-inch (M5) simulator under iOS 27.2, landscape, with R5's 1812 library, `~/Library/Caches/FRUS-Explorer/q1/snapshot-A74` (553 volumes at 74). The first launch of a 75 build re-indexes it, as the owner's did.
+    - While the banner runs, open Browse ▸ a volume's chapter in two-pane, and a document in the reader, and take frames a second apart.
+    - Then do the same on the iPhone 17 under 27.2, where the banner sits above the tab bar.
+    - Log the reserve as written (`reserve()`, DEBUG) and the banner's frame, and the reader web view's frame and `scrollView.adjustedContentInset`.
+    - `TabShellBannerClearanceTests` holds still banners only, never one whose height changes.
+  - **Done looks like:**
+    - On iPad and iPhone, during a re-index and during a download queue, the room set aside equals the banner's height to a point at every settled frame. There is no band below the banner, and a list's last row and the reader's text end at its top.
+    - When the banner goes, the content runs to the bottom with no band, and the reader needs no relayout of its own.
+    - A UI test drives the banner through changes of height and holds the list's and the reader's bottom edges to the banner's top after each change. It can use the download seam (`FRUS_UI_TEST_DOWNLOADS=hold` with `FRUS_UI_TEST_QUEUE_DOWNLOADS`) or a seam of its own, and is seen to fail on `v2` first.
+    - `TabShellBannerClearanceTests` still passes on the iPhone 17 and the iPad Pro 11-inch (M5), as do the unit target, a clean `build-for-testing` and the Mac build.
+  - **The build:** an upload numbered above 1823 and below 1861, its number the owner's to name, as 1823's was (decision 137).
+    - The row bumps `CURRENT_PROJECT_VERSION` by `CLAUDE.md`'s procedure, with the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes (the build number, and the fix in the one line).
+    - The owner archives, uploads and tags it (`build-55` would follow the others).
+    - Before R7, the owner checks it on the iPad: Volumes & Storage ▸ Rebuild Index, or a queue of downloads, with Browse and the reader open.
+  - **Also in the screenshot, for the session and the owner to judge:** the drifting words behind *Learn about FRUS while you wait* pass over the link's own words (*nation* over *while you wait*).
+- **R7, the bump to 1.0 (1861).** One session, one pull request, when R6 has passed and R6a's build has passed on a device: `CURRENT_PROJECT_VERSION` 1861 by the same procedure, the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes' release-candidate line. No other change: the tree that goes to App Review is R6's but for its build number.
 - **R3, the submission.** The owner archives and uploads 1.0 (1861) for both platforms, opens it once from TestFlight (About reads *Version 1.0 (1861)*), and submits it with §2's answers; then tags that commit `1.0-release` (decision 113).
 
 ---

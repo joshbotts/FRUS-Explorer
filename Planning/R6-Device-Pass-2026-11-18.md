@@ -106,7 +106,7 @@ Tags:
 |---|---|---|
 | PD1 | **Settings ▸ Library ▸ Volumes & Storage ▸ Advanced:** Index Health reads *Format version 75*, nothing pending; the storage figures, as in PH1. | **Pass** (2026-11-18) |
 | PD2 | **Research tab:** your notes, highlights, tags and collections are all there, in the same numbers as on the iPhone and the Mac. | **Pass** (2026-11-18) |
-| PD3 | *From memory:* the iPad's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass), as in PH3. | **Pass** (2026-11-18): the re-index ran and finished in about 7–10 minutes |
+| PD3 | *From memory:* the iPad's re-index at its first launch of 1823, and at its update to 1812 (R2c's pass), as in PH3. | **Pass** (2026-11-18): the re-index ran and finished in about 7–10 minutes. Finding **F1** seen during it: see *Findings*, below, and row R6a |
 
 ### What changed since 1812: R5's Mac walk, on the iPad
 
@@ -182,6 +182,12 @@ Each platform reads both files. One device writes each file, and iCloud carries 
 | X7 | **Cleanup,** on any one device: delete *R6 import test*, *R6 scratch* and the other scratch notes and collections. They leave all three devices. | |
 
 ---
+
+## Findings
+
+| Finding | Seen at | What the owner saw | Placed |
+|---|---|---|---|
+| **F1** | PD3, during the iPad's re-index to 75 at its first launch of 1823 | **On Browse, two-pane:** the indexing banner hung across both columns about a third of the way up the window. Documents 57–58 of `frus1977-80v24`'s *Argentina* were behind it, 59–60 showed below it, and below it the sidebar was empty ([the screenshot](R6-Device-Pass-2026-11-18-PD3-banner.webp)). **In the reader:** a blank band between the document's text and the banner, gone once the Research rail was opened. | **Row R6a, before R7,** on the owner's word: "make this one issue for the pre-R7 session" |
 
 ## Results
 
