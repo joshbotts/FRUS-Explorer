@@ -609,6 +609,7 @@ It is written from four sources:
       - *See … De Long* went to the top of the index on the Mac as on the iPad, so F6's second part is the shared code's. The landing script is the kit's and its WebKit test passes, so the likelier fault is the link's target, in the kit's grammar or the serializer, both shared with FRUS Explorer Light and pinned by `ReaderLinkTests`.
 
       F6 joins R6a, before R7, on the owner's word ("Before R7, in R6a").
+    - **MC17 and MC18 were not checked,** both optional, on the owner's choice. That ends the Mac's section: of MC1 to MC18, every check made passed, MC15 confirmed F7 and gave F6's Mac side, and MC6 gave F2 and X1 gave F3.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).

@@ -11785,3 +11785,4 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - what done looks like, Mac check 27's other two taps included.
 
   R6a now holds F8, F1, F3, F4, F5 and F6.
+- **MC17 and MC18 were not checked,** both optional, on the owner's choice: the Mac's Cancel All, and the NARA lookup with the key. That ends the Mac's section. Every check made there passed. MC6 gave F2 and MC15 F6's Mac side, and X1, the Mac's export, gave F3.
