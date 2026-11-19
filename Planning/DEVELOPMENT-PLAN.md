@@ -11777,3 +11777,11 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - *See … De Long* in `frus1873p1v1`'s index went to the top of the index on the Mac, as on the iPad, so F6's second part comes from the shared code. Mac check 27's *reaches its entry* (13 November) was that check's expected result, and no record says the owner saw it.
   - The landing script is the kit's (`FRUSCoreKit/TEI/IndexEntryLanding.swift`), and `IndexEntryLandingWebKitTests` holds it scrolling to a real anchor. So the likelier fault is the link's target, in the kit's grammar or the serializer, both shared with FRUS Explorer Light and pinned by `ReaderLinkTests`.
   - The volume's TEI was read (the owner's library, read-only), but the link's exact target was not traced.
+- **F6 joins R6a** on the owner's word ("Before R7, in R6a"). R6a's bullet carries its brief:
+  - what PD12, PD13 and MC15 showed;
+  - the code, with both hosts alike and the kit's landing test passing;
+  - the lead from #1902, whose owner's rules for a link inside a link ("Outer link wins", "Keep gives way") cover the index's *See* references;
+  - the shared-code duties (`swift test`, `ReaderLinkTests`' table, the reader's pins);
+  - what done looks like, Mac check 27's other two taps included.
+
+  R6a now holds F8, F1, F3, F4, F5 and F6.
