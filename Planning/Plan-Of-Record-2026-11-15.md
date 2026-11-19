@@ -589,6 +589,7 @@ It is written from four sources:
       - in `frus1873p1v1`'s index, *See … De Long* jumped to the beginning of the index, not to De Long's entry as Mac check 27 found.
 
       Both platforms' code paths are identical, so the cause is what this device resolves or WebKit, or a change on both platforms since 13 November. MC15 now taps both links on the Mac to tell which, and F6 is placed after that.
+    - **PD13, seen:** the same contents line opened document 1 this time, so F6's first part does not happen every time. A page link in the index opened the document holding the term. The Contents' links to the front matter and to the Index, T2's fourth finding, were not reported.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
