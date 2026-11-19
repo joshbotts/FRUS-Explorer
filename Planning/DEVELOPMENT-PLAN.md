@@ -11759,3 +11759,9 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
 - **PD23 passed,** which ends the iPad's section. In *R6 scratch*'s Configure sheet, **Open Document** closed the sheet and opened the document in the collection (L19, IPA-4).
   - Of PD1 to PD25, two failed: PD12 (F6) and PD21 (F8, the crash).
   - PD7 passed with F5, PD13 gave F7 (T2's fourth finding), PD16 a note on iPadOS's own tab bar, and PD3 F1.
+- **MC4, MC9 and MC11 passed** on the Mac:
+  - Data & Recovery reads *The copy will carry index version 75.* under Export Research Database…, with Import from JSON… under Export as JSON (L22, L24);
+  - the Search window's Facets bar, *Years: 2 included*, applied its two Years in one search (L18);
+  - the note window's Discard, Esc and close button each asked *Discard Changes?*, Save saved and closed, and Delete asked and closed (L19, IPA-2).
+
+  At the owner's question, MC12's and PH22's *Already here* were written out from `CollectionPickerSheet`. It is the hollow check and words a picker row shows for a moment, before the picker closes, when the collection clicked already holds the document; nothing is then added twice.
