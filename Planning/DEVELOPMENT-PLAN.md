@@ -11765,3 +11765,4 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - the note window's Discard, Esc and close button each asked *Discard Changes?*, Save saved and closed, and Delete asked and closed (L19, IPA-2).
 
   At the owner's question, MC12's and PH22's *Already here* were written out from `CollectionPickerSheet`. It is the hollow check and words a picker row shows for a moment, before the picker closes, when the collection clicked already holds the document; nothing is then added twice.
+- **MC12 passed** on the Mac: *R6 scratch*'s ⚙ popover showed the six template cards, each click making only its card active (L25); a note block's trash asked *Delete Note Block?* (MAC-2); and Add to Collection on a document the collection held showed *Already here*, adding nothing twice (A11Y-3).
