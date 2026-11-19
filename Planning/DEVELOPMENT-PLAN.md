@@ -11756,3 +11756,6 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - the Research tab's rows carry the *Document N* line (L21, MAC-5).
 
   At the owner's ask, PD23's line was rewritten to the screen as built: the row's tap or **Configure** pill, the sheet with the head and **Open Document**, and the older long-press *Open Document* (#755), which the check is not about.
+- **PD23 passed,** which ends the iPad's section. In *R6 scratch*'s Configure sheet, **Open Document** closed the sheet and opened the document in the collection (L19, IPA-4).
+  - Of PD1 to PD25, two failed: PD12 (F6) and PD21 (F8, the crash).
+  - PD7 passed with F5, PD13 gave F7 (T2's fourth finding), PD16 a note on iPadOS's own tab bar, and PD3 F1.
