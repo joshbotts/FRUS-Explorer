@@ -602,6 +602,13 @@ It is written from four sources:
     - **PD23 passed,** which ends the iPad's section: in the Configure sheet, Open Document closes the sheet and opens the document in the collection (L19, IPA-4). Of PD1 to PD25, PD12 and PD21 failed (F6, F8), and PD7 passed with F5. PD13, PD16 and PD3 also gave F7, a note on iPadOS's tab bar, and F1.
     - **MC4, MC9 and MC11 passed** on the Mac: Data & Recovery names index version 75 and lists Import from JSON…; the Search window's Facets bar applies two Years; and the note window asks before it discards, and closes on Save and on Delete. **MC12 passed:** *R6 scratch*'s six template cards, a note block's trash asking first, and *Already here* for a collection that already held the document.
     - **MC10, MC13 and MC16 passed** (2026-11-19). The Research window's rows read their numbers and heads at once, so T2's third finding, #1946, did not show this time; it comes and goes, and its issue stays open. *R6 scratch* exported as PDF and as Word. Help's two links and About ▸ Legal's rows opened where they should.
+    - **MC14 passed:** the four charts under macOS 27.2 in the installed build.
+    - **MC15:**
+      - The Contents' front-matter and Index links still do nothing on the Mac (F7).
+      - v06's contents line opened document 1 there, as on the iPad in PD13, so F6's first part was seen once and is intermittent.
+      - *See … De Long* went to the top of the index on the Mac as on the iPad, so F6's second part is the shared code's. The landing script is the kit's and its WebKit test passes, so the likelier fault is the link's target, in the kit's grammar or the serializer, both shared with FRUS Explorer Light and pinned by `ReaderLinkTests`.
+
+      F6 waits for the owner's word.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).

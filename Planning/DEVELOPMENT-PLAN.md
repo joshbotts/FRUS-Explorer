@@ -11770,3 +11770,10 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - The Research window, opened soon after launch, read its rows' numbers and heads at once, so T2's third finding (#1946, filed by L21) did not show. It has been seen three times, twice by L21 and once in T2, so it comes and goes, and the issue stays open with this pass noted.
   - *R6 scratch* exported as PDF and as Word, and both opened.
   - Help's Privacy Policy and FRUS Explorer Support opened in Safari, and About ▸ Legal's two rows in the in-app browser (L17).
+- **MC14 passed:** the four bar charts name their bars under macOS 27.2 in the installed build, which R5 had seen only in the check copy.
+- **MC15, seen:**
+  - The Contents' front-matter and Index links still do nothing on the installed Mac build (F7).
+  - v06's *Kennedy-Khrushchev Exchanges* line opened document 1, as on the iPad in PD13. So F6's first part, the document list, was seen once on the iPad and not since on either platform: it is intermittent.
+  - *See … De Long* in `frus1873p1v1`'s index went to the top of the index on the Mac, as on the iPad, so F6's second part comes from the shared code. Mac check 27's *reaches its entry* (13 November) was that check's expected result, and no record says the owner saw it.
+  - The landing script is the kit's (`FRUSCoreKit/TEI/IndexEntryLanding.swift`), and `IndexEntryLandingWebKitTests` holds it scrolling to a real anchor. So the likelier fault is the link's target, in the kit's grammar or the serializer, both shared with FRUS Explorer Light and pinned by `ReaderLinkTests`.
+  - The volume's TEI was read (the owner's library, read-only), but the link's exact target was not traced.
