@@ -188,7 +188,7 @@ Each platform reads both files. One device writes each file, and iCloud carries 
 | Finding | Seen at | What the owner saw | Placed |
 |---|---|---|---|
 | **F1** | PD3, during the iPad's re-index to 75 at its first launch of 1823 | **On Browse, two-pane:** the indexing banner hung across both columns about a third of the way up the window. Documents 57–58 of `frus1977-80v24`'s *Argentina* were behind it, 59–60 showed below it, and below it the sidebar was empty ([the screenshot](R6-Device-Pass-2026-11-18-PD3-banner.webp)). **In the reader:** a blank band between the document's text and the banner, gone once the Research rail was opened. | **Row R6a, before R7,** on the owner's word: "make this one issue for the pre-R7 session" |
-| **F2** | MC6 | **On the Mac, the main window's title, the document's head, is almost always cut short.** L21's walk met the same thing at the window's default 1,200 pt: AppKit gives the title about 140 pt before it moves a toolbar item into ». The toolbar's centre names the volume and number whole, and the Window menu and the centre's tooltip name the document. Not a crash, a loss of work or a store check. | *Waiting for the owner's word* |
+| **F2** | MC6 | **On the Mac, the main window's title, the document's head, is almost always cut short.** L21's walk met the same thing at the window's default 1,200 pt: AppKit gives the title about 140 pt before it moves a toolbar item into ». The toolbar's centre names the volume and number whole, and the Window menu and the centre's tooltip name the document. Not a crash, a loss of work or a store check. | **The first update after 1.0,** on the owner's word ("First update"): among §3's candidates |
 
 ## Results
 
