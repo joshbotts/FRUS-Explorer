@@ -624,7 +624,15 @@ It is written from four sources:
     - Analytics' charts.
 
     It is written to `Planning/iPhone-Duo-Assessment-<date>.md`, with the screenshots beside it. Each behaviour gets the posture and path that show it, its weight by R6's rule (a crash, a loss of work or a store check, or not), and a proposed mitigation.
-  - **Xcode's app-resizability skill:** the owner exported Xcode's agent skills on 2026-11-18 (`xcrun agent skills export --output-dir ~/.claude/skills`; "It ran"). Skills load when a session starts, so R6's session does not list the skill, but a session started afterwards should. Follow it if it is listed.
+  - **Xcode's app-resizability skill:** the owner exported Xcode's agent skills on 2026-11-18 (`xcrun agent skills export --output-dir ~/.claude/skills`; "It ran"), and the skill was listed from then on, in R6's own session too. Follow it.
+    - It replaces shared-state APIs with ones a resizable scene can trust. Counted on 2026-11-18, comments included:
+      - `userInterfaceIdiom`: 14 lines in 10 files: `ResearchView`, `SettingsView`, `MainTabView`, `SearchView`, `CompilationView`, `BrowserView`, `ReadingWidth`, `ProjectPickerMenu`, `DocumentView` and `LaunchSplashView`;
+      - `safeAreaInsets` read directly: in `OnboardingView` (4) and `LaunchSplashView` (8);
+      - the app's lifecycle notifications: 5, all in `FRUSExplorerApp.swift`;
+      - `UIScreen.main` and `connectedScenes`: one each, both in `FrameTimeProbe.swift`;
+      - `interfaceOrientation`, `UIDevice.current.orientation` and the key window: none.
+    - **Before R7, a change the skill suggests is a mitigation only where the assessment shows a misbehaviour it causes.** The freeze holds, so the rest of its modernising is for after 1.0, in §5 or the first update.
+    - **The lifecycle notifications include the background-entry observer** that asks for the indexing task (L11 to L14). A change there keeps that request, and passes `BackgroundTaskAppStateTests.swift`'s suites.
   - **Mitigations:** the owner places each finding by R6's rule.
     - A crash, a loss of work or a store check is mitigated in this row, before R7. Where a test can hold the fix, it comes with one that fails first on `v2`: a UI suite on the Duo simulator pinned to `OS=27.2`, also run on the iPhone 17 and an iPad it already runs on.
     - Anything else may go to the first update, or to §5.
