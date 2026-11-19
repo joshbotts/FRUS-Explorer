@@ -11727,4 +11727,4 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
 - **Finding F7, T2's fourth finding now seen on a device.** Asked after PD13, the owner reported that `frus1961-63v06`'s Contents links to its front-matter items and to its Index do nothing on the iPad, as R5's walk saw on the Mac.
   - Read from the code: `FRUSURLScheme.resolveCrossRefTarget` reads a roman-numeral page anchor (`pg_III`) as `.unresolved` by design. The Index's `#pg_315` is read as page 315, but `PageLink.destination` finds no document holding it in the device's page index or the bundled map, and so, by its documented rule, opens nothing.
   - A fix may have to map front- and back-matter pages to their divisions, in the page index (an index version, under the freeze) or at the tap. A reader can reach both from the volume's page in Browse.
-  - It is not a crash, a loss of work or a store check.
+  - It is not a crash, a loss of work or a store check. Placed on the owner's word ("First update"): the first update after 1.0, among the plan's §3 candidates.
