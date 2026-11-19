@@ -11795,3 +11795,9 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - Source Explorer resolves `frus1952-54v02p1` d41's lot (#1894).
   - Cross-Reference Analytics' Most-Referenced draws each name beside its bar under iOS 27.2 on a device, which R5 had measured only in the simulator (decision 141). A bar opens its document, and the graph draws at two hops and on Timeline.
   - Corpus Analytics' **View N documents ↗** opens Search with the same count, and the comparison's lines are solid, dashed and dotted with each pattern in the legend. L21 had seen those patterns only in an offscreen render and the source.
+- **PH11 to PH15 passed** on the iPhone:
+  - Person Analytics', About the Series' and Archival Analytics' names beside their bars;
+  - the Word Cloud's three lenses with Distinctive sizing;
+  - Kissinger's sheet, with a scope bar's Subjects.
+
+  In PH11 the co-mention network, zoomed, overflowed its frame on the iPhone as on the iPad. So F5 shows on both, and R6a's brief now says so.
