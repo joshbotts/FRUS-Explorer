@@ -11699,3 +11699,11 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
 - **A row added during the pass, R6b,** on the owner's word: "add a row to assess the app's behavior on an iphone duo simulator. the assessment should focus on mitigating undesirable behaviors rather than exploiting new opportunities afforded by the device". Placed before R7 ("Before R7, as R6b"), to run after the pass and before R6a, so that R6a's one upload carries what R6b lands.
   - What the brief was written from: this Mac has an iPhone Duo simulator under iOS 27.2 (`69E4A90C`); the app declares no `UIRequiresFullScreen`, all four orientations and multiple scenes; and `FRUSExplorer/` holds at least twelve branches on `userInterfaceIdiom` in ten files, the likeliest place for "iPhone" to mean "narrow" on an unfolded inner screen.
   - The owner chose to export Xcode's agent skills, app-resizability among them, with `xcrun agent skills export --output-dir ~/.claude/skills` ("Yes, I'll run it"), so that R6b's session may load it.
+- **F4 moved into R6a** on the owner's word ("Move to R6a"), once X3 had shown it on the Mac too and its cause was found to be the one override in `AllNotesScreen`. It had first been placed in the first update. Its §3 entry is gone, and R6a's bullet carries its brief:
+  - the defect, as X2 and X3 showed it;
+  - the cause;
+  - care for the delete path where L19 fixed the iPad's crash;
+  - the fix's shape;
+  - what done looks like: All Notes left open follows another device's changes on every platform, with a test that fails on `v2` first and `NoteEditorUnsavedChangesTests` still passing.
+
+  R6a now holds F1, F3 and F4 in one upload.
