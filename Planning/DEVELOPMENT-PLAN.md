@@ -11766,3 +11766,7 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
 
   At the owner's question, MC12's and PH22's *Already here* were written out from `CollectionPickerSheet`. It is the hollow check and words a picker row shows for a moment, before the picker closes, when the collection clicked already holds the document; nothing is then added twice.
 - **MC12 passed** on the Mac: *R6 scratch*'s ⚙ popover showed the six template cards, each click making only its card active (L25); a note block's trash asked *Delete Note Block?* (MAC-2); and Add to Collection on a document the collection held showed *Already here*, adding nothing twice (A11Y-3).
+- **MC10, MC13 and MC16 passed** on the Mac, on 2026-11-19 by the owner's clock.
+  - The Research window, opened soon after launch, read its rows' numbers and heads at once, so T2's third finding (#1946, filed by L21) did not show. It has been seen three times, twice by L21 and once in T2, so it comes and goes, and the issue stays open with this pass noted.
+  - *R6 scratch* exported as PDF and as Word, and both opened.
+  - Help's Privacy Policy and FRUS Explorer Support opened in Safari, and About ▸ Legal's two rows in the in-app browser (L17).
