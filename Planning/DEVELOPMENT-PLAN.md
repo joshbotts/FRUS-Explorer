@@ -11818,3 +11818,8 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - Search's Filters ▸ Done ran the search again, Facets' foot bar applied two Years, and taps just beside Filter and More opened them (L18: IPS-1, IPH-3, IPH-5);
   - the note editor asked *Discard Changes?* on a swipe (L19, IPA-2);
   - Add to Collection said *Added to "R6 scratch"*, then showed *Already here* for the same document, adding nothing twice (L19, A11Y-3).
+- **PH23 to PH26 passed** on the iPhone:
+  - *R6 scratch*'s six template chips in a scrolling row, each selected alone and named in the settings row, and a PDF export (L25);
+  - a note block's *Delete Note Block?* and Open Document at the head of an entry's settings (L19, MAC-2 and IPA-4);
+  - the Research tab's *Document N* lines (L21, MAC-5);
+  - About ▸ Legal's Privacy Policy and Support in the in-app browser, its GitHub link sent to Safari with the sheet kept (L17, ASR-2 and ASR-3).
