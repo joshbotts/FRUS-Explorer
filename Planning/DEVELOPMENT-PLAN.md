@@ -11823,3 +11823,14 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - a note block's *Delete Note Block?* and Open Document at the head of an entry's settings (L19, MAC-2 and IPA-4);
   - the Research tab's *Document N* lines (L21, MAC-5);
   - About ▸ Legal's Privacy Policy and Support in the in-app browser, its GitHub link sent to Safari with the sheet kept (L17, ASR-2 and ASR-3).
+- **PH27, PH28 and PH30 passed; PH29 was not checked.**
+  - Save to Photos from `frus1902app1` d31's map saved the image with the app running on: the device check of L17's Photos key (ASR-1).
+  - A long press raised the edit menu on the first press.
+  - On an iPhone 14 Pro, a device that cannot run Apple Intelligence, the summary surfaces said so. The turned-off and not-ready sentences were not seen (HCD-5).
+  - Voice Control (A11Y-5) was skipped by the owner, so *Tap Archives* and its three siblings have still not been heard on a device.
+- **X5 passed:** the iPhone read the Mac's export and the FRUS Explorer Light file as *…would change nothing*. Every platform has now read both files, and the iPad wrote one and the Mac the other.
+- **X7 failed in part. Finding F10.** On the iPhone, a swipe to delete *R6 scratch* in the Collections list raised the confirmation, which dismissed itself before the owner could answer.
+  - Read from the code (`FRUSExplorer/Collections/CollectionListView.swift`): the row's swipe action is `Button(role: .destructive)`, and the row carries its own confirmation (`.collectionDeleteConfirmation`).
+  - A destructive swipe button animates its row away as if deleted, and takes the row's dialog with it. That is the trap L19 measured and fixed for a collection's entries (a red tint, no destructive role; `CollectionRowDeleteTests`), which the list of collections did not take.
+  - Unchanged since `build-53`. The row's long-press menu has a Delete of its own, which leaves the row in place.
+  - It is not a crash, a loss of work or a store check.
