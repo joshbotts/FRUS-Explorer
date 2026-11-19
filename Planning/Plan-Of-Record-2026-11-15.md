@@ -752,6 +752,7 @@ It is written from four sources:
       - Use the iPad Pro 13-inch (M5) simulator in Windowed Apps, under iOS 27.2 and under 27.0, with a document open and the rail open on each of its sections in turn.
       - Narrow the window step by step to its 374-pt minimum and widen it again; then try Split View and Slide Over.
       - A DEBUG build prints SwiftUI's message, which names the missing type.
+      - **It is intermittent:** not every narrowing crashes (the owner: "narrowing with rail open doesn't always cause a crash"). So repeat each step many times, at different speeds, and count crashes over tries. A clean narrowing proves nothing, and the fix's test has to try enough times to fail on `v2`. A crash that comes and goes fits the moment SwiftUI re-hosts the open inspector as a sheet.
       - R6b's Duo, folded and unfolded with the rail open, may meet the same crash.
     - **Done looks like:**
       - No crash narrowing or widening with the rail open, on each of its sections, on those simulators, on the Duo, and on the owner's iPad.
