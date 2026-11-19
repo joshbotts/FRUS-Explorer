@@ -11707,3 +11707,12 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - what done looks like: All Notes left open follows another device's changes on every platform, with a test that fails on `v2` first and `NoteEditorUnsavedChangesTests` still passing.
 
   R6a now holds F1, F3 and F4 in one upload.
+- **PD4, PD5, PD6 and PD7 passed** on the iPad:
+  - Source Explorer resolves `frus1952-54v02p1` d41's lot to RG 59, A1 1586E;
+  - Cross-Reference Analytics draws each name beside its own bar, a bar opens its document, and the graph draws at two hops and on Timeline;
+  - Corpus Analytics' **View N documents ↗** opens Search with the same N, with the comparison's line patterns;
+  - Person Analytics draws each name of its ranking beside its own bar.
+- **Finding F5, from PD7.** Zoomed into Kissinger's neighbours, Person Analytics' co-mention network drew its nodes and names outside its window: over the window's own header (*Trends*, *Network*, the scope and focus lines) and past its edges, over the main window behind it. The owner's screenshot is `Planning/R6-Device-Pass-2026-11-18-PD7-graph-overflow.webp`.
+  - Read from the code: four network graphs zoom and pan a canvas with `.scaleEffect` then `.offset`, and none clips it to its frame. They are `PersonCoMentionGraphView.swift:824`, `CrossReferenceGraphView.swift:443`, `VolumeConnectionGraphView.swift:613` and `ArchivalNetworkView.swift:326`; the cross-reference view's one `clipShape` (`:1349`) is on a small rounded element, not the canvas.
+  - Whether a parent clips any of the four was not traced. A zoomed node's tap area may lie over the window's own controls too.
+  - None of the three files that #1899 and #1901 moved into the kit since `build-53` changed this chain, so it is older than 1823. It is not a crash, a loss of work or a store check.
