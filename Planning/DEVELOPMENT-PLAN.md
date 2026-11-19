@@ -11801,3 +11801,12 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - Kissinger's sheet, with a scope bar's Subjects.
 
   In PH11 the co-mention network, zoomed, overflowed its frame on the iPhone as on the iPad. So F5 shows on both, and R6a's brief now says so.
+- **PH16 to PH19**, with the owner's answers to four questions:
+  - **PH16:** the reader's contents link opened document 1, and *JAY, JOHN* reached its entry; *Martin* in *Bill Martin* opened his card, and v06's index page numbers were easy to tap. *See … De Long* went to the top of the index on the iPhone too.
+  - **F6, rewritten.** The owner confirmed that PD12's document list came from **Browse's volume list**, which opens a compilation's documents by design, so its first part is withdrawn. Its second part shows on all three platforms, while the index's other links work, so the fault is in the *See* form. That is the case #1902's "Keep gives way" was written for, and R6a's brief now says so.
+  - **PH17:** F7 on the iPhone too, so it is on all three platforms.
+  - **PH18 failed in part. Finding F9.** The CIA job rows have their counts, but Job 09–00438R's sheet was empty in both scopes, This volume and All volumes, though its count reads 2. On the iPad (PD14) the same sheet, the same code, showed both.
+    - The count is read from the device's own index (`document_sources.job_number_norm`, L22), and so is the sheet's query. So the iPhone's query found nothing the count found.
+    - The cause is either the iPhone's state, such as a load during indexing, or a difference between the count's key and the query's. The scope's design is ruled out.
+    - A retry was asked, to tell a transient from a defect.
+  - **PH19 passed.** Under iOS 27.2 the Subject index's search field comes with a pull, and its large title reads plainly, which closes R5's look on a device.
