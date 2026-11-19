@@ -11729,3 +11729,7 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - A fix may have to map front- and back-matter pages to their divisions, in the page index (an index version, under the freeze) or at the tap. A reader can reach both from the volume's page in Browse.
   - It is not a crash, a loss of work or a store check. Placed on the owner's word ("First update"): the first update after 1.0, among the plan's §3 candidates.
 - **PD14 passed.** On the iPad, `frus1977-80v12`'s Sources gives every CIA job row its Archival Neighbors count, and Job 09–00438R's opens its two documents. L22 (#1929) had seen it on the Mac only, the iOS outline held by a unit test alone, so this is the first time a running iOS app has shown it.
+- **PD15 and PD16 passed, so T2's first two findings do not show on the device.**
+  - The Long Telegram's Related Documents window opens and draws under iPadOS 27.2. The render-server abort T2 met was the iOS 27.0 simulator's, and no device runs 27.0.
+  - In Archives' Collections lens, a search for *Bohlen* left the tab sidebar's toggle with its icon.
+  - Seen besides: the tab bar disappears while that search is active. The lens's field is `CollectionBrowserView`'s standard `.searchable` (`CollectionBrowserView.swift:210`), and no code under `FRUSExplorer/` sets the tab bar's visibility (`for: .tabBar`, `toolbarVisibility` and `tabBarMinimizeBehavior` all occur nowhere). So this is iPadOS's own presentation of an active search, not the app's choice.

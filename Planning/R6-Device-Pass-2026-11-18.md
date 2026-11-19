@@ -128,8 +128,8 @@ Tags:
 
 | ID | Check | Result |
 |---|---|---|
-| PD15 | **T2's first finding:** `frus1946v06` d475, the Long Telegram ▸ rail ▸ **Related.** The Related Documents window opens and draws. The iOS 27.0 simulator's render server aborted here; under 27.2 it did not. | |
-| PD16 | `iPad only` **T2's second finding:** in Browse ▸ Archives ▸ the **Collections** lens, search *Bohlen*. *See:* does the tab sidebar's toggle, at the top, keep its icon? Clear the search and show the sidebar again. T2 saw the icon blank once, until a relaunch. | |
+| PD15 | **T2's first finding:** `frus1946v06` d475, the Long Telegram ▸ rail ▸ **Related.** The Related Documents window opens and draws. The iOS 27.0 simulator's render server aborted here; under 27.2 it did not. | **Pass** (2026-11-18): T2's first finding does not show on the device under iPadOS 27.2. No device runs 27.0 |
+| PD16 | `iPad only` **T2's second finding:** in Browse ▸ Archives ▸ the **Collections** lens, search *Bohlen*. *See:* does the tab sidebar's toggle, at the top, keep its icon? Clear the search and show the sidebar again. T2 saw the icon blank once, until a relaunch. | **Pass** (2026-11-18): the toggle kept its icon, so T2's second finding does not show. Seen besides: the tab bar disappears while the search is active. The field is `CollectionBrowserView`'s standard `.searchable` (`:210`), and the app sets the tab bar's visibility nowhere, so this is iPadOS's own presentation of a search field |
 | PD17 | **Subjects** (L15): the rail's **Subjects** with the caption; Search ▸ Filters ▸ **By Subject**, with the caption; Facets ▸ Subjects; Related's *Shared subjects*; and a volume page's Top subjects, with the caption under them. | |
 | PD18 | **Search** on the iPad: Filters' **Done** runs the search again, and Facets' foot bar reads *Years: 2 included* with **Apply**. (L18, as PH20) | |
 | PD19 | `iPad only` **A new note:** type a line, then tap beside the sheet. Nothing happens, and the words stay. Swipe the sheet down: *Discard Changes?* (L19, IPA-2) | |
