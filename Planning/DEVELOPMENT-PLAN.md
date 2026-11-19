@@ -11791,3 +11791,7 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - **PH5 passed:** a queue left with the iPhone locked finished while the app was away. That is the first time L11 to L14's background run has been seen on a device; their sessions drove the handler on simulators, which refuse the scheduler. The Live Activity's form (IPH-7) was not reported.
   - **PH6, seen:** no end-of-queue card appeared, which confirms the review's IPH-8 on a device. It is in §5, after 1.0.
   - **PH7, seen:** with Airplane Mode on during a download, no failure line came, and the banner showed the download underway with no progress. An iOS background transfer waits for a connection rather than failing, which is why L20 met its failure line only through the test seam. Asked, the owner reported that it resumed and finished once Airplane Mode was off. That is the designed behaviour, and no finding.
+- **PH8, PH9 and PH10 passed** on the iPhone:
+  - Source Explorer resolves `frus1952-54v02p1` d41's lot (#1894).
+  - Cross-Reference Analytics' Most-Referenced draws each name beside its bar under iOS 27.2 on a device, which R5 had measured only in the simulator (decision 141). A bar opens its document, and the graph draws at two hops and on Timeline.
+  - Corpus Analytics' **View N documents ↗** opens Search with the same count, and the comparison's lines are solid, dashed and dotted with each pattern in the legend. L21 had seen those patterns only in an offscreen render and the source.

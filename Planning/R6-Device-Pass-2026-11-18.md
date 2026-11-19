@@ -67,9 +67,9 @@ Tags:
 
 | ID | Check | Result |
 |---|---|---|
-| PH8 | `frus1952-54v02p1` d41 ▸ rail ▸ **Sources:** *S/S – NSC files, lot 63 D 351* resolves to RG 59, A1 1586E, cited in 98 volumes. (#1894) | |
-| PH9 | **Browse ▸ Analysis Tools ▸ Cross-Reference Analytics,** Most-Referenced: each name sits beside its own bar, and none is cut at the top (decision 141). A bar opens its document (R5's opened No. 1383, the Berlin protocol), and its **Graph** draws at two hops and on Timeline. (#1891, L16) | |
-| PH10 | **Corpus Analytics,** *Berlin* over 1961–1963: **View N documents ↗** opens Search on *Berlin* over those years with the same N (R5's Mac read 1,470). Add *Cuba* and *Laos*: the lines are solid, dashed and dotted, each pattern beside its term in the legend. (#1896; L21, IPS-3) | |
+| PH8 | `frus1952-54v02p1` d41 ▸ rail ▸ **Sources:** *S/S – NSC files, lot 63 D 351* resolves to RG 59, A1 1586E, cited in 98 volumes. (#1894) | **Pass** (2026-11-19) |
+| PH9 | **Browse ▸ Analysis Tools ▸ Cross-Reference Analytics,** Most-Referenced: each name sits beside its own bar, and none is cut at the top (decision 141). A bar opens its document (R5's opened No. 1383, the Berlin protocol), and its **Graph** draws at two hops and on Timeline. (#1891, L16) | **Pass** (2026-11-19): the names beside their bars under iOS 27.2 on a device, which R5 measured only in the simulator (decision 141) |
+| PH10 | **Corpus Analytics,** *Berlin* over 1961–1963: **View N documents ↗** opens Search on *Berlin* over those years with the same N (R5's Mac read 1,470). Add *Cuba* and *Laos*: the lines are solid, dashed and dotted, each pattern beside its term in the legend. (#1896; L21, IPS-3) | **Pass** (2026-11-19): the comparison's line patterns seen in a running iOS app, which L21 had seen only in an offscreen render |
 | PH11 | **Person Analytics:** each ranking name beside its own bar, none cut (decision 141); the co-mention network and Chronology draw. (#1899) | |
 | PH12 | **About the Series ▸ Geography,** Most-covered countries: each name beside its own bar, none cut. (decision 141; #1899) | |
 | PH13 | **Archival Analytics:** each ranking name beside its own bar, at the chart's leading edge, none cut (decision 141); the network draws. (#1901) | |
