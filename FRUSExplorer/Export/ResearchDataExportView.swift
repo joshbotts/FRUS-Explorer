@@ -10,6 +10,7 @@ import SwiftUI
 import SwiftData
 #if os(macOS)
 import AppKit
+import UniformTypeIdentifiers
 #endif
 
 // MARK: - ResearchDataExportView
@@ -29,7 +30,9 @@ import AppKit
 /// - The query log as a **method appendix** (M-2) — a Markdown table and a CSV, each carrying the
 ///   scope every search ran under and the caveats a reader needs to weigh the counts.
 ///
-/// All three exports are written to a temporary directory and shared via `ShareLink`.
+/// All three exports are written to a temporary directory and shared via `ShareLink`. On the Mac each
+/// is also saved where the reader chooses (R6a, F3): the JSON in a save panel, and the notes and the
+/// query log in a new folder inside a folder chosen in an open panel (`ExportDestinationWriter`).
 ///
 /// ## Why the trail counts are not `@Query`
 /// Every other row here is backed by a `@Query`, which is fine for notes and collections and
@@ -63,6 +66,8 @@ import AppKit
 ///   1.7 — #1915 (L24): an **Import from JSON…** row beside Export as JSON, which asks the host to
 ///          open the file picker (`DataRecoveryView` presents it and the report,
 ///          `ResearchImportSheet`); a closed import prepares the export again
+///   1.8 — R6a (F3): on the Mac the three file exports are saved where the reader chooses, beside
+///          the share menu, with a line saying where they went
 struct DataExportSections: View {
 
     @Environment(AppState.self) private var appState
@@ -99,6 +104,10 @@ struct DataExportSections: View {
     @State private var databaseExportRunning = false
     @State private var databaseExportResult: String?
     @State private var databaseExportProblem: String?
+    #if os(macOS)
+    /// The line under the export the Mac last saved (R6a, F3): where it went, or why it did not.
+    @State private var saveLine: ExportSaveLine?
+    #endif
     #if os(macOS)
     /// The installed index version (#1910), observed, so the line under the button moves when a
     /// re-index raises it (`IndexingPipeline.markDateReindexComplete()`), which may be after the
@@ -346,14 +355,89 @@ struct DataExportSections: View {
     }
     #endif
 
+    // MARK: - Saving an export on the Mac (R6a, F3)
+
+    #if os(macOS)
+    /// Saves the prepared JSON file where the reader names it, in a save panel (R6a, F3).
+    ///
+    /// A Mac's share menu offers only places to send a file, so before R6a the JSON could not be
+    /// saved to a folder: the owner shared it to Mail and saved it from the draft (R6, X1). The share
+    /// menu stays beside the row; iOS keeps its share sheet, which has Save to Files.
+    private func saveJSONExport(_ file: URL) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = file.lastPathComponent
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        do {
+            try ExportDestinationWriter.save(file, to: destination)
+            saveLine = ExportSaveLine(export: .json, text: ExportDestinationWriter.savedFileLine(destination),
+                                      failed: false)
+        } catch {
+            saveLine = ExportSaveLine(export: .json, text: ExportDestinationWriter.failedLine(error), failed: true)
+        }
+    }
+
+    /// Saves an export of several files into a new folder inside the folder the reader chooses, in an
+    /// open panel (R6a, F3): the notes, one file per note, and the query log's Markdown and CSV.
+    private func saveFolderExport(_ files: [URL], folderName: String, message: String, export: SavedExport) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = String(localized: "settings.export.folder.prompt", defaultValue: "Export Here")
+        panel.message = message
+        guard panel.runModal() == .OK, let parent = panel.url else { return }
+        do {
+            let folder = try ExportDestinationWriter.saveFolder(of: files, named: folderName, in: parent)
+            saveLine = ExportSaveLine(export: export,
+                                      text: ExportDestinationWriter.savedFolderLine(folder, count: files.count),
+                                      failed: false)
+        } catch {
+            saveLine = ExportSaveLine(export: export, text: ExportDestinationWriter.failedLine(error), failed: true)
+        }
+    }
+
+    /// The line under the export the Mac last saved: where it went, or why it did not.
+    @ViewBuilder
+    private func saveLineRow(for export: SavedExport) -> some View {
+        if let saveLine, saveLine.export == export {
+            Label(saveLine.text, systemImage: saveLine.failed ? "exclamationmark.triangle" : "checkmark.circle")
+                .foregroundStyle(saveLine.failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+        }
+    }
+
+    /// The share menu kept beside each Mac export.
+    private static var shareTitle: String {
+        String(localized: "settings.export.share", defaultValue: "Share…")
+    }
+    #endif
+
     // MARK: - JSON Export Row
 
     @ViewBuilder
     private var jsonExportRow: some View {
         if let jsonExportURL {
+            #if os(macOS)
+            HStack {
+                Button {
+                    saveJSONExport(jsonExportURL)
+                } label: {
+                    Label(String(localized: "settings.export.json.action.mac", defaultValue: "Export as JSON…"),
+                          systemImage: "doc.badge.arrow.up")
+                }
+                Spacer()
+                ShareLink(item: jsonExportURL) {
+                    Label(Self.shareTitle, systemImage: "square.and.arrow.up")
+                }
+            }
+            saveLineRow(for: .json)
+            #else
             ShareLink(item: jsonExportURL) {
                 Label(String(localized: "settings.export.json.action", defaultValue: "Export as JSON"), systemImage: "doc.badge.arrow.up")
             }
+            #endif
         } else if let jsonExportError {
             Label(jsonExportError, systemImage: "exclamationmark.triangle")
                 .foregroundStyle(.red)
@@ -380,12 +464,37 @@ struct DataExportSections: View {
             Text(String(localized: "settings.export.markdown.empty", defaultValue: "No research notes to export."))
                 .foregroundStyle(.secondary)
         } else {
+            #if os(macOS)
+            HStack {
+                Button {
+                    saveFolderExport(
+                        markdownExportURLs,
+                        folderName: String(localized: "settings.export.markdown.folderName",
+                                           defaultValue: "FRUS Research Notes"),
+                        message: String(localized: "settings.export.markdown.panelMessage",
+                                        defaultValue: "Choose a folder. Your notes are saved in a new folder inside it, “FRUS Research Notes”, one Markdown file per note."),
+                        export: .markdown)
+                } label: {
+                    Label(
+                        String(localized: "settings.export.markdown.action.mac",
+                               defaultValue: "Export Notes as Markdown (\(markdownExportURLs.count))…"),
+                        systemImage: "doc.text"
+                    )
+                }
+                Spacer()
+                ShareLink(items: markdownExportURLs) {
+                    Label(Self.shareTitle, systemImage: "square.and.arrow.up")
+                }
+            }
+            saveLineRow(for: .markdown)
+            #else
             ShareLink(items: markdownExportURLs) {
                 Label(
                     String(localized: "settings.export.markdown.action", defaultValue: "Export Notes as Markdown (\(markdownExportURLs.count))"),
                     systemImage: "doc.text"
                 )
             }
+            #endif
         }
     }
 
@@ -401,6 +510,30 @@ struct DataExportSections: View {
                         defaultValue: "No searches recorded yet."))
                 .foregroundStyle(.secondary)
         } else {
+            #if os(macOS)
+            HStack {
+                Button {
+                    saveFolderExport(
+                        appendixExportURLs,
+                        folderName: String(localized: "settings.export.appendix.folderName",
+                                           defaultValue: "FRUS Query Log"),
+                        message: String(localized: "settings.export.appendix.panelMessage",
+                                        defaultValue: "Choose a folder. The query log is saved in a new folder inside it, “FRUS Query Log”, as a Markdown table and a CSV."),
+                        export: .appendix)
+                } label: {
+                    Label(
+                        String(localized: "settings.export.appendix.action.mac",
+                               defaultValue: "Export Query Log as a Method Appendix…"),
+                        systemImage: "list.bullet.rectangle.portrait"
+                    )
+                }
+                Spacer()
+                ShareLink(items: appendixExportURLs) {
+                    Label(Self.shareTitle, systemImage: "square.and.arrow.up")
+                }
+            }
+            saveLineRow(for: .appendix)
+            #else
             ShareLink(items: appendixExportURLs) {
                 Label(
                     String(localized: "settings.export.appendix.action",
@@ -408,6 +541,7 @@ struct DataExportSections: View {
                     systemImage: "list.bullet.rectangle.portrait"
                 )
             }
+            #endif
         }
     }
 
@@ -574,4 +708,94 @@ extension DataExportSections {
     /// (`DuplicateCopies`): the count the summaries switch's footer gives is the count the file
     /// writes.
     private var summaries: [GeneratedSummary] { DuplicateCopies.oneEach(summaryCopies, id: \.id) }
+}
+
+// MARK: - Saving an export where the reader chooses (R6a, F3)
+
+/// Which of Data & Recovery's file exports the Mac saved (R6a, F3).
+enum SavedExport: Hashable, Sendable {
+    /// Export as JSON.
+    case json
+    /// Export Notes as Markdown, one file per note.
+    case markdown
+    /// Export Query Log as a Method Appendix, a Markdown table and a CSV.
+    case appendix
+}
+
+/// The line under an export the Mac saved: where its file or folder went, or why it did not.
+struct ExportSaveLine: Equatable, Sendable {
+    /// The export the line is about.
+    let export: SavedExport
+    /// What the line says.
+    let text: String
+    /// Whether the save failed.
+    let failed: Bool
+}
+
+/// Copies an export's prepared files to where the reader chose on the Mac (R6a, F3).
+///
+/// Data & Recovery prepares each export in a temporary directory, for the share sheet. A Mac's share
+/// menu offers only places to send a file, so the Mac also saves it: one file where a save panel
+/// names it, and several into a new folder inside the folder an open panel chooses, numbered when
+/// that folder already holds one of the name, so an export never writes over an earlier one. Foundation
+/// only, so the iOS test target holds it to its rules.
+///
+/// Version history:
+///   1.0 — R6a (F3): initial implementation
+enum ExportDestinationWriter {
+
+    /// Copies `file` to `destination`, replacing a file there, which the save panel has already asked
+    /// the reader about.
+    static func save(_ file: URL, to destination: URL) throws {
+        let manager = FileManager.default
+        if manager.fileExists(atPath: destination.path) {
+            try manager.removeItem(at: destination)
+        }
+        try manager.copyItem(at: file, to: destination)
+    }
+
+    /// Copies `files` into a new folder named `folderName` inside `parent`, or `folderName 2`, `3` and
+    /// on when one of the name is there, and returns the new folder.
+    static func saveFolder(of files: [URL], named folderName: String, in parent: URL) throws -> URL {
+        let manager = FileManager.default
+        var folder = parent.appendingPathComponent(folderName, isDirectory: true)
+        var number = 2
+        while manager.fileExists(atPath: folder.path) {
+            folder = parent.appendingPathComponent("\(folderName) \(number)", isDirectory: true)
+            number += 1
+        }
+        try manager.createDirectory(at: folder, withIntermediateDirectories: false)
+        for file in files {
+            try manager.copyItem(at: file, to: folder.appendingPathComponent(file.lastPathComponent))
+        }
+        return folder
+    }
+
+    /// The line under an export saved as one file: its name, and the folder it went into.
+    static func savedFileLine(_ destination: URL) -> String {
+        let name = destination.lastPathComponent
+        let folder = destination.deletingLastPathComponent().lastPathComponent
+        return String(localized: "settings.export.saved.file",
+                      defaultValue: "Saved “\(name)” in \(folder).")
+    }
+
+    /// The line under an export saved as a folder of files: how many, the new folder's name, and the
+    /// folder it went into, the count through `CountCopy` so that one note reads "1 file".
+    static func savedFolderLine(_ folder: URL, count: Int) -> String {
+        let name = folder.lastPathComponent
+        let parent = folder.deletingLastPathComponent().lastPathComponent
+        return CountCopy.phrase(
+            count,
+            one: String(localized: "settings.export.saved.folder.one %@",
+                        defaultValue: "Saved %1$@ file in a new folder, “%2$@”, in %3$@."),
+            many: String(localized: "settings.export.saved.folder.many %@",
+                         defaultValue: "Saved %1$@ files in a new folder, “%2$@”, in %3$@."),
+            then: [name, parent])
+    }
+
+    /// The line under an export that could not be saved.
+    static func failedLine(_ error: any Error) -> String {
+        String(localized: "settings.export.saveFailed",
+               defaultValue: "Couldn’t save the export: \(error.localizedDescription)")
+    }
 }

@@ -1837,3 +1837,149 @@ struct DuplicateCopiesTests {
         #expect(left == [kept.id])
     }
 }
+
+// MARK: - MacDataExportSavePanelTests
+
+/// On the Mac, Data & Recovery's three file exports are saved where the reader chooses (R6a, F3).
+///
+/// Until R6a they went only through `ShareLink`, and a Mac's share menu offers only places to send a
+/// file: the owner exported to JSON by sharing it to Mail and saving it from the draft (R6, X1). Both
+/// test bundles are iOS, so no runtime test reaches the Mac's rows; this reads the view's source, as
+/// `SceneEnvironmentAuditTests` reads the Mac's scenes. Each export's row must call, inside its
+/// `#if os(macOS)` branch, the function that saves it, and that function must run a panel: a save
+/// panel for the JSON, one file, and an open panel choosing a folder for the notes and the query log,
+/// several files each. On the code before R6a it fails for all three: neither function exists.
+///
+/// Version history:
+///   1.0 — R6a (F3): initial implementation
+@Suite("The Mac saves Data & Recovery's file exports where the reader chooses (R6a, F3)")
+struct MacDataExportSavePanelTests {
+
+    /// The repository root, found by walking up from this file.
+    private static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    /// The view's source.
+    private static func viewSource() throws -> String {
+        try String(contentsOf: repoRoot.appending(path: "FRUSExplorer/Export/ResearchDataExportView.swift"),
+                   encoding: .utf8)
+    }
+
+    /// The text from `start` to the next line that opens a `// MARK:` section, or the end.
+    private static func section(of source: String, from start: String) -> String? {
+        guard let begin = source.range(of: start) else { return nil }
+        let rest = source[begin.lowerBound...]
+        let end = rest.range(of: "\n    // MARK:", range: rest.index(after: rest.startIndex)..<rest.endIndex)
+        return String(rest[..<(end?.lowerBound ?? rest.endIndex)])
+    }
+
+    /// The body of the function declared by `signature`, up to the next declaration at its indent.
+    private static func function(_ signature: String, in source: String) -> String? {
+        guard let begin = source.range(of: signature) else { return nil }
+        let rest = source[begin.lowerBound...]
+        let end = rest.range(of: "\n    private ", range: rest.index(after: rest.startIndex)..<rest.endIndex)
+        return String(rest[..<(end?.lowerBound ?? rest.endIndex)])
+    }
+
+    @Test("Each of the three rows calls, on the Mac, the function that saves it", arguments: [
+        ("private var jsonExportRow: some View", "saveJSONExport("),
+        ("private var markdownExportRow: some View", "saveFolderExport("),
+        ("private var appendixExportRow: some View", "saveFolderExport("),
+    ])
+    func eachRowSavesOnTheMac(row: String, call: String) throws {
+        let source = try Self.viewSource()
+        let body = try #require(Self.section(of: source, from: row), "\(row) is gone from the view")
+        let mac = try #require(body.range(of: "#if os(macOS)"), """
+            \(row) has no #if os(macOS) branch: on the Mac it offers only the share menu, which cannot save \
+            a file to a folder (R6, X1).
+            """)
+        let macBranch = body[mac.upperBound...].components(separatedBy: "#else").first ?? ""
+        #expect(macBranch.contains(call), """
+            \(row)'s Mac branch does not call \(call)…), so the Mac cannot save this export where the reader \
+            chooses.
+            """)
+    }
+
+    @Test("The JSON is saved through a save panel, and the notes and the query log into a chosen folder")
+    func theSavesRunAPanel() throws {
+        let source = try Self.viewSource()
+        let json = try #require(Self.function("private func saveJSONExport(", in: source),
+                                "no saveJSONExport(_:) in the view: the Mac cannot save the JSON to a folder")
+        #expect(json.contains("NSSavePanel()") && json.contains("runModal()"),
+                "saveJSONExport(_:) does not run a save panel")
+        let folder = try #require(Self.function("private func saveFolderExport(", in: source),
+                                  "no saveFolderExport in the view: the Mac cannot save the notes or the query log")
+        #expect(folder.contains("NSOpenPanel()") && folder.contains("canChooseDirectories = true")
+                && folder.contains("runModal()"),
+                "saveFolderExport does not run an open panel that chooses a folder")
+    }
+}
+
+// MARK: - ExportDestinationWriterTests
+
+/// What the Mac's save of an export writes (R6a, F3): the file whole where the save panel named it,
+/// and several files in a new folder, numbered so that a second export never writes over the first.
+///
+/// Version history:
+///   1.0 — R6a (F3): initial implementation
+@Suite("Saving an export where the reader chooses writes it whole and never over an earlier one (R6a, F3)")
+struct ExportDestinationWriterTests {
+
+    /// A fresh directory for one test.
+    private static func scratch() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ExportDestinationWriterTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    /// Writes `text` to a file named `name` in `directory`.
+    private static func file(_ name: String, _ text: String, in directory: URL) throws -> URL {
+        let url = directory.appendingPathComponent(name)
+        try text.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    @Test("One file is copied whole, over a file the save panel was told to replace")
+    func savesOneFile() throws {
+        let root = try Self.scratch()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let prepared = try Self.file("frus-research-export.json", #"{"formatVersion":7}"#, in: root)
+        let documents = root.appendingPathComponent("Documents", isDirectory: true)
+        try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+        let chosen = try Self.file("frus-research-export.json", "an older export", in: documents)
+
+        try ExportDestinationWriter.save(prepared, to: chosen)
+
+        #expect(try String(contentsOf: chosen, encoding: .utf8) == #"{"formatVersion":7}"#)
+        #expect(ExportDestinationWriter.savedFileLine(chosen) == "Saved “frus-research-export.json” in Documents.")
+    }
+
+    @Test("Several files go into a new folder, and a second export into a folder numbered 2")
+    func savesAFolderAndNeverOverwrites() throws {
+        let root = try Self.scratch()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let prepared = root.appendingPathComponent("prepared", isDirectory: true)
+        try FileManager.default.createDirectory(at: prepared, withIntermediateDirectories: true)
+        let files = [try Self.file("frus-query-log.md", "| query |", in: prepared),
+                     try Self.file("frus-query-log.csv", "query,count", in: prepared)]
+        let chosen = root.appendingPathComponent("Desktop", isDirectory: true)
+        try FileManager.default.createDirectory(at: chosen, withIntermediateDirectories: true)
+
+        let first = try ExportDestinationWriter.saveFolder(of: files, named: "FRUS Query Log", in: chosen)
+        let second = try ExportDestinationWriter.saveFolder(of: files, named: "FRUS Query Log", in: chosen)
+
+        #expect(first.lastPathComponent == "FRUS Query Log")
+        #expect(second.lastPathComponent == "FRUS Query Log 2")
+        for folder in [first, second] {
+            let names = try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+            #expect(names == ["frus-query-log.csv", "frus-query-log.md"])
+        }
+        #expect(try String(contentsOf: first.appendingPathComponent("frus-query-log.md"), encoding: .utf8) == "| query |")
+        #expect(ExportDestinationWriter.savedFolderLine(second, count: 2)
+                == "Saved 2 files in a new folder, “FRUS Query Log 2”, in Desktop.")
+        #expect(ExportDestinationWriter.savedFolderLine(first, count: 1)
+                == "Saved 1 file in a new folder, “FRUS Query Log”, in Desktop.")
+    }
+}
