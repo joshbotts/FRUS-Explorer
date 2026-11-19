@@ -166,7 +166,7 @@ It is written from four sources:
 | R5 | The release checklist on the frozen tree, the bump to 1.0 (1823), the fourth TestFlight build (decision 137), both TestFlight notes, and the retake sitting T2 for what the rows changed | — |
 | R6 | 1.0 (1823) uploaded, and the device pass: what changed since 1.0 (1812), the one re-index to version 75 that every library makes, and the 1812 pass still owed | — |
 | R6b | Added on the owner's word during R6: FRUS Explorer assessed on the iPhone Duo simulator (iOS 27.2), folded, unfolded and between, to find what misbehaves and mitigate it, not to design for the inner screen. Before R6a, whose upload carries what R6b lands | — |
-| R6a | Found by R6 (findings F1, F3, F4 and F5), before R7 on the owner's word: the tab shell's banner and the room it sets aside kept equal through a re-index or a queue, on iPhone and iPad; on the Mac, Data & Recovery's three file exports saved through a save panel; All Notes following another device's changes while it is open; and the four network graphs clipped to their frames when zoomed; then a TestFlight build numbered between 1823 and 1861 | — |
+| R6a | Found by R6 (findings F8, F1, F3, F4 and F5), before R7 on the owner's word: first the crash narrowing an iPad's window with the rail open (F8); then the tab shell's banner and the room it sets aside kept equal through a re-index or a queue, on iPhone and iPad; on the Mac, Data & Recovery's three file exports saved through a save panel; All Notes following another device's changes while it is open; and the four network graphs clipped to their frames when zoomed; then a TestFlight build numbered between 1823 and 1861 | — |
 | R7 | The bump to 1.0 (1861) | — |
 | R3 | The submission, 1.0 (1861) (decision 87) | — |
 
@@ -597,7 +597,7 @@ It is written from four sources:
     - **PD21 failed: the app crashed. Finding F8.** On the iPad, under iPadOS 27.2.1, narrowing the window with a document and its rail open crashed the app at 23:25:29 Eastern; the window came back as it relaunched.
       - The crash report, read from the iPad with `devicectl` (read-only) and kept outside the repository in the plan's shared notes folder: `EXC_BREAKPOINT`, SwiftUI's trap for a view reading an `@Environment` value its hierarchy was never given (`EnvironmentValues.subscript.getter` → `_assertionFailure`, in `EnvironmentBox.update`). No app frame but `main`, so the view is not named.
       - The likeliest path is new in 1823: L19's IPA-6, the rail as a sheet on an iPad at compact width, and SwiftUI re-hosting the open inspector as a sheet as a window narrows.
-      - A crash goes before R7 by R6's rule; its row waits for the owner's word.
+      - A crash goes before R7 by R6's rule. On the owner's word ("Before R7, in R6a") it joins R6a as that row's first priority, and R6b's brief is told of it.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).
@@ -637,6 +637,7 @@ It is written from four sources:
       - the keyboard's Done bar (#1070).
     - **The tab shell:** a tab bar on the outer screen and perhaps a sidebar on the inner one (`.sidebarAdaptable`). `TabShellBannerClearanceTests.testBannerKeepsItsPlaceWhenTheTabsBecomeASidebar` covers the iPad's case.
     - **The outer screen:** the first run (onboarding's dock, IPH-9), and the queue's Live Activity on the Lock Screen (IPH-7).
+    - **F8 is known, and R6a's to fix:** the app crashes as an iPad window narrows with a document and its rail open. If a fold or an unfold crashes with the rail open, record it as F8 with the posture and the rail's section, and leave the fix to R6a, which checks the Duo too.
   - **The assessment** covers each tab and the main paths, on the outer screen, on the inner one, and through a fold and an unfold in the middle of a task (a sheet open, text typed, a search running, a queue indexing), with each posture screenshotted. The paths:
     - Browse root → subseries → volume → document;
     - Search with results, Filters and Facets;
@@ -665,7 +666,7 @@ It is written from four sources:
     - a row in `CLAUDE.md`'s UI table, and an entry in the runbook, for any suite that runs on the Duo.
 
     There is no bump: R6a, after it, uploads one build that carries both.
-- **R6a, the tab shell's banner and the room it sets aside; the Mac's file exports saved through a save panel (F3, below); All Notes following another device's changes (F4, below); and the network graphs clipped when zoomed (F5, below).** Found by R6 (F1, during PD3), and placed before R7 on the owner's word of 2026-11-18: "make this one issue for the pre-R7 session." It is one fresh session from `v2`, once R6's records have merged. It starts after the pass, on the owner's word ("After the pass"), and after R6b, so that a later finding the owner places before R7 joins this row, unless the owner splits it off, and so that its upload carries R6b's mitigations too.
+- **R6a, first the crash narrowing an iPad's window with the rail open (F8, below); then the tab shell's banner and the room it sets aside; the Mac's file exports saved through a save panel (F3, below); All Notes following another device's changes (F4, below); and the network graphs clipped when zoomed (F5, below).** Found by R6 (F1, during PD3), and placed before R7 on the owner's word of 2026-11-18: "make this one issue for the pre-R7 session." It is one fresh session from `v2`, once R6's records have merged. It starts after the pass, on the owner's word ("After the pass"), and after R6b, so that a later finding the owner places before R7 joins this row, unless the owner splits it off, and so that its upload carries R6b's mitigations too.
   - **What the owner saw,** on an iPad Pro 12.9-inch (5th generation) under iPadOS 27.2.1, landscape, during 1.0 (1823)'s re-index to 75 at its first launch. The screenshot is `R6-Device-Pass-2026-11-18-PD3-banner.webp`.
     - **On Browse, two-pane,** with `frus1977-80v24`'s *Argentina* chapter listing its 66 documents, the indexing banner hung across both columns about a third of the way up the window. It held *Indexing frus1969-76ve01…* with its counts and progress, the *Learn about FRUS while you wait* strip, and the volume's card (title, years, series, Key Persons, *88 cross-references to other volumes*). Documents 57 and 58 were behind it, 59 and 60 showed below it, and below it the sidebar column was empty. Read from the screenshot, the banner is about 189 pt tall, with about 155 pt of the list showing beneath it. So the room the tab set aside was taller than the banner, which hangs at the top of that room.
     - **In the reader,** a blank band lay between the end of the document's text and the banner: the text did not use the height it had. Opening the Research rail put it right.
@@ -693,7 +694,7 @@ It is written from four sources:
   - **The build:** an upload numbered above 1823 and below 1861, its number the owner's to name, as 1823's was (decision 137).
     - The row bumps `CURRENT_PROJECT_VERSION` by `CLAUDE.md`'s procedure, with the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes (the build number, and the fixes in the one line, R6b's with this row's).
     - The owner archives, uploads and tags it (`build-55` would follow the others).
-    - Before R7, the owner checks it on the iPad (Volumes & Storage ▸ Rebuild Index, or a queue of downloads, with Browse and the reader open) and on the Mac (each of the three file exports saved to a folder, and the JSON imported back). On both, All Notes left open follows a note deleted and a note brought back on another device, with no relaunch, and a network graph zoomed in stays within its frame.
+    - Before R7, the owner checks it on the iPad (Volumes & Storage ▸ Rebuild Index, or a queue of downloads, with Browse and the reader open) and on the Mac (each of the three file exports saved to a folder, and the JSON imported back). On both, All Notes left open follows a note deleted and a note brought back on another device, with no relaunch, and a network graph zoomed in stays within its frame. And on the iPad, narrowing and widening the window with a document and its rail open crashes nothing (F8).
   - **Also in the screenshot, for the session and the owner to judge:** the drifting words behind *Learn about FRUS while you wait* pass over the link's own words (*nation* over *while you wait*).
   - **And F3, joined to this row on the owner's word ("Before R7, in R6a"): on the Mac, Data & Recovery's file exports cannot be saved to a folder.**
     - **What the owner saw** in X1, on the Mac under macOS 27.2 with 1.0 (1823): **Export as JSON** opened a share menu with no way to save the file. The owner shared it to Mail and saved it from the draft.
@@ -740,6 +741,23 @@ It is written from four sources:
       - A test holds every view that scales a canvas to clipping it, seen to fail on `v2` first.
       - The UI suites that open these graphs still pass, by the runbook.
       - The owner checks it before R7: PD7's zoom on the iPad, and one graph on the Mac.
+  - **And F8, joined to this row on the owner's word ("Before R7, in R6a"): the app crashes as an iPad's window narrows with a document and its rail open.** The row's first priority, being the one crash.
+    - **What the owner saw** in PD21, on an iPad Pro 12.9-inch (5th generation) under iPadOS 27.2.1 with 1.0 (1823): narrowing the window with a document and its rail open crashed the app, at 23:25:29 Eastern. The window came back as the app relaunched, and TestFlight reported the crash.
+    - **The report** is `R6-PD21-crash-1823-ipad.ips`, in the plan's shared notes folder outside the repository, since it carries a device's reporter key. It was read off the paired iPad with `xcrun devicectl device copy from --domain-type systemCrashLogs`.
+      - `EXC_BREAKPOINT` on the main thread: Swift's `_assertionFailure` from SwiftUICore's `EnvironmentValues.subscript.getter`, while `EnvironmentBox.update` filled a view's `@Environment` properties in `GraphHost.flushTransactions`. That is SwiftUI's trap for a view reading an environment value its hierarchy was never given.
+      - No app frame but `main` is on the stack.
+      - The binary's UUID, `b29d2a57-50ca-306e-81ff-2bc1cb40873c`, is the dSYM in `~/Library/Developer/Xcode/Archives/2026-11-18/FRUSExplorer 11-18-26, 6.57 AM.xcarchive`.
+    - **The likeliest path, not settled, is new in 1823.** L19's IPA-6 (`DocumentView`) makes the rail the trailing `.inspector` only at regular width, and the iPhone's sheet (`railIsSheet`) at compact width. L19 also recorded SwiftUI re-hosting the open inspector as a sheet for a moment as a window narrows. So the suspect is a view in the rail, or in the sheet that holds it, reading `@Environment(AppState.self)` or another value its new container lacks. L19's narrowing walk on the iOS 27.0 simulator did not crash.
+    - **To reproduce:**
+      - Use the iPad Pro 13-inch (M5) simulator in Windowed Apps, under iOS 27.2 and under 27.0, with a document open and the rail open on each of its sections in turn.
+      - Narrow the window step by step to its 374-pt minimum and widen it again; then try Split View and Slide Over.
+      - A DEBUG build prints SwiftUI's message, which names the missing type.
+      - R6b's Duo, folded and unfolded with the rail open, may meet the same crash.
+    - **Done looks like:**
+      - No crash narrowing or widening with the rail open, on each of its sections, on those simulators, on the Duo, and on the owner's iPad.
+      - The missing value is given where the re-hosted content is built, or that content no longer needs it.
+      - A UI test narrows a window with the rail open and fails on `v2` first; `RailAtCompactWidthTests` is its place.
+      - IPA-6's behaviour, as L19 held it, is kept: the sheet at compact width, the column at regular width, and the stored setting.
 - **R7, the bump to 1.0 (1861).** One session, one pull request, when R6 has passed and R6a's build, which carries R6b's mitigations, has passed on a device: `CURRENT_PROJECT_VERSION` 1861 by the same procedure, the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes' release-candidate line. No other change: the tree that goes to App Review is R6's but for its build number.
 - **R3, the submission.** The owner archives and uploads 1.0 (1861) for both platforms, opens it once from TestFlight (About reads *Version 1.0 (1861)*), and submits it with §2's answers; then tags that commit `1.0-release` (decision 113).
 
