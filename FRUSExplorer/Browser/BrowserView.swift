@@ -618,7 +618,7 @@ struct BrowserView: View {
     }
 
     /// Whether the deepest level on the path is a document — the only level that brings a second
-    /// pane of its own (`DocumentView`'s trailing Research `.inspector`).
+    /// pane of its own (`DocumentView`'s trailing Research column).
     private func isDocumentLevel(_ vm: BrowserViewModel) -> Bool {
         if case .document = vm.navigationPath.last { return true }
         return false

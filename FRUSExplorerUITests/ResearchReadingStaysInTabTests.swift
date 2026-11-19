@@ -1596,13 +1596,25 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
 /// toggle reads on is not asked: on the code before L19 XCUI reported it unselected while it was drawn on, in the run's
 /// own screenshot (iPad Pro 13-inch (M5), iOS 27.0).
 ///
+/// ## Narrowing a window (R6a, F8)
+/// `testNarrowingTheWindowWithTheRailOpenCrashesNothing` resizes the window by its corner grip, which needs Windowed
+/// Apps, and skips, naming the setting, where the window does not narrow. It relaunches with the rail's five sections
+/// open, turns to landscape, widens the window and opens the document with its rail column, then narrows the window to
+/// its least width (375 pt, which iPadOS centres) and widens it again twelve times, requiring after each that the app
+/// runs, the column is back and no sheet is left over the reader. On the code before R6a it fails at narrowing 1 on the
+/// iPad Pro 13-inch (M5) under iOS 27.2: an empty form sheet is left over the reader, the sheet SwiftUI made of the open
+/// `.inspector` as the width turned compact, which is the host 1.0 (1823) crashed in on the owner's iPad (R6, PD21).
+/// That code never crashed in the simulator, in 24 narrowings, so the sheet is what the test sees, not the crash.
+///
 /// ## Running it
 /// iPad only (an iPhone skips): name `FRUSExplorerUITests/RailAtCompactWidthTests` and run it on iPad Pro 13-inch (M5),
-/// `OS=27.0`, allowing 600 s. On the code before L19 it fails at that tap, which there turned the stored setting off and
-/// opened nothing.
+/// `OS=27.0`, allowing 600 s, and the narrowing test on the same iPad under `OS=27.2` in Windowed Apps, allowing 900 s.
+/// On the code before L19 the first test fails at that tap, which there turned the stored setting off and opened
+/// nothing.
 ///
 /// Version history:
 ///   1.0 — L19 (#1919, IPA-6): initial implementation
+///   1.1 — R6a (F8): `testNarrowingTheWindowWithTheRailOpenCrashesNothing`
 @MainActor
 final class RailAtCompactWidthTests: XCTestCase {
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
@@ -1686,7 +1698,120 @@ final class RailAtCompactWidthTests: XCTestCase {
         attachScreenshot("Full width again")
     }
 
+    /// Narrowing a window with a document and its rail column open, and widening it again, crashes nothing (R6a, F8).
+    ///
+    /// 1.0 (1823) crashed on the owner's iPad as its window narrowed with the rail open, intermittently (R6, PD21), at
+    /// SwiftUI's trap for a view reading an `@Environment` value its hierarchy was never given, in the sheet SwiftUI made
+    /// of the open inspector. The guard is that sheet: on the code before R6a it was left up, empty, after narrowing 1.
+    /// The window is resized by its corner grip, which needs Windowed Apps: a window that does not narrow skips, naming
+    /// the setting.
+    func testNarrowingTheWindowWithTheRailOpenCrashesNothing() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's rail is always a sheet")
+        // Every section of the rail open, so that each is built when SwiftUI hosts the rail anew, and landscape, as the
+        // owner's iPad was.
+        app.terminate()
+        app.launchArguments += Self.everySectionOpen
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        // XCUI reports SpringBoard's frame in portrait while the window's frame and the drags are in landscape, so the
+        // screen's width is the frame's longer side (measured on the iPad Pro 13-inch (M5) under iOS 27.2).
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard").frame
+        let screen = CGRect(x: 0, y: 0, width: max(springboard.width, springboard.height),
+                            height: min(springboard.width, springboard.height))
+        widenTheWindow(to: screen)
+        closeTheGuideIfPresent()
+        openTheSeededDocumentFromResearch()
+        closeTheGuideIfPresent()
+        if !railTiles.waitForExistence(timeout: 5) { try toggleRail() }
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+            The rail column did not show in the widened window, so it is not at regular width and nothing below would \
+            narrow it across the rail's change of presentation.
+            """)
+        attachScreenshot("Widened, rail column on")
+
+        // Three speeds, since the owner saw the crash on some narrowings and not on others. None is fast: a fast corner
+        // drag has crashed the simulator's own `backboardd` (the runbook's entry for this suite).
+        let speeds: [CGFloat] = [300, 900, 2_000]
+        for attempt in 1...Self.narrowings {
+            let speed = speeds[(attempt - 1) % speeds.count]
+            closeTheGuideIfPresent()
+            let wide = app.windows.firstMatch.frame
+            dragTheCornerGrip(of: wide, to: CGPoint(x: wide.minX + 120, y: wide.maxY - Self.gripInset), speed: speed)
+            Thread.sleep(forTimeInterval: 1)
+            XCTAssertEqual(app.state, .runningForeground,
+                           "Narrowing \(attempt) of \(Self.narrowings), at \(Int(speed)) pt/s, crashed the app (F8)")
+            let narrow = app.windows.firstMatch.frame
+            if attempt == 1 {
+                attachScreenshot("Narrowed")
+                try XCTSkipUnless(narrow.width < wide.width - 200, """
+                    The window kept its width (\(Int(wide.width)) pt, then \(Int(narrow.width)) pt), so this simulator \
+                    is not in Windowed Apps: set Settings ▸ Multitasking & Gestures ▸ Windowed Apps and run again.
+                    """)
+            }
+
+            widenTheWindow(to: screen, speed: speed)
+            XCTAssertEqual(app.state, .runningForeground,
+                           "Widening \(attempt) of \(Self.narrowings), at \(Int(speed)) pt/s, crashed the app (F8)")
+            XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+                After narrowing \(attempt) the widened window shows no rail column: the app was relaunched by the \
+                system after a crash, or the narrowing wrote the stored setting off (L19, IPA-6).
+                """)
+            // The sheet SwiftUI makes of the open inspector as the width turns compact is the host the crash came from.
+            // On the code before R6a it was left up after the narrowing, empty, a 580 × 660 pt form sheet over the
+            // reader with its dismiss region behind it (iPad Pro 13-inch (M5), iOS 27.2, landscape).
+            XCTAssertFalse(app.otherElements["PopoverDismissRegion"].waitForExistence(timeout: 2), """
+                After narrowing \(attempt) of \(Self.narrowings) a sheet is left over the widened reader: the \
+                inspector was shown as a sheet as the window narrowed (F8).
+                """)
+        }
+        attachScreenshot("Widened again after \(Self.narrowings) narrowings")
+    }
+
     // MARK: - Steps
+
+    /// How many times F8's test narrows and widens the window.
+    private static let narrowings = 12
+    /// The rail's five sections, each pinned open (`ResearchRailView`'s accordion keys).
+    private static let everySectionOpen = ["subjects", "summary", "notes", "tags", "collections"]
+        .flatMap { ["-frus.document.researchPanel.\($0)", "YES"] }
+    /// How far inside the window's bottom-right corner its grip is taken.
+    private static let gripInset: CGFloat = 6
+
+    /// Drags the bottom-right corner grip of a window whose frame is `frame` to `end`, both in screen points.
+    private func dragTheCornerGrip(of frame: CGRect, to end: CGPoint, speed: CGFloat = 1_500) {
+        let origin = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            .coordinate(withNormalizedOffset: .zero)
+        let grip = origin.withOffset(CGVector(dx: frame.maxX - Self.gripInset, dy: frame.maxY - Self.gripInset))
+        grip.press(forDuration: 0.3, thenDragTo: origin.withOffset(CGVector(dx: end.x, dy: end.y)),
+                   withVelocity: XCUIGestureVelocity(speed), thenHoldForDuration: 0.3)
+    }
+
+    /// Pages through the FRUS Research Guide and closes it, if a launch's indexing raised it (`IndexingGuideSheetModifier`
+    /// opens it once a session, 0.6 s after a queue of two or more volumes begins), as `VolumeRemovalTests` does.
+    private func closeTheGuideIfPresent() {
+        let start = app.buttons["Start exploring"]
+        let next = app.buttons["Next"]
+        let firstPage = app.staticTexts["The Official Record of American Foreign Policy"]
+        guard start.exists || (next.exists && firstPage.exists) else { return }
+        var pages = 0
+        while !start.exists, pages < 20 {
+            guard next.waitForExistence(timeout: 2), next.isHittable else { break }
+            next.tap()
+            pages += 1
+            Thread.sleep(forTimeInterval: 0.8)
+        }
+        if start.waitForExistence(timeout: 2), start.isHittable { start.tap() }
+        _ = start.waitForNonExistence(timeout: 3)
+    }
+
+    /// Drags the window's corner grip to the screen's right edge, which widens a window in Windowed Apps to all the
+    /// width right of its origin, and waits for the layout to settle.
+    private func widenTheWindow(to screen: CGRect, speed: CGFloat = 1_500) {
+        let frame = app.windows.firstMatch.frame
+        dragTheCornerGrip(of: frame, to: CGPoint(x: screen.maxX - 2, y: frame.maxY - Self.gripInset), speed: speed)
+        Thread.sleep(forTimeInterval: 1)
+    }
 
     /// The rail's Cite tile, which shows wherever the rail does.
     private var railTiles: XCUIElement {

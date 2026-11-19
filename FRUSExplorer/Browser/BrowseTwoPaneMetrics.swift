@@ -16,7 +16,7 @@ import CoreGraphics
 /// F-2 (#914) gated a second pane at 820 pt: a 340 pt corpus list beside at least 480 pt of
 /// detail. The document level was never driven through it, and the document level is the one that
 /// brings a **second pane of its own** — `DocumentView` presents the Research rail as a trailing
-/// `.inspector` on every non-phone idiom, defaulting open (`panelVisible = true`, which
+/// column on every non-phone idiom at regular width, defaulting open (`panelVisible = true`, which
 /// `.rememberLast` leaves alone). So a document in the detail pane asks for three columns in a
 /// container gated for two.
 ///
@@ -85,7 +85,7 @@ enum BrowseTwoPaneMetrics {
     /// separately here rather than as one 820.
     static let detailFloor: CGFloat = 480
 
-    /// Width the Research rail's `.inspector` column takes on iPadOS.
+    /// Width of the Research rail's column on iPadOS, which `DocumentView` draws at this width.
     ///
     /// **Measured, not chosen**, and measured in both states because they differ. On a booted iPad
     /// Pro 13-inch (iPadOS 26.5) the rail takes **280 pt** when it has room — 1032 − 752 with the
@@ -94,9 +94,9 @@ enum BrowseTwoPaneMetrics {
     /// exists to prevent rather than the rail's width. Budgeting the compressed figure would let a
     /// container keep three columns and then discover it could not afford them.
     ///
-    /// The app does not set `inspectorColumnWidth`, so this is the platform's default and may move
-    /// in a future release. It is a budget: being a few points out only shifts where the list pane
-    /// is given up.
+    /// It was measured on the rail's `.inspector`. Since R6a (F8) the column is the reader's own,
+    /// drawn at this width and never compressed, so the budget and the column cannot drift apart
+    /// (the inspector's 280 pt read again under iOS 27.2 before the change).
     static let researchRailWidth: CGFloat = 280
 
     /// The container width at which Browse shows a detail pane at all (F-2's shipped gate).

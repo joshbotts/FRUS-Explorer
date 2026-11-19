@@ -329,10 +329,26 @@ the run's own screenshot, so an `isSelected` check there could not fail; the tap
 code:** passed on the iPad Pro 13-inch (M5), iOS 27.0 (191 s, with the binding below; 149 s before it). **On the code
 before L19** it fails at the tap, which there turned the stored setting off and opened nothing.
 
-**It drives no window resize.** A window narrowed with the column on turned the column off for good until the
-inspector's binding wrote opens only: as the width turns compact SwiftUI shows the open inspector as a sheet for a
-moment and dismisses it through the binding, while the binding's size class still reads regular. That path is checked by
-hand, with a slow corner drag in Windowed Apps; a fast one has crashed the simulator's `backboardd`.
+**`testNarrowingTheWindowWithTheRailOpenCrashesNothing` resizes the window (R6a, F8).** It needs Windowed Apps
+(Settings ▸ Multitasking & Gestures) and skips, naming the setting, where the window does not narrow; run it on the iPad
+Pro 13-inch (M5) under `OS=27.2`, allowing 900 s. It relaunches with the rail's five sections pinned open, turns to
+landscape, widens the window by its corner grip and opens the document with its rail column, then narrows the window to
+its least width and widens it again twelve times at 300, 900 and 2,000 pt/s, requiring after each that the app runs,
+the column is back and no sheet is left over the reader (`PopoverDismissRegion`). None of its speeds is fast: a fast
+corner drag has crashed the simulator's `backboardd`. Three things measured on that iPad under iOS 27.2 on 2026-11-19:
+- **XCUI reports SpringBoard's frame in portrait while the window's frame and the drags are in landscape**, so a drag to
+  "the screen's right edge" narrowed the window; the test takes the screen's width from the frame's longer side.
+- **The narrowed window is 375 pt wide and iPadOS centres it** (x 329–704 in portrait, 501–876 in landscape), at compact
+  width in both orientations.
+- **A launch's indexing can raise the FRUS Research Guide** over the window; the test pages it closed.
+
+**On the code before R6a** (`v2` at `10f2fc31`) it fails at narrowing 1: an empty 580 × 660 pt form sheet is left over
+the reader. It was the sheet SwiftUI made of the open `.inspector` as the width turned compact, which is the host 1.0
+(1823) crashed in on the owner's iPad (R6, PD21). That code never crashed in the simulator, in 24 narrowings (12 in
+portrait, 12 in landscape with every section open), so the sheet is what the test sees, not the crash; handing the rail
+`AppState` alone failed the same way. Since R6a the column is the reader's own (`DocumentView`, a trailing
+`.safeAreaInset`), and SwiftUI makes no sheet of it. **Measured on R6a's code:** the suite's 2 tests passed, the
+narrowing test in 558 s.
 
 ```bash
 xcodebuild test \
