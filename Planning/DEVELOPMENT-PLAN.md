@@ -11915,3 +11915,5 @@ So R6b lands no mitigation and no code, and no suite runs on the Duo: `CLAUDE.md
 - whether a plain iPhone 17 under 27.2 is single-window (R6's iPhone 17 Pro reported no windows).
 
 **Left as found:** the hinge closed at 0°. The library is again 552 of 553: of the 19 volumes moved out for the queues, 16 were downloaded again, each byte for byte the file it replaced, and 3 were copied back. S1's simulator was only read from.
+
+**Opened as #1955** on the owner's word ("Open the PR"), on 2026-11-19, against `v2` at `1f6b51c1`, which had not moved since R6b began, so nothing was merged in. It is docs only and ready for review, with auto-merge off; no CI check runs on it. Its merge is the next row's to record.

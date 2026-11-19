@@ -81,7 +81,7 @@ None misbehaves. The inner screen reads as a wide iPhone, which the brief leaves
 
 - **D1: the first update after 1.0**, on the owner's word of 2026-11-19 ("First update"). It is among the plan's §3 candidates, with both proposed fixes.
 - **No finding goes before R7,** so R6b lands no mitigation. No UI suite runs on the Duo, so `CLAUDE.md`'s UI table and the runbook are unchanged.
-- **The records** were opened as a pull request on the owner's word ("Open the PR").
+- **The records** were opened as #1955 on the owner's word ("Open the PR").
 
 ## The Duo afterwards
 
