@@ -135,10 +135,10 @@ Tags:
 | PD19 | `iPad only` **A new note:** type a line, then tap beside the sheet. Nothing happens, and the words stay. Swipe the sheet down: *Discard Changes?* (L19, IPA-2) | **Pass** (2026-11-18) |
 | PD20 | `iPad only` **Research ▸ All Notes:** delete a scratch note you made for it. The app does not crash; this is the fix in the notes' *Fixed since 1.0 (1812)* line. (L19) | **Pass** (2026-11-18): the fix seen on a device; L19 measured it on simulators |
 | PD21 | `iPad only` **The rail at a narrow width:** open a document with the rail on, then put FRUS Explorer in Split View or a narrow window. The rail's toggle raises a sheet. Widen the window: the column is back, with the toggle on. A document opened at full width afterwards still has its rail. (L19, IPA-6) | **Fail: the app crashed** (2026-11-18, 23:25:29 Eastern) as the owner narrowed the window with a document and its rail open. The window came back on screen as the app relaunched. Finding **F8**, below |
-| PD22 | `iPad only` Make the collection *R6 scratch* here if it is not there yet, and add a document to it from the reader; it syncs to the other two devices. Its **⚙ Collection settings:** six template cards in three rows of two, every name and subtitle whole. Each tap selects only that card. (L25) | |
-| PD23 | `iPad only` A document entry in *R6 scratch* ▸ **Configure ▸ Open Document:** the sheet closes and the document opens. (L19, IPA-4) | |
-| PD24 | `frus1961-63v04` d6 ▸ rail ▸ **Graph:** it opens on Timeline, with its picker enabled and a brush under the axis. Rotate the iPad, and it is still Timeline. (L16, #1914) | |
-| PD25 | **Research tab,** a list of documents: each row has its *Document N* line. (L21, MAC-5) | |
+| PD22 | `iPad only` Make the collection *R6 scratch* here if it is not there yet, and add a document to it from the reader; it syncs to the other two devices. Its **⚙ Collection settings:** six template cards in three rows of two, every name and subtitle whole. Each tap selects only that card. (L25) | **Pass** (2026-11-18) |
+| PD23 | `iPad only` **Collections tab ▸ *R6 scratch*:** in its contents, tap the document you added, or the **Configure** pill at the right of its row. A sheet opens with that entry's settings: the document's head in bold at the top, and under it **Open Document**, with a book icon. Tap **Open Document**. Expected: the sheet closes, and the document opens in the reader inside the collection, with Back returning to *R6 scratch*. The row's long-press menu has an older *Open Document* (#755), which this check is not about. (L19, IPA-4) | |
+| PD24 | `frus1961-63v04` d6 ▸ rail ▸ **Graph:** it opens on Timeline, with its picker enabled and a brush under the axis. Rotate the iPad, and it is still Timeline. (L16, #1914) | **Pass** (2026-11-18) |
+| PD25 | **Research tab,** a list of documents: each row has its *Document N* line. (L21, MAC-5) | **Pass** (2026-11-18) |
 
 ---
 

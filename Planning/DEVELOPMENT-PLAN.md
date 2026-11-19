@@ -11750,3 +11750,9 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - **The devices, by `devicectl`'s list:** the iPad is an iPad Pro 12.9-inch (5th generation), not the 13-inch the earlier records assumed from a screenshot, and the iPhone an iPhone 17 Pro. Both records were corrected here.
 - **F8 joins R6a** on the owner's word ("Before R7, in R6a"), as that row's first priority, being the one crash. R6a's bullet carries its brief: the report and where it is kept, the likeliest path through L19's IPA-6, the reproduction on the iPad simulators under 27.2 and 27.0, and what done looks like. Done means no crash narrowing or widening with the rail open, a UI test in `RailAtCompactWidthTests` that fails on `v2` first, and IPA-6's behaviour kept. R6b's brief now says that a fold crashing with the rail open is F8, R6a's to fix.
 - **F8 is intermittent:** asked whether it repeats, the owner reported that "narrowing with rail open doesn't always cause a crash". R6a's brief now asks the session to repeat each narrowing many times and count crashes over tries, with a test that tries enough times to fail on `v2`. A crash that comes and goes fits the moment SwiftUI re-hosts the open inspector as a sheet.
+- **PD22, PD24 and PD25 passed** on the iPad:
+  - *R6 scratch*'s Collection settings showed the six template cards in three rows of two, every name and subtitle whole, each tap selecting only its card (L25);
+  - `frus1961-63v04` d6's graph opened on Timeline and kept it through a rotation (L16, #1914);
+  - the Research tab's rows carry the *Document N* line (L21, MAC-5).
+
+  At the owner's ask, PD23's line was rewritten to the screen as built: the row's tap or **Configure** pill, the sheet with the head and **Open Document**, and the older long-press *Open Document* (#755), which the check is not about.
