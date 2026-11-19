@@ -122,7 +122,7 @@ Tags:
 | PD11 | **Kissinger's person sheet:** lifespan, Career, Subjects with the caption, VIAF and Wikidata. (#1906; L15) | **Pass** (2026-11-18) |
 | PD12 | **The reader's links,** as in PH16: v06's index and contents, *De Long*, *JAY, JOHN* and *Bill Martin*. (#1898, #1902) | **Fail, in two parts** (2026-11-18): v06's contents line *Kennedy-Khrushchev Exchanges* opened a document list, not page 1, and *See … De Long* jumped to the beginning of the index, not to De Long's entry. Finding **F6**, below. *JAY, JOHN*, *Bill Martin* and the index's page-number boxes were not reported |
 | PD13 | **T2's fourth finding:** `frus1961-63v06`'s Contents, a front-matter link and an Index link. *See:* what the iPad does. | **Seen** (2026-11-18): the contents line *Kennedy-Khrushchev Exchanges* opened document 1 this time, where in PD12 the same line had opened a document list, so F6's first part does not happen every time. A page link in the index opened the document holding the term or person. Asked after, the owner reported that the Contents' links to the front matter (`#pg_III` …) and to the Index (`#pg_315`) do nothing on the iPad either: T2's fourth finding shows on a device. That is finding **F7**, below |
-| PD14 | `frus1977-80v12` ▸ **Sources:** every CIA job row has its Archival Neighbors count, and Job 09–00438R's opens its two documents. (L22, #1929) | |
+| PD14 | `frus1977-80v12` ▸ **Sources:** every CIA job row has its Archival Neighbors count, and Job 09–00438R's opens its two documents. (L22, #1929) | **Pass** (2026-11-18): the first time a running iOS app has shown it; L22 saw it on the Mac, and on iOS only in a unit test |
 
 ### T2's findings, and each row's own surface
 
