@@ -11734,3 +11734,9 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
   - In Archives' Collections lens, a search for *Bohlen* left the tab sidebar's toggle with its icon.
   - Seen besides: the tab bar disappears while that search is active. The lens's field is `CollectionBrowserView`'s standard `.searchable` (`CollectionBrowserView.swift:210`), and no code under `FRUSExplorer/` sets the tab bar's visibility (`for: .tabBar`, `toolbarVisibility` and `tabBarMinimizeBehavior` all occur nowhere). So this is iPadOS's own presentation of an active search, not the app's choice: not a finding, on the owner's word ("iPadOS behaviour").
 - **PD17 passed.** On the iPad, Subjects carries its caption on the Research rail, in Search ▸ Filters ▸ By Subject, in Facets ▸ Subjects, in Related's *Shared subjects* and under a volume page's Top subjects. With PD11's person sheet, that is the device check of the iOS volume page and the person sheet with the caption, where no UI test reads it, which L15's entry left owed.
+- **PD18, PD19 and PD20 passed** on the iPad:
+  - Search's Filters ▸ Done ran the search again under the changed Years (L18, IPS-1), and Facets' foot bar, *Years: 2 included*, applied its two choices (IPH-3);
+  - the note editor ignored a tap beside its sheet with its words kept, and asked *Discard Changes?* on a swipe (L19, IPA-2);
+  - a note deleted from All Notes left the app running.
+
+  The last is L19's crash fix, which the TestFlight notes' *Fixed since 1.0 (1812)* line names. L19 had measured it on simulators; this is the first time it has been seen on a device.
