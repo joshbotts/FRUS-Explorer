@@ -11843,3 +11843,75 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
     - 3 not checked: PH29, MC17 and MC18.
 
 **Opened as #1954** on the owner's word ("Open the PR"), on 2026-11-19, against `v2` at `75364cec`, which had not moved since R6 began, so nothing was merged in. It is docs only and ready for review, with auto-merge off. `python3 Planning/website-drafts/build_paste.py --check` is in step, and no test reads the text it changes. Its merge is the next row's to record. The session cards for R6b and then R6a follow it, each on the owner's word.
+
+**Merged as `1f6b51c1`** by the owner on 2026-11-19 at 06:27:11 UTC, two minutes after it opened, auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`bbc4d03a`). R6's branch was still on `origin` when R6b began. Recorded in R6b's entry, below.
+
+## Session 2026-11-19 — R6b: FRUS Explorer on the iPhone Duo simulator, folded, unfolded and half open: no crash, loss of work or store check; one finding, D1, to the first update
+
+**What and why.** Row R6b of the plan of record from 2026-11-15, added during R6 on the owner's word of 2026-11-18 ("add a row to assess the app's behavior on an iphone duo simulator. the assessment should focus on mitigating undesirable behaviors rather than exploiting new opportunities afforded by the device"). The plan's session started it once #1954 had merged, from `v2` at `1f6b51c1`, on `claude/r6b-iphone-duo-f97938`. The aim was defence, not design: find what misbehaves on the Duo, and mitigate before R7 what R6's rule puts there (a crash, a loss of work or a store check). Records only: no file a target compiles changed.
+
+**#1954's merge, recorded** in the plan's R6 bullet, §4 and R6's entry above: `1f6b51c1`, 2026-11-19 06:27:11 UTC, two minutes after it opened, auto-merge off, no issue closed, the tree the head's (`bbc4d03a`).
+
+**How.**
+- **The device:** the iPhone Duo simulator `69E4A90C` under iOS 27.2 (24B91016s, on its own runtime), Xcode 27.2. The simulator control's `set_posture` folds it:
+  - closed lights the outer screen, 466 × 678 pt;
+  - open lights the inner one, 951 × 669 pt;
+  - 130° lights the inner one too.
+- **The build:** Debug, of `v2` at `1f6b51c1`, built for the Duo under `Scripts/heavy.sh` from this worktree's DerivedData (174 s).
+- **The library:** S1's version-75 library (553 volumes, R5's census) cloned into the Duo's container before the app's first launch, with the SwiftData store renamed to the Debug build's `FRUSExplorerDebug.store`. No re-index ran. The first run was checked before, on the empty install.
+- **The app-resizability skill**, loaded first. Its prerequisites, read only:
+  - the launch storyboard is declared;
+  - four orientations are declared for iPad;
+  - there is no `UIRequiresFullScreen`.
+
+  All three held. The 14 `userInterfaceIdiom` lines in 10 files were read, then seen on the device. No API the skill modernises showed a fault, so none was changed, as the freeze asks.
+- **Driving and evidence:**
+  - the simulator control's taps;
+  - `simctl io … screenshot --display=1` (outer) and `--display=3` (inner), for each screen;
+  - SpringBoard's log, for scene events;
+  - the app's log;
+  - a copy of T2's remote-control XCUITest, for the accessibility tree (`~/Library/Caches/FRUS-Explorer/r6b/`, never committed).
+
+**What held** (`Planning/iPhone-Duo-Assessment-2026-11-19.md`, nine strips). Each task was begun on the outer screen and taken through an unfold and a fold. Each kept its state:
+- the first run's dock, its step and its choice;
+- Search's 380 results;
+- Filters' staged date limit and Facets' *Years: 2 included*, unapplied;
+- the reader's place in the Long Telegram;
+- the rail's sheet, twice each way, with no crash;
+- a new note's typed line, and then its *Discard Changes?*;
+- a collection's subtitle typed in the iPhone's settings drill-in and in the iPad's settings sheet, which the editor swaps at a fold;
+- an entry's drill-in, and its Configure sheet, which became the drill-in when folded;
+- *Delete "…"?*, which re-anchored to its row (dismissed, nothing deleted);
+- Cross-Reference Analytics' chart and Semantic Analytics' map;
+- the FRUS Research Guide a queue raises.
+
+Two queues, 3 volumes and then 1981–88's 13, downloaded from GitHub and indexed, the 13 in about 30 s. The queue's Live Activity showed on the outer screen's Cover Sheet, with the system's *Allow Live Activities?* left unanswered. The tabs are a vertical bar on the trailing edge of both screens, and the content and the iCloud banner keep clear of it. Nothing hides Browse's breadcrumb, which #238 guards against on an iPad. There were no black bars.
+
+**F8 cannot reach the Duo.** The Duo is the phone idiom folded and unfolded, so `DocumentView.railIsSheet` is true and the inspector F8 re-hosts is never built. R6a's F8 brief carries that as a plan revision.
+
+**D1, the one finding.** The Duo is the one iPhone that supports multiple windows: `@Environment(\.supportsMultipleWindows)` is true there in both postures. So the 25 gates that choose a window over a sheet (10 files) take the iPad's side, and the 23 `openAuxWindow` sites open scenes.
+- Cross-Reference Analytics and Semantic Analytics opened as full-screen windows. SpringBoard logged a `SceneCreationRequest` for each, and its *destroy scenes request* on three of four Dones.
+- Done brought the main window back each time (#1368's close works).
+- Once (02:21:40), Done did not end the window, and the next launch read "2 Views Open".
+- Where it did, the session survived: the app's `KnownSceneSessions` still listed both windows, and the next launch read "3 Views Open", the two closed windows beside the main one. A swipe in the system's views switcher removes one.
+
+It is not a crash, a loss of work or a store check. The two fixes proposed are sheets on a phone idiom (one helper read at the 25 gates), or Done ending its window's session after it fronts the launcher. Whether the session also survives on an iPad was not measured.
+
+**Placed on the owner's word, 2026-11-19:**
+- **D1: the first update** ("First update"), among §3's candidates with both fixes.
+- **The records' pull request** ("Open the PR").
+
+So R6b lands no mitigation and no code, and no suite runs on the Duo: `CLAUDE.md`'s UI table and the runbook are unchanged, and R6a's one upload carries nothing of R6b's.
+
+**For whoever drives the Duo next** (R6a's brief has it too):
+- XCUITest's taps reach the outer screen only. On the inner screen a tap on the Browse tab left Search selected, by the tree. So a UI suite can run on the folded Duo, but cannot fold it or drive the inner screen.
+- The control's first taps after a posture change sometimes fail with *could not finish sending input* until it is attached again.
+- Going half open from closed froze the simulator's frame for every app, the system's Settings too.
+
+**Not done or not checked:**
+- a fold while a queue runs: both finished first, so the indexing banner changing height under a fold (F1's ground) is still R6a's to see;
+- landscape on either screen;
+- a physical Duo;
+- whether a plain iPhone 17 under 27.2 is single-window (R6's iPhone 17 Pro reported no windows).
+
+**Left as found:** the hinge closed at 0°. The library is again 552 of 553: of the 19 volumes moved out for the queues, 16 were downloaded again, each byte for byte the file it replaced, and 3 were copied back. S1's simulator was only read from.
