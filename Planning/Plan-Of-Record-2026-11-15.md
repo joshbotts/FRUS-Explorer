@@ -610,6 +610,10 @@ It is written from four sources:
 
       F6 joins R6a, before R7, on the owner's word ("Before R7, in R6a").
     - **MC17 and MC18 were not checked,** both optional, on the owner's choice. That ends the Mac's section: of MC1 to MC18, every check made passed, MC15 confirmed F7 and gave F6's Mac side, and MC6 gave F2 and X1 gave F3.
+    - **The iPhone:**
+      - **PH4 and PH5 passed.** Cancel All asks and empties the queue. A queue left with the iPhone locked finished: the first time L11 to L14's background indexing has been seen on a device.
+      - **PH6, seen:** no end-of-queue card appeared. That confirms the review's IPH-8 on a device; it is already in §5, after 1.0.
+      - **PH7, seen:** in Airplane Mode no failure line came, and the banner showed the download underway with no progress, as a background transfer waits for a connection. Whether it finished once reconnected is to come.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.
   - **A library that had 1.0 (1787) or earlier, and one that had 1.0 (1812).** Each re-indexes once at launch, to version 75 (decisions 117 to 119 and 131), and the pass sees it. The second folds in R2c's device pass, still owed (`Completed/Plan-Of-Record-2026-10-21.md` §4).

@@ -11786,3 +11786,8 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
 
   R6a now holds F8, F1, F3, F4, F5 and F6.
 - **MC17 and MC18 were not checked,** both optional, on the owner's choice: the Mac's Cancel All, and the NARA lookup with the key. That ends the Mac's section. Every check made there passed. MC6 gave F2 and MC15 F6's Mac side, and X1, the Mac's export, gave F3.
+- **The iPhone (iPhone 17 Pro, iOS 27.2), 2026-11-19:**
+  - **PH4 passed:** Volumes & Storage's Cancel All asked, Keep Downloading kept the queue, and Cancel All Downloads emptied it (L20, HCD-2).
+  - **PH5 passed:** a queue left with the iPhone locked finished while the app was away. That is the first time L11 to L14's background run has been seen on a device; their sessions drove the handler on simulators, which refuse the scheduler. The Live Activity's form (IPH-7) was not reported.
+  - **PH6, seen:** no end-of-queue card appeared, which confirms the review's IPH-8 on a device. It is in §5, after 1.0.
+  - **PH7, seen:** with Airplane Mode on during a download, no failure line came, and the banner showed the download underway with no progress. An iOS background transfer waits for a connection rather than failing, which is why L20 met its failure line only through the test seam. Whether the download finished once Airplane Mode was off is to come from the owner.
