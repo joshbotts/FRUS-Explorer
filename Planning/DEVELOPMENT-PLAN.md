@@ -11646,5 +11646,200 @@ The owner took the six ("I like these recommendations. Include a new session in 
 
 **Not done.** The three §5 findings are not filed. The free pages a re-index leaves (20% of a library's index) are reported, not reclaimed (Compact Database does that). The shared Mac check copy's extracted source still carries S4's inert chip patch until its next `setup.sh`. Nothing is owed to FRUS Explorer Light: R5 changed no shared code (its chart fix is in app files, and the rest is test code and records).
 
-**Opened as #1953** on the owner's word of 2026-11-18 ("Open the PR", decision 144), asked once the checklist, T2 and the walk were done, against `v2` at `82d3a403`, which had not moved, so nothing was merged in. Ready for review with the `Mac` label and "Mac verification requested" (five look-only steps in the check copy), a line for the web edition, no issue closed; Auto-fix on, auto-merge off.
+**Opened as #1953** on the owner's word of 2026-11-18 ("Open the PR", decision 144), asked once the checklist, T2 and the walk were done, against `v2` at `82d3a403`, which had not moved, so nothing was merged in. Ready for review with the `Mac` label and "Mac verification requested" (five look-only steps in the check copy), a line for the web edition, no issue closed; Auto-fix on, auto-merge off. **Merged as `75364cec`** by the owner on 2026-11-18 at 11:52:53 UTC, auto-merge off. The owner uploaded 1.0 (1823) for both platforms that day, and it was tagged `build-54` (`c882b64e`, pushed at 12:13 UTC). At the owner's word, R5's session pasted the website's two quick starts and the tour's block 2 again, the last save at 23:18 UTC; afterwards its branch was deleted and the session archived. Recorded in R6's entry, below.
 
+## Session 2026-11-18 — R6: the device pass of 1.0 (1823) on an iPhone, an iPad and the Mac: the checklist, R5's merge record, and the results by ID
+
+**What and why.** Row R6 of the plan of record from 2026-11-15: the owner's device pass of 1.0 (1823), the fourth TestFlight build (`build-54`). The plan's session started it at the owner's request ("give me a checklist for the R6 pass. i will report the results and note any issues…"), from `v2` at `75364cec` (R5's merge, recorded here), on `claude/r6-device-pass-489eee`. The session drives no device: the owner tests and reports by ID, and the session records each result. Records only: nothing is built or run. Under the freeze (decision 129), a docs-only record is part of the row.
+
+**The checklist** (`Planning/R6-Device-Pass-2026-11-18.md`, `a4ca832e`) holds 80 checks by ID:
+- PH1–PH30 on the iPhone;
+- PD1–PD25 on the iPad;
+- MC1–MC18 on the Mac;
+- X1–X7 for Import from JSON across the three.
+
+Each says where to go, what to do and what to expect, and has a Result column. They were written from:
+- the R6 bullet;
+- R2c's pass (`Completed/Plan-Of-Record-2026-10-21.md` §4);
+- the review's §6 (IPH-7, IPH-8, IPH-9, A11Y-5);
+- the log entries of L11 to R5;
+- both TestFlight notes;
+- T2's four findings in §5.
+
+The owner's answers that shaped it (2026-11-18):
+- **The devices:** an iPhone and an iPad on 27.2, and the Mac on macOS 27.2. All three were already on 1823 and on one Apple Account, with a printer at the Mac. There is no small iPhone and no iPad mini.
+- **No library dates from 1.0 (1787) or earlier.** So every library's 74 → 75 re-index had run before the pass, which reads what it left. The 71 → 75 path rests on R5's simulator census (727 s).
+- **"Use an 1823 export"** in place of one from 1812. Both builds write format version 7, and `git diff build-53 75364cec` touches only the envelope's doc comments: L24 changed how the exporter is built, not the records it writes.
+- **"My own web export"** for the FRUS Explorer Light file.
+- **"Skip it"** for a file whose synced settings are newer than the library's.
+
+So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboarding opens again only through a reset or Fix iCloud Sync), #1835 (an iPad mini), and a file's synced settings taken at once. The owner declined a page to tick on a device ("No, list is fine").
+
+**R5's merge, recorded.** These items are written into the plan's R5 bullet, §2 and §4, R5's entry above, and *What the site holds* in `Planning/website-drafts/Squarespace-Entry.md`, which still read as of 10 November:
+- #1953 merged as `75364cec` at 11:52:53 UTC;
+- the upload, for both platforms;
+- `build-54` (`c882b64e`, 12:13 UTC);
+- the website pasted again (the two quick starts and the tour's block 2, last save at 23:18 UTC), after which every live block held its file;
+- the cleanup.
+
+**Results**, by ID as the owner reports them; the checklist's Result column holds each one:
+- **PH1, PH2 and PH3 passed.** The iPhone's index reads format version 75 with nothing pending, and its research is all there. The re-index at its first launch of 1823 ran and finished in about 5–6 minutes.
+- **PD1, PD2 and PD3 passed.** The same on the iPad, whose re-index took about 7–10 minutes. R5's census had 904 s for an 1812 library on a simulator iPad, concurrency 1, on a Mac running other jobs.
+- **MC1, MC2 and MC3 passed.** On the Mac the re-index took about 3 minutes, where R5 timed a copy of the same library in the check copy at 1,001 s. The session then read the installed app's index read-only (a `mode=ro` open of its container's `frus.db`, and the plist): installed version 75, last written at 07:27 Eastern, 553 `volume_structures` rows, every one with its file record, and 321,749 `document_cache` rows. Those are the census figures, so the short re-index was a whole one.
+- **Finding F1, seen during PD3**, placed before R7 as row **R6a** on the owner's word: "make this one issue for the pre-R7 session." During the iPad's re-index (iPadOS 27.2.1, an iPad Pro 12.9-inch of the 5th generation, landscape), the indexing banner hung across both columns of Browse's two-pane about a third of the way up the window, with the list showing below it. The owner's screenshot is `Planning/R6-Device-Pass-2026-11-18-PD3-banner.webp`. In the reader, a blank band lay between the text and the banner until the Research rail was opened. Read from the code, `MainTabView.swift`'s `TabShellBannerModifier` and `TabShellBannerReserve` (#1565) measure the banner and write its height into the tab host's `additionalSafeAreaInsets` on a later main-queue turn. During a re-index the banner's height changes with each volume, so the room set aside can be left behind by the banner; a relayout, such as opening the rail, puts the content right. That reading is to be tested, not settled. The code is unchanged since `build-53`. R6a's bullet in the plan is the brief: the readings to test, the 1812 snapshot that reproduces the re-index, what done looks like, and a build between 1823 and 1861. The cut-off *Administrati…* tile in the same screenshot is in T2's committed `ipad/browse-annotations.png` as well (the tiles' one line, at 85% before they cut off), so it is not new. On the owner's word, R6a starts after the pass ("After the pass").
+- **A row added during the pass, R6b,** on the owner's word: "add a row to assess the app's behavior on an iphone duo simulator. the assessment should focus on mitigating undesirable behaviors rather than exploiting new opportunities afforded by the device". Placed before R7 ("Before R7, as R6b"), to run after the pass and before R6a, so that R6a's one upload carries what R6b lands.
+  - What the brief was written from: this Mac has an iPhone Duo simulator under iOS 27.2 (`69E4A90C`); the app declares no `UIRequiresFullScreen`, all four orientations and multiple scenes; and `FRUSExplorer/` holds at least twelve branches on `userInterfaceIdiom` in ten files, the likeliest place for "iPhone" to mean "narrow" on an unfolded inner screen.
+  - The owner chose to export Xcode's agent skills, app-resizability among them, with `xcrun agent skills export --output-dir ~/.claude/skills` ("Yes, I'll run it"), so that R6b's session may load it.
+- **MC5 passed (ASR-4).** The owner printed a document to a printer from the TestFlight build. The session read the Mac's system log read-only (`log show --last 2h`). `FRUS Explorer[24232]` logged *AppSandbox request successful* at 19:18:30 Eastern. Its `NSPrintOperation` at 19:18:55 connected to `com.apple.printtool.agent` and `com.apple.PrintKit.PrinterTool`, which opened a session for `bottsywattsy.FRUS-Explorer`. No sandbox *deny* from that process appears in the window: the only lines naming both *deny* and *FRUS* were the session's own `log` searches. So the print entitlement L17 added holds in the sandboxed build, the check its unsandboxed check copy could not make.
+- **MC6, MC7 and MC8 passed:** the main window's title and centre, the Window menu's two windows, the empty window's two ways in, and the Search window's tools and matched words. **Finding F2, from MC6:** the document's head in the title bar is almost always cut short (the owner: "the document head is almost always truncated"). L21 met it in its walk, where at the default 1,200 pt AppKit gives the title about 140 pt before it moves a toolbar item into », the centre naming the volume and number whole. It is not a crash, a loss of work or a store check. Placed on the owner's word ("First update"): the first update after 1.0, among the plan's §3 candidates.
+- **X6 passed: the Mac imported a FRUS Explorer Light export.** The owner's own export from the web edition held one document tagged, with a note and a highlight, and the Mac imported all of them. The Mac read the file first, the other way round from the checklist's order, so it wrote the file's records. X4 on the iPad becomes the read-back, after iCloud has carried them: *…importing it would change nothing*.
+- **X4 passed.** On the iPad, the tagged document, its note and its highlight had arrived through iCloud, and the web file then read *…importing it would change nothing*. So the imported records reached a second device, the iCloud check that L24's check copy, with no iCloud, could not make.
+- **X1 passed**, and the Mac's own export imported back read *…importing it would change nothing*. **Finding F3, from X1:** on the Mac, **Export as JSON** opens only a share menu, with no way to save the file to a folder; the owner shared it to Mail and saved it from the draft. In `FRUSExplorer/Export/ResearchDataExportView.swift`, all three of Data & Recovery's file exports go through `ShareLink`: Export as JSON, Export Notes as Markdown and Export Query Log. On iOS the share sheet offers Save to Files; a Mac's share menu has no save destination. Only Export Research Database…, in the same file, runs an `NSSavePanel`. `build-53`'s copy of the file has the same three `ShareLink`s, so 1.0 (1812) behaved the same and this is not a regression. But 1823's Import from JSON makes the file one to keep and carry, and the Mac's TestFlight note asks testers to export to JSON and import the file. It is not a crash, a loss of work or a store check. Placed on the owner's word ("Before R7, in R6a"): it joins row R6a. Its brief there asks for a save panel for the Mac's three exports, iOS unchanged, and a test that fails on `v2` first; the owner checks it on the Mac before R7.
+- **X2 passed, but only after the iPad's app was force-quit and relaunched. Finding F4:** until then, the iPad's All Notes kept listing *R6 import test*, which had been deleted on the Mac. Read from the code: `AllNotesScreen` renders `NotesPaneSnapshot`, a snapshot of values fetched in its `.task` and again after its own edit sheet closes or a delete (`refresh()`). Nothing observes iCloud's imports, so another device's change shows only when the screen is opened again or the app relaunches. A tap on a stale row finds no note and refreshes (`NotesPaneSnapshot.note(id:in:)` returning `nil`), so it is safe. The Research window and Project Home read live `@Query`s. `build-53`'s copy is identical and no commit since has touched the file, so this is not a regression. It is not a crash, a loss of work or a store check. Placed on the owner's word ("First update"): the first update after 1.0, among the plan's §3 candidates.
+- **X3 passed.** The iPad's import of the Mac's export reported the deleted *R6 import test* as *1 to add* and brought it back. On the Mac, though, it reappeared only after the app was restarted, so **F4 shows on the Mac too**.
+  - **The cause, read from the code since:** `ResearchView` refetches the notes snapshot it hands All Notes on each change to its live `@Query` of the notes (`.onChange(of: allNotes.count)` and `.onChange(of: allNotes.first?.lastModified)`), so an iCloud import does refresh it. But `AllNotesScreen` fetches a snapshot of its own in `.task` on appear (#1281, `af700ef9`, 2026-09-12), and `current = localSnapshot ?? snapshot` draws that one first. So the parent's refreshes are never seen while the screen is up. Its doc comment says the local copy should take over only "once this sheet has deleted something".
+  - The screen the owner watched on the Mac is not recorded.
+- **F4 moved into R6a** on the owner's word ("Move to R6a"), once X3 had shown it on the Mac too and its cause was found to be the one override in `AllNotesScreen`. It had first been placed in the first update. Its §3 entry is gone, and R6a's bullet carries its brief:
+  - the defect, as X2 and X3 showed it;
+  - the cause;
+  - care for the delete path where L19 fixed the iPad's crash;
+  - the fix's shape;
+  - what done looks like: All Notes left open follows another device's changes on every platform, with a test that fails on `v2` first and `NoteEditorUnsavedChangesTests` still passing.
+
+  R6a now holds F1, F3 and F4 in one upload.
+- **PD4, PD5, PD6 and PD7 passed** on the iPad:
+  - Source Explorer resolves `frus1952-54v02p1` d41's lot to RG 59, A1 1586E;
+  - Cross-Reference Analytics draws each name beside its own bar, a bar opens its document, and the graph draws at two hops and on Timeline;
+  - Corpus Analytics' **View N documents ↗** opens Search with the same N, with the comparison's line patterns;
+  - Person Analytics draws each name of its ranking beside its own bar.
+- **Finding F5, from PD7.** Zoomed into Kissinger's neighbours, Person Analytics' co-mention network drew its nodes and names outside its window: over the window's own header (*Trends*, *Network*, the scope and focus lines) and past its edges, over the main window behind it. The owner's screenshot is `Planning/R6-Device-Pass-2026-11-18-PD7-graph-overflow.webp`.
+  - Read from the code: four network graphs zoom and pan a canvas with `.scaleEffect` then `.offset`, and none clips it to its frame. They are `PersonCoMentionGraphView.swift:824`, `CrossReferenceGraphView.swift:443`, `VolumeConnectionGraphView.swift:613` and `ArchivalNetworkView.swift:326`; the cross-reference view's one `clipShape` (`:1349`) is on a small rounded element, not the canvas.
+  - Whether a parent clips any of the four was not traced. A zoomed node's tap area may lie over the window's own controls too.
+  - None of the three files that #1899 and #1901 moved into the kit since `build-53` changed this chain, so it is older than 1823. It is not a crash, a loss of work or a store check.
+- **F5 joins R6a** on the owner's word ("Before R7, in R6a"). R6a's bullet carries its brief: the four graphs' scaled canvases, the fix's shape (clip the drawing and the taps to each graph's frame), and what done looks like. R6a now holds F1, F3, F4 and F5 in one upload.
+- **PD8, PD9, PD10 and PD11 passed** on the iPad: About the Series' Most-covered countries and Archival Analytics' ranking with each name beside its own bar, the Word Cloud's three lenses with Distinctive sizing, and Kissinger's person sheet (lifespan, Career, Subjects, VIAF and Wikidata).
+- **PD12 failed in two parts. Finding F6.**
+  - On the iPad, `frus1961-63v06`'s contents line *Kennedy-Khrushchev Exchanges* opened a document list, not page 1, which R5's walk saw it open on the Mac.
+  - In `frus1873p1v1`'s index, *See … De Long* jumped to the beginning of the index, not to De Long's entry, which Mac check 27 saw it reach on 13 November.
+  - Read from the code, both hosts handle these links the same way: `resolvePageReference` and `revealIndexEntry` are line for line alike in `DocumentView` and `MacDocumentView`, and both web views reveal an entry through `revealIndexEntry(on:)` and `IndexEntryLanding`. A document list is `PageLink`'s fallback, `.volume(volumeId:page:)`, which it takes when the device's page index names no document for the page.
+  - So the cause is in what this device resolves or in WebKit, or it changed on both platforms after 13 November. MC15 now asks for the same two taps on the Mac. *JAY, JOHN*, *Bill Martin* and the index's page-number boxes were not reported.
+- **PD13, seen:** on the iPad, `frus1961-63v06`'s contents line *Kennedy-Khrushchev Exchanges* opened document 1 this time, where in PD12 the same line had opened a document list. So F6's first part does not happen every time. One reading, to be tested: a tap made before the device's page index can answer falls back to the volume's page by `PageLink`'s rule. A page link inside the index opened the document holding the term or person. The Contents' links to the front matter (`#pg_III` …) and to the Index (`#pg_315`), T2's fourth finding, were not reported.
+- **Finding F7, T2's fourth finding now seen on a device.** Asked after PD13, the owner reported that `frus1961-63v06`'s Contents links to its front-matter items and to its Index do nothing on the iPad, as R5's walk saw on the Mac.
+  - Read from the code: `FRUSURLScheme.resolveCrossRefTarget` reads a roman-numeral page anchor (`pg_III`) as `.unresolved` by design. The Index's `#pg_315` is read as page 315, but `PageLink.destination` finds no document holding it in the device's page index or the bundled map, and so, by its documented rule, opens nothing.
+  - A fix may have to map front- and back-matter pages to their divisions, in the page index (an index version, under the freeze) or at the tap. A reader can reach both from the volume's page in Browse.
+  - It is not a crash, a loss of work or a store check. Placed on the owner's word ("First update"): the first update after 1.0, among the plan's §3 candidates.
+- **PD14 passed.** On the iPad, `frus1977-80v12`'s Sources gives every CIA job row its Archival Neighbors count, and Job 09–00438R's opens its two documents. L22 (#1929) had seen it on the Mac only, the iOS outline held by a unit test alone, so this is the first time a running iOS app has shown it.
+- **PD15 and PD16 passed, so T2's first two findings do not show on the device.**
+  - The Long Telegram's Related Documents window opens and draws under iPadOS 27.2. The render-server abort T2 met was the iOS 27.0 simulator's, and no device runs 27.0.
+  - In Archives' Collections lens, a search for *Bohlen* left the tab sidebar's toggle with its icon.
+  - Seen besides: the tab bar disappears while that search is active. The lens's field is `CollectionBrowserView`'s standard `.searchable` (`CollectionBrowserView.swift:210`), and no code under `FRUSExplorer/` sets the tab bar's visibility (`for: .tabBar`, `toolbarVisibility` and `tabBarMinimizeBehavior` all occur nowhere). So this is iPadOS's own presentation of an active search, not the app's choice: not a finding, on the owner's word ("iPadOS behaviour").
+- **PD17 passed.** On the iPad, Subjects carries its caption on the Research rail, in Search ▸ Filters ▸ By Subject, in Facets ▸ Subjects, in Related's *Shared subjects* and under a volume page's Top subjects. With PD11's person sheet, that is the device check of the iOS volume page and the person sheet with the caption, where no UI test reads it, which L15's entry left owed.
+- **PD18, PD19 and PD20 passed** on the iPad:
+  - Search's Filters ▸ Done ran the search again under the changed Years (L18, IPS-1), and Facets' foot bar, *Years: 2 included*, applied its two choices (IPH-3);
+  - the note editor ignored a tap beside its sheet with its words kept, and asked *Discard Changes?* on a swipe (L19, IPA-2);
+  - a note deleted from All Notes left the app running.
+
+  The last is L19's crash fix, which the TestFlight notes' *Fixed since 1.0 (1812)* line names. L19 had measured it on simulators; this is the first time it has been seen on a device.
+- **PD21 failed: the app crashed. Finding F8.** Narrowing the iPad's window with a document and its rail open crashed the app, at 23:25:29 Eastern under iPadOS 27.2.1 (24B156). The window came back on screen as the app relaunched, and TestFlight reported the crash.
+  - **The report:** read off the paired iPad with `xcrun devicectl device copy from --domain-type systemCrashLogs` (read-only; `Retired/FRUS Explorer-2026-11-18-232529.ips`). It is kept outside the repository, since it carries the device's reporter key: `R6-PD21-crash-1823-ipad.ips` in the plan's shared notes folder.
+    - `EXC_BREAKPOINT` (`SIGTRAP`) on the main thread: Swift's `_assertionFailure` from SwiftUICore's `EnvironmentValues.subscript.getter`, while `EnvironmentBox.update` filled a view's `@Environment` properties in `GraphHost.flushTransactions`. That is SwiftUI's trap for a view reading an environment value its hierarchy was never given.
+    - No app frame but `main` is on the stack, so the report does not name the view.
+    - The binary's UUID, `b29d2a57-50ca-306e-81ff-2bc1cb40873c`, matches the 1823 archive's dSYM (`FRUSExplorer 11-18-26, 6.57 AM.xcarchive`).
+  - **The likeliest path, not settled, is new in 1823:** L19's IPA-6 shows an iPad's rail at compact width as the iPhone's sheet (`railIsSheet`), and L19 recorded SwiftUI re-hosting the open inspector as a sheet for a moment as a window narrows. L19's narrowing walk on the iOS 27.0 simulator did not crash.
+  - **The same listing held a `JetsamEvent` from 19:26.** FRUS Explorer was the largest process (about 340 MB, suspended), but the only process killed was `findmydeviced`. So the re-index was not cut short, and that event is no finding.
+  - **The devices, by `devicectl`'s list:** the iPad is an iPad Pro 12.9-inch (5th generation), not the 13-inch the earlier records assumed from a screenshot, and the iPhone an iPhone 17 Pro. Both records were corrected here.
+- **F8 joins R6a** on the owner's word ("Before R7, in R6a"), as that row's first priority, being the one crash. R6a's bullet carries its brief: the report and where it is kept, the likeliest path through L19's IPA-6, the reproduction on the iPad simulators under 27.2 and 27.0, and what done looks like. Done means no crash narrowing or widening with the rail open, a UI test in `RailAtCompactWidthTests` that fails on `v2` first, and IPA-6's behaviour kept. R6b's brief now says that a fold crashing with the rail open is F8, R6a's to fix.
+- **F8 is intermittent:** asked whether it repeats, the owner reported that "narrowing with rail open doesn't always cause a crash". R6a's brief now asks the session to repeat each narrowing many times and count crashes over tries, with a test that tries enough times to fail on `v2`. A crash that comes and goes fits the moment SwiftUI re-hosts the open inspector as a sheet.
+- **PD22, PD24 and PD25 passed** on the iPad:
+  - *R6 scratch*'s Collection settings showed the six template cards in three rows of two, every name and subtitle whole, each tap selecting only its card (L25);
+  - `frus1961-63v04` d6's graph opened on Timeline and kept it through a rotation (L16, #1914);
+  - the Research tab's rows carry the *Document N* line (L21, MAC-5).
+
+  At the owner's ask, PD23's line was rewritten to the screen as built: the row's tap or **Configure** pill, the sheet with the head and **Open Document**, and the older long-press *Open Document* (#755), which the check is not about.
+- **PD23 passed,** which ends the iPad's section. In *R6 scratch*'s Configure sheet, **Open Document** closed the sheet and opened the document in the collection (L19, IPA-4).
+  - Of PD1 to PD25, two failed: PD12 (F6) and PD21 (F8, the crash).
+  - PD7 passed with F5, PD13 gave F7 (T2's fourth finding), PD16 a note on iPadOS's own tab bar, and PD3 F1.
+- **MC4, MC9 and MC11 passed** on the Mac:
+  - Data & Recovery reads *The copy will carry index version 75.* under Export Research Database…, with Import from JSON… under Export as JSON (L22, L24);
+  - the Search window's Facets bar, *Years: 2 included*, applied its two Years in one search (L18);
+  - the note window's Discard, Esc and close button each asked *Discard Changes?*, Save saved and closed, and Delete asked and closed (L19, IPA-2).
+
+  At the owner's question, MC12's and PH22's *Already here* were written out from `CollectionPickerSheet`. It is the hollow check and words a picker row shows for a moment, before the picker closes, when the collection clicked already holds the document; nothing is then added twice.
+- **MC12 passed** on the Mac: *R6 scratch*'s ⚙ popover showed the six template cards, each click making only its card active (L25); a note block's trash asked *Delete Note Block?* (MAC-2); and Add to Collection on a document the collection held showed *Already here*, adding nothing twice (A11Y-3).
+- **MC10, MC13 and MC16 passed** on the Mac, on 2026-11-19 by the owner's clock.
+  - The Research window, opened soon after launch, read its rows' numbers and heads at once, so T2's third finding (#1946, filed by L21) did not show. It has been seen three times, twice by L21 and once in T2, so it comes and goes, and the issue stays open with this pass noted.
+  - *R6 scratch* exported as PDF and as Word, and both opened.
+  - Help's Privacy Policy and FRUS Explorer Support opened in Safari, and About ▸ Legal's two rows in the in-app browser (L17).
+- **MC14 passed:** the four bar charts name their bars under macOS 27.2 in the installed build, which R5 had seen only in the check copy.
+- **MC15, seen:**
+  - The Contents' front-matter and Index links still do nothing on the installed Mac build (F7).
+  - v06's *Kennedy-Khrushchev Exchanges* line opened document 1, as on the iPad in PD13. So F6's first part, the document list, was seen once on the iPad and not since on either platform: it is intermittent.
+  - *See … De Long* in `frus1873p1v1`'s index went to the top of the index on the Mac, as on the iPad, so F6's second part comes from the shared code. Mac check 27's *reaches its entry* (13 November) was that check's expected result, and no record says the owner saw it.
+  - The landing script is the kit's (`FRUSCoreKit/TEI/IndexEntryLanding.swift`), and `IndexEntryLandingWebKitTests` holds it scrolling to a real anchor. So the likelier fault is the link's target, in the kit's grammar or the serializer, both shared with FRUS Explorer Light and pinned by `ReaderLinkTests`.
+  - The volume's TEI was read (the owner's library, read-only), but the link's exact target was not traced.
+- **F6 joins R6a** on the owner's word ("Before R7, in R6a"). R6a's bullet carries its brief:
+  - what PD12, PD13 and MC15 showed;
+  - the code, with both hosts alike and the kit's landing test passing;
+  - the lead from #1902, whose owner's rules for a link inside a link ("Outer link wins", "Keep gives way") cover the index's *See* references;
+  - the shared-code duties (`swift test`, `ReaderLinkTests`' table, the reader's pins);
+  - what done looks like, Mac check 27's other two taps included.
+
+  R6a now holds F8, F1, F3, F4, F5 and F6.
+- **MC17 and MC18 were not checked,** both optional, on the owner's choice: the Mac's Cancel All, and the NARA lookup with the key. That ends the Mac's section. Every check made there passed. MC6 gave F2 and MC15 F6's Mac side, and X1, the Mac's export, gave F3.
+- **The iPhone (iPhone 17 Pro, iOS 27.2), 2026-11-19:**
+  - **PH4 passed:** Volumes & Storage's Cancel All asked, Keep Downloading kept the queue, and Cancel All Downloads emptied it (L20, HCD-2).
+  - **PH5 passed:** a queue left with the iPhone locked finished while the app was away. That is the first time L11 to L14's background run has been seen on a device; their sessions drove the handler on simulators, which refuse the scheduler. The Live Activity's form (IPH-7) was not reported.
+  - **PH6, seen:** no end-of-queue card appeared, which confirms the review's IPH-8 on a device. It is in §5, after 1.0.
+  - **PH7, seen:** with Airplane Mode on during a download, no failure line came, and the banner showed the download underway with no progress. An iOS background transfer waits for a connection rather than failing, which is why L20 met its failure line only through the test seam. Asked, the owner reported that it resumed and finished once Airplane Mode was off. That is the designed behaviour, and no finding.
+- **PH8, PH9 and PH10 passed** on the iPhone:
+  - Source Explorer resolves `frus1952-54v02p1` d41's lot (#1894).
+  - Cross-Reference Analytics' Most-Referenced draws each name beside its bar under iOS 27.2 on a device, which R5 had measured only in the simulator (decision 141). A bar opens its document, and the graph draws at two hops and on Timeline.
+  - Corpus Analytics' **View N documents ↗** opens Search with the same count, and the comparison's lines are solid, dashed and dotted with each pattern in the legend. L21 had seen those patterns only in an offscreen render and the source.
+- **PH11 to PH15 passed** on the iPhone:
+  - Person Analytics', About the Series' and Archival Analytics' names beside their bars;
+  - the Word Cloud's three lenses with Distinctive sizing;
+  - Kissinger's sheet, with a scope bar's Subjects.
+
+  In PH11 the co-mention network, zoomed, overflowed its frame on the iPhone as on the iPad. So F5 shows on both, and R6a's brief now says so.
+- **PH16 to PH19**, with the owner's answers to four questions:
+  - **PH16:** the reader's contents link opened document 1, and *JAY, JOHN* reached its entry; *Martin* in *Bill Martin* opened his card, and v06's index page numbers were easy to tap. *See … De Long* went to the top of the index on the iPhone too.
+  - **F6, rewritten.** The owner confirmed that PD12's document list came from **Browse's volume list**, which opens a compilation's documents by design, so its first part is withdrawn. Its second part shows on all three platforms, while the index's other links work, so the fault is in the *See* form. That is the case #1902's "Keep gives way" was written for, and R6a's brief now says so.
+  - **PH17:** F7 on the iPhone too, so it is on all three platforms.
+  - **PH18 failed in part. Finding F9.** The CIA job rows have their counts, but Job 09–00438R's sheet was empty in both scopes, This volume and All volumes, though its count reads 2. On the iPad (PD14) the same sheet, the same code, showed both.
+    - The count is read from the device's own index (`document_sources.job_number_norm`, L22), and so is the sheet's query. So the iPhone's query found nothing the count found.
+    - The cause is either the iPhone's state, such as a load during indexing, or a difference between the count's key and the query's. The scope's design is ruled out.
+    - A retry was asked, to tell a transient from a defect.
+  - **PH19 passed.** Under iOS 27.2 the Subject index's search field comes with a pull, and its large title reads plainly, which closes R5's look on a device.
+- **F9 is reproducible:** after a relaunch, Job 09–00438R's sheet on the iPhone was still empty in both scopes.
+  - Read from the code: a Sources row opens the neighbours in a window of their own wherever windows exist, the Mac and the iPad (S6/#241), and in a hoisted sheet on the iPhone (`VolumeSourcesView` sets `sourceNeighborsTarget`, which `CompilationView` holds). Both paths carry the job number into the request (`ArchivalNeighborsSheet.swift:119` and `:187`–`:194`).
+  - So the leads are the iPhone's presentation path, and a count (`neighborCount(for:)`) that reads the index differently from the sheet's list. The latter could leave rows the list cannot join to, such as a volume whose store pass was cut short; the iPhone's PH4–PH5 re-downloads were indexed in the background.
+- **F9 joins R6a** on the owner's word ("Before R7, in R6a"). R6a's bullet carries its brief: what PH18 and the retry showed; the code, with the window path on the iPad and the Mac and the hoisted sheet on the iPhone; the two leads; the reproduction on the iPhone 17 simulator from R5's snapshot at 75, with a rebuild of the iPhone's index as the device's test; and what done looks like. R6a now holds F8, F1, F3, F4, F5, F6 and F9.
+- **PH20, PH21 and PH22 passed** on the iPhone:
+  - Search's Filters ▸ Done ran the search again, Facets' foot bar applied two Years, and taps just beside Filter and More opened them (L18: IPS-1, IPH-3, IPH-5);
+  - the note editor asked *Discard Changes?* on a swipe (L19, IPA-2);
+  - Add to Collection said *Added to "R6 scratch"*, then showed *Already here* for the same document, adding nothing twice (L19, A11Y-3).
+- **PH23 to PH26 passed** on the iPhone:
+  - *R6 scratch*'s six template chips in a scrolling row, each selected alone and named in the settings row, and a PDF export (L25);
+  - a note block's *Delete Note Block?* and Open Document at the head of an entry's settings (L19, MAC-2 and IPA-4);
+  - the Research tab's *Document N* lines (L21, MAC-5);
+  - About ▸ Legal's Privacy Policy and Support in the in-app browser, its GitHub link sent to Safari with the sheet kept (L17, ASR-2 and ASR-3).
+- **PH27, PH28 and PH30 passed; PH29 was not checked.**
+  - Save to Photos from `frus1902app1` d31's map saved the image with the app running on: the device check of L17's Photos key (ASR-1).
+  - A long press raised the edit menu on the first press.
+  - On an iPhone 14 Pro, a device that cannot run Apple Intelligence, the summary surfaces said so. The turned-off and not-ready sentences were not seen (HCD-5).
+  - Voice Control (A11Y-5) was skipped by the owner, so *Tap Archives* and its three siblings have still not been heard on a device.
+- **X5 passed:** the iPhone read the Mac's export and the FRUS Explorer Light file as *…would change nothing*. Every platform has now read both files, and the iPad wrote one and the Mac the other.
+- **X7 failed in part. Finding F10.** On the iPhone, a swipe to delete *R6 scratch* in the Collections list raised the confirmation, which dismissed itself before the owner could answer.
+  - Read from the code (`FRUSExplorer/Collections/CollectionListView.swift`): the row's swipe action is `Button(role: .destructive)`, and the row carries its own confirmation (`.collectionDeleteConfirmation`).
+  - A destructive swipe button animates its row away as if deleted, and takes the row's dialog with it. That is the trap L19 measured and fixed for a collection's entries (a red tint, no destructive role; `CollectionRowDeleteTests`), which the list of collections did not take.
+  - Unchanged since `build-53`. The row's long-press menu has a Delete of its own, which leaves the row in place.
+  - It is not a crash, a loss of work or a store check.
+- **F10 joins R6a** on the owner's word ("Before R7, in R6a"). Its brief asks for L19's fix applied to the collections list's swipe: a red tint without the destructive role, so the row and its dialog stay. It also asks for a search of the app for the same pattern, a destructive swipe button whose row carries the dialog it raises, with each such row fixed or recorded, and a UI test beside `CollectionListManagementTests` that fails on `v2` first.
+  - **R6a now holds F8, F1, F3, F4, F5, F6, F9 and F10**; F2 and F7 go to the first update, and R6b runs before R6a.
+  - **All 80 checks are accounted for,** counted from the checklist's Result column:
+    - 67 passed, several with a finding: PD3 F1, PD7 and PH11 F5, MC6 F2, X1 F3, X2 F4;
+    - 6 seen: PH6, PH7, PH16, PH17, PD13 and MC15;
+    - 4 failed in full or in part: PD12 (F6), PD21 (F8), PH18 (F9) and X7 (F10);
+    - 3 not checked: PH29, MC17 and MC18.
+
+**Opened as #1954** on the owner's word ("Open the PR"), on 2026-11-19, against `v2` at `75364cec`, which had not moved since R6 began, so nothing was merged in. It is docs only and ready for review, with auto-merge off. `python3 Planning/website-drafts/build_paste.py --check` is in step, and no test reads the text it changes. Its merge is the next row's to record. The session cards for R6b and then R6a follow it, each on the owner's word.

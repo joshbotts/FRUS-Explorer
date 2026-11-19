@@ -54,6 +54,29 @@ that day: [the next section](#what-the-site-holds) has what the site holds now.
 
 ## What the site holds
 
+**On 18 November, at 23:18 UTC, every block on the site held its current file.** After R5 (#1953) merged, R5's session pasted again, at your word, the three blocks that had fallen behind. It worked in the Claude app's browser pane under your sign-in. Each file was typed into its Code Block, and the editor's text was read back and matched by SHA-256 to the file, less its final newline, before Save:
+- the iPad and iPhone quick start, from `e487f964` to `bb9f168e`: T2's alt text;
+- the Mac quick start, from `2bd9ab63` to `42253095`: L21's lines and T2's alt text;
+- the tour's section 4, from `d4bfa31d` to `f6d1ee65`: L25's template names.
+
+Read from the live pages afterwards:
+
+| Page | The site holds | The current file? |
+|---|---|---|
+| Home | its Code Block, `4b2e6134` | yes |
+| Tour | Code `5a86b4c0`, Code `d39128dd`, Video (the film), Code `f6d1ee65`, Code `c05916d5` | yes |
+| Quick start, iPad and iPhone | its Code Block, `bb9f168e` | yes |
+| Quick start, Mac | its Code Block, `42253095` | yes |
+| Privacy | its Code Block, `8c230dab` | yes |
+| Support | its Code Block, `64da46d0` | yes |
+| The footer | its Code Block, `6a78a398` | yes |
+
+The three blocks' 25 images answer 200. Between 10 and 18 November the site also took these pastes, each in the session log:
+- 15 November: the final-testing wording (Home and the tour's first and last sections, below), the tour's three blocks with the reader's crops (#1935), and Home with the app's icon (#1937);
+- 17 November: Home and both quick starts, with L20's figures (#1945).
+
+### Before 18 November
+
 **Paste again, after 15 November.** The site went live before the submission, so the pages stopped
 saying the app had been submitted or was coming soon. They now say it is in final testing and not
 yet on the App Store, and Home's headline is *Research 165 years of U.S. diplomatic history.*
