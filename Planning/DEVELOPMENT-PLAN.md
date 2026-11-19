@@ -11841,3 +11841,5 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
     - 6 seen: PH6, PH7, PH16, PH17, PD13 and MC15;
     - 4 failed in full or in part: PD12 (F6), PD21 (F8), PH18 (F9) and X7 (F10);
     - 3 not checked: PH29, MC17 and MC18.
+
+**Opened as #1954** on the owner's word ("Open the PR"), on 2026-11-19, against `v2` at `75364cec`, which had not moved since R6 began, so nothing was merged in. It is docs only and ready for review, with auto-merge off. `python3 Planning/website-drafts/build_paste.py --check` is in step, and no test reads the text it changes. Its merge is the next row's to record. The session cards for R6b and then R6a follow it, each on the owner's word.
