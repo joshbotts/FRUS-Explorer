@@ -619,7 +619,7 @@ It is written from four sources:
       - **PH16 to PH19:**
         - PH16's reader links passed but for *See … De Long*, at the top of the index on the iPhone too. *JAY, JOHN* reached its entry, *Martin* opened his card, and the index's page numbers were easy to tap. So F6 is the *See* form's on all three platforms, and its first part is withdrawn: PD12's document list was Browse's volume list, by design.
         - PH17: F7 on the iPhone too.
-        - **PH18 failed in part. Finding F9:** Job 09–00438R's sheet was empty in both scopes on the iPhone, though its count reads 2 and the iPad showed both. A retry was asked.
+        - **PH18 failed in part. Finding F9:** Job 09–00438R's sheet was empty in both scopes on the iPhone, though its count reads 2 and the iPad showed both. **Still empty after a relaunch, so reproducible.** The leads are the iPhone's own path, a hoisted sheet where the iPad and the Mac open a window (the job number travels on both), and a count and a list that read the index differently. F9 waits for the owner's word.
         - PH19 passed: the Subject index's field comes with a pull, and its title reads plainly.
     - **Finding F1, seen during PD3,** is the tab shell's banner during the iPad's re-index, with a blank band in the reader until the rail opened. It is placed before R7 as **R6a** on the owner's word ("make this one issue for the pre-R7 session"), to start after the pass ("After the pass").
     - **A row added during the pass, R6b,** on the owner's word: FRUS Explorer assessed on the iPhone Duo simulator, to mitigate what misbehaves there, placed before R7 and run before R6a. The owner chose to export Xcode's agent skills, app-resizability among them, for its session.

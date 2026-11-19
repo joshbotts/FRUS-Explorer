@@ -11810,3 +11810,6 @@ So three things go unchecked: IPH-9 (onboarding at AX3 and AX5 on an SE; onboard
     - The cause is either the iPhone's state, such as a load during indexing, or a difference between the count's key and the query's. The scope's design is ruled out.
     - A retry was asked, to tell a transient from a defect.
   - **PH19 passed.** Under iOS 27.2 the Subject index's search field comes with a pull, and its large title reads plainly, which closes R5's look on a device.
+- **F9 is reproducible:** after a relaunch, Job 09–00438R's sheet on the iPhone was still empty in both scopes.
+  - Read from the code: a Sources row opens the neighbours in a window of their own wherever windows exist, the Mac and the iPad (S6/#241), and in a hoisted sheet on the iPhone (`VolumeSourcesView` sets `sourceNeighborsTarget`, which `CompilationView` holds). Both paths carry the job number into the request (`ArchivalNeighborsSheet.swift:119` and `:187`–`:194`).
+  - So the leads are the iPhone's presentation path, and a count (`neighborCount(for:)`) that reads the index differently from the sheet's list. The latter could leave rows the list cannot join to, such as a volume whose store pass was cut short; the iPhone's PH4–PH5 re-downloads were indexed in the background.
