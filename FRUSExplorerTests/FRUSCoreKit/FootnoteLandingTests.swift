@@ -81,10 +81,12 @@ struct FootnoteLandingTests {
     /// change to both. Pinned as the reader's page is (`ReaderPageTests`): re-take the pin from the
     /// failure message, and say in the version history why the script changed. Since 2026-11-08 the
     /// text is `ReaderLanding`'s template, which `IndexEntryLanding` shares; the pin did not move.
+    /// Re-taken for R6a (F6): the scroll brings the element's start into view (`block: "start"`), not
+    /// its centre, so a tall index entry's first line shows; one byte shorter, nothing else changed.
     @Test("The script's text is pinned")
     func scriptIsPinned() {
         let bytes = Array(FootnoteLanding.script(keyExpression: "KEY").utf8)
-        let pin = (sha256: "64c1196cf748765d9d06680911f882b4781076372731107aa7df074495d4f512", bytes: 811)
+        let pin = (sha256: "d394638f94f79f31d6e3e2c806f0a2d6832ad10ce831e4531900935f6a6234b7", bytes: 810)
         #expect(Self.sha256(bytes) == pin.sha256 && bytes.count == pin.bytes,
                 "the script is \(bytes.count) bytes with SHA-256 \(Self.sha256(bytes)), not its pin")
     }

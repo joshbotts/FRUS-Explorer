@@ -111,6 +111,8 @@ public struct ReaderMeasure: Hashable, Sendable {
 ///          named lists, one to a line about 22.6 px apart at Medium; a footnote marker beside such
 ///          links, whose box had no height, is a box 24 px square, its number at the top. No colour
 ///          is new, and the printed page is unchanged
+///   1.8 — R6a (F6): the stylesheet's comment on an index entry's landing says the script brings
+///          the entry's first line into view, as it now does, not its centre; no rule changed
 public enum ReaderPage {
 
     // MARK: - Page
@@ -781,8 +783,8 @@ public enum ReaderPage {
 
     /* An index entry a "See" reference arrived at (Lane 2 of the editors' annotations follow-ups
        plan, 2026-11-08): the serializer gives an item with an xml:id `id="ix-…"`, and the landing
-       script scrolls it to the centre and adds `ix-arrived`. The same wash as the footnote's, so
-       the contrast gate's reading of that wash covers it, and the same rule under Reduce Motion. */
+       script brings its first line into view and adds `ix-arrived`. The same wash as the footnote's,
+       so the contrast gate's reading of that wash covers it, and the same rule under Reduce Motion. */
     .frus-list > li {
       scroll-margin-block: 30vh;
     }

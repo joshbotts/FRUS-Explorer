@@ -124,15 +124,18 @@ struct ReaderPageTests {
     ///   put back as it was, all eight heads were the 2026-11-11 pins byte for byte when these were
     ///   taken. `theLinksOfAnItemOfLinksAloneAre24PxTargets` below says what the rules must be, and
     ///   `LinksAloneTargetRenderTests` (Xcode's alone) what WebKit draws by them.
+    /// - R6a (F6) re-pinned them for the comment above `.frus-list > li`: the landing script now
+    ///   brings an index entry's first line into view rather than its centre, and the comment says so.
+    ///   Each head grew by 7 bytes, all of them that comment's words; no rule and no variable changed.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("46b73fc5495b39b6945ef0be5b4aa1c7768d0cb4afb19b7e1640925bb8a663c5", 23603),
-        "light medium": ("e6bf4902e19afc364e89844dbfdb9a7d176e5e0a87699f07b89f989d4f5b8f75", 23604),
-        "light large": ("5619252f9c685bcf1cb05acd40ca6d2e41913cb4b45b6c900665965c086ae83c", 23604),
-        "light extraLarge": ("4f0e7c854228fb5de04f9e432c6fdc995b353e694e0f8082ce82210921323eec", 23604),
-        "dark small": ("9ef959c0ab12ae04fa072af098a03e133adef1fa095ba4bd4be3164daea4aaf5", 23633),
-        "dark medium": ("b26a066df3f1a5fcfaa8aec644525af575a91a33bbaa32516b8007fed06cc3d9", 23634),
-        "dark large": ("7195d8cf8007dd32187e5f5eefc0446984814ad74067c9028bbbde2c896cc2d1", 23634),
-        "dark extraLarge": ("c79c2e9dc9acc445dc3e229cfa9153e8066d5d71c597f9a9d63185dd8cc8b6d5", 23634),
+        "light small": ("161b6c9608637da1515973b45a9615bfaa94c307d1fb4577443c87821a5ba349", 23610),
+        "light medium": ("a053bad88401df1a14c13ab9ebd46134287b63278a7791762c0a3e53f86c4783", 23611),
+        "light large": ("67ffebcafeccf50a731ad625b212ff2d3a655c01d8e6b1d68f893061d95a95fa", 23611),
+        "light extraLarge": ("f2506acd6150f9ef4240e1b299b644f5d0fda136cdc7a2337f625d0908493726", 23611),
+        "dark small": ("1025d8bb626c468ee5ba4b5f4c409dc444479b04943e81e481ebec9f40f255e9", 23640),
+        "dark medium": ("4583c419179aebe995228756bdb34f1dd2b6fd5ad59d252c0f39adc5ff35a568", 23641),
+        "dark large": ("1fbb5c9d1d32b96d700b133005e764f92199cdac2457bbc7ab25ea05610d9c21", 23641),
+        "dark extraLarge": ("b72e7605f7465d75ba47f6be4fe352576eee6d6e415fcfc1f92d29e83e9496ad", 23641),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
