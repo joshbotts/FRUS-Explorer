@@ -347,6 +347,8 @@ struct ArchivalNetworkView: View {
                 }
                 #endif
             }
+            // R6a (F5): the zoomed canvas stays inside its frame, drawing and taps alike.
+            .graphViewportClip()
             if scale != 1 || panOffset != .zero {
                 Button {
                     resetViewport()

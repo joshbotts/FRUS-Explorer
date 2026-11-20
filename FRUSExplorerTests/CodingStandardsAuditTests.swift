@@ -1721,6 +1721,69 @@ struct CodingStandardsAuditTests {
         }
     }
 
+    // MARK: - The graph's viewport (R6a, F5)
+
+    /// Each graph that zooms keeps its canvas inside its frame: the `GeometryReader` holding the
+    /// scaled canvas ends in `graphViewportClip()`, which clips its drawing and its taps (R6a, F5).
+    ///
+    /// In R6's pass Person Analytics' co-mention network, zoomed in, drew over its window's own header
+    /// and past the window's edges, on the iPad and on the iPhone (PD7, PH11): the four graphs scale
+    /// and offset a canvas, and none clipped it. It reads source, so it fails the same way on any
+    /// destination; that a zoomed graph stays inside its frame is the by-eye check.
+    ///
+    /// Version history:
+    ///   1.0 — R6a (F5): initial implementation
+    @Test("CodingStandardsAudit: each graph that zooms keeps its canvas inside its frame (R6a, F5)",
+          arguments: emptyCanvasClaims)
+    func graphsClipTheirZoomedCanvas(_ claim: EmptyCanvasClaim) throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
+                                encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
+            \(claim.file) must declare `\(claim.declaration)` exactly once; if a refactor renamed it, \
+            update this claim in `CodingStandardsAuditTests.emptyCanvasClaims`.
+            """)
+        let regex = try NSRegularExpression(pattern: #"\}\s*\.graphViewportClip\(\)"#)
+        #expect(regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body)) == 1, """
+            \(claim.file), `\(claim.declaration)`: the GeometryReader holding the zoomed canvas is not \
+            followed by `.graphViewportClip()`, so the graph zoomed in draws over its window's header and \
+            past its edges, and a node scaled there takes the taps meant for the controls (R6a, F5).
+            """)
+    }
+
+    /// No view in the app zooms and pans a canvas without clipping it (R6a, F5): a file holding a
+    /// `.scaleEffect(…)` followed by `.offset(…)` clips at least as many viewports, so a fifth graph
+    /// cannot ship the overflow the four had. And the clip is the drawing's and the taps' both.
+    ///
+    /// Version history:
+    ///   1.0 — R6a (F5): initial implementation
+    @Test("CodingStandardsAudit: every canvas that zooms and pans is clipped to its frame (R6a, F5)")
+    func everyZoomedCanvasIsClipped() throws {
+        let zoomAndPan = try NSRegularExpression(pattern: #"\.scaleEffect\([^\n]*\)\s*\.offset\("#)
+        let clip = try NSRegularExpression(pattern: #"\.graphViewportClip\(\)"#)
+        var zooming = 0
+        for file in AppSourceTree.swiftFiles(in: Self.projectRoot) {
+            let code = String(decoding: Self.maskedCode(try String(contentsOf: file, encoding: .utf8)),
+                              as: UTF8.self)
+            let whole = NSRange(code.startIndex..., in: code)
+            let canvases = zoomAndPan.numberOfMatches(in: code, range: whole)
+            guard canvases > 0 else { continue }
+            zooming += canvases
+            let clips = clip.numberOfMatches(in: code, range: whole)
+            #expect(clips >= canvases, """
+                \(file.lastPathComponent): \(canvases) canvas(es) zoom and pan, and \(clips) viewport(s) are \
+                clipped with `.graphViewportClip()` (R6a, F5).
+                """)
+        }
+        #expect(zooming >= 4, "Read \(zooming) canvases that zoom and pan; the four network graphs do")
+
+        let shared = try String(contentsOf: Self.sourceRoot.appendingPathComponent(
+            "CrossReference/CrossReferenceGraphView.swift"), encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody("func graphViewportClip() -> some View {", in: shared),
+                                "CrossReferenceGraphView.swift must declare `graphViewportClip()` once")
+        #expect(body.contains("clipped()") && body.contains("contentShape(Rectangle())"),
+                "graphViewportClip() must clip the drawing (`clipped()`) and the taps (`contentShape(Rectangle())`)")
+    }
+
     // MARK: - Label Wiring
 
     /// One place a graph canvas draws its labels through #1384's placement: a declaration, a pattern
