@@ -1,6 +1,6 @@
 # Testing FRUS Explorer 1.0 (iOS)
 
-**Release candidate.** Version 1.0 (1842) is the app meant for the App Store; unless your reports stop it, this is 1.0.
+**Release candidate.** Version 1.0 (1861) is the app meant for the App Store; unless your reports stop it, this is 1.0.
 
 FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your iPhone and iPad: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
 
