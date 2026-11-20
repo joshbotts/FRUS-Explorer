@@ -46,6 +46,8 @@ import notify
 ///   1.0 — #1301 round 2: initial implementation
 ///   1.1 — #1301 round 3: the seeded-fixture preparation plan and the two boot stand-downs
 ///   1.2 — 2026-10-11: `BrowseSeamSignalTests`, for the signal two Browse seams now wait for
+///   1.3 — R6a (F4): `BrowseSeamSignalTests` reads All Notes' two signals, which
+///          `AllNotesFollowsOtherDevicesTests` sends, and the key that arms them
 @Suite("The UI-test fixture seeder reports whether it changed anything")
 struct UITestVolumeSeederTests {
 
@@ -591,12 +593,24 @@ struct BrowseSeamSignalTests {
         let failing = try String(
             contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/VolumeAnnotationsSectionTests.swift"),
             encoding: .utf8)
+        // R6a (F4): the note signals are All Notes' suite's, in the research reading file, which names them as
+        // constants.
+        let notes = try String(
+            contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/ResearchReadingStaysInTabTests.swift"),
+            encoding: .utf8)
 
-        #expect(UITestBrowseSeams.Signal.allCases.count == 4)
-        for signal in UITestBrowseSeams.Signal.allCases where signal != .search && signal != .startDownload {
+        #expect(UITestBrowseSeams.Signal.allCases.count == 6)
+        let elsewhere: Set<UITestBrowseSeams.Signal> = [.search, .startDownload, .addNote, .deleteNote]
+        for signal in UITestBrowseSeams.Signal.allCases where !elsewhere.contains(signal) {
             #expect(suite.contains("case \(signal) = \"\(signal.rawValue)\""),
                     "the UI suite has no `\(signal)` signal named \(signal.rawValue)")
         }
+        #expect(notes.contains("addSignal = \"\(UITestBrowseSeams.Signal.addNote.rawValue)\""),
+                "All Notes' suite does not send the add-note signal by its name")
+        #expect(notes.contains("deleteSignal = \"\(UITestBrowseSeams.Signal.deleteNote.rawValue)\""),
+                "All Notes' suite does not send the delete-note signal by its name")
+        #expect(notes.contains("\"\(UITestResearchSeeder.notesOnSignalKey)\""),
+                "All Notes' suite no longer arms \(UITestResearchSeeder.notesOnSignalKey)")
         #expect(spoken.contains("searchSignal = \"\(UITestBrowseSeams.Signal.search.rawValue)\""),
                 "the VoiceOver suite does not send the search signal by its name")
         #expect(spoken.contains("\"\(UITestBrowseSeams.searchOnSignalKey)\""),
@@ -606,7 +620,7 @@ struct BrowseSeamSignalTests {
         #expect(failing.contains("\"\(UITestBrowseSeams.downloadOnSignalKey)\""),
                 "the failed download's VoiceOver suite no longer arms \(UITestBrowseSeams.downloadOnSignalKey)")
         // And no other name the app would never hear.
-        let named = (suite + spoken + failing)
+        let named = (suite + spoken + failing + notes)
             .components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
         #expect(named == UITestBrowseSeams.Signal.allCases.count)
 
