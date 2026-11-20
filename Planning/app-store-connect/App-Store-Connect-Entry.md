@@ -42,6 +42,16 @@ the screenshots that rows changed are retaken (the plan's T2).
 
 ## What is ready, and what is not
 
+**Submitted (R3, 2026-11-20):** 1.0 (1861) for both platforms, archived from `v2` at `08e8bac8`,
+which is R7's bump with #1958 (the quick starts open frusexplorer.app), #1959 (the owner's
+EditableContent review) and #1960 (info popovers scroll on the Mac), and tagged `1.0-release`. The
+owner's answers: not a trader, China mainland kept, a manual release, and 13+. Neither offer was
+taken. The promotional text is the owner's rewrite (137 characters). Accessibility Nutrition Labels:
+Dark Interface and Reduced Motion (*Not required now*, below). Two things learned while entering it:
+the header and search-results creative assets are optional, iPhone and iPad only, and can be
+submitted later through Asset Library, so none were made; and the Mac's App Sandbox information asks
+only for temporary exception entitlements, of which the build has none.
+
 | | On 2026-11-10 | On 2026-11-18 (R5) |
 |---|---|---|
 | The listing's text | **Ready.** Seven files in [paste/](paste/), each counted against Apple's limit. | **Ready, unchanged.** Read against 1.0 (1823)'s tree: no sentence names anything the rows since 1.0 (1812) changed, and its figures recount the same (553 volumes). |
@@ -91,7 +101,7 @@ you say so:
 |---|---|---|---|
 | Name | [paste/name.txt](paste/name.txt) | 13 | 30 characters |
 | Subtitle | [paste/subtitle.txt](paste/subtitle.txt) | 26 | 30 characters |
-| Promotional Text | [paste/promotional-text.txt](paste/promotional-text.txt) | 153 | 170 characters |
+| Promotional Text | [paste/promotional-text.txt](paste/promotional-text.txt) | 137 | 170 characters |
 | Keywords | [paste/keywords.txt](paste/keywords.txt) | 92 | 100 bytes |
 | Description | [paste/description.txt](paste/description.txt) | 3,423 | 4,000 characters |
 | What's New in This Version (a first version has no such field) | [paste/whats-new.txt](paste/whats-new.txt) | 169 | 4,000 characters |
@@ -332,8 +342,14 @@ updates". A label claims that a person can complete all of the app's common task
 feature: VoiceOver, Voice Control, Larger Text, Dark Interface, Differentiate Without Color Alone,
 Sufficient Contrast or Reduced Motion, and two for video and audio. The repository tests parts of
 this (the reader's contrast, VoiceOver on Search's rows, several bars at the larger text sizes),
-and nothing walks every common task with one feature, which is Apple's test. So no answers are
-drafted, and the section can be left unanswered at 1.0.
+and nothing walks every common task with one feature, which is Apple's test. So no answers were
+drafted. **Entered for 1.0 on 2026-11-20:** Dark Interface and Reduced Motion, which the code
+supports throughout: no screen forces light, the reader's dark palette is contrast-tested, and
+every animation the app draws turns off under Reduce Motion. Not claimed: Larger Text (the reader's
+largest size is 19 pt against a 14-pt default, 136%, where Apple asks for 200%), Differentiate
+Without Color Alone (Archival Analytics' charts tell custodians apart by colour alone), VoiceOver,
+Voice Control and Sufficient Contrast (never walked on a device for every common task), and Captions
+and Audio Descriptions (no video or audio).
 
 **iPhone Duo screenshots.** Apple's page: "Starting in April 2027, screenshots will be required
 for any app using the iOS 27.1 SDK or later." This Mac's Xcode is 27.2, whose iOS SDK is 27.2,
