@@ -146,6 +146,8 @@ struct FeatureInfoItem: Identifiable {
 ///         Research rail's seventh row clipped the heading off an iPhone's medium detent otherwise.
 ///   1.12 — #1380: `personAnalytics`' Comparing people row says "Select a ranking bar", which reads
 ///         on the Mac, where the popover also shows
+///   1.13 — 2026-11-20, for 1.0 (1861): the Mac scrolls too, through `InfoPopoverScrolling`; a long
+///         popover ran off its screen there with nothing to scroll (the owner's finding).
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -168,8 +170,8 @@ struct FeatureInfoButton<Footer: View>: View {
         self.footer = footer()
     }
 
-    /// On iOS the popover's content scrolls when, and only when, the space it is given is shorter
-    /// than the stack.
+    /// The popover's content scrolls when, and only when, the space it is given is shorter than the
+    /// stack, on iOS and on the Mac (`InfoPopoverScrolling`, at the end of this file).
     ///
     /// An unscrollable stack taller than its container is clipped with no way to reach what was
     /// cut, and the heading goes first. #1351's seventh row is what made that visible: on an
@@ -179,7 +181,13 @@ struct FeatureInfoButton<Footer: View>: View {
     /// regular-width popover is capped too — Corpus Analytics' outgrows an iPad mini at the XXXL
     /// text size — so the test is the one `ViewThatFits` makes. The plain stack comes FIRST: asked
     /// for its ideal size, a popover gets the stack and hugs it, and only a capped height falls
-    /// through to the scroll view. macOS keeps the plain stack; nothing there has been measured.
+    /// through to the scroll view.
+    ///
+    /// The Mac caps nothing: its popover grows to the stack's ideal height, and Archival Analytics'
+    /// ran off the bottom of the screen with nothing to scroll (the owner's finding of 2026-11-20,
+    /// before 1.0 (1861) was archived). There `InfoPopoverScrolling` lays the content out at its
+    /// ideal height up to `macMaximumHeight` and offers it no more, so the same fallback takes over,
+    /// and a short popover still hugs its rows.
     var body: some View {
         Button {
             isPresented.toggle()
@@ -189,15 +197,7 @@ struct FeatureInfoButton<Footer: View>: View {
         }
         .help(helpText ?? heading)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
-            #if os(iOS)
-            ViewThatFits(in: .vertical) {
-                explanation
-                ScrollView { explanation }
-                    .scrollBounceBehavior(.basedOnSize)
-            }
-            #else
-            explanation
-            #endif
+            InfoPopoverScrolling { explanation }
         }
     }
 
@@ -1142,5 +1142,69 @@ extension ChartSeriesPalette {
     /// The pattern for the compared series at rank `index`, wrapping past the five.
     static func linePattern(at index: Int) -> StrokeStyle {
         linePatterns[index % linePatterns.count]
+    }
+}
+
+// MARK: - InfoPopoverScrolling
+
+/// An info popover's content as it is when it fits, and scrolling when the room the popover gives it is
+/// shorter: the plain content FIRST, so a popover asked for its ideal size hugs it, and the scroll view
+/// only as the fallback (#1351).
+///
+/// On iOS the popover's container caps that room itself: a popover is held inside its window, and on an
+/// iPhone it adapts to a sheet. A Mac popover is capped by nothing: it asks for its content's ideal
+/// height and grows to it, so a long one ran off the bottom of the screen with nothing to scroll (the
+/// owner's finding of 2026-11-20, Archival Analytics' popover). There the content is laid out at its
+/// ideal height up to `macMaximumHeight` and offered no more, which is what lets the fallback take over.
+/// `FeatureInfoButton` and the cross-reference graph's info popover use it.
+struct InfoPopoverScrolling<Content: View>: View {
+    /// The tallest a Mac info popover grows before it scrolls, in points: about thirty lines of its
+    /// caption text, below the toolbar of a window on the smallest screen the app runs on.
+    static var macMaximumHeight: CGFloat { 560 }
+
+    /// The popover's whole content: its heading, rows and footer.
+    private let content: Content
+
+    /// Wraps an info popover's whole content.
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        #if os(iOS)
+        fitting
+        #else
+        CappedHeightLayout(maxHeight: Self.macMaximumHeight) { fitting }
+        #endif
+    }
+
+    /// The plain content when it fits the room it is given, the scroll view when it does not.
+    private var fitting: some View {
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView { content }
+                .scrollBounceBehavior(.basedOnSize)
+        }
+    }
+}
+
+/// Lays out its one subview at the subview's ideal height, capped at `maxHeight`, and offers it exactly
+/// that: a `ViewThatFits` inside it is then told how little room it has, which a Mac popover, asking
+/// only for an ideal size, never tells it. Its width is the subview's ideal width.
+struct CappedHeightLayout: Layout {
+    /// The tallest the subview is laid out, in points.
+    let maxHeight: CGFloat
+
+    /// The subview's ideal size, its height capped at `maxHeight`.
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let subview = subviews.first else { return .zero }
+        let ideal = subview.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil))
+        return CGSize(width: ideal.width, height: min(ideal.height, maxHeight))
+    }
+
+    /// Places the subview at the top, offered exactly the bounds this layout took.
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading,
+                              proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
     }
 }

@@ -301,7 +301,7 @@ struct CrossReferenceGraphView: View {
                         systemImage: "info.circle"
                     )
                     .popover(isPresented: $showInfoPopover, arrowEdge: .top) {
-                        graphInfoPopoverContent
+                        InfoPopoverScrolling { graphInfoPopoverContent }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
