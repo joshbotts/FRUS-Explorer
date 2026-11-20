@@ -84,12 +84,14 @@ Alternates, all counted:
 | `US foreign relations research` | 29 | Keyword-dense, reads like a search query rather than a subtitle. |
 | `Read and search 553 volumes` | 27 | Concrete, but dates the moment a volume is published. |
 
-### Promotional text — 153 / 170 ✅
+### Promotional text — 137 / 170 ✅
 
-Editable without a review, so it is the field for anything time-sensitive.
+Editable without a review, so it is the field for anything time-sensitive. The owner rewrote it
+when entering 1.0 (1861) on 2026-11-20 (R3); the 153-character text before it led with the volume
+count, which dates the moment a volume is published.
 
 ```
-553 volumes of the U.S. diplomatic record, indexed on your device and searchable offline — with the sourcing and analysis tools a corpus this size needs.
+FRUS Explorer puts powerful research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 ```
 
 ### Keywords — 92 / 100 ✅
