@@ -385,6 +385,33 @@ xcodebuild test \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
+**`FacetsAtCompactWidthTests` (R6a, the Facets check, in `ResearchReadingStaysInTabTests.swift`) is iPad-only and needs
+Windowed Apps.** Search's Facets is an `.inspector` on an iPad, and SwiftUI closes it through its binding as a window
+narrows to compact width. On the code before R6a that close applied what Years or Volumes held staged, as the reader's
+own close does (IPH-3). The first test seeds the fixture volume and the Meaning seam, searches the fixture's phrase,
+opens Facets, stages its first Year, and narrows the window by its corner grip (`WindowedAppsGrip`, shared with
+`RailAtCompactWidthTests`) and widens it again three times at 300, 900 and 2,000 pt/s. After each it requires the app
+running, no *Narrowed by* row, the results listed and the Year still staged. The second narrows first, opens Facets as
+the sheet SwiftUI makes of the inspector at compact width, stages a Year and closes the sheet by a downward drag from
+its Years header, and requires *Narrowed by*: a reader's swipe still applies. **On the code before R6a** (`v2`, iPad Pro
+13-inch (M5), iOS 27.2) the first test fails at narrowing 1, *the staged 1962 was applied*; the second is a control
+there, since that code applied every close. Seen in R6a's check of that code: at 375 pt no sheet is left (unlike the
+reader's rail, F8), and at full width Facets shows again. **What the binding receives**, logged at each write: as the
+width turns compact SwiftUI writes `false` about 0.17 s *before* `body` runs at the new width, then `true` and `false`
+again once it has; widening writes `true`, `false` and `true`. At the first write the size class still reads regular,
+so neither the size class alone nor a timer that `body` starts alone tells every one of those closes from a reader's
+swipe (each was tried, and failed this test); `SearchView.closesFacetsByHand` applies a close only at a compact width
+that `body` noted more than a second before, where a reader's swipe on the compact sheet comes. **Measured on R6a's code:** 2 of 2 on the iPad Pro 13-inch (M5) under iOS 27.2, in Windowed Apps (the narrowing test 279 s, the swipe 215 s). Allow 900 s.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/FacetsAtCompactWidthTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+```
+
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
 `UIObstructionTests` further up is scoped to that suite, so it never runs this one. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On

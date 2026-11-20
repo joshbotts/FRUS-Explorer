@@ -171,7 +171,7 @@ The volumes you are downloading appear here as each one arrives.
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1419–1420 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1490–1491 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -1779,7 +1779,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 2038–2038 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 2109–2109 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1792,28 +1792,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3142–3142 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3213–3213 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3131–3131 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3202–3202 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3138–3138 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 3209–3209 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenuItems | lines: 1560–1560 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenuItems | lines: 1631–1631 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1822,7 +1822,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1594–1595 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1665–1666 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -2041,7 +2041,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3115–3115 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 3186–3186 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
