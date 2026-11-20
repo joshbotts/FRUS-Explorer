@@ -920,6 +920,7 @@ It is written from four sources:
     - **The tag:** `1.0-release` (decision 113), annotated, "App Store 1.0 (1861), both platforms.", on `08e8bac8`, pushed on the owner's word ("please tag the 1.0-1861 release build"); its object is `4569002b`.
     - **The submission:** to App Review on 2026-11-20 ("submitted, record R3"), with the owner's answers to §2's decisions: not a trader under the Digital Services Act, China mainland kept among the storefronts, a manual release, and the age rating 13+ (decision 136). Neither offer was taken: the keywords keep `FRUS`, and the description has no Editors' Annotations sentence. The promotional text is the owner's rewrite, 137 characters, now the listing draft's and `paste/`'s. Accessibility Nutrition Labels: Dark Interface and Reduced Motion, and no others. No header or search-results creative assets, which are optional and for iPhone and iPad only. The Mac's App Sandbox information needed no entry: the build carries no temporary exception entitlement.
     - **Not seen done:** `check_repository_links.py --stamp` (§2) had written no stamp in the main checkout or on `v2` when R3 was recorded.
+    - **Opened as #1961** on the owner's word ("submitted, record R3"), on 2026-11-20, against `v2` at `08e8bac8`, which had not moved since R3's record began. Docs only; no CI check runs on it. Its merge is the next record's.
 
 ---
 

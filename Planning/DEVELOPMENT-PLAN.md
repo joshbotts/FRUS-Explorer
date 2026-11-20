@@ -12070,3 +12070,4 @@ Row R3 of the plan of record from 2026-11-15, the owner's: archive and upload 1.
 
 **Checks:** `build_paste.py --check` says the sheet is in step with the draft. `CodingStandardsAuditTests` and `EditableContentKeyTests` passed on the final records, 87 tests in 2 suites, on the iPhone 17 under iOS 27.2. Nothing a target compiles changed.
 
+**Opened as #1961** on the owner's word ("submitted, record R3"), on 2026-11-20, against `v2` at `08e8bac8`, which had not moved since R3's record began. Docs only; no CI check runs on it. Its merge is the next record's.
