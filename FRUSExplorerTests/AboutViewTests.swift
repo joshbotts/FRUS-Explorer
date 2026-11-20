@@ -41,7 +41,7 @@ struct AboutViewTests {
         // (ai.google.dev) retired with EmbeddingGemma 300m.
         #expect(hosts.contains("huggingface.co"))
         #expect(!hosts.contains("ai.google.dev"))
-        // The privacy policy and the support page (#1917, ASR-2).
+        // The privacy policy and the support page (#1917, ASR-2), and the quick starts since 2026-11-20.
         #expect(hosts.contains("frusexplorer.app"))
     }
 
@@ -86,9 +86,9 @@ struct AboutViewTests {
         return text[lower.upperBound..<upper.lowerBound]
     }
 
-    /// The manuals and quick starts that About, the Research tab and the Mac's Help menu open are
-    /// files in this repository, read on GitHub at the default branch's head. A rename that left
-    /// a link behind would open GitHub's 404 page.
+    /// The manuals that About opens are files in this repository, read on GitHub at the default
+    /// branch's head. A rename that left a link behind would open GitHub's 404 page. (The quick
+    /// starts were too until 2026-11-20; `quickStartsAreTheWebsitesPages` holds them now.)
     @Test("AboutScreenLinksTest: every GitHub document it links is in the repository")
     func linkedDocumentsExist() {
         let root = URL(fileURLWithPath: #filePath)
@@ -96,11 +96,33 @@ struct AboutViewTests {
             .deletingLastPathComponent()   // repo root
         let prefix = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/"
         let documents = AboutLinks.allURLStrings.filter { $0.hasPrefix(prefix) }
-        // The two manuals and the two quick starts: fewer means the prefix no longer matches.
-        #expect(documents.count >= 4)
+        // The two manuals: fewer means the prefix no longer matches.
+        #expect(documents.count >= 2)
         for link in documents {
             let path = root.appendingPathComponent(String(link.dropFirst(prefix.count))).path
             #expect(FileManager.default.fileExists(atPath: path), "\(link) names no file in the repository")
+        }
+    }
+
+    /// The quick starts that About, the Research tab and the Mac's Help menu open are the website's
+    /// pages (the owner's word of 2026-11-20, for 1.0 (1861)), which `Scripts/build_website_pages.py`
+    /// writes from `Docs/iOS-Quick-Start.md` and `Docs/macOS-Quick-Start.md`. Each link is held to
+    /// the address the script's `PAGES` gives its page, so a page moved to another address fails here
+    /// before the app ships a link to the old one. No test reaches the pages themselves.
+    @Test("AboutScreenLinksTest: the quick starts are the website's pages the script writes")
+    func quickStartsAreTheWebsitesPages() throws {
+        #expect(AboutLinks.iosQuickStart == "https://frusexplorer.app/quick-start-ios")
+        #expect(AboutLinks.macQuickStart == "https://frusexplorer.app/quick-start-mac")
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests
+            .deletingLastPathComponent()   // repo root
+        let script = try String(contentsOf: root.appendingPathComponent("Scripts/build_website_pages.py"),
+                                encoding: .utf8)
+        for (source, link) in [("Docs/iOS-Quick-Start.md", AboutLinks.iosQuickStart),
+                               ("Docs/macOS-Quick-Start.md", AboutLinks.macQuickStart)] {
+            let entry = try #require(Self.slice(of: script, from: "source=\"\(source)\"", to: "slug="),
+                                     "PAGES writes no page from \(source)")
+            #expect(entry.contains("url=\"\(link)\""), "PAGES gives the page from \(source) another address than \(link)")
         }
     }
 
@@ -185,10 +207,10 @@ struct InAppBrowserScopeTests {
     @Test("A link on the opening page's site is followed, with or without www.")
     func linksOnTheSiteAreFollowed() throws {
         let scope = opened()
-        for link in ["https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md",
-                     "https://www.github.com/joshbotts",
-                     "http://github.com/HistoryAtState",
-                     "https://GitHub.com/joshbotts/FRUS-Explorer#readme"] {
+        for link in ["https://frusexplorer.app/quick-start-mac",
+                     "https://www.frusexplorer.app/support",
+                     "http://frusexplorer.app/privacy",
+                     "https://FRUSExplorer.app/quick-start-ios#searching"] {
             let destination = try url(link)
             #expect(scope.decision(for: destination, target: .mainFrame, followedByReader: true) == .allow,
                     "\(link)")
@@ -233,20 +255,30 @@ struct InAppBrowserScopeTests {
         #expect(scope.decision(for: Self.quickStart, target: .mainFrame, followedByReader: false) == .allow)
     }
 
+    @Test("From the quick start, the website's page, a manual on GitHub goes to the system")
+    func theQuickStartsManualLinksGoOutside() throws {
+        let scope = opened()
+        for link in [AboutLinks.iosManual, AboutLinks.macManual] {
+            let manual = try url(link)
+            #expect(scope.decision(for: manual, target: .mainFrame, followedByReader: true) == .openOutside(manual),
+                    "\(link)")
+        }
+    }
+
     @Test("A frame's own load is followed; a link followed inside a frame meets the site rule")
     func framesLoadButTheirLinksMeetTheRule() throws {
         let scope = opened()
         let embed = try url("https://www.youtube-nocookie.com/embed/x")
         #expect(scope.decision(for: embed, target: .subframe, followedByReader: false) == .allow)
         #expect(scope.decision(for: embed, target: .subframe, followedByReader: true) == .openOutside(embed))
-        let onSite = try url("https://github.com/joshbotts")
+        let onSite = try url("https://frusexplorer.app/support")
         #expect(scope.decision(for: onSite, target: .subframe, followedByReader: true) == .allow)
     }
 
     @Test("A new-window link on the site loads in this one; off the site it goes to the system")
     func newWindowLinks() throws {
         let scope = opened()
-        let onSite = try url("https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/screenshots/ipad/onboarding-volumes.png")
+        let onSite = try url("https://www.frusexplorer.app/quick-start-mac")
         #expect(scope.decision(for: onSite, target: .newWindow, followedByReader: true) == .loadHere(onSite))
         let offSite = try url("https://docs.github.com/")
         #expect(scope.decision(for: offSite, target: .newWindow, followedByReader: true) == .openOutside(offSite))

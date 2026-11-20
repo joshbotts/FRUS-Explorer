@@ -398,7 +398,7 @@ struct ResearchView: View {
                     .environment(appState)
                     .environment(\.sceneID, sceneID)
             }
-            // The quick start, rendered on GitHub, in the built-in browser About's links use.
+            // The quick start, the website's page, in the built-in browser About's links use.
             .sheet(isPresented: $showQuickStart) {
                 if let url = URL(string: AboutLinks.iosQuickStart) {
                     InAppBrowserView(url: url)

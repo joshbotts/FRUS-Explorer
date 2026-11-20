@@ -4212,7 +4212,7 @@ struct OpenDocumentInNewWindowMenuItem: View {
 }
 
 /// Help ▸ FRUS Explorer Quick Start: the Mac quick start (`AboutLinks.macQuickStart`,
-/// rendered on GitHub as the manuals are) in the default browser. A `View` so it can read
+/// the website's page) in the default browser. A `View` so it can read
 /// `\.openURL`, whose default opens a link the way the system does.
 struct QuickStartHelpMenuItem: View {
     @Environment(\.openURL) private var openURL

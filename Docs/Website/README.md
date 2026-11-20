@@ -12,8 +12,10 @@ be on frusexplorer.app when the site launches; the Support page links to them th
 | Quick start, iPad and iPhone | `Docs/iOS-Quick-Start.md` | `Docs/Website/quick-start-ios.html` | `https://frusexplorer.app/quick-start-ios` |
 | Quick start, Mac | `Docs/macOS-Quick-Start.md` | `Docs/Website/quick-start-mac.html` | `https://frusexplorer.app/quick-start-mac` |
 
-The two quick-start addresses are proposals, not yet the owner's: a different slug is a change to
-`PAGES` in the script and to the two links in `Docs/Support.md`, and the pages are written again.
+The two quick-start addresses are the app's too since 2026-11-20, when its links moved to them for
+1.0 (1861) on the owner's word: a different slug is a change to `PAGES` in the script, to the two
+links in `Docs/Support.md` and to `AboutLinks.iosQuickStart` and `macQuickStart`, which
+`AboutViewTests.quickStartsAreTheWebsitesPages` holds to `PAGES`, and the pages are written again.
 
 The GitHub copies are read at `https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/…`, the
 form `AboutLinks` uses for the manuals, so they are live once merged to `v2`, the default branch.
