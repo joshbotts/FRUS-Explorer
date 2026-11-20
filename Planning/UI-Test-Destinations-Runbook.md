@@ -303,6 +303,17 @@ builds the editor again around the deleted note as All Notes' sheet closes and t
 **On a simulator just booted, run one test first**: on 2026-11-16 the first test launch after a boot crashed the runner
 or timed out.
 
+**`AllNotesFollowsOtherDevicesTests` (R6a, F4, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** It opens Research ▸ All Notes with the seeded note (`FRUS_UI_TEST_SEED_NOTE=1`), then has the app add a
+note, *A note from another device*, and delete the seeded one, each on a Darwin signal
+(`FRUS_UI_TEST_NOTES_ON_SIGNAL=1`; `UITestBrowseSeams.Signal.addNote` and `.deleteNote`), through a second `ModelContext` on
+the app's container, as an iCloud import writes, never through the screen; and requires the open list to show the first and
+drop the second within 10 s. The UI-test store is in memory, and a second context's save reaches Research's live query
+there too: the fixed code passes. **On the code before R6a** it fails at the added note (iPad Pro 13-inch (M5), iOS
+27.2): the screen drew a snapshot it fetched when it appeared, in place of the one Research refreshes (R6, X2 and X3).
+**Measured on R6a's code, iOS 27.0:** passed on the iPhone 17 (56 s) and on the iPad Pro 13-inch (M5) (55 s, at a second launch: at the first the simulator's `backboardd` aborted in Metal, #1620's frames, and the runner restarted), with
+`NoteEditorUnsavedChangesTests`' three, which guard L19's delete path, passing beside it on each.
+
 **`AddToCollectionAnnouncementTests` (#1919, A11Y-3, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an
 iPad under iOS 27, alone, on a simulator shut down before it.** It opens the seeded note's document, `d2`
 (`FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d2`), which the seeded collection does not hold, and the rail's Collections ▸ Add to

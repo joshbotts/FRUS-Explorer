@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+import notify
 
 /// The owner's report, driven end to end: a document opened from a Research-tab list, then Back,
 /// returns to that list — in the Research tab, not the Browse tab (2026-09-11).
@@ -1574,6 +1575,110 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
             Thread.sleep(forTimeInterval: 0.25)
         }
         return condition()
+    }
+}
+
+// MARK: - AllNotesFollowsOtherDevicesTests
+
+/// All Notes, left open, follows a note another device adds and a note another device deletes, with no
+/// relaunch (R6a, F4).
+///
+/// In R6's pass the iPad's All Notes kept listing a note deleted on the Mac until the app was force-quit,
+/// and the Mac showed a note the iPad's import brought back only after a restart (X2, X3). The screen
+/// fetched a snapshot of its own when it appeared, and drew it in place of the one Research keeps fresh
+/// from its live query, so nothing another device did reached it while it was open.
+///
+/// The test opens Research ▸ All Notes with the seeded note, then has the app add a note and delete the
+/// seeded one through a second context on its container, as an iCloud import writes
+/// (`FRUS_UI_TEST_NOTES_ON_SIGNAL`, each change on a Darwin signal), and requires the open list to follow
+/// each. On the code before R6a it fails at the added note, which the open list never shows.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5)**, `OS=27.0`, allowing 600 s.
+///
+/// Version history:
+///   1.0 — R6a (F4): initial implementation
+@MainActor
+final class AllNotesFollowsOtherDevicesTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestResearchSeeder.noteBody`, repeated because a UI-test target cannot import the app.
+    private static let seededBody = "UI Test Research Note"
+    /// `UITestResearchSeeder.otherDeviceNoteBody`.
+    private static let otherDeviceBody = "A note from another device"
+    /// `UITestBrowseSeams.Signal.addNote`'s name.
+    private static let addSignal = "bottsywattsy.FRUS-Explorer.uitest.add-note"
+    /// `UITestBrowseSeams.Signal.deleteNote`'s name.
+    private static let deleteSignal = "bottsywattsy.FRUS-Explorer.uitest.delete-note"
+    /// How long a wait for a launch's screens waits.
+    private static let patience: TimeInterval = 30
+    /// How long the open list has to follow a change: a CloudKit import reaches Research's query in
+    /// well under this on a device, and the seam's save is immediate.
+    private static let follow: TimeInterval = 10
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_NOTES_ON_SIGNAL"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research)
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app = nil
+    }
+
+    func testAllNotesFollowsANoteAddedAndANoteDeletedElsewhere() throws {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let allNotes = app.cells.containing(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+        let door = allNotes.exists ? allNotes
+            : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+        XCTAssertTrue(door.waitForExistence(timeout: Self.patience), "Research has no All Notes row")
+        door.tap()
+        XCTAssertTrue(row(Self.seededBody).waitForExistence(timeout: Self.patience),
+                      "All Notes does not list the seeded note. Texts: \(texts())")
+        XCTAssertFalse(row(Self.otherDeviceBody).exists, "The other device's note is listed before it was added")
+
+        XCTAssertEqual(notify_post(Self.addSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.addSignal), so no note was added")
+        XCTAssertTrue(row(Self.otherDeviceBody).waitForExistence(timeout: Self.follow), """
+            All Notes, left open, does not list the note another device added: it draws a snapshot of its own \
+            in place of the one Research refreshes (R6, X3). Texts: \(texts())
+            """)
+        attachScreenshot("All Notes after another device added a note")
+
+        XCTAssertEqual(notify_post(Self.deleteSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.deleteSignal), so no note was deleted")
+        XCTAssertTrue(row(Self.seededBody).waitForNonExistence(timeout: Self.follow), """
+            All Notes, left open, still lists the note another device deleted (R6, X2). Texts: \(texts())
+            """)
+        XCTAssertTrue(row(Self.otherDeviceBody).exists, "Deleting one note took the other device's note too")
+        attachScreenshot("All Notes after another device deleted a note")
+    }
+
+    // MARK: - Steps
+
+    /// The list's row whose text begins with `body`.
+    private func row(_ body: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", body)).firstMatch
+    }
+
+    private func texts() -> [String] {
+        app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 }
 

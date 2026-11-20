@@ -2763,6 +2763,9 @@ struct FRUSExplorerApp: App {
             #if DEBUG
             // #312: research-content seed for UIObstructionTests scenario 5 — see the seeder.
             UITestResearchSeeder.seedIfRequested(context: modelContainer.mainContext)
+            // R6a (F4): notes changed from outside All Notes on the test's signals. Inert without
+            // FRUS_UI_TEST_NOTES_ON_SIGNAL.
+            UITestResearchSeeder.changeNotesOnSignalIfRequested(container: modelContainer)
             // Visual-marketing §7 step 6: State C, a library that has been worked in. Inert unless
             // FRUS_CAPTURE_SEED=1, and idempotent by project name.
             CaptureStateSeeder.seedIfRequested(context: modelContainer.mainContext)

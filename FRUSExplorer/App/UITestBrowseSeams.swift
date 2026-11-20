@@ -96,6 +96,7 @@ import notify
 ///   1.5 — #1920 (L20, HCD-2): downloads that wait or fail, with no network (``downloadSeam``), and a
 ///          queue of volumes at launch (``downloadsToQueue``)
 ///   1.6 — #1920 (L20, HCD-3): a download the test starts by signal (``downloadsOnSignal``)
+///   1.7 — R6a (F4): the signals that add and delete a note from outside All Notes
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -114,6 +115,10 @@ enum UITestBrowseSeams {
         case search = "bottsywattsy.FRUS-Explorer.uitest.search"
         /// Start the armed volume's download (``downloadsOnSignal``).
         case startDownload = "bottsywattsy.FRUS-Explorer.uitest.start-download"
+        /// Add a note as another device's import would (`UITestResearchSeeder.changeNotesOnSignalIfRequested`).
+        case addNote = "bottsywattsy.FRUS-Explorer.uitest.add-note"
+        /// Delete the seeded note as another device's import would (the same seam).
+        case deleteNote = "bottsywattsy.FRUS-Explorer.uitest.delete-note"
     }
 
     /// Runs `action` on the main actor the first time `signal` arrives, and not again.

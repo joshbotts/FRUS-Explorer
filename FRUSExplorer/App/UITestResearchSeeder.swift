@@ -44,6 +44,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — #312: initial implementation
 ///   1.1 — #1273: `FRUS_UI_TEST_SEED_NOTE_DOCUMENT`, and the persistence note corrected
+///   1.2 — R6a (F4): `FRUS_UI_TEST_NOTES_ON_SIGNAL`, a note added and the seeded one deleted on the
+///          test's signals, through a second context
 enum UITestResearchSeeder {
 
     /// The launch-environment key a UI test sets to request the seed.
@@ -71,6 +73,39 @@ enum UITestResearchSeeder {
         context.insert(note)
         try? context.save()
         print("[UITestResearchSeeder] Seeded one research note")
+    }
+
+    /// The launch-environment key that listens for the signals adding and deleting a note (R6a, F4).
+    static let notesOnSignalKey = "FRUS_UI_TEST_NOTES_ON_SIGNAL"
+
+    /// The body of the note ``UITestBrowseSeams/Signal/addNote`` adds.
+    static let otherDeviceNoteBody = "A note from another device"
+
+    /// Adds a note, and deletes the seeded one, when the test signals, as another device's changes
+    /// arrive (R6a, F4): through a second context on the app's container, never through a screen.
+    ///
+    /// iCloud brings another device's notes in through a context of its own, and All Notes did not
+    /// follow them while it was open (R6, X2 and X3). Each signal runs once.
+    @MainActor
+    static func changeNotesOnSignalIfRequested(container: ModelContainer) {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment[notesOnSignalKey] == "1" else { return }
+        let volumeId = environment[UITestVolumeSeeder.environmentKey] ?? "frus1961-63v06"
+        UITestBrowseSeams.onSignal(.addNote) {
+            let context = ModelContext(container)
+            context.insert(ResearchNote(documentId: "d02", volumeId: volumeId, bodyText: otherDeviceNoteBody))
+            try? context.save()
+            print("[UITestResearchSeeder] Added a note through a second context")
+        }
+        UITestBrowseSeams.onSignal(.deleteNote) {
+            let context = ModelContext(container)
+            let body = noteBody
+            let seeded = (try? context.fetch(FetchDescriptor<ResearchNote>(
+                predicate: #Predicate { $0.bodyText == body }))) ?? []
+            seeded.forEach { context.delete($0) }
+            try? context.save()
+            print("[UITestResearchSeeder] Deleted the seeded note through a second context")
+        }
     }
 }
 
