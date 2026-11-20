@@ -1,12 +1,12 @@
 # Testing FRUS Explorer 1.0 (iOS)
 
-**Release candidate.** Version 1.0 (1823) is the app meant for the App Store; unless your reports stop it, this is 1.0.
+**Release candidate.** Version 1.0 (1842) is the app meant for the App Store; unless your reports stop it, this is 1.0.
 
 FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your iPhone and iPad: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
 
-**Tested 1.0 (1812) or (1787)?** First launch re-indexes your library once. From 1776 it also rebuilds People once, in the background.
+**Tested 1.0 (1823)?** Nothing re-indexes. **From 1.0 (1812) or (1787)**, first launch re-indexes your library once; from 1776 it also rebuilds People once, in the background.
 
-## New in 1.0 (1823)
+## New since 1.0 (1812)
 
 - **Subjects**, the Office of the Historian's experimental subject data, replace detected topics: Browse ▸ **Subjects**, Search's filters, the Research rail and **Related**, each with one caption saying where the data comes from.
 - **Import from JSON…** (Settings ▸ System ▸ **Data & Recovery**) reads an export from this app or from FRUS Explorer Light, and shows what it would add, replace and keep before it writes anything.
@@ -26,16 +26,16 @@ FRUS Explorer puts the State Department's *Foreign Relations of the United State
 - Search by **Keywords** or **Meaning** (EmbeddingGemma 2, an optional 310 MB download), narrow with **Facets**, and search within the results.
 - Collections export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero.
 
-**Fixed since 1.0 (1812):** many things, on every tab, among them a crash when deleting a note from All Notes on an iPad.
+**Fixed since 1.0 (1812):** many things, on every tab, among them two crashes on an iPad: deleting a note from All Notes, and narrowing the window with a document's Research rail open.
 
 ## What to test
 
-1. **1812 and 1787 testers:** after the re-index, are your notes, highlights, tags and collections all there? Are your reports fixed?
-2. **Import:** before you update, export from 1.0 (1812) (Settings ▸ System ▸ Data & Recovery ▸ **Export as JSON**); after, **Import from JSON…** that file, and one from FRUS Explorer Light if you use it. Does the report match what you had, and do the imported records reach your other devices through iCloud?
-3. **Templates:** apply each of the six to a collection, then export it.
-4. **Subjects:** Browse ▸ **Subjects**, then search the index. On an iPhone with iOS 27, is there a search field?
-5. **Downloads:** queue several volumes, then **Cancel All**. Queue a few more and leave the app while they index: is the Live Activity right on the Lock Screen, and is the queue done when you come back?
-6. **Charts:** on iOS 27.2, does each bar's name sit beside its own bar, in Person, Cross-Reference and Archival Analytics and About the Series' Geography?
-7. **Voice Control:** on Browse's first screen, do "Tap Archives", "Tap Administrations", "Tap Editors" and "Tap Clusters" open them?
+1. **Earlier testers:** are your notes, highlights, tags and collections all there? Are your reports fixed?
+2. **iPad:** open a document with its Research rail, then narrow the window and widen it again, several times (Stage Manager or Windowed Apps). Does the app stay up, with the rail back at full width?
+3. **Two devices:** keep All Notes open on one while you add and delete a note on the other. Does the list follow without a relaunch?
+4. **Collections:** on an iPhone, swipe a collection and tap **Delete**. Does the question wait for your answer, and does closing it keep the collection?
+5. **Import:** export as JSON on one device (Settings ▸ System ▸ Data & Recovery ▸ **Export as JSON**) and **Import from JSON…** it on another, or one from FRUS Explorer Light. Does the report match what you had?
+6. **Indexes and graphs:** in a volume's index, does a *See* reference bring its entry into view? Zoomed in, does each network graph stay inside its frame?
+7. **Templates:** apply each of the six to a collection, then export it.
 
 Report device, iOS version, taps, expected, actual and a document id. Thanks!
