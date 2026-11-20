@@ -922,6 +922,7 @@ It is written from four sources:
     - **The link check:** run on 2026-11-20 in the main checkout before #1960 was pulled (the owner: "link check was done before submission", with its output). `RepositoryFactTable`: 20 links OK, 3 owner-asserted (`discoverlbj.org/loh` and two `jfklibrary.org` pages, hosts that refuse every automated fetch), none dead. `PublishedSourceLinkTable`: 3 OK. Both tables were stamped `confirmed` 2026-11-20. The pull of #1960 set the stamp aside in a stash ("WIP on v2: 08e8bac8", 13:13:42 EST), so the archives were cut without it: `v2` and the uploaded build carry 2026-08-28. #1961 had recorded the check as not seen done, reading the tree. The stamp is committed after the submission, from that stash's diff, for the next build.
     - **Opened as #1961** on the owner's word ("submitted, record R3"), on 2026-11-20, against `v2` at `08e8bac8`, which had not moved since R3's record began. Docs only; no CI check runs on it. Its merge is the next record's.
     - **Merged as `0cc286a7`** by the owner on 2026-11-20 at 19:32:52 UTC, two minutes after it opened, auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`a28cbdb8`). Recorded with the link check's correction above, on `claude/r3-record-correction`.
+    - **Opened as #1962** on the owner's word ("link check was done before submission", with its output), on 2026-11-20, against `v2` at `0cc286a7`, which had not moved since the correction began. Its merge is the next record's.
 
 ---
 

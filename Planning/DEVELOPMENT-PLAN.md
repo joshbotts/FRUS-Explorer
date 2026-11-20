@@ -12083,3 +12083,5 @@ Row R3 of the plan of record from 2026-11-15, the owner's: archive and upload 1.
 - **What this change does:** it commits the stamp, applied from the stash's diff without popping it, so the next build carries 2026-11-20. The stash entry is the owner's to drop once this merges.
 - **Recorded:** the plan's R3 bullet and §2 now say the check ran before the archives, on `claude/r3-record-correction` from `v2` at `0cc286a7`.
 - **Checks:** `RepositoryLinkRenderTests` (which pins the stamp's shape), `CodingStandardsAuditTests` and `EditableContentKeyTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no new warning.
+
+**Opened as #1962** on the owner's word ("link check was done before submission", with its output), on 2026-11-20, against `v2` at `0cc286a7`, which had not moved since the correction began. Its merge is the next record's.
