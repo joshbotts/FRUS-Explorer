@@ -12111,3 +12111,5 @@ The plan of record's §3, first bullet (decision 101), started by the plan of re
 **Owed by the owner:** the cookie restriction first (the session's attempt found the browser pane's Squarespace sign-in lapsed); then, after this merges, six pastes: Home `a4e78a81`, the tour's sections 1 (`1f4f80f1`), 4 (`3b5ce46c`) and 5 (`d772ef44`), Support `a6b818f5` and Privacy `f310ad0f`.
 
 **Checks:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass. `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `GeneratedSummary` and `appintentsmetadataprocessor` lines. Nothing a target compiles changed. The new tour figures were not seen rendered (the browser pane refuses a local server); they reuse step 18's markup, which the live tour renders.
+
+**Opened as #1963** on the owner's word ("Open the PR"), on 2026-11-20 at 21:40:19 UTC, against `v2` at `cdae89ff`, which had not moved since the row began. Docs only, with Auto-fix on and auto-merge off. Its merge is the next record's.
