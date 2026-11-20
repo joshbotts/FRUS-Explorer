@@ -65,6 +65,8 @@ import UniformTypeIdentifiers
 ///          `SmartCollectionSnapshot.documentRefs`, at the same ceiling
 ///   1.12 — 2026-11-01: #1823 — a row's menu gains Rename and Delete; swipe, menu and Edit's Delete all
 ///          ask first; Edit chooses several collections to delete at once
+///   1.13 — 2026-11-19: R6a (F10) — the swipe's Delete is red by tint with no role, so its question stays up
+///          until answered (`CollectionListSwipeDeleteTests`)
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -334,13 +336,16 @@ struct CollectionListView: View {
             // the row's text would otherwise open the editor rather than choose the row.
             .gesture(TapGesture().onEnded { collectionToEdit = collection },
                      including: isEditingList ? .subviews : .all)
-            // Asks rather than deleting on a full swipe (#1823): a collection's headings and note blocks go with it.
+            // Asks rather than deleting on a full swipe (#1823): a collection's headings and note blocks go with it. Red by
+            // tint, not `role: .destructive`, which animates the row out as if deleted and takes the row's dialog with it:
+            // on an iPhone under iOS 27.2 the question closed as it opened (R6a, F10; L19's trap, `CollectionRowDeleteTests`).
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
+                Button {
                     pendingDeletionId = collection.id
                 } label: {
                     Label(CollectionDeletion.action, systemImage: "trash")
                 }
+                .tint(.red)
             }
             .contextMenu {
                 Button {

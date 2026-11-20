@@ -106,6 +106,8 @@ import SwiftUI
 ///          progress stream beside `AppState`, as the Mac's Corpus Browser never did
 ///   2.8 — L14 (plan of record decision 124): Index Now starts its pass through `AppState.indexWorkInFlight`,
 ///          so a run of the iOS background task waits for it
+///   2.9 — R6a (F9): the iPhone's hoisted Archival Neighbors sheet for a source row runs
+///          `sourceNeighbors(for:pipeline:scopeVolumeIds:)`, which passes the row's CIA job number
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -330,16 +332,8 @@ struct CompilationView: View {
                 defaultScope: .volume(target.volumeId),
                 anchorVolumeId: target.volumeId
             ) { scopeVolumeIds in
-                guard let pipeline = appState.indexingPipeline else { return ([], 0, nil) }
-                return (try? await pipeline.archivalNeighbors(
-                    forLotFile:   target.lotFile,
-                    recordGroup:  target.recordGroup,
-                    series:       target.series,
-                    repository:   target.repository,
-                    decimalClass: target.decimalClass,
-                    aliasFallback: target.aliasFallback,
-                    scopeVolumeIds: scopeVolumeIds
-                )) ?? ([], 0, nil)
+                await Self.sourceNeighbors(for: target, pipeline: appState.indexingPipeline,
+                                           scopeVolumeIds: scopeVolumeIds)
             }
             .environment(appState)
             .environment(\.sceneID, sceneID)
@@ -860,5 +854,33 @@ struct DocumentRowLabel: View {
         .padding(.vertical, 3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+
+// MARK: - A source's Archival Neighbors on the iPhone
+
+extension CompilationView {
+    /// The documents the iPhone's hoisted Archival Neighbors sheet lists for a front-matter source
+    /// row: every key the row's target carries, as the window's request runs them
+    /// (`ArchivalNeighborsRequest.load`, which the iPad and the Mac open) (R6a, F9).
+    ///
+    /// The sheet ran this inline, and never passed the target's CIA job number (#808, #1929). A job
+    /// row is keyed by its job alone, so on the iPhone its sheet listed nothing while its button,
+    /// whose count reads the job, said how many there were: `frus1977-80v12`'s Job 09–00438R read 2
+    /// over an empty sheet, in both scopes, after a relaunch too (R6, PH18).
+    static func sourceNeighbors(for target: VolumeSourceNeighborsTarget, pipeline: IndexingPipeline?,
+                                scopeVolumeIds: Set<String>?) async -> ArchivalNeighborsResult {
+        guard let pipeline else { return ([], 0, nil) }
+        return (try? await pipeline.archivalNeighbors(
+            forLotFile:   target.lotFile,
+            recordGroup:  target.recordGroup,
+            series:       target.series,
+            repository:   target.repository,
+            decimalClass: target.decimalClass,
+            jobNumber:    target.jobNumber,
+            aliasFallback: target.aliasFallback,
+            scopeVolumeIds: scopeVolumeIds
+        )) ?? ([], 0, nil)
     }
 }

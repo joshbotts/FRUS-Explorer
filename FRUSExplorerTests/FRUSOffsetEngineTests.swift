@@ -2727,7 +2727,7 @@ struct IndexEntryLandingWebKitTests {
         return HTMLTemplate.build(model: model, colorScheme: .light)
     }
 
-    @Test("The script finds the entry, scrolls it toward the centre and marks it arrived; a missing entry answers false")
+    @Test("The script finds the entry, scrolls it into view and marks it arrived; a missing entry answers false")
     func landsOnTheEntry() async throws {
         let harness = OffsetEngineTestHarness()
         try await harness.load(indexPage())
@@ -2758,4 +2758,56 @@ struct IndexEntryLandingWebKitTests {
             #require(IndexEntryLanding.script(anchor: "in999"))) as? Bool
         #expect(missing == false)
     }
+
+    /// An index of sixty short entries and then one far taller than the window, as De Long's in
+    /// frus1873p1v1 is (his entry lists dozens of letters), with the id a "See" reference names.
+    private func tallEntryPage() -> String {
+        var items = (1...60).map { n -> ListItemEntry in
+            ListItemEntry(children: [.plainText("UI Test Index Entry \(n), \(n)")], id: nil)
+        }
+        let letters = (1...90).map { n in
+            ListItemEntry(children: [.plainText("to Mr. Fish, letter \(n) of the entry, \(500 + n)")], id: nil)
+        }
+        items.append(ListItemEntry(children: [
+            .plainText("De Long, C. E.: "),
+            .listBlock(type: nil, heading: nil, items: letters, trailing: []),
+        ], id: "in32"))
+        items += (61...80).map { ListItemEntry(children: [.plainText("UI Test Index Entry \($0), \($0)")], id: nil) }
+        let model = FRUSDocumentRenderModel(
+            documentId: "index",
+            bodyNodes: [.listBlock(type: nil, heading: nil, items: items, trailing: [])],
+            footnotes: [])
+        return HTMLTemplate.build(model: model, colorScheme: .light)
+    }
+
+    /// R6a (F6): a "See" reference brings the entry's own first line into view, however tall the
+    /// entry. The script centred the entry, and an entry taller than the window, as De Long's in
+    /// frus1873p1v1's index, was centred on the middle of its letters with its name above the top of
+    /// the window: measured on the real index page in this harness, the entry's top 592 pt above it.
+    /// So *See … De Long* reached nothing a reader could recognise (R6, PD12, MC15, PH16).
+    @Test("A See reference brings a tall entry's first line into view, not the middle of its letters (R6a, F6)")
+    func landsOnATallEntrysFirstLine() async throws {
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(tallEntryPage())
+        let foundValue = try await harness.webView.evaluateJavaScript(
+            #require(IndexEntryLanding.script(anchor: "in32")))
+        #expect(try #require(foundValue as? Bool))
+        var top = -1.0
+        var height = 0.0
+        for _ in 0..<20 {
+            try await Task.sleep(for: .milliseconds(100))
+            top = (try? await harness.webView.evaluateJavaScript(
+                "document.getElementById('ix-in32').getBoundingClientRect().top") as? Double) ?? -1
+            height = (try? await harness.webView.evaluateJavaScript("window.innerHeight") as? Double) ?? 0
+            if top >= 0 && top < height { break }
+        }
+        let entryHeight = try await harness.webView.evaluateJavaScript(
+            "document.getElementById('ix-in32').getBoundingClientRect().height") as? Double ?? 0
+        #expect(entryHeight > height, "the fixture's entry is \(entryHeight) pt, not taller than the \(height) pt window")
+        #expect(top >= 0 && top < height * 0.5, """
+            After the landing the entry's first line is at \(top) pt in a \(height) pt window: a reader sees \
+            the middle of its letters, not the entry a "See" reference names (R6a, F6).
+            """)
+    }
 }
+

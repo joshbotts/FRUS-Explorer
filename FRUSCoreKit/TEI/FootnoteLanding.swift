@@ -30,6 +30,7 @@ import Foundation
 ///          `FRUSURLSchemeHandler.revealedFootnoteGlobal`, for the web edition's reader
 ///   1.1 — 2026-11-08: the script's text is ``ReaderLanding``'s template, which `IndexEntryLanding`
 ///          shares (Lane 2 of the editors' annotations follow-ups plan); its bytes are as they were
+///   1.2 — R6a (F6): the entry is scrolled to its start, not its centre (``ReaderLanding``)
 public enum FootnoteLanding {
 
     /// The page's global holding the `id` of the footnote entry the reader was last brought to, or
@@ -91,6 +92,13 @@ enum ReaderLanding {
         // Both would have been invisible and permanent: `lastRevealedFootnoteAnchor` is recorded
         // whatever happens, so the reveal is never retried.
         //
+        // The scroll brings the element's START into view, 30% down the window by the stylesheet's
+        // `scroll-margin-block: 30vh` (on `.fn-list-item` and `.frus-list > li`), never its centre
+        // (R6a, F6). Centred, an element taller than the window showed its middle with its first line
+        // above the top: frus1873p1v1's index entry for De Long lists dozens of letters, and its
+        // "See" references reached the middle of those letters, with no name a reader could find
+        // (measured on the real page, the entry's top 592 pt above the window).
+        //
         // Nothing here needs to wait for layout: the page is a `loadHTMLString` document with no
         // `@font-face`, and `didFinish` runs after it is parsed and laid out. A figure's image
         // (#1516) that is on the device is answered by the scheme handler before `didFinish`, so
@@ -111,7 +119,7 @@ enum ReaderLanding {
           if (!li) { return false; }
           const instant = document.hidden
             || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          li.scrollIntoView({ block: "center", behavior: instant ? "auto" : "smooth" });
+          li.scrollIntoView({ block: "start", behavior: instant ? "auto" : "smooth" });
           window.\(revealed) = li.id;
           if (!window.\(revealed)Watched) {
             window.\(revealed)Watched = true;

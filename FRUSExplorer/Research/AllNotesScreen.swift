@@ -42,6 +42,8 @@ import SwiftData
 ///   1.2 — #1791: a delete removes every stored copy of the note
 ///   1.3 — Session 2026-10-25 (FRUS Explorer Light, S17b): the search field's filter is FRUSCoreKit's,
 ///          beside the snapshot's other filters (`NotesPaneSnapshot.filtered(project:tagId:query:)`)
+///   1.4 — R6a (F4): follows the pane's snapshot while open, so another device's notes show without a
+///          relaunch; its own read is kept only until the pane's next snapshot
 struct AllNotesScreen: View {
 
     /// Where this screen is being shown, which decides only its chrome.
@@ -57,9 +59,10 @@ struct AllNotesScreen: View {
     var presentation: Presentation = .sheet
 
     /// The rows to browse. Passed in rather than re-fetched so the sheet and the pane behind it
-    /// cannot disagree about what exists.
+    /// cannot disagree about what exists: Research re-reads it whenever its live query of the notes
+    /// changes, which is how another device's notes reach this screen while it is open.
     let snapshot: NotesPaneSnapshot
-    /// Called after a delete, so the pane re-reads.
+    /// Called on appear and after a delete or an edit, so the pane re-reads.
     let onChanged: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -71,10 +74,12 @@ struct AllNotesScreen: View {
     @State private var query = ""
     @State private var editingNote: ResearchNote?
     @State private var rowToDelete: NotesPaneSnapshot.Row?
+    /// A snapshot this screen read itself after its own delete or edit, until the pane's next one
+    /// arrives (R6a, F4).
     @State private var localSnapshot: NotesPaneSnapshot?
 
-    /// The snapshot to render — the locally refreshed one once this sheet has deleted something,
-    /// otherwise the one handed in.
+    /// The snapshot to render — the locally refreshed one between this screen's own delete or edit and
+    /// the pane's next snapshot, otherwise the one handed in.
     private var current: NotesPaneSnapshot { localSnapshot ?? snapshot }
 
     /// The rows the filters and the search field leave, by FRUSCoreKit's rule
@@ -134,7 +139,12 @@ struct AllNotesScreen: View {
             }
         }
         #endif
-        .task { localSnapshot = NotesPaneSnapshot.fetch(from: modelContext) }
+        // R6a (F4): the pane re-reads on appear, rather than this screen reading a snapshot of its own,
+        // which it drew in place of every later one: another device's notes reached Research's live
+        // query and never this list, until the app was relaunched (R6, X2 and X3). And the pane's next
+        // snapshot replaces the one this screen read after its own delete or edit.
+        .task { onChanged() }
+        .onChange(of: snapshot) { _, _ in localSnapshot = nil }
         .sheet(item: $editingNote, onDismiss: refresh) { note in
             ResearchNoteEditorView(
                 documentId: note.documentId,

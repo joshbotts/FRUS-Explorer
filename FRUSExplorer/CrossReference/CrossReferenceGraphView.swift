@@ -463,6 +463,8 @@ struct CrossReferenceGraphView: View {
                 }
                 #endif
             }
+            // R6a (F5): the zoomed canvas stays inside its frame, drawing and taps alike.
+            .graphViewportClip()
 
             // Compact widths only: details float over the canvas at the
             // bottom-trailing corner (the least node-dense region). On regular
@@ -2233,6 +2235,27 @@ struct GraphEmptyCanvas: View {
         Color.clear
             .contentShape(Rectangle())
             .accessibilityHidden(true)
+    }
+}
+
+// MARK: - The graph's viewport (R6a, F5)
+
+extension View {
+    /// Keeps a graph that zooms and pans inside its own frame: its drawing, and the taps its nodes
+    /// take (R6a, F5).
+    ///
+    /// The four network graphs (the co-mention network, the cross-reference graph, the volume
+    /// connection graph and the archival network) zoom and pan their canvas with `.scaleEffect` and
+    /// `.offset`, which move the drawing without moving the frame it was laid out in. None clipped
+    /// it, so a graph zoomed in drew over its window's own header (Person Analytics' *Trends* and
+    /// *Network*, its scope and focus lines) and, in an iPad window, past the window's edges, over
+    /// the main window behind it (R6, PD7 on the iPad and PH11 on the iPhone). Applied to the
+    /// `GeometryReader` that holds each canvas, so that the floating controls beside it are left
+    /// alone: `clipped()` stops the drawing at the frame, and the rectangle content shape keeps a
+    /// node scaled past the frame from taking a tap meant for a control there. Shared, and kept
+    /// beside `GraphEmptyCanvas`, for its reason.
+    func graphViewportClip() -> some View {
+        clipped().contentShape(Rectangle())
     }
 }
 

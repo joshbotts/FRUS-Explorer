@@ -1721,6 +1721,129 @@ struct CodingStandardsAuditTests {
         }
     }
 
+    // MARK: - The graph's viewport (R6a, F5)
+
+    /// Each graph that zooms keeps its canvas inside its frame: the `GeometryReader` holding the
+    /// scaled canvas ends in `graphViewportClip()`, which clips its drawing and its taps (R6a, F5).
+    ///
+    /// In R6's pass Person Analytics' co-mention network, zoomed in, drew over its window's own header
+    /// and past the window's edges, on the iPad and on the iPhone (PD7, PH11): the four graphs scale
+    /// and offset a canvas, and none clipped it. It reads source, so it fails the same way on any
+    /// destination; that a zoomed graph stays inside its frame is the by-eye check.
+    ///
+    /// Version history:
+    ///   1.0 — R6a (F5): initial implementation
+    @Test("CodingStandardsAudit: each graph that zooms keeps its canvas inside its frame (R6a, F5)",
+          arguments: emptyCanvasClaims)
+    func graphsClipTheirZoomedCanvas(_ claim: EmptyCanvasClaim) throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
+                                encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
+            \(claim.file) must declare `\(claim.declaration)` exactly once; if a refactor renamed it, \
+            update this claim in `CodingStandardsAuditTests.emptyCanvasClaims`.
+            """)
+        let regex = try NSRegularExpression(pattern: #"\}\s*\.graphViewportClip\(\)"#)
+        #expect(regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body)) == 1, """
+            \(claim.file), `\(claim.declaration)`: the GeometryReader holding the zoomed canvas is not \
+            followed by `.graphViewportClip()`, so the graph zoomed in draws over its window's header and \
+            past its edges, and a node scaled there takes the taps meant for the controls (R6a, F5).
+            """)
+    }
+
+    /// No view in the app zooms and pans a canvas without clipping it (R6a, F5): a file holding a
+    /// `.scaleEffect(…)` followed by `.offset(…)` clips at least as many viewports, so a fifth graph
+    /// cannot ship the overflow the four had. And the clip is the drawing's and the taps' both.
+    ///
+    /// Version history:
+    ///   1.0 — R6a (F5): initial implementation
+    @Test("CodingStandardsAudit: every canvas that zooms and pans is clipped to its frame (R6a, F5)")
+    func everyZoomedCanvasIsClipped() throws {
+        let zoomAndPan = try NSRegularExpression(pattern: #"\.scaleEffect\([^\n]*\)\s*\.offset\("#)
+        let clip = try NSRegularExpression(pattern: #"\.graphViewportClip\(\)"#)
+        var zooming = 0
+        for file in AppSourceTree.swiftFiles(in: Self.projectRoot) {
+            let code = String(decoding: Self.maskedCode(try String(contentsOf: file, encoding: .utf8)),
+                              as: UTF8.self)
+            let whole = NSRange(code.startIndex..., in: code)
+            let canvases = zoomAndPan.numberOfMatches(in: code, range: whole)
+            guard canvases > 0 else { continue }
+            zooming += canvases
+            let clips = clip.numberOfMatches(in: code, range: whole)
+            #expect(clips >= canvases, """
+                \(file.lastPathComponent): \(canvases) canvas(es) zoom and pan, and \(clips) viewport(s) are \
+                clipped with `.graphViewportClip()` (R6a, F5).
+                """)
+        }
+        #expect(zooming >= 4, "Read \(zooming) canvases that zoom and pan; the four network graphs do")
+
+        let shared = try String(contentsOf: Self.sourceRoot.appendingPathComponent(
+            "CrossReference/CrossReferenceGraphView.swift"), encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody("func graphViewportClip() -> some View {", in: shared),
+                                "CrossReferenceGraphView.swift must declare `graphViewportClip()` once")
+        #expect(body.contains("clipped()") && body.contains("contentShape(Rectangle())"),
+                "graphViewportClip() must clip the drawing (`clipped()`) and the taps (`contentShape(Rectangle())`)")
+    }
+
+    // MARK: - Destructive swipe buttons (R6a, F10)
+
+    /// Every swipe button that carries `role: .destructive`, by repository path, with what each does. The role animates
+    /// its row out as if deleted, and a dialog the row itself carries goes with it: on the Collections list the swipe's
+    /// question closed as it opened (R6a, F10), as a collection's entries had (L19, `CollectionRowDeleteTests`). So a
+    /// swipe whose row raises its own question is red by `.tint(.red)` with no role. The role stays where the button
+    /// deletes at once, and where the question hangs on the list: Volume Scopes' kept its question and its row, measured
+    /// on the unfixed code (`VolumeScopeSwipeDeleteTests`), and the Archives Visits list and the priority tiers hang
+    /// theirs the same way.
+    static let destructiveSwipeButtons: [String: Int] = [
+        "FRUSExplorer/Browser/ResumeReadingRow.swift": 1,         // Dismiss, at once
+        "FRUSExplorer/History/HistoryView.swift": 3,              // a visit, a search, an export, at once
+        "FRUSExplorer/ProjectContext/ProjectHomeView.swift": 1,   // a collection out of the project, at once
+        "FRUSExplorer/Settings/SettingsView.swift": 2,            // a tag, a project, at once
+        "FRUSExplorer/Settings/CustomScopesView.swift": 1,        // a scope: asks, from a dialog on the list
+        "FRUSExplorer/TripPacket/ArchiveVisitListView.swift": 1,  // a plan: asks, from a dialog on the list
+        "FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift": 2 // a document, at once; a tier: asks, from the list
+    ]
+
+    /// Every `.swipeActions` button with `role: .destructive` is one of `destructiveSwipeButtons`, so a new one is read
+    /// for where its question hangs before it ships (R6a, F10). It reads source, so it fails the same way on any
+    /// destination; that a question raised by a swipe stays up is `CollectionListSwipeDeleteTests`' to show.
+    /// `.onDelete`, whose swipe button is destructive too, is out of its reach.
+    ///
+    /// Version history:
+    ///   1.0 — R6a (F10): initial implementation
+    @Test("CodingStandardsAudit: each destructive swipe button deletes at once or asks from its list, not its row (R6a, F10)")
+    func everyDestructiveSwipeButtonIsListed() throws {
+        let swipe = Array(".swipeActions".utf8)
+        let role = try NSRegularExpression(pattern: #"role:\s*\.destructive"#)
+        var found: [String: Int] = [:]
+        var blocks = 0
+        for file in AppSourceTree.swiftFiles(in: Self.projectRoot) {
+            let code = Self.maskedCode(try String(contentsOf: file, encoding: .utf8))
+            let path = String(file.standardizedFileURL.path.dropFirst(Self.projectRoot.standardizedFileURL.path.count + 1))
+            var from = 0
+            while let at = Self.firstIndex(of: swipe, in: code, from: from) {
+                var next = Self.skipSpace(code, from: at + swipe.count)
+                if next < code.count, code[next] == UInt8(ascii: "(") {
+                    next = Self.skipSpace(code, from: Self.balancedEnd(code, from: next, open: "(", close: ")"))
+                }
+                guard next < code.count, code[next] == UInt8(ascii: "{") else { from = at + swipe.count; continue }
+                let end = Self.balancedEnd(code, from: next, open: "{", close: "}")
+                let block = String(decoding: code[next..<end], as: UTF8.self)
+                blocks += 1
+                let destructive = role.numberOfMatches(in: block, range: NSRange(block.startIndex..., in: block))
+                if destructive > 0 { found[path, default: 0] += destructive }
+                from = end
+            }
+        }
+        #expect(blocks >= 19, "Read \(blocks) `.swipeActions` blocks; the app had 19 when this was written")
+        #expect(found == Self.destructiveSwipeButtons, """
+            The swipe buttons with `role: .destructive` are \(found.sorted { $0.key < $1.key }), not \
+            `destructiveSwipeButtons`. A swipe button whose row carries the question it raises must be red by \
+            `.tint(.red)` with no role: the role animates the row out as if deleted and takes the row's question with \
+            it (R6a, F10). One that deletes at once, or asks from a dialog on its list, may keep the role: add it to \
+            the table with what it does.
+            """)
+    }
+
     // MARK: - Label Wiring
 
     /// One place a graph canvas draws its labels through #1384's placement: a declaration, a pattern

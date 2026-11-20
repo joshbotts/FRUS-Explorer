@@ -845,6 +845,8 @@ struct PersonCoMentionGraphView: View {
                 }
                 #endif
             }
+            // R6a (F5): the zoomed canvas stays inside its frame, drawing and taps alike.
+            .graphViewportClip()
             viewportControls
                 .padding()
         }

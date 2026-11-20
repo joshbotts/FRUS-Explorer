@@ -279,6 +279,11 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          failed one says its error, where only a layer's finish was
 ///   1.41 — 2026-11-15: #1918 (L18, IPH-5) — the actions bar's five controls and the pager's two chevrons take 44-pt hit
 ///          areas by an outset content shape (`minimumHitTarget()`), their layout unchanged
+///   1.42 — 2026-11-19: R6a (the Facets check) — the closes SwiftUI writes to the Facets inspector's binding as an
+///          iPad window narrows or widens apply nothing; a reader's swipe on its compact sheet still applies, as IPH-3
+///          asks (`closesFacetsByHand`, `FacetsWidthWatch`)
+
+
 
 struct SearchView: View {
 
@@ -297,6 +302,11 @@ struct SearchView: View {
     /// #338 step 2: this scene's identity, injected into the Saved Searches sheet so its Word Cloud
     /// action addresses THIS window (a sheet doesn't reliably inherit `\.sceneID`).
     @Environment(\.sceneID) private var sceneID
+    #if os(iOS)
+    /// Whether this window is regular or compact, which `body` notes and the Facets inspector's setter reads live
+    /// (R6a, the Facets check; ``closesFacetsByHand``).
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     /// Point size of the empty-prompt hero glyph, scaled with Dynamic Type
     /// relative to `.largeTitle` so it tracks the prompt text. Clamped via
@@ -339,6 +349,9 @@ struct SearchView: View {
     /// Whether the facet panel is showing — as a sheet on iPhone, as a trailing inspector on iPad.
     @State private var showFacetSheet = false
 
+    /// When this window last turned compact or regular, as `body` read it (R6a, the Facets check; ``closesFacetsByHand``).
+    @State private var facetsWidthWatch = FacetsWidthWatch()
+
     /// `true` on iPhone. Uses `userInterfaceIdiom`, not `sizeClass`, for the reason
     /// `DocumentView.isPhone` documents: an iPhone Plus/Max in landscape reports `.regular` yet
     /// must still use the sheet.
@@ -351,6 +364,56 @@ struct SearchView: View {
         // the facet inspector since R-1c.
         false
         #endif
+    }
+
+    /// Whether a close that reaches the Facets inspector's binding is the reader's own, which applies what Years or
+    /// Volumes holds staged (IPH-3), or SwiftUI's as an iPad window narrows or widens, which applies nothing (R6a, the
+    /// Facets check).
+    ///
+    /// Before R6a every close applied: in R6a's check a staged Year was applied as the window narrowed, and the results
+    /// then read *Narrowed by 1962* (`FacetsAtCompactWidthTests`). Measured on the iPad Pro 13-inch (M5) under iOS 27.2,
+    /// with a log at each write: as the width turns compact SwiftUI writes `false` about 0.17 s before `body` runs at the
+    /// new width, while the size class still reads regular, then `true` and `false` again once it has; widening writes
+    /// `true`, `false` and `true`, which shows Facets again. At a regular width the reader cannot close the column
+    /// through this binding (the binoculars menu's Facets calls ``closeFacetPanelByHand()`` itself), so a close there is
+    /// SwiftUI's; and at compact width a close is SwiftUI's while the width is not settled (``FacetsWidthWatch``). A
+    /// reader's swipe on the sheet the inspector is at compact width comes at a settled width, and applies, as the iPhone
+    /// sheet's does. The Mac's Facets is `SearchSheet`'s, never this one.
+    private var closesFacetsByHand: Bool {
+        windowIsCompact && facetsWidthWatch.isSettled(liveIsCompact: true)
+    }
+
+    /// Whether this window is compact, read live wherever it is read; never on the Mac, which has no size class.
+    private var windowIsCompact: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
+    /// The width `body` last read and when it changed, so that a close SwiftUI writes to the Facets inspector's binding
+    /// as the window narrows or widens is told from the reader's own (R6a, the Facets check; ``closesFacetsByHand``). A
+    /// reference held in `@State`, so that `body`'s note of the width redraws nothing.
+    @MainActor
+    private final class FacetsWidthWatch {
+        /// The width `body` last read, or `nil` before its first read.
+        private var isCompact: Bool?
+        /// When ``isCompact`` last changed.
+        private var changedAt = Date.distantPast
+
+        /// Notes the width `body` reads, restamping ``changedAt`` when it changes.
+        func note(isCompact: Bool) {
+            guard isCompact != self.isCompact else { return }
+            self.isCompact = isCompact
+            changedAt = Date()
+        }
+
+        /// Whether the width is settled: the live width is the one `body` last noted, and it has not changed within
+        /// the last second.
+        func isSettled(liveIsCompact: Bool) -> Bool {
+            liveIsCompact == isCompact && Date().timeIntervalSince(changedAt) >= 1
+        }
     }
 
     /// The facet panel, built once for both containers.
@@ -536,6 +599,8 @@ struct SearchView: View {
 
     var body: some View {
         @Bindable var vm = vm
+        // R6a (the Facets check): the moment the window turns compact or regular, for ``closesFacetsByHand``.
+        let _ = facetsWidthWatch.note(isCompact: windowIsCompact)
         NavigationStack(path: $vm.navigationPath) {
             // #1576 lane 3: content taller than its room runs out at the bottom, and does not
             // move the bars that the insets further down this chain attach to it.
@@ -692,7 +757,13 @@ struct SearchView: View {
                     get: { !isPhone && showFacetSheet },
                     set: { isOpen in
                         guard !isPhone else { return }
-                        if isOpen { showFacetSheet = true } else if showFacetSheet { closeFacetPanelByHand() }
+                        if isOpen {
+                            showFacetSheet = true
+                        } else if showFacetSheet {
+                            // R6a (the Facets check): SwiftUI closes the inspector here as the window narrows, which
+                            // is not the reader's close, so what is staged stays staged (``closesFacetsByHand``).
+                            if closesFacetsByHand { closeFacetPanelByHand() } else { showFacetSheet = false }
+                        }
                     }
                 )) {
                     // No dismissal on apply: staying open beside the narrowing results is the

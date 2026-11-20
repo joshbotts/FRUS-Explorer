@@ -1699,28 +1699,28 @@ Digitized Scans
 *Footers, empty states and confirmations across Settings that §6 does not carry — Tags, Projects, Volume Scopes, Search, Display, Summarization, Connections (NARA and Zotero), Data & Recovery, the storage hubs, vector and model storage, index health and the research data export. Settings is assembled from more than one view file, so several strings are declared twice; the SOURCE line names every file that carries one.*
 
 #### Footer — Adds all \(…) generated summaries to the JSON export. Off…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 165–166 | key: settings.export.includeSummaries.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 174–175 | key: settings.export.includeSummaries.footer -->
 
 Adds all \(summaries.count) generated summaries to the JSON export. Off by default since AI output can be large.
 
 <!-- END SOURCE: settings.export.includeSummaries.footer -->
 
 #### Footer — One Markdown file per research note, with a citation and…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 211–212 | key: settings.export.markdown.footer -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.body | lines: 220–221 | key: settings.export.markdown.footer -->
 
 One Markdown file per research note, with a citation and link back to the source document. Compatible with Obsidian and similar note-taking tools.
 
 <!-- END SOURCE: settings.export.markdown.footer -->
 
 #### Footer — A complete copy of the search index, for analysis with your…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 295–296 | key: settings.export.database.footer | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.databaseExportSection | lines: 304–305 | key: settings.export.database.footer | shared: macOS only -->
 
 A complete copy of the search index, for analysis with your own tools. With the switch off, your notes, summaries and tag names are removed from the copy and the freed space reclaimed, so the words are gone rather than merely unlinked. The copy is verified before it is handed over. It is roughly the size of the index on disk.
 
 <!-- END SOURCE: settings.export.database.footer -->
 
 #### Exported \(…), but the copy did not verify: \(…)
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 335–336 | key: settings.export.database.integrity | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.exportIndexDatabase | lines: 344–345 | key: settings.export.database.integrity | shared: macOS only -->
 
 Exported \(size), but the copy did not verify: \(report.integrityProblems.joined(separator: "; "))
 
@@ -1729,46 +1729,139 @@ Exported \(size), but the copy did not verify: \(report.integrityProblems.joined
 *The line under Export Research Database… on the Mac (#1910): the index version the copy will carry, which a tool that reads the copy may require, or why the button waits. The Mac shows one of the five at a time, and the done line after a copy that verified.*
 
 #### The copy will carry index version \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 544–545 | key: settings.export.database.indexVersion | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 678–679 | key: settings.export.database.indexVersion | shared: macOS only -->
 
 The copy will carry index version \(installed).
 
 <!-- END SOURCE: settings.export.database.indexVersion -->
 
 #### The copy will carry index version \(…), not this build’s \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 541–542 | key: settings.export.database.indexVersion.older | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 675–676 | key: settings.export.database.indexVersion.older | shared: macOS only -->
 
 The copy will carry index version \(installed), not this build’s \(current).
 
 <!-- END SOURCE: settings.export.database.indexVersion.older -->
 
 #### The index is being updated to version \(…). You can export it…
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 530–531 | key: settings.export.database.indexVersion.updatingTo | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 664–665 | key: settings.export.database.indexVersion.updatingTo | shared: macOS only -->
 
 The index is being updated to version \(current). You can export it when the update is done.
 
 <!-- END SOURCE: settings.export.database.indexVersion.updatingTo -->
 
 #### The index is being updated. You can export it when the update is done.
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 533–534 | key: settings.export.database.indexVersion.updating | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 667–668 | key: settings.export.database.indexVersion.updating | shared: macOS only -->
 
 The index is being updated. You can export it when the update is done.
 
 <!-- END SOURCE: settings.export.database.indexVersion.updating -->
 
 #### The index has no version recorded yet.
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 537–538 | key: settings.export.database.indexVersion.none | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.line | lines: 671–672 | key: settings.export.database.indexVersion.none | shared: macOS only -->
 
 The index has no version recorded yet.
 
 <!-- END SOURCE: settings.export.database.indexVersion.none -->
 
 #### Exported \(…), index version \(…).
-<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.doneLine | lines: 554–555 | key: settings.export.database.done.withVersion | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DatabaseExportIndexVersion.doneLine | lines: 688–689 | key: settings.export.database.done.withVersion | shared: macOS only -->
 
 Exported \(size), index version \(version).
 
 <!-- END SOURCE: settings.export.database.done.withVersion -->
+
+*On the Mac each of the three file exports is also saved where the reader chooses (R6a, F3): the JSON in a save panel, and the notes and the query log in a new folder inside the folder an open panel chooses, numbered when one of the name is there. The share menu stays beside each, and a line under the row says where the files went. iOS keeps its share sheet.*
+
+#### Export as JSON…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.jsonExportRow | lines: 427–427 | key: settings.export.json.action.mac | shared: macOS only -->
+
+Export as JSON…
+
+<!-- END SOURCE: settings.export.json.action.mac -->
+
+#### Share…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.shareTitle | lines: 413–413 | key: settings.export.share | shared: macOS only -->
+
+Share…
+
+<!-- END SOURCE: settings.export.share -->
+
+#### Export Notes as Markdown (\(…))…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.markdownExportRow | lines: 479–480 | key: settings.export.markdown.action.mac | shared: macOS only -->
+
+Export Notes as Markdown (\(markdownExportURLs.count))…
+
+<!-- END SOURCE: settings.export.markdown.action.mac -->
+
+#### FRUS Research Notes
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.markdownExportRow | lines: 472–473 | key: settings.export.markdown.folderName | shared: macOS only -->
+
+FRUS Research Notes
+
+<!-- END SOURCE: settings.export.markdown.folderName -->
+
+#### Choose a folder. Your notes are saved in a new folder inside…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.markdownExportRow | lines: 474–475 | key: settings.export.markdown.panelMessage | shared: macOS only -->
+
+Choose a folder. Your notes are saved in a new folder inside it, “FRUS Research Notes”, one Markdown file per note.
+
+<!-- END SOURCE: settings.export.markdown.panelMessage -->
+
+#### Export Query Log as a Method Appendix…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.appendixExportRow | lines: 525–526 | key: settings.export.appendix.action.mac | shared: macOS only -->
+
+Export Query Log as a Method Appendix…
+
+<!-- END SOURCE: settings.export.appendix.action.mac -->
+
+#### FRUS Query Log
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.appendixExportRow | lines: 518–519 | key: settings.export.appendix.folderName | shared: macOS only -->
+
+FRUS Query Log
+
+<!-- END SOURCE: settings.export.appendix.folderName -->
+
+#### Choose a folder. The query log is saved in a new folder inside…
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.appendixExportRow | lines: 520–521 | key: settings.export.appendix.panelMessage | shared: macOS only -->
+
+Choose a folder. The query log is saved in a new folder inside it, “FRUS Query Log”, as a Markdown table and a CSV.
+
+<!-- END SOURCE: settings.export.appendix.panelMessage -->
+
+#### Export Here
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections.saveFolderExport | lines: 389–389 | key: settings.export.folder.prompt | shared: macOS only -->
+
+Export Here
+
+<!-- END SOURCE: settings.export.folder.prompt -->
+
+#### Saved “\(…)” in \(…).
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | ExportDestinationWriter.savedFileLine | lines: 778–779 | key: settings.export.saved.file | shared: macOS only -->
+
+Saved “\(name)” in \(folder).
+
+<!-- END SOURCE: settings.export.saved.file -->
+
+#### Saved %1$@ file in a new folder, “%2$@”, in %3$@.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | ExportDestinationWriter.savedFolderLine | lines: 789–790 | key: settings.export.saved.folder.one %@ | shared: macOS only -->
+
+Saved %1$@ file in a new folder, “%2$@”, in %3$@.
+
+<!-- END SOURCE: settings.export.saved.folder.one %@ -->
+
+#### Saved %1$@ files in a new folder, “%2$@”, in %3$@.
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | ExportDestinationWriter.savedFolderLine | lines: 791–792 | key: settings.export.saved.folder.many %@ | shared: macOS only -->
+
+Saved %1$@ files in a new folder, “%2$@”, in %3$@.
+
+<!-- END SOURCE: settings.export.saved.folder.many %@ -->
+
+#### Couldn’t save the export: \(…)
+<!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | ExportDestinationWriter.failedLine | lines: 798–799 | key: settings.export.saveFailed | shared: macOS only -->
+
+Couldn’t save the export: \(error.localizedDescription)
+
+<!-- END SOURCE: settings.export.saveFailed -->
 
 #### The included copy of the terms could not be loaded. The…
 
@@ -2527,7 +2620,7 @@ Reset view
 
 #### `personNotFound.dismiss` and `personNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1717–1718 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1652 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1740–1741 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1652 -->
 
 Done
 
@@ -2543,7 +2636,7 @@ OK
 
 #### `glossNotFound.dismiss` and `glossNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1750–1751 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1685 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1773–1774 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1685 -->
 
 Done
 
@@ -2559,13 +2652,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4909–4909 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4912–4912 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4393 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4381–4381 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 4384–4384 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3895 -->
 
 Search…
 

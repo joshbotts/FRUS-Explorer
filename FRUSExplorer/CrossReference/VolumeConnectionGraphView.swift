@@ -620,6 +620,8 @@ struct VolumeConnectionGraphView: View {
                     vm.onCanvasSizeChanged(size, reduceMotion: reduceMotion)
                 }
             }
+            // R6a (F5): the zoomed canvas stays inside its frame, drawing and taps alike.
+            .graphViewportClip()
             overlayControls
                 .padding()
         }

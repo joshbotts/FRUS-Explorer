@@ -39,6 +39,9 @@ import Testing
 ///          `AnalyticsProvenance` and `SeriesAnalyticsExport` moved into the kit
 ///   1.3 — 2026-11-12 (FRUS Explorer Light, S24b): `SourceProvenanceDataTests` moved into
 ///          `FRUSExplorerTests/FRUSCoreKit/`, so `walksTheAppFolderAlone` keys it by that path
+///   1.4 — R6a (F5): `walksTheAppFolderAlone` drops `CodingStandardsAuditTests.swift`, whose zoomed-canvas audit
+///          (and F10's swipe audit) read both trees through this type, so the file names it; its licence scan
+///          still reads every directory a target names, which this list's reader cannot tell apart
 enum AppSourceTree {
 
     /// The directories, relative to the repository root.
@@ -167,7 +170,6 @@ struct AppSourceTreeTests {
         "BundledArtifactProvenanceTests.swift": "lists FRUSExplorer/Resources, bundled data and not source",
         "CloudKitSchemaInventoryTests.swift": "writers of AnnotationReview, a SwiftData model",
         "CodingStandardsAuditTests+CopyScans.swift": "reads FRUSCoreKit/ too, by a list of its own",
-        "CodingStandardsAuditTests.swift": "the licence scan reads every directory a target names; its other walk only counts files",
         "DetachedHostingEnvironmentTests.swift": "SwiftUI modifiers whose content is hosted outside the view",
         "DiscoveryTipWiringAuditTests.swift": "TipKit tips and the views that anchor them",
         "EducationDashboardTests.swift": "the Research Guide's entry points, SwiftUI views",

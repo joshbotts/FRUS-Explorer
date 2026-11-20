@@ -70,8 +70,8 @@ enum DocumentSheet: Identifiable {
     /// The four sibling rail tools already had this shape; the cloud rode an app-level hand-off
     /// presented by `MainTabView`, which a standalone document window does not host.
     case wordCloud(WordCloudScope)
-    /// The Research rail as an iPhone bottom sheet (Phase D). On iPad the rail is the trailing
-    /// `.inspector` instead; on iPhone it folds into this consolidated sheet (owner decision D2).
+    /// The Research rail as an iPhone bottom sheet (Phase D). On a regular-width iPad the rail is the
+    /// trailing column instead; on iPhone it folds into this consolidated sheet (owner decision D2).
     case researchRail
     /// The per-document review of a volume update's change set (R-5 P3).
     case reviewChanges
@@ -247,6 +247,10 @@ enum DocumentSheet: Identifiable {
 ///   3.15 — L19 (#1919, IPA-6): an iPad at compact width takes the iPhone's tap-to-open rail sheet
 ///          (``railIsSheet``) where SwiftUI presented the `.inspector` as a full-height sheet over the
 ///          document and its closing turned the rail off for every later document
+///   3.16 — R6a (F8): the regular-width rail is a column the reader draws (`.safeAreaInset`), not
+///          `.inspector`, which SwiftUI showed as a sheet as a window narrowed: the host the iPad's crash
+///          came from, left up empty under iOS 27.2. The rail is also handed `AppState` and the model
+///          context with its scene id, for the `.researchRail` sheet
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -366,7 +370,7 @@ struct DocumentView: View {
     /// after its host and so takes over; dismissing it hands the menu back.
     @State private var ownsKeyboardCommands = false
     /// Research rail visibility (persisted; shared with macOS via AppStorage). On a regular-width iPad
-    /// it drives the trailing `.inspector`; on iPhone it shadows the `.researchRail` sheet's presence
+    /// it shows the trailing column; on iPhone it shadows the `.researchRail` sheet's presence
     /// and gates the Read-mode edge-tap zones; on an iPad at compact width it is left alone, for the
     /// column to read when the width comes back (L19, IPA-6, ``railIsSheet``). The per-accordion
     /// expansion keys are owned by ``ResearchRailView``.
@@ -399,7 +403,7 @@ struct DocumentView: View {
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
 
     /// `true` on iPhone — the rail presents as a bottom sheet there; iPad (and any regular-width
-    /// idiom) gets the trailing `.inspector`. Uses `userInterfaceIdiom`, not `sizeClass`, because an
+    /// idiom) gets the trailing column. Uses `userInterfaceIdiom`, not `sizeClass`, because an
     /// iPhone Plus/Max in landscape reports `.regular` yet must still use the sheet (the same idiom
     /// probe `Browser/BrowserView` uses).
     private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
@@ -409,9 +413,9 @@ struct DocumentView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Whether the rail is the tap-to-open bottom sheet (`.researchRail`) rather than the trailing
-    /// `.inspector`: on iPhone, and on an iPad at compact width (L19, #1919, IPA-6).
+    /// column: on iPhone, and on an iPad at compact width (L19, #1919, IPA-6).
     ///
-    /// At compact width SwiftUI presents an `.inspector` as a sheet of its own. Checked on 2026-11-16
+    /// At compact width SwiftUI presented the rail's `.inspector` (until R6a) as a sheet. Checked on 2026-11-16
     /// (iPad Pro 13-inch (M5), iOS 27.0): a document opened from Project Home, which reads inside a form
     /// sheet, showed no rail with its toggle on; toggled off and on, the rail came up as a full-height
     /// sheet covering the document; and that sheet's closing — by Cite, or by the window widening —
@@ -420,6 +424,10 @@ struct DocumentView: View {
     /// iPhone's: opened by the reader, in a medium sheet, and leaving the stored setting, which is the
     /// column's at regular width, as it was.
     private var railIsSheet: Bool { isPhone || horizontalSizeClass != .regular }
+
+    /// The width of the rail's column at regular width: the width Browse's two-pane gate budgets for it, which is
+    /// the width SwiftUI's `.inspector` gave the rail before the column became the reader's own (R6a, F8).
+    private static var railColumnWidth: CGFloat { BrowseTwoPaneMetrics.researchRailWidth }
 
     @Query private var highlights:             [DocumentHighlight]
     /// This document's `document_revisions` row (R-5 P2), loaded per open; nil until read or when
@@ -532,7 +540,7 @@ struct DocumentView: View {
                                                            documentId: entry.documentId,
                                                            pipeline: appState.indexingPipeline)
             // Apply the default document mode on open (owner decision D2). On iPad/Mac the rail is the
-            // persistent trailing inspector: .read closes it, .research opens it (via `panelVisible`),
+            // persistent trailing column: .read closes it, .research opens it (via `panelVisible`),
             // .rememberLast leaves the persisted state untouched (defaults open).
             //
             // On iPhone the rail is a TRANSIENT bottom sheet, and per #404 it is ALWAYS user-triggered
@@ -550,7 +558,7 @@ struct DocumentView: View {
             // #404: the iPhone rail is user-triggered only, so never leave its sheet up across a
             // document open — including SwiftUI view reuse, where a sheet raised for the PREVIOUS
             // document would otherwise persist over the new one. No-op on a fresh open (activeSheet is
-            // already nil); inert where the rail is the inspector and `activeSheet` is never
+            // already nil); inert where the rail is the column and `activeSheet` is never
             // `.researchRail`. The `onChange` below keeps `panelVisible` in sync on an iPhone's
             // dismissal. L19 (IPA-6): a compact iPad's rail sheet is the iPhone's, and closes so too.
             if railIsSheet, activeSheet?.id == "researchRail" { activeSheet = nil }
@@ -1012,7 +1020,7 @@ struct DocumentView: View {
                     .environment(\.sceneID, sceneID)
             case .researchRail:
                 // The bottom-sheet rail of an iPhone, and of an iPad at compact width (L19, IPA-6); a
-                // regular-width iPad uses the trailing .inspector. medium/large detents + a visible
+                // regular-width iPad uses the trailing column. medium/large detents + a visible
                 // drag indicator (owner decision D2 / plan §5). On an iPhone swipe-dismiss writes
                 // panelVisible = false via the activeSheet onChange below.
                 researchRail(vm: vm)
@@ -1045,24 +1053,31 @@ struct DocumentView: View {
             Text(String(localized: "highlight.delete.message",
                         defaultValue: "This highlight will be permanently removed."))
         }
-        // Trailing Research rail — a regular-width iPad only (Phase D; L19, IPA-6). The binding reads
-        // `panelVisible` there and is pinned false wherever the rail is the `.researchRail` bottom sheet
-        // instead (``railIsSheet``): an iPhone, and an iPad at compact width. This keeps the shared
+        // Trailing Research rail — a regular-width iPad only (Phase D; L19, IPA-6; R6a, F8). It shows
+        // while `panelVisible` is on, and never where the rail is the `.researchRail` bottom sheet instead
+        // (``railIsSheet``): an iPhone, and an iPad at compact width. This keeps the shared
         // `panelVisible` mode bit (edge-tap gate, macOS ⌘⇧R parity) but presents the right surface per
-        // width. At compact width SwiftUI would otherwise auto-present the inspector AS a sheet, over
-        // the document, and write the stored setting off when that sheet closed.
+        // width.
         //
-        // The binding writes an open only. The reader closes the column with the toggle, which writes
-        // `panelVisible` itself, so every close that reaches this setter is SwiftUI's: as a window
-        // narrows to compact width it shows the open inspector as a sheet for a moment and dismisses
-        // it, through this setter while `railIsSheet` still reads the regular width. Writing that close
-        // turned the stored setting off, and the column did not come back when the window widened
-        // again (measured on the iPad Pro 13-inch (M5), iOS 27.0, in Windowed Apps).
-        .inspector(isPresented: Binding(
-            get: { !railIsSheet && panelVisible },
-            set: { isPresented in if isPresented, !railIsSheet { panelVisible = true } }
-        )) {
-            researchRail(vm: vm)
+        // R6a (F8): the column is the reader's own, not SwiftUI's `.inspector`. As a window narrowed
+        // to compact width SwiftUI showed the open inspector as a sheet before this view could close it
+        // (L19 measured it, and wrote the stored setting off through it until the binding wrote opens
+        // only). That sheet is the host 1.0 (1823) crashed in on the owner's iPad, now and then, when
+        // it updated the rail without `AppState` (R6, PD21); and under iOS 27.2 it was left up after
+        // the narrowing, empty, over the reader (iPad Pro 13-inch (M5) simulator, landscape, every
+        // narrowing). A column the reader draws is laid out like any other view: a narrowing takes it
+        // away, and no sheet is ever made of it (the owner's choice, 2026-11-19). It looks as the
+        // inspector did: its background behind the bar's trailing buttons, its header below the bar.
+        .safeAreaInset(edge: .trailing, spacing: 0) {
+            if !railIsSheet && panelVisible {
+                HStack(spacing: 0) {
+                    Divider()
+                    researchRail(vm: vm)
+                        .frame(width: Self.railColumnWidth)
+                }
+                .background(Color(uiColor: .secondarySystemBackground))
+                .transition(.move(edge: .trailing))
+            }
         }
         // L19 (IPA-6): a compact iPad's rail sheet gives way to the column when the window widens, so
         // the two are never up at once.
@@ -1503,7 +1518,7 @@ struct DocumentView: View {
     /// The redesign moved every former toolbar action onto the rail (its tiles + the
     /// Summary/Notes/Tags/Collections accordions) or the selection's verbs (the edit menu since
     /// #1540), so the navigation bar carries just this one control. Back is free (the enclosing
-    /// `NavigationStack`). The toggle shows/hides the rail: on iPad the trailing `.inspector`, on
+    /// `NavigationStack`). The toggle shows/hides the rail: on iPad the trailing column, on
     /// iPhone the `.researchRail` bottom sheet. "Open in New Window" lives in the rail header on iPad
     /// (D8); the summarize-failure alert and the retired color picker's replacement (the edit menu's
     /// colours) live outside the toolbar, so nothing is stranded by the collapse.
@@ -1583,13 +1598,13 @@ struct DocumentView: View {
     }
 
     /// Whether the rail is currently visible — accent-tints the toggle. A regular-width iPad reads
-    /// `panelVisible` (the `.inspector` binding); an iPhone, and an iPad at compact width (L19,
+    /// `panelVisible` (which shows the column); an iPhone, and an iPad at compact width (L19,
     /// IPA-6), read whether the `.researchRail` sheet is up.
     private var railToggleActive: Bool {
         railIsSheet ? (activeSheet?.id == "researchRail") : panelVisible
     }
 
-    /// Shows/hides the rail from the toolbar toggle. iPad drives the `.inspector` via `panelVisible`;
+    /// Shows/hides the rail from the toolbar toggle. iPad drives the column via `panelVisible`;
     /// iPhone presents/dismisses the `.researchRail` sheet — dismissing writes `panelVisible = false`
     /// (via the `activeSheet` onChange) so Research mode and the edge-tap gate stay coherent (D2).
     private func toggleRail() {
@@ -1611,7 +1626,7 @@ struct DocumentView: View {
 
     /// Builds the shared Research rail for this document, wiring the iOS-specific note-composer and
     /// tool presentations. Note editing presents `DocumentView`'s sheets; the tiles route through
-    /// ``openRailTool(_:)``. Mounted twice — the iPad `.inspector` and the iPhone `.researchRail`
+    /// ``openRailTool(_:)``. Mounted twice — the iPad's column and the iPhone's `.researchRail`
     /// sheet — so the closures are captured here once.
     private func researchRail(vm: DocumentViewModel) -> some View {
         ResearchRailView(
@@ -1634,10 +1649,18 @@ struct DocumentView: View {
                     await vm.load(volumeURL: dm.volumeURL(for: entry.volumeId))
                 }
             })
-        // #338 step 2: the rail is presented via `.inspector` (iPad) / `.researchRail` sheet
-        // (iPhone) — neither reliably inherits `\.sceneID` (review Finding 1), so publish it
+        // #338 step 2: the rail was presented via `.inspector` (iPad) / `.researchRail` sheet
+        // (iPhone) — neither reliably inherited `\.sceneID` (review Finding 1), so publish it
         // explicitly here so the rail's Word Cloud tile addresses its hand-off to THIS window.
         .environment(\.sceneID, sceneID)
+        // R6a (F8): the app's state and the store too, for the `.researchRail` sheet, which need not
+        // carry this window's environment (the tab shell hands every sheet it presents `AppState` for
+        // that reason). `ResearchRailView` declares `@Environment(AppState.self)`, which traps where
+        // none was given: 1.0 (1823) crashed so, now and then, in the sheet SwiftUI made of the old
+        // `.inspector` as the owner narrowed an iPad Pro 12.9-inch's window under iPadOS 27.2.1 (R6,
+        // PD21). The column, drawn by this view, inherits both.
+        .environment(appState)
+        .modelContext(modelContext)
     }
 
     /// Fulfils a rail tile/summary tap with `DocumentView`'s existing iOS presentation. Cite and
@@ -1676,7 +1699,7 @@ struct DocumentView: View {
             // The index is a Browse-tab level whose hand-off REPLACES Browse's path, and this document
             // may be read in any tab — Research, Collections, Settings, Search. Handed off alone, the
             // tap changed nothing the reader could see. So this is the "Find all mentions" shape:
-            // close the sheet (on iPhone the rail IS `activeSheet`; on iPad it is the inspector and
+            // close the sheet (on iPhone the rail IS `activeSheet`; on iPad it is the column and
             // this is a no-op), hand off, then bring Browse forward. A reader who came from another
             // tab finds this document still on that tab's stack.
             activeSheet = nil
@@ -1876,7 +1899,7 @@ struct DocumentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             // The inline Summary/Notes/Tags accordion is retired (Phase D) — the shared Research rail
-            // (iPad `.inspector` / iPhone `.researchRail` sheet) is now the one research surface.
+            // (the iPad's column / the `.researchRail` sheet) is now the one research surface.
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

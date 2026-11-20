@@ -303,6 +303,17 @@ builds the editor again around the deleted note as All Notes' sheet closes and t
 **On a simulator just booted, run one test first**: on 2026-11-16 the first test launch after a boot crashed the runner
 or timed out.
 
+**`AllNotesFollowsOtherDevicesTests` (R6a, F4, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** It opens Research ▸ All Notes with the seeded note (`FRUS_UI_TEST_SEED_NOTE=1`), then has the app add a
+note, *A note from another device*, and delete the seeded one, each on a Darwin signal
+(`FRUS_UI_TEST_NOTES_ON_SIGNAL=1`; `UITestBrowseSeams.Signal.addNote` and `.deleteNote`), through a second `ModelContext` on
+the app's container, as an iCloud import writes, never through the screen; and requires the open list to show the first and
+drop the second within 10 s. The UI-test store is in memory, and a second context's save reaches Research's live query
+there too: the fixed code passes. **On the code before R6a** it fails at the added note (iPad Pro 13-inch (M5), iOS
+27.2): the screen drew a snapshot it fetched when it appeared, in place of the one Research refreshes (R6, X2 and X3).
+**Measured on R6a's code, iOS 27.0:** passed on the iPhone 17 (56 s) and on the iPad Pro 13-inch (M5) (55 s, at a second launch: at the first the simulator's `backboardd` aborted in Metal, #1620's frames, and the runner restarted), with
+`NoteEditorUnsavedChangesTests`' three, which guard L19's delete path, passing beside it on each.
+
 **`AddToCollectionAnnouncementTests` (#1919, A11Y-3, in `ResearchReadingStaysInTabTests.swift`) runs on an iPhone and an
 iPad under iOS 27, alone, on a simulator shut down before it.** It opens the seeded note's document, `d2`
 (`FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d2`), which the seeded collection does not hold, and the rail's Collections ▸ Add to
@@ -329,10 +340,26 @@ the run's own screenshot, so an `isSelected` check there could not fail; the tap
 code:** passed on the iPad Pro 13-inch (M5), iOS 27.0 (191 s, with the binding below; 149 s before it). **On the code
 before L19** it fails at the tap, which there turned the stored setting off and opened nothing.
 
-**It drives no window resize.** A window narrowed with the column on turned the column off for good until the
-inspector's binding wrote opens only: as the width turns compact SwiftUI shows the open inspector as a sheet for a
-moment and dismisses it through the binding, while the binding's size class still reads regular. That path is checked by
-hand, with a slow corner drag in Windowed Apps; a fast one has crashed the simulator's `backboardd`.
+**`testNarrowingTheWindowWithTheRailOpenCrashesNothing` resizes the window (R6a, F8).** It needs Windowed Apps
+(Settings ▸ Multitasking & Gestures) and skips, naming the setting, where the window does not narrow; run it on the iPad
+Pro 13-inch (M5) under `OS=27.2`, allowing 900 s. It relaunches with the rail's five sections pinned open, turns to
+landscape, widens the window by its corner grip and opens the document with its rail column, then narrows the window to
+its least width and widens it again twelve times at 300, 900 and 2,000 pt/s, requiring after each that the app runs,
+the column is back and no sheet is left over the reader (`PopoverDismissRegion`). None of its speeds is fast: a fast
+corner drag has crashed the simulator's `backboardd`. Three things measured on that iPad under iOS 27.2 on 2026-11-19:
+- **XCUI reports SpringBoard's frame in portrait while the window's frame and the drags are in landscape**, so a drag to
+  "the screen's right edge" narrowed the window; the test takes the screen's width from the frame's longer side.
+- **The narrowed window is 375 pt wide and iPadOS centres it** (x 329–704 in portrait, 501–876 in landscape), at compact
+  width in both orientations.
+- **A launch's indexing can raise the FRUS Research Guide** over the window; the test pages it closed.
+
+**On the code before R6a** (`v2` at `10f2fc31`) it fails at narrowing 1: an empty 580 × 660 pt form sheet is left over
+the reader. It was the sheet SwiftUI made of the open `.inspector` as the width turned compact, which is the host 1.0
+(1823) crashed in on the owner's iPad (R6, PD21). That code never crashed in the simulator, in 24 narrowings (12 in
+portrait, 12 in landscape with every section open), so the sheet is what the test sees, not the crash; handing the rail
+`AppState` alone failed the same way. Since R6a the column is the reader's own (`DocumentView`, a trailing
+`.safeAreaInset`), and SwiftUI makes no sheet of it. **Measured on R6a's code:** the suite's 2 tests passed, the
+narrowing test in 558 s.
 
 ```bash
 xcodebuild test \
@@ -356,6 +383,33 @@ xcodebuild test \
   -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
   -only-testing FRUSExplorerUITests/AddToCollectionAnnouncementTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+**`FacetsAtCompactWidthTests` (R6a, the Facets check, in `ResearchReadingStaysInTabTests.swift`) is iPad-only and needs
+Windowed Apps.** Search's Facets is an `.inspector` on an iPad, and SwiftUI closes it through its binding as a window
+narrows to compact width. On the code before R6a that close applied what Years or Volumes held staged, as the reader's
+own close does (IPH-3). The first test seeds the fixture volume and the Meaning seam, searches the fixture's phrase,
+opens Facets, stages its first Year, and narrows the window by its corner grip (`WindowedAppsGrip`, shared with
+`RailAtCompactWidthTests`) and widens it again three times at 300, 900 and 2,000 pt/s. After each it requires the app
+running, no *Narrowed by* row, the results listed and the Year still staged. The second narrows first, opens Facets as
+the sheet SwiftUI makes of the inspector at compact width, stages a Year and closes the sheet by a downward drag from
+its Years header, and requires *Narrowed by*: a reader's swipe still applies. **On the code before R6a** (`v2`, iPad Pro
+13-inch (M5), iOS 27.2) the first test fails at narrowing 1, *the staged 1962 was applied*; the second is a control
+there, since that code applied every close. Seen in R6a's check of that code: at 375 pt no sheet is left (unlike the
+reader's rail, F8), and at full width Facets shows again. **What the binding receives**, logged at each write: as the
+width turns compact SwiftUI writes `false` about 0.17 s *before* `body` runs at the new width, then `true` and `false`
+again once it has; widening writes `true`, `false` and `true`. At the first write the size class still reads regular,
+so neither the size class alone nor a timer that `body` starts alone tells every one of those closes from a reader's
+swipe (each was tried, and failed this test); `SearchView.closesFacetsByHand` applies a close only at a compact width
+that `body` noted more than a second before, where a reader's swipe on the compact sheet comes. **Measured on R6a's code:** 2 of 2 on the iPad Pro 13-inch (M5) under iOS 27.2, in Windowed Apps (the narrowing test 279 s, the swipe 215 s). Allow 900 s.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/FacetsAtCompactWidthTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
 ```
 
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
@@ -900,6 +954,50 @@ xcodebuild test \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
   -only-testing FRUSExplorerUITests/CollectionRowDeleteTests \
   -only-testing FRUSExplorerUITests/CollectionInspectorOpenDocumentTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+**`CollectionListSwipeDeleteTests` (R6a, F10, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, under
+iOS 27.2 and 27.0, and nothing skips.** It launches with animations on, as a reader has them, swipes the seeded collection
+(`FRUS_UI_TEST_SEED_PROJECT=1`'s unattached one) and taps the Delete the swipe reveals; requires **Delete “UI Test
+Unattached Collection”?** and, two seconds later, the question still up with the collection still listed; closes the
+question unanswered (an action sheet's Cancel, or a tap beside a popover) and requires the collection listed; then
+deletes it through a second swipe's question. **What it guards:** in R6's pass, on the owner's iPhone under iOS 27.2, the
+swipe's question closed as it opened and the collection stayed (X7). The swipe button carried `role: .destructive`, which
+animates its row out as if deleted and takes the dialog the row carries with it, the trap L19 measured for a collection's
+entries (`CollectionRowDeleteTests`, above); `CollectionListManagementTests`' swipe test passed on that code, since it
+launches with animations off and answers the moment the dialog shows. **Under iOS 27.2 and 27.0 alike the question is
+a popover pointing at the row, on the iPhone as on the iPad.** **On the code before R6a** (iPhone 17, iOS 27.2) it fails at its first
+check, *The swipe's Delete did not ask* (101 s). **Measured on R6a's code:** iPhone 17, iOS 27.2, 1 of 1 (75 s); iPad Pro
+13-inch (M5), iOS 27.2, 1 of 1 (66 s); iPhone 17, iOS 27.0, 1 of 1 (66 s); iPad Pro 13-inch (M5), iOS 27.0, 1 of 1 (61 s). `CollectionListManagementTests`' 4 passed beside it on each. Give it 600 s,
+as for the suites it shares a file with.
+
+**`VolumeScopeSwipeDeleteTests` (R6a, F10's sweep, in `CustomScopeSaveTests.swift`) runs on an iPhone and an iPad under iOS
+27.2, and passes on the code before R6a too: it is the measurement behind a decision, not a guard of a fix.** F10's sweep
+looked for a destructive swipe button whose row carries the question it raises. Volume Scopes, the Archives Visits list
+and the priority tiers keep `role: .destructive` but hang their question on the list. With `FRUS_UI_TEST_SEED_SCOPE=1`,
+the suite opens Settings ▸ Volume Scopes, swipes *UI Test Scope* and taps Delete, and reads four things before asserting
+any: the question raised, still up two seconds later, the scope listed meanwhile, and the scope listed once the question
+is closed unanswered. **Measured on the code as it was** (the scope screen is unchanged by R6a): all four held on the
+iPhone 17 (164 s) and on the iPad Pro 13-inch (M5) (151 s), each under iOS 27.2; the iPad's question is a popover pointing
+at the list. It fails if the question moves onto the row while the swipe keeps its role. The Settings root is a lazy
+list, so the suite scrolls to the Volume Scopes row rather than waiting for it.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.2" \
+  -only-testing FRUSExplorerUITests/CollectionListSwipeDeleteTests \
+  -only-testing FRUSExplorerUITests/VolumeScopeSwipeDeleteTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/CollectionListSwipeDeleteTests \
+  -only-testing FRUSExplorerUITests/VolumeScopeSwipeDeleteTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 

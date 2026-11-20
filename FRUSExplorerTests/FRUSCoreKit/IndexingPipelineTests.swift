@@ -8709,6 +8709,19 @@ struct CIAJobNeighborTests {
                 forLotFile: target.lotFile, recordGroup: target.recordGroup, series: target.series,
                 repository: target.repository, decimalClass: target.decimalClass,
                 jobNumber: target.jobNumber) == key)
+            // R6a (F9): the iPhone's sheet lists what the button counts, in both of its scopes. Its
+            // query, which `CompilationView` ran inline, never passed the job: the owner's iPhone
+            // showed Job 09–00438R's button reading 2 over an empty sheet (R6, PH18), where the iPad
+            // and the Mac open the window, whose request carries the job.
+            for scope in [Set([volumeId]), nil] {
+                let listed = await CompilationView.sourceNeighbors(for: target, pipeline: pipeline,
+                                                                   scopeVolumeIds: scope)
+                #expect(listed.totalCount == stored, """
+                    The iPhone's Archival Neighbors sheet lists \(listed.totalCount) of the \(stored) documents \
+                    the job's button counts (scope \(scope.map { "\($0)" } ?? "all volumes")).
+                    """)
+                #expect(Set(listed.documents.map(\.documentId)) == ["d1", "d2"])
+            }
             #endif
         }
     }

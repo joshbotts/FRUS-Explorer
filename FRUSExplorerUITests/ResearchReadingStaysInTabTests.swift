@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+import notify
 
 /// The owner's report, driven end to end: a document opened from a Research-tab list, then Back,
 /// returns to that list — in the Research tab, not the Browse tab (2026-09-11).
@@ -1577,6 +1578,110 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
     }
 }
 
+// MARK: - AllNotesFollowsOtherDevicesTests
+
+/// All Notes, left open, follows a note another device adds and a note another device deletes, with no
+/// relaunch (R6a, F4).
+///
+/// In R6's pass the iPad's All Notes kept listing a note deleted on the Mac until the app was force-quit,
+/// and the Mac showed a note the iPad's import brought back only after a restart (X2, X3). The screen
+/// fetched a snapshot of its own when it appeared, and drew it in place of the one Research keeps fresh
+/// from its live query, so nothing another device did reached it while it was open.
+///
+/// The test opens Research ▸ All Notes with the seeded note, then has the app add a note and delete the
+/// seeded one through a second context on its container, as an iCloud import writes
+/// (`FRUS_UI_TEST_NOTES_ON_SIGNAL`, each change on a Darwin signal), and requires the open list to follow
+/// each. On the code before R6a it fails at the added note, which the open list never shows.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5)**, `OS=27.0`, allowing 600 s.
+///
+/// Version history:
+///   1.0 — R6a (F4): initial implementation
+@MainActor
+final class AllNotesFollowsOtherDevicesTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// `UITestResearchSeeder.noteBody`, repeated because a UI-test target cannot import the app.
+    private static let seededBody = "UI Test Research Note"
+    /// `UITestResearchSeeder.otherDeviceNoteBody`.
+    private static let otherDeviceBody = "A note from another device"
+    /// `UITestBrowseSeams.Signal.addNote`'s name.
+    private static let addSignal = "bottsywattsy.FRUS-Explorer.uitest.add-note"
+    /// `UITestBrowseSeams.Signal.deleteNote`'s name.
+    private static let deleteSignal = "bottsywattsy.FRUS-Explorer.uitest.delete-note"
+    /// How long a wait for a launch's screens waits.
+    private static let patience: TimeInterval = 30
+    /// How long the open list has to follow a change: a CloudKit import reaches Research's query in
+    /// well under this on a device, and the seam's save is immediate.
+    private static let follow: TimeInterval = 10
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_NOTES_ON_SIGNAL"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .research)
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app = nil
+    }
+
+    func testAllNotesFollowsANoteAddedAndANoteDeletedElsewhere() throws {
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 15).tapped, "no Research tab")
+        let allNotes = app.cells.containing(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+        let door = allNotes.exists ? allNotes
+            : app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'All Notes'")).firstMatch
+        XCTAssertTrue(door.waitForExistence(timeout: Self.patience), "Research has no All Notes row")
+        door.tap()
+        XCTAssertTrue(row(Self.seededBody).waitForExistence(timeout: Self.patience),
+                      "All Notes does not list the seeded note. Texts: \(texts())")
+        XCTAssertFalse(row(Self.otherDeviceBody).exists, "The other device's note is listed before it was added")
+
+        XCTAssertEqual(notify_post(Self.addSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.addSignal), so no note was added")
+        XCTAssertTrue(row(Self.otherDeviceBody).waitForExistence(timeout: Self.follow), """
+            All Notes, left open, does not list the note another device added: it draws a snapshot of its own \
+            in place of the one Research refreshes (R6, X3). Texts: \(texts())
+            """)
+        attachScreenshot("All Notes after another device added a note")
+
+        XCTAssertEqual(notify_post(Self.deleteSignal), UInt32(NOTIFY_STATUS_OK),
+                       "The system refused to post \(Self.deleteSignal), so no note was deleted")
+        XCTAssertTrue(row(Self.seededBody).waitForNonExistence(timeout: Self.follow), """
+            All Notes, left open, still lists the note another device deleted (R6, X2). Texts: \(texts())
+            """)
+        XCTAssertTrue(row(Self.otherDeviceBody).exists, "Deleting one note took the other device's note too")
+        attachScreenshot("All Notes after another device deleted a note")
+    }
+
+    // MARK: - Steps
+
+    /// The list's row whose text begins with `body`.
+    private func row(_ body: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", body)).firstMatch
+    }
+
+    private func texts() -> [String] {
+        app.staticTexts.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
 // MARK: - RailAtCompactWidthTests
 
 /// On an iPad at compact width the reader's rail is the iPhone's tap-to-open sheet, and closing it leaves the rail on
@@ -1596,13 +1701,27 @@ final class NoteEditorUnsavedChangesTests: XCTestCase {
 /// toggle reads on is not asked: on the code before L19 XCUI reported it unselected while it was drawn on, in the run's
 /// own screenshot (iPad Pro 13-inch (M5), iOS 27.0).
 ///
+/// ## Narrowing a window (R6a, F8)
+/// `testNarrowingTheWindowWithTheRailOpenCrashesNothing` resizes the window by its corner grip, which needs Windowed
+/// Apps, and skips, naming the setting, where the window does not narrow. It relaunches with the rail's five sections
+/// open, turns to landscape, widens the window and opens the document with its rail column, then narrows the window to
+/// its least width (375 pt, which iPadOS centres) and widens it again twelve times, requiring after each that the app
+/// runs, the column is back and no sheet is left over the reader. On the code before R6a it fails at narrowing 1 on the
+/// iPad Pro 13-inch (M5) under iOS 27.2: an empty form sheet is left over the reader, the sheet SwiftUI made of the open
+/// `.inspector` as the width turned compact, which is the host 1.0 (1823) crashed in on the owner's iPad (R6, PD21).
+/// That code never crashed in the simulator, in 24 narrowings, so the sheet is what the test sees, not the crash.
+///
 /// ## Running it
 /// iPad only (an iPhone skips): name `FRUSExplorerUITests/RailAtCompactWidthTests` and run it on iPad Pro 13-inch (M5),
-/// `OS=27.0`, allowing 600 s. On the code before L19 it fails at that tap, which there turned the stored setting off and
-/// opened nothing.
+/// `OS=27.0`, allowing 600 s, and the narrowing test on the same iPad under `OS=27.2` in Windowed Apps, allowing 900 s.
+/// On the code before L19 the first test fails at that tap, which there turned the stored setting off and opened
+/// nothing.
 ///
 /// Version history:
 ///   1.0 — L19 (#1919, IPA-6): initial implementation
+///   1.1 — R6a (F8): `testNarrowingTheWindowWithTheRailOpenCrashesNothing`
+///   1.2 — R6a (the Facets check): the corner grip's steps forward to `WindowedAppsGrip`, which
+///          `FacetsAtCompactWidthTests` shares
 @MainActor
 final class RailAtCompactWidthTests: XCTestCase {
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
@@ -1686,7 +1805,100 @@ final class RailAtCompactWidthTests: XCTestCase {
         attachScreenshot("Full width again")
     }
 
+    /// Narrowing a window with a document and its rail column open, and widening it again, crashes nothing (R6a, F8).
+    ///
+    /// 1.0 (1823) crashed on the owner's iPad as its window narrowed with the rail open, intermittently (R6, PD21), at
+    /// SwiftUI's trap for a view reading an `@Environment` value its hierarchy was never given, in the sheet SwiftUI made
+    /// of the open inspector. The guard is that sheet: on the code before R6a it was left up, empty, after narrowing 1.
+    /// The window is resized by its corner grip, which needs Windowed Apps: a window that does not narrow skips, naming
+    /// the setting.
+    func testNarrowingTheWindowWithTheRailOpenCrashesNothing() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's rail is always a sheet")
+        // Every section of the rail open, so that each is built when SwiftUI hosts the rail anew, and landscape, as the
+        // owner's iPad was.
+        app.terminate()
+        app.launchArguments += Self.everySectionOpen
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        // XCUI reports SpringBoard's frame in portrait while the window's frame and the drags are in landscape, so the
+        // screen's width is the frame's longer side (measured on the iPad Pro 13-inch (M5) under iOS 27.2).
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard").frame
+        let screen = CGRect(x: 0, y: 0, width: max(springboard.width, springboard.height),
+                            height: min(springboard.width, springboard.height))
+        widenTheWindow(to: screen)
+        closeTheGuideIfPresent()
+        openTheSeededDocumentFromResearch()
+        closeTheGuideIfPresent()
+        if !railTiles.waitForExistence(timeout: 5) { try toggleRail() }
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+            The rail column did not show in the widened window, so it is not at regular width and nothing below would \
+            narrow it across the rail's change of presentation.
+            """)
+        attachScreenshot("Widened, rail column on")
+
+        // Three speeds, since the owner saw the crash on some narrowings and not on others. None is fast: a fast corner
+        // drag has crashed the simulator's own `backboardd` (the runbook's entry for this suite).
+        let speeds: [CGFloat] = [300, 900, 2_000]
+        for attempt in 1...Self.narrowings {
+            let speed = speeds[(attempt - 1) % speeds.count]
+            closeTheGuideIfPresent()
+            let wide = app.windows.firstMatch.frame
+            dragTheCornerGrip(of: wide, to: CGPoint(x: wide.minX + 120, y: wide.maxY - Self.gripInset), speed: speed)
+            Thread.sleep(forTimeInterval: 1)
+            XCTAssertEqual(app.state, .runningForeground,
+                           "Narrowing \(attempt) of \(Self.narrowings), at \(Int(speed)) pt/s, crashed the app (F8)")
+            let narrow = app.windows.firstMatch.frame
+            if attempt == 1 {
+                attachScreenshot("Narrowed")
+                try XCTSkipUnless(narrow.width < wide.width - 200, """
+                    The window kept its width (\(Int(wide.width)) pt, then \(Int(narrow.width)) pt), so this simulator \
+                    is not in Windowed Apps: set Settings ▸ Multitasking & Gestures ▸ Windowed Apps and run again.
+                    """)
+            }
+
+            widenTheWindow(to: screen, speed: speed)
+            XCTAssertEqual(app.state, .runningForeground,
+                           "Widening \(attempt) of \(Self.narrowings), at \(Int(speed)) pt/s, crashed the app (F8)")
+            XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+                After narrowing \(attempt) the widened window shows no rail column: the app was relaunched by the \
+                system after a crash, or the narrowing wrote the stored setting off (L19, IPA-6).
+                """)
+            // The sheet SwiftUI makes of the open inspector as the width turns compact is the host the crash came from.
+            // On the code before R6a it was left up after the narrowing, empty, a 580 × 660 pt form sheet over the
+            // reader with its dismiss region behind it (iPad Pro 13-inch (M5), iOS 27.2, landscape).
+            XCTAssertFalse(app.otherElements["PopoverDismissRegion"].waitForExistence(timeout: 2), """
+                After narrowing \(attempt) of \(Self.narrowings) a sheet is left over the widened reader: the \
+                inspector was shown as a sheet as the window narrowed (F8).
+                """)
+        }
+        attachScreenshot("Widened again after \(Self.narrowings) narrowings")
+    }
+
     // MARK: - Steps
+
+    /// How many times F8's test narrows and widens the window.
+    private static let narrowings = 12
+    /// The rail's five sections, each pinned open (`ResearchRailView`'s accordion keys).
+    private static let everySectionOpen = ["subjects", "summary", "notes", "tags", "collections"]
+        .flatMap { ["-frus.document.researchPanel.\($0)", "YES"] }
+    /// How far inside the window's bottom-right corner its grip is taken.
+    private static let gripInset = WindowedAppsGrip.inset
+
+    /// Drags the bottom-right corner grip of a window whose frame is `frame` to `end`, both in screen points.
+    private func dragTheCornerGrip(of frame: CGRect, to end: CGPoint, speed: CGFloat = 1_500) {
+        WindowedAppsGrip.drag(from: frame, to: end, speed: speed)
+    }
+
+    /// Pages through the FRUS Research Guide and closes it, if a launch's indexing raised it.
+    private func closeTheGuideIfPresent() {
+        WindowedAppsGrip.closeTheGuideIfPresent(in: app)
+    }
+
+    /// Widens the window to all the width right of its origin, and waits for the layout to settle.
+    private func widenTheWindow(to screen: CGRect, speed: CGFloat = 1_500) {
+        WindowedAppsGrip.widen(app, to: screen, speed: speed)
+    }
 
     /// The rail's Cite tile, which shows wherever the rail does.
     private var railTiles: XCUIElement {
@@ -1743,6 +1955,266 @@ final class RailAtCompactWidthTests: XCTestCase {
             Thread.sleep(forTimeInterval: 0.75)
         }
         return element.exists && element.isHittable
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+// MARK: - WindowedAppsGrip
+
+/// Resizes the app's window in Windowed Apps by its bottom-right corner grip, as a reader does, for
+/// `RailAtCompactWidthTests` (R6a, F8) and `FacetsAtCompactWidthTests` (R6a, the Facets check).
+///
+/// Version history:
+///   1.0 — R6a: lifted from `RailAtCompactWidthTests` for a second suite
+@MainActor
+enum WindowedAppsGrip {
+    /// How far inside the window's bottom-right corner its grip is taken.
+    static let inset: CGFloat = 6
+
+    /// The screen in the drags' frame. XCUI reports SpringBoard's frame in portrait while the window's frame and the
+    /// drags are in landscape, so its width is the frame's longer side (iPad Pro 13-inch (M5), iOS 27.2).
+    static var landscapeScreen: CGRect {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard").frame
+        return CGRect(x: 0, y: 0, width: max(springboard.width, springboard.height),
+                      height: min(springboard.width, springboard.height))
+    }
+
+    /// Drags the bottom-right corner grip of a window whose frame is `frame` to `end`, both in screen points.
+    static func drag(from frame: CGRect, to end: CGPoint, speed: CGFloat = 1_500) {
+        let origin = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+            .coordinate(withNormalizedOffset: .zero)
+        let grip = origin.withOffset(CGVector(dx: frame.maxX - inset, dy: frame.maxY - inset))
+        grip.press(forDuration: 0.3, thenDragTo: origin.withOffset(CGVector(dx: end.x, dy: end.y)),
+                   withVelocity: XCUIGestureVelocity(speed), thenHoldForDuration: 0.3)
+    }
+
+    /// Narrows `app`'s window to its least width (375 pt, which iPadOS centres) by dragging its grip to 120 pt right of
+    /// its left edge.
+    static func narrow(_ app: XCUIApplication, speed: CGFloat) {
+        let wide = app.windows.firstMatch.frame
+        drag(from: wide, to: CGPoint(x: wide.minX + 120, y: wide.maxY - inset), speed: speed)
+    }
+
+    /// Drags the window's corner grip to the screen's right edge, which widens a window in Windowed Apps to all the
+    /// width right of its origin, and waits for the layout to settle.
+    static func widen(_ app: XCUIApplication, to screen: CGRect, speed: CGFloat = 1_500) {
+        let frame = app.windows.firstMatch.frame
+        drag(from: frame, to: CGPoint(x: screen.maxX - 2, y: frame.maxY - inset), speed: speed)
+        Thread.sleep(forTimeInterval: 1)
+    }
+
+    /// Pages through the FRUS Research Guide and closes it, if a launch's indexing raised it (`IndexingGuideSheetModifier`
+    /// opens it once a session, 0.6 s after a queue of two or more volumes begins), as `VolumeRemovalTests` does.
+    static func closeTheGuideIfPresent(in app: XCUIApplication) {
+        let start = app.buttons["Start exploring"]
+        let next = app.buttons["Next"]
+        let firstPage = app.staticTexts["The Official Record of American Foreign Policy"]
+        guard start.exists || (next.exists && firstPage.exists) else { return }
+        var pages = 0
+        while !start.exists, pages < 20 {
+            guard next.waitForExistence(timeout: 2), next.isHittable else { break }
+            next.tap()
+            pages += 1
+            Thread.sleep(forTimeInterval: 0.8)
+        }
+        if start.waitForExistence(timeout: 2), start.isHittable { start.tap() }
+        _ = start.waitForNonExistence(timeout: 3)
+    }
+}
+
+// MARK: - FacetsAtCompactWidthTests
+
+/// A Year staged in Search's Facets panel stays staged and unapplied as an iPad window narrows and widens with the
+/// panel open (R6a, the Facets check; the owner's "Fix before R7").
+///
+/// On an iPad, Facets is a trailing `.inspector`. As the window narrows to compact width, SwiftUI closes it through its
+/// binding's setter, and on the code before R6a that setter took every close for the reader's own and applied what
+/// Years or Volumes held staged, IPH-3's rule for the sheet's Done, a swipe and the binoculars menu's Facets: in R6a's
+/// check a staged *1962* was applied at the first narrowing, and the results then read *Narrowed by 1962*. A narrowing
+/// is not the reader's close, so it applies nothing.
+///
+/// The first test stages a Year, narrows the window by its corner grip and widens it again three times, at three
+/// speeds. After each it requires the app running, no *Narrowed by* row, the results still listed, and the Year still
+/// staged (the panel's pinned bar), opening Facets from the binoculars menu if the widened window shows it closed. The
+/// second narrows the window first, opens Facets as the sheet SwiftUI makes of the inspector at compact width, stages a
+/// Year and closes the sheet with a swipe, which must apply it: the reader's own close, which the first test's rule must
+/// not take away. Both need Windowed Apps and skip, naming the setting, where the window does not narrow.
+///
+/// **Run it on the iPad Pro 13-inch (M5) under `OS=27.2`, in Windowed Apps**, allowing 900 s.
+///
+/// Version history:
+///   1.0 — R6a (the Facets check): initial implementation
+@MainActor
+final class FacetsAtCompactWidthTests: XCTestCase {
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    private static let patience: TimeInterval = 30
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        // A window left narrow is restored narrow at the next launch, which then cannot be narrowed further.
+        if let app, app.state == .runningForeground {
+            WindowedAppsGrip.widen(app, to: WindowedAppsGrip.landscapeScreen)
+        }
+        XCUIDevice.shared.orientation = .portrait
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testNarrowingKeepsAStagedYearUnapplied() throws {
+        let screen = try launchWidenedOnSearch()
+        searchUntilTheFixtureIsListed()
+        openFacets()
+        let year = stageTheFirstYear()
+        attachScreenshot("Widened, \(year) staged")
+
+        for (index, speed) in [CGFloat(300), 900, 2_000].enumerated() {
+            let attempt = index + 1
+            WindowedAppsGrip.closeTheGuideIfPresent(in: app)
+            let wide = app.windows.firstMatch.frame
+            WindowedAppsGrip.narrow(app, speed: speed)
+            Thread.sleep(forTimeInterval: 1.5)
+            XCTAssertEqual(app.state, .runningForeground, "Narrowing \(attempt), at \(Int(speed)) pt/s, crashed the app")
+            if attempt == 1 {
+                let narrow = app.windows.firstMatch.frame
+                attachScreenshot("Narrowed")
+                try XCTSkipUnless(narrow.width < wide.width - 200, """
+                    The window kept its width (\(Int(wide.width)) pt, then \(Int(narrow.width)) pt), so this simulator \
+                    is not in Windowed Apps: set Settings ▸ Multitasking & Gestures ▸ Windowed Apps and run again.
+                    """)
+            }
+            WindowedAppsGrip.widen(app, to: screen, speed: speed)
+            Thread.sleep(forTimeInterval: 1.5)
+            attachScreenshot("Widened after narrowing \(attempt)")
+            XCTAssertFalse(app.staticTexts["Narrowed by"].exists, """
+                After narrowing \(attempt) the staged \(year) was applied: the results read Narrowed by. SwiftUI's close \
+                of the inspector as the window narrowed was taken for the reader's own (IPH-3).
+                """)
+            XCTAssertTrue(fixtureRows.firstMatch.exists, "After narrowing \(attempt) the results are no longer listed")
+            if !yearsHeader.exists { openFacets() }
+            XCTAssertTrue(stagedBar.waitForExistence(timeout: 10),
+                          "After narrowing \(attempt) \(year) is no longer staged in Facets")
+        }
+    }
+
+    /// At compact width Facets is the sheet SwiftUI makes of the inspector, and a swipe that closes it is the reader's
+    /// own close, which applies what is staged (IPH-3). The narrowing's close above must not take that away.
+    func testASwipeClosingTheCompactSheetAppliesTheStagedYear() throws {
+        _ = try launchWidenedOnSearch()
+        let wide = app.windows.firstMatch.frame
+        WindowedAppsGrip.narrow(app, speed: 900)
+        Thread.sleep(forTimeInterval: 1.5)
+        let narrow = app.windows.firstMatch.frame
+        try XCTSkipUnless(narrow.width < wide.width - 200, """
+            The window kept its width (\(Int(wide.width)) pt, then \(Int(narrow.width)) pt), so this simulator is not \
+            in Windowed Apps: set Settings ▸ Multitasking & Gestures ▸ Windowed Apps and run again.
+            """)
+        searchUntilTheFixtureIsListed()
+        openFacets()
+        let year = stageTheFirstYear()
+        attachScreenshot("Compact, \(year) staged in Facets' sheet")
+        yearsHeader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.98)))
+        XCTAssertTrue(yearsHeader.waitForNonExistence(timeout: Self.patience), "A downward drag did not close Facets")
+        attachScreenshot("Compact, Facets closed by a swipe")
+        XCTAssertTrue(app.staticTexts["Narrowed by"].waitForExistence(timeout: Self.patience), """
+            A swipe closing Facets' sheet at compact width did not apply the staged \(year): a reader's own close \
+            applies what is staged (IPH-3).
+            """)
+    }
+
+    // MARK: - Steps
+
+    /// Launches on Search with the fixture volume and the Meaning seam, in landscape, the window widened to all the
+    /// screen right of its origin; returns the screen in the drags' frame.
+    private func launchWidenedOnSearch() throws -> CGRect {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's Facets is always a sheet")
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_MEANING"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .search)
+            + ["-frus.semantic.autoDownloadShards", "<false/>"]
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        let screen = WindowedAppsGrip.landscapeScreen
+        // A window the last launch left narrow comes back narrow and centred, and once the first widening after the
+        // relaunch left it so (375 pt, measured): widen until the window spans most of the screen.
+        for _ in 1...3 where app.windows.firstMatch.frame.width < screen.width * 0.6 {
+            WindowedAppsGrip.closeTheGuideIfPresent(in: app)
+            WindowedAppsGrip.widen(app, to: screen)
+        }
+        WindowedAppsGrip.closeTheGuideIfPresent(in: app)
+        // The iPad's tab sidebar restores the tab it last showed, whatever the launch asked for.
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped, "No Search tab")
+        return screen
+    }
+
+    /// The fixture's documents, as listed.
+    private var fixtureRows: XCUIElementQuery {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "UI Test Document"))
+    }
+
+    /// Facets' Years section header, which shows wherever the panel does.
+    private var yearsHeader: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Years")).firstMatch
+    }
+
+    /// The bar pinned to the panel's foot while Years or Volumes holds a staged choice (IPH-3).
+    private var stagedBar: XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "facets.selection.bar").firstMatch
+    }
+
+    /// Searches the fixture's phrase until its documents are listed: the fixture is indexed during launch, and a
+    /// search that runs first finds nothing.
+    private func searchUntilTheFixtureIsListed() {
+        let field = app.searchFields.firstMatch
+        for _ in 1...5 where !fixtureRows.firstMatch.exists {
+            WindowedAppsGrip.closeTheGuideIfPresent(in: app)
+            XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field")
+            field.tap()
+            if let typed = field.value as? String, !typed.isEmpty, typed != field.placeholderValue {
+                field.buttons["Clear text"].firstMatch.tap()
+                field.tap()
+            }
+            field.typeText("\"Synthetic UI-test content\"\n")
+            _ = fixtureRows.firstMatch.waitForExistence(timeout: 12)
+        }
+        XCTAssertTrue(fixtureRows.firstMatch.exists, "The fixture's documents are not listed")
+    }
+
+    /// Opens Facets from the binoculars menu.
+    private func openFacets() {
+        let examine = app.descendants(matching: .any).matching(identifier: "search.actions.examine").firstMatch
+        XCTAssertTrue(examine.waitForExistence(timeout: Self.patience), "The actions bar has no Examine menu")
+        examine.tap()
+        let facets = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Facets")).firstMatch
+        XCTAssertTrue(facets.waitForExistence(timeout: Self.patience), "The Examine menu has no Facets")
+        facets.tap()
+        XCTAssertTrue(yearsHeader.waitForExistence(timeout: Self.patience), "Facets did not open")
+    }
+
+    /// Discloses Years and chooses its first bucket, which stages it; returns the bucket's label.
+    private func stageTheFirstYear() -> String {
+        yearsHeader.tap()
+        let bucket = app.buttons.matching(NSPredicate(format: "label MATCHES %@", "^(1[89]|20)[0-9]{2}.*")).firstMatch
+        XCTAssertTrue(bucket.waitForExistence(timeout: Self.patience), "Years lists no year")
+        let label = bucket.label
+        bucket.tap()
+        XCTAssertTrue(stagedBar.waitForExistence(timeout: 10), "Choosing \(label) staged nothing")
+        return label
     }
 
     private func attachScreenshot(_ name: String) {

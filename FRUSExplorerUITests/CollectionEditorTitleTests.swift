@@ -1417,6 +1417,114 @@ final class CollectionListManagementTests: XCTestCase {
     }
 }
 
+// MARK: - CollectionListSwipeDeleteTests
+
+/// A swipe that deletes a collection from the Collections list keeps its confirmation until it is
+/// answered (R6a, F10).
+///
+/// In R6's pass, on the iPhone under iOS 27.2, swiping *R6 scratch* and tapping Delete raised the
+/// confirmation, which closed before it could be answered, and the collection stayed (X7). The row's
+/// swipe button carried `role: .destructive`, which animates its row away as if already deleted and
+/// takes the row's dialog with it: the trap L19 measured for a collection's entries and fixed there
+/// with a red tint and no role (`CollectionRowDeleteTests`). `CollectionListManagementTests`'
+/// `testASwipeAsksFirst` passed on that code: it launches with animations off and taps Delete the moment
+/// the dialog shows.
+///
+/// So this suite launches with animations on, as a reader has them: the swipe's Delete must raise the
+/// question, which must still be up two seconds later with the collection still listed; closing it
+/// keeps the collection; a second swipe's Delete, answered, deletes it. On an iPad the dialog is a
+/// popover pointing at the row (`CollectionListManagementTests`), and that holds too.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5)**, `OS=27.2` and `OS=27.0`, allowing 600 s.
+///
+/// Version history:
+///   1.0 — R6a (F10): initial implementation
+@MainActor
+final class CollectionListSwipeDeleteTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collection = "UI Test Unattached Collection"
+    private static let title = "Delete “UI Test Unattached Collection”?"
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testASwipesDeleteWaitsForItsAnswer() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let row = app.collectionViews.staticTexts[Self.collection].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+
+        swipeDelete(row)
+        let question = app.staticTexts[Self.title].firstMatch
+        XCTAssertTrue(question.waitForExistence(timeout: Self.patience), "The swipe's Delete did not ask")
+        Thread.sleep(forTimeInterval: 2)
+        attachScreenshot("Two seconds after the swipe's Delete")
+        XCTAssertTrue(question.exists, """
+            The swipe's Delete raised its question, which closed by itself within two seconds, unanswered: the \
+            destructive swipe button took the row, and the row's dialog with it (R6, X7).
+            """)
+        XCTAssertTrue(row.exists, "The collection left the list before its question was answered")
+        closeTheQuestion()
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "Closing the question deleted the collection")
+
+        swipeDelete(row)
+        XCTAssertTrue(question.waitForExistence(timeout: Self.patience), "The second swipe's Delete did not ask")
+        Thread.sleep(forTimeInterval: 1)
+        let delete = [app.popovers.buttons["Delete"], app.sheets.buttons["Delete"], app.alerts.buttons["Delete"]]
+            .first { $0.exists }
+        try XCTUnwrap(delete, "The question offers no Delete").tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: Self.patience), "Delete left the collection listed")
+    }
+
+    // MARK: - Steps
+
+    /// Swipes the row left, as a reader does, and taps the Delete it reveals.
+    private func swipeDelete(_ row: XCUIElement) {
+        row.swipeLeft()
+        let reveal = app.buttons["Delete"].firstMatch
+        XCTAssertTrue(reveal.waitForExistence(timeout: Self.patience), "The swipe revealed no Delete")
+        reveal.tap()
+    }
+
+    /// Closes the question without deleting: an action sheet's Cancel, or a tap outside a popover.
+    private func closeTheQuestion() {
+        let cancel = app.sheets.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+            XCTAssertGreaterThan(regions.count, 0, "The question has no Cancel and no popover to tap outside")
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
+        }
+        XCTAssertTrue(app.staticTexts[Self.title].firstMatch.waitForNonExistence(timeout: Self.patience),
+                      "The question did not close")
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
 // MARK: - CollectionRowDeleteTests
 
 /// Deleting a collection row that holds the reader's text asks first, on a swipe, and a row that holds nothing goes at

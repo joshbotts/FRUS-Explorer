@@ -302,6 +302,9 @@ enum CollectionRenderingFixtures {
 ///   1.4 — 2026-11-12 (FRUS Explorer Light, S21b's follow-up): the three HTML pages re-pinned for the
 ///          gloss links, named lists and footnote markers that rule now boxes: each grew by 1,346
 ///          bytes, the block `ReaderPageTests` names; the Word, BibTeX and RIS pins hold
+///   1.5 — R6a (F6): the three HTML pages re-pinned for the stylesheet's comment on an index entry's
+///          landing, which now says the script brings the entry's first line into view: each grew by
+///          the 7 bytes `ReaderPageTests` names; the Word, BibTeX and RIS pins hold
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -309,13 +312,13 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("d619ecdab6fba825ef3b869c53a9df724e3108c902d1594a64723af0b8f860e6", 47_663),
+        "everything.html": ("3d194da032ba7e316166f760b71557b8b8886e009ec3b5e6166c36a63651dca2", 47_670),
         "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
         "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
         "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
-        "plain.html": ("0df608b4f6ddafa8213cfb55f62eb174ec1a95aabc7341a3403e035c4400d10a", 32_002),
+        "plain.html": ("6988a6cfebc4f096c5a911546007a661c6300ec713fedfc05cab4fe71471573b", 32_009),
         "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
-        "preview.html": ("38ac19a9c32e489b5ca0d4bcf5a8cada1c753311cb5359cd4e2aeb78515bac22", 30_865),
+        "preview.html": ("a6f7f2c0b9f748bcf0a843cb2d136c984009d326c8af446138c1a12d9ece127b", 30_872),
     ]
 
     static func expectPin(_ name: String, _ data: Data, sourceLocation: SourceLocation = #_sourceLocation) {
