@@ -256,8 +256,8 @@ struct NamedFileSeriesRoutingTests {
         let explainer = NamedFileSeriesRouting.explainer(seriesName: series)
         let macNote = NamedFileSeriesRouting.macNote(seriesName: series)
         if let holder {
-            #expect(explainer == "A file series the citation places with the \(holder), cited without a lot number.")
-            #expect(macNote == "A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
+            #expect(explainer == "A file series the citation attributes generally to the \(holder), cited without a lot number.")
+            #expect(macNote == "A file series the citation attributes generally to the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
             #expect(!NamedFileSeriesRouting.offersStateRecordsLink(seriesName: series),
                     "\(series) is offered NARA's State records page, though its citation places it with the \(holder)")
         } else {

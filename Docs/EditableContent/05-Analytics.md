@@ -1,6 +1,6 @@
 # EditableContent — Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 226 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
@@ -52,7 +52,7 @@ Timeline and Network layouts
 
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1581–1582 | key: graph.info.timeline.body -->
 
-Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page sits at the dates of the documents printed on it. A document or page in a volume you have not downloaded sits at the dates the app has for it, often only its volume’s span, which its label then shows. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
+Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page number sits at the dates of the documents printed on it. The app places and labels a document or page in a volume you have not downloaded at the dates it can access from its existing data, often only its enclosing volume’s span. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
 
 <!-- END SOURCE: graph.info.timeline.body -->
 
@@ -1784,7 +1784,7 @@ Long-press (or right-click) any related document that shows the magnifier icon, 
 
 <!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 113–121 | key: settings.semanticFeedback.privacy.v2 -->
 
-Stored on-device and not synced to iCloud. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it: to share your verdicts, choose Prepare Feedback File, then send the file to \(SemanticFeedbackMail.address). Where this device can send mail, Email Feedback File writes that message with the file attached; Share Feedback File sends the file any other way.
+Stored on-device and not synced to iCloud. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you made it. The app shares none of this on its own: to contribute your verdicts, choose Prepare Feedback File, then send the file to \(SemanticFeedbackMail.address). Where this device can send mail, Email Feedback File drafts that message with the file attached; Share Feedback File lets you share it another way.
 
 <!-- END SOURCE: settings.semanticFeedback.privacy.v2 -->
 
@@ -1826,7 +1826,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 #### Reading every indexed document. On a full library this ta…
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1600–1601 | key: wordcloud.loading.corpus.v2 -->
 
-Reading every indexed document. On a full library this takes about twenty minutes, and longer on an older device; the finished cloud is kept, but closing this screen before then stops it.
+Processing every indexed document. On a full library this takes about twenty minutes, and longer on an older device; the finished cloud is kept, but closing this screen before then stops it.
 
 <!-- END SOURCE: wordcloud.loading.corpus.v2 -->
 

@@ -1,6 +1,6 @@
 # EditableContent — Repository README
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 1 blocks · no ✎ edits held · no ⚑ wording issues
 

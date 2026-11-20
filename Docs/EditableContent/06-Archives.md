@@ -1,6 +1,6 @@
 # EditableContent — Archives — Archival Analytics, Source Explorer, Archives Visits
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §9, §11, §15, §18.3, §18.9, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §9, §11, §15, §18.3, §18.9, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 267 blocks · no ⚑ wording issues
 
@@ -890,7 +890,7 @@ The three counts measure different things
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 345–346 | key: archival.info.weights.detail.v2 -->
 
-Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and about a hundred and ninety collections appear only under pointers, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
+Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: editorial footnotes pointing at material there that FRUS did not print. The first two measure where FRUS historians found the documents they printed; the third measures where they sent readers to learn more. They are never added together because they measure different things. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no editorial footnotes pointing to unpublished documents, and about a hundred and ninety collections appear only under such footnotes, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
 
 <!-- END SOURCE: archival.info.weights.detail.v2 -->
 
@@ -912,7 +912,7 @@ Why Central Files is hidden
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 349–350 | key: archival.info.umbrella.detail.v3 -->
 
-The State Department’s Central Files are cited by 158 volumes and supply more than eighteen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden. Those records — Central Files 1964–66, 1967–69 and 1970–73 — are the Subject-Numeric File’s blocks of years, as the later volumes cite them through the National Archives. Your Library counts the same citations under the Subject-Numeric File instead of listing them as collections.
+The State Department’s Central Files are cited by 158 volumes and supply more than eighteen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden. Those records — Central Files 1964–66, 1967–69 and 1970–73 — are the Subject-Numeric File’s blocks of years, as the editors of later volumes cited them at the National Archives. Your Library counts the same citations under the Subject-Numeric File instead of listing them as collections.
 
 <!-- END SOURCE: archival.info.umbrella.detail.v3 -->
 
@@ -955,7 +955,7 @@ A source note is not a document
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.library.detail.v2 -->
 
-Only documents whose editors recorded where the original was found appear in Your Library. So its total is smaller than your indexed document count, and volumes with no source notes add nothing. The collections list matches each citation to a named body of records; notes citing the central files — the decimal file, the Subject-Numeric File and the Central Foreign Policy File — cite a filing system rather than a collection and are counted in the composition instead. Your Library counts only what you have indexed — Collections does not, and does not change with your downloads.
+Only documents whose editors recorded where the original was found as a source note appear in this mode of browsing Your Library. Its total may be smaller than your indexed document count because volumes with no source notes add nothing. The collections list matches each citation to a named body of records; notes citing the central files — the decimal file, the Subject-Numeric File and the Central Foreign Policy File — cite a filing system rather than a collection and are counted in the composition instead. Your Library counts only what you have indexed, while Collections reflects bundled data and does not change with your downloads.
 
 <!-- END SOURCE: archival.info.library.detail.v2 -->
 
@@ -1233,7 +1233,7 @@ Purport indexes and the filing manual for this period are available on the linke
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 680–681 | key: source.explorer.subjectNumeric.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
-To request the original record from NARA, give them the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box.
+To request the original record from NARA, you will need the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box.
 
 <!-- END SOURCE: source.explorer.subjectNumeric.cite.note -->
 
@@ -1531,7 +1531,7 @@ A named file series cited without a lot number. The citation does not state the 
 
 <!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 326–327 | key: source.explorer.namedSeries.note.held -->
 
-A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.
+A file series the citation attributes generally to the \(holder), cited without a lot number, so no automated NARA Catalog query is available.
 
 <!-- END SOURCE: source.explorer.namedSeries.note.held -->
 
@@ -1555,7 +1555,7 @@ A named file series cited without a lot number. The repository is not stated in 
 
 <!-- SOURCE: FRUSCoreKit/SourceExplorer/NamedFileSeriesRouting.swift | lines: 316–317 | key: source.explorer.namedSeries.explainer.held -->
 
-A file series the citation places with the \(holder), cited without a lot number.
+A file series the citation attributes generally to the \(holder), cited without a lot number.
 
 <!-- END SOURCE: source.explorer.namedSeries.explainer.held -->
 
@@ -1829,7 +1829,7 @@ The three weights count different things. A document counts only when its own so
 #### Documents counts how many published documents came out of…
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 345–346 | key: archival.info.weights.detail.v2 -->
 
-Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and about a hundred and ninety collections appear only under pointers, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
+Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: editorial footnotes pointing at material there that FRUS did not print. The first two measure where FRUS historians found the documents they printed; the third measures where they sent readers to learn more. They are never added together because they measure different things. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no editorial footnotes pointing to unpublished documents, and about a hundred and ninety collections appear only under such footnotes, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
 
 <!-- END SOURCE: archival.info.weights.detail.v2 -->
 

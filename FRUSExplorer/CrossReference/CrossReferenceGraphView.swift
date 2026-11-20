@@ -1579,7 +1579,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.timeline.title",
                               defaultValue: "Timeline and Network layouts"),
                 body:  String(localized: "graph.info.timeline.body",
-                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page sits at the dates of the documents printed on it. A document or page in a volume you have not downloaded sits at the dates the app has for it, often only its volume’s span, which its label then shows. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
+                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page number sits at the dates of the documents printed on it. The app places and labels a document or page in a volume you have not downloaded at the dates it can access from its existing data, often only its enclosing volume’s span. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",

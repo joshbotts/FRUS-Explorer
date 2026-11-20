@@ -1,6 +1,6 @@
 # EditableContent — Search & Browse
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8, §19, §20. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8, §19, §20. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 519 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
@@ -572,7 +572,7 @@ Your Word Cloud settings count words differently from the bundled corpus referen
 
 *Since #1608 (2026-10-12) a reader should not meet it. With no lemmatiser the panel now counts the neighbors as printed and ranks them against a second corpus reference that was counted as printed, under the note in the next block. This sentence is left for a launch on which that second reference could not be loaded. Its text is unchanged.*
 
-This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
+This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the bundled corpus reference. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: search.collocation.unavailable.languageAnalysis -->
 
@@ -3665,13 +3665,13 @@ Browse by editors' annotations
 
 <!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | key: browser.corpus.tile.annotations.help -->
 
-Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard
+Volumes categorized by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard
 
 <!-- END SOURCE: browser.corpus.tile.annotations.help -->
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.index.caption -->
 
-What the editors of %@ annotated, layer by layer. A layer that runs through a volume, such as people tagged, counts when it reaches at least half the volume's documents; one found here and there, such as an editorial note, when one document carries it. Each strip shades the eras, earliest first and the late retrospectives last, by the share of their volumes that carry the layer.
+What the editors of %@ annotated, layer by layer. A layer that runs through a volume, such as people tagged, counts when it reaches at least half the volume's documents. Annotation types found here and there, such as an editorial note, count when one document carries them. Each strip shades the eras, earliest first and the late retrospectives last, by the share of their volumes that carry the layer.
 
 <!-- END SOURCE: browser.annotations.index.caption -->
 
@@ -3837,7 +3837,7 @@ File numbers above the heading
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.people -->
 
-The editors linked each person a document names to the volume's List of Persons, where the person is identified.
+The editors identified the key people in the volume and included a List of Persons with short summary descriptions of their official roles. These people are tagged as they appear in each document in the volume.
 
 <!-- END SOURCE: browser.annotations.practice.people -->
 
@@ -3849,13 +3849,13 @@ A volume counts when at least half its documents link a name to its List of Pers
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.app.people -->
 
-The People browser and Person analytics read these links. Where a volume does not link its names, search for them instead.
+The People browser and Person analytics read these links. Where a volume does not link its names, rely on keyword search instead.
 
 <!-- END SOURCE: browser.annotations.app.people -->
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.abbreviations -->
 
-The editors linked each abbreviation in a document to the volume's List of Abbreviations, where it is spelled out.
+The editors identified common abbreviations in the volume and included a List of Abbreviations that explains what they mean.
 
 <!-- END SOURCE: browser.annotations.practice.abbreviations -->
 
@@ -3909,7 +3909,7 @@ A volume counts when one of its documents lists who attended a meeting.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.sourceNotes -->
 
-A source note says where the editors found a document. It was printed first as a file number above the heading, and later as a note that begins “Source:” with the full archival citation. The earliest volumes print none: a despatch there carries the post's own number instead.
+A source note says where the editors found a document. It was printed first as a file number above the heading, and later as a note that begins “Source:” with the full archival citation. The earliest volumes print none: a despatch there carries its assigned serial number instead.
 
 <!-- END SOURCE: browser.annotations.practice.sourceNotes -->
 
@@ -3945,7 +3945,7 @@ Search's results and Source Explorer show a document's marking.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.excisions -->
 
-The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here. Volumes published before the 1925 order marked an omission with a row of asterisks, under no written rule and without saying whose cut it was; those are not counted here either.
+The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so declassification redactions cannot be distinguished from editorial omissions. They are not counted here. Volumes published before the 1925 order marked an omission with a row of asterisks, under no written rule and without saying whose cut it was; those are not counted here either.
 
 <!-- END SOURCE: browser.annotations.practice.excisions -->
 
@@ -4041,7 +4041,7 @@ Search can limit its results to editorial notes.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.footnotes -->
 
-The editors' footnotes explain a document: who it names, what it answered, what became of it.
+The editors' footnotes usually explain context or reference other documents.
 
 <!-- END SOURCE: browser.annotations.practice.footnotes -->
 
@@ -4059,7 +4059,7 @@ The reader shows each footnote with its document.
 
 <!-- SOURCE: FRUSExplorer/Browser/AnnotationsAxis.swift | key: browser.annotations.practice.marginalNotes -->
 
-A few volumes print the notes written in a document's margin, set off from its text.
+A few volumes print notes written in a document's margin, set off from its text.
 
 <!-- END SOURCE: browser.annotations.practice.marginalNotes -->
 

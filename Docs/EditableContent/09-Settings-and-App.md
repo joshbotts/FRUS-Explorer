@@ -1,6 +1,6 @@
 # EditableContent — Settings & app-wide messages
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 225 blocks · no ⚑ wording issues
 
@@ -437,7 +437,7 @@ The XML file and its search-index rows are deleted from this Mac. Your notes, hi
      they refuse such a volume however it is cited; Browse and Search reach it. -->
 <!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SideloadCatalogueNotice.detail | lines: 401–402 | key: settings.hub.sideload.notCatalogued.detail | shared: iOS+macOS (single edit point) -->
 
-Volumes added from your own files are not included in features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.
+Volumes added from your own files cannot be used with some features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.
 
 <!-- END SOURCE: settings.hub.sideload.notCatalogued.detail -->
 

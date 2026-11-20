@@ -466,7 +466,7 @@ struct CorpusView: View {
                         #endif
                     }
                     .help(String(localized: "browser.corpus.tile.annotations.help",
-                                 defaultValue: "Volumes filed by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
+                                 defaultValue: "Volumes categorized by what their editors annotated — people tagged, source notes, classification and more — and the era each practice became standard"))
 
                     BrowseAxisGridTile(
                         title: String(localized: "browser.corpus.tile.archives",

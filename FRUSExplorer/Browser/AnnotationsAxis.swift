@@ -255,10 +255,10 @@ extension AnnotationLayer {
         switch self {
         case .people:
             return String(localized: "browser.annotations.practice.people",
-                          defaultValue: "The editors linked each person a document names to the volume's List of Persons, where the person is identified.")
+                          defaultValue: "The editors identified the key people in the volume and included a List of Persons with short summary descriptions of their official roles. These people are tagged as they appear in each document in the volume.")
         case .abbreviations:
             return String(localized: "browser.annotations.practice.abbreviations",
-                          defaultValue: "The editors linked each abbreviation in a document to the volume's List of Abbreviations, where it is spelled out.")
+                          defaultValue: "The editors identified common abbreviations in the volume and included a List of Abbreviations that explains what they mean.")
         case .correspondents:
             return String(localized: "browser.annotations.practice.correspondents",
                           defaultValue: "The editors marked who sent each document, and to whom, in its heading.")
@@ -270,13 +270,13 @@ extension AnnotationLayer {
                           defaultValue: "Where a memorandum of conversation lists who took part, the editors marked the list.")
         case .sourceNotes:
             return String(localized: "browser.annotations.practice.sourceNotes",
-                          defaultValue: "A source note says where the editors found a document. It was printed first as a file number above the heading, and later as a note that begins “Source:” with the full archival citation. The earliest volumes print none: a despatch there carries the post's own number instead.")
+                          defaultValue: "A source note says where the editors found a document. It was printed first as a file number above the heading, and later as a note that begins “Source:” with the full archival citation. The earliest volumes print none: a despatch there carries its assigned serial number instead.")
         case .classification:
             return String(localized: "browser.annotations.practice.classification",
                           defaultValue: "The editors printed each document's security classification, first above the dateline and later in the source note.")
         case .excisions:
             return String(localized: "browser.annotations.practice.excisions",
-                          defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so their redactions cannot be told from the editors’ omissions and are not counted here. Volumes published before the 1925 order marked an omission with a row of asterisks, under no written rule and without saying whose cut it was; those are not counted here either.")
+                          defaultValue: "The editors mark what declassification review redacted: a gap in the printed text, “[… not declassified]”, or a whole document withheld, listed in its place with its heading, its source note and the number of pages not declassified. From Secretary Kellogg’s 1925 order until the 1991 statute, volumes marked an omission with an ellipsis, whether the editors left the text out or it was not cleared for publication, so declassification redactions cannot be distinguished from editorial omissions. They are not counted here. Volumes published before the 1925 order marked an omission with a row of asterisks, under no written rule and without saying whose cut it was; those are not counted here either.")
         case .editorialOmissions:
             return String(localized: "browser.annotations.practice.editorialOmissions",
                           defaultValue: "Since Secretary Kellogg’s 1925 order, where the editors left out part of a document as not relevant to the volume, they could say so in brackets and describe what was omitted. Until the 1991 statute an ellipsis could also mark an omission, the editors’ or a redaction, and those are not counted here. Volumes published before the order marked an omission with a row of asterisks, not a bracketed note, and are not counted here.")
@@ -294,10 +294,10 @@ extension AnnotationLayer {
                           defaultValue: "Where no single document tells the story, the editors wrote a note of their own, set between the documents.")
         case .footnotes:
             return String(localized: "browser.annotations.practice.footnotes",
-                          defaultValue: "The editors' footnotes explain a document: who it names, what it answered, what became of it.")
+                          defaultValue: "The editors' footnotes usually explain context or reference other documents.")
         case .marginalNotes:
             return String(localized: "browser.annotations.practice.marginalNotes",
-                          defaultValue: "A few volumes print the notes written in a document's margin, set off from its text.")
+                          defaultValue: "A few volumes print notes written in a document's margin, set off from its text.")
         case .printedAids:
             return String(localized: "browser.annotations.practice.printedAids",
                           defaultValue: "Besides its documents, a volume prints front and back matter to help readers use it: a preface, lists of sources, abbreviations and persons, an index.")
@@ -309,7 +309,7 @@ extension AnnotationLayer {
         switch self {
         case .people:
             return String(localized: "browser.annotations.app.people",
-                          defaultValue: "The People browser and Person analytics read these links. Where a volume does not link its names, search for them instead.")
+                          defaultValue: "The People browser and Person analytics read these links. Where a volume does not link its names, rely on keyword search instead.")
         case .abbreviations:
             return String(localized: "browser.annotations.app.abbreviations",
                           defaultValue: "The reader opens a linked abbreviation's meaning.")
@@ -513,7 +513,7 @@ enum AnnotationsAxis {
     /// The axis's honesty caption: what a row counts, and what a strip shades.
     static func indexCaption(total: Int, locale: Locale = .autoupdatingCurrent) -> String {
         String(format: String(localized: "browser.annotations.index.caption",
-                              defaultValue: "What the editors of %@ annotated, layer by layer. A layer that runs through a volume, such as people tagged, counts when it reaches at least half the volume's documents; one found here and there, such as an editorial note, when one document carries it. Each strip shades the eras, earliest first and the late retrospectives last, by the share of their volumes that carry the layer."),
+                              defaultValue: "What the editors of %@ annotated, layer by layer. A layer that runs through a volume, such as people tagged, counts when it reaches at least half the volume's documents. Annotation types found here and there, such as an editorial note, count when one document carries them. Each strip shades the eras, earliest first and the late retrospectives last, by the share of their volumes that carry the layer."),
                CountCopy.volumes(total, locale: locale))
     }
 

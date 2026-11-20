@@ -11,6 +11,7 @@ are done, hand the files back and the changes will be written to the source code
 wave) has written your review back. Eight of your edits were held — a test pins the wording they replace, the
 text describes the screen the other way round, it lost words mid-sentence, or it read as a note rather than app copy — and three more ship with a name or phrase changed so they describe the screen as it is; each of the eleven sits under its block in a ✎ box that says why. Your close-out pass, [below](#close-out-pass-2026-09-30), settles them one at a time; the table counts what is still open. The
 amendment history that used to fill this paragraph is now the last section, [Amendment-Log.md](Amendment-Log.md).
+Your review of 2026-11-20, of what changed since the close-out, is written back too, for 1.0 (1861): [below](#written-back-2026-11-20-your-review-of-what-changed-since-the-close-out).
 
 ## The files
 
@@ -21,7 +22,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 13 | 0 | — |
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | — |
-| [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 24 KB | 33 | 1 | — |
+| [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 24 KB | 33 | 0 | — |
 | [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 126 KB | 226 | 0 | — |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 134 KB | 274 | 0 | — |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 211 KB | 519 | 0 | — |
@@ -52,6 +53,15 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
   result-set copy; §8 the repository README; §9 Archival Analytics; §10 Export method statements; §11 Source
   Explorer; §12 Word Cloud keyness; §13 Semantic Analytics; §14 Short strings bumped since build 42; §15
   Archives Visits; §16 Browse axis captions; §17 Browse load failures; §18 Prose this file had never carried.
+
+## Written back 2026-11-20 (your review of what changed since the close-out)
+
+*You reviewed the blocks that changed or were added between your close-out pass (`95bfc706`, 2026-10-01) and 1.0 (1861) (`6f7f2046`), in a file of those blocks alone, and handed it back on 2026-11-20; it is kept as [History/2026-11-20 EditableContent-Review.md](History/2026-11-20%20EditableContent-Review.md). Written back for 1.0 (1861) on your word (“For 1861”).*
+
+- **26 strings changed, in 27 blocks:** three Research Guide pages (*Understanding What You’re Reading*, *Finding What You Need*, *Seeing the Bigger Picture*), About the Series’ figures footnote, the graph’s Timeline help, the Semantic Match Feedback footer, the word cloud’s loading line, three Archival Analytics popover texts, Collocates’ language-analysis line, the archival export’s grain caveat, the people partner in the provenance statement, three Source Explorer notes, the Annotations tile and nine Annotations axis texts, and the note on volumes added from your own files.
+- **As you wrote them, but for five fixes you approved:** a question ranks keyword results rather than narrowing them (*Finding What You Need*); Share Feedback File shares the file Prepare Feedback File makes; “Others were redactions made…” without the second “were”; the annotations caption’s second sentence has its verb, “count”; “Between 1906 and 1910”.
+- **`archival.info.weights.detail.v2`**, one string you edited differently in its two blocks (§9.6 and §18 of `06-Archives.md`), ships your second text in both.
+- **The ✎ box under About the Series’ figures footnote** (your 2026-09-30 sentences, replaced by #1543) is gone: your new text settles it.
 
 ## Written back 2026-09-30 (lane WB)
 
