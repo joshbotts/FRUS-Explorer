@@ -870,6 +870,7 @@ It is written from four sources:
     - **R6's review of F8, point 3** (the iOS manual's iPad rail text and `ipad/research-rail.png`): no change, on the owner's word ("No change"): the column looks as the inspector did.
     - **The build is 1842** (`5a1e9323`), the owner's number.
     - **The Mac, walked in the check copy** on the owner's word ("Walk the Mac first"): F3's three exports saved where chosen, each with its line, and the JSON read back by Import from JSON; F5's zoomed network cut at its frame; F6's *See "De Long"* landing on his entry's first line. F4 is not walkable in the copy (no second device); the owner's device check covers it and the Duo's fold.
+    - **The row opened as #1956** on the owner's word ("Open the PR"), on 2026-11-20, against `v2` at `10f2fc31`, which had not moved since R6a began. Ready for review, with auto-merge off. Its merge is the next row's to record.
 - **R7, the bump to 1.0 (1861).** One session, one pull request, when R6 has passed and R6a's build, which carries R6b's mitigations, has passed on a device: `CURRENT_PROJECT_VERSION` 1861 by the same procedure, the README line and its mirror, an Amendment-Log bullet, and both TestFlight notes' release-candidate line. No other change: the tree that goes to App Review is R6's but for its build number.
 - **R3, the submission.** The owner archives and uploads 1.0 (1861) for both platforms, opens it once from TestFlight (About reads *Version 1.0 (1861)*), and submits it with §2's answers; then tags that commit `1.0-release` (decision 113).
 

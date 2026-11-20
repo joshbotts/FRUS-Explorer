@@ -11959,3 +11959,5 @@ So R6b lands no mitigation and no code, and no suite runs on the Duo: `CLAUDE.md
 - **Not run here:** the Duo with the rail's sheet open through a fold (its phone idiom never builds F8's column, and R6b found no crash there on `v2`).
 
 **Records:** `CLAUDE.md`'s UI table gains `AllNotesFollowsOtherDevicesTests`, `CollectionListSwipeDeleteTests` and `VolumeScopeSwipeDeleteTests`, and `RailAtCompactWidthTests`' row its narrowing test; the runbook has their entries; each commit re-pointed the EditableContent ranges its Swift files moved, with an Amendment-Log bullet.
+
+**Opened as #1956** on the owner's word ("Open the PR"), on 2026-11-20, against `v2` at `10f2fc31`, which had not moved since R6a began, so nothing was merged in. It is ready for review, with auto-merge off; no CI check runs on it. Its merge is the next row's to record.
