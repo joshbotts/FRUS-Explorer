@@ -253,7 +253,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// and tying it to a build would refresh itself without anyone checking.
     static let confirmed: Date? = DateComponents(
         calendar: .init(identifier: .gregorian), timeZone: TimeZone(secondsFromGMT: 0),
-        year: 2026, month: 8, day: 28).date
+        year: 2026, month: 11, day: 20).date
 
     /// National Archives at College Park.
     ///

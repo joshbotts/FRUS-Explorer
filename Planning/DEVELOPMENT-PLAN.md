@@ -12071,3 +12071,15 @@ Row R3 of the plan of record from 2026-11-15, the owner's: archive and upload 1.
 **Checks:** `build_paste.py --check` says the sheet is in step with the draft. `CodingStandardsAuditTests` and `EditableContentKeyTests` passed on the final records, 87 tests in 2 suites, on the iPhone 17 under iOS 27.2. Nothing a target compiles changed.
 
 **Opened as #1961** on the owner's word ("submitted, record R3"), on 2026-11-20, against `v2` at `08e8bac8`, which had not moved since R3's record began. Docs only; no CI check runs on it. Its merge is the next record's.
+
+**Merged as `0cc286a7`** by the owner on 2026-11-20 at 19:32:52 UTC, two minutes after it opened (19:31:17 UTC), auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`a28cbdb8`, tree `6ebed974`). Its branch was still on `origin` when the correction below began.
+
+**Corrected the same day, on the owner's word** ("link check was done before submission", then its output). The *Not seen done* paragraph above read the tree, not the run.
+- **The run:** `check_repository_links.py --stamp`, on 2026-11-20 in the main checkout, before #1960 was pulled.
+  - `RepositoryFactTable.swift`: 23 links, 20 OK, 3 owner-asserted (`discoverlbj.org/loh` and two `jfklibrary.org` pages, hosts that refuse every automated fetch, so only the owner can confirm them), 0 dead.
+  - `PublishedSourceLinkTable.swift`: 3 links, 3 OK.
+  - Both tables were stamped `confirmed` 2026-11-20.
+- **Why the tree did not show it:** the pull of #1960 set the two stamped lines aside in a stash at 13:13:42 EST ("WIP on v2: 08e8bac8", which holds those two lines and nothing else). Both files' times are that second. So the archives (13:17 and 13:28) were cut without the stamp, and `v2` and the uploaded 1.0 (1861) carry 2026-08-28.
+- **What this change does:** it commits the stamp, applied from the stash's diff without popping it, so the next build carries 2026-11-20. The stash entry is the owner's to drop once this merges.
+- **Recorded:** the plan's R3 bullet and §2 now say the check ran before the archives, on `claude/r3-record-correction` from `v2` at `0cc286a7`.
+- **Checks:** `RepositoryLinkRenderTests` (which pins the stamp's shape), `CodingStandardsAuditTests` and `EditableContentKeyTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no new warning.
