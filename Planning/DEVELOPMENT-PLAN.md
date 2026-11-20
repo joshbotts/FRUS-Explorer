@@ -11988,3 +11988,5 @@ So R6b lands no mitigation and no code, and no suite runs on the Duo: `CLAUDE.md
 - **The Mac build** (`FRUSExplorerMac`, Debug, the same folder): succeeded, 703 Swift compile steps, the same known warning only; the app reads 1.0 (1861).
 - **`CodingStandardsAuditTests`, `EditableContentKeyTests` and `UnconstructedViewAuditTests`** on the final docs: 90 tests in 3 suites passed, `readmeStatesCurrentBuild` and `planOfRecordMatchesTheVisualMarketingPlan` among them. The simulator was shut down after.
 - **Not run:** the full unit target, `swift test` and the UI suites. In what a target compiles only the build number changed. No test pins it: the one that reads `CFBundleVersion` compares the bundle's own value. No kit changed. R6a's full run at `2463c1ce` (8,157 tests in 987 suites) ran the same code: only the plan and the log changed between it and `39b2c6b1`.
+
+**Opened as #1957** on the owner's word ("Open the PR"), on 2026-11-20, against `v2` at `39b2c6b1`, which had not moved since R7 began, so nothing was merged in. It is ready for review, with Auto-fix on and auto-merge off; no CI check runs on it. Its merge is R3's to record.
