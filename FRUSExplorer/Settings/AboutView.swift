@@ -29,12 +29,11 @@ enum AboutLinks {
     static let iosManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md"
     static let macManual     = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md"
 
-    /// The iPad and iPhone quick start (`Docs/iOS-Quick-Start.md`), rendered on GitHub like the
-    /// manuals. About's Resources and the Research tab's Quick Start row open it.
-    static let iosQuickStart = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-Quick-Start.md"
-    /// The Mac quick start (`Docs/macOS-Quick-Start.md`). About's Resources and Help ▸ FRUS
-    /// Explorer Quick Start open it.
-    static let macQuickStart = "https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-Quick-Start.md"
+    /// The iPad and iPhone quick start: the website's page `Scripts/build_website_pages.py` writes from
+    /// `Docs/iOS-Quick-Start.md`. About's Resources and the Research tab's Quick Start row open it.
+    static let iosQuickStart = "https://frusexplorer.app/quick-start-ios"
+    /// The Mac quick start, the page written from `Docs/macOS-Quick-Start.md`: About and Help open it.
+    static let macQuickStart = "https://frusexplorer.app/quick-start-mac"
 
     // The on-device model's open-source row (B4): Google's model card, which states its licence.
     // The two Gemma Terms links it replaced went with the 300m, whose terms needed them.
@@ -97,6 +96,7 @@ enum AboutLinks {
 ///          because the Settings detail column has no back button of its own.
 ///   1.5 — 2026-11-03: the platform's quick start above its manual in Resources.
 ///   1.6 — L17 (#1917, ASR-2): Legal links the privacy policy and the support page.
+///   1.7 — 2026-11-20, for 1.0 (1861): the quick starts open the website's pages, not GitHub's.
 struct AboutView: View {
 
     @Environment(AppState.self) private var appState
@@ -419,7 +419,7 @@ challenges and the United States's role in the world.
         Section(String(localized: "about.resources.header",
                        defaultValue: "Resources")) {
             researchGuideRow
-            // The platform's quick start and user manual — rendered Markdown on GitHub.
+            // The platform's quick start, the website's page, and its user manual, Markdown on GitHub.
             #if os(macOS)
             resourceLink(String(localized: "about.resources.quickStart.mac", defaultValue: "macOS Quick Start"),
                          urlString: AboutLinks.macQuickStart, systemImage: "list.number")
