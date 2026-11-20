@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import SwiftUI
 import Testing
 @testable import FRUSExplorer
 
@@ -279,21 +280,49 @@ struct ResearchRailInfoItemsTests {
     /// popover registers nothing a unit test can measure, so this pins the construct, in order: the
     /// plain stack FIRST, so a popover asked for its ideal size still hugs it, and the scroll view
     /// only as the fallback. Swapping them, or dropping either, keeps every other test here green.
-    @Test("On iOS the info popover scrolls when it is shorter than its rows, and only then")
+    /// Since 2026-11-20 the construct is `InfoPopoverScrolling`'s, and the Mac uses it too, inside a
+    /// layout that caps its height: a long Mac popover ran off the screen with nothing to scroll.
+    @Test("The info popover scrolls when it is shorter than its rows, and only then, on iOS and the Mac")
     func shortPopoverScrolls() throws {
         let theme = try String(contentsOf: Self.root.appending(path: "FRUSExplorer/Theme/FRUSTheme.swift"),
                                encoding: .utf8)
-        let button = try #require(Self.body(openedBy: "struct FeatureInfoButton<Footer: View>: View {", in: theme),
-                                  "`FeatureInfoButton` not found — was it renamed?")
-        let code = button.components(separatedBy: "\n")
-            .map { $0.components(separatedBy: "//").first ?? $0 }
-            .joined(separator: " ")
-            .split(whereSeparator: \.isWhitespace)
-            .joined(separator: " ")
-        #expect(code.contains(
-            "#if os(iOS) ViewThatFits(in: .vertical) { explanation ScrollView { explanation } .scrollBounceBehavior(.basedOnSize) } #else explanation #endif"))
-        #expect(code.components(separatedBy: "ScrollView").count == 2, "exactly one scroll view, the fallback")
+        func code(openedBy opener: String) throws -> String {
+            let body = try #require(Self.body(openedBy: opener, in: theme), "`\(opener)` not found — was it renamed?")
+            return body.components(separatedBy: "\n")
+                .map { $0.components(separatedBy: "//").first ?? $0 }
+                .joined(separator: " ")
+                .split(whereSeparator: \.isWhitespace)
+                .joined(separator: " ")
+        }
+        let button = try code(openedBy: "struct FeatureInfoButton<Footer: View>: View {")
+        #expect(button.contains(".popover(isPresented: $isPresented, arrowEdge: .top) { InfoPopoverScrolling { explanation } }"))
+        #expect(!button.contains("ScrollView"), "a scroll view of the button's own would scroll every popover")
+        let scrolling = try code(openedBy: "struct InfoPopoverScrolling<Content: View>: View {")
+        #expect(scrolling.contains(
+            "ViewThatFits(in: .vertical) { content ScrollView { content } .scrollBounceBehavior(.basedOnSize) }"))
+        #expect(scrolling.contains(
+            "#if os(iOS) fitting #else CappedHeightLayout(maxHeight: Self.macMaximumHeight) { fitting } #endif"))
+        #expect(scrolling.components(separatedBy: "ScrollView").count == 2, "exactly one scroll view, the fallback")
     }
+
+    #if canImport(UIKit)
+    /// The Mac's cap, as a layout: content shorter than the cap keeps its height, so a short popover still
+    /// hugs its rows, and taller content is laid out at the cap, where the `ViewThatFits` inside it falls
+    /// through to its scroll view. Measured through a hosting controller, so the layout's own arithmetic is
+    /// what is tested; the layout is the same on every platform, though only the Mac's popovers use it.
+    @Test("The capped layout keeps a short content's height and caps a tall one's")
+    @MainActor
+    func cappedLayoutCapsOnlyTallContent() {
+        func height(of content: CGFloat) -> CGFloat {
+            let host = UIHostingController(rootView: CappedHeightLayout(maxHeight: 200) {
+                Color.clear.frame(width: 100, height: content)
+            })
+            return host.sizeThatFits(in: CGSize(width: 360, height: 10_000)).height
+        }
+        #expect(height(of: 120) == 120)
+        #expect(height(of: 500) == 200)
+    }
+    #endif
 
     // MARK: - The scan itself
 
