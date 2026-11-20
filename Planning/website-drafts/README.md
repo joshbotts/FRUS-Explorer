@@ -31,13 +31,35 @@ bundle's figures are 1812's, since its two regenerated files differ only in thei
 stamp. **Owed by the owner after the merge:** paste `paste/quick-start-ios.txt` and
 `quick-start-mac.txt` again; the tour's images load from GitHub and change with the merge.
 
+**Read against 1.0 (1861) on 2026-11-20** (decision 101, the plan of record's §3), the build
+submitted to App Review that day (`08e8bac8`, tagged `1.0-release`), after #1956 to #1960 had
+changed it since R5's reading. Every figure recounts the same: the bundle and the two Swift files
+the recount reads did not change after `75364cec`. Every page sentence holds against the five
+changes but four, which changed on the owner's word that day:
+- **Home and the tour say the app is in App Store review**, where they said final testing; Home's
+  *When can I get it?* had said "in final testing before App Store review".
+- **Support and Privacy are their plain-language texts.** The two drafts were folded into
+  `Docs/Support.md` and `Docs/Privacy-Policy.md` and removed from this folder. Support left out
+  its *In testing* line, so it does not change on release day. Privacy is dated November 20, 2026,
+  and gains a paragraph on the app's own website: Squarespace, which hosts it, counts visits for
+  the developer, and the site sets no analytics cookies. That last sentence holds only once the
+  site's non-essential cookies are set to Restrict (`Squarespace-Entry.md`, *What changed*).
+- **Step 14's Editors' Annotations crop** was re-cut from a retake: the axis's opening sentence is
+  the owner's EditableContent review's (#1959).
+- **Steps 19 and 20 have screens**, captured from 1.0 (1861) on the iPad simulator on the owner's
+  word (`Docs/screenshots/README.md`, the sitting's entry).
+
+Read and found to hold: the iPad's rail, a column of its own since R6a, which looks as the
+inspector did (the owner's word of 2026-11-20); the Mac's exports, which still go only where they
+are saved; the quick starts' links, already the site's. The reading level was measured again
+(*What the drafts already follow*, below). **Owed by the owner after the merge:** restrict the
+site's cookies, then paste six blocks again (`Squarespace-Entry.md`, *What changed*).
+
 ## What is here
 
 | File | What it is | What it becomes |
 |---|---|---|
-| `page-drafts.html` | The review sheet: the home page, and the Support and Privacy drafts as `Scripts/build_website_pages.py` renders them, each shown in a site frame, with the publishing steps, the reading levels and the app's terms. A switch at the top shows the coming-soon or the launch version. | The home page at `frusexplorer.app/`, built in Squarespace from its text |
-| `Support-draft.md` | A plain-language draft of `Docs/Support.md` | The body of `Docs/Support.md`, after review |
-| `Privacy-Policy-draft.md` | A plain-language draft of `Docs/Privacy-Policy.md` | The body of `Docs/Privacy-Policy.md`, after review |
+| `page-drafts.html` | The review sheet: the home page, and Support and Privacy as `Scripts/build_website_pages.py` renders them from `Docs/`, each shown in a site frame, with the publishing steps, the reading levels and the app's terms. A switch at the top shows the coming-soon or the launch version. Until 2026-11-20 its Support and Privacy frames showed the plain-language drafts, `Support-draft.md` and `Privacy-Policy-draft.md`, which were folded into `Docs/` that day and removed | The home page at `frusexplorer.app/`, built in Squarespace from its text |
 | `Home-draft.md`, `Tour-draft.md` | Editing copies of the home page's and the tour's words, with layout left out. No build reads them: a session folds the owner's edits back into `site-src/home.html` and `tour/tour.html`. The owner edits the copies in iCloud Drive, in the *2026-06-30 FRUS Explorer Build 26 screenshots* folder | Nothing; the HTML is the source |
 | `Revisions-proposed-2026-11-06.md` | What 2026-11-06's work changed in the app, and the revisions it led to (applied; its screens are still owed) | Nothing |
 | `tour/tour.html`, `tour/img/` | The tour: 20 steps in five parts, after a section on the editors' work, with production notes for each screen | The page at `frusexplorer.app/tour`, which the home page links to four times; pasted as `paste/tour-block-1.txt` and `-2.txt`, whose screens load from `tour/img/` on GitHub |
@@ -82,8 +104,8 @@ change as an edit to a native block. On release day:
   Apple's official App Store badge, linked to the listing, and switches its kicker, lead, price
   answer and contact section to their launch wording: pasted, that is `paste/home-launch.txt`
   over the block, once it holds the listing's address;
-- Support, once its plain-language draft is folded in, loses its **Coming soon** line (delete it in
-  `Docs/Support.md`, run both scripts, paste the HTML); the copy of record as it stands has none;
+- Support does not change: its plain-language text was folded in on 2026-11-20 without the draft's
+  coming-soon line;
 - the tour drops its coming-soon line, a small block of its own that is deleted, and its closing
   section changes from the help address to *Get the app*: `paste/tour-closing-launch.txt` over that
   block. Its two large blocks hold neither, so they are not pasted again;
@@ -93,12 +115,14 @@ The banner is a section, not Squarespace's Announcement Bar: the site is on the 
 Squarespace includes the bar from the Core plan up (its help centre says a feature the plan lacks
 can still show to the owner while logged in, and not to visitors).
 
-The banner on the home page and the tour reads "FRUS Explorer is in final testing for iPhone, iPad
-and Mac. It is not yet on the App Store." The site went live on 2026-11-15, before the submission,
-and the earlier "has been submitted" and "Coming soon to the App Store" were not true of it; on the
-owner's word that day the pages say what is true now, and need no change until App Review approves.
-Only "will be free" still assumes approval. The same day the home page's headline became
-"Research 165 years of U.S. diplomatic history.", and 553 moved into its opening paragraph.
+The banner on the home page and the tour reads "FRUS Explorer is in App Store review for iPhone,
+iPad and Mac. It is not yet on the App Store." The site went live on 2026-11-15, before the
+submission, and the earlier "has been submitted" and "Coming soon to the App Store" were not true of
+it; on the owner's word that day the pages said the app was in final testing. 1.0 (1861) was
+submitted on 2026-11-20, and on the owner's word that day they say it is in App Store review, which
+holds however long review takes. Only "will be free" still assumes approval. On 2026-11-15 the home
+page's headline became "Research 165 years of U.S. diplomatic history.", and 553 moved into its
+opening paragraph.
 
 ## What the drafts already follow
 
@@ -128,6 +152,25 @@ Only "will be free" still assumes approval. The same day the home page's headlin
 
   "Before" is the copy of record at `v2` `1c18b51` for Support and Privacy, and the tour as it stood on
   2026-10-17. Most blocks still above 9.5 hold a web address, a menu path or a long feature name.
+
+  **Measured again on 2026-11-20**, on the pages as this pass leaves them, by the same rule but with
+  syllables from macOS's own English hyphenation dictionary (CoreFoundation's, the only one on this
+  Mac), and each page's grade the mean of its blocks' grades. The 2026-10-27 dictionary is not known,
+  so the two tables are compared within a column, not across: this one reads the 2026-10-27 texts at
+  8.1 and 10.2 (Support and Privacy before) and 6.1 and 7.2 (their drafts). The script is not
+  committed; it is kept with the session notes of the plan of record's session.
+
+  | Page | 2026-11-20 |
+  |---|---|
+  | Home | 8.7, coming soon and at launch (8.5 on 2026-11-06's text) |
+  | Tour | 8.0 coming soon, 8.1 at launch (8.3 on 2026-11-06's text) |
+  | Support | 6.1, folded, where the text it replaced read 7.8 |
+  | Privacy | 7.2, folded, where the text it replaced read 10.2 |
+  | Quick starts | 6.9 iPad and iPhone, 7.3 Mac |
+
+  Every page is now at grade 8 to 9 or under it. The blocks still above 9.5 are, as before, those
+  holding an address, a menu path or a long feature name, and on Home the editors' paragraph and the
+  hero's disclaimer, whose wording is the owner's.
 - **Support and Privacy claim what the copies of record claim**, and no more. Support adds the
   coming-soon line and one sentence saying what TEI is; that sentence needs a row in
   `Docs/Website/README.md`.
@@ -150,7 +193,7 @@ Only "will be free" still assumes approval. The same day the home page's headlin
   re-cut again (steps 1, 2, 3, 5, 8 and 9: classification chips, the Editors' Annotations door, the
   288-volume line), and steps 14 and 18 gained screens (the Editors' Annotations matrix, Research ▸
   History). Step 13 gained the map film, re-rendered from build 51's layout (`tour/img/map-film.mp4`; rebuild it
-  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip. Steps 3 and 8 (`truman.jpg`, `browse.jpg`) were re-cut on 2026-11-10 from sitting T1's retakes for 1.0 (1812), at their old crops' box: the Editors' Annotations door is now the grid's *Annotations* tile, between Editors and Archives (#1884). Step 14's second screen (`annotations.jpg`) was read beside T1's retake the same day and not re-cut: its crop holds *Who is named* and the first two rows of *Where it came from*, where neither #1868's two new labels nor #1874's sixteenth row shows. No other change since 2026-11-06 reaches a screen the tour shows.
+  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip. Steps 3 and 8 (`truman.jpg`, `browse.jpg`) were re-cut on 2026-11-10 from sitting T1's retakes for 1.0 (1812), at their old crops' box: the Editors' Annotations door is now the grid's *Annotations* tile, between Editors and Archives (#1884). Step 14's second screen (`annotations.jpg`) was read beside T1's retake the same day and not re-cut: its crop holds *Who is named* and the first two rows of *Where it came from*, where neither #1868's two new labels nor #1874's sixteenth row shows. No other change since 2026-11-06 reaches a screen the tour shows. *On 2026-11-20, read against 1.0 (1861): `annotations.jpg` was re-cut at its old box (1240, 236, 1511 × 1827) from a retake, since the owner's EditableContent review (#1959) reworded the axis's opening sentence, the only text in the crop that moved; steps 19 and 20 gained their screens (`batch.jpg`, `corrected.jpg`), on the owner's word that the session capture. Every other crop holds: R6a's rail column looks as the inspector did, and no other string #1956 to #1960 changed shows in a crop. Step 15 is still a text slip.*
 - **The claims.** Read on 2026-11-10 against 1.0 (1812): every on-screen label the tour names is in
   the source as written; the user-facing strings that changed since the drafts' revision of
   2026-11-06 are Editors' Annotations', with the Research Guide's page on excisions (#1868, #1873,
@@ -174,14 +217,16 @@ Only "will be free" still assumes approval. The same day the home page's headlin
 - **The kit's rules.** Read each page against the launch kit's §6 checklist.
 - **The copies of record.** Fold the Support and Privacy drafts in, run
   `python3 Scripts/build_website_pages.py` and `python3 Planning/website-drafts/build_paste.py`,
-  check that each one's `--check` passes, and add the TEI row. Not done: the fold waits for the
-  owner's word on the two drafts, and until then the site carries the copies of record.
+  check that each one's `--check` passes, and add the TEI row. *Done on 2026-11-20, on the owner's
+  word ("Fold both"), with the TEI row and the new website paragraph's row in
+  `Docs/Website/README.md`.*
 - **The owner's call.** Whether the home page and the tour stay drafts here or become copies of record
   under `Docs/Website/`, with a trace for each factual sentence as decision 36 asks of the other two.
   While the tour is published from here, its pasted blocks load their screens from `tour/img/` on
   GitHub at the default branch's head: moving this folder breaks them until the blocks are made and
   pasted again.
 - **The reading level.** Not measured again after 2026-11-06's revisions or 2026-11-10's few words.
+  *Measured on 2026-11-20 (What the drafts already follow, above).*
 - **On the site itself.** Nothing in `Squarespace-Entry.md` was tried in Squarespace, whose site
   answers 401 to everyone but its owner: what it says of the editor is from Squarespace's help
   centre, read 2026-11-10. The pasted tour was checked in the preview's shell at 1280 and 375

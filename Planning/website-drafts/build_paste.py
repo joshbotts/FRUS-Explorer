@@ -30,7 +30,8 @@ and Squarespace-Entry.md walks the owner through both:
                                                  and the same page block by block for native
                                                  blocks (site-src/home.html), the tour's native
                                                  sections, the site footer and the fingerprints
-    page-drafts.html            (review sheet)   its Support and Privacy frames, from the drafts
+    page-drafts.html            (review sheet)   its Support and Privacy frames, from Docs/ (the
+                                                 plain-language drafts were folded in on 2026-11-20)
 
 The tour's two blocks are tour/tour.html made static, since the page as drafted needs a script:
   - its stylesheet is scoped to a wrapper, `.frus-tour`, light only, with what the site's own
@@ -61,7 +62,7 @@ Stdlib only, macOS's bundled python3 (3.9), no pip. Run from anywhere:
     python3 Planning/website-drafts/build_paste.py           # rewrite whatever is out of step
     python3 Planning/website-drafts/build_paste.py --check   # exit 1 if anything is
 Run it after any change to a page's source: Docs/Support.md, Docs/Privacy-Policy.md or a quick
-start (after Scripts/build_website_pages.py), site-src/home.html, tour/tour.html, or a draft.
+start (after Scripts/build_website_pages.py), site-src/home.html or tour/tour.html.
 """
 
 import hashlib
@@ -867,40 +868,40 @@ def kit_chapter(pastes):
     return "\n".join(rows) + "\n"
 
 
-# ---- The review sheet's two frames, from the drafts
+# ---- The review sheet's two frames, from the copies of record
+#
+# Until 2026-11-20 these frames showed the plain-language drafts, Support-draft.md and
+# Privacy-Policy-draft.md, and the Markdown under each was what would replace its copy of record.
+# On the owner's word that day the drafts were folded into Docs/Support.md and
+# Docs/Privacy-Policy.md (each under its own header comment) and removed, so the frames now show
+# the copies of record, the text the site carries.
 
-def sheet_frame(draft, prefix):
-    """A draft as page-drafts.html shows it: the repository script's HTML, with its headings'
-    ids kept apart from the sheet's own and its links pointed within the sheet."""
-    source = "Planning/website-drafts/" + draft
-    out = bwp.body((HERE / draft).read_text(encoding="utf-8"), source)
+def sheet_frame(record, prefix):
+    """A copy of record as page-drafts.html shows it: the repository script's HTML, with its
+    headings' ids kept apart from the sheet's own and its links pointed within the sheet."""
+    out = bwp.body((REPO / record).read_text(encoding="utf-8"), record)
     out = out.replace('<h2 id="', '<h2 id="{}-'.format(prefix))
     out = out.replace('href="#', 'href="#{}-'.format(prefix))
     out = out.replace('href="https://frusexplorer.app/privacy"', 'href="#pg-privacy"')
     out = out.replace('href="https://frusexplorer.app/support"', 'href="#pg-support"')
     out = re.sub(r'href="https://frusexplorer\.app/(quick-start-(?:ios|mac))"',
                  r'href="site/\1.html" target="_blank" rel="noopener"', out)
-    out = re.sub(r'<a href="(https://[^"]+)">', r'<a href="\1" target="_blank" rel="noopener">', out)
-    return out.replace("<p><strong>Coming soon.</strong>",
-                       '<p data-show="soon" class="pg-soonline"><strong>Coming soon.</strong>')
+    return re.sub(r'<a href="(https://[^"]+)">', r'<a href="\1" target="_blank" rel="noopener">', out)
 
 
-def sheet_markdown(draft, record):
-    """What replaces a copy of record when its draft is folded in: the copy's own header comment,
-    then the draft's text."""
-    header = one(r"\A(<!--.*?-->)", (REPO / record).read_text(encoding="utf-8"), "header of " + record)
-    body = re.sub(r"\A<!--.*?-->\s*", "", (HERE / draft).read_text(encoding="utf-8"), flags=re.S)
-    return html.escape(header + "\n\n" + body)
+def sheet_markdown(record):
+    """The copy of record's Markdown, header comment and all, as the sheet shows it."""
+    return html.escape((REPO / record).read_text(encoding="utf-8"))
 
 
 def sheet(text):
-    for key, draft, prefix, record in (("support", "Support-draft.md", "sp", "Docs/Support.md"),
-                                       ("privacy", "Privacy-Policy-draft.md", "pv", "Docs/Privacy-Policy.md")):
+    for key, prefix, record in (("support", "sp", "Docs/Support.md"),
+                                ("privacy", "pv", "Docs/Privacy-Policy.md")):
         frame = re.compile(r'(<section class="work" id="pg-{}".*?<div class="frame-body"><div class="pg-doc">\n)'
                            r"(.*?)(\n        </div></div>)".format(key), re.S)
         source = re.compile(r'(<pre class="src" id="md-{}">)(.*?)(</pre>)'.format(key), re.S)
-        for pattern, value in ((frame, "\n" + sheet_frame(draft, prefix) + "\n"),
-                               (source, sheet_markdown(draft, record))):
+        for pattern, value in ((frame, "\n" + sheet_frame(record, prefix) + "\n"),
+                               (source, sheet_markdown(record))):
             if len(pattern.findall(text)) != 1:
                 raise OutOfShape("page-drafts.html: the {} frame or its Markdown was not found once"
                                  .format(key))

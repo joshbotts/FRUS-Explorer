@@ -20,8 +20,10 @@ top that switches between the coming-soon and launch versions and shows or hides
                                                  a bare page that has none of this preview's styles
     site/quick-start-ios.html   Quick start      from Docs/iOS-Quick-Start.md
     site/quick-start-mac.html   Quick start      from Docs/macOS-Quick-Start.md
-    site/support.html           Support          from Support-draft.md (the plain-language draft)
-    site/privacy.html           Privacy          from Privacy-Policy-draft.md (the same)
+    site/support.html           Support          from Docs/Support.md, the copy of record
+    site/privacy.html           Privacy          from Docs/Privacy-Policy.md (the same); the
+                                                 plain-language drafts these two showed until
+                                                 2026-11-20 were folded into them that day
     site/review.html            The review sheet: figures recounted from the bundle, screens
                                 set against the current captures, and the owner's open calls
 
@@ -105,7 +107,7 @@ SHELL = """<!doctype html>
   <a class="brand" href="index.html"><img src="../tour/img/icon.png" alt="">FRUS Explorer</a>
   <nav class="site-nav" aria-label="Site">{nav}</nav>
 </div></header>
-<div class="soon-strip" data-show="soon"><div class="inner"><b>In testing</b><span>FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.</span></div></div>
+<div class="soon-strip" data-show="soon"><div class="inner"><b>In review</b><span>FRUS Explorer is in App Store review for iPhone, iPad and Mac. It is not yet on the App Store.</span></div></div>
 <main class="site-main"><div class="inner">
 {body}
 </div></main>
@@ -435,11 +437,13 @@ SCREENS = [
      "Now document 16 of frus1952-54v02p1, after #1438, #1481 and #1764, not document 149 of frus1964-68v19; its re-shoot note removed."),
     (13, "map.jpg", "ipad/semantic-map.png", "Build 51's layout and 140 regions. The map film beside it was re-rendered from the same layout on 2026-11-06."),
     (14, "lag.jpg", "ipad/series-production.png", "Same chart, now as the sheet over Research."),
-    (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut. Read on 2026-11-10 beside sitting T1's retake for 1.0 (1812): the crop holds Who is named and the first two rows of Where it came from, where neither #1868's two new labels nor #1874's sixteenth row shows, so it was not re-cut."),
+    (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut. Read on 2026-11-10 beside sitting T1's retake for 1.0 (1812): the crop holds Who is named and the first two rows of Where it came from, where neither #1868's two new labels nor #1874's sixteenth row shows, so it was not re-cut. Re-cut on 2026-11-20 from the website row's retake on 1.0 (1861), at the same box: the axis's opening sentence is the owner's EditableContent review's (#1959), and nothing else in the crop moved."),
     (16, "reader.jpg", "ipad/collections-editor.png", "The preview now opens on the collection's title page and contents."),
     (17, "table.jpg", "macos/analytics-table.png",
      "9,162 documents across 502 volumes became 9,114 across 267: the capture's Mac held 267 volumes."),
     (18, "history.jpg", "ipad/research-history.png", "New on 2026-11-06 from the screens-1861 sitting (#1865): Research ▸ History's right pane, with the slip kept below it."),
+    (19, "batch.jpg", "ipad/citation-batch.png", "New on 2026-11-20, on the owner's word, from 1.0 (1861) on the iPad simulator: Batch over the 25 footnotes of FRUS 1949, vol. I, documents 108 to 148, that cite another FRUS volume, with Needs work first on; the slip stays below it for the three modes."),
+    (20, "corrected.jpg", "ipad/document-change-review.png", "New on 2026-11-20, on the owner's word, from 1.0 (1861) on the iPad simulator: the Long Telegram after Check for Corrections restored a paragraph a hand-edited copy of its volume had dropped, with a highlight made on the shorter text; the slip stays below it."),
 ]
 
 
@@ -483,10 +487,6 @@ def build_review(texts):
             "<tr><td class=num>{}</td><td><div class=shots>{}<figure><img src=\"../tour/img/{}\" alt=\"\" loading=lazy>"
             "<figcaption>now: from <code>{}</code>, committed {}</figcaption></figure></div></td><td>{}</td></tr>".format(
                 step, before, crop, cap, capture_date(cap), change))
-    for step, what in [(19, "Citation Lookup with a pasted chapter of notes"),
-                       (20, "Review… on a corrected volume's highlights")]:
-        shots.append("<tr><td class=num>{}</td><td>No capture yet: {}.</td><td>Capture from the submitted "
-                     "build; Docs/screenshots has nothing for it.</td></tr>".format(step, what))
     try:
         behind = paste_kit().stale()
         kit = ('<span class="st ok">The kit is in step with its sources.</span>' if not behind else
@@ -512,8 +512,8 @@ REVIEW = """<div class="sheet">
   <a href="tour-pasted.html"><b>Tour, as pasted</b><span>/tour · the two Code Blocks of paste/, in this shell</span></a>
   <a href="quick-start-ios.html"><b>Quick start, iPad and iPhone</b><span>/quick-start-ios · Docs/iOS-Quick-Start.md</span></a>
   <a href="quick-start-mac.html"><b>Quick start, Mac</b><span>/quick-start-mac · Docs/macOS-Quick-Start.md</span></a>
-  <a href="support.html"><b>Support</b><span>/support · Support-draft.md</span></a>
-  <a href="privacy.html"><b>Privacy</b><span>/privacy · Privacy-Policy-draft.md</span></a>
+  <a href="support.html"><b>Support</b><span>/support · Docs/Support.md</span></a>
+  <a href="privacy.html"><b>Privacy</b><span>/privacy · Docs/Privacy-Policy.md</span></a>
 </div>
 <p class="sub">To revise: edit the source named on each card (for a quick start, the Markdown in <code>Docs/</code>), then run <code>python3 Planning/website-drafts/build_site.py</code> and reload.</p>
 <p class="sub">To enter them into Squarespace: <code>Planning/website-drafts/Squarespace-Entry.md</code> has the owner's steps, and <code>paste/</code> the twelve files that go into Code Blocks. {kit}</p>
@@ -550,6 +550,7 @@ REVIEW = """<div class="sheet">
   <li><b>Owner's revisions, 2026-11-06:</b> both pages rewritten from the owner's Markdown copies (<code>Home-draft.md</code>, <code>Tour-draft.md</code>): the tour's step titles, Part 0's introduction and notes, the source labels' wording, and steps 6, 9, 16 and 18 restructured. Each new claim was checked against the manuals and the corpus (287 of 553 volumes tag people). Typos fixed; two claims corrected: a cross-reference to a volume not on the device offers the download rather than starting it, and Part II's privacy line names the app, since Apple can pass opted-in analytics to the developer.</li>
   <li><b>Quick starts:</b> as <code>Docs/Website/</code> renders them, unchanged.</li>
   <li><b>Read against 1.0 (1812), 2026-11-10</b>, on the owner's word that build 53 becomes 1.0 (1861) with no further features. <b>Tour:</b> sixteen kinds of annotation, where it said fifteen (#1874); step 14's path, caption and alt text name the Browse grid's Annotations tile (#1884); the map's footnote is 5, where two footnotes were numbered 4; the film's caption no longer names build 51; the closing section's quick-start links are in the source, where this preview patched them in; and the map band's footnote mark takes the band's red (6.7:1, where the page's red was 2.5:1). <b>Home:</b> no word changed. <b>Support and Privacy</b>, the drafts and the copies of record alike: the path to Volumes &amp; Storage names the Library group, and Privacy names the Quick Start on the Research tab among the links the built-in browser opens (#1848), with its date. Every figure recounts the same; section 2 now recounts 288 and sixteen as well. New: <code>build_paste.py</code>, <code>paste/</code>, <code>Squarespace-Entry.md</code> and <a href="tour-pasted.html">the tour as it is pasted</a>. The same day, on the owner's question, both quick starts were read against the build (their notice names build 1861; they name Editors’ Annotations where they list the ways to browse), and on the owner's request the home page became one Code Block in two versions, <a href="home-pasted.html">shown as pasted</a>, and then the tour's coming-soon line, its closing section and the site's footer became Code Blocks too, so that the film's Video block is the only thing entered that is not a paste.</li>
+  <li><b>Read against 1.0 (1861), 2026-11-20</b>, the build submitted to App Review that day (<code>08e8bac8</code>), after #1956 to #1960. Every figure recounts the same: the bundle and the two Swift files the recount reads did not change after R5. <b>Home and the tour:</b> on the owner's word, the coming-soon lines say the app is in App Store review, where they said final testing, and Home's “When can I get it?” no longer says “before App Store review”. <b>Tour:</b> step 14's Editors’ Annotations crop re-cut from a retake, for the axis's sentence the owner's review reworded (#1959); steps 19 and 20 have their screens, captured on the owner's word. <b>Support and Privacy:</b> the plain-language drafts folded into the copies of record on the owner's word, Support without its In testing line; Privacy gains the owner's paragraph on the app's own website, dated November 20, 2026. Every other page sentence holds against #1956 to #1960: the iPad rail is still beside the text (a column now, which looks as the inspector did), the Mac's exports still go only where they are saved, and the quick starts' links were already the site's.</li>
 </ul>
 </section>
 
@@ -570,11 +571,9 @@ REVIEW = """<div class="sheet">
 <h2><span class="n">6</span>Your calls</h2>
 <ol class="calls">
   <li><b>The quick-start addresses.</b> <code>/quick-start-ios</code> and <code>/quick-start-mac</code> are still proposals (<code>Docs/Website/README.md</code>).</li>
-  <li><b>“Will be free”</b> on Home and the tour assumes approval; App Review decides. Since 2026-11-15 the pages say the app is in final testing and not yet on the App Store, which stays true however long review takes.</li>
+  <li><b>“Will be free”</b> on Home and the tour assumes approval; App Review decides. Since 2026-11-20, the day 1.0 (1861) was submitted, the pages say the app is in App Store review and not yet on the App Store, which stays true however long review takes (from 2026-11-15 they said final testing).</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
-  <li><b>Folding the Support and Privacy drafts</b> into <code>Docs/</code>: then <code>Scripts/build_website_pages.py</code>, its <code>--check</code>, and the TEI sentence's row in the README.</li>
-  <li><b>The tour's remaining screens</b>: steps 19 and 20 have no capture, and step 15 is a text slip.</li>
-  <li><b>The day the site goes public.</b> App Review opens <code>/privacy</code> and <code>/support</code>, and the coming-soon lines say the app has been submitted: the day 1.0 (1861) is submitted makes both true.</li>
+  <li><b>The tour's remaining slip</b>: step 15 is still a text slip; steps 19 and 20 have their captures since 2026-11-20.</li>
   <li><b>The app's App Store address, on release day.</b> <code>paste/home-launch.txt</code> waits for it: <code>APP_STORE_URL</code> in <code>build_paste.py</code>. Until it is set the file says NOT READY, on its first line and on the page.</li>
   <li><b>Where the pasted tour's screens live.</b> Its blocks load them from <code>Planning/website-drafts/tour/img/</code> on GitHub, so the folder stays where it is while they are published, or the blocks are made and pasted again.</li>
 </ol>
@@ -614,20 +613,21 @@ def build():
         body = rv + switch + "\n" + bwp.GUIDE_STYLE + "\n" + markdown_page(source, " wide frus-quick-start")
         texts["Quick start, " + label] = page(file, title, body)
     texts["Support"] = page("support.html", "FRUS Explorer Support", note("Support", [
-        "<b>Source:</b> <code>Planning/website-drafts/Support-draft.md</code>, the plain-language draft "
-        "(grade 6.9 against the copy of record's 8.1).",
-        "<b>Revised 2026-11-03:</b> the quick starts' links and sentences folded in from the copy of record.",
-        "The <b>Coming soon</b> paragraph is in the Markdown itself; it comes out on release day, so it shows "
-        "in both versions of this preview.",
-        "One sentence is new against the copy of record: what TEI is. It needs a row in "
-        "<code>Docs/Website/README.md</code>.",
-    ]) + markdown_page("Planning/website-drafts/Support-draft.md"))
+        "<b>Source:</b> <code>Docs/Support.md</code>, the copy of record, rendered by "
+        "<code>Scripts/build_website_pages.py</code>; <code>Docs/Website/support.html</code> is its paste.",
+        "<b>Folded 2026-11-20</b>, on the owner's word: the plain-language draft became the copy of record, "
+        "without its <i>In testing</i> line, so nothing on this page changes on release day. Grade 6.0 by "
+        "that day's measure, where the text it replaced read 7.8. The sentence on what TEI is has its row "
+        "in <code>Docs/Website/README.md</code>.",
+    ]) + markdown_page("Docs/Support.md"))
     texts["Privacy"] = page("privacy.html", "FRUS Explorer Privacy Policy", note("Privacy", [
-        "<b>Source:</b> <code>Planning/website-drafts/Privacy-Policy-draft.md</code>, the plain-language draft "
-        "(grade 8.5 against 9.7).",
-        "The copy of record has not changed since the draft's base, so every claim is still traced in "
-        "<code>Docs/Website/README.md</code>.",
-    ]) + markdown_page("Planning/website-drafts/Privacy-Policy-draft.md"))
+        "<b>Source:</b> <code>Docs/Privacy-Policy.md</code>, the copy of record, rendered by "
+        "<code>Scripts/build_website_pages.py</code>; <code>Docs/Website/privacy.html</code> is its paste.",
+        "<b>Folded 2026-11-20</b>, on the owner's word: the plain-language draft became the copy of record, "
+        "with its date and one paragraph the owner approved that day on the app's own website (Squarespace "
+        "counts page visits; the site sets no analytics cookies). Grade 7.2 by that day's measure, where "
+        "the text it replaced read 10.2. Every claim is traced in <code>Docs/Website/README.md</code>.",
+    ]) + markdown_page("Docs/Privacy-Policy.md"))
     build_review(texts)
     (OUT / "build-stamp.txt").write_text(str(time.time_ns()), encoding="utf-8")
 
@@ -635,7 +635,7 @@ def build():
 # The files a build reads. A change to any of them rebuilds; a change to this script or to
 # Scripts/build_website_pages.py needs --watch restarted, since the running code is already loaded.
 def sources():
-    files = [HERE / "Support-draft.md", HERE / "Privacy-Policy-draft.md", HERE / "tour" / "tour.html",
+    files = [REPO / "Docs" / "Support.md", REPO / "Docs" / "Privacy-Policy.md", HERE / "tour" / "tour.html",
              REPO / "Docs" / "iOS-Quick-Start.md", REPO / "Docs" / "macOS-Quick-Start.md"]
     files += sorted(SRC.glob("*")) + sorted((HERE / "tour" / "img").glob("*"))
     return files

@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint f6d1ee65 -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint 3b5ce46c -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -337,6 +337,11 @@
             <p class="prov"><span class="pk ed">From the editors</span><span>Lookup reads the volume titles, document numbers and page breaks of the Office's editions. In the pre-1955 volumes, document numbers were added to the digital editions, and the app says so when it uses one.</span></p>
           </div>
         </div>
+        <div class="stack">
+          <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/batch.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Batch results, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/batch.jpg" width="900" height="1021" alt="Citation Lookup's Batch results on iPad: 25 citations, 17 resolved, 5 ambiguous, 1 best guess and 2 unresolved, with Needs work first on, so the two footnotes with no match, the best guess and those with two or three possible documents are listed first" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. Batch checks the 25 footnotes in one chapter of a 1949 volume that cite another volume, and lists first the ones that need work.</figcaption>
+          </figure>
         <figure>
           <div class="slip">
             <p class="sc">Citation Lookup · three ways in</p>
@@ -350,6 +355,7 @@
           </div>
           <figcaption><span class="sn">Source</span>The app's modes and result labels, set as text.</figcaption>
         </figure>
+        </div>
       </article>
 
       <article class="entry side" id="e-fix">
@@ -364,6 +370,11 @@
             <p class="prov"><span class="pk ed">From the editors</span><span>The corrections are the Office's. The app shows what changed and leaves every decision to you.</span></p>
           </div>
         </div>
+        <div class="stack">
+          <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/corrected.jpg" target="_blank" rel="noopener" aria-label="Enlarge the review sheet, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/corrected.jpg" width="900" height="1007" alt="The review sheet on iPad for the Long Telegram: under What Changed, The text of this document changed in a volume update, with Mark Reviewed; under Highlights, a highlight made against an earlier version of the text, its words shown in their new context and found once at a new position in the corrected text, with Move Here, Confirm and Remove…" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. After a correction, the review sheet shows where a highlight's words now are, and moves it only when you choose Move Here.</figcaption>
+          </figure>
         <figure>
           <div class="slip">
             <p class="sc">On a corrected document</p>
@@ -374,6 +385,7 @@
           </div>
           <figcaption><span class="sn">Source</span>The app's own banner and actions, set as text.</figcaption>
         </figure>
+        </div>
       </article>
     </div>
   </div>

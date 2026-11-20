@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, coming-soon version · fingerprint 4b2e6134 -->
+<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, coming-soon version · fingerprint a4e78a81 -->
 <style>
 .frus-home { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #5F5F67; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #22705F; --ok: #2F6B3A; --warn: #8A5300; --bad: #A61C2A; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; color-scheme: light; }
 .frus-home { font-family: var(--serif); font-size: 17px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -53,13 +53,13 @@
 </style>
 <div class="frus-home">
 
-<div class="pg-banner"><b>In testing</b><span>FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.</span></div>
+<div class="pg-banner"><b>In review</b><span>FRUS Explorer is in App Store review for iPhone, iPad and Mac. It is not yet on the App Store.</span></div>
 
 <section class="pg-hero">
   <img class="pg-icon" src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/app-icon.png" alt="" width="88" height="88">
   <p class="pg-kick">Free · iPhone, iPad and Mac</p>
   <h1>Research 165 years of U.S. diplomatic history.</h1>
-  <p class="pg-lead">FRUS Explorer is a free research app for iPhone, iPad and Mac, now in final testing. It puts all 553 volumes of the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
+  <p class="pg-lead">FRUS Explorer is a free research app for iPhone, iPad and Mac, now in App Store review. It puts all 553 volumes of the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
   <div class="pg-cta"><span class="pg-btn soon">Not yet on the App Store</span><a href="/tour">Take the tour</a><span class="pg-qs">Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span></div>
   <p class="pg-disc">FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State.</p>
 </section>
@@ -105,7 +105,7 @@
     <dt>Is this an official government app?</dt>
     <dd>No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.</dd>
     <dt>When can I get it?</dt>
-    <dd>It is in final testing before App Store review. This page will link to the App Store as soon as the app is there.</dd>
+    <dd>It is in App Store review. This page will link to the App Store as soon as the app is there.</dd>
     <dt>What does it cost?</dt>
     <dd>It will be free.</dd>
     <dt>What do I need?</dt>

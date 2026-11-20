@@ -1662,6 +1662,50 @@ in both manuals from the bundled files (#1762).
     build; `5ED7E25B` holds its own library at 75; `6F46E6FA` holds no FRUS Explorer; `A913C7F8` holds T2's
     build quit on Add Volumes. The pre-T2 containers, the build, the raw, erased and old frames, the bursts
     and the two clones are under `~/Library/Caches/FRUS-Explorer/t2/` until the owner says.
+- **W1 — run 2026-11-20, 15:34 to 16:06 (Eastern), on the iPad; the website row's captures for 1.0 (1861)
+  (decision 101).** The owner chose that the session captures ("You capture all three"): one retake whose text the
+  owner's EditableContent review moved (#1959), and the two new frames the tour's steps 19 and 20 had waited for.
+  Built from `cdae89ff` (1.0 (1861)'s tree but for records): T2's recipe, the `AppStore` configuration for the
+  simulator under `Scripts/heavy.sh` (15:30:38 to 15:33:55), S1's local-only banner patch applied for the build and
+  reverted as it ended; CFBundleVersion 1861. Scripts: T2's, copied to `~/Library/Caches/FRUS-Explorer/web1/`. The
+  heavy-job lock was held for the whole sitting.
+  - **The iPad, S1's `3D2607D9` under iOS 27.0**: its container cloned to `web1/pre-web1/` first, then
+    `t2/snapshot-75` restored into it (T2's library at index version 75); landscape; the demo status bar; every
+    launch with `-hasCompletedOnboarding 1 -FRUSScreenshotHideSyncBanner YES`. Driven through the simulator tool,
+    each frame `simctl io … screenshot` with S1's time-erase script unchanged (SHA-256 `58d052de…`, every changed
+    pixel inside the box).
+  - **Retaken (1)**: `browse-annotations` (Browse ▸ Annotations, as T2's): against T2's frame, 22,722 pixels
+    differ, all in one box (x 1322–2666, y 309–395), the axis's opening sentence, which #1959 reworded. The tour's
+    `annotations.jpg` was re-cut from it at its old box, found by `findcrop.py` in both earlier captures
+    (1240, 236, 1511 × 1827), 900 × 1088, T2's encoding.
+  - **New (2)**:
+    - `citation-batch` (Search ▸ ••• ▸ Find by citation ▸ Batch): the 25 footnotes of *FRUS* 1949, vol. I,
+      documents 108 to 148 (one compilation), that cite another *FRUS* volume, numbered 1 to 25 and pasted whole;
+      *25 citations · 17 resolved · 5 ambiguous · 1 best guess · 2 unresolved*, with **Needs work first** on. The
+      tour's `batch.jpg` is the sheet, less its left 32 px, where a fragment of the Home Screen's icon showed in
+      the rounded corner (828, 392, 1128 × 1280), 900 × 1021.
+    - `document-change-review` (the Long Telegram's review sheet after a change): no volume has been corrected
+      since the library was indexed, so copies of `frus1946v06.xml` were edited by hand and the volume re-indexed
+      from them (Settings ▸ Volumes & Storage ▸ Show all ▸ Re-index), which stamps a change as an update does. The
+      highlight on Part 1's item (b) was made on a copy with *still* left out of item (a) (blob `0b32a860`); the
+      copy indexed after it (blob `ccfb2264`) has *still* and lacks *particularly in view of recent events,* from
+      the paragraph before Part 1. The sheet: *The text of this document changed in a volume update. Some
+      highlights may be misaligned.*, the passage in its new context, *Found once, at a new position in the
+      corrected text*, and Move Here, Confirm and Remove…. The tour's `corrected.jpg` is the sheet at full width,
+      cut above the reader's next line behind its lower corners (796, 372, 1160 × 1298), 900 × 1007.
+  - **Learned on the way** (the sitting's log, `web1/sitting.log`): a first cycle restored GitHub's copy through
+    Check for Corrections ▸ Update, with the banner and an amber highlight as the tour says, but its highlight was
+    33 characters and the sheet offered no Move Here: the re-anchor does not look for a passage under 40 UTF-16
+    units (`HighlightReanchor.minimumPassageLength`), *Too short to look for*. A second cycle's update was
+    stamped changed and reviewed in the same second: the synced review ledger held the first cycle's Mark
+    Reviewed for that same text and change (`applyAnnotationReviews`, by content hash and change kind), as
+    designed. So the frame's corrected text is one no review had seen. The two updates fetched GitHub's
+    copy (`728cd5b9`, the live blob's), and the container was put back afterwards, so no edited copy is left on
+    the device.
+  - **Left**: no simulator is booted. `3D2607D9` holds its pre-W1 container again (every file and size match the
+    clone) and this sitting's 1.0 (1861) build; its status bar override is cleared. The build, the raw, erased
+    and old frames, the edited volumes and the clone are under `~/Library/Caches/FRUS-Explorer/web1/` until the
+    owner says.
 
 ### Found by T2 — for the owner
 

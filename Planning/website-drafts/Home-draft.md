@@ -15,7 +15,7 @@
 > - **Checked 2026-11-10 against 1.0 (1812)**, which the owner expects to ship as 1.0 (1861) with no further features: no sentence changed. 553 volumes, 3.3 GB and the system requirement recount the same, and the door to Editors’ Annotations, now the Browse grid's Annotations tile (#1884), is still “Browse lays out each kind of annotation”.
 > - **Owner's call:** “It will be free” assumes approval; App Review decides.
 
-**[Coming soon] Banner:** **In testing** — FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store.
+**[Coming soon] Banner:** **In review** — FRUS Explorer is in App Store review for iPhone, iPad and Mac. It is not yet on the App Store.
 
 ---
 
@@ -25,7 +25,7 @@
 
 # Research 165 years of U.S. diplomatic history.
 
-**[Coming soon]** FRUS Explorer is a free research app for iPhone, iPad and Mac, now in final testing. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
+**[Coming soon]** FRUS Explorer is a free research app for iPhone, iPad and Mac, now in App Store review. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 
 **[At launch]** FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.
 
@@ -87,7 +87,7 @@ FRUS Explorer collects no data. What you read, search and write stays with you: 
 No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain.
 
 **[Coming soon] When can I get it?**
-It is in final testing before App Store review. This page will link to the App Store as soon as the app is there.
+It is in App Store review. This page will link to the App Store as soon as the app is there.
 
 **What does it cost?**
 [Coming soon] It will be free.
