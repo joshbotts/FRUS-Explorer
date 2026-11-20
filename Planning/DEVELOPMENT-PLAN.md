@@ -11917,3 +11917,5 @@ So R6b lands no mitigation and no code, and no suite runs on the Duo: `CLAUDE.md
 **Left as found:** the hinge closed at 0°. The library is again 552 of 553: of the 19 volumes moved out for the queues, 16 were downloaded again, each byte for byte the file it replaced, and 3 were copied back. S1's simulator was only read from.
 
 **Opened as #1955** on the owner's word ("Open the PR"), on 2026-11-19, against `v2` at `1f6b51c1`, which had not moved since R6b began, so nothing was merged in. It is docs only and ready for review, with auto-merge off; no CI check runs on it. Its merge is the next row's to record.
+
+**Merged as `10f2fc31`** by the owner on 2026-11-19 at 11:27:44 UTC, four minutes after it opened, auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`e7a99c9f`). R6b's branch was still on `origin` during R6a. Recorded in R6a's entry, below.
