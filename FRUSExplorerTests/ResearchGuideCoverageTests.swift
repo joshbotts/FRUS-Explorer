@@ -90,9 +90,10 @@ struct ResearchGuideCoverageTests {
         // it would have passed on day one and pinned nothing.
         "the research trip packet": ["trip packet", "pull worksheet"],
         // #1577: Search Within These Results, both orders and the swap (lane 7's docs pass, which put the contract on
-        // the guide's narrowing page). The term was zero-hit in the guide, the mirror and both manuals before the
-        // sentence was written; the manuals say "searching within", not "searched within".
-        "searching within a list of results": ["searched within"]
+        // the guide's narrowing page). The owner's review of 2026-11-20 reworded that sentence, and the term with it:
+        // "searched within" was left only in the guide's version history, a comment this test would have passed on,
+        // and "stack the different search modes" was zero-hit everywhere on `v2` before the sentence carried it.
+        "searching within a list of results": ["stack the different search modes"]
     ]
 
     private static func source(_ path: String) throws -> String {

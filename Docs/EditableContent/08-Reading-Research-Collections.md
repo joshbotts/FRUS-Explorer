@@ -1,6 +1,6 @@
 # EditableContent — Reading, Research & Collections (and export method statements)
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
 **In this file:** 325 blocks · no ⚑ wording issues
 
@@ -1191,7 +1191,7 @@ the app's leaf listing. The POL 27 example is the explanation; keep a concrete p
 
 <!-- SOURCE: FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift | grainCaveat | lines: 77–78 | key: archival.export.caveat.grain.v2 -->
 
-Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), or to their category alone when they have no number (POL US-USSR counts under POL), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.
+Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), or to their category alone when they have no number (POL US-USSR counts under POL). A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.
 
 <!-- END SOURCE: archival.export.caveat.grain.v2 -->
 
@@ -1680,7 +1680,7 @@ the National Archives catalog
 #### provenance.partner.ohPeople
 <!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
 
-the Office of the Historian's working data on people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission
+the Office of the Historian's working data for people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission
 
 <!-- END SOURCE: provenance.partner.ohPeople -->
 

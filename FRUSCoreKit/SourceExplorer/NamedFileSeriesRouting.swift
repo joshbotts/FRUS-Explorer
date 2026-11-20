@@ -314,7 +314,7 @@ public enum NamedFileSeriesRouting {
     public static func explainer(seriesName: String) -> String {
         if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
             return String(localized: "source.explorer.namedSeries.explainer.held",
-                          defaultValue: "A file series the citation places with the \(holder), cited without a lot number.")
+                          defaultValue: "A file series the citation attributes generally to the \(holder), cited without a lot number.")
         }
         return String(localized: "source.explorer.namedSeries.explainer",
                       defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation.")
@@ -324,7 +324,7 @@ public enum NamedFileSeriesRouting {
     public static func macNote(seriesName: String) -> String {
         if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
             return String(localized: "source.explorer.namedSeries.note.held",
-                          defaultValue: "A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
+                          defaultValue: "A file series the citation attributes generally to the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
         }
         return String(localized: "source.explorer.namedSeries.note",
                       defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.")

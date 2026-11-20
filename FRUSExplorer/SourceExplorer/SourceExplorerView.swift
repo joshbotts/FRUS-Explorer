@@ -1435,7 +1435,7 @@ struct SourceExplorerView: View {
                 )
             }
             Text(String(localized: "source.explorer.subjectNumeric.cite.note",
-                        defaultValue: "To request the original record from NARA, give them the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box."))
+                        defaultValue: "To request the original record from NARA, you will need the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

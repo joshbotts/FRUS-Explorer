@@ -399,7 +399,7 @@ enum SideloadCatalogueNotice {
     /// The notice: what leaves the volume out, and where it can be reached instead.
     static let detail = String(
         localized: "settings.hub.sideload.notCatalogued.detail",
-        defaultValue: "Volumes added from your own files are not included in features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.")
+        defaultValue: "Volumes added from your own files cannot be used with some features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.")
 
     /// Whether an import of `importedVolumeIds` draws the notice: at least one of them is a volume
     /// citation resolution does not answer for, one `citableVolumeIds` does not hold.

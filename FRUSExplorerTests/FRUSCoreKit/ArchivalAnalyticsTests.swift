@@ -1233,12 +1233,14 @@ struct ArchivalCollectionsDataTests {
 
         let detail = try #require(FeatureInfoButton.archivalAnalytics.items
             .first { $0.title == "The three counts measure different things" }?.detail)
-        #expect(detail.contains("a thousand collections that supplied documents have no pointers"))
+        // The owner's review of 2026-11-20 named the pointers as editorial footnotes in both phrases; the
+        // rounded figures, which this test holds to the indexes, did not change.
+        #expect(detail.contains("a thousand collections that supplied documents have no editorial footnotes pointing to unpublished documents"))
         #expect((950...1_049).contains(documentsNoPointers), """
             \(documentsNoPointers) collections supplied documents and have no pointers. The \
             popover says "a thousand".
             """)
-        #expect(detail.contains("about a hundred and ninety collections appear only under pointers"))
+        #expect(detail.contains("about a hundred and ninety collections appear only under such footnotes"))
         #expect((185...194).contains(pointersNoDocuments), """
             \(pointersNoDocuments) collections are pointed at and supplied no printed document. \
             The popover says "about a hundred and ninety".

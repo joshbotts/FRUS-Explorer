@@ -309,7 +309,7 @@ struct CollocationView: View {
             // Since #1608 a launch with no lemmatiser ranks printed forms and says so in the list's
             // first row; this is what is left for one whose printed-form reference did not load.
             return String(localized: "search.collocation.unavailable.languageAnalysis",
-                          defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.")
+                          defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the bundled corpus reference. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.")
         case .noMatches:
             return String(localized: "search.collocation.unavailable.noMatches",
                           defaultValue: "None of these results contains a whole word this measure can center on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.")

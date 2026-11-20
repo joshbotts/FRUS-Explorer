@@ -112,13 +112,13 @@ struct SemanticFeedbackView: View {
                 Text(String(
                     localized: "settings.semanticFeedback.privacy.v2",
                     defaultValue: """
-                        Stored on-device and not synced to iCloud. Each verdict records the two \
-                        documents, your judgement, the match score, which release of the vectors it \
-                        applies to, and when you gave it. The app sends none of it: to share your \
+                        Stored on-device and not synced to iCloud. Each verdict records the two documents, \
+                        your judgement, the match score, which release of the vectors it applies to, and \
+                        when you made it. The app shares none of this on its own: to contribute your \
                         verdicts, choose Prepare Feedback File, then send the file to \
-                        \(SemanticFeedbackMail.address). Where this device can send mail, Email \
-                        Feedback File writes that message with the file attached; Share Feedback \
-                        File sends the file any other way.
+                        \(SemanticFeedbackMail.address). Where this device can send mail, Email Feedback \
+                        File drafts that message with the file attached; Share Feedback File lets you \
+                        share it another way.
                         """))
             }
 

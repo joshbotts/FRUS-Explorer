@@ -161,7 +161,7 @@ public enum ProvenanceSource: String, CaseIterable, Sendable {
                           defaultValue: "the National Archives catalog")
         case .ohPeopleRegister:
             return String(localized: "provenance.partner.ohPeople",
-                          defaultValue: "the Office of the Historian's working data on people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission")
+                          defaultValue: "the Office of the Historian's working data for people (its HistoryAtState/people repository) and its Principal Officers and Chiefs of Mission")
         case .ohSubjects:
             return String(localized: "provenance.partner.ohSubjects",
                           defaultValue: "the Office of the Historian's subject taxonomy")
