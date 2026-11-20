@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its closing section, coming-soon version · fingerprint c05916d5 -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its closing section, coming-soon version · fingerprint d772ef44 -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -35,10 +35,10 @@
   <div class="inner">
     <div>
       <h2 id="close-h">Not yet on the App Store</h2>
-      <p>FRUS Explorer is in final testing. It will be free, when it is released, for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.</p>
+      <p>FRUS Explorer is in App Store review. It will be free, when it is released, for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.</p>
     </div>
     <div class="cta">
-      <span class="btn soon" aria-disabled="true">In final testing</span>
+      <span class="btn soon" aria-disabled="true">In App Store review</span>
       <span>Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span>
       <span>Questions? <span class="mono"><a href="mailto:help@frusexplorer.app">help@frusexplorer.app</a></span></span>
     </div>

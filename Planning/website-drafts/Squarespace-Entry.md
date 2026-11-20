@@ -16,9 +16,9 @@
 
 # Entering the website into Squarespace
 
-Six pages go on frusexplorer.app. They describe **version 1.0 (1861)**, which is taken to be what
-1.0 (1812), TestFlight build 53, already does: the pages were read against that build on
-2026-11-10, and every figure on them was recounted from its bundle.
+Six pages go on frusexplorer.app. They describe **version 1.0 (1861)**: they were read against
+1.0 (1812), TestFlight build 53, on 2026-11-10, and against 1.0 (1861) itself, the build submitted
+to App Review, on 2026-11-20, and every figure on them was recounted from its bundle.
 
 | Page | Address | How it goes in | From |
 |---|---|---|---|
@@ -31,6 +31,37 @@ Six pages go on frusexplorer.app. They describe **version 1.0 (1861)**, which is
 
 Work in that order. App Store Connect needs the first two addresses, Support links to the two
 quick starts, and Home links to all of the others.
+
+## After 1.0 (1861) went to App Review: two steps, in this order
+
+On 20 November the pages were read against 1.0 (1861), the build submitted that day. Four things
+changed, each on your word: Home and the tour say the app is in App Store review; Support and
+Privacy are their plain-language texts; Privacy has a paragraph on this website; and the tour's
+steps 19 and 20 have screens.
+
+**1. Restrict the site's cookies.** Do this first: Privacy's new paragraph ends *The site sets no
+analytics cookies*, which is true only after it. **Settings ▸ Cookies & Data Privacy ▸ Advanced
+Privacy Settings**, then set **Non-essential cookies** to **Restrict Cookies** and Save; leave the
+cookie banner off. On 20 November a visit set `crumb`, a cookie Squarespace lists as necessary,
+and `ss_cvr` and `ss_cvt`, its analytics cookies, with restriction off. Squarespace's analytics
+still counts page views afterwards, as separate visits. You asked a session to make this change in
+the Claude app's browser pane, which needs your sign-in there; or make it yourself.
+
+**2. Paste six blocks again, once this change has merged.** The tour's new screens load from GitHub
+and exist there only after the merge, and the GitHub copies of Support and Privacy change with it.
+
+| Page | Block | Paste | Fingerprint, from → to |
+|---|---|---|---|
+| Home | its one Code Block | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `4b2e6134` → `a4e78a81` |
+| Tour | section 1, the line at the top | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `5a86b4c0` → `1f4f80f1` |
+| Tour | section 4, the second large block | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `f6d1ee65` → `3b5ce46c` |
+| Tour | section 5, the closing | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `c05916d5` → `d772ef44` |
+| Support | its one Code Block | [paste/support.txt](paste/support.txt) | `64da46d0` → `a6b818f5` |
+| Privacy | its one Code Block | [paste/privacy.txt](paste/privacy.txt) | `8c230dab` → `f310ad0f` |
+
+Not pasted again: the tour's first large block (`d39128dd`), the film, both quick starts
+(`bb9f168e`, `42253095`) and the footer (`6a78a398`). The re-cut screen of step 14 has the same
+size and address, so it shows on the site by itself after the merge.
 
 ## What changed since the steps of 7 November
 
@@ -180,7 +211,7 @@ For each of Privacy, Support and the two quick starts:
 
 What to expect:
 
-- **Privacy** opens with *FRUS Explorer Privacy Policy* and its date, *November 10, 2026*, and
+- **Privacy** opens with *FRUS Explorer Privacy Policy* and its date, *November 20, 2026*, and
   ends with a line that links to Support.
 - **Support** opens with the disclaimer in a quotation block, and lists the two quick starts
   first under *Manuals and guides*. Those two links fail until the quick starts are up.
@@ -192,10 +223,9 @@ What to expect:
   down; if the phone view cuts it off, do the same there, since the two views are sized apart.
 
 **Which Support and Privacy text this is.** It is the published text, `Docs/Support.md` and
-`Docs/Privacy-Policy.md`, as the plan of record has it for the submission. The plain-language
-drafts in this folder replace it only when you say so: a session folds them into `Docs/`, runs
-both scripts, and these two paste files change. The Support draft then carries a *Coming soon*
-line, which comes out on release day.
+`Docs/Privacy-Policy.md`. Since 20 November, on your word, that is the plain-language text: the two
+drafts that sat in this folder were folded into `Docs/`, Support without its *Coming soon* line, so
+neither page changes on release day.
 
 ## The menu and the footer
 
@@ -327,7 +357,7 @@ The badge itself is Apple's own artwork, loaded from Apple's marketing toolbox, 
 
 What to expect:
 
-- **The coming-soon version** opens with the *In testing* line in a tinted box, then *Free ·
+- **The coming-soon version** opens with the *In review* line in a tinted box, then *Free ·
   iPhone, iPad and Mac* over the headline, *Research 165 years of U.S. diplomatic history.*
 - Four columns under *What it does*, which become two and then one as the page narrows.
 - Nine questions under *Questions*, each with its answer showing.
@@ -361,7 +391,7 @@ that does not change at launch, the two small ones hold what does, and the film 
 **On release day, change two things.**
 
 1. **Section 1:** delete it.
-2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “In final testing” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
+2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “In App Store review” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
 
 <!-- /generated:tour -->
 
@@ -371,7 +401,7 @@ What to expect:
 - **The first large block** opens with *Take one question through 553 volumes* and a table of
   contents whose entries jump down the page, and ends with the dark band that holds the map.
 - **The second** opens at step 14 and ends with step 20.
-- **The closing** reads *Not yet on the App Store*, with an outlined *In final testing*, the two quick starts and the help
+- **The closing** reads *Not yet on the App Store*, with an outlined *In App Store review*, the two quick starts and the help
   address beside it.
 - Each screenshot is a link: a click opens it at full size in a new tab.
 - Home's links to `/tour#part-0` and `/tour#part-5` land on *What FRUS historians built* and
@@ -401,8 +431,8 @@ from GitHub (`tour/img/app-icon.png`) as the tour's screens do.
 | When | What |
 |---|---|
 | **Now**, behind the password | Enter all six pages, the menu and the footer: twelve pastes and one video. Nobody else can see them. |
-| **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. The coming-soon lines say the app *has been submitted*, so this is the day they become true. |
-| **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy and the quick starts do not change. Support does not change either, unless the plain-language draft was folded in: then its *Coming soon* line comes out, and you paste it once more. |
+| **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. *Done before the submission: the site went public on 15 November, and on 20 November, the day 1.0 (1861) was submitted, the coming-soon lines came to say it is in App Store review (the first section of this guide).* |
+| **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy, Support and the quick starts do not change. |
 
 Making the site public is yours to do: it is the step that publishes it. So is the wording that
 assumes approval, *It will be free*, which App Review decides.
@@ -426,17 +456,17 @@ this table:
 
 | File | Goes in | Size | Fingerprint |
 |---|---|---|---|
-| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,143 bytes | `8c230dab` |
-| [paste/support.txt](paste/support.txt) | `/support` | 6,419 bytes | `64da46d0` |
+| [paste/privacy.txt](paste/privacy.txt) | `/privacy` | 12,747 bytes | `f310ad0f` |
+| [paste/support.txt](paste/support.txt) | `/support` | 6,761 bytes | `a6b818f5` |
 | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) | `/quick-start-ios` | 26,523 bytes | `bb9f168e` |
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 27,211 bytes | `42253095` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
-| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,294 bytes | `4b2e6134` |
+| [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,278 bytes | `a4e78a81` |
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
-| [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,051 bytes | `5a86b4c0` |
+| [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,053 bytes | `1f4f80f1` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 35,033 bytes | `f6d1ee65` |
-| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,169 bytes | `c05916d5` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,075 bytes | `3b5ce46c` |
+| [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,175 bytes | `d772ef44` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
 <!-- /generated:kit -->
@@ -456,7 +486,7 @@ only section 0 is new.
 
 | Block | Style | Content |
 |---|---|---|
-| Text | **Paragraph 2**, centred | **In testing** — FRUS Explorer is in final testing for iPhone, iPad and Mac. It is not yet on the App Store. |
+| Text | **Paragraph 2**, centred | **In review** — FRUS Explorer is in App Store review for iPhone, iPad and Mac. It is not yet on the App Store. |
 
 - Bold the first two words. Under **Edit Section**, give the section the smallest height and a background that sets it off, so it reads as a notice.
 - This takes the place of the Announcement Bar, which the Basic plan does not include (see *Three things the Basic plan changes*, above).
@@ -468,7 +498,7 @@ only section 0 is new.
 |---|---|---|
 | Text | **Heading 4** (a small label) | Free · iPhone, iPad and Mac |
 | Text | **Heading 1** | Research 165 years of U.S. diplomatic history. |
-| Text | **Paragraph 1** | FRUS Explorer is a free research app for iPhone, iPad and Mac, now in final testing. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history. |
+| Text | **Paragraph 1** | FRUS Explorer is a free research app for iPhone, iPad and Mac, now in App Store review. It puts all 553 volumes of the *Foreign Relations of the United States* series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history. |
 | Button | Primary | **Take the tour** → `/tour` |
 | Text | **Paragraph 2** | Quick start: iPad and iPhone · Mac |
 | Text | **Paragraph 3** (small) | FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State. |
@@ -547,7 +577,7 @@ The first line is **Heading 2**, the rest **Paragraph 2**.
 | Title | Description |
 |---|---|
 | Is this an official government app? | No. FRUS Explorer is an independent research tool released in the developer's private capacity. It is not an official product of the Office of the Historian or the U.S. Department of State. The FRUS series itself is in the public domain. |
-| When can I get it? | It is in final testing before App Store review. This page will link to the App Store as soon as the app is there. |
+| When can I get it? | It is in App Store review. This page will link to the App Store as soon as the app is there. |
 | What does it cost? | It will be free. |
 | What do I need? | An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. |
 | Does it need the internet? | Only to download volumes and a few optional extras. After that, reading and searching work offline. If you add NARA Catalog and/or Zotero API keys, those connections also require internet connectivity. |

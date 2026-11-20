@@ -7,7 +7,7 @@
 
 # FRUS Explorer Support
 
-FRUS Explorer is a research app for iPhone, iPad and Mac for the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian, whose open TEI editions the app builds on.
+FRUS Explorer is a research app for iPhone, iPad and Mac. It helps you read and search the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861 by the Office of the Historian. The app builds on the Office's open TEI editions.
 
 > FRUS Explorer is an independent, private-capacity research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views about historical research methodology and makes no interpretive claims about the history of U.S. foreign policy. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 
@@ -20,7 +20,7 @@ For help with the app, write to its developer, not to the Office of the Historia
 - [FRUS Explorer for iPad and iPhone — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md)
 - [FRUS Explorer for macOS — User Manual](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md)
 
-A quick start takes you through a first session, with screenshots; a manual covers everything. In the app, **Settings → System → About** links to your platform's quick start and manual. The quick start also opens from the Research tab on iPhone and iPad, and from **Help → FRUS Explorer Quick Start** on a Mac. The app's **FRUS Research Guide**, an introduction to the series itself, is in the app: on iPhone and iPad, a row on the Research tab or **Settings → System → About → FRUS Research Guide**; on a Mac, **Help → FRUS Research Guide**.
+A quick start takes you through a first session, with screenshots. A manual covers everything. In the app, **Settings → System → About** links to the quick start and manual for your device. You can also open the quick start from the Research tab on iPhone and iPad, or from **Help → FRUS Explorer Quick Start** on a Mac. The app also has a **FRUS Research Guide**, which introduces the series itself. On iPhone and iPad, find it on the Research tab, or in **Settings → System → About → FRUS Research Guide**. On a Mac, choose **Help → FRUS Research Guide**.
 
 ## Contact
 
@@ -29,23 +29,26 @@ Email **help@frusexplorer.app**. It helps to include:
 - your device and its system version;
 - the app's version and build, from **Settings → System → About** (for example, *Version 1.0 (1861)*);
 - what you did, what you expected, and what happened instead;
-- for an iCloud sync problem, the Sync Log, from **Settings → System → Data & Recovery → Sync Log → Export…**. It holds event types, timing and error codes, never your content.
+- for a problem with iCloud sync, the Sync Log, from **Settings → System → Data & Recovery → Sync Log → Export…**. The log holds the kinds of events, their times and any error codes. It never holds your content.
 
 The [privacy policy](https://frusexplorer.app/privacy) says what happens to an email you send.
 
 ## Common questions
 
-**What does the app need?** An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence, which on a Mac means Apple silicon.
+**What does the app need?** An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence. On a Mac, that means a Mac with Apple silicon.
 
-**Where do the documents come from?** From the Office of the Historian's public TEI editions of the series. The app downloads the volumes you choose from the Office's repository on GitHub and indexes them on your device; from then on, reading and searching work offline.
+**Where do the documents come from?** From the Office of the Historian's public TEI editions of the series. TEI is a standard way to mark up a text. The app reads those marks to tell a heading from a footnote, or a person's name from the words around it. The app downloads the volumes you choose from the Office's collection on GitHub. Then it builds a search index on your device. After that, reading and searching work offline.
 
-**Do I need an account?** No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional, each with a free key of your own, in **Settings → System → Connections**: the National Archives Catalog, which lets Source Explorer look up the records a document's source note cites (the card links to where you get a key), and Zotero, which lets you send documents with your tags and notes to your Zotero library.
+**Do I need an account?** No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional. Each needs a free key of your own, which you add in **Settings → System → Connections**:
 
-**What is natural-language search?** An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Library → Volumes & Storage → Download Search Model**) and runs on your device only: nothing you search leaves it.
+- the National Archives Catalog, which lets Source Explorer look up the records a document's source note names (the card links to where you get a key);
+- Zotero, which lets you send documents, with your tags and notes, to your Zotero library.
+
+**What is natural-language search?** A way to search by meaning instead of by matching words. It is still experimental. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (**Settings → Library → Volumes & Storage → Download Search Model**). The model runs only on your device, so nothing you search leaves it.
 
 **Can I use the search index with my own tools?** Yes, on a Mac. **Settings → System → Data & Recovery → Export Research Database…** saves a checked copy of the index as a SQLite file. Your notes, summaries and tag names are left out unless you turn on **Include My Notes, Summaries, and Tags**. The [Agentic Analysis Guide](https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Agentic-Analysis-Guide.md) explains the database, and how to check what an AI tool tells you about it. If you give a copy to an online service, that service's terms apply.
 
-**My notes are not reaching my other devices.** Start with the app's iCloud status, at the top of Settings on iPhone and iPad and at the right of the main window's status bar on a Mac, which names the problem when there is one. Then read the manual's section on Data & Recovery, which lists the recovery steps in order and what each one deletes.
+**My notes are not reaching my other devices.** First, check the app's iCloud status. On iPhone and iPad, it is at the top of Settings. On a Mac, it is at the right end of the main window's status bar. If something is wrong, the status says what. Then read the manual's section on Data & Recovery. It lists the recovery steps in order and says what each one deletes.
 
 ## Privacy
 
