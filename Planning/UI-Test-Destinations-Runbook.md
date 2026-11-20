@@ -930,6 +930,50 @@ xcodebuild test \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
+**`CollectionListSwipeDeleteTests` (R6a, F10, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, under
+iOS 27.2 and 27.0, and nothing skips.** It launches with animations on, as a reader has them, swipes the seeded collection
+(`FRUS_UI_TEST_SEED_PROJECT=1`'s unattached one) and taps the Delete the swipe reveals; requires **Delete “UI Test
+Unattached Collection”?** and, two seconds later, the question still up with the collection still listed; closes the
+question unanswered (an action sheet's Cancel, or a tap beside a popover) and requires the collection listed; then
+deletes it through a second swipe's question. **What it guards:** in R6's pass, on the owner's iPhone under iOS 27.2, the
+swipe's question closed as it opened and the collection stayed (X7). The swipe button carried `role: .destructive`, which
+animates its row out as if deleted and takes the dialog the row carries with it, the trap L19 measured for a collection's
+entries (`CollectionRowDeleteTests`, above); `CollectionListManagementTests`' swipe test passed on that code, since it
+launches with animations off and answers the moment the dialog shows. **Under iOS 27.2 and 27.0 alike the question is
+a popover pointing at the row, on the iPhone as on the iPad.** **On the code before R6a** (iPhone 17, iOS 27.2) it fails at its first
+check, *The swipe's Delete did not ask* (101 s). **Measured on R6a's code:** iPhone 17, iOS 27.2, 1 of 1 (75 s); iPad Pro
+13-inch (M5), iOS 27.2, 1 of 1 (66 s); iPhone 17, iOS 27.0, 1 of 1 (66 s); iPad Pro 13-inch (M5), iOS 27.0, 1 of 1 (61 s). `CollectionListManagementTests`' 4 passed beside it on each. Give it 600 s,
+as for the suites it shares a file with.
+
+**`VolumeScopeSwipeDeleteTests` (R6a, F10's sweep, in `CustomScopeSaveTests.swift`) runs on an iPhone and an iPad under iOS
+27.2, and passes on the code before R6a too: it is the measurement behind a decision, not a guard of a fix.** F10's sweep
+looked for a destructive swipe button whose row carries the question it raises. Volume Scopes, the Archives Visits list
+and the priority tiers keep `role: .destructive` but hang their question on the list. With `FRUS_UI_TEST_SEED_SCOPE=1`,
+the suite opens Settings ▸ Volume Scopes, swipes *UI Test Scope* and taps Delete, and reads four things before asserting
+any: the question raised, still up two seconds later, the scope listed meanwhile, and the scope listed once the question
+is closed unanswered. **Measured on the code as it was** (the scope screen is unchanged by R6a): all four held on the
+iPhone 17 (164 s) and on the iPad Pro 13-inch (M5) (151 s), each under iOS 27.2; the iPad's question is a popover pointing
+at the list. It fails if the question moves onto the row while the swipe keeps its role. The Settings root is a lazy
+list, so the suite scrolls to the Volume Scopes row rather than waiting for it.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.2" \
+  -only-testing FRUSExplorerUITests/CollectionListSwipeDeleteTests \
+  -only-testing FRUSExplorerUITests/VolumeScopeSwipeDeleteTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/CollectionListSwipeDeleteTests \
+  -only-testing FRUSExplorerUITests/VolumeScopeSwipeDeleteTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control.**
 Its first two tests failed on the unfixed code on each idiom (measured on `v2` with the suite's
 seams, as first written), and the first and third, `testAnotherScopeOffersBrowseWithinWhileNarrowed`,

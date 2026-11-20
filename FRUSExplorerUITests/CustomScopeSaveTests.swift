@@ -269,3 +269,127 @@ final class CustomScopeSaveTests: XCTestCase {
             """)
     }
 }
+
+// MARK: - VolumeScopeSwipeDeleteTests
+
+/// A swipe that deletes a volume scope keeps the scope listed while its question is up, and after the question is
+/// closed unanswered: the measurement behind leaving three swipes as they are (R6a, F10's sweep).
+///
+/// F10's trap is a destructive swipe button whose row carries the question it raises: the role animates the row out as
+/// if deleted, and the row's dialog goes with it (`CollectionListSwipeDeleteTests`). Volume Scopes' swipe keeps
+/// `role: .destructive`, but its question hangs on the list, not the row, and so do the Archives Visits list's and the
+/// priority tiers'. Measured on the code as it was (iPhone 17, iOS 27.2): the question was up two seconds after the
+/// swipe's Delete, the scope listed throughout, and still listed once the question was closed unanswered. So this
+/// passes on the code before R6a too; it fails if the question moves onto the row while the swipe keeps its role.
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5)**, `OS=27.2`, allowing 600 s.
+///
+/// Version history:
+///   1.0 — R6a (F10's sweep): initial implementation
+@MainActor
+final class VolumeScopeSwipeDeleteTests: XCTestCase {
+
+    /// `UITestScopeSeeder.scopeName`.
+    private static let scope = "UI Test Scope"
+    private static let title = "Delete Scope?"
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testAScopesSwipeKeepsItsRowUntilAnswered() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_SCOPE"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .settings)
+        app.launch()
+        openVolumeScopes()
+        let row = app.staticTexts[Self.scope].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded scope is not listed")
+
+        // From here each state is read before any is asserted, so a failure reports all four.
+        continueAfterFailure = true
+        swipeDelete(row)
+        let question = app.staticTexts[Self.title].firstMatch
+        let asked = question.waitForExistence(timeout: Self.patience)
+        Thread.sleep(forTimeInterval: 2)
+        attachScreenshot("Two seconds after the swipe's Delete")
+        let stillAsking = question.exists
+        let listedWhileAsking = row.exists
+        if stillAsking { closeTheQuestion() }
+        let listedAfterClosing = row.waitForExistence(timeout: 5)
+        attachScreenshot("After the question closed unanswered")
+        print("[F10 sweep] asked=\(asked) stillAsking=\(stillAsking) listedWhileAsking=\(listedWhileAsking) "
+              + "listedAfterClosing=\(listedAfterClosing)")
+        XCTAssertTrue(asked, "The swipe's Delete did not ask")
+        XCTAssertTrue(stillAsking, "The question closed by itself within two seconds, unanswered")
+        XCTAssertTrue(listedWhileAsking, """
+            The scope left the list while its question was still up: the destructive swipe button animated \
+            the row out as if it were already deleted.
+            """)
+        XCTAssertTrue(listedAfterClosing, """
+            The question closed unanswered and the scope is no longer listed, though nothing deleted it: \
+            the destructive swipe button took the row.
+            """)
+    }
+
+    // MARK: - Steps
+
+    /// Settings ▸ Volume Scopes. The Settings root is a lazy list, so a row below the fold is absent from the tree
+    /// until it is scrolled to (`CustomScopeSaveTests.scrollUntil`).
+    private func openVolumeScopes() {
+        XCTAssertTrue(navigator.select(.settings, resolveTimeout: 15).tapped, "Could not open the Settings tab")
+        let link = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Volume Scopes'")).firstMatch
+        _ = link.waitForExistence(timeout: 5)
+        for _ in 0..<10 where !(link.exists && link.isHittable) {
+            app.swipeUp(velocity: .slow)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+        if !link.exists {
+            attachScreenshot("Settings, with no Volume Scopes row found")
+            print("[F10 sweep] tree:\n\(app.debugDescription)")
+        }
+        XCTAssertTrue(link.exists, "Volume Scopes is not reachable from Settings (screenshot and tree above)")
+        link.tap()
+    }
+
+    /// Swipes the row left, as a reader does, and taps the Delete it reveals.
+    private func swipeDelete(_ row: XCUIElement) {
+        row.swipeLeft()
+        let reveal = app.buttons["Delete"].firstMatch
+        XCTAssertTrue(reveal.waitForExistence(timeout: Self.patience), "The swipe revealed no Delete")
+        reveal.tap()
+    }
+
+    /// Closes the question without deleting: an action sheet's Cancel, or a tap outside a popover.
+    private func closeTheQuestion() {
+        let cancel = app.sheets.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+            XCTAssertGreaterThan(regions.count, 0, "The question has no Cancel and no popover to tap outside")
+            regions.element(boundBy: regions.count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
+        }
+        XCTAssertTrue(app.staticTexts[Self.title].firstMatch.waitForNonExistence(timeout: Self.patience),
+                      "The question did not close")
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
