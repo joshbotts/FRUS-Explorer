@@ -2702,7 +2702,7 @@ and does not need to — what they can act on is the button. Do not promise that
 and do not name a cause the app has not established.*
 
 ### Could not load this section's documents.
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 558–559 | key: browser.compilation.loadFailed -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 552–553 | key: browser.compilation.loadFailed -->
 
 Could not load this section’s documents.
 
@@ -2722,7 +2722,7 @@ FRUS Explorer could not read this section from its search index. Retry below; if
 <!-- A button label on the row above, beside a circular-arrow icon. Keep it a verb the reader can
      act on — it asks for the same section's documents again, and it is the only way out of the
      error row: this screen has no pull-to-refresh. -->
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 570–571 | key: browser.compilation.loadFailed.retry -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 564–565 | key: browser.compilation.loadFailed.retry -->
 
 Retry
 
