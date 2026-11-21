@@ -12146,3 +12146,15 @@ The owner: "let's generate screenshots for any remaining app UI stubs on the web
 **Owed by the owner:** after this merges, paste tour section 4 (`paste/tour-block-2.txt`, `ac7206e2`). Its new screens load from GitHub and exist there only after the merge.
 
 **Opened as #1964** on the owner's word (the app's *Create PR*), on 2026-11-21 at 17:19:57 UTC, against `v2` at `3e2718b3`, which had not moved since the sitting began. Docs only, with auto-merge off. Its merge is the next record's.
+
+**Merged as `45aebf4c`** by the owner on 2026-11-21 at 17:21:15 UTC, 78 seconds after it opened (17:19:57 UTC), auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`ab92fbfe`, tree `fffc0245`), a squash onto `3e2718b3`. Its branch is still on `origin`.
+
+**Pasted** on the owner's word ("Yes, after merge"), once they had signed in to the browser pane again: tour section 4, `3b5ce46c` to `ac7206e2`, each of its three typed pieces matching the file by SHA-256 and the last save at about 17:45 UTC. A curl of every page at `www.frusexplorer.app` read all ten of the kit's fingerprints, and the four new screens were seen rendered on the live tour at 1440 and 375 px, with no text slip left.
+
+**A slip of this change, found while pasting:** the four new `<img>` tags in `tour/tour.html` carried `loading="lazy" decoding="async"`, which `build_paste.py` adds to every screen, so the paste file had both twice on those four. Browsers ignore a repeated attribute, so no reader saw a difference.
+
+**Fixed on the owner's word** ("Yes, fix it"), from `v2` at `45aebf4c`, on `claude/website-tour-img-attrs`. The four tags lose the two attributes in `tour.html`, and the block's only other change is its fingerprint (`ac7206e2` to `e40ae6ae`). An HTML parser run over all twelve paste files finds no tag with a repeated attribute. `Squarespace-Entry.md` opens with the block to paste, and the folder's README says a new screen carries neither attribute.
+
+**Checks on the fix:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass; `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `appintentsmetadataprocessor` note. Nothing a target compiles changed.
+
+**Opened as #1965** on the owner's word ("Yes, fix it"), on 2026-11-21 at 18:12:51 UTC, against `v2` at `45aebf4c`, which had not moved since the fix began. Docs only, with auto-merge off. Its merge is the next record's.

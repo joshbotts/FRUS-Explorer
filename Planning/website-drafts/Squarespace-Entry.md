@@ -35,11 +35,12 @@ quick starts, and Home links to all of the others.
 ## One block to paste again, once this change has merged
 
 On 21 November the tour's last four text slips became real screens of 1.0 (1861): steps 15, 18, 19
-and 20. Their images load from GitHub and exist there only after the merge, so paste after it.
+and 20, pasted that day (`ac7206e2`). Their four image tags repeated two attributes, which browsers
+ignore. This change removes the repeats, so the block changes again and nothing a reader sees does.
 
 | Page | Block | Paste | Fingerprint, from → to |
 |---|---|---|---|
-| Tour | section 4, the second large block | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `3b5ce46c` → `ac7206e2` |
+| Tour | section 4, the second large block | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `ac7206e2` → `e40ae6ae` |
 
 Nothing else is pasted again.
 
@@ -474,7 +475,7 @@ this table:
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,053 bytes | `1f4f80f1` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,864 bytes | `ac7206e2` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,736 bytes | `e40ae6ae` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,175 bytes | `d772ef44` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
