@@ -218,7 +218,7 @@ def build_tour():
         "after PPS 37 and five other candidates. Six kinds are its own; footnote 61's early draft, filed separately, stands "
         "for what wasn't printed, and G is the editorial note listing the conference's delegations (<code>d78</code>). "
         "No Marshall document of spring 1947 carries all seven kinds.",
-        "<b>Still owed:</b> captures for steps 19 and 20 and a Cite capture to replace step 15's text slip if wanted. Steps 14 and 18 gained screens on 2026-11-06, and step 13 the map film, re-rendered from build 51's layout.",
+        "<b>No step is a text slip any more.</b> Steps 15, 18, 19 and 20 show screens of 1.0 (1861), from sittings W1 and W2 (2026-11-20 and 21). Steps 14 and 18 gained their first screens on 2026-11-06, and step 13 the map film, re-rendered from build 51's layout.",
         "<b>Read against 1.0 (1812) on 2026-11-10</b>, which the owner expects to ship as 1.0 (1861): sixteen kinds "
         "of annotation, where it said fifteen (#1874); the Browse grid's Annotations tile in step 14's path, caption "
         "and alt text (#1884); and the map's footnote is 5, where two were numbered 4. "
@@ -438,11 +438,15 @@ SCREENS = [
     (13, "map.jpg", "ipad/semantic-map.png", "Build 51's layout and 140 regions. The map film beside it was re-rendered from the same layout on 2026-11-06."),
     (14, "lag.jpg", "ipad/series-production.png", "Same chart, now as the sheet over Research."),
     (14, "annotations.jpg", "ipad/browse-annotations.png", "New on 2026-11-06 for 1.0’s Editors’ Annotations (#1859–#1862), from the screens-1861 sitting (#1865): the matrix pane, header cut. Read on 2026-11-10 beside sitting T1's retake for 1.0 (1812): the crop holds Who is named and the first two rows of Where it came from, where neither #1868's two new labels nor #1874's sixteenth row shows, so it was not re-cut. Re-cut on 2026-11-20 from the website row's retake on 1.0 (1861), at the same box: the axis's opening sentence is the owner's EditableContent review's (#1959), and nothing else in the crop moved."),
+    (15, "cite.jpg", "ipad/cite-sheet-actions.png", "New on 2026-11-21, on the owner's word, from 1.0 (1861) on the iPad simulator: the Cite tile's sheet over the Long Telegram, in place of the text slip."),
     (16, "reader.jpg", "ipad/collections-editor.png", "The preview now opens on the collection's title page and contents."),
     (17, "table.jpg", "macos/analytics-table.png",
      "9,162 documents across 502 volumes became 9,114 across 267: the capture's Mac held 267 volumes."),
-    (18, "history.jpg", "ipad/research-history.png", "New on 2026-11-06 from the screens-1861 sitting (#1865): Research ▸ History's right pane, with the slip kept below it."),
+    (18, "history.jpg", "ipad/research-history.png", "New on 2026-11-06 from the screens-1861 sitting (#1865): Research ▸ History's right pane, with the slip kept below it until 2026-11-21."),
+    (18, "appendix.jpg", "ipad/method-appendix-file.png", "New on 2026-11-21, on the owner's word, from 1.0 (1861) on the iPad simulator: the Markdown file Export Query Log as a Method Appendix wrote for History's seven searches, opened in the Files app, in place of the slip of its columns."),
+    (19, "lookup.jpg", "ipad/citation-paste.png", "New on 2026-11-21, on the owner's word, from 1.0 (1861) on the iPad simulator: Paste Citation with the short form this step quotes, one exact match, in place of the slip of its modes and labels."),
     (19, "batch.jpg", "ipad/citation-batch.png", "New on 2026-11-20, on the owner's word, from 1.0 (1861) on the iPad simulator: Batch over the 25 footnotes of FRUS 1949, vol. I, documents 108 to 148, that cite another FRUS volume, with Needs work first on; the slip stays below it for the three modes."),
+    (20, "banner.jpg", "ipad/document-change-banner.png", "New on 2026-11-21, on the owner's word: the reader's banner and amber highlight, W1's frame of 1.0 (1861) just before Review…, in place of the text slip."),
     (20, "corrected.jpg", "ipad/document-change-review.png", "New on 2026-11-20, on the owner's word, from 1.0 (1861) on the iPad simulator: the Long Telegram after Check for Corrections restored a paragraph a hand-edited copy of its volume had dropped, with a highlight made on the shorter text; the slip stays below it."),
 ]
 
@@ -573,7 +577,6 @@ REVIEW = """<div class="sheet">
   <li><b>The quick-start addresses.</b> <code>/quick-start-ios</code> and <code>/quick-start-mac</code> are still proposals (<code>Docs/Website/README.md</code>).</li>
   <li><b>“Will be free”</b> on Home and the tour assumes approval; App Review decides. Since 2026-11-20, the day 1.0 (1861) was submitted, the pages say the app is in App Store review and not yet on the App Store, which stays true however long review takes (from 2026-11-15 they said final testing).</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
-  <li><b>The tour's remaining slip</b>: step 15 is still a text slip; steps 19 and 20 have their captures since 2026-11-20.</li>
   <li><b>The app's App Store address, on release day.</b> <code>paste/home-launch.txt</code> waits for it: <code>APP_STORE_URL</code> in <code>build_paste.py</code>. Until it is set the file says NOT READY, on its first line and on the page.</li>
   <li><b>Where the pasted tour's screens live.</b> Its blocks load them from <code>Planning/website-drafts/tour/img/</code> on GitHub, so the folder stays where it is while they are published, or the blocks are made and pasted again.</li>
 </ol>

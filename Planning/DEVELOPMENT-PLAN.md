@@ -12113,3 +12113,36 @@ The plan of record's §3, first bullet (decision 101), started by the plan of re
 **Checks:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass. `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `GeneratedSummary` and `appintentsmetadataprocessor` lines. Nothing a target compiles changed. The new tour figures were not seen rendered (the browser pane refuses a local server); they reuse step 18's markup, which the live tour renders.
 
 **Opened as #1963** on the owner's word ("Open the PR"), on 2026-11-20 at 21:40:19 UTC, against `v2` at `cdae89ff`, which had not moved since the row began. Docs only, with Auto-fix on and auto-merge off. Its merge is the next record's.
+
+**Merged as `3e2718b3`** by the owner on 2026-11-20 at 21:42:40 UTC, two minutes after it opened, auto-merge off. It closed no issue, and the merge's tree is the pull request's head (`0fc243a2`, tree `51fee44c`), a squash onto `cdae89ff`. Its branch is still on `origin`.
+
+**The owner's two steps, done that evening** ("signed in. can you confirm that I made the correct settings change and then paste in the updated blocks?"):
+- **The cookies.** The owner's change had not been saved (the page read *Not restricted*). The session saved Restrict Cookies and, on the owner's answer, turned Activity log off. On the live site the restriction flag is on, and a fresh visit sets `crumb` alone, in its headers and in `document.cookie`.
+- **The six pastes.** Each field's SHA-256 equalled its file before Save, the last at about 00:55 UTC on 2026-11-21. A curl of every page at `www.frusexplorer.app` (the bare domain answers 301) read the kit's whole table.
+- **Seen rendered.** `batch.jpg` and `corrected.jpg` on the live tour at 407 and 1440 px, which closes this entry's *not seen rendered*.
+
+## Session 2026-11-21 — The tour's last four text slips become screens of 1.0 (1861)
+
+The owner: "let's generate screenshots for any remaining app UI stubs on the website". From `v2` at `3e2718b3`, on `claude/website-tour-screens`. This entry also records #1963's merge, above.
+
+**What was a stand-in.** Four figures set as text, all in the tour, at steps 15, 18, 19 and 20. Home, the quick starts, Support and Privacy had none.
+
+**The captures (W2)**, 11:49 to 12:03 Eastern under the heavy-job lock, on S1's iPad (`3D2607D9`, iOS 27.0) in T2's library at index version 75, from W1's build of 1.0 (1861), whose app and kit sources have not changed since (`Docs/screenshots/README.md` has the sitting):
+- `cite-sheet-actions`, the Cite tile's sheet over the Long Telegram (`cite.jpg`, step 15);
+- `method-appendix-file`, the file Export Query Log as a Method Appendix wrote, saved to Files and opened there, byte for byte the app's (`appendix.jpg`, step 18);
+- `citation-paste`, Paste Citation finding the short form step 19 quotes, one exact match (`lookup.jpg`);
+- W1's `document-change-banner`, the reader's banner over an amber highlight (`banner.jpg`, step 20).
+
+**What changed.** Each slip gave way to its screen, with a caption, alt text and production note. Steps 19 and 20 now run as their text does: Paste before Batch, the banner before the sheet it opens. `Tour-draft.md` had kept the slips and their *No capture exists* notes for steps 19 and 20 through W1, and now has every screen. The review sheet, the guide (`Squarespace-Entry.md`, which opens with the one block to paste) and the folder's README follow. The tour's reading level is 8.1 coming soon and at launch.
+
+**Only `paste/tour-block-2.txt` changed** (`3b5ce46c` to `ac7206e2`). The stylesheet's `.slip` rules stay, unused, so that the tour's first block keeps its bytes.
+
+**Seen rendered** before any paste, in a self-contained copy of Parts IV and V in the browser pane at 1440 and 375 px: nine of nine images, with no sideways scroll.
+
+**Checks:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass; `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `appintentsmetadataprocessor` note. Nothing a target compiles changed.
+
+**Found, not fixed or filed** (the plan's §5): a pasted citation's result names its document by id alone; the method appendix's CSV opens untidily in a spreadsheet, since its `#` lines hold unquoted commas.
+
+**Owed by the owner:** after this merges, paste tour section 4 (`paste/tour-block-2.txt`, `ac7206e2`). Its new screens load from GitHub and exist there only after the merge.
+
+**Opened as #1964** on the owner's word (the app's *Create PR*), on 2026-11-21 at 17:19:57 UTC, against `v2` at `3e2718b3`, which had not moved since the sitting began. Docs only, with auto-merge off. Its merge is the next record's.

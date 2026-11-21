@@ -49,6 +49,15 @@ changes but four, which changed on the owner's word that day:
 - **Steps 19 and 20 have screens**, captured from 1.0 (1861) on the iPad simulator on the owner's
   word (`Docs/screenshots/README.md`, the sitting's entry).
 
+**The tour's last text slips became screens on 2026-11-21**, on the owner's word ("let's generate
+screenshots for any remaining app UI stubs on the website"). No other page had a stand-in for an app
+screen. Sitting W2 took them from the same 1.0 (1861) build (`Docs/screenshots/README.md`): step 15
+shows the Cite sheet, step 18 the method appendix as the file the app writes, step 19 Paste Citation
+finding the short form the step quotes, and step 20 the reader's banner over an amber highlight.
+Steps 19 and 20 now run in the order their text does: Paste before Batch, the banner before the
+sheet it opens. Only `paste/tour-block-2.txt` changed. The stylesheet's `.slip` rules stay, unused,
+so that the tour's first block keeps its bytes and is not pasted again.
+
 Read and found to hold: the iPad's rail, a column of its own since R6a, which looks as the
 inspector did (the owner's word of 2026-11-20); the Mac's exports, which still go only where they
 are saved; the quick starts' links, already the site's. The reading level was measured again
@@ -163,7 +172,7 @@ opening paragraph.
   | Page | 2026-11-20 |
   |---|---|
   | Home | 8.7, coming soon and at launch (8.5 on 2026-11-06's text) |
-  | Tour | 8.0 coming soon, 8.1 at launch (8.3 on 2026-11-06's text) |
+  | Tour | 8.1 coming soon and at launch, with 2026-11-21's captions (8.0 and 8.1 before them, 8.3 on 2026-11-06's text) |
   | Support | 6.1, folded, where the text it replaced read 7.8 |
   | Privacy | 7.2, folded, where the text it replaced read 10.2 |
   | Quick starts | 6.9 iPad and iPhone, 7.3 Mac |
@@ -193,7 +202,7 @@ opening paragraph.
   re-cut again (steps 1, 2, 3, 5, 8 and 9: classification chips, the Editors' Annotations door, the
   288-volume line), and steps 14 and 18 gained screens (the Editors' Annotations matrix, Research ▸
   History). Step 13 gained the map film, re-rendered from build 51's layout (`tour/img/map-film.mp4`; rebuild it
-  with `tools/map-film/`). Still owed: steps 19 and 20 have no capture, and step 15 is a text slip. Steps 3 and 8 (`truman.jpg`, `browse.jpg`) were re-cut on 2026-11-10 from sitting T1's retakes for 1.0 (1812), at their old crops' box: the Editors' Annotations door is now the grid's *Annotations* tile, between Editors and Archives (#1884). Step 14's second screen (`annotations.jpg`) was read beside T1's retake the same day and not re-cut: its crop holds *Who is named* and the first two rows of *Where it came from*, where neither #1868's two new labels nor #1874's sixteenth row shows. No other change since 2026-11-06 reaches a screen the tour shows. *On 2026-11-20, read against 1.0 (1861): `annotations.jpg` was re-cut at its old box (1240, 236, 1511 × 1827) from a retake, since the owner's EditableContent review (#1959) reworded the axis's opening sentence, the only text in the crop that moved; steps 19 and 20 gained their screens (`batch.jpg`, `corrected.jpg`), on the owner's word that the session capture. Every other crop holds: R6a's rail column looks as the inspector did, and no other string #1956 to #1960 changed shows in a crop. Step 15 is still a text slip.*
+  with `tools/map-film/`). Steps 19 and 20 had no capture, and step 15 was a text slip, until sittings W1 and W2 (2026-11-20 and 21). Steps 3 and 8 (`truman.jpg`, `browse.jpg`) were re-cut on 2026-11-10 from sitting T1's retakes for 1.0 (1812), at their old crops' box: the Editors' Annotations door is now the grid's *Annotations* tile, between Editors and Archives (#1884). Step 14's second screen (`annotations.jpg`) was read beside T1's retake the same day and not re-cut: its crop holds *Who is named* and the first two rows of *Where it came from*, where neither #1868's two new labels nor #1874's sixteenth row shows. No other change since 2026-11-06 reaches a screen the tour shows. *On 2026-11-20, read against 1.0 (1861): `annotations.jpg` was re-cut at its old box (1240, 236, 1511 × 1827) from a retake, since the owner's EditableContent review (#1959) reworded the axis's opening sentence, the only text in the crop that moved; steps 19 and 20 gained their screens (`batch.jpg`, `corrected.jpg`), on the owner's word that the session capture. Every other crop holds: R6a's rail column looks as the inspector did, and no other string #1956 to #1960 changed shows in a crop. Step 15 is still a text slip.*
 - **The claims.** Read on 2026-11-10 against 1.0 (1812): every on-screen label the tour names is in
   the source as written; the user-facing strings that changed since the drafts' revision of
   2026-11-06 are Editors' Annotations', with the Research Guide's page on excisions (#1868, #1873,

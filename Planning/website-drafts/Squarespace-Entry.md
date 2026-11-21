@@ -32,23 +32,32 @@ to App Review, on 2026-11-20, and every figure on them was recounted from its bu
 Work in that order. App Store Connect needs the first two addresses, Support links to the two
 quick starts, and Home links to all of the others.
 
-## After 1.0 (1861) went to App Review: two steps, in this order
+## One block to paste again, once this change has merged
+
+On 21 November the tour's last four text slips became real screens of 1.0 (1861): steps 15, 18, 19
+and 20. Their images load from GitHub and exist there only after the merge, so paste after it.
+
+| Page | Block | Paste | Fingerprint, from → to |
+|---|---|---|---|
+| Tour | section 4, the second large block | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `3b5ce46c` → `ac7206e2` |
+
+Nothing else is pasted again.
+
+## After 1.0 (1861) went to App Review: done on 20 November
 
 On 20 November the pages were read against 1.0 (1861), the build submitted that day. Four things
 changed, each on your word: Home and the tour say the app is in App Store review; Support and
 Privacy are their plain-language texts; Privacy has a paragraph on this website; and the tour's
 steps 19 and 20 have screens.
 
-**1. Restrict the site's cookies.** Do this first: Privacy's new paragraph ends *The site sets no
-analytics cookies*, which is true only after it. **Settings ▸ Cookies & Data Privacy ▸ Advanced
-Privacy Settings**, then set **Non-essential cookies** to **Restrict Cookies** and Save; leave the
-cookie banner off. On 20 November a visit set `crumb`, a cookie Squarespace lists as necessary,
-and `ss_cvr` and `ss_cvt`, its analytics cookies, with restriction off. Squarespace's analytics
-still counts page views afterwards, as separate visits. You asked a session to make this change in
-the Claude app's browser pane, which needs your sign-in there; or make it yourself.
-
-**2. Paste six blocks again, once this change has merged.** The tour's new screens load from GitHub
-and exist there only after the merge, and the GitHub copies of Support and Privacy change with it.
+**Both steps it needed are done.** That evening, signed in to Squarespace in the Claude app's browser
+pane, you asked a session to check your cookie change and paste the blocks. The change had not been
+saved, so the session saved it: **Settings ▸ Cookies & Data Privacy ▸ Advanced Privacy Settings**,
+**Non-essential cookies** set to **Restrict Cookies**, with the cookie banner left off. You also chose
+to turn **Activity log** off. A new visit now sets only `crumb`, a cookie Squarespace lists as
+necessary, where it also set `ss_cvr` and `ss_cvt`, its analytics cookies. Keep the setting at
+Restrict: Privacy's sentence *The site sets no analytics cookies* holds only while it is. The session
+then pasted these six blocks, after the change merged:
 
 | Page | Block | Paste | Fingerprint, from → to |
 |---|---|---|---|
@@ -59,9 +68,9 @@ and exist there only after the merge, and the GitHub copies of Support and Priva
 | Support | its one Code Block | [paste/support.txt](paste/support.txt) | `64da46d0` → `a6b818f5` |
 | Privacy | its one Code Block | [paste/privacy.txt](paste/privacy.txt) | `8c230dab` → `f310ad0f` |
 
-Not pasted again: the tour's first large block (`d39128dd`), the film, both quick starts
+Not pasted then: the tour's first large block (`d39128dd`), the film, both quick starts
 (`bb9f168e`, `42253095`) and the footer (`6a78a398`). The re-cut screen of step 14 has the same
-size and address, so it shows on the site by itself after the merge.
+size and address, so it showed on the site by itself after the merge.
 
 ## What changed since the steps of 7 November
 
@@ -465,7 +474,7 @@ this table:
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,053 bytes | `1f4f80f1` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,075 bytes | `3b5ce46c` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,864 bytes | `ac7206e2` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,175 bytes | `d772ef44` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
 
