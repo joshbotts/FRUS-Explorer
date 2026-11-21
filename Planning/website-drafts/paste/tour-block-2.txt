@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint 3b5ce46c -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint ac7206e2 -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -234,13 +234,8 @@
           </div>
         </div>
         <figure>
-          <div class="slip">
-            <p class="sc">Citation · frus1946v06/d474</p>
-            <p class="cite"><i>Foreign Relations of the United States</i>, 1946, Eastern Europe, The Soviet Union, Volume VI, eds. Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, 1969), Document 474.</p>
-            <p class="url">https://history.state.gov/historicaldocuments/frus1946v06/d474</p>
-            <div class="acts" aria-label="Actions the app offers"><span>Copy Citation</span><span>Copy as… BibTeX or RIS</span><span>Send to Zotero Library…</span><span>Share Citation…</span></div>
-          </div>
-          <figcaption><span class="sn">Source</span>The app's own citation for this document, as it appears in a collection's preview.</figcaption>
+          <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/cite.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Citation sheet, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/cite.jpg" width="900" height="429" alt="The Citation sheet on iPad for the Long Telegram: Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI, eds. Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, 1969), Document 475, with the buttons Copy Citation and Copy as…" loading="lazy" decoding="async" loading="lazy" decoding="async"></a>
+          <figcaption><span class="sn">Source</span>iPad, build 1861. The Cite tile's sheet for the Long Telegram. Copy as… offers BibTeX and RIS.</figcaption>
         </figure>
       </article>
 
@@ -308,20 +303,10 @@
             <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/history.jpg" target="_blank" rel="noopener" aria-label="Enlarge the History screen, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/history.jpg" width="900" height="926" alt="Research ▸ History on iPad, filtered to All Projects: Searches Executed lists seven searches with their result counts and ages, among them “Why did the wartime alliance unravel?” with 0 results" loading="lazy" decoding="async"></a>
             <figcaption><span class="sn">Source</span>iPad, build 1861. Research ▸ History keeps the search that found nothing beside the ones that found 11,122.</figcaption>
           </figure>
-        <figure>
-          <div class="slip">
-            <p class="sc">Method appendix · its columns</p>
-            <dl class="cols">
-              <div><dt>Executed</dt><dd>When the search ran</dd></div>
-              <div><dt>Query</dt><dd>The words you searched for</dd></div>
-              <div><dt>Results</dt><dd>What it found, or a floor such as “at least 1,000”</dd></div>
-              <div><dt>Volumes indexed</dt><dd>How many volumes the device held then</dd></div>
-              <div><dt>Scope</dt><dd>What the search ran within</dd></div>
-            </dl>
-            <div class="acts" aria-label="What the export writes"><span>Export Query Log as a Method Appendix</span><span>Markdown table</span><span>CSV</span></div>
-          </div>
-          <figcaption><span class="sn">Source</span>The column names the app writes into a method appendix, set as text.</figcaption>
-        </figure>
+          <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/appendix.jpg" target="_blank" rel="noopener" aria-label="Enlarge the method appendix, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/appendix.jpg" width="1500" height="917" alt="The method appendix open in the Files app on iPad: the project Early Cold War, its research question, and a table of seven searches giving when each ran, its query, its results, the 553 volumes indexed and its scope, among them “Why did the wartime alliance unravel?” with 0 results, followed by notes on how to read the table and where it came from" loading="lazy" decoding="async" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. The method appendix for these seven searches, opened in the Files app: a Markdown table with notes on how to read it. A CSV comes with it.</figcaption>
+          </figure>
         </div>
       </article>
 
@@ -339,22 +324,13 @@
         </div>
         <div class="stack">
           <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/lookup.jpg" target="_blank" rel="noopener" aria-label="Enlarge the citation lookup, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/lookup.jpg" width="900" height="993" alt="Citation Lookup on iPad after a citation was pasted: Parsed Fields reads Subseries 1955-57, Volume XIV and Document no. 23, and Results (1 found) shows an Exact match, d23 in frus1955-57v14, with a View Document button" loading="lazy" decoding="async" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. Paste Citation reads the short form <i>FRUS 1955–57, vol. XIV, doc. 23</i> into its fields and finds the one document it names. Structured Entry takes the same fields by hand.</figcaption>
+          </figure>
+          <figure>
             <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/batch.jpg" target="_blank" rel="noopener" aria-label="Enlarge the Batch results, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/batch.jpg" width="900" height="1021" alt="Citation Lookup's Batch results on iPad: 25 citations, 17 resolved, 5 ambiguous, 1 best guess and 2 unresolved, with Needs work first on, so the two footnotes with no match, the best guess and those with two or three possible documents are listed first" loading="lazy" decoding="async"></a>
             <figcaption><span class="sn">Source</span>iPad, build 1861. Batch checks the 25 footnotes in one chapter of a 1949 volume that cite another volume, and lists first the ones that need work.</figcaption>
           </figure>
-        <figure>
-          <div class="slip">
-            <p class="sc">Citation Lookup · three ways in</p>
-            <div class="acts" aria-label="Modes"><span>Paste Citation</span><span>Structured Entry</span><span>Batch</span></div>
-            <dl class="cols">
-              <div><dt>Resolved</dt><dd>One document matches, and the row names it</dd></div>
-              <div><dt>N possible documents</dt><dd>The citation fits more than one</dd></div>
-              <div><dt>No match</dt><dd>Nothing in the catalog fits</dd></div>
-              <div><dt>Volume identified</dt><dd>Download the volume to find the document</dd></div>
-            </dl>
-          </div>
-          <figcaption><span class="sn">Source</span>The app's modes and result labels, set as text.</figcaption>
-        </figure>
         </div>
       </article>
 
@@ -372,19 +348,13 @@
         </div>
         <div class="stack">
           <figure>
+            <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/banner.jpg" target="_blank" rel="noopener" aria-label="Enlarge the reader with its change banner, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/banner.jpg" width="900" height="976" alt="The Long Telegram in the reader on iPad, under a banner reading The text of this document changed in a volume update. Some highlights may be misaligned, with a Review button; near the foot of the page, an amber highlight on item (b), shifted off the words it was made on" loading="lazy" decoding="async" loading="lazy" decoding="async"></a>
+            <figcaption><span class="sn">Source</span>iPad, build 1861. On a corrected document, a banner says what changed, and a highlight made on the old text turns amber.</figcaption>
+          </figure>
+          <figure>
             <a class="zoom" href="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/corrected.jpg" target="_blank" rel="noopener" aria-label="Enlarge the review sheet, at full size in a new tab"><img src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/corrected.jpg" width="900" height="1007" alt="The review sheet on iPad for the Long Telegram: under What Changed, The text of this document changed in a volume update, with Mark Reviewed; under Highlights, a highlight made against an earlier version of the text, its words shown in their new context and found once at a new position in the corrected text, with Move Here, Confirm and Remove…" loading="lazy" decoding="async"></a>
             <figcaption><span class="sn">Source</span>iPad, build 1861. After a correction, the review sheet shows where a highlight's words now are, and moves it only when you choose Move Here.</figcaption>
           </figure>
-        <figure>
-          <div class="slip">
-            <p class="sc">On a corrected document</p>
-            <p class="cite">The text of this document changed in a volume update. Some highlights may be misaligned.</p>
-            <div class="acts" aria-label="The banner's action"><span>Review…</span></div>
-            <p class="sc">In the review sheet</p>
-            <div class="acts" aria-label="Actions on a highlight"><span>Confirm</span><span>Remove…</span><span>Move Here</span></div>
-          </div>
-          <figcaption><span class="sn">Source</span>The app's own banner and actions, set as text.</figcaption>
-        </figure>
         </div>
       </article>
     </div>

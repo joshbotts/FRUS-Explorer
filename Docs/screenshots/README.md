@@ -1706,6 +1706,40 @@ in both manuals from the bundled files (#1762).
     clone) and this sitting's 1.0 (1861) build; its status bar override is cleared. The build, the raw, erased
     and old frames, the edited volumes and the clone are under `~/Library/Caches/FRUS-Explorer/web1/` until the
     owner says.
+- **W2 — run 2026-11-21, 11:49 to 12:03 (Eastern), on the iPad; the tour's last four text slips.** The owner
+  asked ("let's generate screenshots for any remaining app UI stubs on the website"), so the session
+  captured. No other page of the site had a stand-in for an app screen. W1's build of 1.0 (1861) again:
+  no app or kit source has changed since its tree (`git diff cdae89ff origin/v2` over them is empty). Installed
+  on S1's `3D2607D9` under iOS 27.0, over `t2/snapshot-75`, with W1's launch arguments and demo status bar,
+  the container cloned to `web2/pre-web2/` first and the heavy-job lock held for the whole sitting.
+  - **New (3)**:
+    - `cite-sheet-actions` (the Cite tile's sheet over the Long Telegram, its menu closed, where
+      `cite-sheet` has it open). The tour's `cite.jpg` is its top (816, 926, 1120 × 534), 900 × 429, cut clear
+      of a fragment of the reader's "(2)" in the sheet's corner.
+    - `citation-paste` (Search ▸ ••• ▸ Find by citation ▸ Paste Citation, with the short form step 19 quotes,
+      *FRUS 1955–57, vol. XIV, doc. 23*, after Look Up: Subseries 1955-57, Volume XIV, Document no. 23,
+      *Results (1 found)*, *Exact match*, d23 in frus1955-57v14). `lookup.jpg` is the sheet (796, 392,
+      1160 × 1280), 900 × 993. The sheet is the same height in either orientation and cannot hold its modes,
+      the citation and the result in one frame; the frame with the first two is
+      `web2/erased/citation-paste-top.png`, not committed.
+    - `method-appendix-file` (the file Settings ▸ Data & Recovery ▸ Export Query Log as a Method Appendix
+      wrote, saved to On My iPad and opened in Files, in portrait so that each row but the last fits one
+      line; both saved files were byte for byte the app's). `appendix.jpg` is (0, 62, 2064 × 1262), 1500 × 917.
+      S1's erase script reads a landscape frame, so this frame's status-bar text, on plain white, was filled
+      with white (every pixel of the box's border is 255).
+  - **From W1 (1)**: `document-change-banner`, W1's frame of the Long Telegram's staged change just before
+    *Review…*, with S1's erase. `banner.jpg` is the reader's column (561, 241, 1630 × 1768), 900 × 976.
+  - **Left**: no simulator is booted. `3D2607D9` holds its container as the sitting found it (1,757 files, the
+    list and sizes matching the clone), W1's 1.0 (1861) build, an empty On My iPad and no status bar override.
+    The raw and erased frames, the appendix's two files and the clone are under
+    `~/Library/Caches/FRUS-Explorer/web2/` until the owner says.
+  - **Found, not fixed or filed** (the plan of record's §5):
+    1. **A pasted citation's result names its document by id alone.** Paste Citation and Structured Entry show
+       *d23* over *frus1955-57v14* (`CitationLookupView.swift:772`), with no title, though the index holds
+       the document's head.
+    2. **The appendix's CSV opens untidily in a spreadsheet.** Its `#` lines hold unquoted commas, so Quick
+       Look splits each at them across columns (*…its principal adversary* | *1945-1950?*), and the header row
+       is row 18. A loader that honours `#` reads the file as meant (`QueryMethodAppendix.preambleLines`).
 
 ### Found by T2 — for the owner
 

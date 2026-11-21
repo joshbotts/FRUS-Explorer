@@ -417,15 +417,11 @@ The **Cite** tile copies a document's citation in History at State style, or in 
 
 - **From the editors** — Each citation names the volume's editors and the document's number, and links to the page where the Office publishes its authoritative form.
 
-**Text slip (in place of a screen):**
-> *Citation · frus1946v06/d474*
-> *Foreign Relations of the United States*, 1946, Eastern Europe, The Soviet Union, Volume VI, eds. Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, 1969), Document 474.
-> https://history.state.gov/historicaldocuments/frus1946v06/d474
-> Buttons: Copy Citation · Copy as… BibTeX or RIS · Send to Zotero Library… · Share Citation…
+**Screen:** `img/cite.jpg`
+Alt text: The Citation sheet on iPad for the Long Telegram: Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI, eds. Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, 1969), Document 475, with the buttons Copy Citation and Copy as…
+Caption — Source: iPad, build 1861. The Cite tile's sheet for the Long Telegram. Copy as… offers BibTeX and RIS.
 
-Caption — Source: The app's own citation for this document, as it appears in a collection's preview.
-
-> **Production note** No capture of the Cite sheet exists yet, so this slip is set as text. Swap in a capture of the Cite sheet, or keep the slip.
+> **Production note** Captured 2026-11-21 from 1.0 (1861) on the iPad simulator (`ipad/cite-sheet-actions.png`), in place of the text slip that stood here.
 
 ### 16. Build your own curated document collections
 *Collections · iPad*
@@ -474,19 +470,11 @@ A claim against the record, such as “mentions of ‘United Nations’ fell aft
 Alt text: Research ▸ History on iPad, filtered to All Projects: Searches Executed lists seven searches with their result counts and ages, among them “Why did the wartime alliance unravel?” with 0 results
 Caption — Source: iPad, build 1861. Research ▸ History keeps the search that found nothing beside the ones that found 11,122.
 
-**Text slip (beside the screen):**
-> *Method appendix · its columns*
-> - **Executed** — When the search ran
-> - **Query** — The words you searched for
-> - **Results** — What it found, or a floor such as “at least 1,000”
-> - **Volumes indexed** — How many volumes the device held then
-> - **Scope** — What the search ran within
->
-> Buttons: Export Query Log as a Method Appendix · Markdown table · CSV
+**Screen:** `img/appendix.jpg`
+Alt text: The method appendix open in the Files app on iPad: the project Early Cold War, its research question, and a table of seven searches giving when each ran, its query, its results, the 553 volumes indexed and its scope, among them “Why did the wartime alliance unravel?” with 0 results, followed by notes on how to read the table and where it came from
+Caption — Source: iPad, build 1861. The method appendix for these seven searches, opened in the Files app: a Markdown table with notes on how to read it. A CSV comes with it.
 
-Caption — Source: The column names the app writes into a method appendix, set as text.
-
-> **Production note** Research ▸ History cropped from the 2026-11-06 capture (`ipad/research-history.png`, screens-1861 sitting, #1865); the slip stays for the appendix's columns, which no screen shows.
+> **Production note** Research ▸ History cropped from the 2026-11-06 capture (`ipad/research-history.png`, screens-1861 sitting, #1865). The appendix is the file 1.0 (1861) wrote for those seven searches on 2026-11-21, from Settings ▸ Data & Recovery ▸ Export Query Log as a Method Appendix, saved to Files and opened there (`ipad/method-appendix-file.png`).
 
 ### 19. Check a citation
 *Search ▸ ••• ▸ Find by citation · iPhone, iPad and Mac*
@@ -501,17 +489,15 @@ Paste a citation from someone else's footnote, and the app opens the document it
 
 - **From the editors** — Lookup reads the volume titles, document numbers and page breaks of the Office's editions. In the pre-1955 volumes, document numbers were added to the digital editions, and the app says so when it uses one.
 
-**Text slip (in place of a screen):**
-> *Citation Lookup · three ways in*
-> Modes: Paste Citation · Structured Entry · Batch
-> - **Resolved** — One document matches, and the row names it
-> - **N possible documents** — The citation fits more than one
-> - **No match** — Nothing in the catalog fits
-> - **Volume identified** — Download the volume to find the document
+**Screen:** `img/lookup.jpg`
+Alt text: Citation Lookup on iPad after a citation was pasted: Parsed Fields reads Subseries 1955-57, Volume XIV and Document no. 23, and Results (1 found) shows an Exact match, d23 in frus1955-57v14, with a View Document button
+Caption — Source: iPad, build 1861. Paste Citation reads the short form *FRUS 1955–57, vol. XIV, doc. 23* into its fields and finds the one document it names. Structured Entry takes the same fields by hand.
 
-Caption — Source: The app's modes and result labels, set as text.
+**Screen:** `img/batch.jpg`
+Alt text: Citation Lookup's Batch results on iPad: 25 citations, 17 resolved, 5 ambiguous, 1 best guess and 2 unresolved, with Needs work first on, so the two footnotes with no match, the best guess and those with two or three possible documents are listed first
+Caption — Source: iPad, build 1861. Batch checks the 25 footnotes in one chapter of a 1949 volume that cite another volume, and lists first the ones that need work.
 
-> **Production note** New in this draft. No capture exists. Shoot Batch on the release build with the footnotes of a real chapter, so the counts on screen are true ones.
+> **Production note** Batch captured 2026-11-20 from 1.0 (1861) on the iPad simulator (`ipad/citation-batch.png`): the 25 footnotes of *FRUS* 1949, vol. I, documents 108 to 148, that cite another *FRUS* volume, pasted whole, with Needs work first on. Paste Citation captured 2026-11-21 from the same build (`ipad/citation-paste.png`): the short form this step quotes, pasted and looked up.
 
 ### 20. Keep your notes in step with corrections
 *Reader and Research · iPhone, iPad and Mac*
@@ -526,17 +512,15 @@ Each quotation you saved from the document as part of a collection is checked ag
 
 - **From the editors** — The corrections are the Office's. The app shows what changed and leaves every decision to you.
 
-**Text slip (in place of a screen):**
-> *On a corrected document*
-> The text of this document changed in a volume update. Some highlights may be misaligned.
-> Button: Review…
->
-> *In the review sheet*
-> Buttons: Confirm · Remove… · Move Here
+**Screen:** `img/banner.jpg`
+Alt text: The Long Telegram in the reader on iPad, under a banner reading The text of this document changed in a volume update. Some highlights may be misaligned, with a Review button; near the foot of the page, an amber highlight on item (b), shifted off the words it was made on
+Caption — Source: iPad, build 1861. On a corrected document, a banner says what changed, and a highlight made on the old text turns amber.
 
-Caption — Source: The app's own banner and actions, set as text.
+**Screen:** `img/corrected.jpg`
+Alt text: The review sheet on iPad for the Long Telegram: under What Changed, The text of this document changed in a volume update, with Mark Reviewed; under Highlights, a highlight made against an earlier version of the text, its words shown in their new context and found once at a new position in the corrected text, with Move Here, Confirm and Remove…
+Caption — Source: iPad, build 1861. After a correction, the review sheet shows where a highlight's words now are, and moves it only when you choose Move Here.
 
-> **Production note** New in this draft. No capture exists, and one needs a volume the Office has corrected since the device indexed it. A test volume edited by hand would show the same screens.
+> **Production note** Captured 2026-11-20 from 1.0 (1861) on the iPad simulator (`ipad/document-change-banner.png`, `ipad/document-change-review.png`). No volume has been corrected since the library was indexed, so copies of *FRUS* 1946, vol. VI, were edited by hand and re-indexed, which records a change as an update does: the highlight was made on a copy with one word left out of Part 1's item (a), and the copy indexed after it has that word back and lacks a phrase of the paragraph before Part 1, so the highlighted words moved.
 
 ---
 
