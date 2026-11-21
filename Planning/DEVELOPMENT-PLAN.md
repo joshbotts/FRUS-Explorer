@@ -12156,3 +12156,5 @@ The owner: "let's generate screenshots for any remaining app UI stubs on the web
 **Fixed on the owner's word** ("Yes, fix it"), from `v2` at `45aebf4c`, on `claude/website-tour-img-attrs`. The four tags lose the two attributes in `tour.html`, and the block's only other change is its fingerprint (`ac7206e2` to `e40ae6ae`). An HTML parser run over all twelve paste files finds no tag with a repeated attribute. `Squarespace-Entry.md` opens with the block to paste, and the folder's README says a new screen carries neither attribute.
 
 **Checks on the fix:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass; `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `appintentsmetadataprocessor` note. Nothing a target compiles changed.
+
+**Opened as #1965** on the owner's word ("Yes, fix it"), on 2026-11-21 at 18:12:51 UTC, against `v2` at `45aebf4c`, which had not moved since the fix began. Docs only, with auto-merge off. Its merge is the next record's.
