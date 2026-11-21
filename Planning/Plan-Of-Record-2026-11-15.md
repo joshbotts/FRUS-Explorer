@@ -964,6 +964,7 @@ The repository holds a draft for each.
     - **Only `paste/tour-block-2.txt` changed** (`3b5ce46c` to `ac7206e2`). The stylesheet's `.slip` rules stay, unused, so that the tour's first block keeps its bytes.
     - **Seen rendered** before any paste, in a self-contained copy of Parts IV and V in the browser pane at 1440 and 375 px: nine of nine images, with no sideways scroll.
     - **Checks:** `Scripts/build_website_pages.py --check` and `build_paste.py --check` pass; `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites, with no warning but the known `appintentsmetadataprocessor` note. Nothing a target compiles changed.
+    - **Opened as #1964** on the owner's word (the app's *Create PR*), on 2026-11-21 at 17:19:57 UTC, against `v2` at `3e2718b3`, which had not moved since the sitting began. Docs only, with auto-merge off. Its merge is the next record's.
 - **The release after 1.0: its candidates.** Its order is the next plan's.
   - **#1915, Import from JSON on every platform**, is no longer a candidate: C1 took it for 1.0 on 2026-11-17 (decision 140), as rows L23 and L24 (§1).
   - **#1723, A7: App Intents and Siri**, with A7b's Spotlight association; the owner's device check with Spike Reader decides A7b's place (`App-Intents-Siri-Assessment-2026-10-18.md` §4 and §5).

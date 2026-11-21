@@ -12144,3 +12144,5 @@ The owner: "let's generate screenshots for any remaining app UI stubs on the web
 **Found, not fixed or filed** (the plan's §5): a pasted citation's result names its document by id alone; the method appendix's CSV opens untidily in a spreadsheet, since its `#` lines hold unquoted commas.
 
 **Owed by the owner:** after this merges, paste tour section 4 (`paste/tour-block-2.txt`, `ac7206e2`). Its new screens load from GitHub and exist there only after the merge.
+
+**Opened as #1964** on the owner's word (the app's *Create PR*), on 2026-11-21 at 17:19:57 UTC, against `v2` at `3e2718b3`, which had not moved since the sitting began. Docs only, with auto-merge off. Its merge is the next record's.
