@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · NOT READY: APP-STORE-ADDRESS stands where the app's App Store address goes · fingerprint 2b2d7653 -->
+<!-- frusexplorer.app/ · from Planning/website-drafts/site-src/home.html, launch version · fingerprint 52c56bf9 -->
 <style>
 .frus-home { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #5F5F67; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #22705F; --ok: #2F6B3A; --warn: #8A5300; --bad: #A61C2A; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; color-scheme: light; }
 .frus-home { font-family: var(--serif); font-size: 17px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -53,15 +53,12 @@
 </style>
 <div class="frus-home">
 
-<p class="pg-unready"><b>Not ready to publish.</b> The App Store badge below links nowhere yet: this file was made before the app had an App Store address. Set APP_STORE_URL in build_paste.py, run it, and paste the file it writes.</p>
-
-
 <section class="pg-hero">
   <img class="pg-icon" src="https://raw.githubusercontent.com/joshbotts/FRUS-Explorer/HEAD/Planning/website-drafts/tour/img/app-icon.png" alt="" width="88" height="88">
   <p class="pg-kick">Free on the App Store</p>
   <h1>Research 165 years of U.S. diplomatic history.</h1>
   <p class="pg-lead">FRUS Explorer is a free research app for iPhone, iPad and Mac. It puts all 553 volumes of the <i>Foreign Relations of the United States</i> series and powerful new research tools on your device, so you can reach and share insights from 165 years of U.S. diplomatic history.</p>
-  <div class="pg-cta"><a class="pg-badge-link" href="APP-STORE-ADDRESS"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" width="120" height="40"></a><a href="/tour">Take the tour</a><span class="pg-qs">Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span></div>
+  <div class="pg-cta"><a class="pg-badge-link" href="https://apps.apple.com/us/app/frus-explorer/id6767950407"><img src="https://toolbox.marketingtools.apple.com/api/v2/badges/download-on-the-app-store/black/en-us" alt="Download on the App Store" width="120" height="40"></a><a href="/tour">Take the tour</a><span class="pg-qs">Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span></div>
   <p class="pg-disc">FRUS Explorer is an independent research tool, not an official product of the Office of the Historian or the U.S. Department of State.</p>
 </section>
 

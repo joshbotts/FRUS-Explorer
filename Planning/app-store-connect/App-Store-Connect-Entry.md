@@ -334,6 +334,18 @@ Each version waits for you (manual release). On release day:
   only once it is approved;
 - the announcement copy is the launch kit's §5.
 
+**Released on 2026-11-21.** Apple's lookup gives the release as 23:26:45 UTC, at
+<https://apps.apple.com/us/app/frus-explorer/id6767950407>. The Apple ID is `6767950407`, as both of
+1861's archives record it. The website switched to its launch version that evening.
+
+**Not in the EU, as of 23:50 UTC that day.** Apple's lookup found the app in none of the 27 EU
+storefronts, whose pages answered 404, and at 23:35 in all 13 others tried: the US, the UK, Canada,
+Australia, New Zealand, Japan, South Korea, India, Brazil, Mexico, Switzerland, Norway and China.
+That was 23 minutes after the release, so it may still clear by itself. If it does not, look first at the app's
+own trader status, under **App Information ▸ App Store Regulations and Permits ▸ Digital Services
+Act** ([step 0](#0-before-the-app-your-account)): the record says the account is not a trader, and
+nothing records that this second step was made.
+
 ## Not required now
 
 **Accessibility Nutrition Labels.** Apple: "providing these labels will be voluntary to start",

@@ -101,10 +101,12 @@ FILM = "tour/img/map-film.mp4"
 CODE_BLOCK_LIMIT = 400 * 1000
 # The wrapper of the home page's block.
 HOME_SCOPE = ".frus-home"
-# The app's page on the App Store: "https://apps.apple.com/app/id" and the app's Apple ID. It has
-# one once it is approved, so this is set on release day. While it is None the launch version of
-# the home page holds the placeholder where the address goes, and says so on its first line.
-APP_STORE_URL = None
+# The app's page on the App Store, set on release day (2026-11-21). It is the US storefront's
+# address, which any visitor can open: the storefront-neutral "https://apps.apple.com/app/id…"
+# forwards a visitor to their own, and that day the 27 EU storefronts' pages answered 404. While
+# this is None the launch version of the home page holds the placeholder where the address goes,
+# and says so on its first line.
+APP_STORE_URL = "https://apps.apple.com/us/app/frus-explorer/id6767950407"
 APP_STORE_PLACEHOLDER = "APP-STORE-ADDRESS"
 # Apple's own artwork for that link, served by its marketing toolbox: the black badge, 120 by 40,
 # which is the smallest Apple allows on a screen.
@@ -799,8 +801,8 @@ def home_paste_chapter():
     changed = [i for i in p["questions"]["faq"] if "launch" in i["answers"]]
     pill = words(one(r'<span class="pg-btn soon">(.*?)</span>', p["cta"]["soon"], "coming-soon pill"))
     out = ["| When | What the Code Block holds |\n|---|---|\n"
-           "| Now | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |\n"
-           "| Release day | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |\n",
+           "| Until release day | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |\n"
+           "| From release day, 21 November | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |\n",
            "The launch version differs from the first in six places, and in nothing else:\n",
            "\n".join("{}. {}".format(n, line) for n, line in enumerate([
                "the coming-soon line at the top is gone;",

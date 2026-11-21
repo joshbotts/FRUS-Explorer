@@ -575,9 +575,7 @@ REVIEW = """<div class="sheet">
 <h2><span class="n">6</span>Your calls</h2>
 <ol class="calls">
   <li><b>The quick-start addresses.</b> <code>/quick-start-ios</code> and <code>/quick-start-mac</code> are still proposals (<code>Docs/Website/README.md</code>).</li>
-  <li><b>“Will be free”</b> on Home and the tour assumes approval; App Review decides. Since 2026-11-20, the day 1.0 (1861) was submitted, the pages say the app is in App Store review and not yet on the App Store, which stays true however long review takes (from 2026-11-15 they said final testing).</li>
   <li><b>Home and the tour as copies of record</b>, under <code>Docs/Website/</code> with a trace per factual sentence, or drafts here.</li>
-  <li><b>The app's App Store address, on release day.</b> <code>paste/home-launch.txt</code> waits for it: <code>APP_STORE_URL</code> in <code>build_paste.py</code>. Until it is set the file says NOT READY, on its first line and on the page.</li>
   <li><b>Where the pasted tour's screens live.</b> Its blocks load them from <code>Planning/website-drafts/tour/img/</code> on GitHub, so the folder stays where it is while they are published, or the blocks are made and pasted again.</li>
 </ol>
 </section>

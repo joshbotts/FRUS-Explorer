@@ -26,23 +26,28 @@ to App Review, on 2026-11-20, and every figure on them was recounted from its bu
 | Support | `/support` | one Code Block | [paste/support.txt](paste/support.txt) |
 | Quick start, iPad and iPhone | `/quick-start-ios` | one Code Block | [paste/quick-start-ios.txt](paste/quick-start-ios.txt) |
 | Quick start, Mac | `/quick-start-mac` | one Code Block | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) |
-| Home | `/` | one Code Block | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
-| Tour | `/tour` | four Code Blocks, and a Video block for the film | [the Tour chapter](#tour), below |
+| Home | `/` | one Code Block | [paste/home-launch.txt](paste/home-launch.txt) |
+| Tour | `/tour` | three Code Blocks, and a Video block for the film | [the Tour chapter](#tour), below |
 
 Work in that order. App Store Connect needs the first two addresses, Support links to the two
 quick starts, and Home links to all of the others.
 
-## One block to paste again, once this change has merged
+## Release day: done on 21 November
 
-On 21 November the tour's last four text slips became real screens of 1.0 (1861): steps 15, 18, 19
-and 20, pasted that day (`ac7206e2`). Their four image tags repeated two attributes, which browsers
-ignore. This change removes the repeats, so the block changes again and nothing a reader sees does.
+Apple approved 1.0 (1861), and it was released on 21 November. That evening, on your word, a session
+switched the site to its launch versions. The app's page is
+<https://apps.apple.com/us/app/frus-explorer/id6767950407>. The address you sent had lost its last
+digit, so this is that address with the digit restored: use this one wherever you announce the app.
 
-| Page | Block | Paste | Fingerprint, from → to |
+| Page | Block | What was done | Fingerprint, from → to |
 |---|---|---|---|
-| Tour | section 4, the second large block | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `ac7206e2` → `e40ae6ae` |
+| Home | its one Code Block | [paste/home-launch.txt](paste/home-launch.txt) pasted over it | `a4e78a81` → `52c56bf9` |
+| Tour | the *In review* line, the Tour chapter's section 1 | deleted | `1f4f80f1` → none |
+| Tour | the closing, the chapter's section 5 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) pasted over it | `d772ef44` → `5fa9945b` |
 
-Nothing else is pasted again.
+Nothing else changes for the release. The site holds the tour's parts as blocks of one section,
+which is why deleting the line closed the gap by itself. The tour's second large block was pasted
+earlier that day, `ac7206e2` → `e40ae6ae`, once the fix of its repeated image attributes had merged.
 
 ## After 1.0 (1861) went to App Review: done on 20 November
 
@@ -345,8 +350,8 @@ paste over the other.
 
 | When | What the Code Block holds |
 |---|---|
-| Now | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
-| Release day | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |
+| Until release day | all of [paste/home-coming-soon.txt](paste/home-coming-soon.txt) |
+| From release day, 21 November | all of [paste/home-launch.txt](paste/home-launch.txt), pasted over it |
 
 The launch version differs from the first in six places, and in nothing else:
 
@@ -357,11 +362,7 @@ The launch version differs from the first in six places, and in nothing else:
 5. under *Questions*, *When can I get it?* is gone and *What does it cost?* answers *It's free.*;
 6. the last section is *Tell me what it can't answer yet*, where it was *Questions in the meantime?*.
 
-**The launch file is not ready yet.** Its badge has to link to the app's page on the App Store, an address the app has only once it is approved: `https://apps.apple.com/app/id` followed by the app's Apple ID, which App Store Connect shows under **App Information**. Until then the file holds `APP-STORE-ADDRESS` in its place, says *NOT READY* on its first line, and shows a notice in a dashed box at the top of the page, so a paste of it cannot pass for the finished page.
-
-On release day, give the address to a session, or set `APP_STORE_URL` near the top of `build_paste.py` yourself and run `python3 Planning/website-drafts/build_paste.py`. The file it then writes has the address, no notice and a new fingerprint: paste that one.
-
-The badge itself is Apple's own artwork, loaded from Apple's marketing toolbox, so there is nothing to upload.
+The badge links to <https://apps.apple.com/us/app/frus-explorer/id6767950407>. It is Apple's own artwork, loaded from Apple's marketing toolbox.
 
 <!-- /generated:home-paste -->
 
@@ -401,7 +402,7 @@ that does not change at launch, the two small ones hold what does, and the film 
 **On release day, change two things.**
 
 1. **Section 1:** delete it.
-2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “In App Store review” did. The button goes to the home page, whose badge goes on to the App Store; once `APP_STORE_URL` is set in `build_paste.py` it goes there itself.
+2. **Section 5:** paste all of [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) over what its block holds. Its heading becomes *Bring your own question*, where it was *Not yet on the App Store*; it says the app is free, where it said it will be; and a **Get the app** button stands where the outlined “In App Store review” did. The button goes to <https://apps.apple.com/us/app/frus-explorer/id6767950407>.
 
 <!-- /generated:tour -->
 
@@ -442,7 +443,7 @@ from GitHub (`tour/img/app-icon.png`) as the tour's screens do.
 |---|---|
 | **Now**, behind the password | Enter all six pages, the menu and the footer: twelve pastes and one video. Nobody else can see them. |
 | **The day 1.0 (1861) is submitted** | **Settings ▸ Site Availability ▸ Public ▸ Save.** App Review opens `/privacy` and `/support`, and both answer with an error while the password is on. *Done before the submission: the site went public on 15 November, and on 20 November, the day 1.0 (1861) was submitted, the coming-soon lines came to say it is in App Store review (the first section of this guide).* |
-| **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy, Support and the quick starts do not change. |
+| **Release day** | Home: paste [paste/home-launch.txt](paste/home-launch.txt) over its block, once that file holds the app's App Store address ([Home](#home) says how). The Tour: its two changes, listed at the end of its chapter. Privacy, Support and the quick starts do not change. *Done on 21 November (the first section of this guide).* |
 
 Making the site public is yours to do: it is the step that publishes it. So is the wording that
 assumes approval, *It will be free*, which App Review decides.
@@ -472,12 +473,12 @@ this table:
 | [paste/quick-start-mac.txt](paste/quick-start-mac.txt) | `/quick-start-mac` | 27,211 bytes | `42253095` |
 | [paste/footer.txt](paste/footer.txt) | the footer of every page | 1,253 bytes | `6a78a398` |
 | [paste/home-coming-soon.txt](paste/home-coming-soon.txt) | `/`, until release day | 12,278 bytes | `a4e78a81` |
-| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,395 bytes | `2b2d7653`, not ready: it waits for the App Store address |
+| [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,119 bytes | `52c56bf9` |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,053 bytes | `1f4f80f1` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
 | [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,736 bytes | `e40ae6ae` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,175 bytes | `d772ef44` |
-| [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,025 bytes | `f23bd2df` |
+| [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,080 bytes | `5fa9945b` |
 
 <!-- /generated:kit -->
 
