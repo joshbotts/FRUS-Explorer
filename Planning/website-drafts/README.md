@@ -56,7 +56,9 @@ shows the Cite sheet, step 18 the method appendix as the file the app writes, st
 finding the short form the step quotes, and step 20 the reader's banner over an amber highlight.
 Steps 19 and 20 now run in the order their text does: Paste before Batch, the banner before the
 sheet it opens. Only `paste/tour-block-2.txt` changed. The stylesheet's `.slip` rules stay, unused,
-so that the tour's first block keeps its bytes and is not pasted again.
+so that the tour's first block keeps its bytes and is not pasted again. A screen added to `tour.html`
+carries no `loading` or `decoding`: `build_paste.py` adds both to every screen, and these four had
+them twice until the same day's fix.
 
 Read and found to hold: the iPad's rail, a column of its own since R6a, which looks as the
 inspector did (the owner's word of 2026-11-20); the Mac's exports, which still go only where they
