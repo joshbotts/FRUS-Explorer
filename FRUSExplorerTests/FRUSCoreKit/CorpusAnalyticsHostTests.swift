@@ -32,6 +32,7 @@ import Foundation
 /// Version history:
 ///   1.0 — 2026-11-11 (FRUS Explorer Light, S24a): initial implementation, when Corpus Analytics and the
 ///          method block moved into the kit
+///   1.1 — 2026-11-22 (FRUS Explorer Light, #1928): a decade a host makes
 @Suite("Corpus Analytics as a host drives it")
 struct CorpusAnalyticsHostTests {
 
@@ -230,5 +231,17 @@ struct CorpusAnalyticsHostTests {
         #expect(labels["v1/d2"] == "Editorial Note")
         #expect(labels["v1/d1"] == "Memorandum of Conversation · v1/d1")
         #expect(labels["v2/d1"] == "Memorandum of Conversation · v2/d1")
+    }
+
+    // MARK: - A decade a host makes (#1928)
+
+    /// The suite imports the kit `@testable`, which sees an internal initialiser too, so it shows what a
+    /// host's decade holds, not that the initialiser is public: a host's own build does.
+    @Test("A host makes the kit's decade, and reads its start, count and id")
+    func aHostMakesTheKitsDecade() {
+        let decade = DecadeFrequency(decadeStart: 1970, count: 4)
+        #expect(decade.decadeStart == 1970)
+        #expect(decade.count == 4)
+        #expect(decade.id == 1970)
     }
 }

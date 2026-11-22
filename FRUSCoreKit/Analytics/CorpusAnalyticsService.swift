@@ -87,11 +87,25 @@ public struct VolumeFrequency: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 121: initial implementation
 ///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+///   1.2 — 2026-11-22 (FRUS Explorer Light, #1928): a public initialiser, the memberwise one spelt out,
+///          so a host that sums a series into decades, as the analytics view does, makes the kit's type
 public struct DecadeFrequency: Sendable, Identifiable {
     /// The first calendar year of the ten-year bucket (e.g. `1960` for the 1960s).
     public let decadeStart: Int
+    /// The documents (or, for an occurrence series summed into decades, the occurrences) in the decade.
     public let count: Int
+    /// The decade's first year, which no two buckets of one series share.
     public var id: Int { decadeStart }
+
+    /// Creates a decade's bucket.
+    ///
+    /// - Parameters:
+    ///   - decadeStart: The decade's first year, a multiple of ten: `1970` for the 1970s, where a year 1973 falls.
+    ///   - count: What the decade holds.
+    public init(decadeStart: Int, count: Int) {
+        self.decadeStart = decadeStart
+        self.count = count
+    }
 }
 
 /// Document frequency aggregated per calendar month.
@@ -298,6 +312,10 @@ public struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
 ///   1.12 — #1299 (docs only): `makeQuery(from:)` names the Multiple words help text's current key,
 ///          `analytics.info.multiword.body.v3`
 ///   1.13 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+///   1.14 — 2026-11-22 (FRUS Explorer Light, #1913): `termOccurrencesByYearAndVolume` caches in a
+///          dictionary of its own, `yearVolumeOccurrenceCache`, keyed as the documents series is, where it
+///          shared `yearVolumeFrequencyCache` under an `occ:` prefix that a documents query for a term spelt
+///          with that prefix could meet; cleared with the others by `invalidateCache()`
 public actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -308,7 +326,12 @@ public actor CorpusAnalyticsService {
     // MARK: - Caches
 
     private var yearFrequencyCache: [String: [YearFrequency]] = [:]
+    /// The documents series by (year, volume), `termFrequencyByYearAndVolume`'s.
     private var yearVolumeFrequencyCache: [String: [YearVolumeFrequency]] = [:]
+    /// The occurrence series by (year, volume), `termOccurrencesByYearAndVolume`'s, from which
+    /// `termOccurrencesByYear` sums its years: a dictionary apart from the documents series', so that no
+    /// term can be keyed into the other series (#1913), with the same keys, `scopedCacheKey(term:volumeIds:)`.
+    private var yearVolumeOccurrenceCache: [String: [YearVolumeFrequency]] = [:]
     private var subseriesFrequencyCache: [String: [SubseriesFrequency]] = [:]
     private var volumeFrequencyCache: [String: [VolumeFrequency]] = [:]
     private var decadeFrequencyCache: [String: [DecadeFrequency]] = [:]
@@ -348,6 +371,7 @@ public actor CorpusAnalyticsService {
     public func invalidateCache() {
         yearFrequencyCache.removeAll()
         yearVolumeFrequencyCache.removeAll()
+        yearVolumeOccurrenceCache.removeAll()
         subseriesFrequencyCache.removeAll()
         volumeFrequencyCache.removeAll()
         decadeFrequencyCache.removeAll()
@@ -486,10 +510,16 @@ public actor CorpusAnalyticsService {
     /// scoped and corpus-wide results never collide. A corpus-wide query (`nil` or
     /// empty scope) keys on the bare term, preserving existing unscoped cache entries.
     ///
+    /// The key names the term and the scope, not what was counted: each series keeps a cache of its
+    /// own, so a key is read only in the series it was written in. The occurrence series by (year,
+    /// volume) shared the documents series' cache until #1913, under the key of `"occ:"` and its term,
+    /// which a documents query for a term spelt with that prefix met, so either could be served the
+    /// other's numbers; it has a cache of its own now (`yearVolumeOccurrenceCache`), under this key.
+    ///
     /// - Parameters:
     ///   - term: The query term.
     ///   - volumeIds: The active volume-ID scope, or `nil`/empty for the whole corpus.
-    /// - Returns: A stable cache key unique to the `(term, scope)` pair.
+    /// - Returns: A stable cache key unique to the `(term, scope)` pair, within one series' cache.
     private func scopedCacheKey(term: String, volumeIds: Set<String>?) -> String {
         guard let volumeIds, !volumeIds.isEmpty else { return term }
         return term + "\u{1}" + volumeIds.sorted().joined(separator: "|")
@@ -955,8 +985,9 @@ public actor CorpusAnalyticsService {
     public func termOccurrencesByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws
         -> [YearVolumeFrequency] {
         guard let stem = await occurrenceAvailability(for: term).stem else { return [] }
-        let cacheKey = scopedCacheKey(term: "occ:\(term)", volumeIds: volumeIds)
-        if let cached = yearVolumeFrequencyCache[cacheKey] { return cached }
+        // A cache of the occurrence series' own, so no documents query can be keyed into it (#1913).
+        let cacheKey = scopedCacheKey(term: term, volumeIds: volumeIds)
+        if let cached = yearVolumeOccurrenceCache[cacheKey] { return cached }
 
         let perDocument = try await fts5Store.termOccurrencesByDocument(stem: stem)
         guard !perDocument.isEmpty else { return [] }
@@ -991,7 +1022,7 @@ public actor CorpusAnalyticsService {
         }
         .sorted { $0.year != $1.year ? $0.year < $1.year : $0.volumeId < $1.volumeId }
 
-        insertIntoCache(&yearVolumeFrequencyCache, key: cacheKey, value: result)
+        insertIntoCache(&yearVolumeOccurrenceCache, key: cacheKey, value: result)
         return result
     }
 

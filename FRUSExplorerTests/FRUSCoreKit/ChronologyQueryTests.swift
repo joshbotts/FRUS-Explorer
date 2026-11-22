@@ -1074,3 +1074,127 @@ struct ChronologyVolumeLabelTests {
         }
     }
 }
+
+// MARK: - ChronologyLabelLocaleTests
+
+/// Chronology's section and chart labels in the locale a caller passes (FRUS Explorer Light, #1912):
+/// `ChronologyGrouping.group(_:viewBucket:ascending:locale:)` and
+/// `makeChart(fromCounts:viewBucket:maxSeries:locale:)` write a year, a month and a day in it, as the
+/// counts' calls already group their numbers in theirs, and with no locale passed they write what they
+/// wrote before, in the reader's own. A host whose process's locale is not its readers', as a Linux
+/// server's World English (`en_001`) is not the United States', pins theirs.
+///
+/// Version history:
+///   1.0 — 2026-11-22 (FRUS Explorer Light, #1912): initial implementation
+@Suite("FRUSCoreKit — Chronology's labels, in the locale a caller passes")
+struct ChronologyLabelLocaleTests {
+
+    private static let unitedStates = Locale(identifier: "en_US")
+    private static let britain = Locale(identifier: "en_GB")
+    private static let germany = Locale(identifier: "de_DE")
+
+    /// One row at `iso`, whose stored precision is `precision`, ending at `isoMax`.
+    private static func row(_ doc: String, _ iso: String, _ isoMax: String, _ precision: DatePrecision,
+                            volume: String = "frus1969-76v01") -> ChronologyRow {
+        ChronologyRow(volumeId: volume, documentId: doc, header: "Header \(doc)", dateline: nil, summary: nil,
+                      dateISO: iso, dateISOMax: isoMax, precision: precision, certainty: .exact,
+                      isEditorialNote: false, isFrontMatter: false, documentNumber: nil)
+    }
+
+    /// Two days in February 1969, a document dated to March 1969 alone, a day in July 1970, and one
+    /// dated to 1971 alone, which keep the coarser of the view's granularity and their own.
+    private static let rows = [
+        row("a", "1969-02-15", "1969-02-15", .day),
+        row("b", "1969-02-20", "1969-02-20", .day),
+        row("e", "1969-03-01", "1969-03-31", .month),
+        row("c", "1970-07-04", "1970-07-04", .day, volume: "frus1969-76v02"),
+        row("d", "1971-01-01", "1971-12-31", .year),
+    ]
+
+    @Test("At each granularity a section is labelled in the locale passed: a day in the United States, Britain and Germany, then a month, then a year")
+    func eachGranularityIsLabelledInTheLocalePassed() {
+        func labels(_ view: DateBucket, _ locale: Locale) -> [String] {
+            ChronologyGrouping.group(Self.rows, viewBucket: view, ascending: true, locale: locale).map(\.displayLabel)
+        }
+        #expect(labels(.day, Self.unitedStates) == ["February 15, 1969", "February 20, 1969", "March 1969", "July 4, 1970", "1971"])
+        #expect(labels(.day, Self.britain) == ["15 February 1969", "20 February 1969", "March 1969", "4 July 1970", "1971"])
+        #expect(labels(.day, Self.germany) == ["15. Februar 1969", "20. Februar 1969", "März 1969", "4. Juli 1970", "1971"])
+        #expect(labels(.month, Self.unitedStates) == ["February 1969", "March 1969", "July 1970", "1971"])
+        #expect(labels(.month, Self.britain) == ["February 1969", "March 1969", "July 1970", "1971"])
+        #expect(labels(.month, Self.germany) == ["Februar 1969", "März 1969", "Juli 1970", "1971"])
+        for locale in [Self.unitedStates, Self.britain, Self.germany] {
+            #expect(labels(.year, locale) == ["1969", "1970", "1971"], "\(locale.identifier)")
+        }
+    }
+
+    @Test("The locale changes the labels alone: each section's key, granularity, date, order and rows are the same in every locale, newest first too")
+    func theLocaleChangesTheLabelsAlone() {
+        func sections(_ view: DateBucket, _ ascending: Bool, _ locale: Locale) -> [String] {
+            ChronologyGrouping.group(Self.rows, viewBucket: view, ascending: ascending, locale: locale).map {
+                "\($0.bucketKey) \($0.granularity) \($0.sortDate.timeIntervalSinceReferenceDate) \($0.rows.map(\.id)) \($0.volumeCount)"
+            }
+        }
+        for view in [DateBucket.day, .month, .year] {
+            for ascending in [true, false] {
+                let american = sections(view, ascending, Self.unitedStates)
+                #expect(sections(view, ascending, Self.britain) == american, "\(view), ascending \(ascending)")
+                #expect(sections(view, ascending, Self.germany) == american, "\(view), ascending \(ascending)")
+                #expect(sections(view, ascending, .autoupdatingCurrent) == american, "\(view), ascending \(ascending)")
+            }
+        }
+        #expect(ChronologyGrouping.group(Self.rows, viewBucket: .day, ascending: false, locale: Self.britain).map(\.displayLabel)
+                == ["1971", "4 July 1970", "March 1969", "20 February 1969", "15 February 1969"])
+    }
+
+    @Test("The capped chart's buckets are labelled in the locale passed, and the uncapped chart's take their sections' labels")
+    func theChartsLabelsFollowTheLocale() {
+        let counts: [(bucketKey: String, volumeId: String, count: Int)] = [
+            ("1969-02-15", "frus1969-76v01", 2), ("1970-07-04", "frus1969-76v02", 1), ("1969-02-15", "frus1969-76v02", 1),
+        ]
+        let british = ChronologyGrouping.makeChart(fromCounts: counts, viewBucket: .day, maxSeries: 5, locale: Self.britain)
+        #expect(british.buckets.map(\.label) == ["15 February 1969", "4 July 1970"])
+        let american = ChronologyGrouping.makeChart(fromCounts: counts, viewBucket: .day, maxSeries: 5, locale: Self.unitedStates)
+        #expect(american.buckets.map(\.label) == ["February 15, 1969", "July 4, 1970"])
+        #expect(ChronologyGrouping.makeChart(fromCounts: counts, viewBucket: .month, maxSeries: 5, locale: Self.germany)
+                    .buckets.map(\.label) == ["Februar 1969", "Juli 1970"])
+        // Only the labels differ.
+        #expect(british.buckets.map(\.bucketKey) == american.buckets.map(\.bucketKey))
+        #expect(british.buckets.map(\.total) == american.buckets.map(\.total))
+        #expect(british.series.map(\.key) == american.series.map(\.key))
+
+        let groups = ChronologyGrouping.group(Self.rows, viewBucket: .day, ascending: true, locale: Self.britain)
+        #expect(ChronologyGrouping.makeChart(from: groups, maxSeries: 5).buckets.map(\.label) == groups.map(\.displayLabel))
+    }
+
+    /// The labels as the kit wrote them before it took a locale: a formatter in the reader's own,
+    /// `.autoupdatingCurrent`, over the bucket's first day in the Gregorian calendar.
+    private static func readersOwnLabel(_ key: String, _ granularity: DateBucket) -> String {
+        let parts = key.split(separator: "-").map { Int($0) ?? 0 }
+        var components = DateComponents()
+        components.year = parts[0]
+        components.month = parts.count > 1 ? parts[1] : 1
+        components.day = parts.count > 2 ? parts[2] : 1
+        let date = Calendar(identifier: .gregorian).date(from: components)!
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        switch granularity {
+        case .year: formatter.dateFormat = "yyyy"
+        case .month: formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
+        case .day: formatter.dateStyle = .long
+        }
+        return formatter.string(from: date)
+    }
+
+    @Test("With no locale passed, as the app calls them, the labels are the reader's own, as they were")
+    func withNoLocaleTheLabelsAreTheReadersOwn() {
+        for view in [DateBucket.day, .month, .year] {
+            let groups = ChronologyGrouping.group(Self.rows, viewBucket: view, ascending: true)
+            #expect(groups.map(\.displayLabel) == groups.map { Self.readersOwnLabel($0.bucketKey, $0.granularity) }, "\(view)")
+            #expect(groups.map(\.displayLabel)
+                    == ChronologyGrouping.group(Self.rows, viewBucket: view, ascending: true, locale: .autoupdatingCurrent).map(\.displayLabel))
+        }
+        let counts: [(bucketKey: String, volumeId: String, count: Int)] = [("1969-02", "frus1969-76v01", 3), ("1970-07", "frus1969-76v02", 1)]
+        let chart = ChronologyGrouping.makeChart(fromCounts: counts, viewBucket: .month, maxSeries: 5)
+        #expect(chart.buckets.map(\.label) == ["1969-02", "1970-07"].map { Self.readersOwnLabel($0, .month) })
+    }
+}

@@ -338,6 +338,81 @@ struct OccurrenceCountServiceTests {
         }
     }
 
+    // MARK: - #1913: the two series by (year, volume) keep caches apart
+
+    /// A series by (year, volume), one line a segment, to compare two answers whole.
+    private static func lines(_ series: [YearVolumeFrequency]) -> [String] {
+        series.map { "\($0.year) \($0.volumeId) \($0.count)" }
+    }
+
+    @Test("The occurrence and document series keep caches apart: a documents query for `occ:` and a word is never served that word's occurrences, nor the word's occurrences that query's documents, scoped or not")
+    func theTwoSeriesKeepCachesApart() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // "treaty" three times in v01's d1, once in v02's d1 and once in v02's d2, which alone holds
+            // "occ" beside it: so `occ:treaty`, its colon read as a space, matches d2 alone.
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>A treaty, a treaty, a treaty.</p>")]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                volumeId: "frus1969-76v02",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-04-01\">April 1, 1971</date></dateline><p>A treaty draft.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1972-05-01\">May 1, 1972</date></dateline><p>The OCC treaty desk.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v02")
+            let spelt = "occ:treaty"
+
+            for scope in [nil, Set(["frus1969-76v01", "frus1969-76v02"])] as [Set<String>?] {
+                // Each series as a service that has cached nothing answers it, so neither can have been
+                // served from the other; they differ, so a crossing would show.
+                let occurrences = try await CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+                    .termOccurrencesByYearAndVolume(term: "treaty", volumeIds: scope)
+                let documents = try await CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+                    .termFrequencyByYearAndVolume(term: spelt, volumeIds: scope)
+                #expect(Self.lines(occurrences) == ["1971 frus1969-76v01 3", "1971 frus1969-76v02 1", "1972 frus1969-76v02 1"])
+                #expect(Self.lines(documents) == ["1972 frus1969-76v02 1"], "\(String(describing: scope))")
+
+                // The occurrences first: the documents query asked after them is not served their entry.
+                let occurrencesFirst = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+                #expect(Self.lines(try await occurrencesFirst.termOccurrencesByYearAndVolume(term: "treaty", volumeIds: scope))
+                        == Self.lines(occurrences))
+                #expect(Self.lines(try await occurrencesFirst.termFrequencyByYearAndVolume(term: spelt, volumeIds: scope))
+                        == Self.lines(documents), "the documents query was served the occurrence series' entry")
+
+                // The documents first: the occurrences asked after them, and the years they sum to, are not
+                // served the documents query's entry.
+                let documentsFirst = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+                #expect(Self.lines(try await documentsFirst.termFrequencyByYearAndVolume(term: spelt, volumeIds: scope))
+                        == Self.lines(documents))
+                #expect(Self.lines(try await documentsFirst.termOccurrencesByYearAndVolume(term: "treaty", volumeIds: scope))
+                        == Self.lines(occurrences), "the occurrence series was served the documents query's entry")
+                #expect(try await documentsFirst.termOccurrencesByYear(term: "treaty", volumeIds: scope).map(\.count) == [4, 1])
+            }
+
+            // The occurrence series is served from its own cache until `invalidateCache()` clears it: a volume
+            // indexed after the series was cached is not in it, and is once the cache has been cleared.
+            let cached = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+            let first = Self.lines(try await cached.termOccurrencesByYearAndVolume(term: "treaty"))
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v03.xml"),
+                volumeId: "frus1969-76v03",
+                documents: [("d1", "<head>1. Memo</head><dateline><date when=\"1973-01-01\">January 1, 1973</date></dateline><p>The treaty, the treaty.</p>")]
+            )
+            try await pipeline.indexVolume("frus1969-76v03")
+            #expect(Self.lines(try await cached.termOccurrencesByYearAndVolume(term: "treaty")) == first,
+                    "a cached series is served until the cache is cleared")
+            await cached.invalidateCache()
+            #expect(Self.lines(try await cached.termOccurrencesByYearAndVolume(term: "treaty")) == first + ["1973 frus1969-76v03 2"])
+        }
+    }
+
     @Test("The bar segments are occurrences too, and sum to the year totals")
     func segmentsAreOccurrencesAndReconcile() async throws {
         try await withAnalyticsTempDir { dir in

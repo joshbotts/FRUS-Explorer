@@ -47,6 +47,8 @@ import Observation
 ///          the four constants and every static rule moved into FRUSCoreKit (`ChronologyGrouping`,
 ///          `FRUSCoreKit/Chronology/ChronologyGrouping.swift`), line for line; their names here forward
 ///          there, and the state and `reload()` stay
+///   1.10 — 2026-11-22 (FRUS Explorer Light, #1912): two doc comments name the kit's calls as they now
+///          read, each with a `locale` the app leaves at the reader's own; the calls are unchanged
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -310,7 +312,7 @@ final class ChronologyViewModel {
     // they moved line for line (FRUS Explorer Light, S24b); these are the names `reload()`, the view and
     // the suites call.
 
-    /// Buckets `rows` into date sections: `ChronologyGrouping.group(_:viewBucket:ascending:)`.
+    /// Buckets `rows` into date sections: `ChronologyGrouping.group(_:viewBucket:ascending:locale:)`, in the reader's own locale.
     nonisolated private static func group(
         _ rows: [ChronologyRow],
         viewBucket: DateBucket,
@@ -405,7 +407,7 @@ final class ChronologyViewModel {
     }
 
     /// The distribution chart from aggregate counts:
-    /// `ChronologyGrouping.makeChart(fromCounts:viewBucket:maxSeries:)`.
+    /// `ChronologyGrouping.makeChart(fromCounts:viewBucket:maxSeries:locale:)`, in the reader's own locale.
     nonisolated static func makeChart(
         fromCounts counts: [(bucketKey: String, volumeId: String, count: Int)],
         viewBucket: DateBucket,
