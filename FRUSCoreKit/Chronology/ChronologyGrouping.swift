@@ -39,7 +39,7 @@ public struct ChronologyDateGroup: Identifiable, Sendable {
     public var id: String { bucketKey }
     public var count: Int { rows.count }
 
-    /// A section of exactly these values, as `ChronologyGrouping.group(_:viewBucket:ascending:)` builds
+    /// A section of exactly these values, as `ChronologyGrouping.group(_:viewBucket:ascending:locale:)` builds
     /// each one: the memberwise initialiser, spelt out so that a host can build one too, as the app's
     /// legend filter does when it narrows a section's rows to the chosen volumes.
     public init(bucketKey: String, granularity: DateBucket, sortDate: Date, displayLabel: String,
@@ -187,6 +187,9 @@ public struct ChronologyOverflowCounts: Equatable, Sendable {
 ///   1.0 — 2026-11-12 (FRUS Explorer Light, S24b): out of `ChronologyViewModel` (an `@Observable`
 ///          `@MainActor` class), line for line: the four constants, the grouping, partition, overflow
 ///          and chart statics, the bucket choice and the bucket keys' formatting
+///   1.1 — 2026-11-22 (FRUS Explorer Light, #1912): `group` and `makeChart(fromCounts:viewBucket:maxSeries:locale:)`
+///          take the locale their section and bucket labels are written in, as the counts' calls do; the
+///          default is the reader's own, which the labels were written in before, so the app's are unchanged
 public enum ChronologyGrouping {
 
     /// Hard cap on rows materialised per load. The date pickers bound the working set;
@@ -210,10 +213,21 @@ public enum ChronologyGrouping {
     /// Buckets `rows` into date sections. Each row is placed at the **coarser** of the
     /// view's target granularity and the row's own stored precision, so a year-only
     /// document never lands in a specific-day section pretending to be January 1.
+    ///
+    /// - Parameters:
+    ///   - rows: The rows to section.
+    ///   - viewBucket: The view's target granularity.
+    ///   - ascending: Whether the sections run oldest first.
+    ///   - locale: The locale each section's label (`ChronologyDateGroup.displayLabel`) is written in, in
+    ///     its own calendar: `"February 15, 1969"` in the United States, `"15 February 1969"` in Britain,
+    ///     and in Thailand's Buddhist calendar a year of 2512, as the app's labels are there. The reader's
+    ///     own by default, as the app's are; a host pins its readers' (FRUS Explorer Light, #1912).
+    /// - Returns: The sections, oldest first when `ascending`, newest first otherwise.
     public nonisolated static func group(
         _ rows: [ChronologyRow],
         viewBucket: DateBucket,
-        ascending: Bool
+        ascending: Bool,
+        locale: Locale = .autoupdatingCurrent
     ) -> [ChronologyDateGroup] {
         var buckets: [String: [ChronologyRow]] = [:]
         var bucketGranularity: [String: DateBucket] = [:]
@@ -231,7 +245,7 @@ public enum ChronologyGrouping {
                 bucketKey: key,
                 granularity: gran,
                 sortDate: sortDate(forBucketKey: key) ?? .distantPast,
-                displayLabel: label(forBucketKey: key, granularity: gran),
+                displayLabel: label(forBucketKey: key, granularity: gran, locale: locale),
                 rows: rows,
                 volumeCount: Set(rows.map(\.volumeId)).count,
                 subseriesCount: subseries.count,
@@ -475,7 +489,8 @@ public enum ChronologyGrouping {
     /// Builds the stacked-distribution chart data from the placed date groups: one bucket
     /// per group, segmented by volume. When more than `maxSeries` distinct volumes appear,
     /// the smallest fold into a single `chronologyOtherSeriesKey` series so the legend
-    /// stays legible. Series are returned largest-first for stable colour assignment.
+    /// stays legible. Series are returned largest-first for stable colour assignment. A
+    /// bucket's label is its group's, written in the locale `group` was given.
     public nonisolated static func makeChart(
         from groups: [ChronologyDateGroup],
         maxSeries: Int
@@ -530,10 +545,20 @@ public enum ChronologyGrouping {
     /// exceeds `loadLimit`, so the chart reflects the full distribution without materialising
     /// rows. Buckets are keyed at `viewBucket` granularity; volume folding into
     /// `chronologyOtherSeriesKey` matches `makeChart(from:maxSeries:)`.
+    ///
+    /// - Parameters:
+    ///   - counts: The aggregate counts, a document a tuple's `count` times.
+    ///   - viewBucket: The granularity the counts are keyed at.
+    ///   - maxSeries: The most series the legend shows, `Other` among them.
+    ///   - locale: The locale each bucket's label is written in, as `group`'s sections' are: the
+    ///     reader's own by default, as the app's are; a host pins its readers' (FRUS Explorer Light,
+    ///     #1912).
+    /// - Returns: The buckets oldest first, and the series largest first, with `Other` last.
     public nonisolated static func makeChart(
         fromCounts counts: [(bucketKey: String, volumeId: String, count: Int)],
         viewBucket: DateBucket,
-        maxSeries: Int
+        maxSeries: Int,
+        locale: Locale = .autoupdatingCurrent
     ) -> (buckets: [ChronologyChartBucket], series: [ChronologyChartSeries]) {
         guard !counts.isEmpty else { return ([], []) }
 
@@ -564,7 +589,7 @@ public enum ChronologyGrouping {
                 .sorted { $0.seriesKey < $1.seriesKey }
             return ChronologyChartBucket(
                 bucketKey: key,
-                label: label(forBucketKey: key, granularity: viewBucket),
+                label: label(forBucketKey: key, granularity: viewBucket, locale: locale),
                 date: sortDate(forBucketKey: key) ?? .distantPast,
                 segments: segments
             )
@@ -629,12 +654,12 @@ public enum ChronologyGrouping {
         return Calendar(identifier: .gregorian).date(from: comps)
     }
 
-    /// Renders a bucket key at its granularity: `"1969"`, `"February 1969"`, or
-    /// `"February 15, 1969"`.
-    nonisolated private static func label(forBucketKey key: String, granularity: DateBucket) -> String {
+    /// Renders a bucket key at its granularity in `locale`: `"1969"`, `"February 1969"`, or
+    /// `"February 15, 1969"` in the United States.
+    nonisolated private static func label(forBucketKey key: String, granularity: DateBucket, locale: Locale) -> String {
         guard let date = sortDate(forBucketKey: key) else { return key }
         let f = DateFormatter()
-        f.locale = .autoupdatingCurrent
+        f.locale = locale
         switch granularity {
         case .year:  f.dateFormat = "yyyy"
         case .month: f.setLocalizedDateFormatFromTemplate("MMMM yyyy")
