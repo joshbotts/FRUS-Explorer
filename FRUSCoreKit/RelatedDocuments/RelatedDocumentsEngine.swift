@@ -128,6 +128,11 @@ public enum RelatedDocumentsRanker {
 ///          the host's `RelatedDocumentsDependencies` where they read `AppState`, the semantic axis
 ///          runs only for a host that gives one, and the app's `rank(…, appState:)` passes its own
 ///          (`RelatedDocumentsEngine+App.swift`)
+///   1.3 — 2026-11-22: FRUS Explorer Light (#1907) — `rank` takes a `userSource`, where the shown
+///          rows' lines read a document's summary (`IndexingPipeline.documentSnippets(forKeys:maxLength:userSource:)`),
+///          for a host that keeps each reader's writing apart from the index it serves; the default,
+///          `.index`, reads it from the index by the statement the fetch has always run, so the app's
+///          calls are unchanged
 public enum RelatedDocumentsEngine {
 
     /// The bounded candidate producers. Archival is listed first, so on a key a candidate is produced
@@ -169,6 +174,15 @@ public enum RelatedDocumentsEngine {
     ///     (its query never runs).
     ///   - scopeVolumeIds: The volume set to restrict candidates to (`nil` = all indexed).
     ///   - limit: Maximum rows.
+    ///   - includeSnippets: Whether to fetch each shown row's line (`RelatedDocumentRow.snippet`).
+    ///     Background callers that never read it pass `false`.
+    ///   - userSource: Where a shown row's line reads the document's summary, which it prefers to the
+    ///     document's own text: the index's own `summary_text`, as the app reads it (the default), or
+    ///     one user's row of `user_search` in a store attached to the index
+    ///     (`SearchUserSource.attachedStore(userId:)`), as a host that keeps each reader's writing
+    ///     apart from the index it serves reads it (`IndexingPipeline.documentSnippets(forKeys:maxLength:userSource:)`).
+    ///     Only the lines read it, so with `includeSnippets: false` it changes nothing. A read that
+    ///     fails, as one of an attached store the index does not have, leaves the rows without lines.
     ///   - includeOffIndexLeads: Whether to run the S-3 off-index scan. Background callers pass
     ///     `false` for the same reason they pass `includeSnippets: false` — the scan is a full
     ///     corpus Hamming pass whose only consumer is a section on screen.
@@ -184,6 +198,7 @@ public enum RelatedDocumentsEngine {
         scopeVolumeIds: Set<String>?,
         limit: Int,
         includeSnippets: Bool = true,
+        userSource: SearchUserSource = .index,
         includeOffIndexLeads: Bool = true,
         dependencies: RelatedDocumentsDependencies
     ) async -> RelatedDocumentsResult {
@@ -312,7 +327,9 @@ public enum RelatedDocumentsEngine {
 
         if includeSnippets, let pipeline = dependencies.indexingPipeline, !rows.isEmpty {
             let keys = rows.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-            if let snippets = try? await pipeline.documentSnippets(forKeys: keys) {
+            // The summaries are read where the host keeps them (#1907); from the index, the default,
+            // by the statement this fetch ran before it took a source.
+            if let snippets = try? await pipeline.documentSnippets(forKeys: keys, userSource: userSource) {
                 for i in rows.indices { rows[i].snippet = snippets[rows[i].key.compositeString] }
             }
         }

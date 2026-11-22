@@ -20,11 +20,14 @@ import Foundation
 ///          `RelatedDocumentsRequest.load` and `ProjectLeadsService`)
 ///   1.1 — 2026-11-10: FRUS Explorer Light's S23b — `CrossReferenceStore`'s conformance to
 ///          `RelatedCitationSource` is declared with the store, now FRUSCoreKit's
+///   1.2 — 2026-11-22: FRUS Explorer Light (#1907) — the doc comment names the kit's `rank` as it now
+///          reads, with a `userSource` the app leaves at the index; the call is unchanged
 extension RelatedDocumentsEngine {
 
     /// Computes the ranked related documents for an anchor over the app's own index and stores: the
-    /// kit's ``rank(anchor:anchorYear:weights:scopeVolumeIds:limit:includeSnippets:includeOffIndexLeads:dependencies:)``
-    /// with ``RelatedDocumentsDependencies/init(appState:)``.
+    /// kit's ``rank(anchor:anchorYear:weights:scopeVolumeIds:limit:includeSnippets:userSource:includeOffIndexLeads:dependencies:)``
+    /// with ``RelatedDocumentsDependencies/init(appState:)``, its lines' summaries read from the index
+    /// (the kit's default source), where the app keeps them.
     ///
     /// - Parameters:
     ///   - anchor: The seed document.

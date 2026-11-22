@@ -19,6 +19,12 @@ import Testing
 #if canImport(FTS5Store)
 import FTS5Store
 #endif
+// SHA-256 is CryptoKit's on Apple platforms; on Linux the web edition supplies swift-crypto's Crypto.
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 // MARK: - RelatedDocumentsHostTests
 
@@ -34,8 +40,15 @@ import FTS5Store
 /// `d1`, `d2` and `d3` share a chapter and `d4` sits in another, and the four are dated 1971, 1971,
 /// 1972 and 1975.
 ///
+/// Since #1907 the shown rows' lines read a reader's summaries where a host keeps them: over the app's
+/// index, where the app writes them, and over a copy stripped of the writing and opened read-only, as
+/// such a host serves one, with and without a store of its readers' writing attached (`HostServedIndex`).
+/// From the index, the default, the lines' statement is the one the engine ran before it took a source,
+/// by the pipeline's statement trace and a pin taken at `v2` `21c77370`.
+///
 /// Version history:
 ///   1.0 — 2026-11-08 (FRUS Explorer Light S23a): initial implementation
+///   1.1 — 2026-11-22 (FRUS Explorer Light, #1907): the lines' user source
 @Suite("FRUSCoreKit — Related Documents' engine, as a host calls it")
 struct RelatedDocumentsHostTests {
 
@@ -279,5 +292,181 @@ struct RelatedDocumentsHostTests {
         #expect(result.rows.isEmpty)
         #expect(result.totalBeforeLimit == 0)
         #expect(semantic.candidateCalls == 0)
+    }
+
+    // MARK: A row's line, with a reader's summaries in a store (#1907)
+
+    /// d3's summary, as the app writes one into its index and as the first reader's row of a host's
+    /// store holds it; and its line, folded.
+    private static let d3Summary = "The President's letter,\n  summarised   in brief. "
+    private static let d3SummaryLine = "The President's letter, summarised in brief."
+
+    /// d3's and d4's lines from their text, which the index stores from the head on.
+    private static let d3TextLine = "3. Letter From the President The President set out the terms of the agreement on access."
+    private static let d4TextLine = "4. Editorial Note The agreement entered into force."
+
+    /// The first reader summarised d3, as the app's index holds it, and noted d4; the other reader noted
+    /// d3 and summarised d4.
+    private static let storeRows = [
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d3", summary: d3Summary, note: "On the letter."),
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d4", summary: nil, note: "Only a note."),
+        HostStoreRow(user: "reader-b", volumeId: volumeId, documentId: "d3", summary: nil, note: "The other reader's note."),
+        HostStoreRow(user: "reader-b", volumeId: volumeId, documentId: "d4", summary: "The other reader's summary of the note.", note: nil),
+    ]
+
+    /// The app's index of the volume, with d3's summary written into it, the files a host copies it from,
+    /// and a host's store of its readers' writing.
+    private struct AppIndexAndStore {
+        let app: IndexingPipeline
+        let database: URL
+        let volumes: URL
+        let store: URL
+        let dir: URL
+    }
+
+    /// The volume indexed read-write by the kit's pipeline, as the app's index is built, with d3's summary
+    /// written into it as the app writes one, and a host's store holding `storeRows`, for `body`.
+    @MainActor
+    private func withAppIndexAndStore<T>(_ body: (AppIndexAndStore) async throws -> T) async throws -> T {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSRelatedHost-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try Data(Self.volumeXML.utf8).write(to: volumes.appendingPathComponent("\(Self.volumeId).xml"))
+        let database = dir.appendingPathComponent("index.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                                            volumesDirectory: volumes, resources: .none,
+                                            defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+        try await pipeline.updateSummaryText(volumeId: Self.volumeId, documentId: "d3", responseText: Self.d3Summary)
+        let store = dir.appendingPathComponent("app-data/app.db")
+        try HostServedIndex.writeStore(at: store, rows: Self.storeRows)
+        return try await body(AppIndexAndStore(app: pipeline, database: database, volumes: volumes, store: store, dir: dir))
+    }
+
+    /// `d1`'s related documents over `pipeline`, at the default weights: with no source passed, as the
+    /// app's calls make it, or with `userSource`.
+    @MainActor
+    private func related(over pipeline: IndexingPipeline, userSource: SearchUserSource? = nil,
+                         includeSnippets: Bool = true) async -> RelatedDocumentsResult {
+        guard let userSource else {
+            return await RelatedDocumentsEngine.rank(
+                anchor: Self.key("d1"), anchorYear: nil, weights: .default, scopeVolumeIds: nil, limit: 30,
+                includeSnippets: includeSnippets, dependencies: dependencies(pipeline))
+        }
+        return await RelatedDocumentsEngine.rank(
+            anchor: Self.key("d1"), anchorYear: nil, weights: .default, scopeVolumeIds: nil, limit: 30,
+            includeSnippets: includeSnippets, userSource: userSource, dependencies: dependencies(pipeline))
+    }
+
+    /// The rows with their lines left out: which documents, in which order, with what scores and evidence.
+    private static func withoutLines(_ rows: [RelatedDocumentRow]) -> [RelatedDocumentRow] {
+        rows.map { row in
+            var row = row
+            row.snippet = nil
+            return row
+        }
+    }
+
+    @MainActor
+    @Test("With a reader's store attached to a host's copy, a shown row's line is that reader's summary, row for row as on the app's index, or else the document's text; another reader's is never read")
+    func withAStoreARowsLineIsTheReadersSummary() async throws {
+        try await withAppIndexAndStore { fixture in
+            let served = try HostServedIndex.servedCopy(of: fixture.database, volumes: fixture.volumes, in: fixture.dir,
+                                                        userStore: fixture.store)
+            let app = await related(over: fixture.app)
+            #expect(app.rows.map(\.key) == [Self.key("d3"), Self.key("d4")])
+            #expect(app.rows.map(\.snippet) == [Self.d3SummaryLine, Self.d4TextLine])
+
+            // The first reader's summary of d3 is the app's index's, so the rows are the app's, line for line:
+            // d3's summary, folded, and d4's text, which they only noted.
+            let reader = await related(over: served, userSource: .attachedStore(userId: "reader-a"))
+            #expect(reader.rows == app.rows)
+            #expect(reader.totalBeforeLimit == app.totalBeforeLimit)
+
+            // The other reader's line for d4 is their summary, and for d3, which they noted, the text.
+            let other = await related(over: served, userSource: .attachedStore(userId: "reader-b"))
+            #expect(other.rows.map(\.snippet) == [Self.d3TextLine, "The other reader's summary of the note."])
+            #expect(Self.withoutLines(other.rows) == Self.withoutLines(app.rows))
+
+            // From the index, the default, whose summaries the strip emptied, each line is the document's text,
+            // as before; a reader with no rows reads the same, and so does passing the index.
+            let index = await related(over: served)
+            #expect(index.rows.map(\.snippet) == [Self.d3TextLine, Self.d4TextLine])
+            #expect(Self.withoutLines(index.rows) == Self.withoutLines(app.rows))
+            #expect(await related(over: served, userSource: .attachedStore(userId: "reader-c")).rows == index.rows)
+            #expect(await related(over: served, userSource: .index).rows == index.rows)
+        }
+    }
+
+    @MainActor
+    @Test("Asked for a reader's summaries with no store attached, the rows are ranked as before and carry no lines, not the index's")
+    func withNoStoreTheRowsCarryNoLines() async throws {
+        try await withAppIndexAndStore { fixture in
+            // The app's own index, which holds d3's summary and has no store attached.
+            let app = await related(over: fixture.app)
+            let refused = await related(over: fixture.app, userSource: .attachedStore(userId: "reader-a"))
+            #expect(Self.withoutLines(refused.rows) == Self.withoutLines(app.rows))
+            #expect(refused.rows.map(\.snippet) == [nil, nil])
+        }
+    }
+
+    @MainActor
+    @Test("With no lines asked for, a reader's source reads nothing: no statement the engine runs names the store, and no row has a line")
+    func withNoLinesTheSourceReadsNothing() async throws {
+        try await withAppIndexAndStore { fixture in
+            let served = try HostServedIndex.servedCopy(of: fixture.database, volumes: fixture.volumes, in: fixture.dir,
+                                                        userStore: fixture.store)
+            let trace = StatementTraceForTesting()
+            await served.setStatementTraceForTesting(trace)
+            let quiet = await related(over: served, userSource: .attachedStore(userId: "reader-a"), includeSnippets: false)
+            await served.setStatementTraceForTesting(nil)
+            #expect(quiet.rows.map(\.key) == [Self.key("d3"), Self.key("d4")])
+            #expect(quiet.rows.allSatisfy { $0.snippet == nil })
+            #expect(!trace.statements.isEmpty)
+            #expect(!trace.statements.contains { $0.contains("user_search") }, "\(trace.statements)")
+
+            // Asked for lines, the same source reads the store once, in the lines' statement.
+            let read = StatementTraceForTesting()
+            await served.setStatementTraceForTesting(read)
+            _ = await related(over: served, userSource: .attachedStore(userId: "reader-a"))
+            await served.setStatementTraceForTesting(nil)
+            #expect(read.statements.filter { $0.contains("user_search") }.count == 1, "\(read.statements)")
+        }
+    }
+
+    @MainActor
+    @Test("From the index, the default, the shown rows' lines are read by the statement the engine read them by before it took a source, and passing the index reads the same")
+    func fromTheIndexTheLinesStatementIsItsText() async throws {
+        try await withIndex { pipeline in
+            let trace = StatementTraceForTesting()
+            await pipeline.setStatementTraceForTesting(trace)
+            _ = await RelatedDocumentsEngine.rank(
+                anchor: Self.key("d1"), anchorYear: nil, weights: .default, scopeVolumeIds: nil,
+                limit: 30, dependencies: dependencies(pipeline))
+            await pipeline.setStatementTraceForTesting(nil)
+            let lines = trace.statements.filter { $0.contains("dc.summary_text, dc.body_text") }
+            let text = lines.joined(separator: "\n")
+            let digest = SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+            // Taken at `v2` 21c77370, the tree before #1907, by running this rank with the engine as it was
+            // there: so it says the lines' statement is the text and binds it was.
+            let pinned = (count: 1, sha256: "94145263bcd958c40d322472d06c54749c71d9778ad6df90766994e50c8bc668")
+            if lines.count != pinned.count || digest != pinned.sha256 {
+                Issue.record("""
+                    \(lines.count) statements, SHA-256 \(digest), where the pin is \(pinned.count) and \(pinned.sha256):
+                    \(text)
+                    """)
+            }
+
+            let explicit = StatementTraceForTesting()
+            await pipeline.setStatementTraceForTesting(explicit)
+            _ = await RelatedDocumentsEngine.rank(
+                anchor: Self.key("d1"), anchorYear: nil, weights: .default, scopeVolumeIds: nil,
+                limit: 30, userSource: .index, dependencies: dependencies(pipeline))
+            await pipeline.setStatementTraceForTesting(nil)
+            #expect(explicit.statements.filter { $0.contains("dc.summary_text, dc.body_text") } == lines)
+        }
     }
 }
