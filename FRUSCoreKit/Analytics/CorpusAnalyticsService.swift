@@ -87,11 +87,25 @@ public struct VolumeFrequency: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 121: initial implementation
 ///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+///   1.2 — 2026-11-22 (FRUS Explorer Light, #1928): a public initialiser, the memberwise one spelt out,
+///          so a host that sums a series into decades, as the analytics view does, makes the kit's type
 public struct DecadeFrequency: Sendable, Identifiable {
     /// The first calendar year of the ten-year bucket (e.g. `1960` for the 1960s).
     public let decadeStart: Int
+    /// The documents (or, for an occurrence series summed into decades, the occurrences) in the decade.
     public let count: Int
+    /// The decade's first year, which no two buckets of one series share.
     public var id: Int { decadeStart }
+
+    /// Creates a decade's bucket.
+    ///
+    /// - Parameters:
+    ///   - decadeStart: The decade's first year, a multiple of ten: `1970` for the 1970s, where a year 1973 falls.
+    ///   - count: What the decade holds.
+    public init(decadeStart: Int, count: Int) {
+        self.decadeStart = decadeStart
+        self.count = count
+    }
 }
 
 /// Document frequency aggregated per calendar month.
