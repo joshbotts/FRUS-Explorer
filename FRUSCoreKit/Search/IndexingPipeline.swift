@@ -560,6 +560,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.63 — 2026-11-17 (#1929): `volumeSources(forVolumeId:)` reads `job_number` and `job_number_norm`,
 ///         written since #733, so a Sources row naming a CIA job reads back with its job and gets its
 ///         Archival Neighbors target; nothing the indexer stores changes, so no index version
+///  4.64 — 2026-11-22 (FRUS Explorer Light, #1927): `documentsInDateRange(_:scopeVolumeIds:ascending:limit:userSource:)`
+///         reads a row's summary from one user's rows of an attached store's `user_search`, for a host that
+///         keeps each reader's writing apart from the index it serves, as `documentSnippets(forKeys:maxLength:userSource:)`
+///         reads a line's. From the index, the default and the app's call, it runs the same statement as
+///         before; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -6119,49 +6124,40 @@ public actor IndexingPipeline {
     /// `date_iso` and capped at `limit`. The date range bounds the working set; callers
     /// should always pass a bounded `range`.
     ///
+    /// A row's `summary` is this index's own `summary_text`, which the app keeps level with its
+    /// reader's summaries, unless the host names where its reader's summaries are (`userSource`,
+    /// since FRUS-Explorer#1927): a copy exported without the reader's writing, or stripped of it by
+    /// `ResearchDatabaseStrip`, holds none.
+    ///
     /// - Parameters:
     ///   - range: Inclusive ISO date window. Either bound may be `nil` (open-ended).
     ///   - scopeVolumeIds: Optional volume restriction (e.g. a subseries expansion); `nil`
     ///     searches the whole corpus.
     ///   - ascending: Sort oldest-first when `true`, newest-first when `false`.
     ///   - limit: Hard cap on rows returned.
+    ///   - userSource: Where a row's summary is read: the index's own `summary_text`, as the app
+    ///     reads it (the default), or one user's rows of `user_search` in a store attached to the
+    ///     index (`SearchUserSource.attachedStore(userId:)`), as a host that keeps each reader's
+    ///     writing apart from the index it serves reads it, and as
+    ///     `documentSnippets(forKeys:maxLength:userSource:)` reads it for a line. Every other field,
+    ///     and which rows are returned in which order, is the index's either way.
+    /// - Throws: `IndexingError` when the statement cannot be prepared, as when an attached store is
+    ///   asked for and the index has none attached: a reader's summaries are then refused, not read
+    ///   from the index. As before, a step that fails while the rows are read ends them there, from
+    ///   either source, without an error.
     public func documentsInDateRange(
         _ range: DateRange,
         scopeVolumeIds: [String]?,
         ascending: Bool,
-        limit: Int
+        limit: Int,
+        userSource: SearchUserSource = .index
     ) throws -> [ChronologyRow] {
-        var parts: [String] = ["dd.date_iso IS NOT NULL"]
-        var args: [String] = []
-        if let e = range.earliest {
-            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
-            args.append(e)
-        }
-        if let l = range.latest {
-            parts.append("dd.date_iso <= ?")
-            args.append(l)
-        }
-        if let vids = scopeVolumeIds, !vids.isEmpty {
-            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
-            parts.append("dd.volume_id IN (\(placeholders))")
-            args.append(contentsOf: vids)
-        }
-
-        let order = ascending ? "ASC" : "DESC"
-        let sql = """
-            SELECT dd.volume_id, dd.document_id, dc.header, dc.dateline, dc.summary_text,
-                   dd.date_iso, dd.date_iso_max, dd.date_precision, dd.date_certainty,
-                   dc.is_editorial_note, dc.is_front_matter, dc.document_number
-            FROM document_dates dd
-            JOIN document_cache dc
-              ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
-            WHERE \(parts.joined(separator: " AND "))
-            ORDER BY dd.date_iso \(order), dc.document_number IS NULL, dd.document_id ASC
-            LIMIT \(limit)
-            """
-        let stmt = try auxPrepare(sql)
+        let statement = Self.documentsInDateRangeStatement(range, scopeVolumeIds: scopeVolumeIds,
+                                                           ascending: ascending, limit: limit,
+                                                           userSource: userSource)
+        let stmt = try auxPrepare(statement.sql)
         defer { sqlite3_finalize(stmt) }
-        for (i, arg) in args.enumerated() {
+        for (i, arg) in statement.binds.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
         }
 
@@ -6187,6 +6183,90 @@ public actor IndexingPipeline {
             ))
         }
         return rows
+    }
+
+    /// The statement ``documentsInDateRange(_:scopeVolumeIds:ascending:limit:userSource:)`` runs, and its
+    /// binds in order (FRUS-Explorer#1927).
+    ///
+    /// From the index, the statement the function has always run, byte for byte. From an attached store,
+    /// the same statement, but for each row's summary, which is the user's row of `user_search` for the
+    /// document: the user's summaries are gathered once a statement, in one scan of the table, since FTS5
+    /// indexes none of its unindexed columns, `user_id`, `volume_id` and `document_id` among them, so a
+    /// lookup by document would scan every user's rows for each row returned. They join the index's rows
+    /// as a `LEFT JOIN` after the index's two tables, so the rows, and their order, are the index's. A
+    /// store keeps one row of a user's text for each document (`SearchUserSource.attachedStore(userId:)`);
+    /// should one hold two, the row reads the greater of their summaries, as
+    /// `documentSnippets(forKeys:maxLength:userSource:)` does, so that it is the same at every call. The
+    /// user's bind comes first, as its `?` comes first in the text.
+    private static func documentsInDateRangeStatement(
+        _ range: DateRange,
+        scopeVolumeIds: [String]?,
+        ascending: Bool,
+        limit: Int,
+        userSource: SearchUserSource
+    ) -> (sql: String, binds: [String]) {
+        var parts: [String] = ["dd.date_iso IS NOT NULL"]
+        var args: [String] = []
+        if let e = range.earliest {
+            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("dd.date_iso <= ?")
+            args.append(l)
+        }
+        if let vids = scopeVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("dd.volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+
+        let order = ascending ? "ASC" : "DESC"
+        switch userSource {
+        case .index:
+            let sql = """
+                SELECT dd.volume_id, dd.document_id, dc.header, dc.dateline, dc.summary_text,
+                       dd.date_iso, dd.date_iso_max, dd.date_precision, dd.date_certainty,
+                       dc.is_editorial_note, dc.is_front_matter, dc.document_number
+                FROM document_dates dd
+                JOIN document_cache dc
+                  ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+                WHERE \(parts.joined(separator: " AND "))
+                ORDER BY dd.date_iso \(order), dc.document_number IS NULL, dd.document_id ASC
+                LIMIT \(limit)
+                """
+            return (sql, args)
+        case .attachedStore(let userId):
+            let sql = """
+                WITH summaries(v, d, s) AS MATERIALIZED (
+                    SELECT us.volume_id, us.document_id, max(us.summary_text)
+                    FROM \(attachedUserStoreSchema).user_search us
+                    WHERE us.user_id = ?
+                    GROUP BY us.volume_id, us.document_id)
+                SELECT dd.volume_id, dd.document_id, dc.header, dc.dateline, summaries.s,
+                       dd.date_iso, dd.date_iso_max, dd.date_precision, dd.date_certainty,
+                       dc.is_editorial_note, dc.is_front_matter, dc.document_number
+                FROM document_dates dd
+                JOIN document_cache dc
+                  ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+                LEFT JOIN summaries ON summaries.v = dd.volume_id AND summaries.d = dd.document_id
+                WHERE \(parts.joined(separator: " AND "))
+                ORDER BY dd.date_iso \(order), dc.document_number IS NULL, dd.document_id ASC
+                LIMIT \(limit)
+                """
+            return (sql, [userId] + args)
+        }
+    }
+
+    /// `EXPLAIN QUERY PLAN` for the statement ``documentsInDateRange(_:scopeVolumeIds:ascending:limit:userSource:)``
+    /// runs, so a test can hold how often it reads an attached store's rows and which indexes it reads the
+    /// index's rows by.
+    func documentsInDateRangePlanForTesting(
+        _ range: DateRange, scopeVolumeIds: [String]?, ascending: Bool, limit: Int, userSource: SearchUserSource
+    ) throws -> String {
+        try queryPlanForTesting(Self.documentsInDateRangeStatement(range, scopeVolumeIds: scopeVolumeIds,
+                                                                   ascending: ascending, limit: limit,
+                                                                   userSource: userSource).sql)
     }
 
     /// Returns `(bucketKey, count)` pairs for documents overlapping `range`, grouped by a
