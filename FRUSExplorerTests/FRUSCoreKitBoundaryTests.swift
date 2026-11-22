@@ -23,7 +23,7 @@ import Testing
 /// unseen until its pin next moved. These scans read the source, so the app's own test run fails:
 /// - every import but Foundation is a module the kit may use, inside the `#if canImport` that
 ///   selects it (``importRuleViolations(in:)``);
-/// - no kit file reads `Bundle.main` or `UserDefaults`: the app reads them and passes the kit what
+/// - no kit file reads `Bundle.main`, `UserDefaults` or the Keychain: the app reads them and passes the kit what
 ///   it read (the broken-refs index, the citation style);
 /// - no kit file names a type, function, constant or variable the app declares at the top level of
 ///   a file under `FRUSExplorer/`, outside comments and string literals (``topLevelTypes(in:)``,
@@ -82,6 +82,11 @@ import Testing
 ///         since `makeAnalyticsPipeline` moved into the kit's suites with `CorpusAnalyticsServiceTests`
 ///   1.7 — 2026-11-12 (FRUS Explorer Light, S24c): the kit may import CoreGraphics behind
 ///         `canImport(CoreGraphics)`, for the archival network's layout and the graphs' label rules
+///   1.8 — 2026-11-22 (FRUS Explorer Light, #1911): the import rule takes a kit's allowances
+///         (``importRuleViolations(in:permitted:anywhere:)``), FRUSCoreKit's being ``permittedImports``,
+///         and the app-state rule is one function (``readsAppState(_:)``) that reads the Keychain too, as
+///         `CLAUDE.md`'s rule 1 says; `SharedKitsBoundaryTests`, below, holds the other shared kits to the
+///         same rules with them
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -135,9 +140,26 @@ struct FRUSCoreKitBoundaryTests {
         "CoreGraphics": ("canImport(CoreGraphics)", false),
     ]
 
+    /// The module a line of code imports, or `nil` when it imports none: after any attributes
+    /// (`@testable`, `@preconcurrency`) and an access level (`internal import`, SE-0409), and for an
+    /// import of one declaration (`import struct Foundation.URL`), the module that declares it.
+    static func importedModule(_ code: String) -> String? {
+        let declaration = /^(?:@\w+(?:\([^)]*\))?\s+)*(?:(?:public|package|internal|fileprivate|private)\s+)?import\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?([A-Za-z_]\w*)/
+        return code.firstMatch(of: declaration).map { String($0.1) }
+    }
+
     /// Each import in `source` that breaks the kit's rule, as `line: import`: Foundation anywhere;
     /// a permitted module only directly inside the branch of its own condition; nothing else.
     static func importRuleViolations(in source: String) -> [String] {
+        importRuleViolations(in: source, permitted: permittedImports)
+    }
+
+    /// Each import in `source` that breaks a kit's rule, as `line: import`: Foundation anywhere, a
+    /// module in `anywhere` anywhere, a module in `permitted` only directly inside the branch of its
+    /// own condition, and nothing else. FRUSCoreKit's rule is ``permittedImports`` with nothing
+    /// anywhere; each other shared kit has its own (`SharedKitsBoundaryTests.Kit`).
+    static func importRuleViolations(in source: String, permitted: [String: (condition: String, inElse: Bool)],
+                                     anywhere: Set<String> = []) -> [String] {
         var branches: [(condition: String, inElse: Bool)] = []
         var violations: [String] = []
         for (index, line) in codeLines(source).enumerated() {
@@ -148,10 +170,9 @@ struct FRUSCoreKitBoundaryTests {
                 branches[branches.count - 1].inElse = true
             } else if code.hasPrefix("#endif"), !branches.isEmpty {
                 branches.removeLast()
-            } else if code.hasPrefix("import ") || code.contains(" import ") && code.hasPrefix("@") {
-                let module = code.components(separatedBy: " ").last ?? ""
-                if module == "Foundation" { continue }
-                guard let rule = permittedImports[module], let branch = branches.last,
+            } else if let module = importedModule(code) {
+                if module == "Foundation" || anywhere.contains(module) { continue }
+                guard let rule = permitted[module], let branch = branches.last,
                       branch.condition == rule.condition, branch.inElse == rule.inElse else {
                     violations.append("\(index + 1): \(code)")
                     continue
@@ -204,26 +225,61 @@ struct FRUSCoreKitBoundaryTests {
         // An attributed import is an import, and an import in a comment or a string is not.
         #expect(Self.importRuleViolations(in: "@preconcurrency import WebKit\n") == ["1: @preconcurrency import WebKit"])
         #expect(Self.importRuleViolations(in: "// import SwiftUI\nlet s = \"import UIKit\"\n").isEmpty)
+        // An import with an access level (SE-0409) is an import, attributed or not, and an import of one
+        // declaration imports its module.
+        #expect(Self.importRuleViolations(in: "internal import SwiftUI\npublic import AppKit\npackage import UIKit\n")
+                == ["1: internal import SwiftUI", "2: public import AppKit", "3: package import UIKit"])
+        #expect(Self.importRuleViolations(in: "@preconcurrency internal import WebKit\n") == ["1: @preconcurrency internal import WebKit"])
+        #expect(Self.importRuleViolations(in: "#if canImport(SQLite3)\ninternal import SQLite3\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "import struct Foundation.URL\nimport class SwiftUI.Text\n")
+                == ["2: import class SwiftUI.Text"])
+        #expect(Self.importedModule("let importance = 1") == nil)
     }
 
-    // MARK: The app's settings and bundle
+    // MARK: The app's settings, bundle and Keychain
 
-    @Test("No kit file reads Bundle.main or UserDefaults")
+    /// Whether a line of code, comments and string literals blanked (``codeLines(_:)``), reads what the
+    /// app keeps for itself: its bundle (`Bundle.main`, a `Bundle = .main` or `Bundle? = .main` default,
+    /// or a `bundle: .main` argument), its settings (`UserDefaults`), or the Keychain, through the
+    /// Security framework's item calls and keys (`SecItemCopyMatching`, `kSecClass`, …).
+    static func readsAppState(_ line: String) -> Bool {
+        line.contains("Bundle.main") || line.contains("UserDefaults")
+            || line.range(of: #"Bundle\??\s*=\s*\.main\b|\bbundle:\s*\.main\b"#, options: .regularExpression) != nil
+            || line.range(of: #"\b(SecItem\w*|SecKeychain\w*|kSec[A-Z]\w*)"#, options: .regularExpression) != nil
+    }
+
+    @Test("No kit file reads Bundle.main, UserDefaults or the Keychain")
     func kitReadsNoBundleOrDefaults() throws {
         var sites: [String] = []
         for file in try Self.sources(under: "FRUSCoreKit") {
-            for (index, line) in Self.codeLines(file.text).enumerated()
-            where line.contains("Bundle.main") || line.contains("UserDefaults")
-                || line.range(of: #"Bundle\s*=\s*\.main"#, options: .regularExpression) != nil {
+            for (index, line) in Self.codeLines(file.text).enumerated() where Self.readsAppState(line) {
                 sites.append("\(file.path):\(index + 1)")
             }
         }
         #expect(sites.isEmpty, """
-            A kit file reads the app's bundle or settings. The kit is given what the app read — \
+            A kit file reads the app's bundle, settings or Keychain. The kit is given what the app read — \
             `BrokenRefsIndexStore`, `CitationStyle.current` and the indexer's `IndexingResources.bundled` \
-            and `UserDefaults` stamp store stay in the app for this reason:
+            and `UserDefaults` stamp store stay in the app for this reason, and the NARA client's key comes \
+            through a `NARACatalogKeyProvider`, which the app's `KeychainStore` answers:
             \(sites.joined(separator: "\n"))
             """)
+    }
+
+    @Test("The app-state rule reads the bundle, the settings and the Keychain, and only in code")
+    func appStateRule() {
+        #expect(Self.readsAppState("let url = Bundle.main.url(forResource: name, withExtension: ext)"))
+        #expect(Self.readsAppState("init(bundle: Bundle = .main) {}"))
+        #expect(Self.readsAppState("init(bundle: Bundle? = .main) {}"))
+        #expect(Self.readsAppState("let text = NSLocalizedString(key, bundle: .main, comment: note)"))
+        #expect(Self.readsAppState("let defaults = UserDefaults.standard"))
+        #expect(Self.readsAppState("let status = SecItemCopyMatching(query as CFDictionary, &item)"))
+        #expect(Self.readsAppState("query[kSecClass as String] = kSecClassGenericPassword"))
+        // A bundle the code is given, and a name that only begins like a Security key, are not reads.
+        #expect(!Self.readsAppState("let bundle = Bundle(url: url)"))
+        #expect(!Self.readsAppState("let bundle: Bundle? = given, mainBundle = .mainline"))
+        #expect(!Self.readsAppState("let kSeconds = 60"))
+        // A comment or a string literal is blanked before the rule reads its line.
+        #expect(Self.codeLines("// Bundle.main\nlet s = \"UserDefaults SecItemAdd\"\n").allSatisfy { !Self.readsAppState($0) })
     }
 
     // MARK: The app's types
@@ -672,8 +728,7 @@ struct FRUSCoreKitBoundaryTests {
             })
             for (index, line) in Self.linesByCompiler(file.text).enumerated() where !line.xcodeOnly {
                 let code = line.code.trimmingCharacters(in: .whitespaces)
-                guard code.hasPrefix("import ") || code.hasPrefix("@testable import ") else { continue }
-                let module = code.components(separatedBy: " ").last ?? ""
+                guard let module = Self.importedModule(code) else { continue }
                 guard !["Foundation", "Testing", "FRUSCoreKit"].contains(module) else { continue }
                 if Self.permittedImports[module] != nil, !outsideItsBranch.contains(index + 1) { continue }
                 problems.append("\(file.path):\(index + 1): \(code) outside the Xcode branch")
@@ -762,5 +817,290 @@ struct FRUSCoreKitBoundaryTests {
         let paths = CodingStandardsAuditTests.packageTargetPaths(in: manifest)
         #expect(paths.contains("FRUSCoreKit"), "Package.swift declares no target at FRUSCoreKit")
         #expect(paths.contains("FRUSExplorerTests/FRUSCoreKit"), "Package.swift declares no test target at FRUSExplorerTests/FRUSCoreKit")
+    }
+}
+
+// MARK: - SharedKitsBoundaryTests
+
+/// The other shared kits keep FRUSCoreKit's rules, each with its own allowances (FRUS Explorer Light,
+/// #1911): FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit,
+/// WordCloudKit and ManifestGeneratorCore, with their suites' folders, which the web edition compiles
+/// on Linux from a pinned commit (`CLAUDE.md`, "Web edition"). Five of them are compiled into the app
+/// as well (`project.yml`), so the app's build cannot tell a file of theirs that names the app's code
+/// from one that does not; CrossRefKit, GeneratorKit and ManifestGeneratorCore are the package's
+/// alone. Before these tests a change that broke one of them on Linux was found only by the web
+/// edition's daily watch, after it landed on `v2`. They read the source with
+/// `FRUSCoreKitBoundaryTests`' scanner, comments and string literals blanked, and its name rules:
+/// - every import, an attribute or an access level before `import` included, is Foundation, one the kit
+///   imports behind the `canImport` that selects it, directly inside that branch, or one it may import
+///   anywhere, which ``Kit`` names with its reason (``kits``).
+///   WordCloudKit's NaturalLanguage and `os` sit inside `#if canImport(NaturalLanguage)`;
+/// - no file reads `Bundle.main` (a `Bundle = .main` or `Bundle? = .main` default and a `bundle: .main`
+///   argument included), `UserDefaults` or the Keychain (``FRUSCoreKitBoundaryTests/readsAppState(_:)``);
+/// - no file names a type, function, constant or variable declared at the top level of a file under
+///   `FRUSExplorer/`, nor a suite one under `FRUSExplorerTests/`, beyond what the kit, the kits it
+///   imports and, for a suite, its folder declare for themselves.
+///
+/// A suite's lines that only Xcode compiles, inside `#if !SWIFT_PACKAGE` or the `#else` of
+/// `#if SWIFT_PACKAGE`, are the app's own and exempt (``FRUSCoreKitBoundaryTests/linesByCompiler(_:)``):
+/// `WordCloudKitTests/KeynessTests.swift`, which the unit target compiles too, imports the app there.
+/// A kit's own files have no such exemption.
+///
+/// What it cannot see: a file of one kit the app compiles naming a declaration of another the app
+/// compiles that its package target does not depend on (WordCloudKit naming a FRUSCoreKit type), which
+/// Xcode's one module builds and the package does not; and what FRUSCoreKit's scans cannot see either
+/// (that suite's note). `swift build` of the kit's target catches both.
+///
+/// Version history:
+///   1.0 — 2026-11-22 (FRUS Explorer Light, #1911): initial implementation
+@Suite("Shared kits — Foundation and their own guarded modules, and nothing that lives in the app")
+struct SharedKitsBoundaryTests {
+
+    /// The scanner every kit is read with: FRUSCoreKit's.
+    typealias Boundary = FRUSCoreKitBoundaryTests
+
+    /// A module imported directly inside the branch of `condition`, or of its `#else` when `inElse`.
+    typealias Branch = (condition: String, inElse: Bool)
+
+    /// One shared kit, its suites' folder, and what each may import besides Foundation.
+    struct Kit: Sendable, CustomTestStringConvertible {
+        /// The kit's package target, and its folder from the repository's root.
+        let name: String
+        /// Its suites' folder, or `nil` when they live in another kit's.
+        let suites: String?
+        /// The kits whose modules its files import: their top-level declarations are the package's to
+        /// name, and their suites may live in this kit's suites' folder.
+        var dependencies: [String] = []
+        /// What its files import behind the `canImport` that selects each, which says why; its suites,
+        /// and those of the kits that depend on it, may too.
+        var guarded: [String: Branch] = [:]
+        /// What its files may import anywhere, each with the reason; its suites may too.
+        var anywhere: [String: String] = [:]
+        /// What its suites may import anywhere, beyond the kit's, each with the reason.
+        var suitesAnywhere: [String: String] = [:]
+        /// A name the kit declares, so that a walk that read nothing fails rather than passes.
+        let declares: String
+
+        var testDescription: String { name }
+    }
+
+    /// SQLite and its stand-in, FTS5Store's: the system's on Apple platforms, `CSQLite` on Linux.
+    static let sqlite: [String: Branch] = ["SQLite3": ("canImport(SQLite3)", false), "CSQLite": ("canImport(SQLite3)", true)]
+
+    /// CryptoKit and swift-crypto's `Crypto`, which stands in for it where it is missing.
+    static let crypto: [String: Branch] = ["CryptoKit": ("canImport(CryptoKit)", false), "Crypto": ("canImport(CryptoKit)", true)]
+
+    /// WordCloudKit's tagging code's, rule 1's one exception: NaturalLanguage and `os`, inside
+    /// `#if canImport(NaturalLanguage)` alone (#1900).
+    static let tagging: [String: Branch] = ["NaturalLanguage": ("canImport(NaturalLanguage)", false),
+                                            "os": ("canImport(NaturalLanguage)", false)]
+
+    /// What every suites' folder imports anywhere: the test framework, and the kit it tests, a module of
+    /// the package's that no app target compiles them beside.
+    static func suiteModules(_ kit: String) -> [String: String] {
+        ["Testing": "the suites' framework",
+         kit: "the kit its suites test, a module of the package's; a suite the unit target compiles too imports it inside `#if SWIFT_PACKAGE`"]
+    }
+
+    /// The eight kits, each with what it imports today: behind a guard, or anywhere with the reason.
+    static let kits: [Kit] = [
+        Kit(name: "FTS5Store", suites: "FTS5StoreTests",
+            guarded: sqlite.merging(["OSLog": ("canImport(OSLog)", false)]) { kit, _ in kit },
+            suitesAnywhere: suiteModules("FTS5Store"), declares: "FTS5Store"),
+        Kit(name: "SourceNoteKit", suites: "SourceNoteKitTests",
+            suitesAnywhere: suiteModules("SourceNoteKit"), declares: "SourceNoteParser"),
+        Kit(name: "CrossRefKit", suites: "CrossRefKitTests",
+            suitesAnywhere: suiteModules("CrossRefKit"), declares: "CrossRefGrammar"),
+        Kit(name: "GeneratorKit", suites: "GeneratorKitTests",
+            suitesAnywhere: suiteModules("GeneratorKit"), declares: "VolumeCorpusEnumerator"),
+        // Its suites are in ManifestGeneratorTests, ManifestGeneratorCore's, which imports it.
+        Kit(name: "TEIHeaderKit", suites: nil,
+            guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "TEIHeaderParser"),
+        Kit(name: "SemanticVectorsKit", suites: "SemanticVectorsKitTests", guarded: crypto,
+            suitesAnywhere: suiteModules("SemanticVectorsKit"), declares: "SemanticVectorsArtifacts"),
+        Kit(name: "WordCloudKit", suites: "WordCloudKitTests",
+            guarded: crypto.merging(tagging) { kit, _ in kit },
+            suitesAnywhere: suiteModules("WordCloudKit"), declares: "WordCloudTokenizer"),
+        Kit(name: "ManifestGeneratorCore", suites: "ManifestGeneratorTests", dependencies: ["TEIHeaderKit"],
+            guarded: ["FoundationNetworking": ("canImport(FoundationNetworking)", false)],
+            anywhere: ["TEIHeaderKit": "its package dependency, which no guard needs: no app target compiles ManifestGeneratorCore (project.yml), so wherever it is built TEIHeaderKit is a module of its own"],
+            suitesAnywhere: suiteModules("ManifestGeneratorCore"), declares: "ManifestGeneratorRunner"),
+    ]
+
+    /// Each Swift file of the kit's folder with its lines of code, and of its suites' folder with the lines
+    /// both compilers build, Xcode's own blanked.
+    static func code(of kit: Kit) throws -> (kit: [(path: String, lines: [String])], suites: [(path: String, lines: [String])]) {
+        let files = try Boundary.sources(under: kit.name).map { ($0.path, Boundary.codeLines($0.text)) }
+        let suites = try (kit.suites.map { try Boundary.sources(under: $0) } ?? []).map { file in
+            (file.path, Boundary.linesByCompiler(file.text).map { $0.xcodeOnly ? "" : $0.code })
+        }
+        return (files, suites)
+    }
+
+    /// The kit named `name`, among ``kits``.
+    static func kit(named name: String) -> Kit? {
+        kits.first { $0.name == name }
+    }
+
+    /// What a kit's suites may import behind a guard: the kit's own guarded modules, and those of the kits
+    /// it depends on, whose suites may share its folder (TEIHeaderKit's are in ManifestGeneratorTests).
+    static func suitesGuarded(_ kit: Kit) -> [String: Branch] {
+        kit.dependencies.compactMap { Self.kit(named: $0)?.guarded }
+            .reduce(kit.guarded) { $0.merging($1) { own, _ in own } }
+    }
+
+    /// Each import in a suite's `source` that breaks its kit's rule, as `line: import`, but for those on a
+    /// line only Xcode compiles (``FRUSCoreKitBoundaryTests/linesByCompiler(_:)``), which are the app's own.
+    /// A violation whose line cannot be read is kept, never passed.
+    static func suiteImportViolations(in source: String, permitted: [String: Branch], anywhere: Set<String>) -> [String] {
+        let lines = Boundary.linesByCompiler(source)
+        return Boundary.importRuleViolations(in: source, permitted: permitted, anywhere: anywhere).filter { violation in
+            guard let line = Int(violation.prefix { $0 != ":" }), lines.indices.contains(line - 1) else { return true }
+            return !lines[line - 1].xcodeOnly
+        }
+    }
+
+    @Test("Each kit and its suites import Foundation, and any other module only where the kit's rule allows it", arguments: kits)
+    func importsFollowTheKitsRule(_ kit: Kit) throws {
+        let files = try Boundary.sources(under: kit.name)
+        #expect(!files.isEmpty, "read no file under \(kit.name)/: the walk is broken, not the kit clean")
+        var violations = files.flatMap { file in
+            Boundary.importRuleViolations(in: file.text, permitted: kit.guarded, anywhere: Set(kit.anywhere.keys))
+                .map { "\(file.path):\($0)" }
+        }
+        if let folder = kit.suites {
+            let suites = try Boundary.sources(under: folder)
+            #expect(!suites.isEmpty, "read no suite under \(folder)/")
+            let anywhere = Set(kit.anywhere.keys).union(kit.suitesAnywhere.keys)
+            for file in suites {
+                violations += Self.suiteImportViolations(in: file.text, permitted: Self.suitesGuarded(kit), anywhere: anywhere)
+                    .map { "\(file.path):\($0)" }
+            }
+        }
+        #expect(violations.isEmpty, """
+            A file of \(kit.name)'s imports a module Linux does not have, or outside its guard. The shared \
+            kits compile with Foundation and the guarded modules each imports today (CLAUDE.md, "Web \
+            edition", rule 1); an import a kit needs anew is a decision for the web edition too, with its \
+            guard and an allowance here that says why:
+            \(violations.joined(separator: "\n"))
+            """)
+    }
+
+    @Test("No kit or suite of theirs reads Bundle.main, UserDefaults or the Keychain", arguments: kits)
+    func readsNoAppState(_ kit: Kit) throws {
+        let code = try Self.code(of: kit)
+        var sites: [String] = []
+        for file in code.kit + code.suites {
+            for (index, line) in file.lines.enumerated() where Boundary.readsAppState(line) {
+                sites.append("\(file.path):\(index + 1)")
+            }
+        }
+        #expect(sites.isEmpty, """
+            A file of \(kit.name)'s reads the app's bundle, settings or Keychain, which a shared kit is \
+            given instead (CLAUDE.md, "Web edition", rule 1):
+            \(sites.joined(separator: "\n"))
+            """)
+    }
+
+    /// What the app declares at the top level of a file under `FRUSExplorer/`, read once for every kit.
+    static let appDeclarations: Set<String> = (try? Boundary.topLevelDeclarations(under: "FRUSExplorer")) ?? []
+
+    /// What the unit target's files declare at the top level, which no kit's package suite can see.
+    static let testTargetDeclarations: Set<String> = (try? Boundary.sources(under: "FRUSExplorerTests"))?
+        .reduce(into: Set<String>()) {
+            $0.formUnion(Boundary.topLevelTypes(in: $1.text))
+            $0.formUnion(Boundary.topLevelFunctionsAndGlobals(in: $1.text))
+        } ?? []
+
+    @Test("No kit or suite of theirs names a type, function, constant or variable the app declares", arguments: kits)
+    func namesNothingOfTheApp(_ kit: Kit) throws {
+        // The walks are real: the app's model and view models, and a suite and a helper of the unit target's.
+        #expect(Self.appDeclarations.isSuperset(of: ["SearchViewModel", "AppState", "decodeFRUSSelectionEvent"]),
+                "the app's declarations were not read: \(Self.appDeclarations.count) found")
+        #expect(Self.testTargetDeclarations.isSuperset(of: ["WindowTargetingTests", "measureCoverage"]),
+                "the unit target's declarations were not read: \(Self.testTargetDeclarations.count) found")
+        let code = try Self.code(of: kit)
+        // What the kit has of its own: every name it declares, and what the kits it imports declare at the
+        // top level, which is all of theirs it can see; for its suites, the names they declare too.
+        var own = Set<String>()
+        for file in try Boundary.sources(under: kit.name) { own.formUnion(Boundary.declaredNames(in: file.text)) }
+        for dependency in kit.dependencies { own.formUnion(try Boundary.topLevelDeclarations(under: dependency)) }
+        #expect(own.contains(kit.declares), "\(kit.name)'s own names were not read: \(own.count) found")
+        let suitesOwn = code.suites.reduce(into: own) { $0.formUnion(Boundary.declaredNames(inCode: $1.lines)) }
+        var sites: [String] = []
+        for file in code.kit {
+            sites += Boundary.nameUses(in: file.lines, among: Self.appDeclarations, except: own)
+                .map { "\(file.path):\($0.line): \($0.name)" }
+        }
+        for file in code.suites {
+            sites += Boundary.nameUses(in: file.lines, among: Self.appDeclarations.union(Self.testTargetDeclarations),
+                                      except: suitesOwn)
+                .map { "\(file.path):\($0.line): \($0.name)" }
+        }
+        #expect(sites.isEmpty, """
+            A file of \(kit.name)'s names a declaration that lives in the app, or a suite of its one of the \
+            unit target's. Xcode may build it; the package and FRUS Explorer Light do not. Move the \
+            declaration into the kit, or pass the value in (CLAUDE.md, "Web edition", rule 2). As for \
+            FRUSCoreKit, a member after a `.`, an argument label or parameter and every name the kit \
+            declares are not read, so each site names the app's declaration, or a name the kit takes from \
+            Foundation or the standard library that a new top-level app declaration now meets:
+            \(sites.joined(separator: "\n"))
+            """)
+    }
+
+    @Test("The kits are CLAUDE.md's shared code besides FRUSCoreKit, each with its suites a target of the package's")
+    func theKitsAreTheSharedCode() throws {
+        let guide = try String(contentsOf: Boundary.repoRoot.appendingPathComponent("CLAUDE.md"), encoding: .utf8)
+        let line = try #require(guide.components(separatedBy: "\n").first { $0.hasPrefix("Shared code: ") },
+                                "CLAUDE.md's \"Web edition\" section names no shared code")
+        // A pin on that sentence's shape, "Shared code: A, B, … and FRUSCoreKit/, with …": reword the two together.
+        let listed = try #require(line.firstMatch(of: /^Shared code: (.+?) and FRUSCoreKit\//)?.1,
+                                  "CLAUDE.md's shared code no longer reads \"Shared code: <kits> and FRUSCoreKit/\": \(line)")
+        let names = listed.components(separatedBy: ", ")
+        #expect(Set(names) == Set(Self.kits.map(\.name)), """
+            CLAUDE.md's shared code and these tests' kits differ: a kit added there needs its rules here
+            """)
+        #expect(names.count == Self.kits.count)
+        let manifest = try String(contentsOf: Boundary.repoRoot.appendingPathComponent("Package.swift"), encoding: .utf8)
+        let paths = CodingStandardsAuditTests.packageTargetPaths(in: manifest)
+        for kit in Self.kits {
+            #expect(paths.contains(kit.name), "Package.swift declares no target at \(kit.name)")
+            if let suites = kit.suites { #expect(paths.contains(suites), "Package.swift declares no target at \(suites)") }
+        }
+    }
+
+    @Test("The import rule with a kit's allowances: a module allowed anywhere is read anywhere, a guarded one only in its branch, and a suite's Xcode lines are left out")
+    func importRuleWithAllowances() throws {
+        #expect(Boundary.importRuleViolations(in: "import TEIHeaderKit\n", permitted: [:], anywhere: ["TEIHeaderKit"]).isEmpty)
+        #expect(Boundary.importRuleViolations(in: "import TEIHeaderKit\n", permitted: [:]) == ["1: import TEIHeaderKit"])
+        // WordCloudKit's tagging modules, inside their guard alone.
+        let tagging = "#if canImport(NaturalLanguage)\nimport NaturalLanguage\nimport os\n#endif\n"
+        #expect(Boundary.importRuleViolations(in: tagging, permitted: Self.tagging).isEmpty)
+        #expect(Boundary.importRuleViolations(in: "import os\n", permitted: Self.tagging) == ["1: import os"])
+        #expect(Boundary.importRuleViolations(in: "#if canImport(OSLog)\nimport os\n#endif\n", permitted: Self.tagging)
+                == ["2: import os"])
+        #expect(Boundary.importRuleViolations(in: tagging, permitted: Self.crypto) == ["2: import NaturalLanguage", "3: import os"])
+        // An app framework is never allowed, and FRUSCoreKit's own modules belong to its table alone.
+        #expect(Boundary.importRuleViolations(in: "import SwiftUI\n", permitted: Self.tagging, anywhere: ["Testing"])
+                == ["1: import SwiftUI"])
+        #expect(Boundary.importRuleViolations(in: "#if canImport(SourceNoteKit)\nimport SourceNoteKit\n#endif\n",
+                                             permitted: Self.sqlite) == ["2: import SourceNoteKit"])
+        // A suite that both compilers build imports the kit in the package and the app in Xcode's branch,
+        // which the suites' filter leaves out, and nothing else: the line after it, or before, is read.
+        let suite = "import Testing\n#if SWIFT_PACKAGE\n@testable import WordCloudKit\n#else\n@testable import FRUSExplorer\n#endif\n"
+        #expect(Boundary.importRuleViolations(in: suite, permitted: [:], anywhere: ["Testing", "WordCloudKit"])
+                == ["5: @testable import FRUSExplorer"])
+        #expect(Self.suiteImportViolations(in: suite, permitted: [:], anywhere: ["Testing", "WordCloudKit"]).isEmpty)
+        #expect(Self.suiteImportViolations(in: suite + "import SwiftUI\n", permitted: [:], anywhere: ["Testing", "WordCloudKit"])
+                == ["7: import SwiftUI"])
+        #expect(Self.suiteImportViolations(in: "import SwiftUI\n#if !SWIFT_PACKAGE\n@testable import FRUSExplorer\n#endif\n",
+                                           permitted: [:], anywhere: []) == ["1: import SwiftUI"])
+        // A dependency's guarded modules are its dependants' suites' too: TEIHeaderKit's parser suites live in
+        // ManifestGeneratorTests.
+        let manifest = try #require(Self.kit(named: "ManifestGeneratorCore"))
+        #expect(Self.suitesGuarded(manifest)["FoundationXML"]?.condition == "canImport(FoundationXML)")
+        #expect(Self.suitesGuarded(manifest)["FoundationNetworking"]?.condition == "canImport(FoundationNetworking)")
+        #expect(Self.suiteImportViolations(in: "#if canImport(FoundationXML)\nimport FoundationXML\n#endif\n",
+                                           permitted: Self.suitesGuarded(manifest), anywhere: []).isEmpty)
     }
 }
