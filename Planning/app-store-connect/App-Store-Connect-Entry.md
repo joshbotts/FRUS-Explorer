@@ -129,8 +129,8 @@ already declared. If it is not, **Complete Compliance Requirements** asks for it
 
 What bears on it, from the repository: the app is free in every storefront, with no purchase, no
 advertising and no account, and its description calls it an independent, private-capacity tool.
-The declaration is yours to make. The same status is then set for the app, under **App
-Information ▸ App Store Regulations and Permits ▸ Digital Services Act**.
+The declaration is yours to make. If one app's status has to differ from the account's, Apple's
+help sets it under **Apps ▸ the app ▸ General ▸ App Compliance ▸ Digital Services Act ▸ Edit**.
 
 ## 1. App Information
 
@@ -333,6 +333,24 @@ Each version waits for you (manual release). On release day:
   launch*): the home page's launch version links to the app's App Store address, which the app has
   only once it is approved;
 - the announcement copy is the launch kit's §5.
+
+**Released on 2026-11-21.** Apple's lookup gives the release as 23:26:45 UTC, at
+<https://apps.apple.com/us/app/frus-explorer/id6767950407>. The Apple ID is `6767950407`, as both of
+1861's archives record it. The website switched to its launch version that evening.
+
+**In the 27 EU storefronts since 2026-11-22.** They held nothing at first: at 23:35, 23:42 and
+23:50 UTC on release day, and at 00:05 and 00:09:47 UTC the next day, Apple's lookup found the app
+in none of them and their pages answered 404, where all 13 others tried at 23:35 held it: the US,
+the UK, Canada, Australia, New Zealand, Japan, South Korea, India, Brazil, Mexico, Switzerland,
+Norway and China. At 00:08 UTC the owner said they had signed in on another browser and registered
+the non-trader status. No session saw that page, so whether it was the account's status or the
+app's ([step 0](#0-before-the-app-your-account)) is the owner's to say. At 02:33 UTC all 27 pages
+answered 200, each with the app's listing on its own storefront, free in its own currency and
+with Apple's notice, in the page's language, that the provider has not identified itself as a
+trader and that consumer rights do not apply to agreements with them. At 02:38 Apple's search
+found the app in all 27. Apple's lookup was behind them, finding it in none of the 27 at 02:33 and
+in none of the three tried again at 02:39, so read a storefront's page, not the lookup, to tell
+whether it holds an app. A download from an EU Apple Account has not been tried.
 
 ## Not required now
 

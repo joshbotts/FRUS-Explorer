@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its closing section, launch version · fingerprint f23bd2df -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html, its closing section, launch version · fingerprint 5fa9945b -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -38,7 +38,7 @@
       <p>FRUS Explorer is free for iPhone and iPad (iOS and iPadOS 26) and for Mac (macOS 26). Download one volume, a subseries or the whole series, and work offline from then on.</p>
     </div>
     <div class="cta">
-      <a class="btn" href="/">Get the app</a>
+      <a class="btn" href="https://apps.apple.com/us/app/frus-explorer/id6767950407">Get the app</a>
       <span>Quick start: <a href="/quick-start-ios">iPad and iPhone</a> · <a href="/quick-start-mac">Mac</a></span>
       <a href="/support">Tell me what it can't answer yet</a>
     </div>

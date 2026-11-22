@@ -126,14 +126,18 @@ The banner is a section, not Squarespace's Announcement Bar: the site is on the 
 Squarespace includes the bar from the Core plan up (its help centre says a feature the plan lacks
 can still show to the owner while logged in, and not to visitors).
 
-The banner on the home page and the tour reads "FRUS Explorer is in App Store review for iPhone,
-iPad and Mac. It is not yet on the App Store." The site went live on 2026-11-15, before the
-submission, and the earlier "has been submitted" and "Coming soon to the App Store" were not true of
-it; on the owner's word that day the pages said the app was in final testing. 1.0 (1861) was
-submitted on 2026-11-20, and on the owner's word that day they say it is in App Store review, which
-holds however long review takes. Only "will be free" still assumes approval. On 2026-11-15 the home
-page's headline became "Research 165 years of U.S. diplomatic history.", and 553 moved into its
-opening paragraph.
+Until release day the banner on the home page and the tour read "FRUS Explorer is in App Store
+review for iPhone, iPad and Mac. It is not yet on the App Store." The site went live on 2026-11-15,
+before the submission, and the earlier "has been submitted" and "Coming soon to the App Store" were
+not true of it; on the owner's word that day the pages said the app was in final testing. 1.0 (1861)
+was submitted on 2026-11-20, and on the owner's word that day they said it was in App Store review,
+which held however long review took. On 2026-11-15 the home page's headline became "Research 165
+years of U.S. diplomatic history.", and 553 moved into its opening paragraph.
+
+**The site has held its launch versions since 2026-11-21**, the day 1.0 was released. Home and the
+tour's closing link to the app's page on the App Store (`APP_STORE_URL` in `build_paste.py`), and
+the tour's coming-soon line is deleted. The coming-soon files stay in `paste/` as the record of what
+the site said before.
 
 ## What the drafts already follow
 

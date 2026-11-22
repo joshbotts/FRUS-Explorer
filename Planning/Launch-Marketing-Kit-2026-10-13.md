@@ -489,14 +489,16 @@ one".
 > and it keeps what it read from the volumes apart from what it computed itself. It is an independent,
 > private-capacity project, not an official product of the Office of the Historian or the Department
 > of State; the
-> series is public domain and the code is open source. Manuals and the download are at [link]. I
-> would be grateful for bug reports and, especially, for the questions it cannot yet answer.
+> series is public domain and the code is open source. Manuals and the download are at
+> https://www.frusexplorer.app. I would be grateful for bug reports and, especially, for the
+> questions it cannot yet answer.
 
 ### 5.3 Social posts (each under 300 characters)
 
 1. *FRUS Explorer is out: 553 volumes of the U.S. diplomatic record on your iPhone, iPad or Mac,
    searchable offline, with the editors' footnotes and source notes kept. Independent and
-   private-capacity, free, open source. Not an official product of the Office of the Historian. [link]*
+   private-capacity, free, open source. Not an official product of the Office of the Historian.
+   www.frusexplorer.app*
 2. *Most FRUS documents carry the editors' note on where the original is kept. FRUS Explorer
    resolves it to record group, lot file and entry, then plans the archives trip, including files
    the editors cited but didn't print. [frame 04 or 05]*
@@ -504,10 +506,15 @@ one".
    each region apart. Experimental, and the layout's own caveat is on the screen. [frame 03]*
 4. *FRUS isn't a document dump. Its editors chose every document, wrote every heading and noted
    where the originals are filed. FRUS Explorer builds on that work: source notes become archive
-   leads, cross-references a graph. Not an official product of the Office of the Historian. [link]*
+   leads, cross-references a graph. Not an official product of the Office of the Historian.
+   www.frusexplorer.app*
 5. *The 1991 statute asks FRUS to be a thorough, accurate and reliable record. That standard is what
    makes the series worth building tools on. FRUS Explorer reads the editors' apparatus and keeps it
-   in view. Not an official product of the Office of the Historian. [link]*
+   in view. Not an official product of the Office of the Historian.
+   www.frusexplorer.app*
+
+(Since 2026-11-22 posts 1, 4 and 5 carry the site's address without `https://`: with it, posts 1
+and 4 would run to 301 and 303 characters.)
 
 ### 5.4 One-line press description (under 200 characters)
 
