@@ -12180,3 +12180,37 @@ The owner: "the app has been approved for release. here is URL: ios: https://app
 **The launch kit's links**, on the owner's word ("Yes, fill them"): the four `[link]` placeholders in its §5 hold the site's address, in full in the listserv note and as `www.frusexplorer.app` in the three social posts, which stay under the section's 300 characters at 293, 295 and 280.
 
 **Checks:** `Scripts/build_website_pages.py --check`, both `build_paste.py --check`s (the site's and App Store Connect's) pass; `CodingStandardsAuditTests`, `EditableContentKeyTests` and `AboutViewTests` passed on the iPhone 17 under iOS 27.2, 96 tests in 3 suites. Nothing a target compiles changed.
+
+## Session 2026-11-22 — FRUS Explorer Light's six web-authored kit issues, in three pull requests: Related Documents' and Chronology's rows read a host's store of its readers' summaries (#1907, #1927); Chronology's labels take a locale, Corpus Analytics keeps its two series' caches apart and `DecadeFrequency` has a public initialiser (#1912, #1913, #1928); and the other shared kits get a boundary test (#1911)
+
+FRUS Explorer Light's follow-up for the six issues it filed on 14 and 15 November, which this plan of record places as web-authored pull requests merging after 1.0 (1861)'s upload (§1 and decision 138). Three pull requests, each cut from `v2` at `21c77370`, each with a Mac check of its own (FRUS Explorer Light's checks 32, 33 and 34), and each carrying this entry, the same in all three, so that they merge in any order without conflicting here.
+
+**Mac check 32, `claude/kit-summaries-user-source` (#1907, #1927).** A host that keeps each reader's writing in a store attached to the index (`SearchUserSource.attachedStore(userId:)`, #1806) could not ask Related Documents' engine or Chronology's query for a reader's summaries, so the web edition's rows showed a summarised document's opening text, or no summary.
+- `RelatedDocumentsEngine.rank(…)` takes `userSource: SearchUserSource = .index`, which the shown rows' lines read through #1902's `documentSnippets(forKeys:maxLength:userSource:)`.
+- `IndexingPipeline.documentsInDateRange(…)` takes the same. With a store, each row's summary is the user's, gathered once a statement in one scan of `user_search` and joined after the index's two tables, so the rows and their order are the index's.
+- From the index, the default and the app's call, each runs the statement it ran before, by text and binds. Two pins taken with the statement trace on `v2`'s code hold them: 1 statement for the engine's lines, 6 for six Chronology loads.
+- Tests: four in `RelatedDocumentsHostTests` and `ChronologyUserSourceTests` (7), over a host's copy of the index stripped and opened read-only with a store attached (`HostServedIndex`, in `IndexingTestSupport.swift`). The app's forwarder changes a doc comment alone.
+
+**Mac check 33, `claude/kit-chronology-locale-analytics-cache` (#1912, #1913, #1928).**
+- `ChronologyGrouping.group(…)` and `makeChart(fromCounts:…)` take the locale their labels are written in, the reader's own by default, as before; a Linux server's process locale is World English. `ChronologyLabelLocaleTests` (4). The spanning header's `Docs/EditableContent` block moves 14 lines down.
+- `CorpusAnalyticsService`'s occurrence series by (year, volume) has a cache of its own, where it shared the documents series' under an `occ:` key that a documents term spelt `occ:x` met. Its test fails on `v2`'s service in both directions and passes here.
+- `DecadeFrequency` gains `public init(decadeStart:count:)`.
+
+**Mac check 34, `claude/kit-boundary-tests` (#1911).** `SharedKitsBoundaryTests`, beside `FRUSCoreKitBoundaryTests` and with its scanner, holds the eight other shared kits and their suites to rules 1 and 2, each kit's allowances in one table. The scanner now reads an import after an attribute or access level, and its app-state rule, one function, reads a `Bundle? = .main` default, a `bundle: .main` argument and the Keychain, for FRUSCoreKit too. This file's paragraph on the gate says so. Today's trees pass. Run in an off-lock harness, seventeen deliberate breaks each failed it, and the exemption for Xcode's branches held. Tests only, in the unit target.
+
+**Checks**, with Xcode 27.2 on macOS 27.2, clean and unsigned, on an iPhone 17e simulator (iOS 27.2), each heavy job through `Scripts/heavy.sh`, `v2` at `21c77370` beside each (each pull request has its figures and commands):
+- **`v2`:** `swift test` 4,550 tests in 535 suites; the unit target 8,160 tests in 987 suites, all passing, 17 tests and 2 suites skipped; both app builds with 2 warning lines each.
+- **Mac check 32:** `swift test` 4,561 in 536; the unit target 8,171 in 988; the Mac app's symbols 25 removed and 30 added, each `rank`'s or `documentsInDateRange`'s own.
+- **Mac check 33:** `swift test` 4,556 in 536; the unit target 8,166 in 988; the symbols 32 removed and 43 added, each `group`'s, `makeChart(fromCounts:…)`'s or the new cache's.
+- **Mac check 34:** `swift test` as `v2`'s; the unit target 8,166 in 988; the symbols as `v2`'s.
+- **In all three:** every test passed, with `v2`'s skips by name and its warning lines.
+- **Linux,** in `swift:6.4-noble` over FRUS Explorer Light's `main`: every kit's suites pass at Mac checks 32 and 33, as at `v2`, with the one named Linux skip. A file of the server's that imports the kit without `@testable` compiles against each branch's new calls and against none of them at `v2`.
+
+**Owed by the owner:** Mac checks 32, 33 and 34, each listed in its pull request; then the merges. FRUS Explorer Light's next pin move carries them, and each issue's hand-over follows its merge.
+
+**Not done:** three things found and left alone, each named in its pull request:
+- Chronology's hover-magnifier month labels, which read `Calendar(identifier: .gregorian)`'s root-locale names ("M10" where its comment says "Oct");
+- #1902's plan test of `documentSnippets`, which would pass a scan of the store once a row;
+- a boundary the new suite cannot see, one compiled-in kit naming another it does not depend on.
+
+Also not done: the UI suites, iOS 26.x, a device and a signed run.
