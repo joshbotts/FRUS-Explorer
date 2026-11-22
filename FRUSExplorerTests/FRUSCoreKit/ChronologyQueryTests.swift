@@ -19,6 +19,12 @@ import Foundation
 #if canImport(FTS5Store)
 import FTS5Store
 #endif
+// SHA-256 is CryptoKit's on Apple platforms; on Linux the web edition supplies swift-crypto's Crypto.
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 // MARK: - Test Helpers
 
@@ -313,6 +319,330 @@ struct ChronologyQueryTests {
             )
             #expect(rows.count == 1)
             #expect(rows.first?.volumeId == "frus1977-80v01")
+        }
+    }
+}
+
+// MARK: - ChronologyUserSourceTests
+
+/// Chronology's rows with a reader's summaries, as a host reads them (FRUS Explorer Light, #1927):
+/// `IndexingPipeline.documentsInDateRange(_:scopeVolumeIds:ascending:limit:userSource:)` over the app's own
+/// index, which keeps its reader's summaries in `summary_text`, and over a copy stripped of the writing and
+/// opened read-only, as such a host serves one, with and without a store of its readers' writing attached
+/// (`HostServedIndex`). From the index, the default and the app's call, each statement is the text and binds
+/// it was before the function took a source, by the pipeline's statement trace (`SearchStatementTextTests`'
+/// hook) and a pin taken at `v2` `21c77370`. The suite imports the kit `@testable`, so it cannot show that the
+/// parameter is public; a host's own build does.
+///
+/// The fixture is `ChronologyQueryTests`' two volumes: d4 (1969, a year alone), d1 and d2 (February 15,
+/// 1969), d3 (March 3–5, 1969), and the later volume's d1 (May 5, 1978).
+///
+/// Version history:
+///   1.0 — 2026-11-22 (FRUS Explorer Light, #1927): initial implementation
+@Suite("FRUSCoreKit — Chronology's rows with a reader's summaries, as a host reads them")
+struct ChronologyUserSourceTests {
+
+    private static let volumeId = "frus1969-76v01"
+    private static let laterVolumeId = "frus1977-80v01"
+
+    private static func key(_ documentId: String, in volumeId: String = volumeId) -> String { "\(volumeId)/\(documentId)" }
+
+    /// 1969 in full.
+    private static let year1969 = DateRange(earliest: "1969-01-01", latest: "1969-12-31")
+
+    /// The first reader's rows hold the summaries `appIndex(in:)` writes into the app's index, d1's and d4's
+    /// empty one, with a note alone on d2 and a summary of d99, which the index lacks. The second reader
+    /// summarises d3 and notes d1. No reader has a row for the later volume's d1.
+    private static let storeRows = [
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d1", summary: "The first memo, summarised.", note: "On the memo."),
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d4", summary: "", note: nil),
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d2", summary: nil, note: "Only a note."),
+        HostStoreRow(user: "reader-a", volumeId: volumeId, documentId: "d99", summary: "A document the index lacks.", note: nil),
+        HostStoreRow(user: "reader-b", volumeId: volumeId, documentId: "d3", summary: "The other reader's summary of the meeting.", note: nil),
+        HostStoreRow(user: "reader-b", volumeId: volumeId, documentId: "d1", summary: nil, note: "The other reader's note."),
+    ]
+
+    /// Indexes the two volumes read-write, as the app's index is built, and writes d1's summary and d4's
+    /// empty one into it, as the app writes a summary into its index.
+    private func appIndex(in dir: URL) async throws -> (pipeline: IndexingPipeline, database: URL, volumes: URL) {
+        let database = dir.appendingPathComponent("built.db")
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try writeChronVolume(
+            to: volumes.appendingPathComponent("\(Self.volumeId).xml"), volumeId: Self.volumeId,
+            documents: [
+                ("d1", "<dateline><date when=\"1969-02-15\">February 15, 1969</date></dateline><head>1. Memo</head><p>Body.</p>"),
+                ("d2", "<dateline><date when=\"1969-02-15\">February 15, 1969</date></dateline><head>2. Memo</head><p>Body.</p>"),
+                ("d3", "<dateline><date from=\"1969-03-03\" to=\"1969-03-05\">March 3–5, 1969</date></dateline><head>3. Meeting</head><p>Body.</p>"),
+                ("d4", "<dateline><date when=\"1969\">1969</date></dateline><head>4. Year only</head><p>Body.</p>"),
+            ])
+        try writeChronVolume(
+            to: volumes.appendingPathComponent("\(Self.laterVolumeId).xml"), volumeId: Self.laterVolumeId,
+            documents: [
+                ("d1", "<dateline><date when=\"1978-05-05\">May 5, 1978</date></dateline><head>1. Later memo</head><p>Body.</p>"),
+            ])
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                                            volumesDirectory: volumes, resources: .none,
+                                            defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+        try await pipeline.indexVolume(Self.laterVolumeId)
+        try await pipeline.updateSummaryText(volumeId: Self.volumeId, documentId: "d1", responseText: "The first memo, summarised.")
+        try await pipeline.updateSummaryText(volumeId: Self.volumeId, documentId: "d4", responseText: "")
+        return (pipeline, database, volumes)
+    }
+
+    /// Every field of each row, in order, so two loads compare row for row.
+    private static func fields(_ rows: [ChronologyRow]) -> [String] {
+        rows.map { "\(withoutSummary($0)) | summary \($0.summary.map { "\"\($0)\"" } ?? "nil")" }
+    }
+
+    /// Every field of each row but its summary, in order: which rows a load returned, in which order, and
+    /// all the index gives of each.
+    private static func withoutSummaries(_ rows: [ChronologyRow]) -> [String] {
+        rows.map(withoutSummary)
+    }
+
+    private static func withoutSummary(_ row: ChronologyRow) -> String {
+        [row.id, row.header, row.dateline ?? "nil", row.dateISO, row.dateISOMax ?? "nil",
+         row.precision.map { "\($0)" } ?? "nil", row.certainty.map { "\($0)" } ?? "nil",
+         "\(row.isEditorialNote)", "\(row.isFrontMatter)", row.documentNumber ?? "nil"].joined(separator: " | ")
+    }
+
+    /// A load's shape: its range, scope, order and cap.
+    private struct RangeLoad: CustomStringConvertible {
+        let range: DateRange
+        let scope: [String]?
+        let ascending: Bool
+        let limit: Int
+        var description: String {
+            "\(range.earliest ?? "open")…\(range.latest ?? "open") in \(scope ?? ["every volume"]), \(ascending ? "oldest" : "newest") first, \(limit) at most"
+        }
+    }
+
+    @Test("On the app's index a row's summary is its reader's, as the app keeps it there; on a host's copy, stripped of the writing, no row has one")
+    func onTheAppsIndexARowsSummaryIsItsReaders() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let app = try await built.pipeline.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100)
+            #expect(app.map(\.id) == ["d4", "d1", "d2", "d3"].map { Self.key($0) })
+            #expect(app.map(\.summary) == ["", "The first memo, summarised.", nil, nil])
+
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir)
+            let stripped = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100)
+            #expect(Self.withoutSummaries(stripped) == Self.withoutSummaries(app))
+            #expect(stripped.map(\.summary) == [nil, nil, nil, nil])
+        }
+    }
+
+    @Test("With a reader's store attached to a host's copy, a row's summary is that reader's, row for row as on the app's index, and another reader's is never read")
+    func withAStoreARowsSummaryIsTheReaders() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try HostServedIndex.writeStore(at: store, rows: Self.storeRows)
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let app = try await built.pipeline.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100)
+
+            // The first reader's summaries are the app's index's, so the rows are the app's, row for row: d1's
+            // summary, d4's empty one, none for d2, which they noted, and no row for d99, which the index lacks.
+            let reader = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                               userSource: .attachedStore(userId: "reader-a"))
+            #expect(Self.fields(reader) == Self.fields(app))
+            #expect(reader.map(\.summary) == ["", "The first memo, summarised.", nil, nil])
+
+            // The other reader's summary of d3 is its row's, and d1, which they noted, has none.
+            let other = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                              userSource: .attachedStore(userId: "reader-b"))
+            #expect(Self.withoutSummaries(other) == Self.withoutSummaries(app))
+            #expect(other.map(\.summary) == [nil, nil, nil, "The other reader's summary of the meeting."])
+
+            // A reader with no rows reads none, as the index does as the source, the default, whose summaries
+            // the strip emptied.
+            let index = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100)
+            #expect(index.map(\.summary) == [nil, nil, nil, nil])
+            let none = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                             userSource: .attachedStore(userId: "reader-c"))
+            #expect(Self.fields(none) == Self.fields(index))
+        }
+    }
+
+    @Test("Newest first, scoped, open at either end and capped, the rows are the index's, in its order, each with its own volume's summary")
+    func everyShapeReadsTheIndexsRowsWithTheReadersSummaries() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try HostServedIndex.writeStore(at: store, rows: Self.storeRows)
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let wide = DateRange(earliest: "1900-01-01", latest: "2000-12-31")
+            // Each shape binds a different set of values after the reader's: both ends and a volume, the later
+            // end alone, the earlier end alone, and both ends with two volumes.
+            let cases: [(shape: RangeLoad, reader: String, ids: [String], summaries: [String?])] = [
+                (RangeLoad(range: wide, scope: [Self.volumeId], ascending: false, limit: 2), "reader-b",
+                 [Self.key("d3"), Self.key("d1")], ["The other reader's summary of the meeting.", nil]),
+                (RangeLoad(range: DateRange(earliest: nil, latest: "1969-02-15"), scope: nil, ascending: true, limit: 100), "reader-a",
+                 [Self.key("d4"), Self.key("d1"), Self.key("d2")], ["", "The first memo, summarised.", nil]),
+                // The later volume's d1 shares its id with the first reader's summarised d1, and reads none.
+                (RangeLoad(range: DateRange(earliest: "1969-03-04", latest: nil), scope: nil, ascending: false, limit: 100), "reader-a",
+                 [Self.key("d1", in: Self.laterVolumeId), Self.key("d3"), Self.key("d4")], [nil, nil, ""]),
+                (RangeLoad(range: wide, scope: [Self.laterVolumeId, Self.volumeId], ascending: true, limit: 3), "reader-a",
+                 [Self.key("d4"), Self.key("d1"), Self.key("d2")], ["", "The first memo, summarised.", nil]),
+            ]
+            for (shape, user, ids, summaries) in cases {
+                let app = try await built.pipeline.documentsInDateRange(shape.range, scopeVolumeIds: shape.scope,
+                                                                        ascending: shape.ascending, limit: shape.limit)
+                let reader = try await served.documentsInDateRange(shape.range, scopeVolumeIds: shape.scope,
+                                                                   ascending: shape.ascending, limit: shape.limit,
+                                                                   userSource: .attachedStore(userId: user))
+                #expect(reader.map(\.id) == ids, "\(shape)")
+                #expect(reader.map(\.summary) == summaries, "\(shape)")
+                #expect(Self.withoutSummaries(reader) == Self.withoutSummaries(app), "\(shape)")
+            }
+        }
+    }
+
+    @Test("The next call reads what the host has written since, and should a store hold several rows of one reader's text for a document, the row reads the greatest of their summaries, whichever row it is")
+    func liveWritesAndSeveralRowsOfOneReadersText() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            // The second reader's three summaries of d4, the greatest written between the others, and of d2 a
+            // note alone beside a summary.
+            try HostServedIndex.writeStore(at: store, rows: Self.storeRows + [
+                HostStoreRow(user: "reader-b", volumeId: Self.volumeId, documentId: "d4", summary: "Alpha summary.", note: nil),
+                HostStoreRow(user: "reader-b", volumeId: Self.volumeId, documentId: "d4", summary: "Gamma summary.", note: nil),
+                HostStoreRow(user: "reader-b", volumeId: Self.volumeId, documentId: "d4", summary: "Beta summary.", note: nil),
+                HostStoreRow(user: "reader-b", volumeId: Self.volumeId, documentId: "d2", summary: nil, note: "A note."),
+                HostStoreRow(user: "reader-b", volumeId: Self.volumeId, documentId: "d2", summary: "Delta summary.", note: nil),
+            ])
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            let reader = SearchUserSource.attachedStore(userId: "reader-a")
+            let before = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                               userSource: reader)
+            #expect(before.map(\.summary) == ["", "The first memo, summarised.", nil, nil])
+
+            // The host writes the first reader's summary of d2, which held a note alone, into its row through
+            // its own connection, after the store was read; the next call has it.
+            try HostServedIndex.setSummary(at: store, user: "reader-a", volumeId: Self.volumeId, documentId: "d2",
+                                           summary: "Now summarised.")
+            let after = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                              userSource: reader)
+            #expect(after.map(\.summary) == ["", "The first memo, summarised.", "Now summarised.", nil])
+
+            let other = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true, limit: 100,
+                                                              userSource: .attachedStore(userId: "reader-b"))
+            #expect(other.map(\.summary) == ["Gamma summary.", nil, "Delta summary.", "The other reader's summary of the meeting."])
+        }
+    }
+
+    @Test("A store's rows are read once a statement, not once a row: user_search is scanned once, uncorrelated, and the index's rows by every step the statement from the index takes")
+    func aStoresRowsAreReadOnceAStatement() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let store = dir.appendingPathComponent("app-data/app.db")
+            try HostServedIndex.writeStore(at: store, rows: Self.storeRows)
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir, userStore: store)
+            // FTS5 indexes none of user_search's unindexed columns, so a lookup of one row's summary scans every
+            // reader's rows: once a row would be the rows times the store, here it is once.
+            for shape in [RangeLoad(range: Self.year1969, scope: nil, ascending: true, limit: 5000),
+                          RangeLoad(range: DateRange(earliest: "1900-01-01", latest: nil), scope: [Self.volumeId],
+                                ascending: false, limit: 5000)] {
+                let plan = try await served.documentsInDateRangePlanForTesting(
+                    shape.range, scopeVolumeIds: shape.scope, ascending: shape.ascending, limit: shape.limit,
+                    userSource: .attachedStore(userId: "reader-a"))
+                let index = try await served.documentsInDateRangePlanForTesting(
+                    shape.range, scopeVolumeIds: shape.scope, ascending: shape.ascending, limit: shape.limit,
+                    userSource: .index)
+                #expect(!plan.contains("CORRELATED"), "\(shape): \(plan)")
+                #expect(plan.components(separatedBy: "SCAN us VIRTUAL TABLE").count == 2, "\(shape): \(plan)")
+                // The one scan is the materialised summaries' body, read before the index's rows; a scan joined
+                // to each row (`LEFT-JOIN` on the scan's step) would read the store once a row.
+                #expect(plan.contains("MATERIALIZE summaries | SCAN us VIRTUAL TABLE"), "\(shape): \(plan)")
+                #expect(!plan.components(separatedBy: " | ").contains { $0.hasPrefix("SCAN us") && $0.contains("LEFT-JOIN") },
+                        "\(shape): \(plan)")
+                // From the index, the default, the statement reads no store; the store's statement takes each
+                // of its steps, and its others read the reader's summaries alone.
+                #expect(!index.contains("VIRTUAL TABLE") && !index.contains("CORRELATED"), "\(shape): \(index)")
+                let indexSteps = index.components(separatedBy: " | ")
+                let planSteps = plan.components(separatedBy: " | ")
+                for step in indexSteps {
+                    #expect(planSteps.contains(step), "\(shape): \(step) is not a step of \(plan)")
+                }
+                for step in planSteps where !indexSteps.contains(step) {
+                    #expect(step.contains("summaries") || step.contains(" us ") || step.contains("GROUP BY"),
+                            "\(shape): \(step)")
+                }
+                #expect(index.contains("dd USING INDEX") && index.contains("dc USING"), "\(shape): \(index)")
+            }
+        }
+    }
+
+    @Test("Asked for a reader's summaries with no store attached, the rows are refused, not read from the index")
+    func withNoStoreAReadersRowsAreRefused() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            // The app's own index, whose summary_text holds d1's: it is not read in the reader's place.
+            await #expect(throws: IndexingError.self) {
+                _ = try await built.pipeline.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true,
+                                                                  limit: 100, userSource: .attachedStore(userId: "reader-a"))
+            }
+            let served = try HostServedIndex.servedCopy(of: built.database, volumes: built.volumes, in: dir)
+            await #expect(throws: IndexingError.self) {
+                _ = try await served.documentsInDateRange(Self.year1969, scopeVolumeIds: nil, ascending: true,
+                                                          limit: 100, userSource: .attachedStore(userId: "reader-a"))
+            }
+        }
+    }
+
+    // MARK: From the index, the statement it was
+
+    /// The loads the pin reads: the app's own, 1969 oldest first at its cap of 5,000, then a scope, an end
+    /// left open, both ends open with two volumes, and an empty scope, which reads as none.
+    private static let pinShapes = [
+        RangeLoad(range: year1969, scope: nil, ascending: true, limit: 5000),
+        RangeLoad(range: DateRange(earliest: "1900-01-01", latest: "2000-12-31"), scope: [volumeId], ascending: false, limit: 2),
+        RangeLoad(range: DateRange(earliest: nil, latest: "1969-02-15"), scope: nil, ascending: true, limit: 100),
+        RangeLoad(range: DateRange(earliest: "1969-03-04", latest: nil), scope: nil, ascending: false, limit: 100),
+        RangeLoad(range: DateRange(earliest: nil, latest: nil), scope: [laterVolumeId, volumeId], ascending: true, limit: 3),
+        RangeLoad(range: year1969, scope: [], ascending: false, limit: 5000),
+    ]
+
+    @Test("From the index, the default, every load runs the statement it ran before the function took a source, by its text and binds, and passing the index runs the same")
+    func fromTheIndexEveryLoadRunsItsStatement() async throws {
+        try await withChronTempDir { dir in
+            let built = try await appIndex(in: dir)
+            let trace = StatementTraceForTesting()
+            await built.pipeline.setStatementTraceForTesting(trace)
+            for shape in Self.pinShapes {
+                _ = try await built.pipeline.documentsInDateRange(shape.range, scopeVolumeIds: shape.scope,
+                                                                  ascending: shape.ascending, limit: shape.limit)
+            }
+            await built.pipeline.setStatementTraceForTesting(nil)
+            let statements = trace.statements
+            let text = statements.joined(separator: "\n")
+            let digest = SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+            // Taken at `v2` 21c77370, the tree before #1927, by running these loads with the function as it was
+            // there: so it says the index's statements are the text and binds they were.
+            let pinned = (count: 6, sha256: "1f41296fc41648434d444c9d38bcd24dfa2d34a801a72f3e39e238235612f888")
+            if statements.count != pinned.count || digest != pinned.sha256 {
+                let record = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("ChronologyStatementText-\(digest.prefix(12)).txt")
+                try? Data(text.utf8).write(to: record)
+                Issue.record("""
+                    \(statements.count) statements, SHA-256 \(digest), where the pin is \(pinned.count) and \(pinned.sha256). \
+                    They are written to \(record.path), to compare with the same file from the tree the pin was taken at.
+                    """)
+            }
+            #expect(statements.allSatisfy { $0.hasPrefix("SELECT dd.volume_id, dd.document_id, dc.header, dc.dateline, dc.summary_text,") })
+
+            let explicit = StatementTraceForTesting()
+            await built.pipeline.setStatementTraceForTesting(explicit)
+            for shape in Self.pinShapes {
+                _ = try await built.pipeline.documentsInDateRange(shape.range, scopeVolumeIds: shape.scope,
+                                                                  ascending: shape.ascending, limit: shape.limit,
+                                                                  userSource: .index)
+            }
+            await built.pipeline.setStatementTraceForTesting(nil)
+            #expect(explicit.statements == statements)
         }
     }
 }
