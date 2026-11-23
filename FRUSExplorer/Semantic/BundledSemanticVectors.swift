@@ -33,6 +33,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-2: initial implementation
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — the pair's load is SemanticVectorsKit's
+///          ``SemanticBundledTiers``, by URL, and this loads it from the bundle, with the same
+///          refusals and the same lines in a debug build's console
 @MainActor
 public enum BundledSemanticVectors {
 
@@ -90,24 +93,20 @@ public enum BundledSemanticVectors {
                 #endif
                 return .failure(.noArtifact)
             }
-            do {
-                let data = try Data(contentsOf: indexURL)
-                let file = try JSONDecoder().decode(
-                    SemanticVectorsArtifacts.Index.self, from: data)
-                let index = SemanticVectorIndex(file: file)
-                let vectors = try SemanticCorpusVectors(
-                    contentsOf: binaryURL, expecting: index.provenance)
-                return .success((index, vectors))
-            } catch let error as SemanticUnavailable {
+            do throws(SemanticUnavailable) {
+                let tiers = try SemanticBundledTiers(indexAt: indexURL, binaryAt: binaryURL)
+                return .success((tiers.index, tiers.corpus))
+            } catch {
+                // An index that failed to decode is `malformedArtifact("index: …")`, as it was, and
+                // the console says so in the words it always used.
                 #if DEBUG
-                print("[BundledSemanticVectors] refused: \(error)")
+                if case .malformedArtifact(let detail) = error, detail.hasPrefix("index: ") {
+                    print("[BundledSemanticVectors] index decode failed: \(detail.dropFirst("index: ".count))")
+                } else {
+                    print("[BundledSemanticVectors] refused: \(error)")
+                }
                 #endif
                 return .failure(error)
-            } catch {
-                #if DEBUG
-                print("[BundledSemanticVectors] index decode failed: \(error)")
-                #endif
-                return .failure(.malformedArtifact("index: \(error)"))
             }
         }.value
 

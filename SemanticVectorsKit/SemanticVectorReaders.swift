@@ -283,6 +283,76 @@ public struct SemanticShard: Sendable {
     }
 }
 
+/// The bundled pair, the row index (`semantic-vectors-index.json`) and the corpus tier
+/// (`semantic-vectors-binary.bin`), loaded by URL.
+///
+/// What the app's `BundledSemanticVectors.prepare()` loads from its bundle, for any host: the index
+/// decoded, the binary mapped and never read, and the two **as a pair or not at all**. The binary's
+/// header carries the provenance digest the index states, and a mismatch means two generations met,
+/// so the pair is refused rather than served with vectors keyed by the wrong table.
+///
+/// Every failure is a ``SemanticUnavailable``: the binary's own (``SemanticCorpusVectors``' header
+/// checks, `noArtifact` for a missing file), or `malformedArtifact("index: …")` for an index that
+/// cannot be read or decoded, the case the app's loader has always given it.
+///
+/// Version history:
+///   1.0 — 2026-11-23: FRUS Explorer Light's S26a — the load `BundledSemanticVectors.prepare()` ran,
+///          by URL; the app's `Bundle.main` statics stay in the app over it
+public struct SemanticBundledTiers: Sendable {
+
+    /// The decoded row index.
+    public let index: SemanticVectorIndex
+    /// The mapped corpus tier, whose header matched ``index``'s provenance.
+    public let corpus: SemanticCorpusVectors
+
+    /// Loads the pair.
+    ///
+    /// Not cheap: the index is about 73 KB of JSON to decode, and the binary is mapped. A host loads it
+    /// once, off the main actor, as the app's loader does.
+    ///
+    /// - Parameters:
+    ///   - indexURL: `semantic-vectors-index.json`.
+    ///   - binaryURL: `semantic-vectors-binary.bin`.
+    /// - Throws: `SemanticUnavailable` when either file is missing or unreadable, or the two disagree.
+    public init(indexAt indexURL: URL, binaryAt binaryURL: URL) throws(SemanticUnavailable) {
+        do {
+            let data = try Data(contentsOf: indexURL)
+            let file = try JSONDecoder().decode(SemanticVectorsArtifacts.Index.self, from: data)
+            let index = SemanticVectorIndex(file: file)
+            let corpus = try SemanticCorpusVectors(contentsOf: binaryURL, expecting: index.provenance)
+            self.index = index
+            self.corpus = corpus
+        } catch let error as SemanticUnavailable {
+            throw error
+        } catch {
+            throw .malformedArtifact("index: \(error)")
+        }
+    }
+}
+
+/// Where a host's Tier-2 shards come from: one volume's shard, or `nil` when the host holds no usable
+/// one.
+///
+/// FRUSCoreKit's semantic axis reads a shard through this and through nothing else, so how a host keeps
+/// its shards stays the host's. The app's `SemanticShardStore` downloads, adopts, verifies and purges
+/// them, and answers with its own `shard(for:)`; FRUS Explorer Light holds every shard in its image and
+/// reads them from a folder.
+///
+/// An answer is a shard ``SemanticShard/init(contentsOf:provenance:expectedDocumentCount:)`` validated
+/// against the bundled index's provenance and the volume's document count, as the app's store's is: the
+/// axis reads its rows by the bundled index's row offsets, so a shard of another generation or length
+/// would be scored against the wrong documents.
+///
+/// Version history:
+///   1.0 — 2026-11-23: FRUS Explorer Light's S26a
+public protocol SemanticShardSource: Sendable {
+    /// The shard for a volume, or `nil` when the host has no usable one.
+    ///
+    /// - Parameter volumeID: Manifest `volumeId`.
+    /// - Returns: The mapped, validated shard, or `nil`.
+    func shard(for volumeID: String) async -> SemanticShard?
+}
+
 extension Data {
     /// Reads a little-endian `UInt32` at a byte offset.
     ///

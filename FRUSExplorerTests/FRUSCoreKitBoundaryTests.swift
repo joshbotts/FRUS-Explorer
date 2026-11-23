@@ -87,6 +87,9 @@ import Testing
 ///         and the app-state rule is one function (``readsAppState(_:)``) that reads the Keychain too, as
 ///         `CLAUDE.md`'s rule 1 says; `SharedKitsBoundaryTests`, below, holds the other shared kits to the
 ///         same rules with them
+///   1.9 — 2026-11-23 (FRUS Explorer Light, S26a): the kit may import SemanticVectorsKit behind
+///         `canImport(SemanticVectorsKit)`, as Related Documents' semantic axis and Project Home's reach
+///         do since they moved into the kit
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -125,7 +128,9 @@ struct FRUSCoreKitBoundaryTests {
     /// archival network's layout and the graphs' label rules (S24c): on Apple platforms the geometry
     /// types' conformances and members (`Equatable`, `.zero`, `union`) are its overlay's, which
     /// Foundation alone does not bring into the package's module, and on Linux, where
-    /// `canImport(CoreGraphics)` is false, Foundation declares the same types itself.
+    /// `canImport(CoreGraphics)` is false, Foundation declares the same types itself. SemanticVectorsKit
+    /// joined with Related Documents' semantic axis and Project Home's reach (S26a), the same way as
+    /// TEIHeaderKit: they read the bundled vector tiers and a host's shards with it.
     static let permittedImports: [String: (condition: String, inElse: Bool)] = [
         "FoundationXML": ("canImport(FoundationXML)", false),
         "FoundationNetworking": ("canImport(FoundationNetworking)", false),
@@ -138,6 +143,7 @@ struct FRUSCoreKitBoundaryTests {
         "FTS5Store": ("canImport(FTS5Store)", false),
         "TEIHeaderKit": ("canImport(TEIHeaderKit)", false),
         "CoreGraphics": ("canImport(CoreGraphics)", false),
+        "SemanticVectorsKit": ("canImport(SemanticVectorsKit)", false),
     ]
 
     /// The module a line of code imports, or `nil` when it imports none: after any attributes
@@ -207,6 +213,8 @@ struct FRUSCoreKitBoundaryTests {
         #expect(Self.importRuleViolations(in: "import TEIHeaderKit\n") == ["1: import TEIHeaderKit"])
         #expect(Self.importRuleViolations(in: "#if canImport(CoreGraphics)\nimport CoreGraphics\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "import CoreGraphics\n") == ["1: import CoreGraphics"])
+        #expect(Self.importRuleViolations(in: "#if canImport(SemanticVectorsKit)\nimport SemanticVectorsKit\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "import SemanticVectorsKit\n") == ["1: import SemanticVectorsKit"])
         // Apple-only, guarded or not.
         #expect(Self.importRuleViolations(in: "import SwiftUI\n") == ["1: import SwiftUI"])
         #expect(Self.importRuleViolations(in: "#if canImport(SwiftUI)\nimport SwiftUI\n#endif\n") == ["2: import SwiftUI"])

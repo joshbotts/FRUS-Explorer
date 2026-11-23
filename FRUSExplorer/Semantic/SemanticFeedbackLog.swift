@@ -14,81 +14,6 @@
 
 import Foundation
 
-/// One tester's verdict on one semantic neighbour.
-///
-/// **Every field exists to answer a question the retired blind panel would have answered.** The
-/// panel graded 100 rows, era-stratified, because the program's open question was never "is this
-/// good" but "is this good *before 1900*" — and `era` is what carries that here. A feedback log
-/// without it would record enthusiasm and prove nothing.
-///
-/// Decoding is deliberately lenient on everything except the pair and the verdict: `SemanticFeedbackLog`
-/// swallows a decode failure and returns an empty array, so a non-optional property added in a later
-/// version would silently erase every verdict a tester had already recorded.
-struct SemanticFeedbackEntry: Codable, Identifiable, Sendable, Hashable {
-
-    /// What the tester said about the row.
-    enum Verdict: String, Codable, Sendable, CaseIterable {
-        /// A neighbour a historian would want.
-        case helpful
-        /// A neighbour that wastes the reader's time.
-        case notHelpful
-    }
-
-    /// Stable identity for lists and de-duplication.
-    var id: String { "\(recordedAt.timeIntervalSince1970)-\(anchor)-\(neighbour)" }
-
-    /// When the verdict was given.
-    let recordedAt: Date
-    /// The anchor, as `volumeId/documentId`.
-    let anchor: String
-    /// The neighbour being judged, as `volumeId/documentId`.
-    let neighbour: String
-    /// The verdict.
-    let verdict: Verdict
-    /// The approximate cosine the row was ranked on, so a verdict can be read against the score that
-    /// produced it — "everything above 0.9 is good, everything below 0.7 is noise" is a finding.
-    /// Since B4 it is the cosine through the generation's calibration, the score the row showed
-    /// (`retrieval.calibratedDocumentScore`); a generation without one, the 300m's, logged the raw
-    /// cosine. `provenanceDigest` says which, and the key keeps its name so earlier verdicts decode.
-    let cosine: Double?
-    /// The anchor's coverage era, from the app's own `CoverageEra` banding rather than a second one,
-    /// of the anchor's year in the index (`RelatedDocumentsRequest.resolvedAnchorYear(pipeline:)`),
-    /// so it does not depend on the door that opened the anchor. `nil` for an anchor that neither the
-    /// index nor its dateline dates, and, in a file written before 2026-10-19 (plan of record §6g),
-    /// for many dated anchors too: the export's `anchor` key is what bands those.
-    /// **This is the field the whole log exists for.**
-    let era: String?
-    /// Whether anchor and neighbour are in the same volume — the corpus-scale measurement found 78%
-    /// of top-1 neighbours are volume-mates, and whether that reads as useful or as an echo is a
-    /// judgement only a reader can make.
-    let sameVolume: Bool?
-    /// The artifact generation the verdict describes. A re-harvest invalidates it, and without this
-    /// there would be no way to tell which vectors were being judged.
-    let provenanceDigest: String?
-
-    /// Creates an entry.
-    /// - Parameters:
-    ///   - recordedAt: Timestamp.
-    ///   - anchor: Anchor composite key.
-    ///   - neighbour: Neighbour composite key.
-    ///   - verdict: The tester's verdict.
-    ///   - cosine: The score the row was ranked on.
-    ///   - era: The anchor's coverage era.
-    ///   - sameVolume: Whether the pair share a volume.
-    ///   - provenanceDigest: The vector generation judged.
-    init(recordedAt: Date, anchor: String, neighbour: String, verdict: Verdict,
-         cosine: Double?, era: String?, sameVolume: Bool?, provenanceDigest: String?) {
-        self.recordedAt = recordedAt
-        self.anchor = anchor
-        self.neighbour = neighbour
-        self.verdict = verdict
-        self.cosine = cosine
-        self.era = era
-        self.sameVolume = sameVolume
-        self.provenanceDigest = provenanceDigest
-    }
-}
-
 /// The tester feedback path for the experimental semantic axis.
 ///
 /// ## Why this exists at all
@@ -108,6 +33,9 @@ struct SemanticFeedbackEntry: Codable, Identifiable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — V-3 follow-up: initial implementation
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — `SemanticFeedbackEntry` and the file's coding are
+///          FRUSCoreKit's (`FRUSCoreKit/RelatedDocuments/SemanticFeedbackEntry.swift`), and the log
+///          reads and writes through them; the file, the export and the log's rules are as they were
 actor SemanticFeedbackLog {
 
     /// The shared app-wide log.
@@ -179,10 +107,7 @@ actor SemanticFeedbackLog {
     ///
     /// - Returns: The encoded verdicts, or `nil` when encoding fails.
     func exportData() -> Data? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        return try? encoder.encode(loaded())
+        try? SemanticFeedbackEntry.exportData(loaded())
     }
 
     /// Deletes every recorded verdict.
@@ -196,11 +121,9 @@ actor SemanticFeedbackLog {
     /// Loads on first access, caching thereafter.
     private func loaded() -> [SemanticFeedbackEntry] {
         if let cache { return cache }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
         var rows: [SemanticFeedbackEntry] = []
         if let url = Self.fileURL, let data = try? Data(contentsOf: url),
-           let decoded = try? decoder.decode([SemanticFeedbackEntry].self, from: data) {
+           let decoded = try? SemanticFeedbackEntry.entries(from: data) {
             rows = decoded
         }
         cache = rows
@@ -212,10 +135,7 @@ actor SemanticFeedbackLog {
     private func persist(_ rows: [SemanticFeedbackEntry]) {
         cache = rows
         guard let url = Self.fileURL else { return }
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        guard let data = try? encoder.encode(rows) else { return }
+        guard let data = try? SemanticFeedbackEntry.fileData(rows) else { return }
         try? data.write(to: url, options: .atomic)
     }
 }

@@ -369,6 +369,7 @@ public enum WhyRelatedChip: Hashable, Sendable {
 ///   1.0 — 2026-10-09: #1586 — initial implementation
 ///   1.1 — 2026-10-11: #1618 — Beyond your library's opening sentence, a volume's count and
 ///          the line for the volumes it does not name
+///   1.2 — 2026-11-23: FRUS Explorer Light's S26a — Beyond your library's three lines are public
 public enum RelatedDocumentsCounts {
 
     /// The archival chip: "Lot 54 D 270 · 1 of 1,063".
@@ -418,8 +419,8 @@ public enum RelatedDocumentsCounts {
     ///   - isCapped: Whether the scan stopped at its cap.
     ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: The sentence.
-    static func offIndexCaption(documents: Int, volumes: Int, isCapped: Bool,
-                                locale: Locale = .autoupdatingCurrent) -> String {
+    public static func offIndexCaption(documents: Int, volumes: Int, isCapped: Bool,
+                                       locale: Locale = .autoupdatingCurrent) -> String {
         let inVolumes = CountCopy.volumes(volumes, locale: locale)
         if isCapped {
             return String(format: String(localized: "related.offIndex.caption.capped %@ %@",
@@ -441,7 +442,7 @@ public enum RelatedDocumentsCounts {
     ///   - count: How many of the volume's documents cleared the anchor's cut.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The phrase.
-    static func offIndexVolumeCount(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func offIndexVolumeCount(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "related.offIndex.volumeCount.one %@",
                                      defaultValue: "%@ matching document"),
@@ -456,7 +457,7 @@ public enum RelatedDocumentsCounts {
     ///   - count: How many volumes the section does not name.
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The line.
-    static func offIndexMoreVolumes(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+    public static func offIndexMoreVolumes(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "related.offIndex.moreVolumes.one %@",
                                      defaultValue: "and %@ more volume"),

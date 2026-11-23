@@ -14,7 +14,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// The V-2 device substrate, in the app host — where `Bundle.main` reaches the shipped artifacts.
 ///
@@ -26,6 +36,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-2: initial implementation
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — moved into the kit's suites: the tiers' tests load
+///          them with SemanticVectorsKit's loader, by URL (`BundledTiersFixture`), from the repository in
+///          the package and from the test host's bundle in Xcode, where the first test still checks the
+///          app's own load of its bundle; the shard store and the launch's wiring are the app's, so their
+///          tests are Xcode's alone
 @Suite("Semantic substrate")
 struct SemanticSubstrateTests {
 
@@ -35,6 +50,10 @@ struct SemanticSubstrateTests {
     @MainActor
     @Test("The bundled tiers load, agree on provenance, and cover the shipped corpus")
     func bundledTiersLoad() async throws {
+        #if SWIFT_PACKAGE
+        // The load a host outside the app makes, by URL, of the files the app bundles.
+        let (index, vectors) = try BundledTiersFixture.tiers()
+        #else
         BundledSemanticVectors.resetForTesting()
         await BundledSemanticVectors.prepare()
 
@@ -42,6 +61,7 @@ struct SemanticSubstrateTests {
                 "semantic artifacts are not loading: \(BundledSemanticVectors.availability)")
         let index = try #require(BundledSemanticVectors.index)
         let vectors = try #require(BundledSemanticVectors.corpusVectors)
+        #endif
 
         // The two tiers must describe the same corpus, or a row means different things to each.
         #expect(vectors.documentCount == index.documentCount)
@@ -60,8 +80,7 @@ struct SemanticSubstrateTests {
     @MainActor
     @Test("Real row keying round-trips at the corpus's boundaries")
     func realRowKeyingRoundTrips() async throws {
-        await BundledSemanticVectors.prepare()
-        let index = try #require(BundledSemanticVectors.index)
+        let (index, _) = try BundledTiersFixture.tiers()
 
         // First row, last row, and a volume boundary — the places an off-by-one lives.
         var probes = [0, index.documentCount - 1]
@@ -83,8 +102,7 @@ struct SemanticSubstrateTests {
     @MainActor
     @Test("The fast row lookup agrees with the readable one across every volume boundary")
     func fastAndReadableLookupsAgree() async throws {
-        await BundledSemanticVectors.prepare()
-        let index = try #require(BundledSemanticVectors.index)
+        let (index, _) = try BundledTiersFixture.tiers()
         for volume in index.volumes {
             let first = volume.rowOffset
             let last = volume.rowOffset + volume.documentCount - 1
@@ -98,6 +116,10 @@ struct SemanticSubstrateTests {
     }
 
     // MARK: - Shard store
+    //
+    // Xcode's alone, as the launch's wiring below is: the store is the app's (`SemanticShardStore`),
+    // which keeps its shards behind SemanticVectorsKit's `SemanticShardSource` for the kit's passes.
+    #if !SWIFT_PACKAGE
 
     /// Builds a store over a scratch directory, using the real bundled pin.
     @MainActor
@@ -160,7 +182,7 @@ struct SemanticSubstrateTests {
     func realShardAdoptsAndScores() async throws {
         let (store, index, _) = try await Self.makeStore()
         let repoShards = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Planning/semantic-vectors/shards")
         let volume = index.volumes[0]
         let source = repoShards.appendingPathComponent("\(volume.volumeID).vec")
@@ -191,7 +213,7 @@ struct SemanticSubstrateTests {
     @Test("App start calls BundledSemanticVectors.prepare() and builds the shard store")
     func launchWiringIsPresent() throws {
         let app = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/App/FRUSExplorerApp.swift")
         let source = try String(contentsOf: app, encoding: .utf8)
         #expect(source.contains("await BundledSemanticVectors.prepare()"))
@@ -211,10 +233,12 @@ struct SemanticSubstrateTests {
         #expect(source.contains("semanticShardStore?.removeShard(for: volumeId)"))
 
         let reset = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Settings/ResetService.swift")
         let resetSource = try String(contentsOf: reset, encoding: .utf8)
         #expect(resetSource.contains("semanticShardStore?.removeAllShards()"),
                 "reset deletes volume XML directly, so it never fires onVolumeDeleted")
     }
+
+    #endif
 }

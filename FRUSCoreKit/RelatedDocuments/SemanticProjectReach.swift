@@ -15,9 +15,12 @@
 //
 
 import Foundation
-// No `import SemanticVectorsKit`: `project.yml` compiles the kit's sources directly into
-// both app targets (the FTS5Store/WordCloudKit pattern), so its types are in this module.
-// The SPM library target exists so the generators write through the same declarations.
+// SemanticVectorsKit is a module of its own in a package; `project.yml` compiles its sources
+// directly into both app targets (the FTS5Store/WordCloudKit pattern), where its types are in this
+// module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 // MARK: - ProjectReach
 
@@ -27,31 +30,60 @@ import Foundation
 /// row, so it has no header, no document number and no editorial-note flag — nothing a lead row can
 /// render. `SemanticSimilarityGenerator` owns the document-grain question, per anchor, with a shard
 /// in hand; this type answers the one a project can ask, which is *which volumes should I get?*
-struct ProjectReach: Sendable, Equatable {
+///
+/// Version history:
+///   1.0 — 2026-09-10: S-2, the project reach scan
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — FRUSCoreKit's, and public, for a host's Project
+///          Home
+public struct ProjectReach: Sendable, Equatable {
 
     /// One volume the project reaches into but does not hold.
-    struct VolumeLead: Sendable, Equatable {
+    public struct VolumeLead: Sendable, Equatable {
         /// Manifest `volumeId`.
-        let volumeID: String
+        public let volumeID: String
         /// Documents in it that read as close to one of the project's own documents as that
         /// document's nearest neighbours already on the device.
-        let documentCount: Int
+        public let documentCount: Int
         /// How many of the project's seed documents reached it.
-        let reachingSeeds: Int
+        public let reachingSeeds: Int
+
+        /// Creates a lead.
+        ///
+        /// - Parameters:
+        ///   - volumeID: Manifest `volumeId`.
+        ///   - documentCount: Its documents that cleared a seed's own cut.
+        ///   - reachingSeeds: The seeds that reached it.
+        public init(volumeID: String, documentCount: Int, reachingSeeds: Int) {
+            self.volumeID = volumeID
+            self.documentCount = documentCount
+            self.reachingSeeds = reachingSeeds
+        }
     }
 
     /// Volumes, ranked. See ``ProjectReach`` for what ranks them.
-    let volumes: [VolumeLead]
+    public let volumes: [VolumeLead]
     /// Documents admitted across every volume.
-    let documentCount: Int
+    public let documentCount: Int
     /// Seeds that carried a vector and were actually probed.
-    let seedsProbed: Int
+    public let seedsProbed: Int
+
+    /// Creates a finding.
+    ///
+    /// - Parameters:
+    ///   - volumes: The volumes, ranked.
+    ///   - documentCount: Documents admitted across every volume.
+    ///   - seedsProbed: Seeds that carried a vector and were probed.
+    public init(volumes: [VolumeLead], documentCount: Int, seedsProbed: Int) {
+        self.volumes = volumes
+        self.documentCount = documentCount
+        self.seedsProbed = seedsProbed
+    }
 
     /// Nothing found, or nothing asked.
-    static let none = ProjectReach(volumes: [], documentCount: 0, seedsProbed: 0)
+    public static let none = ProjectReach(volumes: [], documentCount: 0, seedsProbed: 0)
 
     /// Whether there is anything to show.
-    var isEmpty: Bool { volumes.isEmpty }
+    public var isEmpty: Bool { volumes.isEmpty }
 }
 
 // MARK: - SemanticProjectReach
@@ -90,18 +122,22 @@ struct ProjectReach: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — 2026-09-10: S-2, the project reach scan
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — FRUSCoreKit's, and public: the scan reads a
+///          ``SemanticSimilarityHost``'s tiers and indexed volumes where it read the app's
+///          `BundledSemanticVectors` and `AppState`; the app's `reach(seedKeys:weights:appState:)`
+///          loads the bundled tiers, after the gate, as this did, and then calls this
 @MainActor
-enum SemanticProjectReach {
+public enum SemanticProjectReach {
 
     /// The rank whose distance becomes each seed's own cut.
     ///
     /// `RelatedDocumentsEngine.candidatePoolFloor`, so a project's bar is the same bar the Related
     /// panel's S-3 section uses for a single document — the two surfaces are one feature and a
     /// reader moving between them should not meet two different definitions of "close".
-    nonisolated static let cutRank = 120
+    public nonisolated static let cutRank = 120
 
     /// How many volumes the caller is offered.
-    nonisolated static let volumeLimit = 5
+    public nonisolated static let volumeLimit = 5
 
     /// Whether the scan runs.
     ///
@@ -110,25 +146,27 @@ enum SemanticProjectReach {
     ///
     /// - Parameter weights: The reader's tuning.
     /// - Returns: `true` when the reader has turned the semantic axis on.
-    nonisolated static func runsScan(weights: AxisWeights) -> Bool {
+    public nonisolated static func runsScan(weights: AxisWeights) -> Bool {
         weights[.semanticSimilarity] > 0
     }
 
     /// Ranks a project's off-index volumes.
     ///
+    /// The host's bundled tiers must be loaded already: with either missing the finding is
+    /// ``ProjectReach/none``. The scan reads no shard, and asks the host for none.
+    ///
     /// - Parameters:
     ///   - seedKeys: The project's seed document keys, `"volumeId/documentId"`.
     ///   - weights: The reader's tuning — the consent gate.
-    ///   - appState: Holds the bundled vectors and the indexed-volume set.
+    ///   - host: Holds the bundled vectors and the indexed-volume set.
     /// - Returns: The ranked finding, or ``ProjectReach/none`` when the axis is off, the artifacts
     ///   are unavailable, no seed carries a vector, or the pass was cancelled.
-    static func reach(
-        seedKeys: [String], weights: AxisWeights, appState: AppState
+    public static func reach(
+        seedKeys: [String], weights: AxisWeights, host: SemanticSimilarityHost
     ) async -> ProjectReach {
         guard runsScan(weights: weights) else { return .none }
-        await BundledSemanticVectors.prepare()
-        guard let corpus = BundledSemanticVectors.corpusVectors,
-              let index = BundledSemanticVectors.index
+        guard let corpus = host.corpusVectors,
+              let index = host.index
         else { return .none }
 
         // Seeds → corpus rows. A seed whose volume is outside the artifact, or whose document has
@@ -147,7 +185,7 @@ enum SemanticProjectReach {
         guard !probeRows.isEmpty else { return .none }
 
         let eligible = SemanticSimilarityGenerator.eligibleVolumeIDs(
-            indexed: appState.indexedVolumeIds, scope: nil)
+            indexed: host.indexedVolumeIds, scope: nil)
         let order = Self.slotOrder(index.volumes)
 
         let scan = await runScan(probeRows: probeRows, corpus: corpus, index: index,

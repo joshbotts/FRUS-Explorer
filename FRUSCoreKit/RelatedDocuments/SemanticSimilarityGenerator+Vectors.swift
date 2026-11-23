@@ -13,16 +13,26 @@
 // limitations under the License.
 
 import Foundation
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
-/// The app's half of ``SemanticSimilarityGenerator``, whose declaration, pure rules and
-/// ``SemanticOffIndexLeads`` are FRUSCoreKit's (`FRUSCoreKit/RelatedDocuments/SemanticSimilarityGenerator.swift`,
-/// where the type's own note is): the generation, the re-score and the off-index scan, which read
-/// SemanticVectorsKit's bundled tiers and the app's shard store and so stay here until FRUS Explorer
-/// Light's phase 4. The kit's engine reaches them through ``AppSemanticSimilaritySource``.
+/// The passes of ``SemanticSimilarityGenerator``, whose declaration, pure rules and
+/// ``SemanticOffIndexLeads`` are in `SemanticSimilarityGenerator.swift`, where the type's own note is:
+/// the generation, the re-score and the off-index scan, over SemanticVectorsKit's bundled tiers and the
+/// host's shards, which a ``SemanticSimilarityHost`` gives them. The engine reaches them through
+/// ``SemanticVectorsSimilaritySource``.
 ///
 /// Version history:
 ///   1.0 — 2026-11-08: FRUS Explorer Light's S23a — split from the type's file, which moved into
 ///          FRUSCoreKit; every member here is unchanged
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — moved into FRUSCoreKit, as
+///          `SemanticSimilarityGenerator+Vectors.swift`: the passes read a ``SemanticSimilarityHost``
+///          where they read the app's `AppState` and `BundledSemanticVectors`, the same members by the
+///          same names, and a shard through SemanticVectorsKit's ``SemanticShardSource``; each pass's
+///          reads, in their order, are the ones it made
 extension SemanticSimilarityGenerator {
 
     func candidates(
@@ -30,12 +40,12 @@ extension SemanticSimilarityGenerator {
         anchorYear: Int?,
         limit: Int,
         scopeVolumeIds: Set<String>?,
-        appState: AppState
+        host: SemanticSimilarityHost
     ) async throws -> GeneratedPool {
-        guard let index = BundledSemanticVectors.index,
-              let corpus = BundledSemanticVectors.corpusVectors,
-              let store = appState.semanticShardStore,
-              let pipeline = appState.indexingPipeline
+        guard let index = host.index,
+              let corpus = host.corpusVectors,
+              let store = host.shardStore,
+              let pipeline = host.indexingPipeline
         else { return .empty }
 
         // The anchor needs a vector at all: 2,356 of the app's display rows are chapter divs, front
@@ -48,7 +58,7 @@ extension SemanticSimilarityGenerator {
         // is the volume the reader is already looking at.
         guard let anchorEntry = index.volume(anchor.volumeId) else { return .empty }
         guard let anchorShard = await store.shard(for: anchor.volumeId) else {
-            appState.fetchSemanticShardIfNeeded(for: anchor.volumeId, reason: .readerAskedForSemantics)
+            host.requestShard(for: anchor.volumeId)
             return .empty
         }
         guard let query = anchorShard.vector(at: anchorRow - anchorEntry.rowOffset) else {
@@ -58,7 +68,7 @@ extension SemanticSimilarityGenerator {
         // The display fence, as an O(1) per-row lookup. A candidate must be a document the reader
         // could actually open: indexed, and inside the caller's scope when one is set.
         let eligibleVolumes = Self.eligibleVolumeIDs(
-            indexed: appState.indexedVolumeIds, scope: scopeVolumeIds)
+            indexed: host.indexedVolumeIds, scope: scopeVolumeIds)
         guard !eligibleVolumes.isEmpty else { return .empty }
         var eligible = [UInt8](repeating: 0, count: index.documentCount)
         for volumeID in eligibleVolumes {
@@ -94,7 +104,7 @@ extension SemanticSimilarityGenerator {
             scored.append((row: row, score: score))
         }
         for volumeID in missingVolumes {
-            appState.fetchSemanticShardIfNeeded(for: volumeID, reason: .readerAskedForSemantics)
+            host.requestShard(for: volumeID)
         }
 
         scored.sort { $0.score == $1.score ? $0.row < $1.row : $0.score > $1.score }
@@ -186,7 +196,7 @@ extension SemanticSimilarityGenerator {
     ///
     /// ## What it deliberately does not do
     /// **It fetches nothing.** It reads only shards already on disk and queues no download, unlike
-    /// ``candidates(for:anchorYear:limit:scopeVolumeIds:appState:)``, which asks for the shards its
+    /// ``candidates(for:anchorYear:limit:scopeVolumeIds:host:)``, which asks for the shards its
     /// pool needs. Re-scoring the whole candidate universe would otherwise widen the burst measured
     /// at a median of 104 volumes per panel open onto the other axes' pools as well — and that path
     /// now honours the reader's download switch, so a miss here means the reader declined, not that
@@ -197,24 +207,26 @@ extension SemanticSimilarityGenerator {
     ///   - candidates: Keys the other generators produced that this axis has not scored.
     ///   - floor: The calibrated cosine of this axis's own weakest vended neighbour. A candidate's
     ///     cosine is calibrated before it is compared, so the two are on one scale.
-    ///   - store: The shard store, read-only. **Taking the store rather than the `AppState` its
-    ///     siblings take is what makes the paragraph above structural instead of a convention**:
-    ///     with no `AppState` in scope there is no `fetchSemanticShardIfNeeded` to call, so a later
-    ///     change cannot widen the burst here by accident. A test can pin an outcome; it cannot pin
-    ///     the absence of a call that nothing prevents.
+    ///   - index: The bundled row index, or `nil` while it is not loaded, when nothing is scored.
+    ///   - store: The host's shards, read-only. **Taking the shards rather than the
+    ///     ``SemanticSimilarityHost`` its siblings take is what makes the paragraph above structural
+    ///     instead of a convention**: with no host in scope there is no request for a shard to make,
+    ///     so a later change cannot widen the burst here by accident. A test can pin an outcome; it
+    ///     cannot pin the absence of a call that nothing prevents.
     /// - Returns: Calibrated cosines for the candidates that cleared the floor; empty when nothing
     ///   did.
     static func reScore(
         anchor: DocumentKey,
         candidates: Set<DocumentKey>,
         floor: Double,
-        store: SemanticShardStore
+        index: SemanticVectorIndex?,
+        store: any SemanticShardSource
     ) async -> [DocumentKey: Double] {
         // `candidates.isEmpty` is a COST guard and nothing more — it saves mapping the anchor's
         // shard for a pass with nothing to score. The result is `[:]` either way, which is why no
         // test pins it; `rescorePlan` is what actually refuses an empty target set.
         guard !candidates.isEmpty,
-              let index = BundledSemanticVectors.index,
+              let index,
               let anchorRow = index.row(documentID: anchor.documentId, volumeID: anchor.volumeId),
               let anchorEntry = index.volume(anchor.volumeId),
               let anchorShard = await store.shard(for: anchor.volumeId),
@@ -318,7 +330,7 @@ extension SemanticSimilarityGenerator {
 
     /// Runs the off-index scan for an anchor, end to end, and scores what it can.
     ///
-    /// A separate entry point rather than a second return value from ``candidates(for:anchorYear:limit:scopeVolumeIds:appState:)``:
+    /// A separate entry point rather than a second return value from ``candidates(for:anchorYear:limit:scopeVolumeIds:host:)``:
     /// `GeneratedPool` is document-grain and record-bearing — every candidate needs a
     /// `document_cache` row to render — and a finding about documents this device *cannot* render
     /// has no shape there. So the engine calls this beside the generator and carries the result on
@@ -339,22 +351,22 @@ extension SemanticSimilarityGenerator {
     ///   - scopeVolumeIds: The caller's volume restriction, if any. It narrows what counts as
     ///     *held*, exactly as it does for the axis, so a scoped panel reports leads against the
     ///     scope the reader is looking at.
-    ///   - appState: Holds the live index and the shard store.
+    ///   - host: Holds the bundled tiers, the indexed volumes and the shards.
     /// - Returns: The leads, or `.none` when the stack is absent or nothing cleared the cut.
     static func offIndexSection(
         for anchor: DocumentKey,
         limit: Int,
         scopeVolumeIds: Set<String>?,
-        appState: AppState
+        host: SemanticSimilarityHost
     ) async -> SemanticOffIndexLeads {
-        guard let index = BundledSemanticVectors.index,
-              let corpus = BundledSemanticVectors.corpusVectors,
-              let store = appState.semanticShardStore,
+        guard let index = host.index,
+              let corpus = host.corpusVectors,
+              let store = host.shardStore,
               let anchorRow = index.row(documentID: anchor.documentId, volumeID: anchor.volumeId)
         else { return .none }
 
         let eligibleVolumes = Self.eligibleVolumeIDs(
-            indexed: appState.indexedVolumeIds, scope: scopeVolumeIds)
+            indexed: host.indexedVolumeIds, scope: scopeVolumeIds)
         guard !eligibleVolumes.isEmpty else { return .none }
         var eligible = [UInt8](repeating: 0, count: index.documentCount)
         for volumeID in eligibleVolumes {
@@ -390,7 +402,7 @@ extension SemanticSimilarityGenerator {
         anchorRow: Int,
         rows: [Int],
         index: SemanticVectorIndex,
-        store: SemanticShardStore
+        store: any SemanticShardSource
     ) async -> [SemanticOffIndexLeads.DocumentLead] {
         // The query vector is the anchor's own, which needs the anchor's shard. Absent, the volume
         // channel still stands; only the exact scores are unavailable.
@@ -466,45 +478,142 @@ extension SemanticSimilarityGenerator {
 
 }
 
-// MARK: - AppSemanticSimilaritySource
+// MARK: - SemanticVectorsSimilaritySource
 
-/// The app's semantic axis for the kit's engine: this generator's three passes over SemanticVectorsKit's
-/// bundled tiers and the app's shard store, bound to the `AppState` that holds them.
+/// The semantic axis for the engine: the generator's three passes over SemanticVectorsKit's bundled
+/// tiers and the host's shards, which a ``SemanticSimilarityHost`` holds.
 ///
-/// `RelatedDocumentsDependencies(appState:)` passes one, so the engine runs the axis as it did when it
-/// called these passes with its own `AppState`.
+/// The app's `RelatedDocumentsDependencies(appState:)` passes one over `SemanticSimilarityHost(appState:)`,
+/// so the engine runs the axis as it did when the app's own source called these passes with its
+/// `AppState`. FRUS Explorer Light passes one over a host of its own.
 ///
 /// Version history:
-///   1.0 — 2026-11-08: FRUS Explorer Light's S23a
+///   1.0 — 2026-11-08: FRUS Explorer Light's S23a, as the app's `AppSemanticSimilaritySource`
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — FRUSCoreKit's, over a ``SemanticSimilarityHost``
+///          where it held the app's `AppState`
 @MainActor
-struct AppSemanticSimilaritySource: SemanticSimilaritySource {
+public struct SemanticVectorsSimilaritySource: SemanticSimilaritySource {
 
-    /// Holds the shard store and the indexed volumes the passes read.
-    let appState: AppState
+    /// Holds the tiers, the shards and the indexed volumes the passes read.
+    public let host: SemanticSimilarityHost
 
-    /// The generator's own candidates (``SemanticSimilarityGenerator/candidates(for:anchorYear:limit:scopeVolumeIds:appState:)``).
-    func candidates(for anchor: DocumentKey, anchorYear: Int?, limit: Int,
-                    scopeVolumeIds: Set<String>?) async throws -> GeneratedPool {
+    /// Creates the source.
+    ///
+    /// - Parameter host: What the passes read.
+    public init(host: SemanticSimilarityHost) {
+        self.host = host
+    }
+
+    /// The generator's own candidates (``SemanticSimilarityGenerator/candidates(for:anchorYear:limit:scopeVolumeIds:host:)``).
+    public func candidates(for anchor: DocumentKey, anchorYear: Int?, limit: Int,
+                           scopeVolumeIds: Set<String>?) async throws -> GeneratedPool {
         try await SemanticSimilarityGenerator().candidates(
             for: anchor, anchorYear: anchorYear, limit: limit,
-            scopeVolumeIds: scopeVolumeIds, appState: appState)
+            scopeVolumeIds: scopeVolumeIds, host: host)
     }
 
-    /// The off-index scan (``SemanticSimilarityGenerator/offIndexSection(for:limit:scopeVolumeIds:appState:)``).
-    func offIndexSection(for anchor: DocumentKey, limit: Int,
-                         scopeVolumeIds: Set<String>?) async -> SemanticOffIndexLeads {
+    /// The off-index scan (``SemanticSimilarityGenerator/offIndexSection(for:limit:scopeVolumeIds:host:)``).
+    public func offIndexSection(for anchor: DocumentKey, limit: Int,
+                                scopeVolumeIds: Set<String>?) async -> SemanticOffIndexLeads {
         await SemanticSimilarityGenerator.offIndexSection(
-            for: anchor, limit: limit, scopeVolumeIds: scopeVolumeIds, appState: appState)
+            for: anchor, limit: limit, scopeVolumeIds: scopeVolumeIds, host: host)
     }
 
-    /// The re-score (``SemanticSimilarityGenerator/reScore(anchor:candidates:floor:store:)``) over the
-    /// shard store `AppState` holds now, the store the engine read before it called the re-score
-    /// itself; with none there is nothing to score. `reScore` is still given the store alone, so it
-    /// can queue no fetch.
-    func reScore(anchor: DocumentKey, candidates: Set<DocumentKey>,
-                 floor: Double) async -> [DocumentKey: Double] {
-        guard let store = appState.semanticShardStore else { return [:] }
+    /// The re-score (``SemanticSimilarityGenerator/reScore(anchor:candidates:floor:index:store:)``) over
+    /// the shards the host holds now, the store the engine read before it called the re-score itself;
+    /// with none there is nothing to score. `reScore` is given the index and the shards alone, never
+    /// the host, so it can request no shard.
+    public func reScore(anchor: DocumentKey, candidates: Set<DocumentKey>,
+                        floor: Double) async -> [DocumentKey: Double] {
+        guard let store = host.shardStore else { return [:] }
         return await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: candidates, floor: floor, store: store)
+            anchor: anchor, candidates: candidates, floor: floor, index: host.index, store: store)
+    }
+}
+
+// MARK: - SemanticSimilarityHost
+
+/// What the semantic axis reads from its host, in place of the app's `AppState` and
+/// `BundledSemanticVectors`: SemanticVectorsKit's bundled tiers, the host's shards, the volumes the
+/// index holds, the index's pipeline, and the request for a shard the host does not hold.
+///
+/// ## Each member is read where it is used, not when the value is made
+/// As ``RelatedDocumentsDependencies``' members are: the initialiser takes each but the request as an
+/// autoclosure, which a pass reads where it read the app's `AppState` or `BundledSemanticVectors`. So
+/// the app's `SemanticSimilarityHost(appState:)` gives a pass the tiers and the store they hold at
+/// that moment, as the pass's own reads did: the bundled tiers load after the first frame, the shard
+/// store is built once they have, and the indexed volumes grow while a volume indexes. A host whose
+/// values never change passes them as values, or as stored properties: an expression given here, such
+/// as a load, runs at every read.
+///
+/// ## The request for a shard
+/// ``requestShard(for:)`` is the one thing a pass asks of its host. The generation calls it for the
+/// anchor's volume when the anchor's shard is missing, and then offers nothing; with the anchor's
+/// shard, it calls it once for each candidate volume whose shard was missing, after it has scored the
+/// rest. The re-score and the off-index scan never call it. The
+/// app starts a download, if the reader's Download With Volumes allows it
+/// (`AppState.fetchSemanticShardIfNeeded(for:reason:)`, `.readerAskedForSemantics`). A host that holds
+/// every shard it ever will, as FRUS Explorer Light does, can count what it is asked for, or pass
+/// nothing.
+///
+/// Version history:
+///   1.0 — 2026-11-23: FRUS Explorer Light's S26a
+public struct SemanticSimilarityHost: Sendable {
+
+    private let indexProvider: @MainActor @Sendable () -> SemanticVectorIndex?
+    private let corpusVectorsProvider: @MainActor @Sendable () -> SemanticCorpusVectors?
+    private let shardStoreProvider: @MainActor @Sendable () -> (any SemanticShardSource)?
+    private let indexedVolumeIdsProvider: @MainActor @Sendable () -> Set<String>
+    private let indexingPipelineProvider: @MainActor @Sendable () -> IndexingPipeline?
+    private let shardRequest: @MainActor @Sendable (String) -> Void
+
+    /// The bundled row index, or `nil` while it is not loaded, when the axis has nothing to give.
+    @MainActor public var index: SemanticVectorIndex? { indexProvider() }
+
+    /// The bundled corpus tier, mapped, or `nil` while it is not loaded.
+    @MainActor public var corpusVectors: SemanticCorpusVectors? { corpusVectorsProvider() }
+
+    /// The host's shards, or `nil` while it has no store, when the axis scores nothing.
+    @MainActor public var shardStore: (any SemanticShardSource)? { shardStoreProvider() }
+
+    /// The volumes with rows in the index: a candidate comes from one of them, and the off-index scan
+    /// looks past them.
+    @MainActor public var indexedVolumeIds: Set<String> { indexedVolumeIdsProvider() }
+
+    /// The live index's pipeline, whose display records are the candidates' fence; `nil` while no
+    /// index is open.
+    @MainActor public var indexingPipeline: IndexingPipeline? { indexingPipelineProvider() }
+
+    /// Tells the host that a pass wanted a volume's shard and found none.
+    ///
+    /// - Parameter volumeID: Manifest `volumeId`.
+    @MainActor public func requestShard(for volumeID: String) {
+        shardRequest(volumeID)
+    }
+
+    /// Creates the host. Every member but the request is an autoclosure, read where a pass uses it.
+    ///
+    /// - Parameters:
+    ///   - index: The bundled row index.
+    ///   - corpusVectors: The bundled corpus tier.
+    ///   - shardStore: The host's shards.
+    ///   - indexedVolumeIds: The volumes with rows in the index.
+    ///   - indexingPipeline: The live index's pipeline.
+    ///   - requestShard: Called with a volume whose shard a pass wanted and the host did not hold; by
+    ///     default, nothing.
+    public init(
+        index: @autoclosure @escaping @MainActor @Sendable () -> SemanticVectorIndex?,
+        corpusVectors: @autoclosure @escaping @MainActor @Sendable () -> SemanticCorpusVectors?,
+        shardStore: @autoclosure @escaping @MainActor @Sendable () -> (any SemanticShardSource)?,
+        indexedVolumeIds: @autoclosure @escaping @MainActor @Sendable () -> Set<String>,
+        indexingPipeline: @autoclosure @escaping @MainActor @Sendable () -> IndexingPipeline?,
+        requestShard: @escaping @MainActor @Sendable (String) -> Void = { _ in }
+    ) {
+        self.indexProvider = index
+        self.corpusVectorsProvider = corpusVectors
+        self.shardStoreProvider = shardStore
+        self.indexedVolumeIdsProvider = indexedVolumeIds
+        self.indexingPipelineProvider = indexingPipeline
+        self.shardRequest = requestShard
     }
 }
