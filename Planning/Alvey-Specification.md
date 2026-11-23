@@ -65,9 +65,10 @@ runs on: Export Research Database… (L-2), tag names beside tag ids (L-3), the 
 (L-4), `frusexplorer://` deep links (L-5), the corpus-wide shard fetch (L-6), the research-state
 record (L-7) and the `.fruscollection` write-minimum (L-1). The method lives in the guide, and the
 §12 house-rules block is the instrument: across C-0, C-2 and C-0b to C-0d, the block arm obeyed
-95.2–100% of the rubric's items against a no-rules control of 75–84% (guide §12, "Which surface
-answers which block"). In C-3, Opus 5.5 at `medium` and Sonnet 5.5 at `high` obeyed 34 of 34 items
-in both of their runs (guide §3a; `Planning/C-3-Results-2026-10-26.md`).
+95.2–100% of the rubric's items against a no-rules control of 75–84%
+(`Planning/Agentic-Loop-Development-Plan.md`, the C-2 table; guide §12, after the block). In C-3,
+Opus 5.5 at `medium` and Sonnet 5.5 at `high` obeyed 34 of 34 items in both of their runs (guide
+§3a; `Planning/C-3-Results-2026-10-26.md`).
 
 Three facts limit who can use it:
 
@@ -79,8 +80,9 @@ Three facts limit who can use it:
    assessment counted, exactly one of §12's roughly 40 rules was enforced by a mechanism, the
    export's privacy strip (`Planning/Completed/MCP-Server-Assessment-2026-08-31.md` §1). The
    export's `research_*` views have since taken four more off the agent's memory (guide §12, after
-   the block). The assessment's own line still describes the rest: "a description is prose with
-   exactly the authority of §12's prose. Only implementations bind."
+   the block). The agentic-loop plan recorded the assessment's verdict in a line that still
+   describes the rest: "a description is prose with exactly the authority of §12's prose. Only
+   implementations bind." (`Planning/Agentic-Loop-Development-Plan.md`, "The wave is complete").
 3. **Sending the work to a cloud model is a decision, not a default** (guide §11). The decision
    covers the researcher's own writing and "an unpublished argument visible in the shape of your
    queries."
@@ -237,8 +239,9 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
 
 ### 5.1 Platform
 
-- **PLAT-1** macOS 26 or later on Apple silicon, the floor FRUS Explorer's Mac app has
-  (`project.yml`, `deploymentTarget: "26.0"`).
+- **PLAT-1** macOS 26 or later, the floor FRUS Explorer's Mac app has (`project.yml`,
+  `deploymentTarget: "26.0"`), on Apple silicon, which LM Studio's Mac app requires **[LMS,
+  unverified]**. The Apple-silicon floor is Alvey's own; FRUS Explorer's Mac app has none.
 - **PLAT-2** No iOS or iPadOS in the first release, for four reasons. Export Research Database… is
   Mac-only (`FRUSExplorer/Export/ResearchDataExportView.swift:212-214`). iOS has no route to the
   index file (guide §2). LM Studio does not run there. A reading round needs hours of a Mac's power
@@ -371,8 +374,8 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   refuses an FTS schema generation other than its own. The message says which app to update, or to
   export again once FRUS Explorer has finished re-indexing.
 - **SRC-5** A hand-made `.backup` (guide §2) has no `research_provenance`. Alvey accepts one only
-  with the researcher's research-state record pasted beside it (Settings ▸ Volumes & Storage ▸
-  Advanced ▸ Index Health ▸ Copy Research-State Record; `ResearchDataExporter.swift:1378-1451`).
+  with the researcher's research-state record pasted beside it (Settings ▸ Library ▸ Volumes &
+  Storage ▸ Advanced ▸ Copy Research-State Record; guide §13; `ResearchDataExporter.swift:1378-1451`).
   It checks the record's versions as SRC-4 does, and the record's indexed-volume list must equal the
   copy's.
 - **SRC-6** Alvey never opens FRUS Explorer's live index (guide §11: "Do not point an agent at the
@@ -399,14 +402,14 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   results read "unavailable", as guide §12 requires ("say so and stop").
 - **SRC-10** Alvey fetches TEI lazily, a volume at a time as a scope needs it, and caches it by blob
   SHA-1, since a blob never changes. It reads the files through the kits' `FRUSDocumentParser`
-  (`FRUSCoreKit/TEI/FRUSDocumentParser.swift:168`) with its own `DocumentASTSource` conformer.
+  (`FRUSCoreKit/TEI/FRUSDocumentParser.swift:166`) with its own `DocumentASTSource` conformer.
 
 ### 7.3 The bundled JSON
 
 - **SRC-11** Alvey bundles copies of the files FRUS Explorer bundles that its tools read, taken from
-  `FRUSExplorer/Resources/` at the pinned commit. They are the five `IndexingResources` files,
-  `manifest.json`, the archival indexes guide §12 lists, the subject profiles,
-  `resolved-edge-index.json` and `cited-page-map.json`. Each loads through the kits'
+  `FRUSExplorer/Resources/` at the pinned commit. They are the five `IndexingResources` files
+  (`cited-page-map.json` among them), `manifest.json`, the archival indexes guide §12 lists, the
+  subject profiles and `resolved-edge-index.json`. Each loads through the kits'
   `init(contentsOf:)` where one exists, and by a plain decode where none does (`CentralFilesIndex`,
   `VolumeSourcesIndex`, `LotClaimantsIndex`).
 - **SRC-12** The run record carries each file's SHA-256. When the index copy came from a FRUS
@@ -424,11 +427,11 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   verified as FRUS Explorer verifies them (`FRUSExplorer/Semantic/SemanticShardFetcher.swift:61`,
   `238`), or from FRUS Explorer's own vectors folder through a grant. A row whose shard is missing
   is dropped from the rerank, never scored zero.
-- **SRC-15** A text query needs the pinned encoder: EmbeddingGemma 2 at Q8_0, the GGUF whose
-  SHA-256 the artifact's provenance pins (`2188ac1d…`, `provenance.modelFileSHA256`). FRUS Explorer
-  shows its verified copy at Settings ▸ Volumes & Storage ▸ Natural-Language Search ▸ Model File,
-  with Show in Finder (`FRUSExplorer/Settings/SemanticModelSection.swift`). The researcher loads
-  that file into LM Studio, or into another OpenAI-compatible embeddings server (§8.12). Alvey
+- **SRC-15** A text query needs the pinned encoder: EmbeddingGemma 2 at Q8_0, the GGUF whose SHA-256
+  the artifact's provenance pins (`2188ac1d…`, `provenance.modelFileSHA256`). FRUS Explorer shows
+  its verified copy at Settings ▸ Library ▸ Volumes & Storage ▸ Natural-Language Search ▸ Model
+  File, with Show in Finder (`FRUSExplorer/Settings/SemanticModelSection.swift`). The researcher
+  loads that file into LM Studio, or into another OpenAI-compatible embeddings server (§8.12). Alvey
   verifies the served model id and the file's SHA-256 as
   `RetrievalEvalHarnessCore/LMStudioEmbeddingClient.swift:37` does.
 - **SRC-16** A text query follows the artifact's own recipe through SemanticVectorsKit's functions:
@@ -446,8 +449,9 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   requires a cosine of at least 0.999 against each reference vector, the bar
   `QueryEncoderParityTests` holds FRUS Explorer's own encoder to (`QueryEncoderParityTests.swift:27`).
   If a server cannot load the model or misses the bar, text queries stay off and the reason is
-  shown. The run's VECTORS section then reads "none" or "neighbours of documents only" (guide
-  §14.16).
+  shown. The run's VECTORS section then names that operation as not run, and why, as guide §14.16
+  asks of every vector operation. A run with no vector artifacts at all writes the word "none"
+  there.
 - **SRC-18** A vector result is a lead for reading, never evidence. It reaches a deliverable only
   through a document the run read (guide §14.17, §A.8).
 
@@ -583,9 +587,10 @@ section relies on is re-checked against the installed version in A0 (§20).
 
 - **LMS-17** Reasoning is set per role, through `reasoning_effort` where the model takes it (since
   0.4.8 **[LMS, unverified]**), or else the model's own switch, such as Qwen3's think and no-think.
-  CAL-6 proves the setting takes effect on this server. The sweep's record shows why that matters:
-  the no-think template's only trace was a fixed four prompt tokens a chunk, and the run manifest
-  could not see the toggle (`NER-RUNBOOK.md` §4.8.2).
+  CAL-6 proves the setting takes effect on this server. The pilot's record shows why that matters.
+  Its no-think arms turned thinking off on the LM Studio side, and the run manifest could not record
+  the toggle. Only its effects in the store showed which mode had run: the completion tokens a
+  chunk, and a fixed four prompt tokens a chunk more (`NER-RUNBOOK.md` §4.8.1, §4.8.2).
 - **LMS-18** Reasoning text (`message.reasoning`, `delta.reasoning` **[LMS]**) is kept in the
   operator's log. It is never parsed as output and never shown to the historian.
 
@@ -636,21 +641,26 @@ section relies on is re-checked against the installed version in A0 (§20).
 
 - **POW-1** When the server is on this Mac, Alvey reads `ProcessInfo.thermalState` and the power
   source. By default it starts no new step at `.serious`, resumes at `.fair`, and records every
-  pause. The measurements bear on both sides: the Air held within 10% of its early rate over a
-  25-minute probe with no thermal warning (`DEVELOPMENT-PLAN.md`, the EmbeddingGemma 2 entry), and
-  its 4.4-hour average was still four times the Studio's time a chunk (§18.1).
+  pause. The thermal state alone is not enough. On the Air's 12.64-hour embedding run, where a
+  25-minute probe had predicted 8.6 to 9.1 hours, the pace against the Studio's slipped from 1.70
+  in the first hour to 2.69 in the last with no thermal warning, and the battery drained on mains
+  power through the first two hours (`tools/semantic-harvest/README.md`, field notes of 2026-10-14
+  to 15). So Alvey also watches each step's measured rate (POW-3), and warns when the battery drains
+  on mains power.
 - **POW-2** Options: run only on mains power; pause between batches, as the harvester's
   `BATCH_SLEEP` does (`NER-RUNBOOK.md` §4.3); keep the Mac awake during a run (UI-8); hold the
   heavy-job lock (STD-2).
-- **POW-3** For a server on another Mac, Alvey cannot read the thermal state. It watches the
-  decode rate of each stream and flags a sustained drop.
+- **POW-3** Alvey compares the prefill and decode rates of every stream with the model's
+  calibration and flags a sustained drop. For a server on another Mac, whose thermal state Alvey
+  cannot read, this is the only sign of a slowdown it has.
 
 ### 8.11 Determinism
 
 - **DET-1** Reader, refuter and critic steps run at temperature 0 with a seed. A generation is still
-  not reproducible: LM Studio's batched MLX generation ignores `seed` **[LMS]**, and the owner's
-  sweep found differences between runs from batching and cache state, across an OS and an LM Studio
-  build (`NER-RUNBOOK.md` §4.8.2). So Alvey reproduces tool results exactly (REC-2), records every
+  not reproducible. LM Studio's batched MLX generation ignores `seed` **[LMS]**. The owner's two
+  no-think pilot arms ran the same 824 chunks on two Macs with different OS and LM Studio builds,
+  and their mentions differed by 57, which the record puts down to batching and cache state
+  (`NER-RUNBOOK.md` §4.8.2). So Alvey reproduces tool results exactly (REC-2), records every
   generation, and never claims a generation can be reproduced.
 
 ### 8.12 Embeddings
@@ -658,8 +668,9 @@ section relies on is re-checked against the installed version in A0 (§20).
 - **EMB-1** Text queries use `POST /v1/embeddings` **[LMS]** on an embeddings server set apart from
   the chat server. The pinned encoder may need a newer runtime than LM Studio ships: the harvest
   moved to `llama-server` for EmbeddingGemma 2 (`tools/semantic-harvest/README.md`, field notes of
-  2026-10-14), and LM Studio's runtime 2.21 was reported to fall back 2 to 3× slower on M5 Macs
-  (`DEVELOPMENT-PLAN.md`, the same entry). The parity gate (SRC-17) decides which server qualifies,
+  2026-10-14). LM Studio's runtime 2.21 was reported to fail the Metal tensor self-test on M5 Macs
+  and fall back, 2 to 3× slower on prompt processing (`DEVELOPMENT-PLAN.md`, the 2026-10-14 entry
+  on the EmbeddingGemma 2 spike). The parity gate (SRC-17) decides which server qualifies,
   not the server's name.
 
 ### 8.13 Models for A0
@@ -670,7 +681,7 @@ unverified]**. The one measured on this corpus is the first:
 
 | Model | Shape | Weights at the catalogue's quantization | Context | Note |
 |---|---|---|---|---|
-| Qwen3 14 B | dense | about 15 GB at Q8_0 | — | Measured here: 3.38% of strings not verbatim, schema never broken (§1.2, §18.1) |
+| Qwen3 14 B | dense | about 15 GB at Q8_0 | — | Measured here: 3.38% of strings not verbatim; over the sweep no output was unparsable and 155 chunks were truncated (`NER-RUNBOOK.md` §4.8.3) |
 | gpt-oss-20b | 21 B, 3.6 B active | about 12 GB (MXFP4) | 128 K | Reasoning effort settable |
 | Qwen3.6-35B-A3B, Qwen3.8-27B | mixture of experts; dense | 16–21 GB | up to 262 K | Tool-capable |
 | Gemma 4 26B A4B | 3.8 B active | about 18 GB at Q4_K_M | 256 K | Native function calling |
@@ -853,8 +864,10 @@ line's first three paragraphs (guide §14.16).
 - **RUN-2** Each step's result is committed to disk before the next step starts. After a crash, a
   quit, a sleep or a lost server, a run resumes at the first uncommitted step.
 - **RUN-3** A model step's cache key is the SHA-256 of its exact request bytes together with the
-  model's identity (§8.2), the harness runbook's rule (`Planning/Agentic-Harness-Runbook.md` §3).
-  A resumed run reuses a step only when both match, and the record lists the reused steps.
+  model's identity (§8.2). The harness runbook's resume cache is keyed on the byte-identical prompt
+  and options (`Planning/Agentic-Harness-Runbook.md` §3). Alvey adds the model, because LM Studio
+  can answer a request with a model other than the one it names (LMS-6). A resumed run reuses a
+  step only when both match, and the record lists the reused steps.
 - **RUN-4** A dead step's partial output is a claim, not a result (guide §14.12 item 6). A retried
   step starts fresh, and the record keeps both attempts.
 - **RUN-5** The operator can pause, resume and cancel. A cancelled run's folder is complete up to
@@ -883,11 +896,12 @@ line's first three paragraphs (guide §14.16).
 - **VER-3 Citations are checked.** Every cited key exists in the index copy. Every document the
   overview cites is in the collection, and every collection entry exists (guide §14.16).
 - **VER-4 Reader-facing lint.** Checks the overview and the collection's prose and notes for SQL,
-  the index's table and column names, document keys outside a history.state.gov URL, file paths and
-  issue numbers (rubric O1), and for bare percentages. It flags sentences over 30 words, technical
-  words left unexplained ("stem", "hits", "returned", "TEI", "cosine", "Hamming", "cluster"), and
-  every *only*, *first*, *earliest*, *last*, *never* and *none* with no scope beside it (guide
-  §14.13). A failed check blocks release; a flag is shown to the researcher.
+  the index's table and column names, document keys outside a history.state.gov URL and file paths
+  (rubric O1), for issue numbers (guide §12, READER-FACING OUTPUT), and for bare percentages. It
+  flags sentences over 30 words, technical words left unexplained ("stem", "hits", "returned",
+  "TEI", "cosine", "Hamming", "cluster"), and every *only*, *first*, *earliest*, *last*, *never* and
+  *none* with no scope beside it (guide §14.13). A failed check blocks release; a flag is shown to
+  the researcher.
 - **VER-5 Reading is measured.** Documents read whole, documents quoted and passages quoted, with
   the whole/partial split, computed from the ledger and set against the brief's floors (guide §9
   item 8).
@@ -1002,17 +1016,17 @@ decision.
 | Surface | Where the researcher finds it | What Alvey takes from it | Requirement |
 |---|---|---|---|
 | Export Research Database… (Mac only) | Settings ▸ System ▸ Data & Recovery | The index copy, its provenance and its views | SRC-1 to SRC-7 |
-| Copy Research-State Record | Settings ▸ Volumes & Storage ▸ Advanced ▸ Index Health | The versions and volume list a hand-made copy lacks | SRC-5 |
+| Copy Research-State Record | Settings ▸ Library ▸ Volumes & Storage ▸ Advanced | The versions and volume list a hand-made copy lacks | SRC-5 |
 | Export as JSON (format version 7) | Settings ▸ System ▸ Data & Recovery | The researcher's curation, when the brief opts in | SRC-19 |
 | A collection's `.fruscollection` | The collection's Export sheet | A seed, and the historian's feedback | SRC-20, §13.4 |
-| The embedder on disk | Settings ▸ Volumes & Storage ▸ Natural-Language Search ▸ Model File | The pinned query encoder, loaded into LM Studio | SRC-15 |
+| The embedder on disk | Settings ▸ Library ▸ Volumes & Storage ▸ Natural-Language Search ▸ Model File | The pinned query encoder, loaded into LM Studio | SRC-15 |
 | The Volumes and vectors folders | Inside FRUS Explorer's container, granted once | The exact TEI files and the shards | SRC-9, SRC-14 |
 
 ### 13.3 From Alvey to FRUS Explorer
 
 - **IO-2 The collection is the way back.** Alvey builds a `CollectionExport` and writes it with the
   kits' `NativeCollectionSerializer.makeFile(from:includeNotes:resolveNoteTexts:)` and
-  `encode(_:)` (`FRUSCoreKit/Collections/NativeCollectionFormat.swift:419`, `472`), so the file
+  `encode(_:)` (`FRUSCoreKit/Collections/NativeCollectionFormat.swift:472`, `419`), so the file
   has the shape FRUS Explorer's own files have. Its contents follow guide §15.1a:
   - the bottom line in `introductionText`; the one-line answer in `note`; the run in `authorLine`
     (`Alvey <version>, run <id>, <date>, <model>`), which prints on the title page of every export;
@@ -1038,7 +1052,7 @@ decision.
   check FRUS Explorer makes before every export, and again when a corrected volume arrives, passes.
 - **IO-4 Opening it.** Alvey hands the file to FRUS Explorer by bundle id
   (`bottsywattsy.FRUS-Explorer`), as FRUS Explorer hands RIS files to Zotero
-  (`FRUSExplorer/App/SupportingViews.swift:1457-1466`). FRUS Explorer imports it as a new
+  (`FRUSExplorer/App/SupportingViews.swift:1656-1681`). FRUS Explorer imports it as a new
   collection in the active project, and opens a byte-identical file only once a session
   (`FRUSExplorer/App/FRUSExplorerApp.swift:2436-2479`).
 - **IO-5 Deep links.** Every document Alvey shows has *Open in FRUS Explorer*, which opens its
@@ -1230,8 +1244,8 @@ machine, and Alvey re-runs it when any of the four changes.
 - **CAL-5 Speed.** Prefill and decode rates and seconds per reader step on this machine, at one
   request and at the server's parallel slots, sustained long enough to see throttling.
 - **CAL-6 Reasoning control.** Proof that the model's think and no-think settings change its
-  completion length as configured. The sweep's lesson is that a run manifest cannot see a
-  server-side toggle (`NER-RUNBOOK.md` §4.8.2).
+  completion length as configured. The pilot's lesson is that a run manifest cannot record a
+  server-side toggle, and only the store's record of its effects shows it (`NER-RUNBOOK.md` §4.8.1).
 - **CAL-7 Floors.** Alvey refuses to assign a model to a role whose calibration falls below the
   role's floor. The owner sets the floors (§22).
 
@@ -1281,9 +1295,10 @@ come from its calibration on the machine (CAL-5), never from this section.
 
 ### 18.2 What the anchors decide
 
-- **Generation is the scarce resource.** The recommended Claude cells emitted about 170,000 output
-  tokens a run (guide §3a). At the 14 B's measured 5.7 tokens a second on the Air, 170,000 tokens
-  would be about eight hours of decode alone **[DERIVED]**. So Alvey keeps generation short:
+- **Generation is the scarce resource.** The two recommended Claude cells emitted about 170,000
+  (Opus at `medium`) and 420,000 to 540,000 (Sonnet at `high`) output tokens a run (guide §3a). At
+  the 14 B's measured 5.7 tokens a second on the Air, that is about 8 to 26 hours of decode alone
+  **[DERIVED]**. So Alvey keeps generation short:
   structured outputs, notes of bounded length, and code-written tables, lists, citations and
   method text (P1, P3).
 - **Reading is prefill.** A reader step takes a whole document and the stable prefix in and gives a
@@ -1310,8 +1325,9 @@ come from its calibration on the machine (CAL-5), never from this section.
 
 - **A11Y-1** FRUS Explorer's standards apply (`Planning/FRUS-Explorer-Specification.md` §18):
   VoiceOver labels, hints and traits on every custom view; text that follows the system size;
-  contrast of at least 4.5:1; colour never the only carrier of meaning; full keyboard operation;
-  Reduce Motion respected.
+  sufficient contrast, held here to the 4.5:1 that `ReaderPageTests` enforces for the reader's
+  page; colour never the only carrier of meaning; Reduce Motion respected. A Mac app also owes full
+  keyboard operation.
 - **A11Y-2** HTML deliverables SHOULD use the kits' reader stylesheet (`ReaderPage`), whose
   contrast `ReaderPageTests` already gates, rather than a stylesheet of Alvey's own.
 - **L10N-1** Every user-facing string uses `String(localized:)`. The first release writes its
