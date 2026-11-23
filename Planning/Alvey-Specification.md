@@ -1,6 +1,6 @@
 # Alvey — Specification
 
-**Version**: 0.1 (draft)
+**Version**: 0.2 (draft)
 **Date**: 2026-11-23
 **Status**: DRAFT for the owner's review. Nothing in it is approved or scheduled; §21 lists the
 decisions it needs, and until each is made the recommendation beside it stands in for it.
@@ -100,9 +100,11 @@ the first, and makes the second acute. The owner has measured local models on th
   generated about 735 tokens per chunk where the answer was about 25. That moved a
   prefill-bound workload into decode, the axis the fanless Air is worst at (same file, §4.7)
   **[MEASURED]**.
-- **The machine matters fourfold.** The same no-think run took 4.68 s a chunk on the M1 Max Mac
-  Studio and 19.27 s on the M5 MacBook Air, the Air's figure an average over 4.4 fanless hours
-  (same file, §4.8.2) **[MEASURED]**.
+- **The one machine is the slow one.** The same no-think run took 4.68 s a chunk on the M1 Max Mac
+  Studio the owner then had, and 19.27 s on the M5 MacBook Air, the Air's figure an average over
+  4.4 fanless hours (same file, §4.8.2) **[MEASURED]**. The owner no longer has the Studio. This
+  specification is designed for the Air alone: 32 GB of memory that the model shares with
+  everything else, no fan, and the Mac this repository is built on.
 
 Nothing measured so far says that a model in the 14–30 B range holds the 221-line block of prose
 rules the way Opus 5.5 does, and the sweep's figures give reason to doubt it. Alvey is built on the
@@ -246,8 +248,11 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   Mac-only (`FRUSExplorer/Export/ResearchDataExportView.swift:212-214`). iOS has no route to the
   index file (guide §2). LM Studio does not run there. A reading round needs hours of a Mac's power
   and thermal budget (§18).
-- **PLAT-3** One Mac or two. LM Studio may run on the Mac that runs Alvey, or on another Mac on the
-  local network: for the owner, the M1 Max Studio serving while Alvey runs on the Air (§8.1).
+- **PLAT-3 One Mac.** Alvey and LM Studio run on the same Mac. For the owner that is the M5
+  MacBook Air (32 GB, fanless), now the only machine, and the Mac this repository is built on. The
+  model, its KV cache, Alvey, FRUS Explorer and macOS share its 32 GB (LMS-20), and a run shares its
+  processor with any build (STD-2). A model server on another Mac remains possible for a researcher
+  who has one (LMS-1, PRIV-5), and arrives in A4 (§20).
 
 ### 5.2 Toolchain and standards
 
@@ -256,11 +261,13 @@ instrument that scored Claude (§17), and a structural item that fails is a bug 
   doc comment on every public and internal declaration; `String(localized:)` for every user-facing
   string. These are this repository's standards (CLAUDE.md, "Coding Standards"), carried into
   Alvey's own CLAUDE.md with the gates that enforce them.
-- **STD-2** On a Mac that builds this repository, Alvey MAY hold the one-heavy-job lock
-  (`$HOME/Library/Caches/FRUS-Explorer/heavy-job.lock`, `Scripts/heavy.sh:54`) while a run's model
-  steps execute on that Mac, so that a run and a build never contend. The option is off by default.
-  CLAUDE.md records why the lock exists: on 2026-10-18 concurrent heavy jobs drove the load average
-  to 785 and the Mac had to be restarted.
+- **STD-2** On a Mac that builds this repository, which for the owner is the only Mac, Alvey SHOULD
+  take the one-heavy-job lock (`$HOME/Library/Caches/FRUS-Explorer/heavy-job.lock`,
+  `Scripts/heavy.sh:54`) for each batch of model steps and release it between batches. A waiting
+  build then runs between two batches, and Alvey waits while the build holds the lock. The option
+  is on by default where the lock's folder exists. The `alvey` command can take the lock directly;
+  the sandboxed app needs the folder granted once. CLAUDE.md records why the lock exists: on
+  2026-10-18 concurrent heavy jobs drove the load average to 785 and the Mac had to be restarted.
 
 ### 5.3 Repository arrangement and the kits
 
@@ -545,9 +552,9 @@ section relies on is re-checked against the installed version in A0 (§20).
 | critic | 0 | on, capped | none: one structured verdict |
 
 - **LMS-10** The refuter and the critic SHOULD run on a different model from the planner and the
-  writer, so that the contest of guide §14.12 is not one model grading its own work. On a 32 GB Air
-  that means changing models between phases, and the scheduler groups steps by model to keep the
-  changes few (ENG-2).
+  writer, so that the contest of guide §14.12 is not one model grading its own work. On the Air
+  that means changing models between phases, since two such models rarely fit its 32 GB at once,
+  and the scheduler groups steps by model to keep the changes few (ENG-2).
 
 ### 8.4 Requests
 
@@ -604,7 +611,9 @@ section relies on is re-checked against the installed version in A0 (§20).
   operator the exact `lms load` command.
 - **LMS-20** Before loading, Alvey estimates the profile's memory: the weights from `size_bytes`
   **[LMS]**, plus the KV cache for its context length and slots, or `lms load --estimate-only`
-  **[LMS]**. It refuses a profile that will not fit this Mac.
+  **[LMS]**. It refuses a profile that will not fit in the Mac's memory less what macOS and the
+  apps already running, FRUS Explorer among them, hold. On the 32 GB Air that budget, more than any
+  model's quality, decides what A0 can try (§8.13).
 - **LMS-21 The prefix cache.** LM Studio's engines reuse the longest cached prefix of a request:
   MLX at 256-token boundaries, with a disk-backed cache since 2026-07, and llama.cpp through
   per-slot context checkpoints **[LMS, partly unverified]**. CTX-2 puts the stable part of every
@@ -619,8 +628,10 @@ section relies on is re-checked against the installed version in A0 (§20).
 - **LMS-23** LM Studio serves parallel requests by continuous batching: on llama.cpp since 0.4.0,
   with Max Concurrent Predictions defaulting to 4, and on MLX for text models since 0.4.2 **[LMS]**.
   Alvey sends at most the loaded instance's `parallel` requests at once, and only for independent
-  steps (ENG-2). On the Studio four workers gave 3.9× in a burst and 1.55× sustained (§18.1). On a
-  fanless Mac the default is one until CAL-5 measures more.
+  steps (ENG-2). Parallel slots were measured only on the Studio, which the owner no longer has:
+  four workers gave 3.9× in a burst and 1.55× sustained (§18.1). On the Air the default is one
+  slot until CAL-5 measures more, and each extra slot's KV cache comes out of the same 32 GB
+  (LMS-20).
 
 ### 8.9 Liveness and failure
 
@@ -688,8 +699,10 @@ unverified]**. The one measured on this corpus is the first:
 | GLM-4.7-Flash | 30 B, 3 B active | about 16 GB | 128 K | — |
 | Mistral Small | dense | about 14 GB | 128 K | — |
 
-A model of 16–21 GB leaves little room for a long context's KV cache on the 32 GB Air. The
-Studio's 64 GB takes any of them.
+On the 32 GB Air, a model of 16–21 GB leaves little room for a long context's KV cache, for a
+second model or for FRUS Explorer beside it. So A0 starts from the entries of 12 to 15 GB, and
+treats a larger one as a test of whether it fits at a useful context length. A smaller quantization
+of the same model is a different model to calibrate (LMS-7).
 
 ---
 
@@ -816,7 +829,8 @@ line's first three paragraphs (guide §14.16).
   Alvey's: correspondents, date, decision points, persons named verbatim, places, topics. Writes a
   CSV with a column per field and the evidence offsets beside each value. Every extracted string is
   re-located like a quotation; an unlocated value is flagged and never kept silently. This is the
-  workload the owner has already measured (§18).
+  workload the owner has already measured (§18). On the Air it runs over a set of documents, never
+  the corpus (§18.2).
 - **TPL-2 Document dossier.** One document with its text and footnotes, cross-references both ways,
   related documents with the reason each is related, the persons in it with their careers, its
   archival source and the series its footnotes point at, and a short reader's summary with verified
@@ -1252,7 +1266,7 @@ machine, and Alvey re-runs it when any of the four changes.
 ### 17.2 Accepting Alvey itself
 
 - **EVAL-1** The C-3 question (guide §3a) runs through Alvey with each candidate profile, on the
-  Studio and on the Air. The C-3 instruments score it, blind to the arm: the 35-item scorer, the
+  Air. The C-3 instruments score it, blind to the arm: the 35-item scorer, the
   refuter and the reader judge, as `Planning/c3-reader-test/` holds them. The result is compared
   with the nine Claude cells already recorded there. The instruments are cloud models (Claude
   Fable 5.1 at `max`, as in C-3), run by the owner as development tooling. Nothing in Alvey calls
@@ -1279,7 +1293,9 @@ machine, and Alvey re-runs it when any of the four changes.
 
 ### 18.1 The measured anchors
 
-Every figure here is from the owner's two machines and the record that holds it.
+Every figure here is from a machine the owner measured on, with the record that holds it. The owner
+no longer has the Mac Studio, so its column is history. Only the Air's column describes the machine
+Alvey will run on.
 
 | Measurement | Mac Studio, M1 Max, 64 GB | MacBook Air, M5, 32 GB | Record |
 |---|---|---|---|
@@ -1302,13 +1318,18 @@ come from its calibration on the machine (CAL-5), never from this section.
   structured outputs, notes of bounded length, and code-written tables, lists, citations and
   method text (P1, P3).
 - **Reading is prefill.** A reader step takes a whole document and the stable prefix in and gives a
-  few hundred tokens out. Prefix caching (CTX-2) and the server's parallel slots on the Studio
-  (§8.8) are its levers. The Air is about four times slower a step and throttles over hours, which
-  favours several resumable sessions over one long one (`NER-RUNBOOK.md` §4.2).
+  few hundred tokens out. Prefix caching (CTX-2) is its main lever, since parallel slots have not
+  been measured on the Air (§8.8). The Air took about four times the Studio's time a step, and it
+  slows over hours with no thermal warning (POW-1). That favours several resumable sessions over
+  one long one (`NER-RUNBOOK.md` §4.2).
 - **Reasoning is a setting with a price.** Reader and extraction roles default to no-think (§8.6),
   and the planner's and critic's reasoning is capped by `max_tokens`.
 - **Mixture-of-experts models** generate at a rate set by their active parameters, which suits the
   writer and planner roles on paper. A0 measures whether it does (§20).
+- **What the Air puts out of reach.** The record's own extrapolation for the no-think detector over
+  its full scope was about 18.4 days on the Studio and about 76 days on the Air (`NER-RUNBOOK.md`
+  §4.8.2). So batch extraction (TPL-1) runs over a collection, a volume or a search's results,
+  never the corpus, and a brief's reading list is sized to the runs the Air can make (RUN-1).
 
 ### 18.3 Estimating a run
 
@@ -1344,7 +1365,7 @@ same way.
 
 | Phase | What it delivers | Gate |
 |---|---|---|
-| **A0 Assessment** | A headless prototype, the `alvey` command over the kits, runs the C-3 question's scoping and reading rounds with two candidate profiles on the Studio and on the Air, scored as EVAL-1 to EVAL-3. Ends with BUILD, BUILD NARROWER (for example batch extraction and dossiers only) or NO-BUILD. | The owner's verdict on the record |
+| **A0 Assessment** | A headless prototype, the `alvey` command over the kits, runs the C-3 question's scoping and reading rounds with two candidate profiles on the Air, the one machine, scored as EVAL-1 to EVAL-3. It also finds which candidates fit in 32 GB at a useful context length (LMS-20). Ends with BUILD, BUILD NARROWER (for example batch extraction and dossiers only) or NO-BUILD. | The owner's verdict on the record |
 | **A1 Foundation** | AlveyKit's core tools over the index copy (coverage, search, phrase counts, reading, metadata, outlines, cross-references); the LM Studio client with its two guards; structured outputs; the ledger; VER-1, VER-3, VER-5 and VER-7; batch extraction (TPL-1) and the dossier (TPL-2); deep links; the collection writer; the run record | A0's BUILD |
 | **A2 Scoping** | The TEI surface (download and verification); variant scans; controls; false friends; timelines; the archival tools; the writer with VER-2 and VER-4; the scope gate; the scoping round | A1 complete |
 | **A3 Reading** | The reading round; refuter and critic; spot-check and release gates; the full overview and collection; the calibration suite; EVAL-1 rerun on the app | A2 complete |
@@ -1371,7 +1392,8 @@ Each decision has a recommendation, which stands in for it until the owner decid
 7. **Write-back.** *Recommended:* collections only in the first release. Notes and tags through
    Import from JSON wait for FX-1 (§13.6).
 8. **The SQL tool.** *Recommended:* absent from the first release (§9.3).
-9. **Model roster and machine.** No recommendation until A0 has measured one.
+9. **Model roster.** The machine is now the Air alone. No model is recommended until A0 has
+   measured one there.
 10. **Gate defaults.** *Recommended:* as §10.5.
 11. **A cloud backend.** *Recommended:* out of scope. Alvey's case is the local one (§1.2).
 12. **Licence.** *Recommended:* Apache 2.0, as this repository is, since Alvey compiles its kits.
@@ -1389,9 +1411,15 @@ Each decision has a recommendation, which stands in for it until the owner decid
 - The minimum LM Studio version, after A0 checks the features §8 relies on.
 - The range of index format versions Alvey supports, set in A1 against the pinned kit.
 - The app icon and the About text.
+- Whether the owner will again have a second Mac to serve models. Until then, A4's server on
+  another Mac is for other researchers.
 
 ---
 
 Version history:
 
+- 0.2 — 2026-11-23: the owner no longer has the Mac Studio. The M5 Air, 32 GB and fanless, is the
+  only machine. PLAT-3, STD-2, LMS-10, LMS-20, LMS-23, §8.13, TPL-1, EVAL-1, §18 and A0 now design
+  for it, and §18.2 records that a corpus-wide batch pass is out of reach. The Studio's measurements
+  stay in §18.1 as history.
 - 0.1 — 2026-11-23: first draft, for the owner's review.

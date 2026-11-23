@@ -12226,6 +12226,7 @@ Also not done: the UI suites, iOS 26.x, a device and a signed run.
 - **Sources:**
   - an inventory of FRUS Explorer's exchange surfaces and of the kits' public API at `4556c4d`;
   - LM Studio's documentation source, `lmstudio-ai/docs` at `8c7159b`. lmstudio.ai was not reachable from this session, and facts known only from search extracts are marked as such.
+- **Revised the same day (v0.2):** the owner no longer has the Mac Studio. The spec now designs for the M5 Air alone (32 GB, fanless, and the Mac this repository is built on): one model at a time in its memory budget, one parallel slot until measured, the heavy-job lock taken a batch at a time, and batch extraction over a set of documents, never the corpus. The record's own extrapolation for a corpus-wide pass on the Air is about 76 days. The Studio's measurements stay in the spec as history.
 
 **Not done:**
 - no code;
