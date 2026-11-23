@@ -38,6 +38,14 @@ import NaturalLanguage
 /// `.printed` asks for no lemma scheme, so its count is of printed forms throughout — the count the
 /// printed-form keyness reference was made by — whatever the lemmatiser does while it runs.
 ///
+/// ## A host's tagger (S29a)
+/// What the count reads of a tagger is a protocol, `WordCloudTagger`: each word in order with its
+/// range and, when asked, its lemma and its lexical class, and for the entity lenses each name with
+/// its type. ``accumulate(from:into:tagger:)`` counts with any tagger, on every platform, by the
+/// same rules; ``accumulate(from:into:)`` counts with NaturalLanguage's, through the gate
+/// (`NaturalLanguageWordCloudTagger`), which is how the app has always counted. A `.printed`
+/// tokenizer reads no lemma from any tagger, so a host's count of printed forms is one too.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — #1373: taggers come from `NaturalLanguageReadiness`, after the warm-up
@@ -47,6 +55,9 @@ import NaturalLanguage
 ///   1.4 — 2026-11-12 (FRUS Explorer Light, S24d): its counting behind `canImport(NaturalLanguage)`;
 ///          where the framework is missing (Linux) the type keeps its configuration and its filters
 ///          (``accepts(_:)``, ``singularize(_:)``), and its counting is unavailable and says why
+///   1.5 — 2026-11-23 (FRUS Explorer Light, S29a): the walk reads a `WordCloudTagger`, so
+///          ``accumulate(from:into:tagger:)`` counts with a host's tagger on every platform;
+///          ``accumulate(from:into:)`` counts with NaturalLanguage's, through the gate, as before
 public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
@@ -100,20 +111,18 @@ public struct WordCloudTokenizer: Sendable {
         self.wordForm = wordForm
     }
 
-    #if canImport(NaturalLanguage)
-    /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
-    private var nameTag: NLTag? {
+    /// The name type this lens keeps, if it's an entity lens.
+    private var nameType: WordCloudNameType? {
         switch lens {
-        case .people:        return .personalName
-        case .places:        return .placeName
-        case .organizations: return .organizationName
+        case .people:        return .person
+        case .places:        return .place
+        case .organizations: return .organization
         default:             return nil
         }
     }
 
-    /// The `NaturalLanguage` lexical-class tag this lens filters on, if it's a
-    /// part-of-speech lens.
-    private var lexicalTag: NLTag? {
+    /// The lexical class this lens keeps, if it's a part-of-speech lens.
+    private var keptClass: WordCloudLexicalClass? {
         switch lens {
         case .topics:      return .noun
         case .actions:     return .verb
@@ -122,7 +131,20 @@ public struct WordCloudTokenizer: Sendable {
         }
     }
 
-    /// Accumulates lemmatised, filtered term counts from `text` into `counts`.
+    /// What the word walk reads of each word (S29a).
+    ///
+    /// Lemmas for a `.dictionary` tokenizer and none for a `.printed` one (#1608), and the lexical class
+    /// only when a part-of-speech lens needs it, so the default `.allTerms` path stays lemma-only and
+    /// fast. Internal so a test reads what each form asks for.
+    var wordReading: WordCloudTagReading {
+        var reading: WordCloudTagReading = wordForm == .printed ? [] : [.lemmas]
+        if keptClass != nil { reading.insert(.lexicalClasses) }
+        return reading
+    }
+
+    #if canImport(NaturalLanguage)
+    /// Accumulates lemmatised, filtered term counts from `text` into `counts`, with NaturalLanguage's
+    /// tagger through the readiness gate (`NaturalLanguageWordCloudTagger`), as the app counts.
     ///
     /// Counts are accumulated into the caller's dictionary rather than returned so
     /// many documents can be folded into a single running tally without allocating
@@ -134,20 +156,11 @@ public struct WordCloudTokenizer: Sendable {
     /// - Returns: The number of surviving tokens contributed by `text`.
     @discardableResult
     public func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
-        guard !text.isEmpty else { return 0 }
-        return lens.isEntity
-            ? accumulateEntities(from: text, into: &counts)
-            : accumulateWords(from: text, into: &counts)
-    }
-
-    /// Word path: lemmatised content words (`.allTerms`) optionally filtered to a
-    /// part-of-speech (`.topics` / `.actions` / `.descriptors`).
-    private func accumulateWords(from text: String, into counts: inout [String: Int]) -> Int {
         // Through the readiness gate, never `NLTagger(tagSchemes:)` directly: a scheme whose first
         // use in a process fails stays failed for the rest of it (#1373), so the warm-up must come
-        // first even when a tokenizer is the first thing to run.
-        return accumulateWords(from: text, into: &counts,
-                               tagger: NaturalLanguageReadiness.tagger(tagSchemes: wordSchemes))
+        // first even when a tokenizer is the first thing to run. The gate's tagger builds a tagger
+        // for each walk, with the schemes the walk reads (``wordSchemes``).
+        accumulate(from: text, into: &counts, tagger: NaturalLanguageWordCloudTagger())
     }
 
     /// The schemes the word walk asks the gate for.
@@ -156,43 +169,70 @@ public struct WordCloudTokenizer: Sendable {
     /// path stays lemma-only and fast. A `.printed` tokenizer asks for `.tokenType` where a
     /// `.dictionary` one asks for `.lemma` (#1608): the tagger then has no lemma scheme, the walk
     /// goes by `.tokenType` (`NaturalLanguageReadiness.wordWalkScheme(of:)`), and every word is
-    /// counted as printed. Internal so a test reads what each form asks for.
+    /// counted as printed. They are ``wordReading`` in NaturalLanguage's terms
+    /// (`NaturalLanguageWordCloudTagger.wordSchemes(for:)`, S29a). Internal so a test reads what each
+    /// form asks for.
     var wordSchemes: [NLTagScheme] {
-        let walk: NLTagScheme = wordForm == .printed ? .tokenType : .lemma
-        return lexicalTag == nil ? [walk] : [walk, .lexicalClass]
+        NaturalLanguageWordCloudTagger.wordSchemes(for: wordReading)
     }
+    #else
+    /// Where `NaturalLanguage` is missing (Linux), the tokenizer has no tagger of its own, so it counts
+    /// only with a host's (``accumulate(from:into:tagger:)``, S29a) and, without one, counts nothing and
+    /// says why (FRUS Explorer Light, S24d). It never counts another way: the count is the kit's rules
+    /// over a tagger's walks, and the tagger's identity says whose count it is, so a reference counted
+    /// by NaturalLanguage refuses a host's (`KeynessBaselineFile.Configuration.mismatches`). The
+    /// configuration and the filters, ``accepts(_:)`` and ``singularize(_:)``, read no tagger and are
+    /// here on every platform.
+    @available(*, unavailable, message: "WordCloudTokenizer counts with NaturalLanguage unless it is given a tagger, and this platform has no NaturalLanguage: count with a WordCloudTagger of your own, accumulate(from:into:tagger:), or read the bundled clouds")
+    @discardableResult
+    public func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
+        fatalError("WordCloudTokenizer counts with NaturalLanguage unless it is given a tagger")
+    }
+    #endif
 
-    /// The word walk over `tagger`, which ``accumulateWords(from:into:)`` builds through the gate.
+    /// Accumulates lemmatised, filtered term counts from `text` into `counts`, with `tagger`'s words,
+    /// lemmas, lexical classes and names (S29a).
     ///
-    /// Walks by `NaturalLanguageReadiness.wordWalkScheme(of:)` and reads a lemma only from a `.lemma`
-    /// walk: a tagger the gate built without `.lemma`, because its asset request is in flight
-    /// (#1539), walks by `.tokenType`, whose tags are token kinds, not dictionary forms. Internal so
-    /// a test can hand it such a tagger.
+    /// The rules are the same whatever the tagger: the lemma where it gives one, and otherwise the
+    /// word lowercased and plural-folded; the lexicon, the markings, the length and the stopwords; a
+    /// part-of-speech lens's class; an entity lens's name type. So a host's tagger counts by the app's
+    /// rules, and NaturalLanguage's (``accumulate(from:into:)``) counts as it always has.
+    ///
     /// - Parameters:
     ///   - text: The document body text to tokenise.
     ///   - counts: A running `term → count` tally, mutated in place.
-    ///   - tagger: The tagger to walk, from `NaturalLanguageReadiness.tagger(tagSchemes:)`.
+    ///   - tagger: The tagger whose walks the count reads.
     /// - Returns: The number of surviving tokens contributed by `text`.
-    func accumulateWords(from text: String, into counts: inout [String: Int], tagger: NLTagger) -> Int {
-        let walk = NaturalLanguageReadiness.wordWalkScheme(of: tagger)
-        tagger.string = text
-        // The FRUS corpus is English; pinning the language improves lemma quality
-        // and avoids per-call language detection.
-        tagger.setLanguage(.english, range: text.startIndex..<text.endIndex)
+    @discardableResult
+    public func accumulate<Tagger: WordCloudTagger>(from text: String, into counts: inout [String: Int],
+                                                    tagger: Tagger) -> Int {
+        guard !text.isEmpty else { return 0 }
+        return lens.isEntity
+            ? accumulateEntities(from: text, into: &counts, tagger: tagger)
+            : accumulateWords(from: text, into: &counts, tagger: tagger)
+    }
 
+    /// Word path: lemmatised content words (`.allTerms`) optionally filtered to a part-of-speech
+    /// (`.topics` / `.actions` / `.descriptors`), over `tagger`'s word walk.
+    ///
+    /// Reads a lemma only where the walk gives one: a `.printed` tokenizer asks for none, and a tagger
+    /// the gate built without `.lemma`, because its asset request is in flight (#1539), walks by
+    /// `.tokenType`, whose tags are token kinds, not dictionary forms, and gives none. Internal so a
+    /// test can hand it such a tagger.
+    /// - Parameters:
+    ///   - text: The document body text to tokenise.
+    ///   - counts: A running `term → count` tally, mutated in place.
+    ///   - tagger: The tagger to walk: NaturalLanguage's through the gate, an `NLTagger` from the gate,
+    ///     or a host's.
+    /// - Returns: The number of surviving tokens contributed by `text`.
+    func accumulateWords<Tagger: WordCloudTagger>(from text: String, into counts: inout [String: Int],
+                                                  tagger: Tagger) -> Int {
         var added = 0
-        tagger.enumerateTags(
-            in: text.startIndex..<text.endIndex,
-            unit: .word,
-            scheme: walk,
-            options: [.omitPunctuation, .omitWhitespace, .omitOther]
-        ) { tag, tokenRange in
-            if let needed = lexicalTag {
-                let cls = tagger.tag(at: tokenRange.lowerBound, unit: .word, scheme: .lexicalClass).0
-                guard cls == needed else { return true }
+        tagger.enumerateWords(in: text, reading: wordReading) { tokenRange, lemma, classOfWord in
+            if let needed = keptClass {
+                guard classOfWord() == needed else { return true }
             }
             let surface = text[tokenRange]
-            let lemma = walk == .lemma ? tag?.rawValue : nil
             let hasLemma = (lemma?.isEmpty == false)
             // Prefer the lemma; fall back to the surface form when the lemmatiser
             // has no entry (proper nouns, archaic spellings). When falling back,
@@ -213,22 +253,14 @@ public struct WordCloudTokenizer: Sendable {
         return added
     }
 
-    /// Entity path: named people / places / organizations via the name-type
-    /// recogniser. `.joinNames` keeps multi-word names ("United States") whole.
-    private func accumulateEntities(from text: String, into counts: inout [String: Int]) -> Int {
-        guard let needed = nameTag else { return 0 }
-        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: [.nameType])
-        tagger.string = text
-        tagger.setLanguage(.english, range: text.startIndex..<text.endIndex)
-
+    /// Entity path: named people / places / organizations via `tagger`'s name walk, in which a name of
+    /// several words ("United States") is one.
+    private func accumulateEntities<Tagger: WordCloudTagger>(from text: String, into counts: inout [String: Int],
+                                                             tagger: Tagger) -> Int {
+        guard let needed = nameType else { return 0 }
         var added = 0
-        tagger.enumerateTags(
-            in: text.startIndex..<text.endIndex,
-            unit: .word,
-            scheme: .nameType,
-            options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]
-        ) { tag, tokenRange in
-            guard tag == needed else { return true }
+        tagger.enumerateNames(in: text) { tokenRange, type in
+            guard type == needed else { return true }
             // Lowercase first to merge casing variants ("United States" /
             // "united states"), accept against the lowercased stopword set, then
             // present the entity in Title Case for display.
@@ -243,21 +275,6 @@ public struct WordCloudTokenizer: Sendable {
         }
         return added
     }
-    #else
-    /// Where `NaturalLanguage` is missing (Linux), the tokenizer counts nothing, and says so rather
-    /// than counting another way (FRUS Explorer Light, S24d). The app counts its tagger's words,
-    /// lemmas, lexical classes and names; a count made by any other rule would be another vocabulary,
-    /// which the bundled clouds, the keyness references and every comparison between them would
-    /// read as a finding. A host there refuses a live count, as the app refuses a lens its tagger
-    /// cannot serve, and reads the bundled clouds (`CloudVectorsFile`), which the generator counted
-    /// with this kit's multi-lens pass. The configuration and the filters, ``accepts(_:)`` and
-    /// ``singularize(_:)``, read no tagger and are here on every platform.
-    @available(*, unavailable, message: "WordCloudTokenizer counts with NaturalLanguage, which this platform does not have, and a count made another way would not compare with the bundled clouds or the keyness references: refuse a live count, and read the bundled clouds")
-    @discardableResult
-    public func accumulate(from text: String, into counts: inout [String: Int]) -> Int {
-        fatalError("WordCloudTokenizer counts with NaturalLanguage, which this platform does not have")
-    }
-    #endif
 
     /// Words that look plural (end in `s`) but are singular or uncountable, and so
     /// must never be folded.

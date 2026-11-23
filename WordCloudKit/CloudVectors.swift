@@ -44,6 +44,8 @@ import Foundation
 ///         shape, both sides.
 ///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
 ///         files somewhere other than a bundle
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``Provenance/tokenizer``, the tokenizer the counts
+///         were made by, NaturalLanguage's where a file names none
 public struct CloudVectorsFile: Codable, Sendable, Equatable {
 
     /// Schema version. Bump when the shape changes in a way a shipped reader would misread.
@@ -104,13 +106,37 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
         public let tuning: WordCloudTuning
         /// Terms kept per (scope, lens) before truncation is reported as such.
         public let topTermsPerList: Int
+        /// The tokenizer the counts were made by (S29a): NaturalLanguage's for the app's files, a host's
+        /// for one its own tagger counted. A file written before S29a names none, and was counted by
+        /// NaturalLanguage, so it reads as ``WordCloudTokenizerIdentity/naturalLanguage``.
+        public let tokenizer: WordCloudTokenizerIdentity
 
         /// Creates a provenance stamp.
-        public init(volumeCount: Int, documentCount: Int, tuning: WordCloudTuning, topTermsPerList: Int) {
+        /// - Parameters:
+        ///   - volumeCount: Number of volume files tokenised.
+        ///   - documentCount: Number of documents tokenised across them.
+        ///   - tuning: The tuning the counts were made under.
+        ///   - topTermsPerList: Terms kept per scope and lens.
+        ///   - tokenizer: The tokenizer the counts were made by. Default NaturalLanguage's, the app's.
+        public init(volumeCount: Int, documentCount: Int, tuning: WordCloudTuning, topTermsPerList: Int,
+                    tokenizer: WordCloudTokenizerIdentity = .naturalLanguage) {
             self.volumeCount = volumeCount
             self.documentCount = documentCount
             self.tuning = tuning
             self.topTermsPerList = topTermsPerList
+            self.tokenizer = tokenizer
+        }
+
+        /// Decodes a stamp. One written before S29a names no tokenizer and was counted by
+        /// NaturalLanguage, the only tokenizer there was; every stamp written since names its own.
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            volumeCount = try container.decode(Int.self, forKey: .volumeCount)
+            documentCount = try container.decode(Int.self, forKey: .documentCount)
+            tuning = try container.decode(WordCloudTuning.self, forKey: .tuning)
+            topTermsPerList = try container.decode(Int.self, forKey: .topTermsPerList)
+            tokenizer = try container.decodeIfPresent(WordCloudTokenizerIdentity.self, forKey: .tokenizer)
+                ?? .naturalLanguage
         }
     }
 
@@ -226,7 +252,7 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
 /// in the word cloud's own overflow menu. Turn it off and the scope fills with `department`,
 /// `telegram`, `washington`, none of which this reference has ever counted; keyness would rank the
 /// boilerplate as the corpus's most distinctive vocabulary. ``configuration`` records what the
-/// artifact was built under and ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:)``
+/// artifact was built under and ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:tokenizer:)``
 /// is how a caller refuses rather than reports that.
 ///
 /// ## Two files, one for each form a word is counted in (#1608)
@@ -237,11 +263,22 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
 /// of one generator pass, with the same stamp and provenance, and each says which it is in
 /// ``Configuration/wordForm``. ``resourceName(for:)`` is the one place the two names are written.
 ///
+/// ## Counted by one tokenizer (S29a)
+/// The division is between two counts of one tokenizer, or it is between two vocabularies: a lemma
+/// another tagger gives, a word it splits otherwise, a class it reads differently. So the stamp names
+/// the tokenizer the reference was counted by (``Configuration/tokenizer``), and
+/// ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:tokenizer:)``
+/// refuses a scope counted by another: the rule the web edition's specification states, that a reference
+/// from another tokenizer is never compared. A reference written before S29a names none, and was counted
+/// by NaturalLanguage, which is what it reads as; so the bundled references stand as they are.
+///
 /// Version history:
 ///   1.0 — S-1: initial implementation
 ///   1.1 — #1608: ``Configuration/wordForm`` and ``resourceName(for:)``; the printed-form file
 ///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
 ///         files somewhere other than a bundle
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``Configuration/tokenizer``, and the mismatch that
+///         refuses a scope counted by another tokenizer
 public struct KeynessBaselineFile: Codable, Sendable, Equatable {
 
     /// Schema version.
@@ -280,6 +317,10 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         /// vocabulary, whatever its settings: the app picks the file by this, and never offers a
         /// file to a scope counted the other way.
         public let wordForm: WordCloudWordForm
+        /// The tokenizer the counts were made by (S29a). A scope counted by another is a different
+        /// vocabulary, whatever its settings, and ``mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:tokenizer:)``
+        /// says so (``Mismatch/tokenizer``).
+        public let tokenizer: WordCloudTokenizerIdentity
 
         /// Creates a configuration stamp.
         /// - Parameters:
@@ -289,18 +330,24 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         ///   - stopwordsDigest: SHA-256 of the stopword payload.
         ///   - wordForm: The form the counts are in. Default `.dictionary`, the form every
         ///     reference had before #1608.
+        ///   - tokenizer: The tokenizer the counts were made by. Default NaturalLanguage's, the
+        ///     tokenizer of every reference before S29a and of the app's.
         public init(tuning: WordCloudTuning, includeDiplomatic: Bool,
                     lexiconsDigest: String, stopwordsDigest: String,
-                    wordForm: WordCloudWordForm = .dictionary) {
+                    wordForm: WordCloudWordForm = .dictionary,
+                    tokenizer: WordCloudTokenizerIdentity = .naturalLanguage) {
             self.tuning = tuning
             self.includeDiplomatic = includeDiplomatic
             self.lexiconsDigest = lexiconsDigest
             self.stopwordsDigest = stopwordsDigest
             self.wordForm = wordForm
+            self.tokenizer = tokenizer
         }
 
         /// Decodes a stamp. One written before #1608 has no `wordForm` and was counted in
-        /// dictionary forms, the only form there was; every file written since says its own.
+        /// dictionary forms, the only form there was; every file written since says its own. One
+        /// written before S29a names no tokenizer and was counted by NaturalLanguage, the only
+        /// tokenizer there was.
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             tuning = try container.decode(WordCloudTuning.self, forKey: .tuning)
@@ -309,15 +356,17 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
             stopwordsDigest = try container.decode(String.self, forKey: .stopwordsDigest)
             wordForm = try container.decodeIfPresent(WordCloudWordForm.self, forKey: .wordForm)
                 ?? .dictionary
+            tokenizer = try container.decodeIfPresent(WordCloudTokenizerIdentity.self, forKey: .tokenizer)
+                ?? .naturalLanguage
         }
 
         /// The same stamp for the counts of another form. The two references of one run differ in
-        /// nothing else.
+        /// nothing else, their tokenizer included.
         /// - Parameter wordForm: The form the other counts are in.
         public func counted(as wordForm: WordCloudWordForm) -> Configuration {
             Configuration(tuning: tuning, includeDiplomatic: includeDiplomatic,
                           lexiconsDigest: lexiconsDigest, stopwordsDigest: stopwordsDigest,
-                          wordForm: wordForm)
+                          wordForm: wordForm, tokenizer: tokenizer)
         }
 
         /// A way in which a scope's tokenisation makes it incomparable to this reference.
@@ -336,6 +385,10 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
             case lexicons
             /// The bundled stopword payload has changed since the artifact was built.
             case stopwords
+            /// The scope was counted by another tokenizer than the reference was (S29a): another
+            /// vocabulary, which no setting of the reader's mends. The web edition's specification
+            /// states the rule, that a reference from another tokenizer is never compared.
+            case tokenizer
         }
 
         /// Every way the given scope tokenisation is incomparable to this reference. Empty means
@@ -346,6 +399,11 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         /// (``wordForm``). The plural fold is compared for both forms. In a printed count it is the
         /// only thing that joins `treaties` to `treaty`, so a scope that folds differently from a
         /// printed reference is incomparable in every plural, not only in the lemmatiser's gaps.
+        ///
+        /// It does ask what tokenizer counted the scope (S29a), with no default: a default of
+        /// NaturalLanguage's would be the unchecked assumption that the scope was the app's, which a
+        /// host's count is not. A scope counted by another tokenizer than ``tokenizer`` is
+        /// ``Mismatch/tokenizer``, whatever its settings.
         ///
         /// The test is deliberately **asymmetric**, because the two directions are not equally
         /// harmful. A scope setting that only *removes* terms — a higher `minimumLength`, a higher
@@ -360,10 +418,13 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         ///   - includeDiplomatic: Whether the scope had the diplomatic stopword layer active.
         ///   - lexiconsDigest: SHA-256 of the lexicon payload the scope used.
         ///   - stopwordsDigest: SHA-256 of the stopword payload the scope used.
+        ///   - tokenizer: The tokenizer the scope was counted by: the identity of the tagger that
+        ///     counted it (`WordCloudTagger.identity`), NaturalLanguage's for every count the app makes.
         public func mismatches(against tuning: WordCloudTuning,
                                includeDiplomatic: Bool,
                                lexiconsDigest: String,
-                               stopwordsDigest: String) -> [Mismatch] {
+                               stopwordsDigest: String,
+                               tokenizer: WordCloudTokenizerIdentity) -> [Mismatch] {
             var found: [Mismatch] = []
             if tuning.foldPlurals != self.tuning.foldPlurals { found.append(.foldPlurals) }
             if tuning.filterMarkings != self.tuning.filterMarkings { found.append(.filterMarkings) }
@@ -373,6 +434,7 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
             if tuning.minimumLength < self.tuning.minimumLength { found.append(.minimumLength) }
             if lexiconsDigest != self.lexiconsDigest { found.append(.lexicons) }
             if stopwordsDigest != self.stopwordsDigest { found.append(.stopwords) }
+            if tokenizer != self.tokenizer { found.append(.tokenizer) }
             return found
         }
     }
@@ -420,7 +482,8 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
     ///
     /// It does not check the file against a form: a host that reads the file of one form holds it
     /// to ``Configuration/wordForm`` as the app does, and refuses a scope its
-    /// ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:)`` names.
+    /// ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:tokenizer:)`` names,
+    /// a scope its own tagger counted among them when the file was counted by another.
     ///
     /// - Throws: whatever `Data(contentsOf:)` or `JSONDecoder` throws; the app's loader skips a file
     ///   that fails, and answers that no reference is there.
