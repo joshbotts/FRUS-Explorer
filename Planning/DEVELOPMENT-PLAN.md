@@ -12214,3 +12214,21 @@ FRUS Explorer Light's follow-up for the six issues it filed on 14 and 15 Novembe
 - a boundary the new suite cannot see, one compiled-in kit naming another it does not depend on.
 
 Also not done: the UI suites, iOS 26.x, a device and a signed run.
+
+## Session 2026-11-23 — Alvey: a specification for a companion app that runs the Agentic Analysis Guide's method on a local model served by LM Studio
+
+`Planning/Alvey-Specification.md` (v0.1, a draft for the owner's review; nothing in it is approved or scheduled) specifies Alvey, a macOS app that runs the guide's rounds (scope, read, contest, decide whether to stop, deliver) on a model the researcher serves in LM Studio. Its thesis is the 2026-08-31 MCP assessment's: only implementations bind. That reasoning closed C-1 for Claude, which obeys the §12 block. It does not hold for a local model: the owner's own sweep measured Qwen3 14 B returning 3.38% of its strings non-verbatim with a schema enforced (`tools/semantic-harvest/NER-RUNBOOK.md` §4.8.3). So the tools, the pipeline and the verifiers carry the rules, and §11.2 maps each C-3 rubric item to the mechanism that carries it.
+
+- **Interoperability, through what 1.0 already ships:** the research database export (Mac), the research-state record, Export as JSON, `.fruscollection` in both directions, `frusexplorer://document/…` and the embedder on disk. Alvey writes collections only. It writes no import file until FRUS Explorer can attribute an outside app's notes and summaries (FX-1): today a note has no author, and a summary's default authorship says Apple Intelligence.
+- **Shared code:** Alvey lives in a separate repository with this one as a pinned submodule, the web edition's arrangement. Seven kit gaps are listed (KG-1 to KG-7), each a pull request here when Alvey needs it. Nothing new is asked of sessions here.
+- **Not reopened:** the MCP server's refusal (L-8) and C-1's closure.
+- **It enters as an assessment (A0),** as L-8 did: a headless prototype run on the C-3 question and scored with C-3's instruments, ending in build, build narrower or no-build. §21 lists fourteen owner decisions.
+- **Sources:**
+  - an inventory of FRUS Explorer's exchange surfaces and of the kits' public API at `4556c4d`;
+  - LM Studio's documentation source, `lmstudio-ai/docs` at `8c7159b`. lmstudio.ai was not reachable from this session, and facts known only from search extracts are marked as such.
+
+**Not done:**
+- no code;
+- no change to the guide, the plan of record or CLAUDE.md;
+- no LM Studio fact checked against an installed copy, which is A0's first step;
+- no test run, since no test reads the new file.
