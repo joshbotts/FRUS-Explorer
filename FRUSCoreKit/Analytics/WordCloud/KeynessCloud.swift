@@ -14,25 +14,9 @@
 
 import Foundation
 
-// MARK: - KeynessCloudMeasure
-
-/// The control's label for each measure. The measure is `WordCloudKit`'s
-/// (`WordCloudKit/KeynessCloudMeasure.swift`); its words are the app's, as `WordCloudLens+UI`'s are.
-///
-/// Version history:
-///   1.0 — S-1: initial implementation, in the measure's own declaration
-///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): the measure moved into `WordCloudKit`; its label
-///          stays here
-extension KeynessCloudMeasure {
-
-    /// The control's label for this measure.
-    var pickerLabel: String {
-        switch self {
-        case .frequency: String(localized: "wordcloud.measure.frequency", defaultValue: "Frequency")
-        case .keyness: String(localized: "wordcloud.measure.keyness", defaultValue: "Distinctive")
-        }
-    }
-}
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
 
 // MARK: - KeynessCloud
 
@@ -62,43 +46,61 @@ extension KeynessCloudMeasure {
 ///          without the lemmatiser is `languageAnalysisUnavailable` rather than ranked
 ///   1.2 — #1608: a scope counted as printed is ranked against the reference counted as printed,
 ///          and the ranking says so (``Ranking/wordForm``)
+///   1.3 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public: the ranking takes the
+///          references and the tokenizer from its caller (``rank(terms:scopeTotal:fetchedTermCount:termLimit:lens:tuning:includeDiplomatic:languageAnalysis:references:tokenizer:minimumScopeCount:)``),
+///          or a lookup's answer (``rank(terms:scopeTotal:fetchedTermCount:termLimit:availability:minimumScopeCount:)``),
+///          and holds no state, so it is not isolated; the measure's label stays the app's
 ///
-/// `@MainActor` because ``BundledKeynessBaseline`` is: the reference is loaded once and read from
-/// views, so it takes the same isolation rather than paying for a second copy of a 20,000-entry
-/// dictionary to cross an actor boundary on every re-rank.
-@MainActor
-enum KeynessCloud {
+/// Not isolated since it moved into the kit: it ranks over the references its caller passes, and holds
+/// nothing. The app's ranking against `BundledKeynessBaseline`, which is `@MainActor` because the
+/// reference is loaded once and read from views, is the app's own, on the main actor as before.
+public enum KeynessCloud {
 
     // MARK: - Result
 
     /// A keyness reading of one scope.
-    struct Ranking: Equatable {
+    public struct Ranking: Equatable, Sendable {
         /// Over-represented terms, most distinctive first.
-        let scores: [KeynessScore]
+        public let scores: [KeynessScore]
         /// How many of the scope's terms were eligible to be scored.
-        let candidateCount: Int
+        public let candidateCount: Int
         /// Whether the candidate set was bounded by the cloud's term limit rather than by the
         /// low-frequency floor.
         ///
         /// `true` means the ranking covers only the scope's most *frequent* terms, so a word that is
         /// rare in the scope but unique to it could not be reached. That is a real limitation of
         /// ranking an already-truncated list, and the view says so rather than implying completeness.
-        let rankedAmongTopFrequent: Bool
+        public let rankedAmongTopFrequent: Bool
         /// The scope floor a term had to clear to be scored at all.
-        let minimumScopeCount: Int
+        public let minimumScopeCount: Int
         /// How much of the corpus vocabulary the reference prices, for the provenance line.
-        let referenceRetained: Int
+        public let referenceRetained: Int
         /// How many distinct terms the corpus had before the reference was truncated.
-        let referenceDistinct: Int
+        public let referenceDistinct: Int
         /// The smallest corpus count the reference prices. A scope term rarer than this corpus-wide
         /// is *unpriced*, not absent — the distinction the view must not blur.
-        let referenceCutoffCount: Int
+        public let referenceCutoffCount: Int
         /// The reference artifact's generation stamp.
-        let generated: String?
+        public let generated: String?
         /// The form the scope and the reference were both counted in (#1608). `.printed` is the
         /// fallback of a launch with no lemmatiser, and every surface that shows or exports such a
         /// ranking says so: `WordCloudDisplayState.comparedAsPrintedNote(_:)` and its export forms.
-        let wordForm: WordCloudWordForm
+        public let wordForm: WordCloudWordForm
+
+        /// A reading of `scores`, spelt out so a host can make one (FRUS Explorer Light, S29b).
+        public init(scores: [KeynessScore], candidateCount: Int, rankedAmongTopFrequent: Bool,
+                    minimumScopeCount: Int, referenceRetained: Int, referenceDistinct: Int,
+                    referenceCutoffCount: Int, generated: String?, wordForm: WordCloudWordForm) {
+            self.scores = scores
+            self.candidateCount = candidateCount
+            self.rankedAmongTopFrequent = rankedAmongTopFrequent
+            self.minimumScopeCount = minimumScopeCount
+            self.referenceRetained = referenceRetained
+            self.referenceDistinct = referenceDistinct
+            self.referenceCutoffCount = referenceCutoffCount
+            self.generated = generated
+            self.wordForm = wordForm
+        }
 
         /// Whether this term's reference count of zero means *unpriced* rather than *unused*.
         ///
@@ -106,13 +108,13 @@ enum KeynessCloud {
         /// ``referenceCutoffCount`` is absent from it without being absent from the corpus.
         /// Printing a bare "0 corpus-wide" for such a word asserts something the artifact cannot
         /// support, and it is exactly the word a high keyness score will have floated to the top.
-        func isUnpriced(_ score: KeynessScore) -> Bool {
+        public func isUnpriced(_ score: KeynessScore) -> Bool {
             score.referenceCount == 0 && referenceCutoffCount > 1
         }
     }
 
     /// Why a keyness reading could not be produced.
-    enum Unavailable: Equatable {
+    public enum Unavailable: Equatable, Sendable {
         /// No verdict yet — the first recompute has not run, or the bundled reference is still
         /// decoding off the main actor. Distinct from ``noArtifact`` because "not yet" and "never"
         /// are different claims and only one of them is a failure.
@@ -138,17 +140,23 @@ enum KeynessCloud {
     }
 
     /// The outcome of asking for a keyness reading.
-    enum Outcome: Equatable {
+    public enum Outcome: Equatable, Sendable {
         case ranked(Ranking)
         case unavailable(Unavailable)
 
         /// The outcome to show before any verdict exists.
-        static let pending = Outcome.unavailable(.pending)
+        public static let pending = Outcome.unavailable(.pending)
     }
 
     // MARK: - Ranking
 
-    /// Ranks a computed cloud's terms by keyness against the bundled corpus reference.
+    /// Ranks a computed cloud's terms by keyness against the corpus reference `references` holds for the
+    /// scope, or says why there is none: the lookup (`KeynessReferences.baseline(for:tuning:includeDiplomatic:languageAnalysis:tokenizer:)`)
+    /// and then ``rank(terms:scopeTotal:fetchedTermCount:termLimit:availability:minimumScopeCount:)``.
+    ///
+    /// A host passes the references its own tokenizer counted and its tagger's identity, so a reference
+    /// another tokenizer counted refuses the scope (`Mismatch.tokenizer`); the app ranks against its
+    /// bundled references, for NaturalLanguage's counts, through its own `rank`.
     ///
     /// - Parameters:
     ///   - terms: The scope's terms, as the cloud computed them — already truncated to the cloud's
@@ -174,7 +182,10 @@ enum KeynessCloud {
     ///     the disk cache was counted by another process (#1373). It also chooses the reference
     ///     (#1608): `WordFrequencyService` counts a scope in the verdict's own form, and the
     ///     reference counted in that form is the one read.
-    static func rank(
+    ///   - references: The corpus references to rank against, by the form their words are counted in.
+    ///   - tokenizer: The tokenizer `terms` were counted by (S29a).
+    ///   - minimumScopeCount: The fewest occurrences in the scope a term needs to be scored.
+    public static func rank(
         terms: [TermCount],
         scopeTotal: Int,
         fetchedTermCount: Int,
@@ -183,12 +194,36 @@ enum KeynessCloud {
         tuning: WordCloudTuning,
         includeDiplomatic: Bool,
         languageAnalysis: NaturalLanguageHealth,
+        references: KeynessReferences,
+        tokenizer: WordCloudTokenizerIdentity,
         minimumScopeCount: Int = Keyness.defaultMinimumScopeCount
     ) -> Outcome {
-        let availability = BundledKeynessBaseline.baseline(
-            for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
-            languageAnalysis: languageAnalysis)
+        rank(terms: terms, scopeTotal: scopeTotal, fetchedTermCount: fetchedTermCount, termLimit: termLimit,
+             availability: references.baseline(for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
+                                               languageAnalysis: languageAnalysis, tokenizer: tokenizer),
+             minimumScopeCount: minimumScopeCount)
+    }
 
+    /// Ranks a computed cloud's terms by keyness against the reference a lookup found for the scope, or
+    /// gives the lookup's refusal: the ranking itself, which every form of `rank` comes to.
+    ///
+    /// - Parameters:
+    ///   - terms: The scope's terms, as the cloud computed them — already truncated to the cloud's
+    ///     limit, and already minus any words hidden from this cloud.
+    ///   - scopeTotal: The scope's **true** token total (`WordCloudResult.totalTokenCount`).
+    ///   - fetchedTermCount: How many terms the cloud actually FETCHED, before any per-cloud hides.
+    ///   - termLimit: The limit the cloud requested.
+    ///   - availability: The lookup's answer for the scope's lens, settings, verdict and tokenizer: a
+    ///     reference counted in the scope's form, or why there is none.
+    ///   - minimumScopeCount: The fewest occurrences in the scope a term needs to be scored.
+    public static func rank(
+        terms: [TermCount],
+        scopeTotal: Int,
+        fetchedTermCount: Int,
+        termLimit: Int,
+        availability: KeynessReferences.Availability,
+        minimumScopeCount: Int = Keyness.defaultMinimumScopeCount
+    ) -> Outcome {
         let reference: KeynessReference
         switch availability {
         case .unavailable(.noArtifact):
@@ -254,7 +289,7 @@ enum KeynessCloud {
     /// These counts are **layout input only**. `PlacedWord` carries just a term, a size and a
     /// position, so no scaled score reaches the screen — which matters, because a list rendering
     /// them under the existing "%lld occurrences" label would state a falsehood.
-    static func layoutTerms(_ scores: [KeynessScore]) -> [TermCount] {
+    public static func layoutTerms(_ scores: [KeynessScore]) -> [TermCount] {
         scores.map { TermCount(term: $0.term, count: max(1, Int(($0.logLikelihood * 100).rounded()))) }
     }
 }

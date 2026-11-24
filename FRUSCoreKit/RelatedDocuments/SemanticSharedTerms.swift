@@ -14,6 +14,10 @@
 
 import Foundation
 
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
+
 /// The "why related" evidence for a semantic row: the distinctive vocabulary two documents share.
 ///
 /// ## Why this exists
@@ -69,19 +73,30 @@ import Foundation
 ///          as printed, and ``sharedTerms(anchor:candidates:appState:)`` returns the form with the
 ///          terms (``Evidence``); ``reloadToken(for:)``, the part of Related Documents' reload
 ///          identity that follows the tagger
-enum SemanticSharedTerms {
+///   1.3 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public: the pass counts with the
+///          tagger and the stopwords its caller gives (``evidence(anchor:candidates:pipeline:reference:stopwords:tagger:isolation:)``),
+///          and a host's entry reads its own references (``sharedTerms(anchor:candidates:pipeline:references:languageAnalysis:stopwords:tagger:isolation:)``);
+///          the app's entry over `AppState`, its pass behind NaturalLanguage's gate and the reload identity
+///          stay the app's
+public enum SemanticSharedTerms {
 
     /// What one pass found: each candidate's shared terms, and the form the words were compared in
     /// (#1608).
-    struct Evidence: Equatable {
+    public struct Evidence: Equatable, Sendable {
         /// Display-form terms per candidate; a candidate with no distinctive overlap is absent.
-        let terms: [DocumentKey: [String]]
+        public let terms: [DocumentKey: [String]]
         /// The form both documents' words and the corpus reference were counted in.
-        let wordForm: WordCloudWordForm
+        public let wordForm: WordCloudWordForm
+
+        /// What one pass found, spelt out so a host can make one (FRUS Explorer Light, S29b).
+        public init(terms: [DocumentKey: [String]], wordForm: WordCloudWordForm) {
+            self.terms = terms
+            self.wordForm = wordForm
+        }
 
         /// A pass that could not run: no candidates, no index, no reference, or no text for the
         /// anchor. It compared nothing, so it says nothing of how.
-        static let none = Evidence(terms: [:], wordForm: .dictionary)
+        public static let none = Evidence(terms: [:], wordForm: .dictionary)
 
         /// What the panel says above its rows when their shared words were compared as printed, or
         /// `nil` when they were compared in dictionary forms (#1608).
@@ -93,7 +108,7 @@ enum SemanticSharedTerms {
         /// no shared word leaves every row with a percentage where a device that reduces words can
         /// name the words, and this line is then the only thing that says why. A pass that could
         /// not run is ``none``, whose form is `.dictionary`, and says nothing.
-        var printedFormsNote: String? {
+        public var printedFormsNote: String? {
             guard wordForm == .printed else { return nil }
             return String(localized: "related.sharedTerms.printedForms.note",
                           defaultValue: "Shared words compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so two documents share a word only where both print the same form (“negotiate” in one and “negotiated” in the other is not a match). A device that does reduce them (a Mac, or another iPhone or iPad) can name different shared words.")
@@ -101,24 +116,8 @@ enum SemanticSharedTerms {
     }
 
     /// How many terms a chip shows. Three is what fits beside the other axes' chips on an iPhone.
-    static let chipTermLimit = 3
+    public static let chipTermLimit = 3
 
-    /// The part of Related Documents' reload identity that follows the tagger (#1608): the form the
-    /// settled verdict counts in, and dictionary forms until there is one.
-    ///
-    /// The list reloads when this changes, and at no other re-check. A re-check that adopts a
-    /// lemmatiser turns shared words compared as printed into ones compared in dictionary forms,
-    /// and the note above the rows says "right now", so they are compared again and the note goes.
-    /// A re-check that adopts names or lexical classes changes nothing this list shows; reloading
-    /// for it would re-rank an open list and lose the reader's place for the same rows, on a launch
-    /// whose lemmatiser works, which is why the identity does not take the monitor's revision.
-    /// Before a verdict exists the pass waits for one, so "dictionary" then is a placeholder that a
-    /// verdict with a lemmatiser leaves as it is.
-    /// - Parameter status: `LanguageAnalysisMonitor.shared.status`.
-    static func reloadToken(for status: NaturalLanguageReadiness.Status) -> String {
-        guard case .settled(let verdict) = status else { return WordCloudWordForm.dictionary.rawValue }
-        return verdict.health.wordForm.rawValue
-    }
 
     /// The lens the chip counts under.
     ///
@@ -126,74 +125,78 @@ enum SemanticSharedTerms {
     /// and sentiment lexicons would throw away exactly the proper nouns and rare technical terms that
     /// make a chip informative. It is also the lens `BundledKeynessBaseline` prices most fully
     /// (98.1% of corpus token mass).
-    static let lens: WordCloudLens = .allTerms
+    public static let lens: WordCloudLens = .allTerms
 
-    /// Computes the shared distinctive terms between an anchor and each candidate.
+    /// Computes the shared distinctive terms between an anchor and each candidate, for a host: the
+    /// reference its own references hold for its verdict and its tagger's identity, then the pass
+    /// (FRUS Explorer Light, S29b).
     ///
-    /// Reads every text in one keyed query and tokenises each document once, so the cost is linear in
-    /// the displayed rows rather than quadratic. The lexical assessment measured this class of query
-    /// at ~50 ms for a comparable row count.
+    /// The app's entry, `sharedTerms(anchor:candidates:appState:)`, does the same over its bundled
+    /// references, NaturalLanguage's verdict and its gate. Unavailable means unpriced, not "every term is
+    /// rare": with no reference the host can be compared with, the pass names nothing and the caller falls
+    /// back to stating the percentage.
     ///
     /// - Parameters:
     ///   - anchor: The document the rows are related to.
     ///   - candidates: The displayed candidates to explain.
-    ///   - appState: Supplies the index and the tokenisation payloads.
-    /// - Returns: Display-form terms per candidate — a candidate with no distinctive overlap is
-    ///   absent rather than present with an empty list — and the form they were compared in.
-    @MainActor
-    static func sharedTerms(
+    ///   - pipeline: The index the texts are read from.
+    ///   - references: The corpus references the host's tokenizer counted.
+    ///   - languageAnalysis: The verdict the terms are counted under: the host tagger's health.
+    ///   - stopwords: The stopword lists the tokenizer reads.
+    ///   - tagger: The tagger whose walks the tokenizer reads; its identity chooses the reference.
+    ///   - isolation: Where the pass runs: its caller's actor, by default.
+    /// - Returns: Display-form terms per candidate, and the form they were compared in.
+    public static func sharedTerms<Tagger: WordCloudTagger>(
         anchor: DocumentKey,
         candidates: [DocumentKey],
-        appState: AppState
+        pipeline: IndexingPipeline,
+        references: KeynessReferences,
+        languageAnalysis: NaturalLanguageHealth,
+        stopwords: WordCloudStopwordSet,
+        tagger: Tagger,
+        isolation: isolated (any Actor)? = #isolation
     ) async -> Evidence {
-        guard !candidates.isEmpty, let pipeline = appState.indexingPipeline else { return .none }
-
-        // The corpus reference. Unavailable means unpriced, not "every term is rare" — ranking
-        // without it would put the anchor's most ordinary words first. Awaited, so a panel opened
-        // while the launch decode is still in flight reads the reference rather than its absence.
-        await BundledKeynessBaseline.prepare()
-        let tuning = WordCloudTuning.standard
-        // The terms below are counted in this process, so its tagger verdict decides the form they
-        // are counted in and the reference that prices them (#1373, #1608): lemmas against the
-        // reference counted in lemmas, or, with no lemmatiser, printed forms against the one
-        // counted as printed. Never one against the other, which would skip every inflected word
-        // as unpriced and name only the uninflected ones. Awaited on every call, so the main actor
-        // is not blocked while the warm-up waits on its assets, and a re-check that replaced the
-        // verdict is read (#1539).
-        let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
-        guard case .available(let reference) = BundledKeynessBaseline.baseline(
-            for: lens, tuning: tuning, includeDiplomatic: true,
-            languageAnalysis: languageAnalysis)
+        guard !candidates.isEmpty else { return .none }
+        // The chip's reference, as the app reads it: All terms at the standard tuning with the
+        // diplomatic layer, in the verdict's form, counted by this tagger.
+        guard case .available(let reference) = references.baseline(
+            for: lens, tuning: .standard, includeDiplomatic: true,
+            languageAnalysis: languageAnalysis, tokenizer: tagger.identity)
         else { return .none }
         return await evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
-                              reference: reference)
+                              reference: reference, stopwords: stopwords, tagger: tagger)
     }
+
 
     /// The pass itself, against a reference the caller read: fetch the texts, count each in the
     /// reference's form, and name the rarest words the anchor shares with each candidate.
     ///
-    /// ``sharedTerms(anchor:candidates:appState:)`` reads the reference for this process's verdict
-    /// and calls it; nothing else in the app does. It is a function of its own so a test can run the
-    /// pass in a form its host's verdict would not choose (#1608).
+    /// ``sharedTerms(anchor:candidates:pipeline:references:languageAnalysis:stopwords:tagger:isolation:)``
+    /// reads the reference for a host's verdict and calls it, and so does the app's entry, through its own
+    /// `evidence(anchor:candidates:pipeline:reference:)`, which awaits NaturalLanguage's readiness gate
+    /// first (#1373) and passes NaturalLanguage's tagger and the bundled stopwords. It is a function of its
+    /// own so a test can run the pass in a form its host's verdict would not choose (#1608).
     ///
     /// - Parameters:
     ///   - anchor: The document the rows are related to.
     ///   - candidates: The displayed candidates to explain.
     ///   - pipeline: The index the texts are read from.
     ///   - reference: The corpus reference, which also fixes the form the texts are counted in.
+    ///   - stopwords: The stopword lists the tokenizer reads (the app's bundled `word-cloud-stopwords.json`).
+    ///   - tagger: The tagger whose walks the tokenizer reads (S29a). A tagger that warms up before its
+    ///     first walk is awaited by its host first; the app's form awaits NaturalLanguage's gate.
+    ///   - isolation: Where the pass runs: its caller's actor, by default, as it ran on the main actor
+    ///     for the app before it moved (FRUS Explorer Light, S29b).
     /// - Returns: Display-form terms per candidate, and the reference's form.
-    @MainActor
-    static func evidence(
+    public static func evidence<Tagger: WordCloudTagger>(
         anchor: DocumentKey,
         candidates: [DocumentKey],
         pipeline: IndexingPipeline,
-        reference: KeynessReference
+        reference: KeynessReference,
+        stopwords: WordCloudStopwordSet,
+        tagger: Tagger,
+        isolation: isolated (any Actor)? = #isolation
     ) async -> Evidence {
-        // The warm-up before anything below tags (#1373). The app's caller has awaited it already,
-        // to read the reference; awaited here too, so a caller that was handed a reference cannot
-        // make this the process's first tagging and hold the main thread for as long as the
-        // warm-up waits on its assets.
-        _ = await NaturalLanguageReadiness.verdictWhenReady()
         let tuning = WordCloudTuning.standard
         let keys = ([anchor] + candidates).map {
             WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
@@ -204,18 +207,18 @@ enum SemanticSharedTerms {
         else { return .none }
 
         let tokenizer = WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: true),
+            stopwords: stopwords.active(includeDiplomatic: true),
             minimumLength: tuning.minimumLength,
             foldPlurals: tuning.foldPlurals,
             lens: lens,
             // .allTerms is not a lexicon-backed lens, so no membership set applies.
             lexicon: nil,
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : [],
+            markings: tuning.filterMarkings ? stopwords.markings : [],
             // The reference's own form, so the two documents are counted the way it was (#1608).
             wordForm: reference.wordForm)
 
         var anchorCounts: [String: Int] = [:]
-        tokenizer.accumulate(from: anchorText, into: &anchorCounts)
+        tokenizer.accumulate(from: anchorText, into: &anchorCounts, tagger: tagger)
         guard !anchorCounts.isEmpty else { return .none }
 
         var result: [DocumentKey: [String]] = [:]
@@ -223,7 +226,7 @@ enum SemanticSharedTerms {
             guard let text = texts["\(candidate.volumeId)/\(candidate.documentId)"],
                   !text.isEmpty else { continue }
             var candidateCounts: [String: Int] = [:]
-            tokenizer.accumulate(from: text, into: &candidateCounts)
+            tokenizer.accumulate(from: text, into: &candidateCounts, tagger: tagger)
 
             let terms = rank(
                 shared: Set(anchorCounts.keys).intersection(candidateCounts.keys),
@@ -246,7 +249,7 @@ enum SemanticSharedTerms {
     ///   - corpusCounts: The baseline's corpus frequencies.
     ///   - limit: How many terms to return.
     /// - Returns: The rarest shared terms, rarest first, tie-broken alphabetically for determinism.
-    static func rank(shared: Set<String>, corpusCounts: [String: Int], limit: Int) -> [String] {
+    public static func rank(shared: Set<String>, corpusCounts: [String: Int], limit: Int) -> [String] {
         var priced: [(term: String, count: Int)] = []
         priced.reserveCapacity(shared.count)
         for term in shared {
@@ -270,7 +273,7 @@ enum SemanticSharedTerms {
     ///   - term: A lowercased lemma, or a lowercased printed form.
     ///   - text: The anchor's body text.
     /// - Returns: The display form.
-    static func displayForm(for term: String, in text: String) -> String {
+    public static func displayForm(for term: String, in text: String) -> String {
         guard let range = text.range(of: term, options: [.caseInsensitive, .diacriticInsensitive])
         else { return term }
         // Extend to the whole word so a lemma matched inside a longer surface form ("alliance"

@@ -14,41 +14,21 @@
 
 import Foundation
 
-// MARK: - CollocationConfiguration
+// MARK: - CollocationConfiguration, live
 
-/// The tokenisation a collocation pass runs under, resolved **once**.
+/// The app's half of Collocates' pass: the configuration resolved from the user's live settings, and the
+/// scan behind NaturalLanguage's readiness gate.
 ///
-/// This type exists because of a failure mode the configuration guard cannot catch on its own:
-/// `BundledKeynessBaseline.baseline(for:tuning:includeDiplomatic:languageAnalysis:)` validates the
-/// values a caller *claims*, not the ones its tokenizer was actually built with. Passing
-/// `includeDiplomatic: true` to the guard while constructing the tokenizer with `false` passes every
-/// check and produces a confident, wrong ranking.
-///
-/// So the two are derived from one value. The tokenizer and the reference lookup both come from
-/// here, and there is no second reading of the settings in between.
-///
-/// The tagger verdict is the same kind of value since #1608, and for the same reason: it decides
-/// the form the neighbours are counted in *and* which reference they are ranked against. A host
-/// that built the tokenizer under one verdict and looked the reference up under another — a
-/// re-check can replace the verdict between two awaits — would rank printed forms against
-/// dictionary-form counts. So the verdict is resolved once, held here, and read from here by both.
+/// `CollocationConfiguration`, Collocates' window scan and its ranking moved into FRUSCoreKit (FRUS
+/// Explorer Light, S29b), where a host builds a configuration over its own values and scans with a tagger
+/// of its own. What reads the app's settings and its gate stays here.
 ///
 /// Version history:
-///   1.0 — S-2: initial implementation
-///   1.1 — #1608: ``languageAnalysis``; the tokenizer counts in that verdict's form
-struct CollocationConfiguration: Sendable {
-
-    /// The live word-cloud tuning the scope is counted under.
-    let tuning: WordCloudTuning
-    /// Whether the diplomatic stopword layer is active. In this codebase that is the
-    /// `excludeBoilerplate` setting **verbatim, not inverted** — see `WordCloudLoader.load`.
-    let includeDiplomatic: Bool
-    /// The tagger verdict the pass runs under (#1608). The tokenizer counts in its form, and the
-    /// host hands this same value to `BundledKeynessBaseline.baseline`, which reads the reference
-    /// counted in that form.
-    let languageAnalysis: NaturalLanguageHealth
-    /// The tokenizer built from exactly those values.
-    let tokenizer: WordCloudTokenizer
+///   1.0 — S-2: initial implementation (the configuration and `live`)
+///   1.1 — #1608: ``CollocationConfiguration/live(languageAnalysis:)`` takes the verdict
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): the configuration moved into FRUSCoreKit; `live` builds
+///          it over the app's bundled lists, and the scan the app calls awaits the gate here
+extension CollocationConfiguration {
 
     /// Resolves the live settings once and builds the tokenizer from them and the verdict.
     /// - Parameter languageAnalysis: This process's tagger verdict, awaited by the caller for this
@@ -58,14 +38,44 @@ struct CollocationConfiguration: Sendable {
         let tuning = WordCloudSettings.tuning
         let includeDiplomatic = UserDefaults.standard
             .object(forKey: WordCloudSettings.Keys.excludeBoilerplate) as? Bool ?? true
-        return CollocationConfiguration(
-            tuning: tuning,
-            includeDiplomatic: includeDiplomatic,
-            languageAnalysis: languageAnalysis,
-            // `.allTerms` — the lens the reference prices most deeply, and the one a collocate list
-            // wants: a neighbour is interesting whatever part of speech it is.
-            tokenizer: WordCloudTokenizer.configured(
-                tuning: tuning, lens: .allTerms, includeDiplomatic: includeDiplomatic,
-                wordForm: languageAnalysis.wordForm))
+        // The kit's configuration over the app's bundled lists: All terms, in the verdict's form.
+        return .configured(tuning: tuning, includeDiplomatic: includeDiplomatic,
+                           languageAnalysis: languageAnalysis,
+                           stopwords: WordCloudStopwords.shared, lexicons: WordCloudLexicons.shared)
+    }
+}
+
+// MARK: - SearchService + collocation, behind the gate
+
+extension SearchService {
+
+    /// Words the query's matches keep company with, counted with NaturalLanguage's tagger once the
+    /// readiness gate has its verdict: the kit's pass (`collocation(for:parameters:windowSize:configuration:reference:tagger:maxMatches:)`,
+    /// FRUS Explorer Light, S29b), as the app ran it before it moved.
+    ///
+    /// - Parameters:
+    ///   - results: the retained result set — everything the user could page to, not the page.
+    ///   - parameters: the executed query, for its positive terms.
+    ///   - windowSize: words either side of each match.
+    ///   - configuration: the resolved live tokenisation. The caller resolves it on the main actor.
+    ///   - reference: the corpus reference the caller read for `configuration.languageAnalysis`, so
+    ///     it is counted in the form the tokenizer counts in (#1608).
+    func collocation(
+        for results: [SearchResult],
+        parameters: SearchParameters,
+        windowSize: Int,
+        configuration: CollocationConfiguration,
+        reference: KeynessReference,
+        maxMatches: Int? = nil
+    ) async throws -> CollocationAnalysis.Outcome {
+        // The tagger's verdict before anything below tokenizes (#1373). Both callers await it on the
+        // main actor already; awaiting it here too means a caller that forgets cannot make the
+        // process's first tagging block this actor — and every search behind it — for as long as
+        // the warm-up waits on its assets.
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
+        return try await collocation(
+            for: results, parameters: parameters, windowSize: windowSize,
+            configuration: configuration, reference: reference,
+            tagger: NaturalLanguageWordCloudTagger(), maxMatches: maxMatches)
     }
 }

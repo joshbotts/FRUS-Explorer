@@ -8,17 +8,27 @@
 
 import Foundation
 
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
+
 // MARK: - SearchService + collocation
 
-/// The collocation panel's measure over a retained result set, kept in the app because it tags
-/// with NaturalLanguage and tokenises through WordCloudKit, which the kit cannot import. It reads
-/// the service's pipeline and positive terms, which the kit keeps internal for it.
+/// The collocation panel's measure over a retained result set. It reads the service's pipeline and
+/// positive terms, and tokenises through WordCloudKit with a tagger its caller gives: the app's form,
+/// which awaits NaturalLanguage's readiness gate and passes NaturalLanguage's tagger, stays the app's.
 ///
 /// Version history:
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): moved out of `SearchService.swift` verbatim
 ///         when the service moved into FRUSCoreKit
 ///   1.1 — #1608: the reference is a `KeynessReference`, and the ranking is told the form the
 ///         tokenizer counted in
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): back in FRUSCoreKit, public, which now depends on
+///         WordCloudKit: the pass counts with the tagger its caller gives, S29a's `WordCloudTagger`, and
+///         the app's form awaits the gate and passes NaturalLanguage's
 extension SearchService {
 
     /// Words the query's matches keep company with, ranked by how distinctive that company is.
@@ -44,19 +54,20 @@ extension SearchService {
     ///   - configuration: the resolved live tokenisation. The caller resolves it on the main actor.
     ///   - reference: the corpus reference the caller read for `configuration.languageAnalysis`, so
     ///     it is counted in the form the tokenizer counts in (#1608).
-    func collocation(
+    ///   - tagger: the tagger whose walks the tokenizer reads (S29a). A tagger that warms up before its
+    ///     first walk is awaited by its host before this is called: the app's form awaits
+    ///     NaturalLanguage's readiness gate, then passes its tagger. The reference must be the one
+    ///     looked up for this tagger's identity.
+    ///   - maxMatches: the match budget, ``collocationMatchBudget(windowSize:)`` by default.
+    public func collocation<Tagger: WordCloudTagger & Sendable>(
         for results: [SearchResult],
         parameters: SearchParameters,
         windowSize: Int,
         configuration: CollocationConfiguration,
         reference: KeynessReference,
+        tagger: Tagger,
         maxMatches: Int? = nil
     ) async throws -> CollocationAnalysis.Outcome {
-        // The tagger's verdict before anything below tokenizes (#1373). Both callers await it on the
-        // main actor already; awaiting it here too means a caller that forgets cannot make the
-        // process's first tagging block this actor — and every search behind it — for as long as
-        // the warm-up waits on its assets.
-        _ = await NaturalLanguageReadiness.verdictWhenReady()
         let maxMatches = maxMatches ?? Self.collocationMatchBudget(windowSize: windowSize)
         // The same set the concordance and the highlighter anchor on, so the words treated as
         // matches are the words the reader sees marked. For a `NEAR(a b, N)` query that set holds
@@ -118,7 +129,7 @@ extension SearchService {
                 // One tokenizer pass per CHUNK rather than per window: `accumulate` builds a fresh
                 // `NLTagger` on every call, and a window-at-a-time loop would construct thousands.
                 windowTokenCount += configuration.tokenizer
-                    .accumulate(from: windowText.joined(separator: "\n"), into: &counts)
+                    .accumulate(from: windowText.joined(separator: "\n"), into: &counts, tagger: tagger)
             }
         }
 
@@ -126,7 +137,8 @@ extension SearchService {
         // compares like with like. Stems would not match — the counts are lemmas, or printed forms
         // on a launch with no lemmatiser (#1608), and the same tokenizer makes both.
         var anchorLemmas: [String: Int] = [:]
-        configuration.tokenizer.accumulate(from: terms.joined(separator: "\n"), into: &anchorLemmas)
+        configuration.tokenizer.accumulate(from: terms.joined(separator: "\n"), into: &anchorLemmas,
+                                           tagger: tagger)
 
         return CollocationAnalysis.rank(
             counts: counts,
@@ -154,7 +166,7 @@ extension SearchService {
     /// covers every iOS result set outright and every sparse macOS one; it clips only a dense query
     /// over a full macOS set, where the collocates drawn from a 200,000-token sample are
     /// statistically indistinguishable from those drawn from the whole.
-    static let collocationTokenBudget = 200_000
+    public static let collocationTokenBudget = 200_000
 
     /// Matches affordable at a given window size.
     ///
@@ -162,7 +174,7 @@ extension SearchService {
     /// match contributes ~10 surviving tokens, at ±50 about five times that. A fixed match budget
     /// calibrated at ±10 would let the ±50 the picker offers cost five times its measurement — 12 s
     /// where 2.5 s was intended, on a control the user is invited to move.
-    static func collocationMatchBudget(windowSize: Int) -> Int {
+    public static func collocationMatchBudget(windowSize: Int) -> Int {
         // ~48% of raw words survive stopwording and the length floor, measured corpus-wide:
         // 1,286 MB of body text yields 94.6M surviving tokens, ~13.6 bytes each against ~6.5
         // bytes per raw word.
@@ -172,5 +184,5 @@ extension SearchService {
 
     /// Documents per keyed body-text fetch, matching every other bulk reader in the app (400 pairs
     /// is 800 binds, under SQLite's 999-variable limit).
-    static let collocationChunkSize = 400
+    public static let collocationChunkSize = 400
 }

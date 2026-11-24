@@ -1364,12 +1364,17 @@ struct NaturalLanguageReadinessScanTests {
         #expect(app[body].contains("NaturalLanguageReadiness.beginWarmUp()"), "the macOS init does not start the warm-up")
     }
 
-    /// The app's two main-actor functions that tokenize, each named by its file and declaration.
-    private static let mainActorTaggers: [(path: String, declaration: String)] = [
-        ("FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift", "static func collectionCloudImage("),
+    /// The app's two main-actor functions that tokenize, each named by its file and declaration, with
+    /// what in its body first tokenizes.
+    private static let mainActorTaggers: [(path: String, declaration: String, tokenizes: String)] = [
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift", "static func collectionCloudImage(",
+         "WordCloudTokenizer"),
         // #1608: the pass that tokenizes is `evidence`, which `sharedTerms` calls with the
         // reference it read. Both await the verdict; this pins the one that builds the tokenizer.
-        ("FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift", "static func evidence("),
+        // Since FRUS Explorer Light's S29b the pass is FRUSCoreKit's, which runs on its caller's actor:
+        // the app's `evidence` awaits the verdict and then hands it NaturalLanguage's tagger.
+        ("FRUSExplorer/RelatedDocuments/SemanticSharedTerms+App.swift", "static func evidence(",
+         "NaturalLanguageWordCloudTagger()"),
     ]
 
     @Test("A main-actor function that tokenizes awaits the warm-up before it builds a tokenizer (#1373)",
@@ -1398,7 +1403,7 @@ struct NaturalLanguageReadinessScanTests {
         let text = String(source[body])
         let awaited = try #require(text.range(of: "await NaturalLanguageReadiness.verdictWhenReady()"),
                                    "\(path): \(entry.declaration) tokenizes without awaiting the warm-up")
-        let tokenizer = try #require(text.range(of: "WordCloudTokenizer"),
+        let tokenizer = try #require(text.range(of: entry.tokenizes),
                                      "\(path): \(entry.declaration) no longer builds a tokenizer")
         #expect(awaited.upperBound <= tokenizer.lowerBound,
                 "\(path): the tokenizer is built before the warm-up is awaited")

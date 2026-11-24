@@ -15,35 +15,9 @@
 import Foundation
 
 // MARK: - KeynessReference
-
-/// A corpus reference a keyness comparison divides by, with the form its words are counted in and
-/// the facts a surface states about it (#1608).
-///
-/// One value, so a surface that ranks against a reference cannot name another one when it says what
-/// it ranked against: the counts, the form, the coverage and the stamp all come from the file
-/// ``BundledKeynessBaseline`` chose for the scope.
-///
-/// Version history:
-///   1.0 — #1608: initial implementation, replacing the `(terms, totalTokens, cutoffCount)` triple
-///          and `BundledKeynessBaseline`'s separate `coverage(for:)` and `generated`
-struct KeynessReference: Equatable, Sendable {
-    /// The retained terms and their corpus occurrence counts.
-    let terms: [String: Int]
-    /// The corpus's **true** total for the lens, across every term including the ones truncation
-    /// dropped — not the sum of ``terms``.
-    let totalTokens: Int
-    /// The smallest corpus count that is priced, so a term absent from ``terms`` can be described
-    /// precisely ("occurs fewer than N times corpus-wide") rather than confused with a term absent
-    /// from the corpus.
-    let cutoffCount: Int
-    /// The form ``terms`` are counted in. A scope counted in the other form is not comparable.
-    let wordForm: WordCloudWordForm
-    /// How many distinct terms the corpus had for the lens before truncation, for the provenance
-    /// line: ``terms`` holds a head of them.
-    let distinctTerms: Int
-    /// The generation stamp of the file the reference came from.
-    let generated: String
-}
+//
+// Moved to FRUSCoreKit (`FRUSCoreKit/Analytics/WordCloud/KeynessReferences.swift`, FRUS Explorer Light, S29b),
+// with this loader's lookup and refusals over values (`KeynessReferences`), which a host reads by URL.
 
 // MARK: - BundledKeynessBaseline
 
@@ -105,6 +79,9 @@ struct KeynessReference: Equatable, Sendable {
 ///          ``prepare()`` waits for the load in flight
 ///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): the reference is held to the tokenizer the scope
 ///          was counted by, NaturalLanguage's, as to its settings (`Mismatch.tokenizer`)
+///   1.4 — 2026-11-24 (FRUS Explorer Light, S29b): the lookup, its refusals and a file's reading by URL
+///          are FRUSCoreKit's (`KeynessReferences`), which this loader asks over what it holds
+///          (``references``); `Availability` is the kit's; `KeynessCloud.rank` reads it here
 @MainActor
 enum BundledKeynessBaseline {
 
@@ -125,6 +102,16 @@ enum BundledKeynessBaseline {
     /// lens, configuration and tagger verdict — ``baseline(for:tuning:includeDiplomatic:languageAnalysis:)``
     /// is the answer to that.
     static var isAvailable: Bool { !files.isEmpty }
+
+    /// What this loader holds, as the kit's lookup reads it (S29b): the loaded files and the bundled
+    /// payloads' digests. With nothing loaded it is `KeynessReferences.none`, so the digests are hashed
+    /// only once a reference is there to compare them with, as before.
+    static var references: KeynessReferences {
+        guard !files.isEmpty else { return .none }
+        let digests = bundledPayloadDigests()
+        return KeynessReferences(files: files, lexiconsDigest: digests.lexicons,
+                                 stopwordsDigest: digests.stopwords)
+    }
 
     // MARK: - Loading
 
@@ -164,58 +151,43 @@ enum BundledKeynessBaseline {
                 #endif
                 continue
             }
-            do {
-                let file = try JSONDecoder().decode(KeynessBaselineFile.self, from: Data(contentsOf: url))
-                // Held to what the file says of itself: a file counted in the other form is not
-                // this form's reference whatever it is named, and offering it would score printed
-                // forms against dictionary-form counts — the error the second file exists to end.
-                guard Self.isReference(file, for: wordForm) else {
-                    #if DEBUG
-                    print("[BundledKeynessBaseline] \(name).json says its words are counted as "
-                          + "\(file.configuration.wordForm.rawValue), not \(wordForm.rawValue); not used.")
-                    #endif
-                    continue
-                }
-                loaded[wordForm] = file
-            } catch {
-                #if DEBUG
-                print("[BundledKeynessBaseline] Failed to decode \(name).json — \(error)")
-                #endif
+            // Read and held to what the file says of itself by the kit (S29b): a file counted in the
+            // other form is not this form's reference whatever it is named
+            // (`KeynessReferences.file(at:for:)`).
+            switch KeynessReferences.file(at: url, for: wordForm) {
+            case .success(let file): loaded[wordForm] = file
+            case .failure(let failure): report(failure, name: name, wordForm: wordForm)
             }
         }
         return loaded
     }
 
+    /// Says in a debug build why `name`.json is not `wordForm`'s reference, in the words the loader
+    /// has always printed.
+    nonisolated private static func report(_ failure: KeynessReferences.LoadFailure, name: String,
+                                           wordForm: WordCloudWordForm) {
+        #if DEBUG
+        switch failure {
+        case .otherForm(let stated):
+            print("[BundledKeynessBaseline] \(name).json says its words are counted as "
+                  + "\(stated.rawValue), not \(wordForm.rawValue); not used.")
+        case .unreadable(let error):
+            print("[BundledKeynessBaseline] Failed to decode \(name).json — \(error)")
+        }
+        #endif
+    }
+
     /// Whether `file` is the reference for `wordForm`: its own stamp says its words are counted in
-    /// that form.
+    /// that form. The kit's rule (`KeynessReferences.isReference(_:for:)`) since S29b.
     nonisolated static func isReference(_ file: KeynessBaselineFile, for wordForm: WordCloudWordForm) -> Bool {
-        file.configuration.wordForm == wordForm
+        KeynessReferences.isReference(file, for: wordForm)
     }
 
     // MARK: - Reading
 
-    /// What a caller gets when it asks for a baseline.
-    enum Availability: Equatable {
-        /// A usable reference, in the form the scope was counted in.
-        case available(KeynessReference)
-        /// No baseline, and why.
-        case unavailable(Reason)
-
-        /// Why keyness cannot be offered.
-        enum Reason: Equatable {
-            /// The bundled resource is missing or would not decode.
-            case noArtifact
-            /// The generator does not price this lens — the three entity lenses.
-            case lensNotPriced(WordCloudLens)
-            /// The live tokenisation is not comparable to the artifact's.
-            case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
-            /// The scope has no reference it can be compared with, for a reason no setting mends
-            /// (#1373): a part-of-speech lens was counted without lexical classes, so it counted
-            /// nothing; or the scope was counted as printed and the reference counted as printed is
-            /// not loaded (#1608).
-            case languageAnalysisUnavailable
-        }
-    }
+    /// What a caller gets when it asks for a baseline: the kit's (`KeynessReferences.Availability`) since
+    /// S29b, a usable reference or why there is none.
+    typealias Availability = KeynessReferences.Availability
 
     /// The corpus reference for one lens, under the tokenisation the caller is actually using.
     ///
@@ -240,36 +212,10 @@ enum BundledKeynessBaseline {
                          tuning: WordCloudTuning,
                          includeDiplomatic: Bool,
                          languageAnalysis: NaturalLanguageHealth) -> Availability {
-        // Nothing loaded at all reads as missing, whatever the tagger did.
-        guard !files.isEmpty else { return .unavailable(.noArtifact) }
-        // Before the settings check: a mismatch's message tells the reader to restore a setting,
-        // and here no setting would help. A lens the tagger could not serve counted nothing, so
-        // there is nothing to compare in either form. Entity lenses fall through to
-        // `lensNotPriced`, which is the structural answer for them whatever the tagger does.
-        if !lens.isEntity, !languageAnalysis.supports(lens) {
-            return .unavailable(.languageAnalysisUnavailable)
-        }
-        // The entity lenses read no lemma; their answer is the dictionary file's `lensNotPriced`.
-        let wordForm: WordCloudWordForm = lens.isEntity ? .dictionary : languageAnalysis.wordForm
-        guard let file = files[wordForm] else {
-            // The scope was counted as printed and its reference is not here: what was true of
-            // every such scope before #1608 is still true of this one.
-            return .unavailable(wordForm == .printed ? .languageAnalysisUnavailable : .noArtifact)
-        }
-        let digests = bundledPayloadDigests()
-        // Every count the app makes is NaturalLanguage's, through the readiness gate (S29a).
-        let mismatches = file.configuration.mismatches(
-            against: tuning, includeDiplomatic: includeDiplomatic,
-            lexiconsDigest: digests.lexicons, stopwordsDigest: digests.stopwords,
-            tokenizer: .naturalLanguage)
-        guard mismatches.isEmpty else { return .unavailable(.configurationMismatch(mismatches)) }
-        guard let lensFile = file.lenses[lens.rawValue], lensFile.totalTokens > 0 else {
-            return .unavailable(.lensNotPriced(lens))
-        }
-        return .available(KeynessReference(
-            terms: lensFile.terms, totalTokens: lensFile.totalTokens,
-            cutoffCount: lensFile.cutoffCount, wordForm: wordForm,
-            distinctTerms: lensFile.distinctTerms, generated: file.generated))
+        // The kit's lookup and refusals (S29b) over what this loader holds. Every count the app makes
+        // is NaturalLanguage's, through the readiness gate (S29a).
+        references.baseline(for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
+                            languageAnalysis: languageAnalysis, tokenizer: .naturalLanguage)
     }
 
     // MARK: - Payload digests
@@ -315,4 +261,57 @@ enum BundledKeynessBaseline {
         payloadDigests = digests
     }
     #endif
+}
+
+// MARK: - KeynessCloud, against the bundled references
+
+extension KeynessCloud {
+
+    /// Ranks a computed cloud's terms by keyness against the bundled corpus reference: the kit's ranking
+    /// (FRUS Explorer Light, S29b) against the reference ``BundledKeynessBaseline`` holds for the scope,
+    /// NaturalLanguage's counts' (`KeynessCloud.rank(terms:scopeTotal:fetchedTermCount:termLimit:availability:minimumScopeCount:)`).
+    /// On the main actor, as the loader is.
+    ///
+    /// - Parameters:
+    ///   - terms: The scope's terms, as the cloud computed them — already truncated to the cloud's
+    ///     limit, and already minus any words hidden from this cloud.
+    ///   - scopeTotal: The scope's **true** token total. `WordCloudResult.totalTokenCount` is
+    ///     accumulated across every document before truncation, so it is the right value; the sum of
+    ///     `terms` is not, and would inflate every relative frequency.
+    ///   - fetchedTermCount: How many terms the cloud actually FETCHED, before any per-cloud
+    ///     hides. `terms` is the post-hide set, and judging truncation from it is wrong: hiding a
+    ///     single word takes a full 220-term fetch to 219 and would flip the disclosure from
+    ///     "ranked among the top 220" to "ranked over everything", which is false.
+    ///   - termLimit: The limit the cloud requested, so a ranking can tell whether the candidate set
+    ///     was cut by that limit or by the floor.
+    ///   - lens: The lens the terms were counted under.
+    ///   - tuning: The **live** tuning the terms were counted under — not `.standard`. The reference
+    ///     is fixed at build time while the app's tokenizer follows user settings, and this is the
+    ///     value that decides whether the two are comparable.
+    ///   - includeDiplomatic: Whether the diplomatic stopword layer was active. In this codebase
+    ///     that is the `excludeBoilerplate` setting **verbatim, not inverted** — see
+    ///     `WordCloudLoader.load`.
+    ///   - languageAnalysis: What the tagger could do when `terms` were counted — the result's own
+    ///     `WordCloudResult.languageAnalysis`, not this process's verdict, since a cloud read from
+    ///     the disk cache was counted by another process (#1373). It also chooses the reference
+    ///     (#1608): `WordFrequencyService` counts a scope in the verdict's own form, and the
+    ///     reference counted in that form is the one read.
+    @MainActor
+    static func rank(
+        terms: [TermCount],
+        scopeTotal: Int,
+        fetchedTermCount: Int,
+        termLimit: Int,
+        lens: WordCloudLens,
+        tuning: WordCloudTuning,
+        includeDiplomatic: Bool,
+        languageAnalysis: NaturalLanguageHealth,
+        minimumScopeCount: Int = Keyness.defaultMinimumScopeCount
+    ) -> Outcome {
+        rank(terms: terms, scopeTotal: scopeTotal, fetchedTermCount: fetchedTermCount, termLimit: termLimit,
+             availability: BundledKeynessBaseline.baseline(
+                for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
+                languageAnalysis: languageAnalysis),
+             minimumScopeCount: minimumScopeCount)
+    }
 }

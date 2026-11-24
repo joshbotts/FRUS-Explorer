@@ -14,8 +14,27 @@
 
 import Foundation
 import Testing
-
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store and WordCloudKit as modules of their own; Xcode compiles them into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
+
+// Collocates' window, its ranking and the vocabulary they pair with, which moved into FRUSCoreKit with
+// the scan (FRUS Explorer Light, S29b); the caveat's words, the app's view's, are Xcode's alone.
+//
+// Version history:
+//   1.0 — S-2: initial implementation
+//   1.1 — 2026-11-24 (FRUS Explorer Light, S29b): moved into the kit's suites
 
 // MARK: - CollocationWindowTests
 
@@ -279,16 +298,16 @@ struct CollocationAnalysisTests {
 @Suite("Collocation vocabulary pairing")
 struct CollocationVocabularyPairingTests {
 
-    /// Decodes the shipped reference straight from the bundle.
+    /// Decodes the shipped reference straight from the bundle, or in the package from the repository
+    /// (`WordCloudResources`).
     ///
-    /// Deliberately NOT through ``BundledKeynessBaseline``: that type holds one static that
+    /// Deliberately NOT through `BundledKeynessBaseline`: that type holds one static that
     /// `BundledKeynessBaselineTests` injects fixtures into, and a suite reading it in the same test
     /// run sees whatever the other suite last injected. These two cases passed in isolation and
     /// failed in the full suite for exactly that reason — the artifact is the fixed point, the
     /// loader is not.
     private func referenceTerms() throws -> [String: Int] {
-        let url = try #require(Bundle.main.url(forResource: "keyness-baseline", withExtension: "json"))
-        let file = try JSONDecoder().decode(KeynessBaselineFile.self, from: Data(contentsOf: url))
+        let file = try JSONDecoder().decode(KeynessBaselineFile.self, from: WordCloudResources.data("keyness-baseline"))
         return try #require(file.lenses[WordCloudLens.allTerms.rawValue]).terms
     }
 
@@ -302,13 +321,18 @@ struct CollocationVocabularyPairingTests {
     American support for the defense of the continent.
     """
 
+    #if canImport(NaturalLanguage)
+    // NaturalLanguage's lemmas against the reference they counted: where the platform has no
+    // NaturalLanguage (Linux) there are no such lemmas to pair, and the stem test below runs alone.
     @Test("Neighbours counted the app's way are found in the corpus reference")
     @MainActor
     func lemmaCountsPairWithTheBaseline() throws {
         let reference = try referenceTerms()
-        // The SAME construction the word cloud counts with, which is what the reference was built by.
+        // The SAME construction the word cloud counts with, which is what the reference was built by:
+        // the kit's assembly over the bundled lists, which the app's `configured` calls.
         let tokenizer = WordCloudTokenizer.configured(
-            tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: .dictionary)
+            tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: .dictionary,
+            stopwords: try WordCloudResources.stopwords(), lexicons: try WordCloudResources.lexicons())
         var counts: [String: Int] = [:]
         let total = tokenizer.accumulate(from: passage, into: &counts)
 
@@ -317,6 +341,7 @@ struct CollocationVocabularyPairingTests {
         #expect(overlap > 0.8,
                 "only \(overlap) of these neighbours are priced by the reference — the signature of counting in the wrong vocabulary, not of a rare passage")
     }
+    #endif
 
     @Test("Counting the neighbours as Porter stems instead would be caught")
     func stemCountsWouldFailThePairing() throws {
@@ -334,6 +359,8 @@ struct CollocationVocabularyPairingTests {
 }
 
 // MARK: - CollocationCaveatCopyTests
+
+#if !SWIFT_PACKAGE // the caveat's words are the app's view's (`CollocationCaveatCopy`, in `CollocationView.swift`)
 
 /// Collocates' caveat printed its counts through `%lld`, with no locale to group them: "6387 matches, in 1512
 /// documents that had indexed text." and "The scan stopped at 500 of your 1204 results" (#1683).
@@ -361,3 +388,4 @@ struct CollocationCaveatCopyTests {
                 == "The scan stopped at 1,000 of your 7,500 results, so this ranking covers part of them, not all.")
     }
 }
+#endif

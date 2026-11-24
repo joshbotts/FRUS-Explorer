@@ -568,6 +568,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.65 — 2026-11-23 (FRUS Explorer Light S26a): `candidateRecords(forKeys:)` is public, unchanged, since
 ///         the semantic axis's generation, which moved into the kit, fences its candidates with it, for a
 ///         host that does the same; nothing the indexer stores or reads changes
+///  4.66 — 2026-11-24 (FRUS Explorer Light, S29b): `documentBodyTexts(forKeys:)`, `documentCacheCount()` and
+///         `allDocumentKeys()` are public, unchanged, since the word cloud's count, which moved into the kit
+///         (`WordCloudCount`), reads a scope's text with the first, for a host that counts a scope, the
+///         corpus included, as the app does; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -11191,7 +11195,7 @@ public actor IndexingPipeline {
     ///
     /// - Parameter keys: The document keys to fetch text for.
     /// - Returns: The non-empty body texts of the matched documents.
-    func documentBodyTexts(forKeys keys: [WordCloudDocumentKey]) throws -> [String] {
+    public func documentBodyTexts(forKeys keys: [WordCloudDocumentKey]) throws -> [String] {
         guard !keys.isEmpty else { return [] }
         var result: [String] = []
         result.reserveCapacity(keys.count)
@@ -11573,14 +11577,14 @@ public actor IndexingPipeline {
     /// `indexVersion` stamp with `installedDateIndexVersion` (#1421 review).
     ///
     /// - Returns: The number of cached documents.
-    func documentCacheCount() throws -> Int {
+    public func documentCacheCount() throws -> Int {
         let stmt = try auxPrepare("SELECT COUNT(*) FROM document_cache")
         defer { sqlite3_finalize(stmt) }
         guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
-    func allDocumentKeys() throws -> [WordCloudDocumentKey] {
+    public func allDocumentKeys() throws -> [WordCloudDocumentKey] {
         let stmt = try auxPrepare("SELECT volume_id, document_id FROM document_cache")
         defer { sqlite3_finalize(stmt) }
         var keys: [WordCloudDocumentKey] = []

@@ -14,6 +14,13 @@
 
 import Foundation
 
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
+
 // MARK: - CollocationWindow
 
 /// The text lying within ±N words of a query's matches in one document.
@@ -37,18 +44,20 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — S-2: initial implementation
-enum CollocationWindow {
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public, with the result and
+///          the analysis, so a host collects and ranks a search's neighbours by the app's rules
+public enum CollocationWindow {
 
     /// One document's contribution.
-    struct DocumentScan: Equatable {
+    public struct DocumentScan: Equatable, Sendable {
         /// The merged window text, as runs of the document's own prose. Runs are kept separate
         /// rather than concatenated so a caller can join them with a break the lemmatiser will
         /// respect — splicing two distant passages into one sentence invents adjacency.
-        let runs: [String]
+        public let runs: [String]
         /// How many matches of the query were found.
-        let anchorCount: Int
+        public let anchorCount: Int
         /// Matches beyond ``maxAnchorsPerDocument`` that contributed no window.
-        let omittedAnchorCount: Int
+        public let omittedAnchorCount: Int
     }
 
     /// Matches counted per document before the rest are dropped.
@@ -56,7 +65,7 @@ enum CollocationWindow {
     /// A single memo that uses the query term two hundred times would otherwise dominate a
     /// collocation over a thousand documents, and the result would describe that memo's habits
     /// rather than the corpus's. Bounded, and the omission is reported rather than absorbed.
-    static let maxAnchorsPerDocument = 200
+    public static let maxAnchorsPerDocument = 200
 
     /// Collects the merged ±`windowSize`-word neighbourhoods of every match in `body`.
     ///
@@ -66,7 +75,7 @@ enum CollocationWindow {
     ///     highlighter match on, so the words treated as matches here are the words the reader sees
     ///     highlighted.
     ///   - windowSize: how many words either side of a match to collect.
-    static func scan(body: String, stems: [String], windowSize: Int) -> DocumentScan {
+    public static func scan(body: String, stems: [String], windowSize: Int) -> DocumentScan {
         guard !body.isEmpty, !stems.isEmpty, windowSize > 0 else {
             return DocumentScan(runs: [], anchorCount: 0, omittedAnchorCount: 0)
         }
@@ -149,46 +158,65 @@ enum CollocationWindow {
 /// Version history:
 ///   1.0 — S-2: initial implementation
 ///   1.1 — #1608: ``wordForm``, and the note a ranking of printed forms carries
-struct CollocationResult: Equatable {
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public
+public struct CollocationResult: Equatable, Sendable {
 
     /// Neighbours over-represented beside the query, most distinctive first.
-    let scores: [KeynessScore]
+    public let scores: [KeynessScore]
     /// Words either side of each match that were collected.
-    let windowSize: Int
+    public let windowSize: Int
     /// Documents whose text was actually scanned.
-    let documentsScanned: Int
+    public let documentsScanned: Int
     /// Documents in the result set.
-    let documentsInScope: Int
+    public let documentsInScope: Int
     /// Documents the scan actually reached before the budget stopped it. Distinct from
     /// ``documentsScanned``, which counts only those that had cached text — conflating the two made
     /// a complete scan report itself as truncated whenever a document was missing from the cache.
-    let documentsOffered: Int
+    public let documentsOffered: Int
     /// Matches found across the scanned documents.
-    let anchorCount: Int
+    public let anchorCount: Int
     /// Matches dropped by the per-document bound.
-    let omittedAnchorCount: Int
+    public let omittedAnchorCount: Int
     /// Surviving tokens inside the merged windows — the denominator the scores divide by.
-    let windowTokenCount: Int
+    public let windowTokenCount: Int
     /// The floor a neighbour had to clear to be ranked.
-    let minimumCount: Int
+    public let minimumCount: Int
     /// The smallest corpus count the reference prices; below it a neighbour is *unpriced*.
-    let referenceCutoffCount: Int
+    public let referenceCutoffCount: Int
     /// The reference artifact's generation stamp.
-    let generated: String?
+    public let generated: String?
     /// The form the neighbours and the reference were both counted in (#1608). `.printed` is the
     /// fallback of a launch whose language analysis has no lemmatiser.
-    let wordForm: WordCloudWordForm
+    public let wordForm: WordCloudWordForm
+
+    /// A result of `scores`, spelt out so a host can make one (FRUS Explorer Light, S29b).
+    public init(scores: [KeynessScore], windowSize: Int, documentsScanned: Int, documentsInScope: Int,
+                documentsOffered: Int, anchorCount: Int, omittedAnchorCount: Int, windowTokenCount: Int,
+                minimumCount: Int, referenceCutoffCount: Int, generated: String?, wordForm: WordCloudWordForm) {
+        self.scores = scores
+        self.windowSize = windowSize
+        self.documentsScanned = documentsScanned
+        self.documentsInScope = documentsInScope
+        self.documentsOffered = documentsOffered
+        self.anchorCount = anchorCount
+        self.omittedAnchorCount = omittedAnchorCount
+        self.windowTokenCount = windowTokenCount
+        self.minimumCount = minimumCount
+        self.referenceCutoffCount = referenceCutoffCount
+        self.generated = generated
+        self.wordForm = wordForm
+    }
 
     /// What the panel says above a ranking of printed forms, or `nil` for one of dictionary forms
     /// (#1608): ``CollocationAnalysis/printedFormsNote(for:)``.
-    var printedFormsNote: String? { CollocationAnalysis.printedFormsNote(for: wordForm) }
+    public var printedFormsNote: String? { CollocationAnalysis.printedFormsNote(for: wordForm) }
 
     /// Whether the budget stopped the scan short of the whole result set.
     ///
     /// Keyed on what the scan was OFFERED, not on what had text: a result set containing documents
     /// whose body was never cached is not a bounded scan, and reporting it as one would tell a
     /// researcher their ranking is partial when it is complete.
-    var wasBounded: Bool { documentsOffered < documentsInScope }
+    public var wasBounded: Bool { documentsOffered < documentsInScope }
 }
 
 // MARK: - CollocationAnalysis
@@ -211,7 +239,8 @@ struct CollocationResult: Equatable {
 ///          and refuses a reference counted in the other form; the two refusals that are a result
 ///          of the count carry its form, and ``printedFormsNote(for:)`` is what the panel says of
 ///          a count of printed forms, ranked or not
-enum CollocationAnalysis {
+///   1.3 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public
+public enum CollocationAnalysis {
 
     /// What the panel says of neighbours counted and compared as printed, or `nil` for a count in
     /// dictionary forms (#1608).
@@ -233,14 +262,14 @@ enum CollocationAnalysis {
     /// (`CollocationRebuildKey.language`), and the note going is what says so.
     ///
     /// - Parameter wordForm: The form the neighbours and the reference were counted in.
-    static func printedFormsNote(for wordForm: WordCloudWordForm) -> String? {
+    public static func printedFormsNote(for wordForm: WordCloudWordForm) -> String? {
         guard wordForm == .printed else { return nil }
         return String(localized: "search.collocation.printedForms.note",
                       defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.")
     }
 
     /// Why a collocation could not be produced.
-    enum Unavailable: Equatable {
+    public enum Unavailable: Equatable, Sendable {
         /// No verdict yet.
         case pending
         /// The scan could not finish — it was cancelled, or the index could not be read.
@@ -274,7 +303,7 @@ enum CollocationAnalysis {
         /// What the panel says beside this refusal when it is a result of a count of printed forms,
         /// or `nil` (#1608). Only the two refusals reached after the neighbours were counted and
         /// compared carry a form; every other one says nothing about the words near the matches.
-        var printedFormsNote: String? {
+        public var printedFormsNote: String? {
             switch self {
             case .noNeighboursAboveFloor(_, let wordForm), .nothingDistinctive(let wordForm):
                 return CollocationAnalysis.printedFormsNote(for: wordForm)
@@ -286,12 +315,12 @@ enum CollocationAnalysis {
     }
 
     /// The outcome of asking what appears near a query.
-    enum Outcome: Equatable {
+    public enum Outcome: Equatable, Sendable {
         case ranked(CollocationResult)
         case unavailable(Unavailable)
 
         /// The outcome to show before any verdict exists.
-        static let pending = Outcome.unavailable(.pending)
+        public static let pending = Outcome.unavailable(.pending)
     }
 
     /// Tokenises window text and ranks it against the corpus reference.
@@ -309,7 +338,7 @@ enum CollocationAnalysis {
     ///     collocate of itself, and with two matches within 2N words each would otherwise appear in
     ///     the other's window.
     ///   - reference: the corpus counts and true total, from ``BundledKeynessBaseline``.
-    static func rank(
+    public static func rank(
         counts: [String: Int],
         windowTokenCount: Int,
         anchorLemmas: Set<String>,
