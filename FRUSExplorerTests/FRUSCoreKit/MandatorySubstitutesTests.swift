@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - Fixtures
 
@@ -81,6 +87,8 @@ private enum SubstituteFixtures {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-3
+///   1.1 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("A6 mandatory substitutes (#830 T-3)")
 struct MandatorySubstitutesTests {
 
@@ -342,6 +350,8 @@ struct MandatorySubstitutesTests {
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-3 (as `MandatorySubstitutesChapterTests`)
 ///   2.0 — Archive Visits Phase 1: re-pinned from the deleted chapter to the fold
+///   2.1 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Substitutes fold (#830 T-3 / Phase 1)")
 struct MandatorySubstitutesFoldTests {
 

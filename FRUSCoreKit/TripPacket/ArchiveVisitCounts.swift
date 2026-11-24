@@ -22,13 +22,15 @@ import Foundation
 ///   1.0 — 2026-09-25: #1374
 ///   1.1 — 2026-09-25: #1458 — the editor's sections, its summary line and the list row's summary
 ///          move here and count repositories by one rule, presidential libraries included
-enum ArchiveVisitCounts {
+///   1.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; what it counts and says
+///          is unchanged
+public enum ArchiveVisitCounts {
 
     /// "1 target" / "N targets".
     ///
     /// - Parameter count: How many research targets the plan derives.
     /// - Returns: The phrase.
-    static func targets(_ count: Int) -> String {
+    public static func targets(_ count: Int) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "archiveVisit.count.targets.one", defaultValue: "%@ target"),
                          many: String(localized: "archiveVisit.count.targets.many", defaultValue: "%@ targets"))
@@ -38,7 +40,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter count: How many distinct repositories hold those targets.
     /// - Returns: The phrase.
-    static func repositories(_ count: Int) -> String {
+    public static func repositories(_ count: Int) -> String {
         CountCopy.phrase(count,
                          one: String(localized: "archiveVisit.count.repositories.one",
                                      defaultValue: "%@ repository"),
@@ -57,7 +59,7 @@ enum ArchiveVisitCounts {
 
     /// The heading of the Targets list's group for targets no repository can serve. It is a
     /// section, never a repository: nothing here counts it.
-    static var unplacedSectionHeading: String {
+    public static var unplacedSectionHeading: String {
         String(localized: "archiveVisit.section.unplaced", defaultValue: "Confirm before you travel")
     }
 
@@ -65,7 +67,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter target: A derived research target.
     /// - Returns: The section heading.
-    static func sectionHeading(for target: TripPacketModel.Target) -> String {
+    public static func sectionHeading(for target: TripPacketModel.Target) -> String {
         target.facility.chapterHeading ?? unplacedSectionHeading
     }
 
@@ -74,7 +76,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter targets: The plan's derived targets.
     /// - Returns: The section headings.
-    static func sectionHeadings(of targets: [TripPacketModel.Target]) -> [String] {
+    public static func sectionHeadings(of targets: [TripPacketModel.Target]) -> [String] {
         let repositories = TripPacketModel.repositoryNames(of: targets)
         guard targets.contains(where: { $0.facility.chapterHeading == nil }) else {
             return repositories
@@ -89,7 +91,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter model: The derived plan.
     /// - Returns: The count.
-    static func repositoryCount(of model: TripPacketModel) -> Int {
+    public static func repositoryCount(of model: TripPacketModel) -> Int {
         model.repositoryNames.count
     }
 
@@ -97,7 +99,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter model: The derived plan.
     /// - Returns: The line.
-    static func editorSummary(of model: TripPacketModel) -> String {
+    public static func editorSummary(of model: TripPacketModel) -> String {
         let targets = model.targets.count
         let repositories = repositoryCount(of: model)
         return String(localized: "archiveVisit.editor.summary.v3",
@@ -108,7 +110,7 @@ enum ArchiveVisitCounts {
     ///
     /// - Parameter model: The derived plan.
     /// - Returns: The phrase.
-    static func listSummary(of model: TripPacketModel) -> String {
+    public static func listSummary(of model: TripPacketModel) -> String {
         let targets = model.targets.count
         let repositories = repositoryCount(of: model)
         return String(format: String(

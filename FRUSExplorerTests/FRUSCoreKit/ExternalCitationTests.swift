@@ -320,7 +320,6 @@ struct ExternalCitationTests {
             """)
     }
 
-    #if !SWIFT_PACKAGE // the trip packet's builder and exporter are the app's
     @Test("The exported packet prints the volume's own footnote number (#1322)")
     func exportedPacketPrintsThePrintedLabel() async throws {
         // End to end through the REAL emitter: pipeline -> TripPacketDataSource -> builder ->
@@ -344,7 +343,6 @@ struct ExternalCitationTests {
             The packet printed the ordinal + 1 — the defect #1322 is about.
             """)
     }
-    #endif
 
     @Test("A database written before v53 gains the column and still stores rows (#1322)")
     func legacyTableGainsTheLabelColumn() async throws {

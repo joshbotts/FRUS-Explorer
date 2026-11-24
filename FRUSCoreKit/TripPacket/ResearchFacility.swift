@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - ResearchFacility
 
@@ -56,7 +59,7 @@ import Foundation
 /// it through ``chapterHeading``. D3 is untouched: an agency is still provenance, a records centre
 /// still heads nothing. What a library's row does NOT hold — an address, an inquiry email — stays
 /// unprinted, and the packet's draft for a library says so (`TripPacketExporter.inquiryDrafts`).
-enum ResearchFacility: Equatable, Sendable {
+public enum ResearchFacility: Equatable, Sendable {
 
     /// NARA's own reference unit for the series, from `series-facts-index.json`.
     case derived(facility: String)
@@ -88,7 +91,7 @@ enum ResearchFacility: Equatable, Sendable {
     /// `nil` for both ``unknown`` and ``confirmBeforeTravelling``, and the second is the one worth
     /// stating: a records centre is a real institution, and heading a chapter with it would still
     /// send a researcher somewhere the records may no longer be.
-    var chapterHeading: String? {
+    public var chapterHeading: String? {
         switch self {
         case .derived(let facility):        return facility
         case .servedAt(let facility, _):    return facility
@@ -116,12 +119,14 @@ enum ResearchFacility: Equatable, Sendable {
 ///          (`seriesName`)
 ///   1.3 — 2026-10-02 (#1543): the Subject-Numeric File is College Park material by its category,
 ///          like the other two central filing systems
-enum ResearchFacilityResolver {
+///   1.4 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; `facility`'s series-facts
+///          lookup has no default, which named the app's store, and every caller passed one already
+public enum ResearchFacilityResolver {
 
     /// The one place a researcher is served for records whose citation names an agency rather than
     /// a place (D3). Not a curated institutional fact: it is the reference unit NARA itself states
     /// for 697 of the 698 series in `series-facts-index.json`, and the string is the same one.
-    static let collegePark = "National Archives at College Park"
+    public static let collegePark = "National Archives at College Park"
 
     /// Repository strings that name a creating agency, not a visitable place (D3).
     ///
@@ -152,16 +157,17 @@ enum ResearchFacilityResolver {
     ///   - seriesName: the stored series name of a ``SourceProvenanceCategory/namedFileSeries``
     ///     citation, which is where such a citation names its holder (step 5); ignored for every
     ///     other category.
-    ///   - facts: the series-facts lookup; injected so tests drive the real rule against fixtures.
+    ///   - facts: the series-facts lookup over the host's `series-facts-index.json`, which the model passes
+    ///     from its own; injected so tests drive the real rule against fixtures.
     ///   - table: the curated repository rows — the same table `TripPacketModel.build` looks each
     ///     target's `facts` up in, so a target's heading and its links come from one row.
     /// - Returns: the facility, or ``ResearchFacility/unknown`` — never a guess.
-    static func facility(
+    public static func facility(
         naId: String?,
         category: SourceProvenanceCategory?,
         repository: String?,
         seriesName: String? = nil,
-        facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) },
+        facts: (String) -> SeriesFactsIndex.Facts?,
         table: RepositoryFactTable = .current
     ) -> ResearchFacility {
         // 1. NARA's own answer, when the citation reached a series. Data beats every rule below.
@@ -259,7 +265,7 @@ enum ResearchFacilityResolver {
     /// mapped, because the two units in the index (Textual Reference, Motion Pictures) both serve
     /// at the same address, and inventing a distinction the data does not carry is exactly the
     /// fabrication this workstream is trying to avoid.
-    static func normalisedReferenceUnit(_ unit: String) -> String {
+    public static func normalisedReferenceUnit(_ unit: String) -> String {
         guard let separator = unit.range(of: " - ") else { return unit }
         return String(unit[unit.startIndex..<separator.lowerBound])
     }

@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - ResearchFacilityTests
 
@@ -35,6 +41,8 @@ import Foundation
 ///          National Archives case is the drawn-from citation the corpus prints, not a footnote
 ///   1.2 — 2026-10-01: #1514, review round 1 — a named series whose name opens with the agency
 ///          holding it is placed nowhere, one fixture per conjunct of the rule
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Research facility derivation (#830 T-1)")
 struct ResearchFacilityTests {
 

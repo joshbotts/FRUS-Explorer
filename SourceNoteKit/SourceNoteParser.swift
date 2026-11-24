@@ -597,6 +597,8 @@ public struct ArchiveCitation: Sendable {
 ///          reading as it was, for the Archives Visit packet's test of where a citation ends
 ///   1.20 — 2026-11-11 (FRUS Explorer Light, S22c): `lotFileRecordGroup(_:)` public, unchanged, for
 ///          `NARALookupAnalyzer`, which moved into FRUSCoreKit, a module apart from this one
+///   1.21 — 2026-11-23 (FRUS Explorer Light, S30a): `withoutClosingStop(_:)` public, unchanged, for
+///          `TripPacketBuilder.centralFileDesignation(_:)`, which moved into FRUSCoreKit
 public struct SourceNoteParser {
 
     public init() {}
@@ -3864,7 +3866,7 @@ public struct SourceNoteParser {
     /// `candidate` without the stop that closes its sentence — unless that stop closes an
     /// abbreviation of initials (`POL IRAN-U.S.`), which keeps it (#1515). `DEF 15–3 IRAN-U.S..`,
     /// printed with both stops, keeps one.
-    static func withoutClosingStop(_ candidate: String) -> String {
+    public static func withoutClosingStop(_ candidate: String) -> String {
         guard candidate.hasSuffix(".") else { return candidate }
         if candidate.range(of: #"(?:^|[^A-Za-z.])(?:[A-Z]\.){2,}$"#, options: .regularExpression) != nil {
             return candidate

@@ -91,24 +91,13 @@ import AppKit
 ///          at render time, which #1366 had stopped on the plan path
 ///   2.0 — #1619 (#1558's reading): `TripPacketSeed.resolve` throws why a smart collection's
 ///          search could not run, where it returned `nil` and its three callers said nothing
+///   2.1 — 2026-11-23 (FRUS Explorer Light, S30a): `TripPacketSeed` and `TripPacketPDFRenderer` are declared
+///          in FRUSCoreKit (`TripPacketSheetRules.swift`) with the static collection's seeds, over values, and
+///          the PDF's file name; this file extends them with the smart collection's resolution and the drawing
 
-/// How a collection becomes a reading list — the one membership rule the add-to-plan flows share.
-///
-/// A namespace, with no cases. Through Phase 3 it was the packet sheet's seed, with three:
-/// `.documents` (an explicit reading list), `.collection` (resolved inside the sheet) and `.plan`.
-/// The first two were constructed nowhere once the Archives Visit editor became the sheet's only
-/// presenter, and on those paths the project's research question still seeded the inquiry's topic
-/// without the topic field showing it — the mismatch #1366 fixed on the plan path. #1423 deleted
-/// them, and the sheet now takes its ``ArchiveVisitPlan`` directly (`TripPacketSheet.plan`). A new
-/// entry point makes a plan (`ArchiveVisitPlan.make`) and presents that, so it follows the same
-/// seed-at-creation rule; it does not get a second way into the sheet.
-///
-/// What is left is what the collection surfaces call before they make a plan: a smart
-/// collection's membership comes from its saved search (matching export behavior — the editor
-/// itself tells the user "static entries are ignored"), and a static collection contributes its
-/// document entries AND its excerpts, whose `volumeId`/`documentId` provenance is a real
-/// document reference the old filter dropped.
-enum TripPacketSeed {
+/// The app's half of ``TripPacketSeed``, declared in FRUSCoreKit with the static collection's rule
+/// (`TripPacketSheetRules.swift`): a collection as the app stores it, smart or static.
+extension TripPacketSeed {
 
     /// Resolves a collection to its reading list — the ONE membership rule every add-to-plan
     /// flow shares (Phase 3 factored it out of the sheet): smart → the export's own
@@ -132,23 +121,6 @@ enum TripPacketSeed {
                 .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         }
         return staticSeedDocuments(from: collection.documentEntries ?? [])
-    }
-
-    /// The static-collection seed rule, separated so it is testable: document and excerpt
-    /// entries with non-empty ids, in `sortOrder`, de-duplicated first-occurrence-wins.
-    static func staticSeedDocuments(from entries: [CollectionEntry])
-        -> [(volumeId: String, documentId: String)] {
-        var seen = Set<String>()
-        var out: [(volumeId: String, documentId: String)] = []
-        for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder })
-        where (entry.entryKind == .document || entry.entryKind == .excerpt)
-            && !entry.volumeId.isEmpty && !entry.documentId.isEmpty {
-            let key = "\(entry.volumeId)/\(entry.documentId)"
-            if seen.insert(key).inserted {
-                out.append((volumeId: entry.volumeId, documentId: entry.documentId))
-            }
-        }
-        return out
     }
 }
 
@@ -556,39 +528,9 @@ struct TripPacketSheet: View {
 
 // MARK: - TripPacketPDFRenderer
 
-/// Paginates the packet string into a US-Letter PDF (#830).
-///
-/// ## The same string, never a second composition
-/// The exporter's one-format rule stands: this renders the EXACT plain text the reader
-/// reviewed, in a monospaced face, flowed across pages by CoreText. A structured PDF
-/// (styled headings, laid-out tables) would be a second composition of the packet — a
-/// second place for its honesty rules to be applied differently — which is the exact
-/// failure #960 measured across the collection exporters. The technique is
-/// `PDFCollectionExporter`'s (CoreText framesetter into a `CGContext` PDF); the ambition
-/// deliberately is not.
-///
-/// Version history:
-///   1.0 — Session 2026-08-23: #830
-///   1.1 — Lane EXPORT review round 1: `fileName(title:)` cuts the title to fit (`ExportFileName`), so a long
-///          project name no longer leaves the sheet with no PDF to share
-enum TripPacketPDFRenderer {
-
-    /// The PDF's file name: "Archives Visit — " and `title`, its path separators written as `-`, cut on a whole
-    /// character so the name fits the file system (`ExportFileName`, #1498's rule).
-    ///
-    /// Uncut, a project name past about 230 characters made a name the file system refuses, `CGDataConsumer(url:)`
-    /// failed, `render` returned `nil`, and the sheet's Share PDF control disappeared without a word (review round 1).
-    ///
-    /// - Parameter title: The packet's title — the project's name.
-    /// - Returns: The file name, ending in `.pdf`.
-    static func fileName(title: String) -> String {
-        let prefix = "Archives Visit — "
-        let safeName = title.components(separatedBy: CharacterSet(charactersIn: "/\\:"))
-            .joined(separator: "-")
-        let stem = ExportFileName.fitting(safeName,
-                                          reserving: ExportFileName.length(of: prefix) + ExportFileName.length(of: ".pdf"))
-        return prefix + stem + ".pdf"
-    }
+/// The app's half of ``TripPacketPDFRenderer``, declared in FRUSCoreKit with the PDF's file name
+/// (`TripPacketSheetRules.swift`): the drawing, through CoreText.
+extension TripPacketPDFRenderer {
 
     /// Renders the packet to a temporary PDF, or `nil` when the context cannot be made.
     ///

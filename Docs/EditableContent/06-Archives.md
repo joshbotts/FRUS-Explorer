@@ -1956,7 +1956,7 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 
 #### The summary line
 <!-- Placeholder note: keep `\(ArchiveVisitCounts.targets(targets))` and `\(ArchiveVisitCounts.repositories(repositories))` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitCounts.swift | lines: 103–104 | key: archiveVisit.editor.summary.v3 -->
+<!-- SOURCE: FRUSCoreKit/TripPacket/ArchiveVisitCounts.swift | lines: 105–106 | key: archiveVisit.editor.summary.v3 -->
 
 \(ArchiveVisitCounts.targets(targets)) across \(ArchiveVisitCounts.repositories(repositories)).
 
@@ -2187,20 +2187,20 @@ straight from a smart collection; no screen could open one, so lane HYG (2026-10
 that path and its two strings.*
 
 #### Empty — no documents to plan over
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 301–302 | key: packet.empty.noDocuments.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 273–274 | key: packet.empty.noDocuments.message -->
 
 There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.
 
 <!-- END SOURCE: packet.empty.noDocuments.message -->
 
 #### Empty — the index is not ready
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 290–291 | key: packet.empty.noIndex.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 262–263 | key: packet.empty.noIndex.title -->
 
 The search index isn’t ready
 
 <!-- END SOURCE: packet.empty.noIndex.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 294–295 | key: packet.empty.noIndex.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 266–267 | key: packet.empty.noIndex.message -->
 
 The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.
 
@@ -2212,13 +2212,13 @@ The packet reads source notes from the search index, which isn’t available yet
      Since #1366 the seeded form shows only while the field still reads the plan's project's
      research question (a plan copies it when it is created); before, the sheet was never told
      the question and this form could not appear. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 439–440 | key: packet.topic.caption.seeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 411–412 | key: packet.topic.caption.seeded -->
 
 Seeded from your project’s research question — edit freely. The drafts include what you write here, never the stored note.
 
 <!-- END SOURCE: packet.topic.caption.seeded -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 441–442 | key: packet.topic.caption.unseeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 413–414 | key: packet.topic.caption.unseeded -->
 
 The inquiry drafts include what you write here.
 

@@ -14,8 +14,14 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 import SwiftData
 @testable import FRUSExplorer
+#endif
 
 // MARK: - RepositoryFactTableTests
 
@@ -23,6 +29,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   1.1 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Repository fact table (#830 T-1)")
 struct RepositoryFactTableTests {
 
@@ -150,6 +158,9 @@ struct RepositoryFactTableTests {
 ///          restriction rule, and the pre-1946 flag)
 ///   2.1 — 2026-09-25: #1459 — a curated library heads its own chapter and sorts by its name;
 ///          review, round 1: `build` is driven with an injected table on both channels
+///   2.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too but for the static seed rule's test over SwiftData entries,
+///          and the rule over values has a test of its own
 @Suite("Trip packet model (#830 T-1)")
 struct TripPacketModelTests {
 
@@ -427,6 +438,7 @@ struct TripPacketModelTests {
 
     // MARK: - The collection seed rule (Archive Visits Phase 0)
 
+    #if !SWIFT_PACKAGE // the app's `CollectionEntry` is a SwiftData model; the rule over values is below
     /// `TripPacketSeed.staticSeedDocuments` is the one place the three collection surfaces
     /// derive a packet's reading list, so its rules are pinned here: excerpts count as the
     /// documents they quote, duplicates collapse first-occurrence-wins, order is `sortOrder`,
@@ -466,6 +478,28 @@ struct TripPacketModelTests {
             """)
         #expect(seeded.map(\.volumeId) == ["v1", "v1"])
     }
+    #endif
+
+    /// The same rule over a collection's entries as values, the form a host passes: the app's test above
+    /// reaches it through the app's overload over `CollectionEntry`.
+    @Test("The static seed over values takes documents and excerpts, deduplicated, in sort order")
+    func staticSeedRuleOverValues() {
+        let seeded = TripPacketSeed.staticSeedDocuments(from: [
+            (kind: .document, volumeId: "v1", documentId: "d1", sortOrder: 1),
+            (kind: .excerpt, volumeId: "v1", documentId: "d2", sortOrder: 0),
+            (kind: .document, volumeId: "v1", documentId: "d2", sortOrder: 2),
+            (kind: .heading, volumeId: "", documentId: "", sortOrder: 3),
+            (kind: .excerpt, volumeId: "", documentId: "", sortOrder: 4),
+            (kind: .prose, volumeId: "v2", documentId: "d9", sortOrder: 5),
+            (kind: .document, volumeId: "v2", documentId: "", sortOrder: 6),
+            (kind: .excerpt, volumeId: "", documentId: "d7", sortOrder: 7),
+        ])
+        #expect(seeded.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d2", "v1/d1"], """
+            Expected the excerpt's document first (sortOrder 0), the document second, the duplicate \
+            collapsed, and the heading, the id-less entries and the prose block contributing nothing — \
+            got \(seeded).
+            """)
+    }
 }
 
 // MARK: - ArchiveVisitRepositoryCountTests
@@ -481,6 +515,8 @@ struct TripPacketModelTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1458
+///   1.1 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Archives Visit repository counts (#1458)")
 struct ArchiveVisitRepositoryCountTests {
 

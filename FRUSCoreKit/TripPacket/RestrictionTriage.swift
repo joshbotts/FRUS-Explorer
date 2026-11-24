@@ -21,7 +21,7 @@ import Foundation
 /// Ordered worst-first, because that is the order the packet prints and the order a researcher
 /// needs: a fully restricted series changes whether the trip is worth taking, and an unrestricted
 /// one changes nothing.
-enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
+public enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
     /// NARA states the series is closed. 138 of 698 — 19.8%.
     case fully = 0
     /// Some of it is closed.
@@ -38,7 +38,7 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
     /// NARA states it is open.
     case unrestricted = 4
 
-    static func < (lhs: RestrictionSeverity, rhs: RestrictionSeverity) -> Bool {
+    public static func < (lhs: RestrictionSeverity, rhs: RestrictionSeverity) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 
@@ -47,7 +47,7 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
     /// Matched on the prefix rather than on equality, because the index's statuses are
     /// `Restricted - Fully` / `- Partly` / `- Possibly` and a punctuation change upstream should
     /// degrade to ``unknown`` rather than silently read as open.
-    static func from(accessStatus: String?) -> RestrictionSeverity {
+    public static func from(accessStatus: String?) -> RestrictionSeverity {
         guard let status = accessStatus?.trimmingCharacters(in: .whitespaces), !status.isEmpty else {
             return .unknown
         }
@@ -65,7 +65,7 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
     ///
     /// ``unknown`` counts. A series the catalogue cannot classify is precisely the one worth
     /// asking staff about, and omitting it would make the triage's silence look like a clearance.
-    var warrantsAdvanceContact: Bool { self != .unrestricted }
+    public var warrantsAdvanceContact: Bool { self != .unrestricted }
 }
 
 // MARK: - RestrictionTriage
@@ -89,41 +89,43 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
 ///   1.0 — Session 2026-08-22: #830 T-1, per D4
 ///   1.1 — Session 2026-08-23: #830 — rows carry the series' display title, so chapter 5
 ///          names what is closed instead of pointing at a NAID
-struct RestrictionTriage: Equatable, Sendable {
+///   1.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; `build`'s series-facts
+///          lookup has no default, which named the app's store, and every caller passed one already
+public struct RestrictionTriage: Equatable, Sendable {
 
     /// One series the planned reading touches.
-    struct Row: Equatable, Sendable, Identifiable {
+    public struct Row: Equatable, Sendable, Identifiable {
         /// The series NAID.
-        let naId: String
+        public let naId: String
         /// The series' display title, when the resolution that produced this NAID carried
         /// one (#830 v1.1) — so the packet can say WHICH series is closed. A bare NAID is
         /// a number the reader cannot act on.
-        let seriesTitle: String?
+        public let seriesTitle: String?
         /// NARA's stated access status, verbatim; `nil` when it states none.
-        let accessStatus: String?
+        public let accessStatus: String?
         /// NARA's stated exemptions, e.g. `FOIA (b)(1) National Security`.
-        let accessRestrictions: [String]
+        public let accessRestrictions: [String]
         /// How many of the reader's documents cite this series.
-        let documentCount: Int
+        public let documentCount: Int
         /// The severity this row sorts and prints by.
-        let severity: RestrictionSeverity
-        var id: String { naId }
+        public let severity: RestrictionSeverity
+        public var id: String { naId }
     }
 
     /// Rows worst-first, then by how much of the reading they affect, then by NAID for a total order.
-    let rows: [Row]
+    public let rows: [Row]
 
     /// Documents whose citation never reached a series, so nothing can be said about their access.
     ///
     /// Reported rather than dropped. A triage that silently covered 40% of a reading list would
     /// read as a clean bill of health for the other 60%.
-    let unresolvedDocumentCount: Int
+    public let unresolvedDocumentCount: Int
 
     /// Series the reading touches that warrant contact before travelling.
-    var needingAdvanceContact: [Row] { rows.filter(\.severity.warrantsAdvanceContact) }
+    public var needingAdvanceContact: [Row] { rows.filter(\.severity.warrantsAdvanceContact) }
 
     /// Whether there is anything to say at all.
-    var isEmpty: Bool { rows.isEmpty && unresolvedDocumentCount == 0 }
+    public var isEmpty: Bool { rows.isEmpty && unresolvedDocumentCount == 0 }
 
     /// Builds the triage from the series a reading list cites.
     ///
@@ -132,12 +134,13 @@ struct RestrictionTriage: Equatable, Sendable {
     ///   - seriesTitles: series NAID → display title, from the resolutions that produced
     ///     the NAIDs. A NAID with no entry prints bare, which is disclosed, not hidden.
     ///   - unresolvedDocumentCount: documents whose citation reached no series.
-    ///   - facts: the series-facts lookup; injected so tests drive the real rule.
-    static func build(
+    ///   - facts: the series-facts lookup over the host's `series-facts-index.json`; injected so tests
+    ///     drive the real rule.
+    public static func build(
         documentCountsByNaId: [String: Int],
         seriesTitles: [String: String] = [:],
         unresolvedDocumentCount: Int,
-        facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) }
+        facts: (String) -> SeriesFactsIndex.Facts?
     ) -> RestrictionTriage {
         let rows = documentCountsByNaId.map { naId, count -> Row in
             let f = facts(naId)

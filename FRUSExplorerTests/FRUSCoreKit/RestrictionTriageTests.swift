@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - RestrictionTriageTests
 
@@ -26,6 +32,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   1.1 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Restriction triage (#830 T-1)")
 struct RestrictionTriageTests {
 
