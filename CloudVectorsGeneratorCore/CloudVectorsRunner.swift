@@ -43,6 +43,18 @@ import GeneratorKit
 /// walk on, the pools took the peak from 3.89 GB to 235 MB and the four files came out byte for
 /// byte the same.
 ///
+/// ## The tagger is the caller's (S29a)
+/// ``run(tagger:cloudLenses:environment:)`` counts with the tagger its caller gives, refuses on that
+/// tagger's health, stamps every file with its identity, and writes the lenses the caller asks the cloud
+/// files to carry; the reference prices every lens the run counts, whichever the clouds carry. ``run()``,
+/// the app's generator, gives it NaturalLanguage's tagger through the readiness gate
+/// (`NaturalLanguageWordCloudTagger`) and the four lenses the onboarding cloud draws, so it writes what it
+/// wrote, byte for byte: a file of NaturalLanguage's names no tokenizer, as those files did
+/// (`WordCloudTokenizerIdentity.legacyNaturalLanguage`). A host with a tagger of its own, such as FRUS
+/// Explorer Light on Linux, gives that, and the files say they were counted by it. Every pass the run makes
+/// counts with the caller's tagger: each tokenizer is bound to it once (`TaggedPass`), the verification
+/// walks' included.
+///
 /// Version history:
 ///   1.0 — O-1: initial implementation
 ///   1.1 — #1373: refuses to run when `NaturalLanguageReadiness`'s canary finds no lemmas or no
@@ -50,6 +62,9 @@ import GeneratorKit
 ///   1.2 — #1608: counts printed forms in the same pass and writes `keyness-baseline-printed.json`;
 ///          `VERIFY_PRINTED_WALK`, which walks with both taggers a device builds; refuses to
 ///          write a printed reference that lacks a lens; an autorelease pool for each document
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``run(tagger:cloudLenses:environment:)`` takes the
+///          tagger, its health and identity, the lenses the clouds carry and the environment from its
+///          caller, and every file names the tokenizer; ``run()`` passes NaturalLanguage's
 public enum CloudVectorsRunner {
 
     /// Every lens the run tokenises: the four the cloud draws, plus the two extra the keyness
@@ -58,10 +73,53 @@ public enum CloudVectorsRunner {
     public static let baselineLenses: [WordCloudLens] =
         [.allTerms, .descriptors] + WordCloudLens.bundledCloudLenses
 
-    /// Runs the generator, honouring the environment overrides documented in
-    /// `Planning/Generators-Runbook.md`.
+    #if canImport(NaturalLanguage)
+    /// Runs the app's generator, honouring the environment overrides documented in
+    /// `Planning/Generators-Runbook.md`: NaturalLanguage's tagger through the readiness gate, and the
+    /// four lenses the onboarding cloud draws.
+    ///
+    /// It refuses on this process's verdict before it reads a file (#1373), and
+    /// ``run(tagger:cloudLenses:environment:)`` holds the tagger's health to the same rule again.
     public static func run() throws {
-        let env = ProcessInfo.processInfo.environment
+        try requireLanguageAnalysis(NaturalLanguageReadiness.health)
+        try run(tagger: NaturalLanguageWordCloudTagger())
+    }
+    #else
+    /// Where `NaturalLanguage` is missing (Linux), the app's generator has no tagger to count with, and
+    /// a host runs ``run(tagger:cloudLenses:environment:)`` with one of its own (S29a).
+    @available(*, unavailable, message: "CloudVectorsRunner.run() counts with NaturalLanguage, which this platform does not have: run(tagger:cloudLenses:environment:) with a WordCloudTagger of your own")
+    public static func run() throws {
+        fatalError("CloudVectorsRunner.run() counts with NaturalLanguage, which this platform does not have")
+    }
+    #endif
+
+    /// Runs the generator with `tagger`, honouring the environment overrides documented in
+    /// `Planning/Generators-Runbook.md` (S29a).
+    ///
+    /// It refuses before it counts anything unless the tagger lemmatises and classifies words
+    /// (``requireLanguageAnalysis(_:)``, on `tagger.health`), and unless `cloudLenses` are lenses it
+    /// counts (each of ``baselineLenses``, once). The four files name the tagger's identity as the
+    /// tokenizer their counts were made by, so a reference counted by another refuses a scope this
+    /// tagger counted.
+    ///
+    /// A run makes walks that read different things of a word: the both-forms pass reads lemmas, and
+    /// `VERIFY_PRINTED_WALK`'s two walks read none, one with the lexical classes and one without, as a
+    /// device with no lemmatiser builds its taggers. So the tagger must build for each walk what that walk
+    /// reads: for NaturalLanguage, `NaturalLanguageWordCloudTagger`, as ``run()`` gives, and not an
+    /// `NLTagger`, which holds the schemes it was built with, so that its printed walks would read its own.
+    ///
+    /// - Parameters:
+    ///   - tagger: The tagger every pass of the run counts with: NaturalLanguage's for the app, or a
+    ///     host's own.
+    ///   - cloudLenses: The lenses the two cloud files carry, in cycle order: by default the four the
+    ///     onboarding cloud draws. Each must be one of ``baselineLenses``, which the run counts and the
+    ///     references price.
+    ///   - env: The environment the overrides are read from: this process's by default.
+    public static func run<Tagger: WordCloudTagger>(
+        tagger: Tagger,
+        cloudLenses: [WordCloudLens] = WordCloudLens.bundledCloudLenses,
+        environment env: [String: String] = ProcessInfo.processInfo.environment
+    ) throws {
         let volumesDir = URL(fileURLWithPath: env["VOLUMES_DIR"] ?? "/Users/jbotts/Development/frus/volumes")
         let manifestPath = env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json"
         let lexiconsPath = env["LEXICONS"] ?? "FRUSExplorer/Resources/word-cloud-lexicons.json"
@@ -80,11 +138,14 @@ public enum CloudVectorsRunner {
         guard !lexicons.concepts.isEmpty, !lexicons.sentimentAll.isEmpty else {
             throw RunError.emptyLexicons(lexiconsPath)
         }
-        // The same canary the app's word cloud and Distinctive measure consult (#1373), because
+        // The same verdict the app's word cloud and Distinctive measure consult (#1373), because
         // this run writes the reference Distinctive compares against: counted without lemmas it
         // would be a reference of printed forms, and every lemmatised scope would be scored
-        // against the wrong vocabulary with nothing on screen to say so.
-        try requireLanguageAnalysis(NaturalLanguageReadiness.health)
+        // against the wrong vocabulary with nothing on screen to say so. A host's tagger comes with
+        // its health as NaturalLanguage's does (S29a), and is held to the same rule.
+        try requireLanguageAnalysis(tagger.health)
+        // The clouds carry lenses the run counts, each once (S29a).
+        try requireCloudLenses(cloudLenses)
 
         let manifest = try loadManifest(URL(fileURLWithPath: manifestPath))
         generatorLog("manifest: \(manifest.count) shippable volumes")
@@ -105,9 +166,12 @@ public enum CloudVectorsRunner {
               let stopwordsDigest = WordCloudPayloadDigest.digest(
                   ofFileAt: URL(fileURLWithPath: stopwordsPath))
         else { throw RunError.undigestiblePayloads(lexiconsPath, stopwordsPath) }
+        // The tokenizer is the tagger's (S29a): a reference counted by another refuses the scopes this
+        // tagger counts, and every file of the run says which counted it.
         let configuration = KeynessBaselineFile.Configuration(
             tuning: tuning, includeDiplomatic: includeDiplomatic,
-            lexiconsDigest: lexiconsDigest, stopwordsDigest: stopwordsDigest)
+            lexiconsDigest: lexiconsDigest, stopwordsDigest: stopwordsDigest,
+            tokenizer: tagger.identity)
 
         guard let tokenizer = WordCloudMultiLensTokenizer(
             // `.allTerms` and `.descriptors` join the four bundled cloud lenses because the keyness
@@ -125,7 +189,7 @@ public enum CloudVectorsRunner {
             stopwords: stopwords,
             lexicons: lexicons,
             markings: markings
-        ) else { throw RunError.tokenizerConfiguration }
+        )?.counting(with: tagger) else { throw RunError.tokenizerConfiguration }
 
         // VERIFY_PRINTED_WALK=1 (#1608): the same lenses and sets, told to count as printed, so
         // they ask for a tagger with no lemma scheme — the walk a launch with no lemmatiser makes.
@@ -134,11 +198,13 @@ public enum CloudVectorsRunner {
         // alone, for All terms (Collocates, Related Documents' shared words, the default cloud),
         // Concepts and Sentiment. The first walk counts all six lenses with the first tagger; the
         // second counts the three that read no lexical class with the second. It roughly doubles
-        // the tagging; the artifacts are the same bytes with it on or off.
-        let printedWalks: [WordCloudMultiLensTokenizer]
+        // the tagging; the artifacts are the same bytes with it on or off. Each walk counts with the
+        // run's tagger (S29a), which builds for each walk the tagger it reads.
+        let printedWalks: [TaggedPass<Tagger>]
         if env["VERIFY_PRINTED_WALK"] == "1" {
             printedWalks = try Self.printedVerificationWalks(
                 tuning: tuning, stopwords: stopwords, lexicons: lexicons, markings: markings)
+                .map { $0.counting(with: tagger) }
             generatorLog("VERIFY_PRINTED_WALK: every document is also walked with no lemma scheme, "
                          + "by a tagger that holds the lexical classes and by one that does not")
         } else {
@@ -212,7 +278,7 @@ public enum CloudVectorsRunner {
                          + "lexical-class scheme held and without it")
         }
 
-        let output = CloudVectorsAggregator(lexicons: lexicons)
+        let output = CloudVectorsAggregator(lenses: cloudLenses, lexicons: lexicons)
             .pack(volumes: volumeCounts, generated: generated, tuning: tuning,
                   configuration: configuration, printedCorpus: printedCorpus)
         // Before the first write, so a run that would ship a printed reference without a lens
@@ -342,7 +408,8 @@ public enum CloudVectorsRunner {
                 values.totalTokens, priced * 100))
         }
         generatorLog("\(label) pinned to lexicons \(file.configuration.lexiconsDigest.prefix(12))… "
-                     + "stopwords \(file.configuration.stopwordsDigest.prefix(12))…; "
+                     + "stopwords \(file.configuration.stopwordsDigest.prefix(12))…, "
+                     + "counted by \(file.configuration.tokenizer); "
                      + "\(data.count) bytes in \(url.lastPathComponent)")
     }
 
@@ -374,12 +441,27 @@ public enum CloudVectorsRunner {
     /// A separate function so a test can hand it a failed verdict — this process's own is set once
     /// and cannot be made to fail on demand.
     ///
-    /// - Parameter health: The tagger verdict to check, `NaturalLanguageReadiness.health` in a run.
+    /// - Parameter health: The tagger verdict to check: `NaturalLanguageReadiness.health` in the app's
+    ///   run, and the health a host's tagger comes with in a host's (S29a).
     /// - Throws: ``RunError/languageAnalysisUnavailable(_:)`` when either is missing.
     public static func requireLanguageAnalysis(_ health: NaturalLanguageHealth) throws {
         guard health.lemmatizes, health.classifiesWords else {
             throw RunError.languageAnalysisUnavailable(health)
         }
+    }
+
+    /// Refuses lenses for the cloud files that the run does not count (S29a): none at all, an entity
+    /// lens or any other outside ``baselineLenses``, or one named twice.
+    ///
+    /// The run counts ``baselineLenses`` and the references price each of them; a cloud file may carry
+    /// any of them, in the order its caller gives, and no other, since a lens the run does not count
+    /// would ship as an empty list a reader could not tell from a scope with no such words.
+    /// - Parameter lenses: The lenses the caller asks the cloud files to carry.
+    /// - Throws: ``RunError/cloudLenses(_:)`` naming the lenses asked for.
+    static func requireCloudLenses(_ lenses: [WordCloudLens]) throws {
+        guard !lenses.isEmpty, lenses.allSatisfy(baselineLenses.contains),
+              Set(lenses).count == lenses.count
+        else { throw RunError.cloudLenses(lenses) }
     }
 
     /// Failures that should stop the run rather than produce a plausible-looking artifact.
@@ -395,6 +477,9 @@ public enum CloudVectorsRunner {
         case printedWalkDiverged(volume: String, detail: String)
         /// The printed reference has no tokens for a lens the dictionary reference prices (#1608).
         case printedReferenceIncomplete([String])
+        /// The cloud files were asked to carry no lens, a lens named twice, or one the run does not
+        /// count (S29a).
+        case cloudLenses([WordCloudLens])
 
         public var description: String {
             switch self {
@@ -412,10 +497,11 @@ public enum CloudVectorsRunner {
                      + "itself to these payloads; writing it unpinned would let a later lexicon "
                      + "edit corrupt every keyness ranking with nothing to detect it."
             case .languageAnalysisUnavailable(let health):
-                return "NLTagger failed its canary in this process (lemmas: \(health.lemmatizes), "
-                     + "lexical classes: \(health.classifiesWords)). Counting the corpus now would "
+                return "The tagger cannot lemmatise or classify words (lemmas: \(health.lemmatizes), "
+                     + "lexical classes: \(health.classifiesWords)): NaturalLanguage's failed its canary "
+                     + "in this process, or a host's tagger does not do both. Counting the corpus now would "
                      + "write a keyness reference of printed forms, or empty part-of-speech lenses; "
-                     + "refusing to write an artifact. Re-run in a new process."
+                     + "refusing to write an artifact. For NaturalLanguage, re-run in a new process."
             case .printedWalkDiverged(let volume, let detail):
                 return "VERIFY_PRINTED_WALK: in \(volume) the printed forms counted in the lemma pass "
                      + "are not what a walk with no lemma scheme counts (\(detail)). The reference "
@@ -427,7 +513,59 @@ public enum CloudVectorsRunner {
                      + "\(lenses.joined(separator: ", ")), which the dictionary-form reference "
                      + "prices. The printed tally did not reach the packer; refusing to write an "
                      + "artifact."
+            case .cloudLenses(let lenses):
+                return "The cloud files were asked to carry "
+                     + (lenses.isEmpty ? "no lens" : lenses.map(\.rawValue).joined(separator: ", "))
+                     + ". They carry lenses the run counts, each once: "
+                     + CloudVectorsRunner.baselineLenses.map(\.rawValue).joined(separator: ", ")
+                     + "; refusing to write an artifact."
             }
         }
     }
+
+    // MARK: - The run's passes (S29a)
+
+    /// One pass of a run: a tokenizer and the tagger the run was given, bound once, so that every pass
+    /// the run makes, the main one and the verification walks, counts with its caller's tagger and with
+    /// no other (S29a).
+    ///
+    /// The tagger builds for each walk what that walk reads: NaturalLanguage's asks the gate for a
+    /// tagger with the walk's schemes, as the tokenizers always have.
+    struct TaggedPass<Tagger: WordCloudTagger> {
+        /// The tokenizer whose rules the pass counts by.
+        let tokenizer: WordCloudMultiLensTokenizer
+        /// The tagger whose walks it reads.
+        let tagger: Tagger
+
+        /// The lenses the pass counts.
+        var lenses: [WordCloudLens] { tokenizer.lenses }
+
+        /// The tokenizer's one-form pass over `text`, with the run's tagger.
+        func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]]) {
+            tokenizer.accumulate(from: text, into: &counts, tagger: tagger)
+        }
+
+        /// The tokenizer's both-forms pass over `text`, with the run's tagger.
+        func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]],
+                        printedInto printed: inout [WordCloudLens: [String: Int]]) {
+            tokenizer.accumulate(from: text, into: &counts, printedInto: &printed, tagger: tagger)
+        }
+    }
 }
+
+extension WordCloudMultiLensTokenizer {
+    /// This tokenizer bound to `tagger`, for a pass of the run (S29a).
+    func counting<Tagger: WordCloudTagger>(with tagger: Tagger) -> CloudVectorsRunner.TaggedPass<Tagger> {
+        CloudVectorsRunner.TaggedPass(tokenizer: self, tagger: tagger)
+    }
+}
+
+#if !canImport(ObjectiveC)
+/// Where there is no Objective-C runtime (Linux) nothing is autoreleased, so a pool is the body alone
+/// (S29a): the run gives each document one, for NaturalLanguage's tagger (#1608). FRUSCoreKit's
+/// `LinuxFoundationShims.swift` declares the same; this target does not depend on it.
+@inline(__always)
+func autoreleasepool<Result>(invoking body: () throws -> Result) rethrows -> Result {
+    try body()
+}
+#endif

@@ -45,6 +45,11 @@ import os
 /// also reads `false` for a scheme the canary did not tag because its asset request was still in
 /// flight (``NaturalLanguageWarmUp/withheld``).
 ///
+/// ## A host's tagger (FRUS Explorer Light, S29a)
+/// A tagger of a host's own comes with a verdict too (`WordCloudTagger.health`), stated where
+/// NaturalLanguage's is measured, since what it can do is its own code's. The kit reads both alike: a
+/// lens's support (``supports(_:)``) and the form a count is made in (``wordForm``).
+///
 /// Version history:
 ///   1.0 — #1373: initial implementation
 ///   1.1 — #1539: ``improves(on:)``, the rule a re-check's verdict must pass to replace this one
@@ -53,6 +58,8 @@ import os
 ///   1.4 — 2026-11-12 (FRUS Explorer Light, S24d): on every platform, for the rules a host reads
 ///          from a verdict (``supports(_:)``, ``wordForm``); ``works(_:)``, which names a tag scheme,
 ///          behind `canImport(NaturalLanguage)`
+///   1.5 — 2026-11-23 (FRUS Explorer Light, S29a): a host's tagger comes with one
+///          (`WordCloudTagger.health`)
 public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 
     /// The lemmatiser reduced at least one word of the canary sentence to a different dictionary

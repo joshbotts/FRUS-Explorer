@@ -43,6 +43,8 @@ import SwiftUI
 ///          (`CollocationCaveatCopy`)
 ///   1.5 — #1683: on the Mac the Within picker takes its own size, so its label and its left cap are on screen,
 ///          and Rank by does too, so the two labels start at one edge
+///   1.6 — 2026-11-23 (FRUS Explorer Light, S29a): a reference counted by another tokenizer is named
+///          (`Mismatch.tokenizer`), as the Word Cloud names it; the app's own counts never meet one
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -345,6 +347,9 @@ struct CollocationView: View {
             case .lexicons, .stopwords:
                 String(localized: "wordcloud.keyness.mismatch.payload",
                        defaultValue: "the bundled word lists have changed since the reference was built")
+            case .tokenizer:
+                String(localized: "wordcloud.keyness.mismatch.tokenizer",
+                       defaultValue: "the reference was counted by another tokenizer")
             }
         }
         .reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
