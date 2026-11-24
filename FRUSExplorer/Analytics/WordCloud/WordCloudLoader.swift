@@ -31,7 +31,7 @@ enum WordCloudLoader {
     /// depth buys is the second tier (`attlee`, `ruhr`, `clayton`, `mikołajczyk`; `golan`, `assad`,
     /// `unef`), which is usually where the research is.
     ///
-    /// It costs no extra CPU: `WordFrequencyService.finalize` sorts the whole tally and applies
+    /// It costs no extra CPU: the count's `WordCloudCount.finalize` sorts the whole tally and applies
     /// `.prefix(limit)` afterwards, so only the prefix changes. It does cost **one** recomputation
     /// of every disk-cached scope (corpus, subseries, subject categories), because `limit` is part
     /// of both cache keys — deliberate, and paid once. Scopes a researcher builds (collections,

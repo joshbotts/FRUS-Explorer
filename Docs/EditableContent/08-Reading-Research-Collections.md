@@ -2464,7 +2464,7 @@ No indexed documents share this document’s archival provenance or cross-refere
 <!-- END SOURCE: related.empty.detail -->
 
 #### Shared words compared as printed: this device’s language…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift | SemanticSharedTerms.Evidence.printedFormsNote | lines: 98–99 | key: related.sharedTerms.printedForms.note -->
+<!-- SOURCE: FRUSCoreKit/RelatedDocuments/SemanticSharedTerms.swift | SemanticSharedTerms.Evidence.printedFormsNote | lines: 113–114 | key: related.sharedTerms.printedForms.note -->
 
 *Added by #1608 (2026-10-12). A line above Related Documents' rows on a launch whose language analysis has no lemmatiser, whenever the rows' shared words were compared (one of the two experimental wording signals is raised). The* shares: *chips used to be left out on such a launch; they now compare the two documents' words as printed, and this says that they did, why, and that another device can name different words, as the owner's condition for the fallback asks. It is shown whether or not a row has a chip: with none, every row shows a percentage where a device that reduces words can name the words, and this line is what says why.*
 

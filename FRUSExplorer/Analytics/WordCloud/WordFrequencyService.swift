@@ -8,11 +8,6 @@
 
 import Foundation
 
-/// Progress callback for long-running word-cloud computation: `(documents
-/// processed, total documents)`. Invoked from the service's actor; handlers that
-/// touch UI state must hop to the main actor themselves.
-typealias WordCloudProgress = @Sendable (Int, Int) -> Void
-
 /// Computes word-cloud frequency data for a body of FRUS material.
 ///
 /// This is the inverse of `CorpusAnalyticsService`: instead of "how many
@@ -35,15 +30,16 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 /// background `Task` and show progress.
 ///
 /// ## Memory (#1798)
-/// Each document is tagged inside an autorelease pool of its own, as `CloudVectorsRunner` tags
-/// the corpus. The tagger hands back autoreleased objects, and nothing drained them between
-/// chunks, the `await` for each chunk's text included: measured in the test host on an iPhone 17
-/// simulator (iOS 27.0) over a full index of 553 volumes, the count kept 70 to 100 KB a
-/// document, in every lens, and released none of it when it ended. The default lens held 2.1 GB after
-/// 20,000 documents and 4.5 GB after 60,000, so a corpus count would have needed about 25 GB, and
-/// the corpus cloud crashed an M1 iPad Pro (#1798). With the pools a count of 5,000 documents
-/// peaks 13 MB over its start in the default lens and at nothing in the others, in the same time,
-/// and the whole corpus in the default lens peaked at 158 MB, 19 MB over its start, in 17 minutes.
+/// Each document is tagged inside an autorelease pool of its own, by the count this actor calls:
+/// `WordCloudCount`'s "Memory" has the measurements, the corpus cloud that crashed an M1 iPad Pro
+/// without the pools and the 158 MB it peaks at with them.
+///
+/// ## The count (FRUS Explorer Light, S29b)
+/// The count itself, steps 2 to 4, is FRUSCoreKit's `WordCloudCount`, with `finalize` and the rules by
+/// which a stored result stands in for a fresh count, so that a host counts a scope by the same rules
+/// with a tagger of its own. This actor keeps what is the app's: its caches, in memory and on disk, the
+/// readiness gate it awaits before it counts, and the tokenizer's assembly from the settings and the
+/// bundled lists. It hands the count NaturalLanguage's tagger, so it counts as it did, on this actor.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
@@ -62,6 +58,9 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///   1.5 — #1608: the tokenizer counts in the form of the verdict the result is stamped with, so a
 ///          result stamped "no lemmatiser" is a count of printed forms throughout
 ///   1.6 — #1798: an autorelease pool for each document (see "Memory")
+///   1.7 — 2026-11-24 (FRUS Explorer Light, S29b): the count, its `finalize` and its results' reuse and
+///          persistence rules moved into FRUSCoreKit (`WordCloudCount`), with `WordCloudProgress`; this
+///          actor keeps its caches and the gate, and counts with NaturalLanguage's tagger, as before
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -73,10 +72,6 @@ actor WordFrequencyService {
     private var cache: [String: WordCloudResult] = [:]
     private var cacheOrder: [String] = []
     private let cacheLimit = 24
-
-    /// Documents fetched and tokenised per chunk when folding a large scope, kept
-    /// modest so peak memory stays bounded even for the whole corpus.
-    private let chunkSize = 400
 
     // MARK: - Init
 
@@ -214,35 +209,15 @@ actor WordFrequencyService {
             // while they are made.
             wordForm: languageAnalysis.wordForm
         )
-        let total = keys.count
-        var counts: [String: Int] = [:]
-        var tokenTotal = 0
-        var documentCount = 0
-        var index = 0
-        while index < keys.count {
-            try Task.checkCancellation()
-            let chunk = Array(keys[index..<min(index + chunkSize, keys.count)])
-            index += chunkSize
-            let texts = try await pipeline.documentBodyTexts(forKeys: chunk)
-            documentCount += texts.count
-            // A pool for each document (#1798): the tagger hands back autoreleased objects, and
-            // nothing drains them between chunks, the `await` above included. Without one, the
-            // count kept 70 to 100 KB a document until the process ended; see the type's doc.
-            for text in texts {
-                tokenTotal += autoreleasepool { tokenizer.accumulate(from: text, into: &counts) }
-            }
-            progress?(min(index, total), total)
-        }
-
-        var result = Self.finalize(counts: counts, documentCount: documentCount,
-                                   totalTokens: tokenTotal, limit: limit,
-                                   minimumCount: tuning.minimumCount)
-        // Stamp the lens before persisting: the disk cache names files by a digest of the key,
-        // so this is the only way a later reader (the settings bench) can tell an entity cloud
-        // from a word cloud. See `WordCloudResult.lens`.
-        result.lens = lens
-        result.languageAnalysis = languageAnalysis
-        result.indexVersion = indexVersion
+        // The count, FRUSCoreKit's since S29b, on this actor as before: the documents' text in chunks,
+        // each tagged in an autorelease pool of its own (#1798), the result stamped with the lens, the
+        // verdict and the index version before it is stored. NaturalLanguage's tagger, through the
+        // readiness gate, is the one the tokenizer counted with before the count moved.
+        let result = try await WordCloudCount.count(
+            keys: keys, pipeline: pipeline, tokenizer: tokenizer,
+            tagger: NaturalLanguageWordCloudTagger(),
+            countedUnder: languageAnalysis, indexVersion: indexVersion,
+            limit: limit, minimumCount: tuning.minimumCount, progress: progress)
         store(result, for: cacheKey)
         // The disk cache outlives this process, and the next one's tagger may work: persisting a
         // cloud counted without the tagger this lens reads would hand it a stored zero, or a
@@ -255,54 +230,24 @@ actor WordFrequencyService {
         return result
     }
 
-    /// The tagger half of ``isReusable(_:for:indexVersion:)``: whether a stored result's own stamp
-    /// says the tagger counted `lens` as designed (#1373).
-    ///
-    /// An entry written before #1373 carries no stamp, and one written since without a working
-    /// tagger is never saved — but the stamp is checked on the way back in as well, because the
-    /// file is outside this process's control.
-    ///
-    /// The settings bench asks this half alone, on purpose: it samples a stored cloud as the
-    /// reader's vocabulary, to show what the length and occurrence thresholds would keep, and a
-    /// count read before a re-index is still that vocabulary. It never stands in for a count.
+    /// The tagger half of ``isReusable(_:for:indexVersion:)``: FRUSCoreKit's `WordCloudCount.isReusable(_:for:)`
+    /// since S29b, under the name the settings bench calls.
     static func isReusable(_ stored: WordCloudResult, for lens: WordCloudLens) -> Bool {
-        stored.languageAnalysis?.countsAsDesigned(for: lens) == true
+        WordCloudCount.isReusable(stored, for: lens)
     }
 
-    /// Whether a result read back from the disk cache may stand in for a fresh count under `lens`,
-    /// over an index installed at `indexVersion`.
-    ///
-    /// Both of its stamps must say so: the tagger's (``isReusable(_:for:)``), and the index's
-    /// (#1421 review). The disk key fingerprints the index by its document count, which a re-index
-    /// that rewrites every body leaves as it was — v59 re-joined 313,949 of them — so only the
-    /// stamp can tell a count read from the old text from one read from the new. An entry written
-    /// before the stamp has none, and is counted again once.
-    ///
-    /// - Parameters:
-    ///   - stored: The result read back from the disk cache.
-    ///   - lens: The lens the caller is counting under.
-    ///   - indexVersion: `IndexingPipeline.installedDateIndexVersion` as the count begins.
+    /// Whether a result read back from the disk cache may stand in for a fresh count under `lens`, over
+    /// an index installed at `indexVersion`: `WordCloudCount.isReusable(_:for:indexVersion:)` since S29b.
     static func isReusable(_ stored: WordCloudResult, for lens: WordCloudLens,
                            indexVersion: Int) -> Bool {
-        isReusable(stored, for: lens) && stored.indexVersion == indexVersion
+        WordCloudCount.isReusable(stored, for: lens, indexVersion: indexVersion)
     }
 
     /// Whether a count this process made earlier, held in the in-memory cache, may answer a request
-    /// counted under `current` — this process's verdict now (#1539).
-    ///
-    /// A count made as designed always may (``isReusable(_:for:)``): it is what any verdict that
-    /// works would count. One that was not — printed forms, or a zero for a lens whose tagger
-    /// failed — only while `current` is still the verdict it was counted under. Before #1539 the
-    /// verdict could not change within a process and the memory cache needed no rule; now a return
-    /// to the foreground can adopt a better one, and the same scope would then count differently.
-    ///
-    /// - Parameters:
-    ///   - cached: The result the memory cache holds for the request's key.
-    ///   - lens: The lens the caller is counting under.
-    ///   - current: This process's verdict as the request begins.
+    /// counted under `current` (#1539): `WordCloudCount.isReusableInMemory(_:for:countedUnder:)` since S29b.
     static func isReusableInMemory(_ cached: WordCloudResult, for lens: WordCloudLens,
                                    countedUnder current: NaturalLanguageHealth) -> Bool {
-        isReusable(cached, for: lens) || cached.languageAnalysis == current
+        WordCloudCount.isReusableInMemory(cached, for: lens, countedUnder: current)
     }
 
     /// The memory and disk caches' signature for `signature` under `lens`: `.allTerms` keeps the
@@ -326,14 +271,11 @@ actor WordFrequencyService {
     }
     #endif
 
-    /// Whether a result counted under `languageAnalysis` may be written to the disk cache.
-    ///
-    /// Only when every tagger `lens` reads worked. A later process may have a tagger that does, and
-    /// the stored result would otherwise answer for it — a zero for Topics, or printed forms where
-    /// that process would count dictionary forms.
+    /// Whether a result counted under `languageAnalysis` may be written to the disk cache:
+    /// `WordCloudCount.isPersistable(countedUnder:lens:)` since S29b.
     static func isPersistable(countedUnder languageAnalysis: NaturalLanguageHealth,
                               lens: WordCloudLens) -> Bool {
-        languageAnalysis.countsAsDesigned(for: lens)
+        WordCloudCount.isPersistable(countedUnder: languageAnalysis, lens: lens)
     }
 
     /// Top terms across the entire indexed corpus.
@@ -371,23 +313,6 @@ actor WordFrequencyService {
     }
 
     // MARK: - Private
-
-    /// Builds the descending top-N term list from a raw tally, dropping terms below
-    /// the minimum occurrence count.
-    private static func finalize(
-        counts: [String: Int],
-        documentCount: Int,
-        totalTokens: Int,
-        limit: Int,
-        minimumCount: Int = 1
-    ) -> WordCloudResult {
-        let top = counts
-            .filter { $0.value >= minimumCount }
-            .map { TermCount(term: $0.key, count: $0.value) }
-            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.term < $1.term }
-            .prefix(limit)
-        return WordCloudResult(terms: Array(top), documentCount: documentCount, totalTokenCount: totalTokens)
-    }
 
     /// Composite cache key combining the scope signature with the parameters that
     /// also affect the result.

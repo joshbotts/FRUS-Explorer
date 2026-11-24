@@ -14,15 +14,33 @@
 
 import Foundation
 import Testing
-
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds WordCloudKit as a module of its own; Xcode compiles it into the app. Testable, for
+// `KeynessScore`'s memberwise initialiser, which a case below builds a score with.
+#if canImport(WordCloudKit)
+@testable import WordCloudKit
+#endif
 
 // MARK: - KeynessCloudTests
 
 /// Turning a computed cloud into a keyness ranking — and refusing to, when the two sides are not
 /// comparable.
 ///
-/// `.serialized` because every case injects into ``BundledKeynessBaseline``'s shared static.
+/// The kit's ranking since FRUS Explorer Light's S29b, over references a case injects
+/// (`KeynessFixtureReferences`); in Xcode each case also holds the app's ranking, which reads
+/// `BundledKeynessBaseline`, to the kit's answer.
+///
+/// `.serialized` because every case injects into one shared static, and in Xcode the loader's.
+///
+/// Version history:
+///   1.0 — S-1: initial implementation
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S29b): moved into the kit's suites with the ranking
 @Suite("Keyness cloud", .serialized)
 @MainActor
 struct KeynessCloudTests {
@@ -49,8 +67,7 @@ struct KeynessCloudTests {
             lenses: [WordCloudLens.allTerms.rawValue: .init(
                 totalTokens: totalTokens, distinctTerms: distinctTerms,
                 terms: terms, cutoffCount: cutoffCount)])
-        BundledKeynessBaseline.injectForTesting(
-            file, digests: (lexicons: Self.lexicons, stopwords: Self.stopwords))
+        KeynessFixtureReferences.inject(file, digests: (lexicons: Self.lexicons, stopwords: Self.stopwords))
     }
 
     private func rank(
@@ -63,12 +80,12 @@ struct KeynessCloudTests {
         includeDiplomatic: Bool = true,
         languageAnalysis: NaturalLanguageHealth = .fullyWorking
     ) -> KeynessCloud.Outcome {
-        KeynessCloud.rank(terms: terms.map { TermCount(term: $0.0, count: $0.1) },
-                          scopeTotal: scopeTotal,
-                          fetchedTermCount: fetchedTermCount ?? terms.count,
-                          termLimit: termLimit, lens: lens,
-                          tuning: tuning, includeDiplomatic: includeDiplomatic,
-                          languageAnalysis: languageAnalysis)
+        KeynessFixtureReferences.rank(terms: terms.map { TermCount(term: $0.0, count: $0.1) },
+                                      scopeTotal: scopeTotal,
+                                      fetchedTermCount: fetchedTermCount ?? terms.count,
+                                      termLimit: termLimit, lens: lens,
+                                      tuning: tuning, includeDiplomatic: includeDiplomatic,
+                                      languageAnalysis: languageAnalysis)
     }
 
     // MARK: - #1373: terms counted without the lemmatiser, with no reference counted as printed
@@ -81,7 +98,7 @@ struct KeynessCloudTests {
     @Test("With no printed-form reference loaded, terms counted without the lemmatiser are not ranked against the dictionary-form one (#1373, #1608)")
     func unlemmatisedTermsAreNotRanked() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let terms = [("treaty", 1_200), ("quemoy", 600)]
         // The control: the same terms, counted by a working tagger, DO rank — so the refusal below
         // is the gate's doing and not a property of the fixture.
@@ -102,7 +119,7 @@ struct KeynessCloudTests {
     @Test("A word rare corpus-wide but common here outranks a word that is common everywhere")
     func distinctivenessBeatsFrequency() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // BOTH terms must survive the over-representation filter, or this proves nothing about
         // ORDERING: the first version scored `treaty` at 3% of a scope against 5% of the reference,
         // so it was dropped as under-represented and "quemoy first" held trivially, in a list of one.
@@ -121,7 +138,7 @@ struct KeynessCloudTests {
     @Test("Under-represented words are excluded, because a size ranking cannot carry a sign")
     func onlyOverRepresented() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // `government` is 20% of the reference and 0.3% of this scope — strongly UNDER-represented.
         let r = try #require(ranking(rank([("quemoy", 60), ("government", 30)])))
         #expect(r.scores.map(\.term) == ["quemoy"])
@@ -132,7 +149,7 @@ struct KeynessCloudTests {
     @Test("The scope denominator is the TRUE total, not the sum of the listed terms")
     func usesTrueScopeTotal() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let terms = [("quemoy", 60), ("treaty", 300)]
         let tight = try #require(ranking(rank(terms, scopeTotal: 360)))
         let true_ = try #require(ranking(rank(terms, scopeTotal: 100_000)))
@@ -147,7 +164,7 @@ struct KeynessCloudTests {
     @Test("The low-frequency floor keeps a one-mention word off the top")
     func floorApplies() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let r = try #require(ranking(rank([("quemoy", 60), ("kamchatka", 2)])))
         let terms = r.scores.map(\.term)
         #expect(!terms.contains("kamchatka"),
@@ -158,7 +175,7 @@ struct KeynessCloudTests {
     @Test("A scope with nothing above the floor reports that, rather than an empty ranking")
     func nothingAboveFloor() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         #expect(rank([("a", 1), ("b", 2)])
                 == .unavailable(.noTermsAboveFloor(minimum: Keyness.defaultMinimumScopeCount)))
     }
@@ -166,7 +183,7 @@ struct KeynessCloudTests {
     @Test("A scope whose every word is typical reports that, and it is not an error")
     func nothingDistinctive() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // Only under-represented terms survive the floor.
         #expect(rank([("government", 10)]) == .unavailable(.nothingOverRepresented))
     }
@@ -176,7 +193,7 @@ struct KeynessCloudTests {
     @Test("Truncation is DETECTED, not assumed — the caveat is true either way")
     func truncationIsComputed() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // Fewer terms than the limit: the scope simply ran out, so the ranking is complete.
         let complete = try #require(ranking(rank([("quemoy", 60), ("treaty", 300)], termLimit: 220)))
         #expect(!complete.rankedAmongTopFrequent)
@@ -190,7 +207,7 @@ struct KeynessCloudTests {
     @Test("Hiding one word does not turn a truncated fetch into a claim of completeness")
     func sessionHideDoesNotFlipTheCaveat() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // The cloud fetched its full limit and the user then hid one word from this cloud, so the
         // list handed to `rank` is one short. Judging truncation from THAT would flip the caveat to
         // "ranked over every word occurring at least 3 times here" — false, and unfalsifiable by a
@@ -204,7 +221,7 @@ struct KeynessCloudTests {
     @Test("An unpriced term is distinguishable from one the corpus never used")
     func unpricedIsNotUnused() throws {
         injectReference(cutoffCount: 110)
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // `matsu` is absent from the reference — but the reference only prices words occurring 110+
         // times corpus-wide, so its absence means "rarer than 110", not "never used". It is also
         // exactly the row a high keyness score floats to the top.
@@ -214,7 +231,7 @@ struct KeynessCloudTests {
         #expect(r.isUnpriced(score),
                 "a bare '0 corpus-wide' would assert something the truncated reference cannot support")
         // With a cutoff of 1 nothing is truncated, so a zero really does mean unused.
-        BundledKeynessBaseline.injectForTesting(nil)
+        KeynessFixtureReferences.clear()
         injectReference(cutoffCount: 1)
         let complete = try #require(ranking(rank([("matsu", 40)])))
         let completeScore = try #require(complete.scores.first)
@@ -224,7 +241,7 @@ struct KeynessCloudTests {
     @Test("candidateCount reports what was SCORED, not what was handed in")
     func candidateCountExcludesFlooredTerms() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // Three terms in, one below the floor: a candidateCount echoing the input would overstate
         // the ranking's reach in the caveat the user reads.
         let r = try #require(ranking(rank([("quemoy", 60), ("treaty", 300), ("kamchatka", 1)])))
@@ -234,7 +251,7 @@ struct KeynessCloudTests {
     @Test("The reference's coverage travels with the ranking, so the view can disclose it")
     func coverageTravels() throws {
         injectReference(cutoffCount: 110, distinctTerms: 254_027)
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let r = try #require(ranking(rank([("quemoy", 60)])))
         #expect(r.referenceCutoffCount == 110,
                 "without the cutoff a view cannot distinguish UNPRICED from absent-from-the-corpus")
@@ -247,21 +264,21 @@ struct KeynessCloudTests {
 
     @Test("No artifact means no ranking — never a ranking against nothing")
     func noArtifact() {
-        BundledKeynessBaseline.injectForTesting(nil)
+        KeynessFixtureReferences.clear()
         #expect(rank([("quemoy", 60)]) == .unavailable(.noArtifact))
     }
 
     @Test("An unpriced lens is reported as such, not silently scored against an empty reference")
     func lensNotPriced() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         #expect(rank([("kennedy", 60)], lens: .people) == .unavailable(.lensNotPriced(.people)))
     }
 
     @Test("Turning boilerplate exclusion off blocks the comparison")
     func boilerplateMismatchBlocks() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // The one-tap case from the cloud's own Options menu. With the layer off the scope fills
         // with department/telegram/washington at reference count zero, which keyness would rank as
         // the corpus's most distinctive vocabulary.
@@ -272,7 +289,7 @@ struct KeynessCloudTests {
     @Test("Settings that only shrink the scope are still comparable")
     func shrinkingSettingsAllowed() {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         // A longer minimum length and a higher minimum count remove terms from the scope; every term
         // that survives still has a reference. Refusing these would withhold keyness from a user
         // whose settings cost nothing.
@@ -297,7 +314,7 @@ struct KeynessCloudTests {
         // effect they go the other. A reader shown only the score would take reparation to be the
         // stronger finding, when babelsberg is the word that is almost unique to this volume.
         injectReference(["reparation": 21_314, "babelsberg": 507], totalTokens: 94_622_813)
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let r = try #require(ranking(rank([("reparation", 1_423), ("babelsberg", 429)],
                                           scopeTotal: 250_418)))
         let common = try #require(r.scores.first(where: { $0.term == "reparation" }))
@@ -318,7 +335,7 @@ struct KeynessCloudTests {
     @Test("A term absent from the reference gets a finite effect size, not an infinity")
     func absentTermHasFiniteEffectSize() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let r = try #require(ranking(rank([("matsu", 40)])))
         let score = try #require(r.scores.first)
         // The +0.5 continuity correction. Without it the ratio is log2(x/0) = infinity, which the
@@ -332,7 +349,7 @@ struct KeynessCloudTests {
     @Test("Layout counts are positive and preserve the ranking's order")
     func layoutTermsArePositiveAndOrdered() throws {
         injectReference()
-        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        defer { KeynessFixtureReferences.clear() }
         let r = try #require(ranking(rank([("quemoy", 60), ("treaty", 300)])))
         let layout = KeynessCloud.layoutTerms(r.scores)
         // WordCloudLayout.place returns NOTHING when the largest count is <= 0, and normalises over

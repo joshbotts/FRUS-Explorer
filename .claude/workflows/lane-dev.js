@@ -67,7 +67,7 @@ WHERE SOURCE LIVES — two trees since October 2026:
 - The app's Swift is under FRUSExplorer/ AND FRUSCoreKit/. The TEI parser, AST, converter and HTML serializer, the citation formatter,
   parser, matching engine and page-range store, IndexingPipeline and SearchService are in FRUSCoreKit/, in the subfolder they had
   (FRUSCoreKit/Search/IndexingPipeline.swift), and their suites are in FRUSExplorerTests/FRUSCoreKit/. The app's half stayed:
-  FRUSExplorer/Search/IndexingPipeline+App.swift, SearchService+Collocation.swift, and the stores that read the bundle or the defaults.
+  FRUSExplorer/Search/IndexingPipeline+App.swift, CollocationService.swift, and the stores that read the bundle or the defaults.
 - An issue, plan or note written before 2026-10-04 names the old paths and line numbers. If a path is missing, find the file by name
   (git ls-files | grep '/<Name>.swift$') and the symbol by grep. A file that moved is not code that is gone.
 - Search every tree the app compiles: git grep -n <pattern> -- FRUSExplorer FRUSCoreKit FTS5Store SourceNoteKit TEIHeaderKit

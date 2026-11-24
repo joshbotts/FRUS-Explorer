@@ -23,6 +23,8 @@ import Foundation
 /// Version history:
 ///   1.0 — O-1: split out of `WordCloudTokenizer` when it moved to `WordCloudKit`
 ///   1.1 — #1608: `configured` takes the form to count words in, with no default
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): the assembly is FRUSCoreKit's, over the lists a host
+///          gives (`configured(…stopwords:lexicons:)`); this one passes the app's bundled lists
 extension WordCloudTokenizer {
 
     /// Builds the tokenizer the app actually uses, from a tuning and a lens.
@@ -48,15 +50,9 @@ extension WordCloudTokenizer {
                            includeDiplomatic: Bool,
                            extraStopwords: Set<String> = [],
                            wordForm: WordCloudWordForm) -> WordCloudTokenizer {
-        WordCloudTokenizer(
-            stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomatic)
-                .union(extraStopwords),
-            minimumLength: tuning.minimumLength,
-            foldPlurals: tuning.foldPlurals,
-            lens: lens,
-            lexicon: WordCloudLexicons.filter(for: lens),
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : [],
-            wordForm: wordForm
-        )
+        // The kit's assembly, over the app's bundled lists, each decoded on its first use as before.
+        configured(tuning: tuning, lens: lens, includeDiplomatic: includeDiplomatic,
+                   extraStopwords: extraStopwords, wordForm: wordForm,
+                   stopwords: WordCloudStopwords.shared, lexicons: WordCloudLexicons.shared)
     }
 }

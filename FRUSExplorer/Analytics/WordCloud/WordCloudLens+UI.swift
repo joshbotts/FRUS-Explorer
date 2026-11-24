@@ -74,3 +74,25 @@ extension WordCloudLens {
         }
     }
 }
+
+// MARK: - KeynessCloudMeasure
+
+/// The control's label for each measure. The measure is `WordCloudKit`'s
+/// (`WordCloudKit/KeynessCloudMeasure.swift`); its words are the app's, as `WordCloudLens+UI`'s are.
+///
+/// Version history:
+///   1.0 — S-1: initial implementation, in the measure's own declaration
+///   1.1 — 2026-11-12 (FRUS Explorer Light, S24d): the measure moved into `WordCloudKit`; its label
+///          stays here
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): moved here from `KeynessCloud.swift`, which moved into
+///          FRUSCoreKit, beside the lens's words
+extension KeynessCloudMeasure {
+
+    /// The control's label for this measure.
+    var pickerLabel: String {
+        switch self {
+        case .frequency: String(localized: "wordcloud.measure.frequency", defaultValue: "Frequency")
+        case .keyness: String(localized: "wordcloud.measure.keyness", defaultValue: "Distinctive")
+        }
+    }
+}

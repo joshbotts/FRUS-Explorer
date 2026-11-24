@@ -14,8 +14,20 @@
 
 import Foundation
 import Testing
-
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store and WordCloudKit as modules of their own; Xcode compiles them into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
 
 // The printed-form fallback (#1608).
 //
@@ -30,10 +42,20 @@ import Testing
 // reference as a parameter (`CollocationConfiguration`, `WordFrequencyService.topTerms(…countedUnder:)`,
 // `SemanticSharedTerms.evidence`). A control that needs a working lemmatiser asks the host first.
 //
+// Since FRUS Explorer Light's S29b the counts, the ranking, the lookup and the passes are FRUSCoreKit's,
+// and these suites run in its package too. Each count walks `WordCloudTestTagging.tagger`:
+// NaturalLanguage's where the platform has it, the stand-in where it does not (Linux). In Xcode a pass
+// runs through the app's own form, behind its readiness gate, and a ranking or a lookup holds the app's to
+// the kit's (`KeynessFixtureReferences`); the app's surfaces' words, its loader's reading of its bundle and
+// the wiring of its views are Xcode's alone.
+//
 // Version history:
 //   1.0 — #1608: initial implementation
 //   1.1 — #1608, decision 38 of the 2026-10-14 plan of record: an exported image's caption and a collection's plate
 //         carry the device caveat (`PrintedFormWordingTests.exportsCarryTheDeviceCaveat`)
+//   1.2 — 2026-11-24 (FRUS Explorer Light, S29b): moved into the kit's suites with the counts, the ranking and
+//         the passes; the kit's loading by URL, its configuration over values and its shared terms' host entry
+//         are held here too
 
 // MARK: - Fixtures
 
@@ -90,10 +112,10 @@ enum PrintedFormFixture {
             lenses: packed)
     }
 
-    /// Injects the references named, with digests that match them.
+    /// Injects the references named, with digests that match them (`KeynessFixtureReferences`).
     @MainActor
     static func inject(dictionary: Bool = true, printed: Bool = true) {
-        BundledKeynessBaseline.injectForTesting(
+        KeynessFixtureReferences.inject(
             dictionary ? file(.dictionary) : nil,
             printed: printed ? file(.printed) : nil,
             digests: (lexicons: lexiconsDigest, stopwords: stopwordsDigest))
@@ -101,7 +123,7 @@ enum PrintedFormFixture {
 
     /// Clears the seam, so the next `prepare()` reads the bundle.
     @MainActor
-    static func clear() { BundledKeynessBaseline.injectForTesting(nil) }
+    static func clear() { KeynessFixtureReferences.clear() }
 
     /// A reference value of `form` for the passes that take one, pricing the fixture index's words.
     static func reference(_ form: WordCloudWordForm, pricingTreaty: Bool = true) -> KeynessReference {
@@ -162,7 +184,8 @@ enum PrintedFormFixture {
 
 // MARK: - Which reference a verdict reads
 
-/// `BundledKeynessBaseline.baseline` reads the reference counted in the form the verdict counts in.
+/// The lookup (`KeynessReferences.baseline`, the app's `BundledKeynessBaseline.baseline` in Xcode too) reads
+/// the reference counted in the form the verdict counts in.
 ///
 /// `.serialized`, and no test awaits between injecting and reading: the loader holds one static, as
 /// `BundledKeynessBaselineTests` says of its own cases.
@@ -172,12 +195,12 @@ struct PrintedFormReferenceSelectionTests {
 
     private func ask(_ lens: WordCloudLens, _ health: NaturalLanguageHealth,
                      tuning: WordCloudTuning = .standard,
-                     includeDiplomatic: Bool = true) -> BundledKeynessBaseline.Availability {
-        BundledKeynessBaseline.baseline(for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
-                                        languageAnalysis: health)
+                     includeDiplomatic: Bool = true) -> KeynessReferences.Availability {
+        KeynessFixtureReferences.baseline(for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
+                                          languageAnalysis: health)
     }
 
-    private func reference(_ availability: BundledKeynessBaseline.Availability) -> KeynessReference? {
+    private func reference(_ availability: KeynessReferences.Availability) -> KeynessReference? {
         if case .available(let reference) = availability { return reference }
         return nil
     }
@@ -263,14 +286,20 @@ struct PrintedFormReferenceSelectionTests {
     func aFileIsHeldToItsOwnStamp() {
         let dictionary = PrintedFormFixture.file(.dictionary)
         let printed = PrintedFormFixture.file(.printed)
-        #expect(BundledKeynessBaseline.isReference(dictionary, for: .dictionary))
-        #expect(BundledKeynessBaseline.isReference(printed, for: .printed))
-        #expect(!BundledKeynessBaseline.isReference(dictionary, for: .printed))
-        #expect(!BundledKeynessBaseline.isReference(printed, for: .dictionary))
+        #expect(KeynessReferences.isReference(dictionary, for: .dictionary))
+        #expect(KeynessReferences.isReference(printed, for: .printed))
+        #expect(!KeynessReferences.isReference(dictionary, for: .printed))
+        #expect(!KeynessReferences.isReference(printed, for: .dictionary))
+        #if !SWIFT_PACKAGE // the app's loader asks the kit's rule
+        for (file, form) in [(dictionary, WordCloudWordForm.dictionary), (printed, .printed), (dictionary, .printed),
+                             (printed, .dictionary)] {
+            #expect(BundledKeynessBaseline.isReference(file, for: form) == KeynessReferences.isReference(file, for: form))
+        }
+        #endif
 
         // Offered as the printed reference, a file of dictionary-form counts is not used: printed
         // forms scored against it is the error the second file exists to end.
-        BundledKeynessBaseline.injectForTesting(
+        KeynessFixtureReferences.inject(
             dictionary, printed: PrintedFormFixture.file(.printed, stampedAs: .dictionary),
             digests: (lexicons: PrintedFormFixture.lexiconsDigest, stopwords: PrintedFormFixture.stopwordsDigest))
         defer { PrintedFormFixture.clear() }
@@ -310,12 +339,13 @@ struct PrintedFormReferenceSelectionTests {
         PrintedFormFixture.clear()
         #expect(ask(.allTerms, PrintedFormFixture.unlemmatised) == .unavailable(.noArtifact))
         #expect(ask(.allTerms, .fullyWorking) == .unavailable(.noArtifact))
-        #expect(!BundledKeynessBaseline.isAvailable)
+        #expect(!KeynessFixtureReferences.isAvailable)
     }
 }
 
 // MARK: - The reference's load
 
+#if !SWIFT_PACKAGE // the app's loader, reading the app's bundle; the kit's reading by URL is held below
 /// `BundledKeynessBaseline.prepare()` and the callers that arrive while it is loading (#1608).
 ///
 /// These read the real bundle, since the load is what is under test. They share the loader's one
@@ -370,6 +400,7 @@ struct PrintedFormReferenceLoadingTests {
         #expect(printedTotal() == 1_000_100)
     }
 }
+#endif
 
 // MARK: - Distinctive
 
@@ -380,9 +411,9 @@ struct PrintedFormKeynessTests {
 
     private func rank(_ terms: [(String, Int)], _ health: NaturalLanguageHealth,
                       lens: WordCloudLens = .allTerms) -> KeynessCloud.Outcome {
-        KeynessCloud.rank(terms: terms.map { TermCount(term: $0.0, count: $0.1) }, scopeTotal: 10_000,
-                          fetchedTermCount: terms.count, termLimit: 220, lens: lens, tuning: .standard,
-                          includeDiplomatic: true, languageAnalysis: health)
+        KeynessFixtureReferences.rank(terms: terms.map { TermCount(term: $0.0, count: $0.1) }, scopeTotal: 10_000,
+                                      fetchedTermCount: terms.count, termLimit: 220, lens: lens, tuning: .standard,
+                                      includeDiplomatic: true, languageAnalysis: health)
     }
 
     private func ranking(_ outcome: KeynessCloud.Outcome) -> KeynessCloud.Ranking? {
@@ -566,6 +597,31 @@ struct PrintedFormCollocationTests {
         #expect(CollocationAnalysis.printedFormsNote(for: .dictionary) == nil)
     }
 
+    @Test("A configuration counts in the form of the verdict it is handed, and keeps the verdict and the settings")
+    func configurationFollowsTheVerdict() throws {
+        // The kit's, over values a host holds (S29b): the app's `live` reads its settings and calls it.
+        let stopwords = try WordCloudResources.stopwords()
+        let lexicons = try WordCloudResources.lexicons()
+        func configured(_ health: NaturalLanguageHealth, includeDiplomatic: Bool = true) -> CollocationConfiguration {
+            .configured(tuning: .standard, includeDiplomatic: includeDiplomatic, languageAnalysis: health,
+                        stopwords: stopwords, lexicons: lexicons)
+        }
+        let printed = configured(PrintedFormFixture.unlemmatised)
+        #expect(printed.tokenizer.wordForm == .printed)
+        #expect(printed.languageAnalysis == PrintedFormFixture.unlemmatised)
+        let dictionary = configured(.fullyWorking)
+        #expect(dictionary.tokenizer.wordForm == .dictionary)
+        #expect(dictionary.languageAnalysis == .fullyWorking)
+        // A lemmatiser with no lexical classes still counts dictionary forms.
+        #expect(configured(PrintedFormFixture.unclassified).tokenizer.wordForm == .dictionary)
+        // All terms, from the settings it holds: the diplomatic layer is in the tokenizer it built.
+        #expect(dictionary.tokenizer.lens == .allTerms)
+        #expect(dictionary.includeDiplomatic && dictionary.tokenizer.stopwords.isSuperset(of: stopwords.diplomatic))
+        let without = configured(.fullyWorking, includeDiplomatic: false)
+        #expect(!without.includeDiplomatic && without.tokenizer.stopwords == stopwords.active(includeDiplomatic: false))
+    }
+
+    #if !SWIFT_PACKAGE // the app's settings, read by `live`
     @Test("The live configuration counts in the form of the verdict it is handed, and keeps the verdict")
     @MainActor
     func liveConfigurationFollowsTheVerdict() {
@@ -579,15 +635,31 @@ struct PrintedFormCollocationTests {
         #expect(CollocationConfiguration.live(languageAnalysis: PrintedFormFixture.unclassified)
             .tokenizer.wordForm == .dictionary)
     }
+    #endif
 
     /// A configuration at the standard settings, built as `live(languageAnalysis:)` builds one, so
-    /// the scans below do not read whatever settings another test left in the host's defaults.
-    private func configuration(_ health: NaturalLanguageHealth) -> CollocationConfiguration {
-        CollocationConfiguration(
-            tuning: .standard, includeDiplomatic: true, languageAnalysis: health,
-            tokenizer: WordCloudTokenizer.configured(
-                tuning: .standard, lens: .allTerms, includeDiplomatic: true,
-                wordForm: health.wordForm))
+    /// the scans below do not read whatever settings another test left in the host's defaults: the
+    /// kit's, over the bundled lists.
+    private func configuration(_ health: NaturalLanguageHealth) throws -> CollocationConfiguration {
+        .configured(tuning: .standard, includeDiplomatic: true, languageAnalysis: health,
+                    stopwords: try WordCloudResources.stopwords(), lexicons: try WordCloudResources.lexicons())
+    }
+
+    /// The scan a host runs: in Xcode the app's, which awaits the readiness gate and walks
+    /// NaturalLanguage's tagger; in the package the kit's, walking ``WordCloudTestTagging/tagger``.
+    private func scan(_ service: SearchService, _ results: [SearchResult], _ parameters: SearchParameters,
+                      configuration: CollocationConfiguration,
+                      reference: KeynessReference) async throws -> CollocationAnalysis.Outcome {
+        #if SWIFT_PACKAGE
+        // The tagger's verdict before the first walk, as the app's form awaits the gate.
+        _ = await WordCloudTestTagging.readyHealth()
+        return try await service.collocation(for: results, parameters: parameters, windowSize: 10,
+                                             configuration: configuration, reference: reference,
+                                             tagger: WordCloudTestTagging.tagger)
+        #else
+        try await service.collocation(for: results, parameters: parameters, windowSize: 10,
+                                      configuration: configuration, reference: reference)
+        #endif
     }
 
     @Test("A real scan under a verdict with no lemmatiser ranks the printed forms near the matches")
@@ -597,10 +669,9 @@ struct PrintedFormCollocationTests {
             let results = try await service.search(parameters: parameters)
             #expect(results.count == 3)
 
-            let outcome = try await service.collocation(
-                for: results, parameters: parameters, windowSize: 10,
-                configuration: configuration(PrintedFormFixture.unlemmatised),
-                reference: PrintedFormFixture.reference(.printed))
+            let outcome = try await scan(service, results, parameters,
+                                         configuration: configuration(PrintedFormFixture.unlemmatised),
+                                         reference: PrintedFormFixture.reference(.printed))
             let ranked = try #require(result(outcome), "\(outcome)")
             #expect(ranked.wordForm == .printed)
             // Four of "negotiated", which clears the floor of three; "negotiating" is a word of its
@@ -615,16 +686,16 @@ struct PrintedFormCollocationTests {
         }
     }
 
+    #if canImport(NaturalLanguage) // this host's own verdict is NaturalLanguage's readiness gate's
     @Test("The same scan under this host's own verdict is ranked in its form, or refused against the other")
     func scanUnderTheHostsVerdict() async throws {
         let health = await NaturalLanguageReadiness.verdictWhenReady().health
         try await PrintedFormFixture.withIndex { _, service in
             let parameters = SearchParameters(keywords: "treaty")
             let results = try await service.search(parameters: parameters)
-            let outcome = try await service.collocation(
-                for: results, parameters: parameters, windowSize: 10,
-                configuration: configuration(health),
-                reference: PrintedFormFixture.reference(.dictionary))
+            let outcome = try await scan(service, results, parameters,
+                                         configuration: configuration(health),
+                                         reference: PrintedFormFixture.reference(.dictionary))
             if health.lemmatizes {
                 let ranked = try #require(result(outcome), "\(outcome)")
                 #expect(ranked.wordForm == .dictionary)
@@ -638,28 +709,58 @@ struct PrintedFormCollocationTests {
             }
         }
     }
+    #endif
 }
 
 // MARK: - The cloud's count
 
-/// `WordFrequencyService` counts in the form of the verdict it stamps the result with, and
-/// Distinctive ranks that result against the reference of the same form.
+/// The count (`WordCloudCount`, the app's `WordFrequencyService` in Xcode) counts in the form of the
+/// verdict it stamps the result with, and Distinctive ranks that result against the reference of the
+/// same form.
 @Suite("Printed-form fallback — the cloud's count and its ranking (#1608)", .serialized)
 @MainActor
 struct PrintedFormCloudCountTests {
 
-    private func count(_ service: WordFrequencyService,
+    /// The kit's count of the fixture's documents under `health`, at the standard settings over the
+    /// bundled lists, walking ``WordCloudTestTagging/tagger``.
+    private func kitCount(_ pipeline: IndexingPipeline,
+                          under health: NaturalLanguageHealth) async throws -> WordCloudResult {
+        // The tagger's verdict before the first walk, as the app's service awaits it: this count runs on
+        // the suite's actor, the main actor.
+        _ = await WordCloudTestTagging.readyHealth()
+        return try await WordCloudCount.count(
+            keys: PrintedFormFixture.keys, pipeline: pipeline,
+            tokenizer: WordCloudTokenizer.configured(
+                tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: health.wordForm,
+                stopwords: try WordCloudResources.stopwords(), lexicons: try WordCloudResources.lexicons()),
+            tagger: WordCloudTestTagging.tagger, countedUnder: health,
+            indexVersion: pipeline.installedDateIndexVersion, limit: 50,
+            minimumCount: WordCloudTuning.standard.minimumCount)
+    }
+
+    /// The count a host makes: in the package the kit's; in Xcode the app's service, which awaits the
+    /// readiness gate and hands the kit's count NaturalLanguage's tagger, held to the kit's own count.
+    private func count(_ pipeline: IndexingPipeline,
                        under health: NaturalLanguageHealth) async throws -> WordCloudResult {
-        try await service.topTerms(
+        let kit = try await kitCount(pipeline, under: health)
+        #if !SWIFT_PACKAGE
+        let app = try await WordFrequencyService(pipeline: pipeline).topTerms(
             signature: "test-1608-\(UUID().uuidString)", keys: PrintedFormFixture.keys, limit: 50,
             includeDiplomaticStopwords: true, countedUnder: health)
+        #expect(app.terms == kit.terms && app.documentCount == kit.documentCount
+                && app.totalTokenCount == kit.totalTokenCount, "the app's service counts as the kit's count does")
+        #expect(app.lens == kit.lens && app.languageAnalysis == kit.languageAnalysis
+                && app.indexVersion == kit.indexVersion, "the app's service stamps as the kit's count does")
+        return app
+        #else
+        return kit
+        #endif
     }
 
     @Test("A cloud counted under a verdict with no lemmatiser is a count of printed forms, stamped with that verdict, and Distinctive ranks it")
     func countedAsPrintedAndRanked() async throws {
         try await PrintedFormFixture.withIndex { pipeline, _ in
-            let result = try await count(WordFrequencyService(pipeline: pipeline),
-                                         under: PrintedFormFixture.unlemmatised)
+            let result = try await count(pipeline, under: PrintedFormFixture.unlemmatised)
             let counts = Dictionary(uniqueKeysWithValues: result.terms.map { ($0.term, $0.count) })
             #expect(result.documentCount == 3)
             #expect(counts["negotiated"] == 4, "\(counts)")
@@ -669,16 +770,22 @@ struct PrintedFormCloudCountTests {
             // The plural fold still applies, as it always has to a word with no lemma.
             #expect(counts["delegate"] == 2 && counts["delegates"] == nil)
             #expect(result.languageAnalysis == PrintedFormFixture.unlemmatised)
+            #expect(result.lens == .allTerms)
+            #if !SWIFT_PACKAGE // the app's caption reads the stamp
             #expect(WordCloudDisplayState.countedAsPrinted(result, lens: .allTerms))
+            #endif
             // Not written to the disk cache: another launch's lemmatiser may work.
+            #expect(!WordCloudCount.isPersistable(countedUnder: PrintedFormFixture.unlemmatised, lens: .allTerms))
+            #if !SWIFT_PACKAGE // the app's service asks the kit's rule
             #expect(!WordFrequencyService.isPersistable(countedUnder: PrintedFormFixture.unlemmatised,
                                                         lens: .allTerms))
+            #endif
 
             // The view's own call, with the result's own stamp. No await from here to the end.
             PrintedFormFixture.inject()
             defer { PrintedFormFixture.clear() }
             let stamp = try #require(result.languageAnalysis)
-            let outcome = KeynessCloud.rank(
+            let outcome = KeynessFixtureReferences.rank(
                 terms: result.terms, scopeTotal: result.totalTokenCount,
                 fetchedTermCount: result.terms.count, termLimit: 50, lens: .allTerms,
                 tuning: .standard, includeDiplomatic: true, languageAnalysis: stamp)
@@ -688,27 +795,54 @@ struct PrintedFormCloudCountTests {
             }
             #expect(ranking.wordForm == .printed)
             #expect(ranking.scores.first { $0.term == "negotiated" }?.referenceCount == 500)
+            #if !SWIFT_PACKAGE // the app's header line reads the ranking's form
             #expect(WordCloudDisplayState.comparedAsPrintedNote(ranking) != nil)
+            #endif
         }
     }
 
+    @Test("A cloud counted under a verdict that lemmatises is a count of dictionary forms, stamped with that verdict")
+    func countedInDictionaryForms() async throws {
+        // The kit's count alone, walking the test's tagger with its lemmas: NaturalLanguage's where the
+        // platform has it and gives them, and the stand-in's on Linux.
+        #if canImport(NaturalLanguage)
+        guard await NaturalLanguageReadiness.verdictWhenReady().health.lemmatizes else { return }
+        #endif
+        try await PrintedFormFixture.withIndex { pipeline, _ in
+            let result = try await kitCount(pipeline, under: .fullyWorking)
+            let counts = Dictionary(uniqueKeysWithValues: result.terms.map { ($0.term, $0.count) })
+            #expect(counts["negotiate"] == 5, "\(counts)")
+            #expect(counts["negotiated"] == nil && counts["negotiating"] == nil)
+            #expect(counts["treaty"] == 6)
+            #expect(result.languageAnalysis == .fullyWorking && result.lens == .allTerms)
+            #expect(result.indexVersion == pipeline.installedDateIndexVersion)
+            #expect(WordCloudCount.isPersistable(countedUnder: .fullyWorking, lens: .allTerms))
+        }
+    }
+
+    #if canImport(NaturalLanguage) // this host's own verdict is NaturalLanguage's readiness gate's
     @Test("Under this host's own verdict the cloud is counted in its form")
     func countedUnderTheHostsVerdict() async throws {
         let health = await NaturalLanguageReadiness.verdictWhenReady().health
         try await PrintedFormFixture.withIndex { pipeline, _ in
-            let result = try await count(WordFrequencyService(pipeline: pipeline), under: health)
+            let result = try await count(pipeline, under: health)
             let counts = Dictionary(uniqueKeysWithValues: result.terms.map { ($0.term, $0.count) })
             #expect(result.languageAnalysis == health)
             if health.lemmatizes {
                 #expect(counts["negotiate"] == 5, "\(counts)")
                 #expect(counts["negotiated"] == nil)
+                #if !SWIFT_PACKAGE // the app's caption reads the stamp
                 #expect(!WordCloudDisplayState.countedAsPrinted(result, lens: .allTerms))
+                #endif
             } else {
                 #expect(counts["negotiated"] == 4, "\(counts)")
+                #if !SWIFT_PACKAGE // the app's caption reads the stamp
                 #expect(WordCloudDisplayState.countedAsPrinted(result, lens: .allTerms))
+                #endif
             }
         }
     }
+    #endif
 }
 
 // MARK: - Related Documents
@@ -722,12 +856,27 @@ struct PrintedFormSharedTermsTests {
     private let d2 = DocumentKey(volumeId: "vol1", documentId: "d2")
     private let d3 = DocumentKey(volumeId: "vol1", documentId: "d3")
 
+    /// The pass a host runs: in Xcode the app's, which awaits the readiness gate and walks NaturalLanguage's
+    /// tagger over the bundled stopwords; in the package the kit's, walking ``WordCloudTestTagging/tagger``.
+    private func evidence(_ pipeline: IndexingPipeline, anchor: DocumentKey, candidates: [DocumentKey],
+                          reference: KeynessReference) async throws -> SemanticSharedTerms.Evidence {
+        #if SWIFT_PACKAGE
+        // The tagger's verdict before the first walk, as the app's form awaits the gate.
+        _ = await WordCloudTestTagging.readyHealth()
+        return await SemanticSharedTerms.evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
+                                                  reference: reference, stopwords: try WordCloudResources.stopwords(),
+                                                  tagger: WordCloudTestTagging.tagger)
+        #else
+        await SemanticSharedTerms.evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
+                                           reference: reference)
+        #endif
+    }
+
     @Test("Against the printed reference, two documents share the words both print, rarest first, in the anchor's spelling")
     func chipsComparePrintedForms() async throws {
         try await PrintedFormFixture.withIndex { pipeline, _ in
-            let evidence = await SemanticSharedTerms.evidence(
-                anchor: d1, candidates: [d2, d3], pipeline: pipeline,
-                reference: PrintedFormFixture.reference(.printed))
+            let evidence = try await evidence(pipeline, anchor: d1, candidates: [d2, d3],
+                                              reference: PrintedFormFixture.reference(.printed))
             #expect(evidence.wordForm == .printed)
             // d1 and d2 both print "negotiated" (40 corpus-wide), "envoys" (500) and "treaty"
             // (50,000). d2's "negotiating" is no match for d1's "negotiated".
@@ -742,20 +891,23 @@ struct PrintedFormSharedTermsTests {
     @Test("A word the printed reference does not price is skipped, not shown as the rarest")
     func unpricedPrintedWordIsSkipped() async throws {
         try await PrintedFormFixture.withIndex { pipeline, _ in
-            let evidence = await SemanticSharedTerms.evidence(
-                anchor: d1, candidates: [d2], pipeline: pipeline,
-                reference: PrintedFormFixture.reference(.printed, pricingTreaty: false))
+            let evidence = try await evidence(pipeline, anchor: d1, candidates: [d2],
+                                              reference: PrintedFormFixture.reference(.printed, pricingTreaty: false))
             #expect(evidence.terms[d2] == ["negotiated", "envoys"], "\(evidence.terms)")
         }
     }
 
     @Test("Against the dictionary-form reference, a host that lemmatises shares the dictionary forms")
     func chipsCompareDictionaryFormsWhereTheHostCan() async throws {
+        // NaturalLanguage's verdict where the platform has it; the stand-in's lemmas otherwise.
+        #if canImport(NaturalLanguage)
         let health = await NaturalLanguageReadiness.verdictWhenReady().health
+        #else
+        let health = StandInWordCloudTagger.fixtures.health
+        #endif
         try await PrintedFormFixture.withIndex { pipeline, _ in
-            let evidence = await SemanticSharedTerms.evidence(
-                anchor: d1, candidates: [d2], pipeline: pipeline,
-                reference: PrintedFormFixture.reference(.dictionary))
+            let evidence = try await evidence(pipeline, anchor: d1, candidates: [d2],
+                                              reference: PrintedFormFixture.reference(.dictionary))
             #expect(evidence.wordForm == .dictionary)
             #expect(evidence.printedFormsNote == nil)
             // Only a host with a lemmatiser can say what the dictionary forms are.
@@ -809,16 +961,71 @@ struct PrintedFormSharedTermsTests {
             // A reference that prices none of the documents' words: nothing can be named.
             let empty = KeynessReference(terms: ["quemoy": 3], totalTokens: 1_000_000, cutoffCount: 3,
                                          wordForm: .printed, distinctTerms: 1, generated: "2026-10-12")
-            let evidence = await SemanticSharedTerms.evidence(
-                anchor: d1, candidates: [d2, d3], pipeline: pipeline, reference: empty)
+            let evidence = try await evidence(pipeline, anchor: d1, candidates: [d2, d3], reference: empty)
             #expect(evidence.terms.isEmpty)
             #expect(evidence.wordForm == .printed)
             #expect(evidence.printedFormsNote != nil)
         }
     }
 
+    // MARK: A host's entry
+
+    @Test("A host's entry reads the chip's reference from its own references for its tagger, and runs the pass")
+    func hostEntryReadsItsOwnReference() async throws {
+        let tagger = WordCloudTestTagging.tagger
+        // The tagger's verdict, once it can walk without blocking the main actor this suite runs on.
+        let health = await WordCloudTestTagging.readyHealth()
+        // The host's references: the fixture's printed and dictionary files, counted by this tagger.
+        func file(_ form: WordCloudWordForm, by tokenizer: WordCloudTokenizerIdentity) -> KeynessBaselineFile {
+            let fixture = PrintedFormFixture.file(form)
+            return KeynessBaselineFile(
+                version: fixture.version, generated: fixture.generated, provenance: fixture.provenance,
+                termsPerLens: fixture.termsPerLens,
+                configuration: .init(tuning: .standard, includeDiplomatic: true,
+                                     lexiconsDigest: PrintedFormFixture.lexiconsDigest,
+                                     stopwordsDigest: PrintedFormFixture.stopwordsDigest,
+                                     wordForm: form, tokenizer: tokenizer),
+                lenses: fixture.lenses)
+        }
+        func references(by tokenizer: WordCloudTokenizerIdentity) -> KeynessReferences {
+            KeynessReferences(dictionary: file(.dictionary, by: tokenizer), printed: file(.printed, by: tokenizer),
+                              lexiconsDigest: PrintedFormFixture.lexiconsDigest,
+                              stopwordsDigest: PrintedFormFixture.stopwordsDigest)
+        }
+        let stopwords = try WordCloudResources.stopwords()
+        try await PrintedFormFixture.withIndex { pipeline, _ in
+            let own = references(by: tagger.identity)
+            let found = await SemanticSharedTerms.sharedTerms(
+                anchor: d1, candidates: [d2, d3], pipeline: pipeline, references: own,
+                languageAnalysis: health, stopwords: stopwords, tagger: tagger)
+            // The same as the pass over the reference the lookup gives for the tagger's verdict.
+            guard case .available(let reference) = own.baseline(
+                for: SemanticSharedTerms.lens, tuning: .standard, includeDiplomatic: true,
+                languageAnalysis: health, tokenizer: tagger.identity)
+            else { Issue.record("the host's own reference is not found"); return }
+            let direct = await SemanticSharedTerms.evidence(anchor: d1, candidates: [d2, d3], pipeline: pipeline,
+                                                            reference: reference, stopwords: stopwords,
+                                                            tagger: tagger)
+            #expect(found == direct)
+            #expect(found.wordForm == health.wordForm)
+            #expect(!found.terms.isEmpty, "\(found)")
+            // References another tokenizer counted refuse the host: no chip, and no claim about the form.
+            let other = WordCloudTokenizerIdentity(name: "Another", version: "1")
+            #expect(other != tagger.identity)
+            let refused = await SemanticSharedTerms.sharedTerms(
+                anchor: d1, candidates: [d2, d3], pipeline: pipeline, references: references(by: other),
+                languageAnalysis: health, stopwords: stopwords, tagger: tagger)
+            #expect(refused == .none)
+            // And no candidates is no pass at all.
+            #expect(await SemanticSharedTerms.sharedTerms(
+                anchor: d1, candidates: [], pipeline: pipeline, references: own,
+                languageAnalysis: health, stopwords: stopwords, tagger: tagger) == .none)
+        }
+    }
+
     // MARK: The reload identity
 
+    #if !SWIFT_PACKAGE // the app's reload identity, which reads NaturalLanguage's readiness gate's status
     private func settled(_ health: NaturalLanguageHealth) -> NaturalLanguageReadiness.Status {
         .settled(.init(
             warmUp: NaturalLanguageWarmUp(trigger: .firstForeground, applicationState: .active,
@@ -849,6 +1056,7 @@ struct PrintedFormSharedTermsTests {
         // So a verdict with a lemmatiser, when it comes, reloads nothing.
         #expect(SemanticSharedTerms.reloadToken(for: status) == "dictionary")
     }
+    #endif
 }
 
 // MARK: - What each surface says
@@ -880,6 +1088,25 @@ struct PrintedFormWordingTests {
                           generated: "2026-10-12", wordForm: form)
     }
 
+    /// The kit's notes of the fallback (S29b): Collocates' and Related Documents', each with the name it
+    /// fails under.
+    private var kitNotes: [(name: String, text: String?)] {
+        [("Collocates", collocation(.printed).printedFormsNote),
+         ("Collocates, nothing above the floor",
+          CollocationAnalysis.Unavailable.noNeighboursAboveFloor(minimum: 3, wordForm: .printed).printedFormsNote),
+         ("Collocates, nothing distinctive",
+          CollocationAnalysis.Unavailable.nothingDistinctive(wordForm: .printed).printedFormsNote),
+         ("Related Documents",
+          SemanticSharedTerms.Evidence(terms: [DocumentKey(volumeId: "v", documentId: "d"): ["envoys"]],
+                                       wordForm: .printed).printedFormsNote),
+         ("Related Documents, no shared word",
+          SemanticSharedTerms.Evidence(terms: [:], wordForm: .printed).printedFormsNote)]
+    }
+
+    #if SWIFT_PACKAGE
+    /// What the package holds: the kit's notes. The word cloud's are its view's, and Xcode's alone.
+    private var fallbackNotes: [(name: String, text: String?)] { kitNotes }
+    #else
     /// Every on-screen note of the fallback, and the CSV's caveat, with the name it fails under.
     ///
     /// The owner's decision of 2026-09-29 is that a surface says these things **on screen**, and
@@ -904,10 +1131,15 @@ struct PrintedFormWordingTests {
           SemanticSharedTerms.Evidence(terms: [:], wordForm: .printed).printedFormsNote),
          ("Word Cloud CSV, keyness", WordCloudDisplayState.comparedAsPrintedCaveat(printedRanking(.printed)))]
     }
+    #endif
 
     @Test("Each surface says that it compared or counted as printed, why, and that another device can differ")
     func everySurfaceMeetsTheOwnersCondition() throws {
+        #if SWIFT_PACKAGE
+        #expect(fallbackNotes.count == 5)
+        #else
         #expect(fallbackNotes.count == 8)
+        #endif
         for (name, text) in fallbackNotes {
             let note = try #require(text, "\(name) says nothing when it falls back")
             // That it did.
@@ -931,10 +1163,12 @@ struct PrintedFormWordingTests {
             #expect(note.contains("“negotiate”") && note.contains("“negotiated”"), "\(name): \(note)")
             #expect(!note.contains("negotiations"), "\(name): \(note)")
         }
+        #if !SWIFT_PACKAGE // the word cloud's CSV caveat is its view's
         let caveat = try #require(WordCloudDisplayState.countedAsPrintedCaveat(
             cloud(PrintedFormFixture.unlemmatised), lens: .allTerms))
         #expect(caveat.contains("“negotiate” and “negotiated” are two words"), "\(caveat)")
         #expect(!caveat.contains("negotiations"), "\(caveat)")
+        #endif
         // And the claim itself, on the tokenizer: the pair is one word folded, and two as printed.
         #expect(WordCloudTokenizer.singularize("negotiations") == "negotiation")
         #expect(WordCloudTokenizer.singularize("negotiated") == "negotiated")
@@ -943,6 +1177,8 @@ struct PrintedFormWordingTests {
     @Test("A ranking or a count in dictionary forms says none of it")
     func dictionaryFormsSayNothing() {
         #expect(collocation(.dictionary).printedFormsNote == nil)
+        #expect(SemanticSharedTerms.Evidence(terms: [:], wordForm: .dictionary).printedFormsNote == nil)
+        #if !SWIFT_PACKAGE // the word cloud's notes are its view's
         #expect(WordCloudDisplayState.comparedAsPrintedNote(printedRanking(.dictionary)) == nil)
         #expect(WordCloudDisplayState.comparedAsPrintedNote(nil) == nil)
         #expect(WordCloudDisplayState.comparedAsPrintedCaveat(printedRanking(.dictionary)) == nil)
@@ -954,8 +1190,10 @@ struct PrintedFormWordingTests {
                                                        ranking: printedRanking(.dictionary)) == nil)
         #expect(WordCloudDisplayState.printedFormsCaptionSegment(cloud(.fullyWorking), lens: .allTerms,
                                                                  ranking: printedRanking(.dictionary)) == nil)
+        #endif
     }
 
+    #if !SWIFT_PACKAGE // the word cloud's header, export and plate lines are its view's
     @Test("The cloud's header prints the ranking's line under Distinctive and the count's under Frequency")
     func headerLineFollowsTheMeasure() {
         let counted = cloud(PrintedFormFixture.unlemmatised)
@@ -1012,12 +1250,15 @@ struct PrintedFormWordingTests {
         #expect(WordCloudDisplayState.printedFormsCaptionSegment(cloud(.fullyWorking), lens: .allTerms,
                                                                  ranking: nil) == nil)
     }
+    #endif
 }
 
 // MARK: - Wiring
 
+#if !SWIFT_PACKAGE // the app's views and the scans of its source, which read the repository through an app suite's helpers
 /// The calls each surface has to make, read where they are written. The rules are run above; a
-/// surface that stopped making the call would compile and pass them.
+/// surface that stopped making the call would compile and pass them. Since S29b the scan, the count,
+/// the pass and the reference's reading are FRUSCoreKit's, and are read there.
 @Suite("Printed-form fallback — wiring (#1608)")
 struct PrintedFormWiringTests {
 
@@ -1098,19 +1339,27 @@ struct PrintedFormWiringTests {
 
     @Test("The scan tells the ranking the form its own tokenizer counted in")
     func scanReportsTheTokenizersForm() throws {
-        let scan = try body(of: "func collocation(",
-                            in: "FRUSExplorer/Search/SearchService+Collocation.swift")
+        let scan = try body(of: "public func collocation<",
+                            in: "FRUSCoreKit/Search/SearchService+Collocation.swift")
         #expect(scan.contains(squeezed("wordForm: configuration.tokenizer.wordForm, reference: reference")))
+        // And it counts with the tagger it was handed, the app's form handing it NaturalLanguage's.
+        #expect(scan.contains(squeezed("into: &counts, tagger: tagger)")))
+        let app = try body(of: "func collocation(", in: "FRUSExplorer/Search/CollocationService.swift", atLeast: 500)
+        #expect(app.contains(squeezed("tagger: NaturalLanguageWordCloudTagger(), maxMatches: maxMatches)")))
     }
 
     @Test("The cloud's count is made in the form of the verdict it is stamped with")
     func cloudCountsInItsStampsForm() throws {
         let source = try code("FRUSExplorer/Analytics/WordCloud/WordFrequencyService.swift")
-        // The second `topTerms`: the count itself, which takes the verdict.
+        // The second `topTerms`: the count itself, which takes the verdict, builds the tokenizer in its
+        // form and hands it to the kit's count, which stamps the result with it (S29b).
         let declaration = try #require(source.range(of: "countedUnder languageAnalysis: NaturalLanguageHealth,"))
         let count = squeezed(source[try #require(Scan.braceBody(in: source, after: declaration.upperBound))])
         #expect(count.contains(squeezed("wordForm: languageAnalysis.wordForm")))
-        #expect(count.contains(squeezed("result.languageAnalysis = languageAnalysis")))
+        #expect(count.contains(squeezed("countedUnder: languageAnalysis, indexVersion: indexVersion,")))
+        let kit = try body(of: "public static func count<Tagger: WordCloudTagger>(",
+                           in: "FRUSCoreKit/Analytics/WordCloud/WordCloudCount.swift", atLeast: 500)
+        #expect(kit.contains(squeezed("result.languageAnalysis = languageAnalysis")))
         // And the one the app calls hands the count the verdict it awaited.
         let wrapper = try body(of: "func topTerms(", in: "FRUSExplorer/Analytics/WordCloud/WordFrequencyService.swift")
         #expect(wrapper.contains(squeezed(
@@ -1127,7 +1376,8 @@ struct PrintedFormWiringTests {
 
     @Test("Related Documents reads the reference for the verdict, counts in the reference's form, and shows the note")
     func relatedDocumentsWiring() throws {
-        let path = "FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift"
+        // The app's entry and its gated pass, and the kit's pass they call (S29b).
+        let path = "FRUSExplorer/RelatedDocuments/SemanticSharedTerms+App.swift"
         let entry = try body(of: "static func sharedTerms(", in: path)
         // The load is awaited before the reference is read: a panel opened while the launch decode
         // is in flight would otherwise read "no artifact" for a file a moment from being there.
@@ -1136,7 +1386,10 @@ struct PrintedFormWiringTests {
         #expect(prepared.upperBound <= read.lowerBound, "the reference is read before its load is awaited")
         #expect(entry.contains(squeezed("languageAnalysis: languageAnalysis)")))
         #expect(entry.contains(squeezed("return await evidence(anchor: anchor, candidates: candidates, pipeline: pipeline, reference: reference)")))
-        let pass = try body(of: "static func evidence(", in: path)
+        let gated = try body(of: "static func evidence(", in: path, atLeast: 500)
+        #expect(gated.contains(squeezed("tagger: NaturalLanguageWordCloudTagger())")))
+        let pass = try body(of: "public static func evidence<Tagger: WordCloudTagger>(",
+                            in: "FRUSCoreKit/RelatedDocuments/SemanticSharedTerms.swift")
         #expect(pass.contains(squeezed("wordForm: reference.wordForm)")))
         #expect(pass.contains(squeezed("corpusCounts: reference.terms")))
         #expect(pass.contains(squeezed("return Evidence(terms: result, wordForm: reference.wordForm)")))
@@ -1197,9 +1450,14 @@ struct PrintedFormWiringTests {
                             in: "FRUSExplorer/Analytics/WordCloud/BundledKeynessBaseline.swift")
         #expect(load.contains(squeezed("for wordForm in WordCloudWordForm.allCases {")))
         #expect(load.contains(squeezed("KeynessBaselineFile.resourceName(for: wordForm)")))
-        #expect(load.contains(squeezed("guard Self.isReference(file, for: wordForm) else {")))
+        // Each read through the kit (S29b), which holds the file to the form its own stamp names.
+        #expect(load.contains(squeezed("switch KeynessReferences.file(at: url, for: wordForm) {")))
+        let read = try body(of: "public static func file(at url: URL, for wordForm: WordCloudWordForm)",
+                            in: "FRUSCoreKit/Analytics/WordCloud/KeynessReferences.swift", atLeast: 500)
+        #expect(read.contains(squeezed("guard isReference(file, for: wordForm) else {")))
     }
 }
+#endif
 
 // MARK: - The shipped references
 
@@ -1209,15 +1467,13 @@ struct PrintedFormWiringTests {
 /// Like that suite it decodes the files straight from the bundle, so it shares no state with the
 /// suites that inject fixtures, and it is what fails when the new resource was never enrolled: a
 /// resource missing from the bundle is no build error, only a fallback that silently refuses on
-/// every launch it was built for.
+/// every launch it was built for. In the package it reads the repository's copies
+/// (`WordCloudResources`), as a host does.
 @Suite("Printed-form fallback — the shipped reference counted as printed (#1608)")
 struct PrintedKeynessBaselineArtifactTests {
 
     private func bundledData(_ resource: String) throws -> Data {
-        let url = try #require(
-            Bundle.main.url(forResource: resource, withExtension: "json"),
-            "\(resource).json is not in the app bundle. If it was just generated, it needs `xcodegen generate` to be enrolled — followed by `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.")
-        return try Data(contentsOf: url)
+        try WordCloudResources.data(resource)
     }
 
     private func load(_ form: WordCloudWordForm) throws -> KeynessBaselineFile {
@@ -1330,6 +1586,49 @@ struct PrintedKeynessBaselineArtifactTests {
         #expect(try encoder.encode(try load(.printed)) == onDisk)
     }
 
+    @Test("The kit reads both files by URL, each under the form it states, with the payloads' digests (S29b)")
+    func theKitReadsBoth() throws {
+        let references = WordCloudResources.references()
+        #expect(references.isAvailable)
+        #expect(Set(references.files.keys) == Set(WordCloudWordForm.allCases))
+        for (form, file) in references.files {
+            #expect(file.configuration.wordForm == form)
+            #expect(file.lenses["allTerms"]?.totalTokens ?? 0 > 0)
+            // Each read as the kit reads one file, and refused as the other form's reference.
+            guard case .success(let read) = KeynessReferences.file(
+                at: try #require(WordCloudResources.url(KeynessBaselineFile.resourceName(for: form))), for: form)
+            else { Issue.record("\(form.rawValue): the kit does not read its own file"); continue }
+            #expect(read == file)
+            let other: WordCloudWordForm = form == .dictionary ? .printed : .dictionary
+            guard case .failure(.otherForm(let stated)) = KeynessReferences.file(
+                at: try #require(WordCloudResources.url(KeynessBaselineFile.resourceName(for: form))), for: other)
+            else { Issue.record("\(form.rawValue): read as the \(other.rawValue) reference"); continue }
+            #expect(stated == form)
+        }
+        // The digests are the bundled payloads', so the shipped references match the bundled lists.
+        #expect(references.lexiconsDigest == WordCloudPayloadDigest.digest(of: try bundledData("word-cloud-lexicons")))
+        #expect(references.stopwordsDigest == WordCloudPayloadDigest.digest(of: try bundledData("word-cloud-stopwords")))
+        // A missing file is no reference, and a missing payload an empty digest, which matches none.
+        let missing = FileManager.default.temporaryDirectory.appendingPathComponent("no-such-\(UUID().uuidString).json")
+        guard case .failure(.unreadable) = KeynessReferences.file(at: missing, for: .dictionary) else {
+            Issue.record("a missing file was read"); return
+        }
+        #expect(KeynessReferences.payloadDigest(ofFileAt: missing).isEmpty)
+        #expect(KeynessReferences.payloadDigest(ofFileAt: nil).isEmpty)
+        // With the bundled settings, NaturalLanguage's counts are priced by the shipped references; another
+        // tokenizer's are refused.
+        guard case .available(let dictionary) = references.baseline(
+            for: .allTerms, tuning: .standard, includeDiplomatic: true, languageAnalysis: .fullyWorking,
+            tokenizer: .naturalLanguage)
+        else { Issue.record("the shipped dictionary-form reference does not price All terms"); return }
+        #expect(dictionary.wordForm == .dictionary)
+        #expect(references.baseline(for: .allTerms, tuning: .standard, includeDiplomatic: true,
+                                    languageAnalysis: .fullyWorking,
+                                    tokenizer: WordCloudTokenizerIdentity(name: "Another", version: "1"))
+                == .unavailable(.configurationMismatch([.tokenizer])))
+    }
+
+    #if !SWIFT_PACKAGE // the app's loader, reading the app's bundle
     @Test("The app's loader reads both files from the bundle, each under the form it states")
     func theLoaderReadsBoth() {
         let loaded = BundledKeynessBaseline.loadBundled()
@@ -1338,5 +1637,8 @@ struct PrintedKeynessBaselineArtifactTests {
             #expect(file.configuration.wordForm == form)
             #expect(file.lenses["allTerms"]?.totalTokens ?? 0 > 0)
         }
+        // What the kit reads by URL from the same bundle.
+        #expect(loaded == WordCloudResources.references().files)
     }
+    #endif
 }

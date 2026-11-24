@@ -14,16 +14,33 @@
 
 import Foundation
 import Testing
-
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds WordCloudKit as a module of its own; Xcode compiles it into the app.
+#if canImport(WordCloudKit)
+import WordCloudKit
+#endif
 
 // MARK: - BundledKeynessBaselineTests
 
-/// The keyness baseline loader, and the distinction it must never blur: "no baseline" is not
+/// The keyness baseline's lookup, and the distinction it must never blur: "no baseline" is not
 /// "an empty corpus".
+///
+/// The kit's lookup since FRUS Explorer Light's S29b (`KeynessReferences`), over references a case
+/// injects (`KeynessFixtureReferences`); in Xcode each case also holds the app's loader,
+/// `BundledKeynessBaseline`, to the kit's answer.
 ///
 /// `.serialized` because every case here mutates one static: two cases interleaving at an
 /// `await` would see each other's injected file, and the failure would look like a loader bug.
+///
+/// Version history:
+///   1.0 — S-1: initial implementation
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S29b): moved into the kit's suites with the lookup
 @Suite("Bundled keyness baseline", .serialized)
 @MainActor
 struct BundledKeynessBaselineTests {
@@ -55,8 +72,7 @@ struct BundledKeynessBaselineTests {
     /// Injects a file plus digests that MATCH it, so a case that is not about configuration is not
     /// accidentally testing the configuration guard.
     private func inject(_ file: KeynessBaselineFile?) {
-        BundledKeynessBaseline.injectForTesting(
-            file, digests: (lexicons: Self.lexiconsDigest, stopwords: Self.stopwordsDigest))
+        KeynessFixtureReferences.inject(file, digests: (lexicons: Self.lexiconsDigest, stopwords: Self.stopwordsDigest))
     }
 
     /// Asks under the artifact's own configuration, so only the thing under test can fail.
@@ -64,10 +80,10 @@ struct BundledKeynessBaselineTests {
                      tuning: WordCloudTuning = .standard,
                      includeDiplomatic: Bool = true,
                      languageAnalysis: NaturalLanguageHealth = .fullyWorking)
-    -> BundledKeynessBaseline.Availability {
-        BundledKeynessBaseline.baseline(for: lens, tuning: tuning,
-                                        includeDiplomatic: includeDiplomatic,
-                                        languageAnalysis: languageAnalysis)
+    -> KeynessReferences.Availability {
+        KeynessFixtureReferences.baseline(for: lens, tuning: tuning,
+                                          includeDiplomatic: includeDiplomatic,
+                                          languageAnalysis: languageAnalysis)
     }
 
     // MARK: - Absence
@@ -76,7 +92,7 @@ struct BundledKeynessBaselineTests {
     func absentIsUnavailable() {
         inject(nil)
         defer { inject(nil) }
-        #expect(!BundledKeynessBaseline.isAvailable)
+        #expect(!KeynessFixtureReferences.isAvailable)
         #expect(ask(.allTerms) == .unavailable(.noArtifact),
                 "Returning empty counts would score EVERY scope term as unique to the scope — a keyness list that is entirely wrong and entirely plausible-looking")
     }
@@ -164,7 +180,7 @@ struct BundledKeynessBaselineTests {
 
     @Test("A changed lexicon or stopword payload blocks keyness until the baseline is rebuilt")
     func payloadDigestMismatch() {
-        BundledKeynessBaseline.injectForTesting(
+        KeynessFixtureReferences.inject(
             makeFile(lenses: [.concepts: (1000, 100, ["security": 40])]),
             digests: (lexicons: "EDITED-SINCE", stopwords: Self.stopwordsDigest))
         defer { inject(nil) }
@@ -173,7 +189,7 @@ struct BundledKeynessBaselineTests {
         // in every build.
         #expect(ask(.concepts) == .unavailable(.configurationMismatch([.lexicons])))
 
-        BundledKeynessBaseline.injectForTesting(
+        KeynessFixtureReferences.inject(
             makeFile(lenses: [.concepts: (1000, 100, ["security": 40])]),
             digests: (lexicons: Self.lexiconsDigest, stopwords: "EDITED-SINCE"))
         #expect(ask(.concepts) == .unavailable(.configurationMismatch([.stopwords])))
@@ -302,17 +318,15 @@ struct BundledKeynessBaselineTests {
 /// the only thing that fails when that happens. (Verified by doing it: with the file removed and
 /// the project regenerated, both platforms still built and only this suite went red.)
 ///
-/// It decodes the file directly rather than through ``BundledKeynessBaseline``, so it shares no
-/// state with the injection suite above and cannot be perturbed by it.
+/// It decodes the file directly rather than through `BundledKeynessBaseline`, so it shares no
+/// state with the injection suite above and cannot be perturbed by it. In Xcode it reads the test
+/// host's bundle; in the package, the repository's `FRUSExplorer/Resources` (`WordCloudResources`,
+/// FRUS Explorer Light, S29b), the files a host reads.
 @Suite("Keyness baseline artifact")
 struct KeynessBaselineArtifactTests {
 
     private func bundledData(_ resource: String) throws -> Data {
-        let url = try #require(
-            Bundle.main.url(forResource: resource, withExtension: "json"),
-            "\(resource).json is not in the app bundle. If it was just regenerated, it needs `xcodegen generate` to be enrolled — followed by `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`."
-        )
-        return try Data(contentsOf: url)
+        try WordCloudResources.data(resource)
     }
 
     private func loadBundledFile() throws -> KeynessBaselineFile {

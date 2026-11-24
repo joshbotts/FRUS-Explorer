@@ -23,8 +23,8 @@ import Foundation
 /// would silently revert to frequency on the Mac while surviving the same action on iOS.
 ///
 /// The raw values are what the app stores under `frus.wordcloud.measure`. The control's label,
-/// `pickerLabel`, is the app's (`KeynessCloud.swift`), as ``WordCloudLens``'s labels are: the words
-/// are localised there, and this kit reads no bundle.
+/// `pickerLabel`, is the app's (`WordCloudLens+UI.swift` since FRUS Explorer Light's S29b), as
+/// ``WordCloudLens``'s labels are: the words are localised there, and this kit reads no bundle.
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
