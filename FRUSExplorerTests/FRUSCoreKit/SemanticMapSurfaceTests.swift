@@ -76,11 +76,6 @@ private final class NotificationlessMTKView: MTKView {
 ///         it is realized once. The late-attach test is still replaced by one that makes several
 ///         views from one surface and requires every one to be born attached, because that closes a
 ///         real ordering hole even though it was not the macOS cause.
-///   1.4 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites with the map's rules: the
-///         pure tests load the bundled map through the kit by URL (`SemanticMapFixture`) and run in the
-///         package, the two lasso tests with the kit's positions and no Metal gate, since they read no
-///         renderer; what drives the app's loader, its model, its renderer, its view or its Info.plist
-///         is Xcode's
 ///   1.4 — V-4: adds the region-label layout tests. Pure functions of (clusters, camera, size), so
 ///         they run without a GPU — the thing this surface has repeatedly needed and not had.
 ///   1.5 — V-4: the on-demand rendering pass. The first draft of these cases asserted a counter
@@ -95,6 +90,11 @@ private final class NotificationlessMTKView: MTKView {
 ///         explicit-drawing mode, and two cases are added: requests drawn on the next main-queue
 ///         turn, one frame per turn, and #1700's regression test, a change reaching a presented frame
 ///         on a view whose MetalKit draw notifications produce nothing.
+///   1.7 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites with the map's rules: the
+///         pure tests load the bundled map through the kit by URL (`SemanticMapFixture`) and run in the
+///         package, the two lasso tests with the kit's positions and no Metal gate, since they read no
+///         renderer; what drives the app's loader, its model, its renderer, its view or its Info.plist
+///         is Xcode's
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -753,9 +753,15 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
         let positions = SemanticMapPicking.positions(of: map)
+        #if !SWIFT_PACKAGE
+        // The model's own decode of the plane, which `setSlice(axis: nil)` restores the map from, is
+        // the kit's, row for row.
+        #expect(SemanticMapModel.mapPoints(from: map).map(\.position) == positions)
+        #endif
 
         // Aim at a document the artifact actually holds, and require that one back.
         let target = try #require(map.placement(at: 12_345))
@@ -1318,8 +1324,9 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
         let positions = SemanticMapPicking.positions(of: map)
 
         // Include the volume whose ids are NOT `dN` — `frus1958-60v05mSupp` keys its 628 documents
@@ -1357,8 +1364,9 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
         let positions = SemanticMapPicking.positions(of: map)
 
         // **Best of five batches, not the mean of one.** A wall-clock budget in a suite that also
@@ -1385,7 +1393,14 @@ struct SemanticMapSurfaceTests {
         // scan of 314,483 rows costs 55.9 ms per tap alone on this machine, so the budget carries
         // most of a factor of two — headroom against a real regression rather than against the
         // suite's own load, which `best` above cannot be inflated by.
+        #if SWIFT_PACKAGE
+        // The package, which the web edition's Linux CI also runs, as a debug build on shared runners,
+        // holds ten times the device's budget: a guard against a regression in kind, as the web's
+        // browser suite holds its frame budget, not a measurement of the runner.
+        #expect(each < .seconds(1), "a tap took \(each)")
+        #else
         #expect(each < .milliseconds(100), "a tap took \(each)")
+        #endif
         #expect(found > 0, "20 taps down the diagonal of a full-corpus map should hit something")
     }
 
@@ -1426,8 +1441,9 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
         let positions = SemanticMapPicking.positions(of: map)
 
         // A box around the whole grid encloses the entire corpus.
@@ -1463,8 +1479,9 @@ struct SemanticMapSurfaceTests {
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
         let positions = SemanticMapPicking.positions(of: map)
         let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
                           CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]

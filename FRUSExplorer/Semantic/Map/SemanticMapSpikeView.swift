@@ -704,8 +704,9 @@ final class SemanticMapModel {
 
     /// Where a dated year lands on the slice's normalised vertical axis.
     ///
-    /// One function shared by the layout, the tick overlay and the tests, so the ticks cannot
-    /// drift from the points they label.
+    /// The kit's (`SemanticMapSlice.y(forYear:scale:)`): one function shared by the tick overlay and
+    /// the tests, and the arithmetic the layout places each row by, so the ticks cannot drift from
+    /// the points they label.
     /// - Parameters:
     ///   - year: The coverage-midpoint year.
     ///   - scale: The slice's recorded scale.
@@ -1491,12 +1492,9 @@ struct SemanticMapSpikeView: View {
         SemanticMapVolumes.coverageYear(of: appState.manifestStore.entry(forVolumeId: volumeID))
     }
 
-    /// The fewest source notes a volume needs before the lens will colour it: the kit's
-    /// (`SemanticMapVolumes.minimumProvenanceNotes`), whose note gives the measurement behind ten.
-    static var minimumProvenanceNotes: Int { SemanticMapVolumes.minimumProvenanceNotes }
-
     /// The category a volume's source notes name most often, when there are enough of them: a
-    /// plurality, not a majority, by the kit's rule (`SemanticMapVolumes.dominantProvenance(byVolume:)`).
+    /// plurality, not a majority, by the kit's rule (`SemanticMapVolumes.dominantProvenance(byVolume:)`),
+    /// whose floor of ten notes is `SemanticMapVolumes.minimumProvenanceNotes`.
     ///
     /// - Parameter byVolume: The aggregate's per-volume table.
     /// - Returns: The dominant category per volume, omitting volumes below the evidence floor.
@@ -1631,7 +1629,8 @@ struct SemanticMapSpikeView: View {
     ///
     /// **This is what turns the slice from an unlabelled chart into a labelled one** (X-5/MR-13).
     /// Everything here projects through the same camera as the points and reads
-    /// `SemanticMapModel.sliceY(forYear:scale:)` — the same function the layout used — so a tick
+    /// `SemanticMapModel.sliceY(forYear:scale:)` — the kit's `SemanticMapSlice.y(forYear:scale:)`, the
+    /// arithmetic the layout placed each row by — so a tick
     /// sits exactly on the row of documents from that year, at every zoom.
     @ViewBuilder
     private var sliceScaleOverlay: some View {
