@@ -185,6 +185,9 @@ public struct TripPacketTopicSentence: Equatable, Sendable {
 ///          substitutes and claimants have no defaults, which named the app's stores, and a pointed-at lot
 ///          resolves through `lotResolution`, where it called the app's overload over the stores: the
 ///          builder passes its ``TripPacketIndexes``' lookups
+///   2.8 — 2026-11-24 (FRUS Explorer Light, S30b): `Group.DocumentRef`, `RefSeeding` and `CitedLots` with its
+///          `Part` have their memberwise initialisers spelt out, public, for a host that builds a model's
+///          parts of its own; unchanged
 public struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -215,6 +218,17 @@ public struct TripPacketModel: Equatable, Sendable {
             public let sourceNote: String
 
             public var id: String { "\(volumeId)/\(documentId)" }
+
+            /// The memberwise initialiser, spelt out because a synthesized one is never `public`.
+            public init(volumeId: String, documentId: String, citation: String, fileDesignation: String?,
+                        documentDay: DecimalFileSegment.DocumentDay?, sourceNote: String) {
+                self.volumeId = volumeId
+                self.documentId = documentId
+                self.citation = citation
+                self.fileDesignation = fileDesignation
+                self.documentDay = documentDay
+                self.sourceNote = sourceNote
+            }
         }
 
         /// The grouping key from `archivalSourceRows`.
@@ -296,6 +310,17 @@ public struct TripPacketModel: Equatable, Sendable {
         /// Whether an `Ibid.` supplied the unit — disclosed on the rendered line, because an
         /// inherited citation is the previous footnote's assertion, not this one's.
         public let inherited: Bool
+
+        /// The memberwise initialiser, spelt out because a synthesized one is never `public`.
+        public init(volumeId: String, documentId: String, citation: String, footnoteLabel: String?,
+                    rawText: String, inherited: Bool) {
+            self.volumeId = volumeId
+            self.documentId = documentId
+            self.citation = citation
+            self.footnoteLabel = footnoteLabel
+            self.rawText = rawText
+            self.inherited = inherited
+        }
     }
 
     /// A lot target's access status, stated at the grain the data supports (§3a).
@@ -342,6 +367,15 @@ public struct TripPacketModel: Equatable, Sendable {
             public let recordGroups: Set<String>
             /// The lot's one NARA series, when the bundle holds one under those record groups.
             public let resolution: ArchivalResolution?
+
+            /// The memberwise initialiser, spelt out because a synthesized one is never `public`.
+            public init(lotAsPrinted: String, documentCount: Int, recordGroups: Set<String>,
+                        resolution: ArchivalResolution?) {
+                self.lotAsPrinted = lotAsPrinted
+                self.documentCount = documentCount
+                self.recordGroups = recordGroups
+                self.resolution = resolution
+            }
         }
 
         /// The record groups the notes citing the target's own lot name — what the claimant line
@@ -350,6 +384,12 @@ public struct TripPacketModel: Equatable, Sendable {
         /// Each lot, in the order its first document was placed, when the target's documents do not
         /// all cite one; empty otherwise.
         public var parts: [Part] = []
+
+        /// The memberwise initialiser, spelt out because a synthesized one is never `public`.
+        public init(recordGroups: Set<String> = [], parts: [Part] = []) {
+            self.recordGroups = recordGroups
+            self.parts = parts
+        }
     }
 
     /// One research target: an archival unit under a claim-free, form-aware key.

@@ -42,6 +42,8 @@ import SwiftData
 ///   1.4 — #1456 review, round 1: a row's summary is derived and cached under the plan's
 ///         `ArchiveVisitDerivation.InputSignature` (``SummaryKey``), not its `lastModified`, which a
 ///         seed's flag and a seed's volume finishing indexing never move.
+///   1.5 — 2026-11-24 (FRUS Explorer Light, S30b): Rename reads its draft by FRUSCoreKit's rule
+///         (`ArchiveVisitPlanWrites.name(fromDraft:)`); unchanged.
 struct ArchiveVisitListView: View {
 
     @Environment(AppState.self) private var appState
@@ -271,10 +273,10 @@ struct ArchiveVisitListView: View {
 
     private func commitRename() {
         guard let plan = renaming else { return }
-        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = ArchiveVisitPlanWrites.name(fromDraft: draftName)
         // An empty commit is ignored rather than clearing to Untitled — matching the
         // WorkingCorpora rule; `lastModified` moves via the save-time stamper.
-        if !trimmed.isEmpty { plan.rename(to: trimmed) }
+        if let name { plan.rename(to: name) }
         try? modelContext.save()
         renaming = nil
     }

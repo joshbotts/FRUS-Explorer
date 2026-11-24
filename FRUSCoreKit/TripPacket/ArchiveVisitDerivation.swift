@@ -13,15 +13,20 @@
 // limitations under the License.
 
 import Foundation
-import SwiftData
 
 // MARK: - ArchiveVisitDerivation
 
-/// Derives the rendered state of an ``ArchiveVisitPlan``: the packet model from its seeds
+/// Derives the rendered state of an Archives Visit plan: the packet model from its seeds
 /// through the §5 two-list seam, plus the state overlay and the seed-coverage numbers.
 ///
 /// ONE derivation path — the editor's target list, the export sheet, and the list row's
 /// summary all read this, so no two surfaces can disagree about what a plan's targets are.
+///
+/// **It reads the plan as the research export's records** (`ArchiveVisitPlanExport`, with its
+/// `ArchiveVisitDocumentExport` seeds and `ArchiveVisitTargetExport` stored targets), which carry
+/// every field it reads. The app maps its SwiftData rows to them (`ArchiveVisitDerivation+App.swift`,
+/// whose forms over `ArchiveVisitPlan` its views and tests call), and a host that keeps the records'
+/// fields in tables of its own, as FRUS Explorer Light does, reads them as the export does.
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 3: initial implementation
@@ -35,7 +40,7 @@ import SwiftData
 ///         resolves a write through the rendered overlay
 ///   1.4 — #1421 review, round 2: `targetState`'s `resolvedBy` has no default, so a write site
 ///         cannot drop it and still compile
-///   1.5 — #1456: ``inputSignature(plan:indexedVolumeIds:)``, what ``derive(plan:indexedVolumeIds:dataSource:)``
+///   1.5 — #1456: ``inputSignature(plan:indexedVolumeIds:)``, what ``derive(plan:indexedVolumeIds:dataSource:indexes:)``
 ///         reads from the plan and which of its seeds' volumes are indexed, as one value, so the editor
 ///         re-derives when a write from anywhere else changes it
 ///   1.6 — #1456 review, round 1: the signature's doc names what it does not carry (the index's
@@ -49,24 +54,40 @@ import SwiftData
 ///   1.8 — 2026-11-23 (FRUS Explorer Light, S30a): `ArchiveVisitOverlay` moved into FRUSCoreKit
 ///         (`TripPacket/ArchiveVisitOverlay.swift`) with the exporter that reads it, and `derive` calls
 ///         the app's overload of the builder, over its stores (`TripPacket+App.swift`); nothing changes
-@MainActor
-enum ArchiveVisitDerivation {
+///   1.9 — 2026-11-24 (FRUS Explorer Light, S30b): moved into FRUSCoreKit, public, over the research
+///         export's records of a plan, its documents and its targets where it read the SwiftData rows,
+///         which the app maps to them; `derive` takes the bundled indexes the builder reads and is the
+///         one `@MainActor` member, as the builder is; the overlay's join is
+///         ``overlay(for:over:)``, and the signature is counted by
+///         ``inputSignature(seeds:inquiryText:tiers:targets:indexedVolumeIds:)``, which both forms
+///         call; `ArchiveVisitTargetKeys` and `ArchiveVisitTopicReseed` moved with them, and the plan's
+///         writes are `ArchiveVisitPlanWrites`'; nothing changes in what derives
+public enum ArchiveVisitDerivation {
 
     /// Everything a surface needs to render a plan.
-    struct Derived {
+    public struct Derived: Equatable, Sendable {
         /// The packet model, built from the plan's seeds under its contribution flags, with
         /// the plan's edited inquiry text applied to the topic sentence.
-        let model: TripPacketModel
+        public let model: TripPacketModel
         /// The plan's stored state, joined at render time.
-        let overlay: ArchiveVisitOverlay
+        public let overlay: ArchiveVisitOverlay
         /// How many documents seed the plan.
-        let seededDocumentCount: Int
+        public let seededDocumentCount: Int
         /// How many of those seeds live in volumes indexed on this device — the
         /// `WorkingCorpusResolver` membership rule (by volume, one set lookup per key).
-        let indexedDocumentCount: Int
+        public let indexedDocumentCount: Int
+
+        /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+        public init(model: TripPacketModel, overlay: ArchiveVisitOverlay,
+                    seededDocumentCount: Int, indexedDocumentCount: Int) {
+            self.model = model
+            self.overlay = overlay
+            self.seededDocumentCount = seededDocumentCount
+            self.indexedDocumentCount = indexedDocumentCount
+        }
     }
 
-    /// What ``derive(plan:indexedVolumeIds:dataSource:)`` reads from the plan, and which of the plan's
+    /// What ``derive(plan:indexedVolumeIds:dataSource:indexes:)`` reads from the plan, and which of the plan's
     /// seed volumes are indexed on this device, as one value (#1456).
     ///
     /// The editor keys its derivation on this, and the Archives Visits list's row its summary, so a
@@ -91,48 +112,76 @@ enum ArchiveVisitDerivation {
     /// as it was (`AppState` inserts an id already present), so the signature does not move, and a
     /// screen open across that re-index keeps the derivation it had until it is reopened or the plan
     /// changes.
-    struct InputSignature: Hashable, Sendable {
+    public struct InputSignature: Hashable, Sendable {
 
         /// One seed as the derivation reads it: its key and its two contribution flags.
-        struct Seed: Hashable, Sendable {
+        public struct Seed: Hashable, Sendable {
             /// The seed's `"volumeId/documentId"` key.
-            let documentKey: String
+            public let documentKey: String
             /// Whether its own source note contributes (the drawn-from channel).
-            let includeSource: Bool
+            public let includeSource: Bool
             /// Whether its footnotes' citations contribute (the pointed-at channel).
-            let includeExternalRefs: Bool
+            public let includeExternalRefs: Bool
+
+            /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+            public init(documentKey: String, includeSource: Bool, includeExternalRefs: Bool) {
+                self.documentKey = documentKey
+                self.includeSource = includeSource
+                self.includeExternalRefs = includeExternalRefs
+            }
         }
 
         /// One stored state row as the overlay reads it.
-        struct StoredTarget: Hashable, Sendable {
+        public struct StoredTarget: Hashable, Sendable {
             /// The key the row was minted under.
-            let targetKey: String
+            public let targetKey: String
             /// The tier it is assigned to, or `nil`.
-            let tierId: UUID?
+            public let tierId: UUID?
             /// Whether the target stays in the packet.
-            let included: Bool
+            public let included: Bool
             /// The researcher's note.
-            let userNote: String?
+            public let userNote: String?
             /// When the row was created, and its id: which of several rows answering for one
             /// target the target shows (`ArchiveVisitTargetKeys.shownRow`, decision 62).
-            let createdAt: Date?
-            let id: UUID
+            public let createdAt: Date?
+            public let id: UUID
+
+            /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+            public init(targetKey: String, tierId: UUID?, included: Bool, userNote: String?,
+                        createdAt: Date?, id: UUID) {
+                self.targetKey = targetKey
+                self.tierId = tierId
+                self.included = included
+                self.userNote = userNote
+                self.createdAt = createdAt
+                self.id = id
+            }
         }
 
         /// The plan's seed rows, each with how many rows carry it. Counted rather than a set, since
         /// the derivation counts rows (`seededDocumentCount`) and two devices minting one seed leave
         /// two until the pair collapses; unordered, since the derivation sorts them itself.
-        let seeds: [Seed: Int]
+        public let seeds: [Seed: Int]
         /// The plan's inquiry text, as stored.
-        let inquiryText: String?
+        public let inquiryText: String?
         /// The plan's tiers, in order: the overlay takes the list whole.
-        let tiers: [ArchiveVisitTier]
+        public let tiers: [ArchiveVisitTier]
         /// The plan's stored state rows, counted for the same reason as ``seeds``: the overlay
         /// reports how many rows the plan stores (`storedKeyCount`).
-        let targets: [StoredTarget: Int]
+        public let targets: [StoredTarget: Int]
         /// The volumes the seeds live in that are indexed on this device — the indexed set
         /// intersected with the seeds' own volumes, never the whole set.
-        let indexedSeedVolumes: Set<String>
+        public let indexedSeedVolumes: Set<String>
+
+        /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+        public init(seeds: [Seed: Int], inquiryText: String?, tiers: [ArchiveVisitTier],
+                    targets: [StoredTarget: Int], indexedSeedVolumes: Set<String>) {
+            self.seeds = seeds
+            self.inquiryText = inquiryText
+            self.tiers = tiers
+            self.targets = targets
+            self.indexedSeedVolumes = indexedSeedVolumes
+        }
     }
 
     /// The ``InputSignature`` of `plan` on a device whose indexed volumes are `indexedVolumeIds`.
@@ -150,37 +199,69 @@ enum ArchiveVisitDerivation {
     /// 60 Hz on every pass, which on iOS includes each keystroke in the editor's name field. A device
     /// and an on-disk store were not measured.
     ///
+    /// The app's views pass its rows through its own form over `ArchiveVisitPlan`, which reads those
+    /// attributes of the rows themselves; both forms count through
+    /// ``inputSignature(seeds:inquiryText:tiers:targets:indexedVolumeIds:)``.
+    ///
     /// - Parameters:
     ///   - plan: the plan.
-    ///   - indexedVolumeIds: the device's indexed volumes — the set ``derive(plan:indexedVolumeIds:dataSource:)`` is passed.
-    static func inputSignature(plan: ArchiveVisitPlan, indexedVolumeIds: Set<String>) -> InputSignature {
-        let seedRows = plan.documents ?? []
-        var seeds: [InputSignature.Seed: Int] = [:]
+    ///   - indexedVolumeIds: the device's indexed volumes — the set ``derive(plan:indexedVolumeIds:dataSource:indexes:)`` is passed.
+    public static func inputSignature(plan: ArchiveVisitPlanExport,
+                                      indexedVolumeIds: Set<String>) -> InputSignature {
+        inputSignature(
+            seeds: plan.documents.lazy.map {
+                InputSignature.Seed(documentKey: $0.documentKey, includeSource: $0.includeSource,
+                                    includeExternalRefs: $0.includeExternalRefs)
+            },
+            inquiryText: plan.inquiryText, tiers: plan.tiers,
+            targets: plan.targets.lazy.map {
+                InputSignature.StoredTarget(targetKey: $0.targetKey, tierId: $0.tierId,
+                                            included: $0.included, userNote: $0.userNote,
+                                            createdAt: $0.createdAt, id: $0.id)
+            },
+            indexedVolumeIds: indexedVolumeIds)
+    }
+
+    /// The ``InputSignature`` of a plan given as the values the derivation reads: each seed row and
+    /// each stored state row as it reads them, the inquiry text and the tiers as stored. The rule
+    /// both ``inputSignature(plan:indexedVolumeIds:)`` and the app's form over its rows count by.
+    ///
+    /// - Parameters:
+    ///   - seeds: every seed row, one entry a row.
+    ///   - inquiryText: the plan's inquiry text, as stored.
+    ///   - tiers: the plan's tiers, in order.
+    ///   - targets: every stored state row, one entry a row.
+    ///   - indexedVolumeIds: the device's indexed volumes.
+    public static func inputSignature(
+        seeds: some Sequence<InputSignature.Seed>,
+        inquiryText: String?,
+        tiers: [ArchiveVisitTier],
+        targets: some Sequence<InputSignature.StoredTarget>,
+        indexedVolumeIds: Set<String>
+    ) -> InputSignature {
+        var counted: [InputSignature.Seed: Int] = [:]
         var seedVolumes = Set<String>()
-        for row in seedRows {
-            seeds[InputSignature.Seed(documentKey: row.documentKey, includeSource: row.includeSource,
-                                      includeExternalRefs: row.includeExternalRefs), default: 0] += 1
-            if let volumeId = volumeId(ofSeedKey: row.documentKey) { seedVolumes.insert(volumeId) }
+        for seed in seeds {
+            counted[seed, default: 0] += 1
+            if let volumeId = volumeId(ofSeedKey: seed.documentKey) { seedVolumes.insert(volumeId) }
         }
-        var targets: [InputSignature.StoredTarget: Int] = [:]
-        for row in plan.targets ?? [] {
-            targets[InputSignature.StoredTarget(targetKey: row.targetKey, tierId: row.tierId,
-                                                included: row.included, userNote: row.userNote,
-                                                createdAt: row.createdAt, id: row.id), default: 0] += 1
+        var stored: [InputSignature.StoredTarget: Int] = [:]
+        for target in targets {
+            stored[target, default: 0] += 1
         }
-        return InputSignature(seeds: seeds, inquiryText: plan.inquiryText, tiers: plan.tiers,
-                              targets: targets, indexedSeedVolumes: seedVolumes.intersection(indexedVolumeIds))
+        return InputSignature(seeds: counted, inquiryText: inquiryText, tiers: tiers,
+                              targets: stored, indexedSeedVolumes: seedVolumes.intersection(indexedVolumeIds))
     }
 
     /// The volume a seed's `"volumeId/documentId"` key lives in — the one rule both the derivation's
     /// seed coverage and ``inputSignature(plan:indexedVolumeIds:)`` read a seed's volume by, so the
     /// two cannot disagree about which indexed volumes a plan depends on.
-    static func volumeId(ofSeedKey key: String) -> String? {
+    public static func volumeId(ofSeedKey key: String) -> String? {
         key.split(separator: "/").first.map(String.init)
     }
 
     /// Splits a `"volumeId/documentId"` key into the tuple every pipeline call takes.
-    static func documentTuple(fromKey key: String) -> (volumeId: String, documentId: String)? {
+    public static func documentTuple(fromKey key: String) -> (volumeId: String, documentId: String)? {
         guard let slash = key.firstIndex(of: "/") else { return nil }
         let volumeId = String(key[..<slash])
         let documentId = String(key[key.index(after: slash)...])
@@ -195,17 +276,23 @@ enum ArchiveVisitDerivation {
     /// read of the plan here belongs there too. What it reads from the index through `dataSource` is
     /// not in it (see there).
     ///
+    /// `@MainActor`, as the builder and its data source are.
+    ///
     /// - Parameters:
-    ///   - plan: the plan.
+    ///   - plan: the plan, with its seeds and its stored targets.
     ///   - indexedVolumeIds: the device's indexed volumes, for the seed-coverage numbers.
     ///   - dataSource: the packet's pipeline seam.
-    static func derive(
-        plan: ArchiveVisitPlan,
+    ///   - indexes: the bundled indexes the packet reads, as the host loaded them; the app passes its
+    ///     stores' (`TripPacketIndexes.bundled`, through its form over `ArchiveVisitPlan`).
+    @MainActor
+    public static func derive(
+        plan: ArchiveVisitPlanExport,
         indexedVolumeIds: Set<String>,
-        dataSource: some TripPacketReferenceDataSource
+        dataSource: some TripPacketReferenceDataSource,
+        indexes: TripPacketIndexes
     ) async -> Derived {
         // The seeds, in a stable order so two devices derive identically.
-        let seeds = (plan.documents ?? []).sorted { $0.documentKey < $1.documentKey }
+        let seeds = plan.documents.sorted { $0.documentKey < $1.documentKey }
 
         // The §5 projection: contribution flags become two lists AT THE SEAM, and are never
         // threaded through the build loops.
@@ -222,7 +309,8 @@ enum ArchiveVisitDerivation {
             sourceDocuments: sourceDocuments,
             referenceDocuments: referenceDocuments,
             researchQuestion: nil,
-            dataSource: dataSource)
+            dataSource: dataSource,
+            indexes: indexes)
         // The plan's persistent inquiry text is the edited topic sentence — the same slot the
         // packet sheet's field writes, so the exporter's forExport rule needs no second reader.
         if let inquiryText = plan.inquiryText,
@@ -230,6 +318,27 @@ enum ArchiveVisitDerivation {
             model.topicSentence.edited = inquiryText
         }
 
+        let overlay = overlay(for: plan, over: model)
+
+        let indexed = seeds.filter { seed in
+            guard let volumeId = volumeId(ofSeedKey: seed.documentKey) else { return false }
+            return indexedVolumeIds.contains(volumeId)
+        }.count
+
+        return Derived(model: model, overlay: overlay,
+                       seededDocumentCount: seeds.count, indexedDocumentCount: indexed)
+    }
+
+    /// The overlay of `plan`'s stored state on `model`, the packet derived from its seeds: the
+    /// tiers, the stored rows joined to the derived targets, the orphans and the superseded rows.
+    /// What ``derive(plan:indexedVolumeIds:dataSource:indexes:)`` applies, and what a host reads
+    /// again after a write that changes only the stored state, which leaves the model as it was.
+    ///
+    /// - Parameters:
+    ///   - plan: the plan; its tiers and its stored targets are read.
+    ///   - model: the packet derived from the plan's seeds.
+    public static func overlay(for plan: ArchiveVisitPlanExport,
+                               over model: TripPacketModel) -> ArchiveVisitOverlay {
         // The overlay: stored rows joined by key; a stored key with no derived target is an
         // orphan — kept and disclosed, never deleted. A stored key the re-index re-spelled joins
         // the target it was minted for, under the target's key (#1421 review), and a key on a
@@ -238,17 +347,17 @@ enum ArchiveVisitDerivation {
         // and written by their own keys (`ArchiveVisitOverlay.superseded`).
         let derivedKeys = Set(model.targets.map(\.key))
         var overlay = ArchiveVisitOverlay(tiers: plan.tiers)
-        let storedRows = (plan.targets ?? []).sorted(by: { $0.targetKey < $1.targetKey })
+        let storedRows = plan.targets.sorted(by: { $0.targetKey < $1.targetKey })
         overlay.storedKeyCount = storedRows.count
         let resolution = ArchiveVisitTargetKeys.resolve(
             storedKeys: Set(storedRows.map(\.targetKey)), derivedKeys: derivedKeys,
             textKeys: ArchiveVisitTargetKeys.textKeys(of: model.targets))
-        func apply(_ row: ArchiveVisitTarget, under key: String, excluding: Bool) {
+        func apply(_ row: ArchiveVisitTargetExport, under key: String, excluding: Bool) {
             if let tierId = row.tierId { overlay.tierAssignments[key] = tierId }
             if excluding, !row.included { overlay.excludedKeys.insert(key) }
             if let note = row.userNote, !note.isEmpty { overlay.notes[key] = note }
         }
-        var answering: [String: [ArchiveVisitTarget]] = [:]
+        var answering: [String: [ArchiveVisitTargetExport]] = [:]
         for row in storedRows {
             guard let key = resolution[row.targetKey] else {
                 apply(row, under: row.targetKey, excluding: true)
@@ -269,14 +378,7 @@ enum ArchiveVisitDerivation {
                 overlay.superseded[row.targetKey] = .init(targetKey: key, excluded: !row.included)
             }
         }
-
-        let indexed = seeds.filter { seed in
-            guard let volumeId = volumeId(ofSeedKey: seed.documentKey) else { return false }
-            return indexedVolumeIds.contains(volumeId)
-        }.count
-
-        return Derived(model: model, overlay: overlay,
-                       seededDocumentCount: seeds.count, indexedDocumentCount: indexed)
+        return overlay
     }
 }
 
@@ -342,11 +444,14 @@ enum ArchiveVisitDerivation {
 ///   1.2 — decision 62 (A15): a key on a note's text joins the target the note sits in now
 ///          (``textKeys(of:)``), several stored keys may resolve to one derived key, and the target
 ///          shows one row of them (``shownRow(among:answeringFor:)``)
-enum ArchiveVisitTargetKeys {
+///   1.3 — 2026-11-24 (FRUS Explorer Light, S30b): moved into FRUSCoreKit with the derivation,
+///          public; ``shownRow(among:answeringFor:)`` reads the export's records of the stored rows,
+///          and the earliest-created order it keeps by is ``DuplicateRecordOrder``'s; unchanged
+public enum ArchiveVisitTargetKeys {
 
     /// `key` with every space removed — the form the #1421 re-join cannot change, since it
     /// removed spaces and nothing else.
-    static func spacingInsensitive(_ key: String) -> String {
+    public static func spacingInsensitive(_ key: String) -> String {
         String(key.unicodeScalars.filter { $0 != " " }.map(Character.init))
     }
 
@@ -363,7 +468,7 @@ enum ArchiveVisitTargetKeys {
     /// and is `POL 1 US-USSR`. It is read character for character, so two keys of different
     /// lengths never join by it (`DEF 1-1 US` is not `DEF 11 US`), and either way round, for a row
     /// minted on version 69 and read by a device still on 68.
-    static func sameTarget(stored: String, derived: String) -> Bool {
+    public static func sameTarget(stored: String, derived: String) -> Bool {
         if stored == derived { return true }
         let a = spacingInsensitive(stored), b = spacingInsensitive(derived)
         if a == b { return true }
@@ -387,7 +492,7 @@ enum ArchiveVisitTargetKeys {
     /// drawn-from document's source note, or a footnote citation's text — to the derived targets
     /// holding such a seeding (decision 62). What ``resolve(storedKeys:derivedKeys:textKeys:)``
     /// reads a stored `r|` key's note by.
-    static func textKeys(of targets: [TripPacketModel.Target]) -> [String: Set<String>] {
+    public static func textKeys(of targets: [TripPacketModel.Target]) -> [String: Set<String>] {
         var keys: [String: Set<String>] = [:]
         for target in targets {
             for document in target.drawnFrom {
@@ -414,12 +519,12 @@ enum ArchiveVisitTargetKeys {
     /// minted on the new spelling was an orphan.
     ///
     /// - Parameters:
-    ///   - storedKeys: The plan's stored `ArchiveVisitTarget.targetKey`s.
+    ///   - storedKeys: The plan's stored targets' keys (`ArchiveVisitTargetExport.targetKey`).
     ///   - derivedKeys: The keys of the targets the plan derives now.
     ///   - textKeys: ``textKeys(of:)`` over those targets.
     /// - Returns: Stored key → derived key, for every stored key that resolves.
-    static func resolve(storedKeys: Set<String>, derivedKeys: Set<String>,
-                        textKeys: [String: Set<String>] = [:]) -> [String: String] {
+    public static func resolve(storedKeys: Set<String>, derivedKeys: Set<String>,
+                               textKeys: [String: Set<String>] = [:]) -> [String: String] {
         let textKeysWithoutSpaces = textKeys.reduce(into: [String: Set<String>]()) { keys, entry in
             keys[spacingInsensitive(entry.key), default: []].formUnion(entry.value)
         }
@@ -447,18 +552,19 @@ enum ArchiveVisitTargetKeys {
     /// The stored row a derived target shows, of the rows that answer for it (decision 62): the
     /// one minted under the target's own key, when there is one, so a target the reader had set
     /// shows what it showed; otherwise the earliest created, the order `DuplicateRecordCleanup`
-    /// keeps one of two copies by, so every device shows the same row. `nil` only for no rows.
+    /// keeps one of two copies by (``DuplicateRecordOrder/isKept(_:over:)``), so every device shows
+    /// the same row. `nil` only for no rows.
     ///
     /// The rule was chosen in A15, where several rows can first answer for one target: a note
     /// keyed on its text since its row was set now sits in its file's target, beside that
     /// target's own row or another note's. It applies equally to a row re-spelled beside one
     /// minted on the new spelling. The rows it does not show keep their tier, note and exclusion,
     /// unapplied (``ArchiveVisitOverlay/superseded``).
-    static func shownRow(among rows: [ArchiveVisitTarget],
-                         answeringFor key: String) -> ArchiveVisitTarget? {
+    public static func shownRow(among rows: [ArchiveVisitTargetExport],
+                                answeringFor key: String) -> ArchiveVisitTargetExport? {
         let own = rows.filter { $0.targetKey == key }
         return (own.isEmpty ? rows : own).min {
-            DuplicateRecordCleanup.isKept(($0.createdAt, $0.id), over: ($1.createdAt, $1.id))
+            DuplicateRecordOrder.isKept(($0.createdAt, $0.id), over: ($1.createdAt, $1.id))
         }
     }
 }
@@ -468,142 +574,26 @@ enum ArchiveVisitTargetKeys {
 /// What Re-seed from Project did, or proposes to do, to a plan's inquiry topic (#1366).
 ///
 /// The topic is copied from the project's research question once, when the plan is created
-/// (``ArchiveVisitPlan/make(name:activeProject:)``); Re-seed from Project is the one explicit way
+/// (``ArchiveVisitPlanWrites/newPlan(name:projectId:researchQuestion:id:now:)``, which the app's
+/// `ArchiveVisitPlan.make(name:activeProject:)` applies); Re-seed from Project is the one explicit way
 /// to offer the project's CURRENT question again — "an explicit re-seed, never a live mirror".
 /// It fills an empty topic, leaves one that already reads the question, and otherwise asks. It asks
 /// even when the topic is only the question as it stood at creation: the plan keeps no record of
 /// what it was seeded with, so that topic and one the reader rewrote look the same, and asking is
-/// the side of the ambiguity that loses nothing.
-enum ArchiveVisitTopicReseed: Equatable, Sendable {
+/// the side of the ambiguity that loses nothing. The rule is
+/// ``ArchiveVisitPlanWrites/topicReseed(inquiryText:question:)``.
+///
+/// Version history:
+///   1.0 — #1366: initial implementation, in the app's `ArchiveVisitDerivation.swift`
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S30b): moved into FRUSCoreKit with the derivation,
+///          public; unchanged
+public enum ArchiveVisitTopicReseed: Equatable, Sendable {
     /// Nothing was written: the project has no research question, or the topic already reads
     /// it — or the project no longer exists, when Re-seed adds no documents either.
     case unchanged
     /// The topic was empty, and now holds the project's question.
     case filled(question: String)
     /// The topic holds other text, and nothing was written. The caller asks, and on the reader's
-    /// yes calls ``ArchiveVisitPlan/replaceInquiryTopic(with:)``.
+    /// yes writes the question as the topic (the app's `ArchiveVisitPlan.replaceInquiryTopic(with:)`).
     case needsConfirmation(question: String, current: String)
-}
-
-// MARK: - Plan state mutation
-
-extension ArchiveVisitPlan {
-
-    /// Offers the project's current research question to this plan's topic — the decision
-    /// behind Re-seed from Project's second half (#1366; the rule is ``ArchiveVisitTopicReseed``'s).
-    /// Writes only into an empty topic; text of the reader's own is never replaced here.
-    /// The caller saves.
-    ///
-    /// - Parameter question: the project's research question as it stands now.
-    func reseedTopic(fromProjectQuestion question: String?) -> ArchiveVisitTopicReseed {
-        guard let question = TripPacketTopicSentence.written(question) else { return .unchanged }
-        guard let current = TripPacketTopicSentence.written(inquiryText) else {
-            inquiryText = question
-            return .filled(question: question)
-        }
-        if TripPacketTopicSentence.sameText(current, question) { return .unchanged }
-        return .needsConfirmation(question: question, current: current)
-    }
-
-    /// Replaces the topic with the project's question — the confirmed half of
-    /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``. The caller saves.
-    func replaceInquiryTopic(with question: String) {
-        inquiryText = question
-    }
-
-    /// 1e's explicit Re-seed from Project: adds the project's CURRENT leads union as new seeds
-    /// (both contributions on, never removing anything — a mirror would silently erase choices),
-    /// then offers the project's current research question to the topic through
-    /// ``reseedTopic(fromProjectQuestion:)`` (#1366). Before #1366 it moved documents only, so a
-    /// question written after the plan was made could never reach it.
-    ///
-    /// A project that no longer exists changes nothing and reports `.unchanged` (#1366 review): a
-    /// deleted project's notes and collections keep its id — "kept but unlinked", per the delete
-    /// confirmation — so gathering over that id would re-seed from records the reader was told
-    /// had left the project. The editor offers no Re-seed then; this holds for a menu drawn
-    /// before the delete.
-    ///
-    /// Saves `context` before it gathers (#1457 review): the project's seed is gathered on a fresh
-    /// context, which reads only saved data, and a note, a focus tag or an attach made moments
-    /// earlier may not be saved yet — `ProjectLeadsService.recompute` and Project Home's engaged set
-    /// save first for the same reason. The caller saves what this writes, and asks the reader on
-    /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``.
-    @MainActor
-    func reseed(fromProject projectId: UUID, in context: ModelContext) async
-        -> ArchiveVisitTopicReseed {
-        guard let project = Self.project(withId: projectId, in: context) else { return .unchanged }
-        // Read before the await: the project is not touched again after it.
-        let question = project.researchQuestion
-        try? context.save()
-        let keys = await ProjectLeadsService.gatherSeed(
-            forProject: projectId, container: context.container).seedKeys
-        let documents = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
-        addSeeds(documents, includeSource: true, includeExternalRefs: true, in: context)
-        return reseedTopic(fromProjectQuestion: question)
-    }
-
-    /// Renames the plan. `lastModified` is stamped at save time by `ModelModificationStamper`.
-    func rename(to newName: String) {
-        name = newName
-    }
-
-    /// The stored state row for a target key, minting one when `mint` and none exists —
-    /// the §2a overlay rule: a row exists only once the user gives the target state, and
-    /// its id is DERIVED so two devices minting the same row create a collapsible pair.
-    ///
-    /// `overlay` is the one the caller rendered from. Through its ``ArchiveVisitOverlay/storedKeys``
-    /// a target whose row was minted under a key the re-index re-spelled finds that row (#1421
-    /// review); without it the lookup minted a second row beside it, and the target's tier and
-    /// note stayed on the first. A new row is minted under the target's current key. The parameter
-    /// has no default (#1421 review, round 2): the editor's four write sites are covered by no test,
-    /// so a site that dropped it would still compile and would mint the duplicate again. Pass `nil`
-    /// only where nothing has been rendered yet.
-    ///
-    /// The caller saves the context.
-    func targetState(forKey key: String, resolvedBy overlay: ArchiveVisitOverlay?,
-                     mintIfMissing mint: Bool,
-                     in context: ModelContext) -> ArchiveVisitTarget? {
-        let storedKey = overlay?.storedKey(for: key) ?? key
-        if let existing = (targets ?? []).first(where: { $0.targetKey == storedKey }) {
-            return existing
-        }
-        guard mint else { return nil }
-        let row = ArchiveVisitTarget(planId: id, targetKey: key)
-        row.plan = self
-        context.insert(row)
-        return row
-    }
-
-    /// Adds seeds to the plan — the one write path every add flow shares.
-    ///
-    /// Upserts by derived id: a document already seeded gains the requested contributions
-    /// (flags turn ON, never off — adding "references" from Source Explorer must not silently
-    /// switch off a source contribution another surface added), and a new document mints its
-    /// row with exactly the requested flags. Returns how many NEW seed rows were minted.
-    /// The caller saves the context.
-    @discardableResult
-    func addSeeds(_ documents: [(volumeId: String, documentId: String)],
-                  includeSource: Bool, includeExternalRefs: Bool,
-                  in context: ModelContext) -> Int {
-        guard includeSource || includeExternalRefs else { return 0 }
-        var existingByKey = Dictionary((self.documents ?? []).map { ($0.documentKey, $0) },
-                                       uniquingKeysWith: { first, _ in first })
-        var minted = 0
-        for document in documents {
-            let key = "\(document.volumeId)/\(document.documentId)"
-            if let existing = existingByKey[key] {
-                if includeSource { existing.includeSource = true }
-                if includeExternalRefs { existing.includeExternalRefs = true }
-                continue
-            }
-            let seed = ArchiveVisitDocument(planId: id, documentKey: key)
-            seed.plan = self
-            seed.includeSource = includeSource
-            seed.includeExternalRefs = includeExternalRefs
-            context.insert(seed)
-            existingByKey[key] = seed
-            minted += 1
-        }
-        return minted
-    }
 }

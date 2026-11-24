@@ -94,6 +94,8 @@ import SourceNoteKit
 ///          builds take the bundled indexes the packet reads (``TripPacketIndexes``), from which the lots
 ///          resolve and the model's lookups read, where the app's stores were read through its overload of
 ///          the resolution and the model's defaults; the app passes its stores' (`TripPacket+App.swift`)
+///   1.15 — 2026-11-24 (FRUS Explorer Light, S30b): documentation only — the two-list entry's caller,
+///          `ArchiveVisitDerivation`, is the kit's, and the app passes its stores through its form of `derive`
 @MainActor
 public enum TripPacketBuilder {
 
@@ -135,7 +137,7 @@ public enum TripPacketBuilder {
     /// `indexes` are the bundled indexes the packet reads, as the host loaded them: each lot resolves
     /// through their archival three (``ArchivalResolver/documentResolution(lotFile:indexes:)``), and the
     /// model reads its series facts, divided lots, substitutes and footnote-only lots from them. The app
-    /// passes its stores' (`TripPacketIndexes.bundled`, through the overload `ArchiveVisitDerivation` calls).
+    /// passes its stores' (`TripPacketIndexes.bundled`, through its form of `ArchiveVisitDerivation.derive`).
     public static func build(
         sourceDocuments: [(volumeId: String, documentId: String)],
         referenceDocuments: [(volumeId: String, documentId: String)],
