@@ -682,9 +682,13 @@ let package = Package(
         /// platforms; on Linux, Foundation declares them. On Linux, the web edition's package supplies swift-crypto's
         /// `Crypto` and the SQLite headers. TEIHeaderKit, since the library's rules moved in (FRUS
         /// Explorer Light's S21a), reads a side-loaded volume's header for `LocalVolumeCatalog`.
+        /// SemanticVectorsKit, since Related Documents' semantic axis and Project Home's reach moved in
+        /// (FRUS Explorer Light's S26a), is imported behind `canImport` the same way: the axis reads its
+        /// bundled tiers and a host's shards with it.
         .target(
             name: "FRUSCoreKit",
-            dependencies: [.target(name: "SourceNoteKit"), .target(name: "FTS5Store"), .target(name: "TEIHeaderKit")],
+            dependencies: [.target(name: "SourceNoteKit"), .target(name: "FTS5Store"), .target(name: "TEIHeaderKit"),
+                           .target(name: "SemanticVectorsKit")],
             path: "FRUSCoreKit",
             swiftSettings: [.swiftLanguageMode(.v6)],
             linkerSettings: [.linkedLibrary("sqlite3")]
@@ -695,10 +699,12 @@ let package = Package(
         /// runs them on iOS as before. Each opens with `#if SWIFT_PACKAGE`, to import FRUSCoreKit
         /// here and the app module there, and a test or an assertion that needs the app (its
         /// module, its bundle or its views' source) sits inside `#if !SWIFT_PACKAGE`. The indexer's
-        /// suites also import FTS5Store, SourceNoteKit and SQLite3, each behind `canImport`.
+        /// suites also import FTS5Store, SourceNoteKit and SQLite3, each behind `canImport`, and the
+        /// semantic axis's import SemanticVectorsKit the same way.
         .testTarget(
             name: "FRUSCoreKitTests",
-            dependencies: [.target(name: "FRUSCoreKit"), .target(name: "FTS5Store"), .target(name: "SourceNoteKit")],
+            dependencies: [.target(name: "FRUSCoreKit"), .target(name: "FTS5Store"), .target(name: "SourceNoteKit"),
+                           .target(name: "SemanticVectorsKit")],
             path: "FRUSExplorerTests/FRUSCoreKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

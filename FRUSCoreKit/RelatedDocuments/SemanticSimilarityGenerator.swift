@@ -88,8 +88,13 @@ import Foundation
 ///          they stay in the app (`SemanticSimilarityGenerator+App.swift`), and the engine reaches
 ///          them through the host's ``SemanticSimilaritySource`` (``RelatedDocumentsDependencies/semantic``),
 ///          which a host without the semantic stack leaves out
+///   1.4 — 2026-11-23: FRUS Explorer Light's S26a — the generation, the re-score and the off-index
+///          scan are FRUSCoreKit's too (`SemanticSimilarityGenerator+Vectors.swift`), over a
+///          ``SemanticSimilarityHost``, and ``SemanticVectorsSimilaritySource`` is the source the app
+///          passes; the type, ``evidenceLabel(for:)``, ``eligibleVolumeIDs(indexed:scope:)`` and the
+///          off-index leads' initialisers are public, for a host outside the app
 @MainActor
-struct SemanticSimilarityGenerator: SimilarityGenerator {
+public struct SemanticSimilarityGenerator: SimilarityGenerator {
 
     var axis: SimilarityAxis { .semanticSimilarity }
 
@@ -98,9 +103,9 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
 
     /// The host's semantic candidates, or none when the host gives no semantic axis.
     ///
-    /// The generation is the host's: the app's reads SemanticVectorsKit's bundled tiers and its
-    /// shard store and fetches a missing shard, in `SemanticSimilarityGenerator+App.swift`, which is
-    /// why it stays in the app until FRUS Explorer Light's phase 4.
+    /// The generation is the host's source's: ``SemanticVectorsSimilaritySource``'s reads
+    /// SemanticVectorsKit's bundled tiers and the host's shards and asks the host for a missing shard,
+    /// in `SemanticSimilarityGenerator+Vectors.swift`.
     func candidates(
         for anchor: DocumentKey,
         anchorYear: Int?,
@@ -194,7 +199,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     ///   - indexed: Volumes with rows in `document_cache`.
     ///   - scope: The caller's volume restriction, if any.
     /// - Returns: The eligible volume ids.
-    nonisolated static func eligibleVolumeIDs(indexed: Set<String>, scope: Set<String>?) -> Set<String> {
+    public nonisolated static func eligibleVolumeIDs(indexed: Set<String>, scope: Set<String>?) -> Set<String> {
         guard let scope else { return indexed }
         return indexed.intersection(scope)
     }
@@ -209,7 +214,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     ///
     /// - Parameter score: The approximate cosine, through the generation's calibration (B4).
     /// - Returns: A short label.
-    nonisolated static func evidenceLabel(for score: Double) -> String {
+    public nonisolated static func evidenceLabel(for score: Double) -> String {
         let percent = Int((min(1.0, max(0.0, score)) * 100).rounded())
         return String(
             localized: "related.semantic.evidence",
@@ -221,16 +226,18 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
 // MARK: - SemanticSimilaritySource
 
 /// The semantic axis's three passes, which a host with the semantic stack gives the engine through
-/// ``RelatedDocumentsDependencies/semantic``: the app's, over SemanticVectorsKit's bundled tiers and
-/// its shard store, is `AppSemanticSimilaritySource`. A host without one, as FRUS Explorer Light is
-/// until its phase 4, leaves the axis out, and it contributes nothing.
+/// ``RelatedDocumentsDependencies/semantic``: the kit's own, over SemanticVectorsKit's bundled tiers
+/// and a host's shards, is ``SemanticVectorsSimilaritySource``, which the app passes over its
+/// `AppState`. A host without one leaves the axis out, and it contributes nothing.
 ///
-/// What a host outside the app needs to fill the passes' values beyond `.none` is still internal:
-/// the off-index leads' initialisers, ``SemanticSimilarityGenerator/evidenceLabel(for:)`` and
-/// `RelatedDocumentsCounts`' off-index lines. The host that gains a semantic stack makes them public.
+/// A host that writes a source of its own fills the passes' values with the off-index leads'
+/// initialisers, ``SemanticSimilarityGenerator/evidenceLabel(for:)`` and `RelatedDocumentsCounts`'
+/// off-index lines, public since FRUS Explorer Light's S26a.
 ///
 /// Version history:
 ///   1.0 — 2026-11-08: FRUS Explorer Light's S23a
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — the kit's own source, and the members a host's
+///          source fills its values with, public
 @MainActor
 public protocol SemanticSimilaritySource: Sendable {
     /// The axis's own candidates for `anchor`: calibrated cosines, absolute in `[0, 1]`; the app's
@@ -264,6 +271,11 @@ public protocol SemanticSimilaritySource: Sendable {
 /// volumes they have never asked for. So the document channel is opportunistic — it enriches the
 /// section where search or a past download has already paid for the shard, and its absence costs
 /// the reader nothing the volume channel does not already say.
+///
+/// Version history:
+///   1.0 — S-3, with the generator's off-index leads channel (``SemanticSimilarityGenerator``'s history)
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — the three initialisers are public, for a host
+///          outside the app that fills the leads itself
 public struct SemanticOffIndexLeads: Equatable, Sendable {
 
     /// One volume beyond the reader's library, and how many of its documents cleared the cut.
@@ -274,6 +286,16 @@ public struct SemanticOffIndexLeads: Equatable, Sendable {
         /// Documents in it at or better than the anchor's own on-index cut.
         public let count: Int
         public var id: String { volumeID }
+
+        /// Creates a lead.
+        ///
+        /// - Parameters:
+        ///   - volumeID: The volume id.
+        ///   - count: Its documents at or better than the anchor's cut.
+        public init(volumeID: String, count: Int) {
+            self.volumeID = volumeID
+            self.count = count
+        }
     }
 
     /// One document named outright, because its volume's shard was already on this device.
@@ -285,6 +307,18 @@ public struct SemanticOffIndexLeads: Equatable, Sendable {
         /// refuses that mix everywhere else.
         public let score: Double
         public var id: String { "\(volumeID)/\(documentID)" }
+
+        /// Creates a lead.
+        ///
+        /// - Parameters:
+        ///   - volumeID: The document's volume id.
+        ///   - documentID: The document id.
+        ///   - score: The calibrated cosine.
+        public init(volumeID: String, documentID: String, score: Double) {
+            self.volumeID = volumeID
+            self.documentID = documentID
+            self.score = score
+        }
     }
 
     /// Documents at or better than the anchor's own on-index cut.
@@ -297,6 +331,23 @@ public struct SemanticOffIndexLeads: Equatable, Sendable {
     public var rows: [Int] = []
     /// The document channel's rows, best first. Empty when no off-index shard was present.
     public var documents: [DocumentLead] = []
+
+    /// Creates the leads.
+    ///
+    /// - Parameters:
+    ///   - documentCount: Documents at or better than the anchor's own on-index cut.
+    ///   - volumes: The volumes holding them, most matches first.
+    ///   - isCapped: Whether the scan's cap bound.
+    ///   - rows: The kept corpus rows, nearest-first.
+    ///   - documents: The document channel's rows, best first.
+    public init(documentCount: Int, volumes: [VolumeLead], isCapped: Bool,
+                rows: [Int] = [], documents: [DocumentLead] = []) {
+        self.documentCount = documentCount
+        self.volumes = volumes
+        self.isCapped = isCapped
+        self.rows = rows
+        self.documents = documents
+    }
 
     public static let none = SemanticOffIndexLeads(documentCount: 0, volumes: [], isCapped: false)
 }

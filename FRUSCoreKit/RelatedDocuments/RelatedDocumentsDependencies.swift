@@ -32,14 +32,16 @@ import Foundation
 /// values.
 ///
 /// ## The semantic axis is behind ``semantic``
-/// The app passes `AppSemanticSimilaritySource`, its generator's three passes, which read
-/// SemanticVectorsKit's bundled tiers and the app's shard store; a host without the semantic stack
-/// passes none, as FRUS Explorer Light does until its phase
-/// 4. With none, the axis contributes nothing: no candidates, no re-score of the other axes'
+/// The app passes ``SemanticVectorsSimilaritySource``, the generator's three passes, which read
+/// SemanticVectorsKit's bundled tiers and the app's shard store through the
+/// ``SemanticSimilarityHost`` it builds from `AppState`; a host without the semantic stack passes
+/// none. With none, the axis contributes nothing: no candidates, no re-score of the other axes'
 /// candidates and no off-index leads, whatever its weight.
 ///
 /// Version history:
 ///   1.0 — 2026-11-08: FRUS Explorer Light's S23a, with the engine's move into FRUSCoreKit
+///   1.1 — 2026-11-23: FRUS Explorer Light's S26a — the note names the kit's semantic source, which
+///          the app passes since the passes moved into the kit
 public struct RelatedDocumentsDependencies: Sendable {
 
     private let indexingPipelineProvider: @MainActor @Sendable () -> IndexingPipeline?

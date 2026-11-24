@@ -14,7 +14,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// The semantic axis (V-3) and the two shared-code changes it required.
 ///
@@ -26,6 +36,13 @@ import Foundation
 /// Version history:
 ///   1.0 — V-3: initial implementation
 ///   1.1 — 2026-09-10: S-1, re-scoring the other axes' candidates against the anchor's own band
+///   1.2 — 2026-11-23: FRUS Explorer Light's S26a — moved into the kit's suites with the passes, which
+///          FRUSCoreKit holds now: the package runs every test but the four that read the packer's
+///          shards, which the repository ignores, so that a test that would only be skipped on Linux
+///          stays in the app's run (`SemanticSimilarityHostTests` drives the same passes over shards it
+///          writes); the tests that read the bundled tiers load them with SemanticVectorsKit's loader,
+///          by URL (`BundledTiersFixture`), from the test host's bundle in Xcode and from the repository
+///          in the package
 @Suite("Semantic similarity axis")
 struct SemanticAxisTests {
 
@@ -43,7 +60,10 @@ struct SemanticAxisTests {
             D-A settled. Raising the weight without keeping the word would have turned an \
             unmeasured axis on silently.
             """)
+        #if !SWIFT_PACKAGE
+        // The axes' SF Symbols are the app's (`SimilarityModel+App.swift`).
         #expect(!axis.systemImage.isEmpty)
+        #endif
         #expect(SimilarityAxis.allCases.contains(.semanticSimilarity))
     }
 
@@ -226,9 +246,7 @@ struct SemanticAxisTests {
     @MainActor
     @Test("Off-index leads are counted against the anchor's own band, and name volumes only")
     func offIndexLeadsUseTheAnchorsOwnBand() async throws {
-        await BundledSemanticVectors.prepare()
-        let index = try #require(BundledSemanticVectors.index)
-        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+        let (index, corpus) = try BundledTiersFixture.tiers()
 
         // Half the volumes, deterministically: every other one in index order.
         let held = Set(index.volumes.enumerated().filter { $0.offset.isMultiple(of: 2) }
@@ -265,9 +283,7 @@ struct SemanticAxisTests {
     @MainActor
     @Test("A reader holding the whole corpus gets no off-index leads")
     func nothingOffIndexWhenEverythingIsHeld() async throws {
-        await BundledSemanticVectors.prepare()
-        let index = try #require(BundledSemanticVectors.index)
-        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+        let (index, corpus) = try BundledTiersFixture.tiers()
         let eligible = [UInt8](repeating: 1, count: index.documentCount)
         let anchorRow = 0
         let onIndex = SemanticRetrievalKernel.hammingCandidates(
@@ -349,9 +365,7 @@ struct SemanticAxisTests {
     @MainActor
     @Test("The kept rows are exactly the counted documents, and every one is off-index")
     func offIndexKeptRowsMatchTheCount() async throws {
-        await BundledSemanticVectors.prepare()
-        let index = try #require(BundledSemanticVectors.index)
-        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+        let (index, corpus) = try BundledTiersFixture.tiers()
 
         let held = Set(index.volumes.enumerated().filter { $0.offset.isMultiple(of: 2) }
                                      .map { $0.element.volumeID })
@@ -515,6 +529,12 @@ struct SemanticAxisTests {
     }
 
     // MARK: - The re-score itself, against real shards
+    //
+    // Xcode's alone: the packer's shards under `Planning/semantic-vectors/shards` are ignored by the
+    // repository, so these four are skipped wherever the generator has not run, and a skipped test is
+    // one the web edition's Linux CI refuses. `SemanticSimilarityHostTests` drives the same re-score
+    // over shards it writes, on every platform.
+    #if !SWIFT_PACKAGE
 
     /// A store over a temporary directory holding exactly the shards named.
     ///
@@ -561,7 +581,7 @@ struct SemanticAxisTests {
 
         // A floor below every possible cosine: the unfiltered truth.
         let all = await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+            anchor: anchor, candidates: candidates, floor: -1.1, index: index, store: store)
         try #require(all.count == candidates.count,
                      "every candidate's shard is on disk, so every one must score")
 
@@ -574,7 +594,7 @@ struct SemanticAxisTests {
             """)
 
         let kept = await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: candidates, floor: floor, store: store)
+            anchor: anchor, candidates: candidates, floor: floor, index: index, store: store)
         #expect(Set(kept.keys) == Set(expected.keys), """
             The floor must admit exactly the candidates at or above it: kept \(kept.count), \
             expected \(expected.count) of \(all.count).
@@ -618,7 +638,7 @@ struct SemanticAxisTests {
         let candidates = Set(documentIDs.map { Self.key(RescoreFixtures.anchorVolume, $0) })
 
         let scored = await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+            anchor: anchor, candidates: candidates, floor: -1.1, index: index, store: store)
         #expect(scored.count == candidates.count)
 
         let own = try #require(scored[anchor])
@@ -635,9 +655,9 @@ struct SemanticAxisTests {
     ///
     /// The candidate set spans a volume whose shard is present and one whose shard is not, and the
     /// store's own directory listing is compared before and after. **The stronger half of this
-    /// guarantee is structural rather than tested**: `reScore` takes a `SemanticShardStore` and not
-    /// the `AppState` its sibling entry points take, so there is no `fetchSemanticShardIfNeeded` in
-    /// scope for a later change to reach. What remains for a test is the outcome — an absent shard
+    /// guarantee is structural rather than tested**: `reScore` takes the index and the shards, not
+    /// the `SemanticSimilarityHost` its sibling entry points take, so there is no request for a shard
+    /// in scope for a later change to reach. What remains for a test is the outcome — an absent shard
     /// is a silent miss, not a fault and not a download.
     @MainActor
     @Test("A candidate whose shard is absent contributes nothing and pulls nothing",
@@ -657,7 +677,7 @@ struct SemanticAxisTests {
             .prefix(20).map { Self.key(RescoreFixtures.absentVolume, $0) })
 
         let scored = await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: held.union(absent), floor: -1.1, store: store)
+            anchor: anchor, candidates: held.union(absent), floor: -1.1, index: index, store: store)
         #expect(Set(scored.keys) == held, """
             Only the held volume's candidates may score. Scoring the absent one would mean a fetch \
             ran — the burst this path exists to avoid widening.
@@ -684,11 +704,14 @@ struct SemanticAxisTests {
         let candidates = Set(try #require(index.documentIDs(forVolume: RescoreFixtures.candidateVolume))
             .prefix(20).map { Self.key(RescoreFixtures.candidateVolume, $0) })
         let scored = await SemanticSimilarityGenerator.reScore(
-            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+            anchor: anchor, candidates: candidates, floor: -1.1, index: index, store: store)
         #expect(scored.isEmpty)
     }
+    #endif
+
 }
 
+#if !SWIFT_PACKAGE
 /// The real packer shards the S-1 re-score tests drive.
 ///
 /// `Planning/semantic-vectors/shards` is gitignored — it is the download tier, not a bundled
@@ -702,6 +725,7 @@ private enum RescoreFixtures {
 
     static var repoRoot: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
     }
 
     static func shardURL(_ volumeID: String) -> URL {
@@ -714,3 +738,4 @@ private enum RescoreFixtures {
             .allSatisfy { FileManager.default.fileExists(atPath: shardURL($0).path) }
     }
 }
+#endif

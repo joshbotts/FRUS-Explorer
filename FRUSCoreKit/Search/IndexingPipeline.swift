@@ -565,6 +565,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         keeps each reader's writing apart from the index it serves, as `documentSnippets(forKeys:maxLength:userSource:)`
 ///         reads a line's. From the index, the default and the app's call, it runs the same statement as
 ///         before; nothing the indexer stores or reads changes
+///  4.65 — 2026-11-23 (FRUS Explorer Light S26a): `candidateRecords(forKeys:)` is public, unchanged, since
+///         the semantic axis's generation, which moved into the kit, fences its candidates with it, for a
+///         host that does the same; nothing the indexer stores or reads changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -11235,7 +11238,7 @@ public actor IndexingPipeline {
     /// - Parameter keys: The documents to look up.
     /// - Returns: A record per key that exists in the cache.
     /// - Throws: `IndexingError.sqliteError` on a statement failure.
-    func candidateRecords(
+    public func candidateRecords(
         forKeys keys: [DocumentKey]
     ) async throws -> [DocumentKey: CandidateRecord] {
         guard !keys.isEmpty else { return [:] }
