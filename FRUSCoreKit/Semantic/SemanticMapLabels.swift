@@ -13,8 +13,16 @@
 // limitations under the License.
 
 import Foundation
+// Linux's Foundation declares the geometry types itself; on Apple platforms a package module needs
+// CoreGraphics for their Equatable and their members.
+#if canImport(CoreGraphics)
 import CoreGraphics
-import simd
+#endif
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// Where the map's camera is looking.
 ///
@@ -29,18 +37,20 @@ import simd
 ///
 /// Version history:
 ///   1.0 — V-4: extracted when the map gained labels
-struct SemanticMapCamera: Equatable, Sendable {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the label layout, public,
+///          CoreGraphics behind `canImport` and without `simd`, whose `SIMD2` is the standard library's
+public struct SemanticMapCamera: Equatable, Sendable {
 
     /// Grid coordinate at the centre of the view.
-    var centre: SIMD2<Float>
+    public var centre: SIMD2<Float>
     /// Half the visible grid height. Zoom scales this; aspect widens it.
-    var halfExtent: Float
+    public var halfExtent: Float
 
     /// Creates a camera.
     /// - Parameters:
     ///   - centre: Grid coordinate at the centre of the view.
     ///   - halfExtent: Half the visible grid height.
-    init(centre: SIMD2<Float> = SIMD2<Float>(0, 0), halfExtent: Float = 32_768) {
+    public init(centre: SIMD2<Float> = SIMD2<Float>(0, 0), halfExtent: Float = 32_768) {
         self.centre = centre
         self.halfExtent = halfExtent
     }
@@ -50,7 +60,7 @@ struct SemanticMapCamera: Equatable, Sendable {
     /// - Parameter aspect: Viewport width divided by height.
     /// - Returns: The per-axis scale. Applying aspect here rather than to `halfExtent` is what keeps
     ///   a resize from disturbing the camera and a zoom from distorting the map.
-    func scale(aspect: Float) -> SIMD2<Float> {
+    public func scale(aspect: Float) -> SIMD2<Float> {
         let safeAspect = aspect.isFinite && aspect > 0 ? aspect : 1
         return safeAspect >= 1
             ? SIMD2<Float>(halfExtent * safeAspect, halfExtent)
@@ -62,15 +72,16 @@ struct SemanticMapCamera: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-struct SemanticMapLabel: Identifiable, Equatable {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit, public
+public struct SemanticMapLabel: Identifiable, Equatable {
     /// The cluster this names.
-    let id: Int
+    public let id: Int
     /// The words, already trimmed to the number the map shows.
-    let text: String
+    public let text: String
     /// Where to draw it, in view points.
-    let position: CGPoint
+    public let position: CGPoint
     /// How many documents the region holds — the ranking that decides who gets a label.
-    let documentCount: Int
+    public let documentCount: Int
 }
 
 /// Chooses which regions get named, and where the names go.
@@ -86,17 +97,59 @@ struct SemanticMapLabel: Identifiable, Equatable {
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-enum SemanticMapLabelLayout {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the camera, public;
+///          ``labelledClusters(_:scope:)``, the scoped map's choice of what may be named, out of
+///          `SemanticMapModel`
+public enum SemanticMapLabelLayout {
 
     /// How many names the map will show at once.
-    static let defaultLimit = 22
+    public static let defaultLimit = 22
 
     /// Minimum distance between two names, in points.
-    static let defaultSpacing: CGFloat = 72
+    public static let defaultSpacing: CGFloat = 72
 
     /// How many of a cluster's terms to show. The artifact carries four, ranked; two reads as a name
     /// and four reads as a word cloud.
-    static let defaultTermCount = 2
+    public static let defaultTermCount = 2
+
+    /// How many in-scope documents a region needs before its name is drawn.
+    ///
+    /// A label sits at the region's WHOLE-CORPUS centroid, which is where its members are only if it
+    /// has members. One in-scope document out of nine thousand puts a name in the middle of a field
+    /// of ghosts, and the reader has no way to see that it describes a single point. Five is a
+    /// judgement rather than a measurement, and a low one: it drops the degenerate case without
+    /// pretending to a threshold nobody has calibrated.
+    public static let minimumLabelledInScope = 5
+
+    /// The regions to label, re-counted against the scope.
+    ///
+    /// Two things happen here and both are necessary. A region with (almost) nothing in scope is
+    /// **dropped**, because the artifact's cluster centres are whole-corpus and scoping to one
+    /// subseries otherwise left the label layer choosing its dozen from all 172 regions, most of them
+    /// naming a place that now held nothing but ghosts.
+    /// And a surviving region's `documentCount` is **replaced by its in-scope count**, because the
+    /// label layer ranks by size and keeps a dozen: rank by the series and a narrow scope gives its
+    /// labels to the corpus's biggest regions rather than to the ones it fills.
+    ///
+    /// The regions table of an export and the accessibility list read the same list, so the counts
+    /// in a file and on the screen agree with the names drawn.
+    ///
+    /// - Parameters:
+    ///   - clusters: Every region the artifact names.
+    ///   - scope: The scope's mask, or `nil` for the whole series.
+    /// - Returns: The regions to label: `clusters` itself when unscoped.
+    public static func labelledClusters(_ clusters: [SemanticMapArtifacts.Cluster],
+                                        scope: SemanticMapColouring.ScopeMask?)
+        -> [SemanticMapArtifacts.Cluster] {
+        guard let scope else { return clusters }
+        return clusters.compactMap { cluster in
+            guard let count = scope.regionCounts[UInt16(clamping: cluster.id)],
+                  count >= minimumLabelledInScope else { return nil }
+            return SemanticMapArtifacts.Cluster(
+                id: cluster.id, terms: cluster.terms, documentCount: count,
+                centreX: cluster.centreX, centreY: cluster.centreY, eraCounts: cluster.eraCounts)
+        }
+    }
 
     /// Projects a grid coordinate to a point in the view.
     ///
@@ -108,7 +161,7 @@ enum SemanticMapLabelLayout {
     ///   - camera: Where the camera is looking.
     ///   - size: The view's size in points.
     /// - Returns: The position in view points; may be outside `size`.
-    static func project(_ grid: SIMD2<Float>, camera: SemanticMapCamera, size: CGSize) -> CGPoint {
+    public static func project(_ grid: SIMD2<Float>, camera: SemanticMapCamera, size: CGSize) -> CGPoint {
         let aspect = size.height > 0 ? Float(size.width / size.height) : 1
         let scale = camera.scale(aspect: aspect)
         let normalized = (grid - camera.centre) / scale
@@ -128,7 +181,7 @@ enum SemanticMapLabelLayout {
     ///   - camera: Where the camera is looking.
     ///   - size: The view's size in points.
     /// - Returns: The grid coordinate under that point.
-    static func unproject(_ point: CGPoint, camera: SemanticMapCamera, size: CGSize)
+    public static func unproject(_ point: CGPoint, camera: SemanticMapCamera, size: CGSize)
         -> SIMD2<Float> {
         guard size.width > 0, size.height > 0 else { return camera.centre }
         let aspect = Float(size.width / size.height)
@@ -149,7 +202,7 @@ enum SemanticMapLabelLayout {
     ///   - spacing: Minimum distance between two names, in points.
     ///   - termCount: How many of each cluster's terms to show.
     /// - Returns: The names to draw, largest region first.
-    static func labels(
+    public static func labels(
         for clusters: [SemanticMapArtifacts.Cluster],
         camera: SemanticMapCamera,
         size: CGSize,

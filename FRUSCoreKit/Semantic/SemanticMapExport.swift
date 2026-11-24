@@ -7,6 +7,16 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// Linux's Foundation declares the geometry types itself; on Apple platforms a package module needs
+// CoreGraphics for their Equatable and their members.
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 // MARK: - SemanticMapExport
 
@@ -52,7 +62,9 @@ import Foundation
 ///   1.1 — W-3 (#1007): the figure — `figureTitle`/`sliceDescription` parameters on
 ///         ``provenance(index:scopeLabel:scopedDocumentCount:lens:indexedVolumeCount:figureTitle:sliceDescription:)``,
 ///         and the refusal section above rewritten as the assembly description
-enum SemanticMapExport {
+///   1.4 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the region card's rows,
+///         public, CoreGraphics behind `canImport`; `FigureFrame`'s initialiser spelt out for a host
+public enum SemanticMapExport {
 
     // MARK: - The figure's frame
 
@@ -68,13 +80,24 @@ enum SemanticMapExport {
     /// regardless of what was on screen, so a frame sentence there would describe a framing the
     /// table does not depend on. The frame sequence is a moving camera; one frame's numbers would
     /// be false of the other 553.
-    struct FigureFrame: Equatable, Sendable {
+    public struct FigureFrame: Equatable, Sendable {
         /// The camera the plate was rendered through.
-        let camera: SemanticMapCamera
+        public let camera: SemanticMapCamera
         /// The plate rectangle, in points.
-        let size: CGSize
+        public let size: CGSize
         /// How many regions this figure actually names.
-        let labelledRegionCount: Int
+        public let labelledRegionCount: Int
+
+        /// Creates a figure's frame.
+        /// - Parameters:
+        ///   - camera: The camera the plate was rendered through.
+        ///   - size: The plate rectangle, in points.
+        ///   - labelledRegionCount: How many regions the figure names.
+        public init(camera: SemanticMapCamera, size: CGSize, labelledRegionCount: Int) {
+            self.camera = camera
+            self.size = size
+            self.labelledRegionCount = labelledRegionCount
+        }
     }
 
     // MARK: - Provenance
@@ -110,14 +133,14 @@ enum SemanticMapExport {
     ///     plane, not the slice) and without this sentence the reader has no way to know why.
     ///   - frame: Non-nil for a FIGURE. Adds the frame and label-selection caveats — see
     ///     ``FigureFrame``.
-    static func provenance(index: SemanticMapArtifacts.MapIndex,
-                           scopeLabel: String?,
-                           scopedDocumentCount: Int?,
-                           lens: SemanticMapLens,
-                           indexedVolumeCount: Int?,
-                           figureTitle: String? = nil,
-                           sliceDescription: String? = nil,
-                           frame: FigureFrame? = nil) -> AnalyticsProvenance {
+    public static func provenance(index: SemanticMapArtifacts.MapIndex,
+                                  scopeLabel: String?,
+                                  scopedDocumentCount: Int?,
+                                  lens: SemanticMapLens,
+                                  indexedVolumeCount: Int?,
+                                  figureTitle: String? = nil,
+                                  sliceDescription: String? = nil,
+                                  frame: FigureFrame? = nil) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: figureTitle ?? String(localized: "semanticMap.export.title",
                                 defaultValue: "Semantic map regions"),
@@ -264,8 +287,8 @@ enum SemanticMapExport {
     ///     so counts agree with what the map drew.
     ///   - termCount: How many of each region's terms to name.
     /// - Returns: The table, ready for `provenancedCSV`.
-    static func regionsTable(clusters: [SemanticMapArtifacts.Cluster],
-                             termCount: Int = 4) -> ChartInspectorData {
+    public static func regionsTable(clusters: [SemanticMapArtifacts.Cluster],
+                                    termCount: Int = 4) -> ChartInspectorData {
         let ranked = clusters.sorted {
             $0.documentCount == $1.documentCount ? $0.id < $1.id
                                                  : $0.documentCount > $1.documentCount
@@ -316,7 +339,8 @@ enum SemanticMapExport {
 ///         the view for the same reason
 ///   1.2 — 2026-09-30: #1478 — the era rows' counts are grouped ("3,803"), like the headline
 ///         above them, where `String(Int)` printed them bare
-enum SemanticMapRegionRows {
+///   1.3 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the export, public
+public enum SemanticMapRegionRows {
 
     /// The region card's headline: "3,803 documents in the series · 1,204 in scope".
     ///
@@ -329,7 +353,7 @@ enum SemanticMapRegionRows {
     ///   - documentCount: The artifact's whole-corpus count for the region.
     ///   - inScope: The region's count in the current scope, when a scope is applied.
     /// - Returns: The headline.
-    static func countSummary(documentCount: Int, inScope: Int?) -> String {
+    public static func countSummary(documentCount: Int, inScope: Int?) -> String {
         let total = String(format: String(localized: "semanticMap.region.count %@",
                                           defaultValue: "%@ in the series"),
                            CountCopy.documents(documentCount))
@@ -340,11 +364,11 @@ enum SemanticMapRegionRows {
     }
 
     /// One era's label and count, as the card prints them.
-    struct Row {
+    public struct Row {
         /// The era's name, or the fallback for a key this app has no case for.
-        let label: String
+        public let label: String
         /// The document count, already a string for display.
-        let count: String
+        public let count: String
     }
 
     /// The rows for a region, oldest era first, keeping every key. Each count is grouped for the
@@ -354,8 +378,8 @@ enum SemanticMapRegionRows {
     ///   - cluster: The region, straight from the artifact.
     ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: Rows that account for every document in `cluster.documentCount`.
-    static func eraRows(_ cluster: SemanticMapArtifacts.Cluster,
-                        locale: Locale = .autoupdatingCurrent) -> [Row] {
+    public static func eraRows(_ cluster: SemanticMapArtifacts.Cluster,
+                               locale: Locale = .autoupdatingCurrent) -> [Row] {
         let known = cluster.eraCounts
             .compactMap { key, value -> (Int, String, Int)? in
                 guard let raw = Int(key), let era = CoverageEra(rawValue: raw) else { return nil }

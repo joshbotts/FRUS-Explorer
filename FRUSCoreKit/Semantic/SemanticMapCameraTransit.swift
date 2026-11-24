@@ -51,18 +51,19 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — visual-marketing plan §3.2 M-1: initial implementation
-struct SemanticMapCameraTransit: Equatable, Sendable {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit, public
+public struct SemanticMapCameraTransit: Equatable, Sendable {
 
     /// Where the camera starts.
-    let from: SemanticMapCamera
+    public let from: SemanticMapCamera
     /// Where it lands.
-    let to: SemanticMapCamera
+    public let to: SemanticMapCamera
 
     /// Creates a transit.
     /// - Parameters:
     ///   - from: The camera at the start.
     ///   - to: The camera at the end.
-    init(from: SemanticMapCamera, to: SemanticMapCamera) {
+    public init(from: SemanticMapCamera, to: SemanticMapCamera) {
         self.from = from
         self.to = to
     }
@@ -73,7 +74,7 @@ struct SemanticMapCameraTransit: Equatable, Sendable {
     /// caller should apply `to` and be done. Also false when either half-extent is non-positive,
     /// which has no logarithm — a defensive case, since `SemanticMapCamera` is never built that way
     /// by the app, but one where the alternative is a `NaN` camera and a blank map.
-    var isWorthAnimating: Bool {
+    public var isWorthAnimating: Bool {
         guard from.halfExtent > 0, to.halfExtent > 0 else { return false }
         return from != to
     }
@@ -83,7 +84,7 @@ struct SemanticMapCameraTransit: Equatable, Sendable {
     /// - Parameter fraction: 0 at the start, 1 at the end. Values outside are clamped, so a caller
     ///   that overshoots its clock by a frame lands on the destination rather than past it.
     /// - Returns: The interpolated camera; `from` at 0 and `to` at 1, both by identity.
-    func camera(at fraction: Double) -> SemanticMapCamera {
+    public func camera(at fraction: Double) -> SemanticMapCamera {
         guard isWorthAnimating else { return to }
         if fraction <= 0 { return from }
         if fraction >= 1 { return to }
@@ -105,7 +106,7 @@ struct SemanticMapCameraTransit: Equatable, Sendable {
     /// Deliberately not a spring or an overshoot: the destination of a region focus is a *claim*
     /// about where a region is, and a camera that sails past it and comes back says the map moved
     /// when it did not.
-    static func eased(_ fraction: Double) -> Double {
+    public static func eased(_ fraction: Double) -> Double {
         let t = min(max(fraction, 0), 1)
         return t * t * (3 - 2 * t)
     }

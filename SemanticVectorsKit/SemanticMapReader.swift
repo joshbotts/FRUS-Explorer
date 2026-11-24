@@ -114,6 +114,67 @@ public struct SemanticMapVectors: Sendable {
     }
 }
 
+/// The bundled map, its index (`semantic-map-index.json`) and its placements (`semantic-map.bin`), loaded by
+/// URL and held to the bundled vectors.
+///
+/// What the app's `BundledSemanticMap.prepare()` loads from its bundle, for any host, and refused as it
+/// refuses it: coordinates are computed *from* vectors, so a map from one generation drawn against another
+/// places documents where different vectors put them, and every region would be subtly wrong in a way no
+/// reader could detect. The two files load **as a pair or not at all**, and every failure is a
+/// ``SemanticUnavailable``:
+/// - `noArtifact` when either file is missing, as when the app's bundle carries neither;
+/// - `malformedArtifact("map index: …")` for an index that cannot be read or decoded;
+/// - `provenanceMismatch` for an index whose provenance digest is not the vectors' own;
+/// - and the binary's own refusals, ``SemanticMapVectors``': a header that is not a map's, another
+///   generation's digest, or another count of documents than the vectors hold.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S28a — the load `BundledSemanticMap.prepare()` ran, by URL;
+///          the app's `Bundle.main` statics stay in the app over it
+public struct SemanticBundledMap: Sendable {
+
+    /// The decoded cluster roster and layout provenance.
+    public let index: SemanticMapArtifacts.MapIndex
+    /// The mapped placements, whose header matched the vectors' provenance and count.
+    public let vectors: SemanticMapVectors
+
+    /// Loads the pair.
+    ///
+    /// Not cheap: the index is about 24 KB of JSON to decode, and the binary, 1.89 MB, is mapped. A host
+    /// loads it once, off the main actor, as the app's loader does, and only once its vectors have loaded.
+    ///
+    /// - Parameters:
+    ///   - indexURL: `semantic-map-index.json`.
+    ///   - binaryURL: `semantic-map.bin`.
+    ///   - vectorIndex: The bundled vectors' index, whose provenance and document count the map must share.
+    /// - Throws: `SemanticUnavailable`, as the type's note lists.
+    public init(indexAt indexURL: URL, binaryAt binaryURL: URL,
+                vectorIndex: SemanticVectorIndex) throws(SemanticUnavailable) {
+        guard FileManager.default.fileExists(atPath: indexURL.path),
+              FileManager.default.fileExists(atPath: binaryURL.path) else {
+            throw .noArtifact
+        }
+        let provenance = vectorIndex.provenance
+        do {
+            let data = try Data(contentsOf: indexURL)
+            let mapIndex = try JSONDecoder().decode(SemanticMapArtifacts.MapIndex.self, from: data)
+            guard mapIndex.provenanceDigest == provenance.digestHex else {
+                throw SemanticUnavailable.provenanceMismatch(
+                    expected: provenance.digestHex, found: mapIndex.provenanceDigest)
+            }
+            let vectors = try SemanticMapVectors(
+                contentsOf: binaryURL, provenance: provenance,
+                expectedDocumentCount: vectorIndex.documentCount)
+            self.index = mapIndex
+            self.vectors = vectors
+        } catch let error as SemanticUnavailable {
+            throw error
+        } catch {
+            throw .malformedArtifact("map index: \(error)")
+        }
+    }
+}
+
 extension Data {
     /// Reads a little-endian `UInt32` at a byte offset.
     /// - Parameter offset: Byte offset.

@@ -2578,14 +2578,14 @@ every denominator and every "cannot appear here" must survive.*
 <!-- Placeholder note: keep `\(clusterCount)`, `\(unclusteredCount)` and `\(percentText)` intact.
      The unclustered disclosure is the load-bearing clause — those documents cannot be reached
      from this list at all, and hiding that would present the axis as exhaustive. -->
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 139–145 | key: browser.clusters.caption -->
+<!-- SOURCE: FRUSCoreKit/Semantic/ClustersAxis.swift | lines: 151–157 | key: browser.clusters.caption -->
 
 \(clusterCount) clusters computed from document text. Labels are the most distinctive sampled terms, not subject headings. \(unclusteredCount) documents (\(percentText)%) belong to no cluster and cannot be reached from this list. Era bars reflect each volume’s coverage era, not document dates.
 
 <!-- END SOURCE: browser.clusters.caption -->
 
 #### The drill-in footer
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 768–769 | key: browser.clusters.drill.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 580–581 | key: browser.clusters.drill.footer -->
 
 A cluster is a grouping detected by an AI model that the corpus fell into on its own. It is comprised of documents whose language reads alike to an AI model. It is detected mathematically by turning its text into numeric vectors and clustering documents measured as similar rather than chosen by an editor. Its label is automatically assigned from the most distinctive words in a sample of the cluster’s documents. It is not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date.
 
@@ -2990,14 +2990,14 @@ Volumes citing %1$@ whose coverage falls inside %2$@. Counted from document sour
 <!-- END SOURCE: browser.archives.class.caption %@ %@ -->
 
 #### The cluster data and the semantic vectors come from…
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClustersIndexView.unavailableText | lines: 294–295 | key: browser.clusters.mismatch -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClustersIndexView.unavailableText | lines: 103–104 | key: browser.clusters.mismatch -->
 
 The cluster data and the semantic vectors come from different releases, so the list is not shown.
 
 <!-- END SOURCE: browser.clusters.mismatch -->
 
 #### Footer — Saved “\(…)” with the first \(…) of \(…) documents.
-<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClusterDocumentsView.actionsSection | lines: 806–807 | key: browser.clusters.saved.truncated -->
+<!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | ClusterDocumentsView.actionsSection | lines: 618–619 | key: browser.clusters.saved.truncated -->
 
 Saved “\(savedCorpusName)” with the first \(savedCapture.documentKeys.count) of \(savedCapture.total) documents.
 

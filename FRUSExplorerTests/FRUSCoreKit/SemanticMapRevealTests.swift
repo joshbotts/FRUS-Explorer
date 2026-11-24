@@ -13,14 +13,29 @@
 // limitations under the License.
 
 import Foundation
+#if !SWIFT_PACKAGE
 import Metal
+#endif
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// The map needs a Metal device to prepare. Declared here rather than shared because
 /// `SemanticMapSurfaceTests`' copy is file-private, and a second one-line constant beats widening
 /// another suite's surface to reach it.
+#if !SWIFT_PACKAGE
+// The app's renderer is Metal's.
 private let revealTestsHaveMetal = MTLCreateSystemDefaultDevice() != nil
+#endif
 
 /// Going from a document to its place on the map, and back out to its nearest neighbours.
 ///
@@ -36,8 +51,70 @@ private let revealTestsHaveMetal = MTLCreateSystemDefaultDevice() != nil
 ///
 /// Version history:
 ///   1.0 — build 42: document → map, and the map's nearest-document list
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites: the reveal's rule is the
+///          kit's (`SemanticMapReveal`), which the package tests over the bundled map; the model's deferral,
+///          its renderer and the view's source are the app's
 @Suite("Revealing a document on the map")
 struct SemanticMapRevealTests {
+
+    // MARK: - The kit's reveal, over the bundled map
+
+    @Test("A key splits at its first separator, and a key without one names nothing")
+    func keysSplitAtTheFirstSeparator() throws {
+        let parts = try #require(SemanticMapReveal.documentKey("frus1861/d1"))
+        #expect(parts.volumeID == "frus1861" && parts.documentID == "d1")
+        #expect(SemanticMapReveal.documentKey("frus1861/d1/extra")?.documentID == "d1/extra")
+        for key in ["frus1861", "", "/d1", "frus1861/"] {
+            #expect(SemanticMapReveal.documentKey(key) == nil, "\(key) parsed")
+        }
+    }
+
+    @Test("A real document reveals at its own point, in its region, at the reveal's extent")
+    func kitRevealsARealDocument() throws {
+        let loaded = try SemanticMapFixture.load()
+        let clusters = loaded.mapIndex.clusters
+        var clustered: Int?
+        for row in 0..<min(loaded.index.documentCount, 5_000)
+        where loaded.map.placement(at: row)?.cluster != SemanticMapArtifacts.unclustered {
+            clustered = row; break
+        }
+        let row = try #require(clustered, "no clustered row in the first 5,000")
+        let document = try #require(loaded.index.document(at: row))
+        let revealed = try #require(SemanticMapReveal.reveal(
+            volumeID: document.volumeID, documentID: document.documentID, index: loaded.index,
+            map: loaded.map, clusters: clusters, isReadable: { $0 == document.volumeID }))
+        let placement = try #require(loaded.map.placement(at: row))
+        #expect(revealed.selection.row == row)
+        #expect(revealed.selection.position == SIMD2(Float(placement.x), Float(placement.y)))
+        #expect(revealed.selection.regionName
+                == SemanticMapPicking.regionName(ofRow: row, map: loaded.map, clusters: clusters))
+        #expect(revealed.selection.regionName != nil, "a tap and a reveal would show different cards")
+        #expect(revealed.selection.isDownloaded)
+        #expect(revealed.camera == SemanticMapCamera(centre: revealed.selection.position,
+                                                     halfExtent: SemanticMapReveal.documentHalfExtent))
+        #expect(SemanticMapReveal.reveal(volumeID: "frus9999", documentID: "d99999", index: loaded.index,
+                                         map: loaded.map, clusters: clusters, isReadable: { _ in true }) == nil,
+                "a document the map has no point for must say so")
+    }
+
+    @Test("A region focus lands on its centre only under the layout that minted its id")
+    func kitFocusesARegion() throws {
+        let mapIndex = try SemanticMapFixture.load().mapIndex
+        let region = try #require(mapIndex.clusters.first)
+        let focused = try #require(SemanticMapReveal.focus(
+            regionID: region.id, digest: mapIndex.layoutIdentity, artifactDigest: mapIndex.layoutIdentity,
+            clusters: mapIndex.clusters))
+        #expect(focused.region.id == region.id)
+        #expect(focused.camera == SemanticMapCamera(
+            centre: SIMD2(Float(region.centreX), Float(region.centreY)),
+            halfExtent: SemanticMapReveal.regionHalfExtent))
+        #expect(SemanticMapReveal.focus(regionID: region.id, digest: "another layout",
+                                        artifactDigest: mapIndex.layoutIdentity, clusters: mapIndex.clusters) == nil)
+        #expect(SemanticMapReveal.focus(regionID: -1, digest: mapIndex.layoutIdentity,
+                                        artifactDigest: mapIndex.layoutIdentity, clusters: mapIndex.clusters) == nil)
+        #expect(SemanticMapReveal.regionHalfExtent > SemanticMapReveal.documentHalfExtent,
+                "a region's focus leaves more of the map in view than a document's")
+    }
 
     // MARK: - The request carries the document, and its identity
 
@@ -84,6 +161,8 @@ struct SemanticMapRevealTests {
 
     // MARK: - Revealing, against the real artifact
 
+    #if !SWIFT_PACKAGE
+    // The app's model, prepared over its bundle, and its renderer.
     /// **These load the bundled map on purpose, and the first draft did not.**
     ///
     /// Without it `BundledSemanticMap.vectors` is nil, `reveal` returns at its first guard, and
@@ -121,7 +200,7 @@ struct SemanticMapRevealTests {
         #expect(selection.documentID == document.documentID)
         #expect(selection.row == 0)
         #expect(model.camera != before, "the camera did not move to the revealed document")
-        #expect(model.camera.halfExtent == SemanticMapModel.revealHalfExtent)
+        #expect(model.camera.halfExtent == SemanticMapReveal.documentHalfExtent)
     }
 
     /// The reveal must agree with a tap about which region a document is in.
@@ -193,25 +272,28 @@ struct SemanticMapRevealTests {
         #expect(model.reveal(documentKey: "no-separator", isReadable: { _ in true }) == .notFound,
                 "a key that can never parse should not make the caller retry forever")
     }
+    #endif
 
     /// The half of the fix that a mutation caught surviving: the outcome was right and the caller
     /// discarded it.
     @Test("A continuation is settled by every outcome except notReady")
     func onlyNotReadyDefersTheContinuation() {
-        #expect(SemanticMapSpikeView.continuationIsSettled(.revealed))
-        #expect(SemanticMapSpikeView.continuationIsSettled(.notFound), """
+        #expect(SemanticMapReveal.continuationIsSettled(.revealed))
+        #expect(SemanticMapReveal.continuationIsSettled(.notFound), """
             A document the map genuinely does not have must SETTLE the continuation, or the view \
             re-attempts the same missing document forever.
             """)
-        #expect(SemanticMapSpikeView.continuationIsSettled(nil),
+        #expect(SemanticMapReveal.continuationIsSettled(nil),
                 "a continuation carrying no document has nothing to wait for")
-        #expect(!SemanticMapSpikeView.continuationIsSettled(.notReady), """
+        #expect(!SemanticMapReveal.continuationIsSettled(.notReady), """
             A reveal that could not run yet was recorded as applied. That is the bug a reader hit — \
             the map opens, the continuation is banked, the retry never happens, and the document is \
             never selected.
             """)
     }
 
+    #if !SWIFT_PACKAGE
+    // Reads the app's view.
     /// The continuation must be recorded **after** the reveal is consulted, not before.
     ///
     /// **This is the shape of the original defect and the extracted predicate does not catch it.**
@@ -225,6 +307,7 @@ struct SemanticMapRevealTests {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
                 .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
             encoding: .utf8)
         let start = try #require(source.range(of: "private func applyContinuedRequestIfNeeded()"))
@@ -247,9 +330,12 @@ struct SemanticMapRevealTests {
             arrived while prepare() was still loading — the original defect, verbatim.
             """)
     }
+    #endif
 
     // MARK: - The deferral, which is what the console output measured
 
+    #if !SWIFT_PACKAGE
+    // The app's model's deferral, and the view's retry of it, read from its source.
     /// **The failure a reader hit, reproduced.** Console output from the shipped build:
     ///
     /// ```
@@ -325,6 +411,7 @@ struct SemanticMapRevealTests {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
                 .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
             encoding: .utf8)
         // Comments are stripped so prose naming the call cannot stand in for it.
@@ -354,9 +441,12 @@ struct SemanticMapRevealTests {
             looking at the whole corpus with a selection somewhere off screen.
             """)
     }
+    #endif
 
     // MARK: - The camera the labels project through
 
+    #if !SWIFT_PACKAGE
+    // The app's model and renderer, the view's source and the card's count.
     /// **The renderer owns the camera; the model keeps a mirror. They must agree.**
     ///
     /// Region labels and the selection marker are SwiftUI layers that project through
@@ -387,7 +477,7 @@ struct SemanticMapRevealTests {
             through the renderer's and the region labels through the model's, so they would be \
             drawn against different views of the map — names detached from the cloud they name.
             """)
-        #expect(model.camera.halfExtent == SemanticMapModel.revealHalfExtent,
+        #expect(model.camera.halfExtent == SemanticMapReveal.documentHalfExtent,
                 "the reveal did not actually zoom in")
     }
 
@@ -406,6 +496,7 @@ struct SemanticMapRevealTests {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
                 .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
             encoding: .utf8)
         let code = source.components(separatedBy: .newlines)
@@ -447,6 +538,7 @@ struct SemanticMapRevealTests {
     func neighbourCountIsTen() {
         #expect(SemanticMapSpikeView.nearestCount == 10)
     }
+    #endif
 
     /// The reveal camera must actually change what is on screen.
     ///
@@ -454,11 +546,11 @@ struct SemanticMapRevealTests {
     /// map exactly as it was, which is indistinguishable from doing nothing.
     @Test("Revealing zooms in rather than leaving the camera alone")
     func revealZoomsIn() {
-        #expect(SemanticMapModel.revealHalfExtent < SemanticMapCamera().halfExtent, """
-            The reveal half-extent (\(SemanticMapModel.revealHalfExtent)) is not closer than the \
+        #expect(SemanticMapReveal.documentHalfExtent < SemanticMapCamera().halfExtent, """
+            The reveal half-extent (\(SemanticMapReveal.documentHalfExtent)) is not closer than the \
             default camera (\(SemanticMapCamera().halfExtent)), so revealing a document would not \
             visibly move the map.
             """)
-        #expect(SemanticMapModel.revealHalfExtent > 0)
+        #expect(SemanticMapReveal.documentHalfExtent > 0)
     }
 }

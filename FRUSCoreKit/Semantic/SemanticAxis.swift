@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import Foundation
-import simd
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// A direction through the embedding space, with a pole at each end.
 ///
@@ -38,14 +42,17 @@ import simd
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-struct SemanticAxis: Equatable, Sendable {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit, public, without `simd`, which
+///          it never used; ``centroid(forVolume:index:corpus:)``, out of `SemanticMapModel`, so a host finds
+///          a pole's vector as the app does
+public struct SemanticAxis: Equatable, Sendable {
 
     /// Unit-norm direction from the negative pole toward the positive one.
-    let direction: [Float]
+    public let direction: [Float]
     /// What sits at the low end.
-    let negativeLabel: String
+    public let negativeLabel: String
     /// What sits at the high end.
-    let positiveLabel: String
+    public let positiveLabel: String
 
     /// Builds the normalised difference of two pole vectors.
     ///
@@ -56,7 +63,7 @@ struct SemanticAxis: Equatable, Sendable {
     ///   - positiveLabel: Its name.
     /// - Returns: The axis, or `nil` when the poles are the same direction — a zero-length difference
     ///   has no orientation, and normalising it would produce a direction made entirely of rounding.
-    static func between(
+    public static func between(
         negative: [Float], negativeLabel: String,
         positive: [Float], positiveLabel: String
     ) -> SemanticAxis? {
@@ -96,7 +103,7 @@ struct SemanticAxis: Equatable, Sendable {
     ///   - row: The document's row.
     ///   - bytesPerRow: Bytes per document in that block.
     /// - Returns: The coordinate, in −1…1.
-    func project(signBitsAt base: UnsafeRawPointer, row: Int, bytesPerRow: Int) -> Float {
+    public func project(signBitsAt base: UnsafeRawPointer, row: Int, bytesPerRow: Int) -> Float {
         var total = Float(0)
         let rowStart = row * bytesPerRow
         for byteIndex in 0..<bytesPerRow {
@@ -118,7 +125,7 @@ struct SemanticAxis: Equatable, Sendable {
     /// Its own constant rather than the map's `gridExtent`: a projection is bounded to −1…1 by
     /// construction, so the slice fills its grid exactly, where the map's extent is whatever the
     /// layout stage happened to quantize into.
-    static let sliceExtent = 30_000
+    public static let sliceExtent = 30_000
 
     /// Dequantizes an int8 centroid into the float vector a pole needs.
     ///
@@ -126,7 +133,25 @@ struct SemanticAxis: Equatable, Sendable {
     ///   - codes: The stored codes.
     ///   - scale: Its per-vector scale.
     /// - Returns: The vector.
-    static func dequantize(codes: [Int8], scale: Float) -> [Float] {
+    public static func dequantize(codes: [Int8], scale: Float) -> [Float] {
         codes.map { Float($0) * scale }
+    }
+
+    /// A volume's centroid, dequantized into the float vector a pole needs.
+    ///
+    /// The centroid block stores **volumes in index order first, then subseries**, so a volume's slot
+    /// is its position in `index.volumes` — the one place this ordering is relied on, and the reason
+    /// it is stated here rather than assumed at the call site.
+    ///
+    /// - Parameters:
+    ///   - volumeID: The volume.
+    ///   - index: The bundled vector index.
+    ///   - corpus: The bundled corpus tier, whose centroid block it reads.
+    /// - Returns: Its centroid, or `nil` when the artifact does not carry one.
+    public static func centroid(forVolume volumeID: String, index: SemanticVectorIndex,
+                                corpus: SemanticCorpusVectors) -> [Float]? {
+        guard let slot = index.volumes.firstIndex(where: { $0.volumeID == volumeID }),
+              let stored = corpus.centroid(at: slot) else { return nil }
+        return dequantize(codes: stored.codes, scale: stored.scale)
     }
 }

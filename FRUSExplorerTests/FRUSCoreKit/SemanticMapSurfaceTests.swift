@@ -14,18 +14,33 @@
 
 import Testing
 import Foundation
+#if !SWIFT_PACKAGE
 import MetalKit
 #if canImport(UIKit)
 import UIKit
 #endif
+#endif
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// Whether this host has a GPU at all.
 ///
 /// The renderer tests are *disabled* rather than failed where there is none: a machine without Metal
 /// is a real condition, and a red suite there would say something false about the map. Evaluated once
 /// so the three traits agree with each other.
+#if !SWIFT_PACKAGE
+// The app's renderer is Metal's.
 private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
+#endif
 
 #if canImport(UIKit)
 /// An `MTKView` whose draw notifications produce nothing: #1700's condition on the Mac, made by hand
@@ -35,10 +50,13 @@ private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
 /// `displayLayer:`, and the view's implementation of it is what produces the frame. On the Mac that
 /// implementation merges into a dispatch source that a closed window has cancelled, so it produces
 /// nothing; here it simply does nothing. `draw()` does not go through it.
+#if !SWIFT_PACKAGE
+// MetalKit's view, the app's surface.
 private final class NotificationlessMTKView: MTKView {
     /// Takes the layer's display request and draws nothing, as the Mac's cancelled source does.
     override func display(_ layer: CALayer) {}
 }
+#endif
 #endif
 
 /// The map surface: the bundled loader, what a colour means, and whether anything reaches the GPU.
@@ -72,11 +90,18 @@ private final class NotificationlessMTKView: MTKView {
 ///         explicit-drawing mode, and two cases are added: requests drawn on the next main-queue
 ///         turn, one frame per turn, and #1700's regression test, a change reaching a presented frame
 ///         on a view whose MetalKit draw notifications produce nothing.
+///   1.7 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites with the map's rules: the
+///         pure tests load the bundled map through the kit by URL (`SemanticMapFixture`) and run in the
+///         package, the two lasso tests with the kit's positions and no Metal gate, since they read no
+///         renderer; what drives the app's loader, its model, its renderer, its view or its Info.plist
+///         is Xcode's
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
     // MARK: - The bundled map
 
+    #if !SWIFT_PACKAGE
+    // The app's loader, its statics and its reset.
     /// Coordinates are computed *from* vectors, so a map drawn against a different generation would
     /// place every document where different vectors put it — wrong in a way no reader could detect.
     @MainActor
@@ -96,14 +121,14 @@ struct SemanticMapSurfaceTests {
         #expect(map.clusterCount == mapIndex.clusters.count)
         #expect(map.gridExtent == mapIndex.gridExtent)
     }
+    #endif
 
     /// Every placement must sit inside the grid the artifact declares, or the renderer's framing
     /// puts documents off screen with no indication anything is wrong.
     @MainActor
     @Test("Every placement is inside the declared grid, and clusters are in range")
     func placementsAreInBounds() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
+        let map = try SemanticMapFixture.load().map
         let extent = Int16(clamping: map.gridExtent)
 
         // Corners of the row space plus a stride through the middle: a systematic error shows at the
@@ -127,9 +152,8 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("The cluster lens dims the unclustered and cycles the rest through the palette")
     func clusterLensColours() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
 
         let colours = SemanticMapColouring.indices(
             for: .cluster, map: map, index: index,
@@ -153,9 +177,8 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("Volume-derived lenses colour each volume's rows uniformly")
     func volumeLensesAreUniformPerVolume() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
         let downloaded = Set(index.volumes.prefix(3).map(\.volumeID))
 
         let colours = SemanticMapColouring.indices(
@@ -172,9 +195,8 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("The era lens bands by the app's own CoverageEra")
     func eraLensUsesCoverageEra() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
 
         let colours = SemanticMapColouring.indices(
             for: .era, map: map, index: index,
@@ -205,6 +227,8 @@ struct SemanticMapSurfaceTests {
 
     // MARK: - The model, and the defect it was extracted for
 
+    #if !SWIFT_PACKAGE
+    // The app's model, its renderer and its MetalKit view.
     /// The test that would have caught the blank map — on its second attempt.
     ///
     /// The screen shipped with the renderer built inside the representable, which wrote SwiftUI state
@@ -574,6 +598,7 @@ struct SemanticMapSurfaceTests {
             #expect(sample.y == reference.y, "row \(row) y")
         }
     }
+    #endif
 
     // MARK: - Region labels
 
@@ -724,14 +749,19 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("A tap selects the document under it, and empty map selects nothing")
     func pickingFindsTheNearestDocument() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
+        let map = try SemanticMapFixture.load().map
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
+        let positions = SemanticMapPicking.positions(of: map)
+        #if !SWIFT_PACKAGE
+        // The model's own decode of the plane, which `setSlice(axis: nil)` restores the map from, is
+        // the kit's, row for row.
+        #expect(SemanticMapModel.mapPoints(from: map).map(\.position) == positions)
+        #endif
 
         // Aim at a document the artifact actually holds, and require that one back.
         let target = try #require(map.placement(at: 12_345))
@@ -757,9 +787,8 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("The provenance lens colours by category, and absence keeps its own slot")
     func provenanceLensColoursByCategory() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
 
         // Two volumes with known, different categories, and one with none.
         let volumes = Array(index.volumes.prefix(2).map(\.volumeID))
@@ -825,11 +854,10 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("Every lens names every colour it hands out, or declares that it cannot")
     func legendsCoverTheirPalettes() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
-        let byVolume = SourceProvenanceStore().index?.byVolume ?? []
-        let dominant = SemanticMapSpikeView.dominantProvenance(byVolume: byVolume)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
+        let byVolume = try SemanticMapFixture.provenanceByVolume()
+        let dominant = SemanticMapVolumes.dominantProvenance(byVolume: byVolume)
         let downloaded = Set(index.volumes.prefix(5).map(\.volumeID))
 
         for lens in SemanticMapLens.allCases {
@@ -839,9 +867,17 @@ struct SemanticMapSurfaceTests {
             #expect(legend.count <= SemanticMapColouring.paletteSize)
 
             // Two legend entries in one colour is a key that cannot be used.
+            #if SWIFT_PACKAGE
+            // A swatch is its palette entry made opaque: the app's `swatch` draws it as SwiftUI's Color.
+            let palette = SemanticMapColouring.palette(for: lens)
+            let swatches = (0..<legend.count).map { "\(palette[$0].x) \(palette[$0].y) \(palette[$0].z)" }
+            #expect(Set(swatches).count == swatches.count,
+                    "\(lens.displayName) draws two legend entries in the same colour")
+            #else
             let swatches = (0..<legend.count).map { SemanticMapSpikeView.swatch(lens: lens, slot: $0) }
             #expect(Set(swatches.map { "\($0)" }).count == swatches.count,
                     "\(lens.displayName) draws two legend entries in the same colour")
+            #endif
 
             // The slots this lens really produces, over the shipped artifact.
             let colours = SemanticMapColouring.indices(
@@ -903,9 +939,9 @@ struct SemanticMapSurfaceTests {
     @Test("The provenance caption's two figures are the bundled index's")
     @MainActor
     func provenanceCaptionFiguresAreMeasured() throws {
-        let byVolume = try #require(SourceProvenanceStore().index?.byVolume)
+        let byVolume = try SemanticMapFixture.provenanceByVolume()
         #expect(byVolume.count == 523, "read \(byVolume.count) volumes")
-        let dominant = SemanticMapSpikeView.dominantProvenance(byVolume: byVolume)
+        let dominant = SemanticMapVolumes.dominantProvenance(byVolume: byVolume)
         var pluralityOnly = 0
         for volume in byVolume {
             guard let winner = dominant[volume.volumeId] else { continue }
@@ -933,9 +969,9 @@ struct SemanticMapSurfaceTests {
         let below = VolumeProvenance(volumeId: "frus1898", decade: 1890, totalNotes: 1,
                                      counts: ["unrecognized": 1])
         let at = VolumeProvenance(volumeId: "frus1958-60v01", decade: 1950,
-                                  totalNotes: SemanticMapSpikeView.minimumProvenanceNotes,
+                                  totalNotes: SemanticMapVolumes.minimumProvenanceNotes,
                                   counts: ["lotFile": 6, "centralDecimalFile": 4])
-        let table = SemanticMapSpikeView.dominantProvenance(byVolume: [below, at])
+        let table = SemanticMapVolumes.dominantProvenance(byVolume: [below, at])
         #expect(table["frus1898"] == nil, "a volume resting on one note must not be coloured")
         #expect(table["frus1958-60v01"] == .lotFile)
 
@@ -946,7 +982,7 @@ struct SemanticMapSurfaceTests {
         let order = SourceProvenanceCategory.allCases
         let expected = order.firstIndex(of: .lotFile)! < order.firstIndex(of: .centralDecimalFile)!
             ? SourceProvenanceCategory.lotFile : .centralDecimalFile
-        #expect(SemanticMapSpikeView.dominantProvenance(byVolume: [tied])["frus1969-76v01"] == expected)
+        #expect(SemanticMapVolumes.dominantProvenance(byVolume: [tied])["frus1969-76v01"] == expected)
     }
 
     // MARK: - The slice scale (UI review X-5 / MR-13)
@@ -956,15 +992,15 @@ struct SemanticMapSurfaceTests {
     /// sit strictly below every dated year, with a gap.
     @Test("Undated volumes sit in a gutter below every dated year")
     func sliceGutterIsBelowTheDatedBand() {
-        let scale = SemanticMapModel.SliceScale(minYear: 1861, maxYear: 1988, undatedCount: 3)
-        let earliest = SemanticMapModel.sliceY(forYear: scale.minYear, scale: scale)
-        let latest = SemanticMapModel.sliceY(forYear: scale.maxYear, scale: scale)
+        let scale = SemanticMapSlice.Scale(minYear: 1861, maxYear: 1988, undatedCount: 3)
+        let earliest = SemanticMapSlice.y(forYear: scale.minYear, scale: scale)
+        let latest = SemanticMapSlice.y(forYear: scale.maxYear, scale: scale)
         #expect(earliest < latest, "the axis must run early → late upward")
-        #expect(SemanticMapModel.sliceGutterY < earliest - 0.1,
+        #expect(SemanticMapSlice.gutterY < earliest - 0.1,
                 "the gutter must be visibly below the earliest dated year, not adjacent to it")
         // The dated band spans most of the plane; the map's own frame shows all of it.
         #expect(latest <= 1.0 + 1e-5)
-        #expect(SemanticMapModel.sliceGutterY >= -1.0)
+        #expect(SemanticMapSlice.gutterY >= -1.0)
     }
 
     /// Ticks come from the same function as the points, so they cannot drift; and the tick chooser
@@ -972,19 +1008,19 @@ struct SemanticMapSurfaceTests {
     @Test("Tick years are round, within range, and at most a handful")
     func sliceTicksAreSane() {
         for (lo, hi) in [(1861, 1988), (1945, 1952), (1900, 1901), (1969, 1976)] {
-            let ticks = SemanticMapSpikeView.tickYears(min: lo, max: hi)
+            let ticks = SemanticMapSlice.tickYears(min: lo, max: hi)
             #expect(!ticks.isEmpty, "\(lo)-\(hi)")
             #expect(ticks.count <= 6, "\(lo)-\(hi) produced \(ticks.count) ticks")
             #expect(ticks.allSatisfy { $0 >= lo && $0 <= hi }, "\(lo)-\(hi): \(ticks)")
             #expect(ticks == ticks.sorted())
-            let scale = SemanticMapModel.SliceScale(minYear: lo, maxYear: hi, undatedCount: 0)
+            let scale = SemanticMapSlice.Scale(minYear: lo, maxYear: hi, undatedCount: 0)
             for year in ticks {
-                let y = SemanticMapModel.sliceY(forYear: year, scale: scale)
+                let y = SemanticMapSlice.y(forYear: year, scale: scale)
                 #expect(y >= -0.82 - 1e-5 && y <= 1.0 + 1e-5,
                         "tick \(year) projects outside the dated band")
             }
         }
-        #expect(SemanticMapSpikeView.tickYears(min: 1950, max: 1950) == [1950])
+        #expect(SemanticMapSlice.tickYears(min: 1950, max: 1950) == [1950])
     }
 
     // MARK: - Scope
@@ -996,9 +1032,8 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("A scope masks exactly its volumes' rows, and counts what it masked")
     func scopeMaskCoversExactlyItsVolumes() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
 
         #expect(SemanticMapColouring.scopeMask(volumeIDs: nil, map: map, index: index) == nil,
                 "an unscoped map must be distinguishable from one scoped to everything")
@@ -1040,21 +1075,19 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("Scoped labels drop empty regions and rank by what is in scope")
     func scopedLabelsFollowTheScope() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
-        let model = SemanticMapModel()
-        await model.prepare(lens: .cluster, eraForVolume: { _ in nil }, isDownloaded: { _ in false })
-        #expect(!model.clusters.isEmpty)
-        #expect(model.labelledClusters.count == model.clusters.count,
+        // The kit's rule over the bundled map, as a host labels it; the app's model, below, labels by it.
+        let loaded = try SemanticMapFixture.load()
+        let map = loaded.map, index = loaded.index
+        let clusters = loaded.mapIndex.clusters
+        #expect(!clusters.isEmpty)
+        #expect(SemanticMapLabelLayout.labelledClusters(clusters, scope: nil).count == clusters.count,
                 "an unscoped map labels every region it knows")
 
         // One volume: few enough that most of the 179 regions must drop out.
         let volumeID = try #require(index.volumes.first?.volumeID)
-        model.setScope(volumeIDs: [volumeID])
-        let scope = try #require(model.scope)
-        let labelled = model.labelledClusters
-        #expect(labelled.count < model.clusters.count,
+        let scope = try #require(SemanticMapColouring.scopeMask(volumeIDs: [volumeID], map: map, index: index))
+        let labelled = SemanticMapLabelLayout.labelledClusters(clusters, scope: scope)
+        #expect(labelled.count < clusters.count,
                 "scoping to one volume left every region labelled")
         #expect(labelled.allSatisfy { scope.regionCounts[UInt16(clamping: $0.id)] != nil })
         for cluster in labelled {
@@ -1082,11 +1115,25 @@ struct SemanticMapSurfaceTests {
         #expect(scope.regionCounts == expected,
                 "the mask's per-region counts disagree with the artifact's own cluster membership")
 
+        #if !SWIFT_PACKAGE
+        // The app's model labels by the kit's rule, through its own scope.
+        await BundledSemanticMap.prepare()
+        let model = SemanticMapModel()
+        await model.prepare(lens: .cluster, eraForVolume: { _ in nil }, isDownloaded: { _ in false })
+        #expect(model.labelledClusters.count == model.clusters.count,
+                "an unscoped map labels every region it knows")
+        model.setScope(volumeIDs: [volumeID])
+        #expect(model.scope == scope)
+        #expect(model.labelledClusters.map(\.id) == labelled.map(\.id))
+        #expect(model.labelledClusters.map(\.documentCount) == labelled.map(\.documentCount))
         model.setScope(volumeIDs: nil)
         #expect(model.scope == nil)
         #expect(model.labelledClusters.count == model.clusters.count)
+        #endif
     }
 
+    #if !SWIFT_PACKAGE
+    // The app's model and its renderer.
     /// Everything else about the scope is observable in Swift; this is the one step that is not.
     /// `setScopeFlags` writes one byte per row at an offset inside an 8-byte stride, and a wrong
     /// offset lands on the colour index — recolouring the corpus rather than dimming it, which draws
@@ -1212,6 +1259,7 @@ struct SemanticMapSurfaceTests {
         #expect(model.slice != nil, "the deferred axis was dropped rather than applied")
         #expect(model.requestedPoles.negative == nil && model.requestedPoles.positive == nil)
     }
+    #endif
 
     /// An out-of-scope point is drawn as ground, so it must not be pickable or lassoable. Both
     /// scans take the same mask; if either ignored it, the map would hand back a document the reader
@@ -1219,13 +1267,12 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("Picking and the lasso both refuse out-of-scope documents")
     func scopeGatesPickingAndLasso() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        let positions = SemanticMapPicking.positions(of: map)
 
         // Scope to one volume, then aim at a document in a DIFFERENT one.
         let inScopeVolume = try #require(index.volumes.first?.volumeID)
@@ -1272,15 +1319,15 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("A picked row resolves to a real volume and document")
     func pickedRowResolvesToADocument() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
-        let index = try #require(BundledSemanticVectors.index)
+        let map = try SemanticMapFixture.load().map
+        let index = try SemanticMapFixture.load().index
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
+        let positions = SemanticMapPicking.positions(of: map)
 
         // Include the volume whose ids are NOT `dN` — `frus1958-60v05mSupp` keys its 628 documents
         // `eta_d1…`, which is exactly the case a shape assumption would break on.
@@ -1313,14 +1360,14 @@ struct SemanticMapSurfaceTests {
     @MainActor
     @Test("Picking the whole corpus is fast enough for a tap")
     func pickingIsFastEnough() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
+        let map = try SemanticMapFixture.load().map
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
+        let positions = SemanticMapPicking.positions(of: map)
 
         // **Best of five batches, not the mean of one.** A wall-clock budget in a suite that also
         // prepares three full-corpus models measures the machine as much as the code: this case has
@@ -1346,7 +1393,14 @@ struct SemanticMapSurfaceTests {
         // scan of 314,483 rows costs 55.9 ms per tap alone on this machine, so the budget carries
         // most of a factor of two — headroom against a real regression rather than against the
         // suite's own load, which `best` above cannot be inflated by.
+        #if SWIFT_PACKAGE
+        // The package, which the web edition's Linux CI also runs, as a debug build on shared runners,
+        // holds ten times the device's budget: a guard against a regression in kind, as the web's
+        // browser suite holds its frame budget, not a measurement of the runner.
+        #expect(each < .seconds(1), "a tap took \(each)")
+        #else
         #expect(each < .milliseconds(100), "a tap took \(each)")
+        #endif
         #expect(found > 0, "20 taps down the diagonal of a full-corpus map should hit something")
     }
 
@@ -1381,17 +1435,16 @@ struct SemanticMapSurfaceTests {
     /// capture limit, because `WorkingCorpus` stores it as the thing a truncated capture is a
     /// fraction *of*.
     @MainActor
-    @Test("A lasso selects the documents inside it and counts every one",
-          .enabled(if: semanticMapHasMetal))
+    @Test("A lasso selects the documents inside it and counts every one")
     func lassoSelectsEnclosedDocuments() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
+        let map = try SemanticMapFixture.load().map
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
+        let positions = SemanticMapPicking.positions(of: map)
 
         // A box around the whole grid encloses the entire corpus.
         let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
@@ -1420,17 +1473,16 @@ struct SemanticMapSurfaceTests {
     /// The capture limit is the synced record's size budget, so a lasso must respect it and say so
     /// rather than quietly writing a corpus larger than the model was designed for.
     @MainActor
-    @Test("A lasso over everything is capped, and reports what it left out",
-          .enabled(if: semanticMapHasMetal))
+    @Test("A lasso over everything is capped, and reports what it left out")
     func lassoRespectsTheCaptureLimit() async throws {
-        await BundledSemanticMap.prepare()
-        let map = try #require(BundledSemanticMap.vectors)
+        let map = try SemanticMapFixture.load().map
         let size = CGSize(width: 600, height: 600)
         let camera = SemanticMapCamera(centre: SIMD2<Float>(0, 0),
                                        halfExtent: Float(map.gridExtent))
-        // Picking scans what is DRAWN. In map mode that is the artifact's own placements — the same
-        // array the model uploads — so the tests go through the same accessor the model does.
-        let positions = SemanticMapModel.mapPoints(from: map).map(\.position)
+        // Picking scans what is DRAWN. In map mode that is the artifact's own placements, which the
+        // kit reads as the model's `mapPoints(from:)` does (`pickingFindsTheNearestDocument` holds
+        // the two equal in Xcode).
+        let positions = SemanticMapPicking.positions(of: map)
         let everything = [CGPoint(x: -50, y: -50), CGPoint(x: 650, y: -50),
                           CGPoint(x: 650, y: 650), CGPoint(x: -50, y: 650)]
 
@@ -1541,11 +1593,14 @@ struct SemanticMapSurfaceTests {
 
     // MARK: - Wiring
 
+    #if !SWIFT_PACKAGE
+    // Reads the app's view.
     @Test("The map surface reads the bundled artifact rather than a developer file")
     func surfaceReadsTheBundle() throws {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
                 .appendingPathComponent("FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
             encoding: .utf8)
         #expect(source.contains("BundledSemanticMap.prepare()"))
@@ -1554,6 +1609,7 @@ struct SemanticMapSurfaceTests {
         #expect(!source.contains("syntheticCloud"))
         #expect(!source.contains("spikeCoordsPath"))
     }
+    #endif
 }
 
 // MARK: - Export (UI review M-20 / F-28)
@@ -1888,6 +1944,8 @@ struct SemanticMapHandoffTests {
         #expect(flat != sliced)
     }
 
+    #if !SWIFT_PACKAGE
+    // The app's Info.plist and its activity types.
     /// **The test that would have caught the whole feature being dead.**
     ///
     /// Handoff routes an activity to an app only if its type string is registered in that target's
@@ -1905,6 +1963,7 @@ struct SemanticMapHandoffTests {
         #expect(declared.contains(AppActivityTypes.semanticMap),
                 "the semantic map publishes this type; unregistered, Handoff silently ignores it")
     }
+    #endif
 }
 
 // MARK: - The map's sources (PV-1)

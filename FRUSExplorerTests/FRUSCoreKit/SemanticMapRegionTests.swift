@@ -14,13 +14,23 @@
 
 import Foundation
 import Testing
-import simd
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// Regions: what they can be carried into, and whether the era ramp can be read at all.
 ///
 /// Version history:
 ///   1.0 — build 42: region capture, and the era palette's contrast floor
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites, the OKLab distance spelt out
 @Suite("Map regions capture cleanly and the era ramp is legible")
 struct SemanticMapRegionTests {
 
@@ -46,7 +56,9 @@ struct SemanticMapRegionTests {
     }
 
     private static func distance(_ a: SIMD4<Float>, _ b: SIMD4<Float>) -> Double {
-        simd_distance(oklab(a), oklab(b))
+        // Euclidean, spelt out: `simd_distance` is Apple's `simd`, which Linux has not.
+        let difference = oklab(a) - oklab(b)
+        return (difference * difference).sum().squareRoot()
     }
 
     /// The era lens colours the reader can actually receive — one per era, not all sixteen slots.

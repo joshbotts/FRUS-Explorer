@@ -113,9 +113,13 @@ struct ArchivalCopyRulesTests {
         "CrossReference/CrossReferenceGraphView.swift",
         "Search/ConcordanceView.swift",
         "Search/CollocationView.swift",
-        "Semantic/Map/SemanticMapExport.swift",
+        // S28a (FRUS Explorer Light): the map's export and lens moved into the kit, with the copy of the
+        // slice, the poles' refusals and a capture's name out of the view; the guard follows them.
+        "../FRUSCoreKit/Semantic/SemanticMapExport.swift",
         "Semantic/Map/SemanticMapSpikeView.swift",
-        "Semantic/Map/SemanticMapLens.swift",
+        "../FRUSCoreKit/Semantic/SemanticMapLens.swift",
+        "../FRUSCoreKit/Semantic/SemanticMapSlice.swift",
+        "../FRUSCoreKit/Semantic/SemanticMapCapture.swift",
         "Analytics/PersonAnalyticsView.swift",
         "Analytics/PersonCoMentionGraphView.swift",
         // S24b: the trajectory picker's labels and the co-mention cap's sentence moved into the kit with the

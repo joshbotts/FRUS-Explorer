@@ -28,6 +28,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — the load and its refusals are SemanticVectorsKit's,
+///          by URL (`SemanticBundledMap`); this keeps the bundle's lookup, the vectors' gate and the
+///          statics
 @MainActor
 public enum BundledSemanticMap {
 
@@ -67,10 +70,8 @@ public enum BundledSemanticMap {
         }
         loadStarted = true
 
-        let provenance = vectorIndex.provenance
-        let documentCount = vectorIndex.documentCount
         let loaded = await Task.detached(priority: .utility) {
-            () -> Result<(SemanticMapArtifacts.MapIndex, SemanticMapVectors), SemanticUnavailable> in
+            () -> Result<SemanticBundledMap, SemanticUnavailable> in
             guard let indexURL = Bundle.main.url(
                     forResource: "semantic-map-index", withExtension: "json"),
                   let binaryURL = Bundle.main.url(
@@ -81,32 +82,24 @@ public enum BundledSemanticMap {
                 #endif
                 return .failure(.noArtifact)
             }
-            do {
-                let data = try Data(contentsOf: indexURL)
-                let mapIndex = try JSONDecoder().decode(
-                    SemanticMapArtifacts.MapIndex.self, from: data)
-                guard mapIndex.provenanceDigest == provenance.digestHex else {
-                    return .failure(.provenanceMismatch(
-                        expected: provenance.digestHex, found: mapIndex.provenanceDigest))
-                }
-                let vectors = try SemanticMapVectors(
-                    contentsOf: binaryURL, provenance: provenance,
-                    expectedDocumentCount: documentCount)
-                return .success((mapIndex, vectors))
-            } catch let error as SemanticUnavailable {
+            // The load and its refusals are SemanticVectorsKit's, by URL (`SemanticBundledMap`), so a
+            // host outside the app refuses a map as this does. `throws(_)` on the `do`: without
+            // FullTypedThrows a plain `do` would catch `any Error`.
+            do throws(SemanticUnavailable) {
+                return .success(try SemanticBundledMap(
+                    indexAt: indexURL, binaryAt: binaryURL, vectorIndex: vectorIndex))
+            } catch {
                 #if DEBUG
                 print("[BundledSemanticMap] refused: \(error)")
                 #endif
                 return .failure(error)
-            } catch {
-                return .failure(.malformedArtifact("map index: \(error)"))
             }
         }.value
 
         switch loaded {
-        case .success(let (mapIndex, vectors)):
-            loadedIndex = mapIndex
-            loadedVectors = vectors
+        case .success(let map):
+            loadedIndex = map.index
+            loadedVectors = map.vectors
             failure = nil
         case .failure(let reason):
             failure = reason
