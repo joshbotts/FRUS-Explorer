@@ -40,17 +40,21 @@ final class TableTagger: WordCloudTagger {
     private(set) var classReads = 0
     /// How many of them a walk read without asking for classes, which the protocol forbids.
     private(set) var unaskedClassReads = 0
+    /// Whether it gives a word's lemma to a walk that did not ask for lemmas, as a careless host's might.
+    let givesLemmasUnasked: Bool
 
     init(identity: WordCloudTokenizerIdentity = HostTaggerFixtures.identity,
          health: NaturalLanguageHealth = .fullyWorking,
          lemmas: [String: String] = HostTaggerFixtures.lemmas,
          classes: [String: WordCloudLexicalClass] = HostTaggerFixtures.classes,
-         names: [(words: [String], type: WordCloudNameType)] = HostTaggerFixtures.names) {
+         names: [(words: [String], type: WordCloudNameType)] = HostTaggerFixtures.names,
+         givesLemmasUnasked: Bool = false) {
         self.identity = identity
         self.health = health
         self.lemmas = lemmas
         self.classes = classes
         self.names = names.sorted { $0.words.count > $1.words.count }
+        self.givesLemmasUnasked = givesLemmasUnasked
     }
 
     /// The words of `text`: runs of letters and digits, an apostrophe or a hyphen kept between two of them.
@@ -82,7 +86,7 @@ final class TableTagger: WordCloudTagger {
         readings.append(reading)
         for range in Self.words(in: text) {
             let key = text[range].lowercased()
-            let lemma = reading.contains(.lemmas) && health.lemmatizes ? lemmas[key] : nil
+            let lemma = (reading.contains(.lemmas) || givesLemmasUnasked) && health.lemmatizes ? lemmas[key] : nil
             let goOn = body(range, lemma) {
                 self.classReads += 1
                 if !reading.contains(.lexicalClasses) { self.unaskedClassReads += 1 }
@@ -207,6 +211,21 @@ struct WordCloudHostTaggerTokenizerTests {
                            "dulle": 1, "says": 1], "\(counts)")
         // A stopword met only through its lemma ("says", under "say") is a word of its own as printed.
         #expect(tagger.readings == [[]])
+    }
+
+    @Test("A count of printed forms reads no lemma from a tagger that gives one unasked, in either tokenizer")
+    func printedIgnoresLemmasGivenUnasked() throws {
+        let careless = TableTagger(givesLemmasUnasked: true)
+        #expect(count(.allTerms, wordForm: .printed, tagger: careless)
+                == count(.allTerms, wordForm: .printed, tagger: TableTagger()))
+        #expect(count(.allTerms, wordForm: .printed, tagger: careless)["negotiated"] == 1)
+        let printedPass = try #require(HostTaggerFixtures.multiLens(wordForm: .printed))
+        var fromCareless: [WordCloudLens: [String: Int]] = [:]
+        var fromCareful: [WordCloudLens: [String: Int]] = [:]
+        printedPass.accumulate(from: HostTaggerFixtures.diplomatic, into: &fromCareless, tagger: careless)
+        printedPass.accumulate(from: HostTaggerFixtures.diplomatic, into: &fromCareful, tagger: TableTagger())
+        #expect(fromCareless == fromCareful)
+        #expect(fromCareless[.actions]?["negotiated"] == 1)
     }
 
     @Test("With the fold off a plural with no lemma is its own word")
@@ -432,6 +451,11 @@ struct WordCloudTokenizerIdentityTests {
     func naturalLanguageIsPinned() throws {
         #expect(WordCloudTokenizerIdentity.naturalLanguage.name == "NaturalLanguage")
         #expect(WordCloudTokenizerIdentity.naturalLanguage.version == "1")
+        #expect(WordCloudTokenizerIdentity.legacyNaturalLanguage == WordCloudTokenizerIdentity(name: "NaturalLanguage", version: "1"))
+        // Today the app counts as every file before S29a was counted. A new version of NaturalLanguage's
+        // identity is a change to what the app counts, and comes with the bundled files counted again.
+        #expect(WordCloudTokenizerIdentity.naturalLanguage == .legacyNaturalLanguage,
+                "NaturalLanguage's version moved: count the bundled clouds and references again")
         #expect(HostTaggerFixtures.identity.description == "TableTagger 1")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -440,17 +464,71 @@ struct WordCloudTokenizerIdentityTests {
         #expect(try JSONDecoder().decode(WordCloudTokenizerIdentity.self, from: data) == HostTaggerFixtures.identity)
     }
 
-    @Test("A stamp that names no tokenizer was counted by NaturalLanguage")
+    private static let configurationJSON = #"{"includeDiplomatic":true,"lexiconsDigest":"l","stopwordsDigest":"s","tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"wordForm":"printed"}"#
+    private static let provenanceJSON = #"{"documentCount":9,"topTermsPerList":50,"tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"volumeCount":2}"#
+
+    private static func sorted<T: Encodable>(_ value: T) throws -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return String(decoding: try encoder.encode(value), as: UTF8.self)
+    }
+
+    @Test("A stamp that names no tokenizer was counted by NaturalLanguage as it was before S29a")
     func noTokenizerIsNaturalLanguage() throws {
-        let configuration = #"{"includeDiplomatic":true,"lexiconsDigest":"l","stopwordsDigest":"s","tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"wordForm":"printed"}"#
-        let decoded = try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: Data(configuration.utf8))
-        #expect(decoded.tokenizer == .naturalLanguage)
+        let decoded = try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: Data(Self.configurationJSON.utf8))
+        #expect(decoded.tokenizer == .legacyNaturalLanguage)
         #expect(decoded.wordForm == .printed)
-        let provenance = #"{"documentCount":9,"topTermsPerList":50,"tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"volumeCount":2}"#
-        let stamp = try JSONDecoder().decode(CloudVectorsFile.Provenance.self, from: Data(provenance.utf8))
-        #expect(stamp.tokenizer == .naturalLanguage)
+        let stamp = try JSONDecoder().decode(CloudVectorsFile.Provenance.self, from: Data(Self.provenanceJSON.utf8))
+        #expect(stamp.tokenizer == .legacyNaturalLanguage)
         #expect(stamp == CloudVectorsFile.Provenance(volumeCount: 2, documentCount: 9, tuning: .standard,
                                                      topTermsPerList: 50))
+    }
+
+    @Test("A stamp of the tokenizer a stamp without one reads as is written without the key, and as it was read")
+    func legacyStampsAreWrittenAsTheyWere() throws {
+        let configuration = try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: Data(Self.configurationJSON.utf8))
+        #expect(try Self.sorted(configuration) == Self.configurationJSON)
+        let provenance = try JSONDecoder().decode(CloudVectorsFile.Provenance.self, from: Data(Self.provenanceJSON.utf8))
+        #expect(try Self.sorted(provenance) == Self.provenanceJSON)
+        // Another tokenizer's stamp names it, after the keys it had.
+        let host = KeynessBaselineFile.Configuration(tuning: .standard, includeDiplomatic: true, lexiconsDigest: "l",
+                                                     stopwordsDigest: "s", wordForm: .printed,
+                                                     tokenizer: HostTaggerFixtures.identity)
+        #expect(try Self.sorted(host) == #"{"includeDiplomatic":true,"lexiconsDigest":"l","stopwordsDigest":"s","tokenizer":{"name":"TableTagger","version":"1"},"tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"wordForm":"printed"}"#)
+        let hostProvenance = CloudVectorsFile.Provenance(volumeCount: 2, documentCount: 9, tuning: .standard,
+                                                         topTermsPerList: 50, tokenizer: HostTaggerFixtures.identity)
+        #expect(try Self.sorted(hostProvenance).contains(#""tokenizer":{"name":"TableTagger","version":"1"}"#))
+        // NaturalLanguage's own stamp is written without the key while it is the legacy one.
+        let app = KeynessBaselineFile.Configuration(tuning: .standard, includeDiplomatic: true, lexiconsDigest: "l",
+                                                    stopwordsDigest: "s", wordForm: .printed, tokenizer: .naturalLanguage)
+        #expect(try Self.sorted(app) == Self.configurationJSON)
+    }
+
+    @Test("The bundled references and clouds, decoded and encoded again, are the stamps they were",
+          arguments: ["keyness-baseline", "keyness-baseline-printed", "cloud-vectors-core"])
+    func bundledFilesReencodeAsTheyWere(resource: String) throws {
+        let data = try Data(contentsOf: Self.resource(resource))
+        if resource.hasPrefix("keyness") {
+            let file = try JSONDecoder().decode(KeynessBaselineFile.self, from: data)
+            let again = try JSONDecoder().decode(KeynessBaselineFile.self, from: try JSONEncoder().encode(file))
+            #expect(again == file)
+            #expect(!(try Self.sorted(file.configuration)).contains(#""tokenizer""#))
+            #expect(!(try Self.sorted(file.provenance)).contains(#""tokenizer""#))
+            #if canImport(Darwin)
+            // As the app's writer-reader parity holds them: the generator's own encoder gives the file's bytes.
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            #expect(try encoder.encode(file) == data)
+            #endif
+        } else {
+            let file = try JSONDecoder().decode(CloudVectorsFile.self, from: data)
+            #expect(!(try Self.sorted(file.provenance)).contains(#""tokenizer""#))
+            #if canImport(Darwin)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+            #expect(try encoder.encode(file) == data)
+            #endif
+        }
     }
 
     @Test("A stamp carries its tokenizer through an encode and a decode, and into the other form's")
@@ -490,9 +568,9 @@ struct WordCloudTokenizerIdentityTests {
     func bundledFilesAreNaturalLanguages(wordForm: WordCloudWordForm) throws {
         let reference = try KeynessBaselineFile(contentsOf: Self.resource(KeynessBaselineFile.resourceName(for: wordForm)))
         let core = try CloudVectorsFile(contentsOf: Self.resource("cloud-vectors-core"))
-        #expect(reference.configuration.tokenizer == .naturalLanguage)
-        #expect(reference.provenance.tokenizer == .naturalLanguage)
-        #expect(core.provenance.tokenizer == .naturalLanguage)
+        #expect(reference.configuration.tokenizer == .legacyNaturalLanguage)
+        #expect(reference.provenance.tokenizer == .legacyNaturalLanguage)
+        #expect(core.provenance.tokenizer == .legacyNaturalLanguage)
         let configuration = reference.configuration
         let mismatches = configuration.mismatches(
             against: configuration.tuning, includeDiplomatic: configuration.includeDiplomatic,
@@ -522,13 +600,13 @@ struct NaturalLanguageWordCloudTaggerTests {
         #expect(NaturalLanguageWordCloudTagger.nameSchemes == [.nameType])
     }
 
-    @Test("Each tokenizer's schemes are its reading's, so a printed count asks for no lemma scheme",
+    @Test("A printed count asks the gate for no lemma scheme, and the two tokenizers ask for the same schemes",
           arguments: WordCloudLens.allCases.filter { !$0.isEntity })
-    func tokenizersAskForTheirReadingsSchemes(lens: WordCloudLens) throws {
+    func tokenizersAskForTheSameSchemes(lens: WordCloudLens) throws {
         for wordForm in WordCloudWordForm.allCases {
             let single = WordCloudTokenizer(stopwords: [], lens: lens, wordForm: wordForm)
-            #expect(single.wordSchemes == NaturalLanguageWordCloudTagger.wordSchemes(for: single.wordReading))
             #expect(single.wordSchemes.contains(.lemma) == (wordForm == .dictionary))
+            #expect(single.wordSchemes.contains(.lexicalClass) == WordCloudMultiLensTokenizer.readsLexicalClass(lens))
             let multi = try #require(WordCloudMultiLensTokenizer(lenses: [lens], tuning: .standard, stopwords: [],
                                                                  lexicons: .empty, markings: [], wordForm: wordForm))
             #expect(multi.schemes == single.wordSchemes)
@@ -555,27 +633,107 @@ struct NaturalLanguageWordCloudTaggerTests {
         #expect(WordCloudNameType(nil) == nil)
     }
 
-    @Test("The gate's taggers are NaturalLanguage's, and their health is the gate's verdict")
+    @Test("NaturalLanguage's tagger is the gate's verdict, and an NLTagger the verdict for the schemes it holds")
     func identityAndHealth() {
         let verdict = NaturalLanguageReadiness.health
         #expect(NaturalLanguageWordCloudTagger().identity == .naturalLanguage)
         #expect(NaturalLanguageWordCloudTagger().health == verdict)
-        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: [.lemma])
-        #expect(tagger.identity == .naturalLanguage)
-        #expect(tagger.health == verdict)
+        for schemes: [NLTagScheme] in [[.lemma], [.lemma, .lexicalClass], [.tokenType], [.lexicalClass, .tokenType],
+                                       [.nameType], [.lemma, .lexicalClass, .nameType]] {
+            let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
+            #expect(tagger.identity == .naturalLanguage)
+            #expect(tagger.health == NaturalLanguageHealth(
+                lemmatizes: verdict.lemmatizes && schemes.contains(.lemma),
+                classifiesWords: verdict.classifiesWords && schemes.contains(.lexicalClass),
+                recognizesNames: verdict.recognizesNames && schemes.contains(.nameType)), "\(schemes)")
+        }
     }
 
-    @Test("Given NaturalLanguage's tagger, each tokenizer counts what it counts without one",
-          arguments: WordCloudLens.allCases)
-    func theTaggerTakingCountIsTheAppsCount(lens: WordCloudLens) throws {
-        let text = HostTaggerFixtures.diplomatic + " " + HostTaggerFixtures.economic
-        for wordForm in WordCloudWordForm.allCases {
-            let tokenizer = HostTaggerFixtures.tokenizer(lens, wordForm: wordForm)
-            var implicit: [String: Int] = [:]
-            var explicit: [String: Int] = [:]
-            tokenizer.accumulate(from: text, into: &implicit)
-            tokenizer.accumulate(from: text, into: &explicit, tagger: NaturalLanguageWordCloudTagger())
-            #expect(implicit == explicit, "\(lens.rawValue), \(wordForm.rawValue)")
+    // MARK: - NLTagger's walks are the calls the tokenizers made of it
+
+    /// The texts the walks are held over: possessives, hyphens, abbreviations, numbers, an accented word
+    /// and contractions, and the two fixtures' prose.
+    private static let walkTexts = [
+        "Mr. O'Brien's note of Jan. 5 said the U.S.-U.K. talks weren't over: the chargé d'affaires hadn't seen "
+            + "telegram No. 1,204, and the so-called \"stand-still\" agreement's text was re-drafted.",
+        HostTaggerFixtures.diplomatic, HostTaggerFixtures.economic,
+        "President Eisenhower met Prime Minister Churchill and Secretary Dulles in Geneva; the United Nations noted it.",
+    ]
+
+    /// One word of a walk, as the tokenizer reads it.
+    private struct Walked: Equatable, CustomStringConvertible {
+        let word: String
+        let lemma: String?
+        let lexicalClass: WordCloudLexicalClass?
+        var description: String { "\(word)/\(lemma ?? "-")/\(lexicalClass.map { "\($0)" } ?? "-")" }
+    }
+
+    /// NaturalLanguage's word walk as `v2`'s tokenizers made it, call for call: the walk scheme the gate's
+    /// tagger gives, the string set and English pinned, the same options, the lemma the walk's tag when it
+    /// is by `.lemma`, and the class asked at the word's first character.
+    private static func walkedAsBefore(_ tagger: NLTagger, _ text: String) -> [Walked] {
+        let walk = NaturalLanguageReadiness.wordWalkScheme(of: tagger)
+        tagger.string = text
+        tagger.setLanguage(.english, range: text.startIndex..<text.endIndex)
+        var found: [Walked] = []
+        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: walk,
+                             options: [.omitPunctuation, .omitWhitespace, .omitOther]) { tag, range in
+            let lexicalClass = tagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0
+            found.append(Walked(word: String(text[range]), lemma: walk == .lemma ? tag?.rawValue : nil,
+                                lexicalClass: WordCloudLexicalClass(lexicalClass)))
+            return true
+        }
+        return found
+    }
+
+    @Test("An NLTagger's word walk gives the words, lemmas and classes NaturalLanguage's own walk gives",
+          arguments: [[NLTagScheme.lemma, .lexicalClass], [.lemma], [.tokenType, .lexicalClass],
+                      [.tokenType], [.lexicalClass, .tokenType]])
+    func wordWalkIsTheOldWalk(schemes: [NLTagScheme]) {
+        for text in Self.walkTexts {
+            let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
+            var found: [Walked] = []
+            tagger.enumerateWords(in: text, reading: [.lemmas, .lexicalClasses]) { range, lemma, lexicalClass in
+                found.append(Walked(word: String(text[range]), lemma: lemma, lexicalClass: lexicalClass()))
+                return true
+            }
+            let expected = Self.walkedAsBefore(NaturalLanguageReadiness.tagger(tagSchemes: schemes), text)
+            #expect(found == expected, "\(schemes): \(found.prefix(8)) against \(expected.prefix(8))")
+            #expect(found.count > 10, "the text tokenised to almost nothing: \(found)")
+        }
+    }
+
+    @Test("A walk that reads no lemma is given none, over a tagger that holds the lemma scheme too")
+    func noLemmaUnlessAsked() {
+        let text = HostTaggerFixtures.diplomatic
+        var lemmas: [String?] = []
+        NaturalLanguageReadiness.tagger(tagSchemes: [.lemma, .lexicalClass])
+            .enumerateWords(in: text, reading: [.lexicalClasses]) { _, lemma, _ in
+                lemmas.append(lemma)
+                return true
+            }
+        #expect(!lemmas.isEmpty && lemmas.allSatisfy { $0 == nil })
+    }
+
+    @Test("An NLTagger's name walk gives the names NaturalLanguage's own walk gives, joined")
+    func nameWalkIsTheOldWalk() {
+        for text in Self.walkTexts {
+            let tagger = NaturalLanguageReadiness.tagger(tagSchemes: [.nameType])
+            var found: [String] = []
+            tagger.enumerateNames(in: text) { range, type in
+                found.append("\(text[range])/\(type.map { "\($0)" } ?? "-")")
+                return true
+            }
+            let before = NaturalLanguageReadiness.tagger(tagSchemes: [.nameType])
+            before.string = text
+            before.setLanguage(.english, range: text.startIndex..<text.endIndex)
+            var expected: [String] = []
+            before.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .nameType,
+                                 options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]) { tag, range in
+                expected.append("\(text[range])/\(WordCloudNameType(tag).map { "\($0)" } ?? "-")")
+                return true
+            }
+            #expect(found == expected)
         }
     }
 }

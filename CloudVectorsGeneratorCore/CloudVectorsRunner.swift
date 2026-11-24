@@ -49,9 +49,11 @@ import GeneratorKit
 /// files to carry; the reference prices every lens the run counts, whichever the clouds carry. ``run()``,
 /// the app's generator, gives it NaturalLanguage's tagger through the readiness gate
 /// (`NaturalLanguageWordCloudTagger`) and the four lenses the onboarding cloud draws, so it writes what it
-/// wrote. A host with a tagger of its own, such as FRUS Explorer Light on Linux, gives that, and the files
-/// say they were counted by it. Every pass the run makes counts with the caller's tagger: each tokenizer
-/// is bound to it once (``TaggedPass``), the verification walks' included.
+/// wrote, byte for byte: a file of NaturalLanguage's names no tokenizer, as those files did
+/// (`WordCloudTokenizerIdentity.legacyNaturalLanguage`). A host with a tagger of its own, such as FRUS
+/// Explorer Light on Linux, gives that, and the files say they were counted by it. Every pass the run makes
+/// counts with the caller's tagger: each tokenizer is bound to it once (`TaggedPass`), the verification
+/// walks' included.
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
@@ -96,8 +98,15 @@ public enum CloudVectorsRunner {
     ///
     /// It refuses before it counts anything unless the tagger lemmatises and classifies words
     /// (``requireLanguageAnalysis(_:)``, on `tagger.health`), and unless `cloudLenses` are lenses it
-    /// counts (``requireCloudLenses(_:)``). The four files name the tagger's identity as the tokenizer
-    /// their counts were made by, so a reference counted by another refuses a scope this tagger counted.
+    /// counts (each of ``baselineLenses``, once). The four files name the tagger's identity as the
+    /// tokenizer their counts were made by, so a reference counted by another refuses a scope this
+    /// tagger counted.
+    ///
+    /// A run makes walks that read different things of a word: the both-forms pass reads lemmas, and
+    /// `VERIFY_PRINTED_WALK`'s two walks read none, one with the lexical classes and one without, as a
+    /// device with no lemmatiser builds its taggers. So the tagger must build for each walk what that walk
+    /// reads: for NaturalLanguage, `NaturalLanguageWordCloudTagger`, as ``run()`` gives, and not an
+    /// `NLTagger`, which holds the schemes it was built with, so that its printed walks would read its own.
     ///
     /// - Parameters:
     ///   - tagger: The tagger every pass of the run counts with: NaturalLanguage's for the app, or a

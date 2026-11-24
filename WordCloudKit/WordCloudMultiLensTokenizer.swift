@@ -253,8 +253,8 @@ public struct WordCloudMultiLensTokenizer: Sendable {
     /// word walk (S29a): the rules of ``accumulate(from:into:)``, over any tagger.
     ///
     /// Reads a lemma only where the walk gives one, exactly as `WordCloudTokenizer`'s word walk does:
-    /// a `.printed` tokenizer asks for none, and a tagger the gate built without `.lemma` gives none
-    /// (#1539), so a test can hand it such a tagger.
+    /// a `.printed` tokenizer asks for none and reads none, and a tagger the gate built without
+    /// `.lemma` gives none (#1539), so a test can hand it such a tagger.
     /// - Parameters:
     ///   - text: The document body text to tokenise.
     ///   - counts: A running `lens → term → count` tally, mutated in place.
@@ -297,9 +297,13 @@ public struct WordCloudMultiLensTokenizer: Sendable {
                                                into counts: inout [WordCloudLens: [String: Int]],
                                                printedInto printed: inout [WordCloudLens: [String: Int]],
                                                countsPrinted: Bool) {
-        tagger.enumerateWords(in: text, reading: reading) { tokenRange, lemma, classOfWord in
+        let reading = self.reading
+        let readsLemmas = reading.contains(.lemmas)
+        tagger.enumerateWords(in: text, reading: reading) { tokenRange, givenLemma, classOfWord in
             // ── Shared work: exactly WordCloudTokenizer.accumulateWords, done once ──
             let surface = text[tokenRange]
+            // A `.printed` pass reads no lemma, whatever the tagger gives (#1608, S29a).
+            let lemma = readsLemmas ? givenLemma : nil
             let hasLemma = (lemma?.isEmpty == false)
             // The printed form is worked out only where something reads it: for a word with no
             // lemma, whose candidate it is, and for every word of a both-forms pass.

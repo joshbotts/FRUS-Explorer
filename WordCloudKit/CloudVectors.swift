@@ -45,7 +45,8 @@ import Foundation
 ///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
 ///         files somewhere other than a bundle
 ///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``Provenance/tokenizer``, the tokenizer the counts
-///         were made by, NaturalLanguage's where a file names none
+///         were made by: NaturalLanguage's as it was, where a file names none, and written only when it
+///         is another
 public struct CloudVectorsFile: Codable, Sendable, Equatable {
 
     /// Schema version. Bump when the shape changes in a way a shipped reader would misread.
@@ -108,7 +109,8 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
         public let topTermsPerList: Int
         /// The tokenizer the counts were made by (S29a): NaturalLanguage's for the app's files, a host's
         /// for one its own tagger counted. A file written before S29a names none, and was counted by
-        /// NaturalLanguage, so it reads as ``WordCloudTokenizerIdentity/naturalLanguage``.
+        /// NaturalLanguage as it was then, so it reads as ``WordCloudTokenizerIdentity/legacyNaturalLanguage``;
+        /// a stamp of that tokenizer is written without the key, so the app's files stay the bytes they were.
         public let tokenizer: WordCloudTokenizerIdentity
 
         /// Creates a provenance stamp.
@@ -127,8 +129,13 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
             self.tokenizer = tokenizer
         }
 
-        /// Decodes a stamp. One written before S29a names no tokenizer and was counted by
-        /// NaturalLanguage, the only tokenizer there was; every stamp written since names its own.
+        /// The stamp's keys, in the order its fields are declared.
+        private enum CodingKeys: String, CodingKey {
+            case volumeCount, documentCount, tuning, topTermsPerList, tokenizer
+        }
+
+        /// Decodes a stamp. One that names no tokenizer was counted by NaturalLanguage as it was before
+        /// S29a, the only tokenizer there was (``WordCloudTokenizerIdentity/legacyNaturalLanguage``).
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             volumeCount = try container.decode(Int.self, forKey: .volumeCount)
@@ -136,7 +143,18 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
             tuning = try container.decode(WordCloudTuning.self, forKey: .tuning)
             topTermsPerList = try container.decode(Int.self, forKey: .topTermsPerList)
             tokenizer = try container.decodeIfPresent(WordCloudTokenizerIdentity.self, forKey: .tokenizer)
-                ?? .naturalLanguage
+                ?? .legacyNaturalLanguage
+        }
+
+        /// Encodes a stamp, naming its tokenizer unless it is the one a stamp that names none reads as,
+        /// so that a file of that tokenizer is written as it was before S29a, byte for byte.
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(volumeCount, forKey: .volumeCount)
+            try container.encode(documentCount, forKey: .documentCount)
+            try container.encode(tuning, forKey: .tuning)
+            try container.encode(topTermsPerList, forKey: .topTermsPerList)
+            if tokenizer != .legacyNaturalLanguage { try container.encode(tokenizer, forKey: .tokenizer) }
         }
     }
 
@@ -270,15 +288,18 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
 /// ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:tokenizer:)``
 /// refuses a scope counted by another: the rule the web edition's specification states, that a reference
 /// from another tokenizer is never compared. A reference written before S29a names none, and was counted
-/// by NaturalLanguage, which is what it reads as; so the bundled references stand as they are.
+/// by NaturalLanguage as it was then (`WordCloudTokenizerIdentity.legacyNaturalLanguage`), which is what it
+/// reads as, and a stamp of that tokenizer is written without the key; so the bundled references stand as
+/// they are, byte for byte.
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
 ///   1.1 — #1608: ``Configuration/wordForm`` and ``resourceName(for:)``; the printed-form file
 ///   1.2 — 2026-11-12 (FRUS Explorer Light, S24d): ``init(contentsOf:)``, for a host that keeps the
 ///         files somewhere other than a bundle
-///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``Configuration/tokenizer``, and the mismatch that
-///         refuses a scope counted by another tokenizer
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): ``Configuration/tokenizer``, written only when it is
+///         not the one a file that names none reads as, and the mismatch that refuses a scope counted by
+///         another tokenizer
 public struct KeynessBaselineFile: Codable, Sendable, Equatable {
 
     /// Schema version.
@@ -344,10 +365,15 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
             self.tokenizer = tokenizer
         }
 
+        /// The stamp's keys, in the order its fields are declared.
+        private enum CodingKeys: String, CodingKey {
+            case tuning, includeDiplomatic, lexiconsDigest, stopwordsDigest, wordForm, tokenizer
+        }
+
         /// Decodes a stamp. One written before #1608 has no `wordForm` and was counted in
         /// dictionary forms, the only form there was; every file written since says its own. One
-        /// written before S29a names no tokenizer and was counted by NaturalLanguage, the only
-        /// tokenizer there was.
+        /// that names no tokenizer was counted by NaturalLanguage as it was before S29a, the only
+        /// tokenizer there was (`WordCloudTokenizerIdentity.legacyNaturalLanguage`).
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             tuning = try container.decode(WordCloudTuning.self, forKey: .tuning)
@@ -357,7 +383,20 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
             wordForm = try container.decodeIfPresent(WordCloudWordForm.self, forKey: .wordForm)
                 ?? .dictionary
             tokenizer = try container.decodeIfPresent(WordCloudTokenizerIdentity.self, forKey: .tokenizer)
-                ?? .naturalLanguage
+                ?? .legacyNaturalLanguage
+        }
+
+        /// Encodes a stamp, its form always (#1608), and its tokenizer unless it is the one a stamp
+        /// that names none reads as, so that a reference of that tokenizer is written as it was before
+        /// S29a, byte for byte.
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(tuning, forKey: .tuning)
+            try container.encode(includeDiplomatic, forKey: .includeDiplomatic)
+            try container.encode(lexiconsDigest, forKey: .lexiconsDigest)
+            try container.encode(stopwordsDigest, forKey: .stopwordsDigest)
+            try container.encode(wordForm, forKey: .wordForm)
+            if tokenizer != .legacyNaturalLanguage { try container.encode(tokenizer, forKey: .tokenizer) }
         }
 
         /// The same stamp for the counts of another form. The two references of one run differ in

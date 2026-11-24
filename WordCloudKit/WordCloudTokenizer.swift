@@ -44,7 +44,7 @@ import NaturalLanguage
 /// its type. ``accumulate(from:into:tagger:)`` counts with any tagger, on every platform, by the
 /// same rules; ``accumulate(from:into:)`` counts with NaturalLanguage's, through the gate
 /// (`NaturalLanguageWordCloudTagger`), which is how the app has always counted. A `.printed`
-/// tokenizer reads no lemma from any tagger, so a host's count of printed forms is one too.
+/// tokenizer asks no tagger for lemmas and reads none, so a host's count of printed forms is one too.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
@@ -215,10 +215,10 @@ public struct WordCloudTokenizer: Sendable {
     /// Word path: lemmatised content words (`.allTerms`) optionally filtered to a part-of-speech
     /// (`.topics` / `.actions` / `.descriptors`), over `tagger`'s word walk.
     ///
-    /// Reads a lemma only where the walk gives one: a `.printed` tokenizer asks for none, and a tagger
-    /// the gate built without `.lemma`, because its asset request is in flight (#1539), walks by
-    /// `.tokenType`, whose tags are token kinds, not dictionary forms, and gives none. Internal so a
-    /// test can hand it such a tagger.
+    /// Reads a lemma only where the walk gives one: a `.printed` tokenizer asks for none, and reads none
+    /// from a tagger that gives one anyway, and a tagger the gate built without `.lemma`, because its
+    /// asset request is in flight (#1539), walks by `.tokenType`, whose tags are token kinds, not
+    /// dictionary forms, and gives none. Internal so a test can hand it such a tagger.
     /// - Parameters:
     ///   - text: The document body text to tokenise.
     ///   - counts: A running `term → count` tally, mutated in place.
@@ -228,11 +228,15 @@ public struct WordCloudTokenizer: Sendable {
     func accumulateWords<Tagger: WordCloudTagger>(from text: String, into counts: inout [String: Int],
                                                   tagger: Tagger) -> Int {
         var added = 0
-        tagger.enumerateWords(in: text, reading: wordReading) { tokenRange, lemma, classOfWord in
+        let reading = wordReading
+        let readsLemmas = reading.contains(.lemmas)
+        tagger.enumerateWords(in: text, reading: reading) { tokenRange, givenLemma, classOfWord in
             if let needed = keptClass {
                 guard classOfWord() == needed else { return true }
             }
             let surface = text[tokenRange]
+            // A count of printed forms reads no lemma, whatever the tagger gives (#1608, S29a).
+            let lemma = readsLemmas ? givenLemma : nil
             let hasLemma = (lemma?.isEmpty == false)
             // Prefer the lemma; fall back to the surface form when the lemmatiser
             // has no entry (proper nouns, archaic spellings). When falling back,

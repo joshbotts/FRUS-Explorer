@@ -387,7 +387,9 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   count with any tagger on every platform; their `accumulate` without one counts with NaturalLanguage's
   through the readiness gate (`NaturalLanguageWordCloudTagger`, and `NLTagger` conforms), as before, so
   the two parity suites hold the app's counts. The clouds' provenance and the references' configuration
-  name the tokenizer (NaturalLanguage's where a file names none, so the bundled files stand), and
+  name the tokenizer; a file that names none was counted by NaturalLanguage at version 1
+  (`WordCloudTokenizerIdentity.legacyNaturalLanguage`), and a stamp of that tokenizer is written without
+  the key, so the bundled files stand byte for byte and the generator writes the bytes it wrote; and
   `KeynessBaselineFile.Configuration.mismatches(…tokenizer:)` refuses a scope counted by another
   (`Mismatch.tokenizer`); `CloudVectorsRunner.run(tagger:cloudLenses:environment:)` takes the tagger and
   the lenses the clouds carry from its caller, and `run()` passes NaturalLanguage's. NaturalLanguage and

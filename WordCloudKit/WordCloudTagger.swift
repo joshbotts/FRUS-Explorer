@@ -48,9 +48,11 @@ import NaturalLanguage
 /// On Apple platforms the readiness gate's taggers are one: `NLTagger` conforms, walking itself, and
 /// ``NaturalLanguageWordCloudTagger`` asks the gate for a new `NLTagger` for each walk, with the schemes the
 /// walk reads, as the tokenizers always have. Each tokenizer's `accumulate` without a tagger counts with
-/// it, so the app counts as it did; `WordCloudMultiLensParityTests` and `WordCloudPrintedFormParityTests`
-/// hold that. Where NaturalLanguage is missing (Linux) a host gives a tagger of its own, and nothing counts
-/// without one.
+/// it, so the app counts as it did: `WordCloudMultiLensParityTests` and `WordCloudPrintedFormParityTests`
+/// hold the two tokenizers to each other, the printed-form suite's and the readiness suite's fixed counts
+/// and the app's `WordCloudTests` hold their counts, and `NaturalLanguageWordCloudTaggerTests` holds
+/// `NLTagger`'s walks to the calls the tokenizers made of it before. Where NaturalLanguage is missing
+/// (Linux) a host gives a tagger of its own, and nothing counts without one.
 ///
 /// Version history:
 ///   1.0 — 2026-11-23 (FRUS Explorer Light, S29a): initial implementation
@@ -68,10 +70,11 @@ public protocol WordCloudTagger {
     ///
     /// The text is English, as the corpus is. `body` is given the word's range in `text`; its lemma when
     /// `reading` holds ``WordCloudTagReading/lemmas`` and the tagger has one, and `nil` or an empty string
-    /// where it has none; and a function that answers the word's lexical class, which the walk calls only
-    /// for a word whose class it reads, at most once, and only while `body` runs. A walk whose `reading`
-    /// holds ``WordCloudTagReading/lexicalClasses`` may read classes; one that does not reads none.
-    /// `body` returns `false` to stop the walk.
+    /// where it has none; and a function that answers the word's lexical class, which the tokenizer calls
+    /// only for a word whose class it reads, at most once, and only while `body` runs. A walk whose
+    /// `reading` holds ``WordCloudTagReading/lexicalClasses`` may read classes; one that does not reads
+    /// none. A tokenizer that asked for no lemma reads none, whatever the tagger gives. `body` returns
+    /// `false` to stop the walk.
     ///
     /// - Parameters:
     ///   - text: The text to walk.
@@ -159,9 +162,15 @@ public enum WordCloudNameType: Sendable, Hashable, CaseIterable {
 /// ## NaturalLanguage's
 /// ``naturalLanguage`` is the app's, on every Apple platform and runtime. NaturalLanguage's lemmas and
 /// classes differ a little from one operating system build to another, and the app has always compared a
-/// count made on one with a reference made on another, so here they are one tokenizer. A file that names
-/// no tokenizer, every file written before S29a and the bundled ones among them, was counted by it and
-/// reads as it, so those files stand as they are.
+/// count made on one with a reference made on another, so here they are one tokenizer.
+///
+/// ## A file that names none
+/// Every file written before S29a, the bundled ones among them, names no tokenizer, and was counted by
+/// NaturalLanguage as it was then: ``legacyNaturalLanguage``, which such a file reads as. It is fixed: if
+/// ``naturalLanguage``'s version changes, a file that names no tokenizer still reads as the old one, and
+/// the new one's counts refuse it. A stamp of ``legacyNaturalLanguage`` is written without the key, as
+/// those files were, so the files stand as they are, byte for byte, and the app's generator, while
+/// NaturalLanguage's version is the one they were counted by, writes the bytes it wrote.
 ///
 /// ## A host's
 /// A host's tagger names its own (``WordCloudTagger/identity``), and changes its version whenever its
@@ -187,8 +196,13 @@ public struct WordCloudTokenizerIdentity: Codable, Sendable, Hashable, CustomStr
     }
 
     /// NaturalLanguage's: the readiness gate's taggers walked by this kit's tokenizers, the app's on every
-    /// Apple platform, and the tokenizer of every file that names none.
+    /// Apple platform. Its version changes only with a change to what the app counts, and with the
+    /// bundled clouds and references counted again.
     public static let naturalLanguage = WordCloudTokenizerIdentity(name: "NaturalLanguage", version: "1")
+
+    /// The tokenizer of a file that names none: NaturalLanguage at version 1, which counted every file
+    /// written before S29a. Fixed, whatever ``naturalLanguage`` becomes; and written without the key.
+    public static let legacyNaturalLanguage = WordCloudTokenizerIdentity(name: "NaturalLanguage", version: "1")
 
     /// The name and the version, as a log line or a refusal states them.
     public var description: String { "\(name) \(version)" }
@@ -208,9 +222,18 @@ extension NLTagger: WordCloudTagger {
     /// NaturalLanguage's.
     public var identity: WordCloudTokenizerIdentity { .naturalLanguage }
 
-    /// The readiness gate's verdict, which a tagger from the gate was built after. It waits for the verdict
+    /// What this tagger can do: the readiness gate's verdict, for the schemes it was built with. A tagger
+    /// the gate built without `.lemma`, as for a count of printed forms or while the lemma request is in
+    /// flight (#1539), gives no lemma, whatever the process's lemmatiser does; one built without
+    /// `.lexicalClass` classes nothing, and one without `.nameType` names no one. It waits for the verdict
     /// as `NaturalLanguageReadiness.health` does, which a tagger from the gate has already waited for.
-    public var health: NaturalLanguageHealth { NaturalLanguageReadiness.health }
+    public var health: NaturalLanguageHealth {
+        let verdict = NaturalLanguageReadiness.health
+        let schemes = tagSchemes
+        return NaturalLanguageHealth(lemmatizes: verdict.lemmatizes && schemes.contains(.lemma),
+                                     classifiesWords: verdict.classifiesWords && schemes.contains(.lexicalClass),
+                                     recognizesNames: verdict.recognizesNames && schemes.contains(.nameType))
+    }
 
     /// Walks this tagger by word, as the tokenizers always have: by the scheme
     /// `NaturalLanguageReadiness.wordWalkScheme(of:)` gives, `.lemma` when this tagger has it and
@@ -260,7 +283,8 @@ extension NLTagger: WordCloudTagger {
 ///
 /// This is how the tokenizers have always tagged, a tagger for each text, and what their `accumulate`
 /// without a tagger counts with. The app's cloud-vector generator passes it to its runner, which makes
-/// three kinds of walk, each with its own schemes; one `NLTagger` holds the schemes it was built with.
+/// three kinds of walk, each with its own schemes; one `NLTagger` holds the schemes it was built with, so
+/// this, not an `NLTagger`, is NaturalLanguage's tagger for a run.
 ///
 /// Version history:
 ///   1.0 — 2026-11-23 (FRUS Explorer Light, S29a): initial implementation
@@ -274,7 +298,8 @@ public struct NaturalLanguageWordCloudTagger: WordCloudTagger, Sendable {
 
     /// The readiness gate's verdict, read now, waiting for it as `NaturalLanguageReadiness.health` does: so
     /// never on the main thread before the verdict has settled. A re-check can replace it, so read it per
-    /// count, never keep it.
+    /// count, never keep it. Each walk's tagger holds the schemes the walk reads, so the verdict is what
+    /// this tagger can do.
     public var health: NaturalLanguageHealth { NaturalLanguageReadiness.health }
 
     /// The schemes a word walk that reads `reading` asks the gate for: `.lemma` for one that reads lemmas,
@@ -341,5 +366,8 @@ extension WordCloudNameType {
 /// Where `NaturalLanguage` is missing (Linux), the kit has no tagger of its own, and a host gives one
 /// (S29a).
 @available(*, unavailable, message: "NaturalLanguageWordCloudTagger tags with NaturalLanguage, which this platform does not have: give the tokenizers a WordCloudTagger of your own")
-public struct NaturalLanguageWordCloudTagger {}
+public struct NaturalLanguageWordCloudTagger {
+    /// Here so that making one is refused with the type's reason, not as an initialiser it lacks.
+    public init() {}
+}
 #endif

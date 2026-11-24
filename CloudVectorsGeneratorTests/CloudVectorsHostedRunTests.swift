@@ -24,6 +24,9 @@ import WordCloudKit
 private struct RunTagger: WordCloudTagger {
     var identity = WordCloudTokenizerIdentity(name: "RunTagger", version: "1")
     var health = NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false)
+    /// A fault for the verification to find: a walk that reads no lemma misses each text's first word,
+    /// so a printed count is not what the one pass counted as printed.
+    var missesFirstWordWithoutLemmas = false
 
     static let lemmas: [String: String] = [
         "negotiated": "negotiate", "treaties": "treaty", "delegations": "delegation", "signed": "sign",
@@ -67,7 +70,8 @@ private struct RunTagger: WordCloudTagger {
     func enumerateWords(in text: String, reading: WordCloudTagReading,
                         using body: (_ range: Range<String.Index>, _ lemma: String?,
                                      _ lexicalClass: () -> WordCloudLexicalClass?) -> Bool) {
-        for range in Self.words(in: text) {
+        let words = Self.words(in: text)
+        for range in missesFirstWordWithoutLemmas && !reading.contains(.lemmas) ? Array(words.dropFirst()) : words {
             let key = text[range].lowercased()
             let lemma = reading.contains(.lemmas) && health.lemmatizes ? Self.lemmas[key] : nil
             let goOn = body(range, lemma) { health.classifiesWords ? (Self.classes[key] ?? .other) : nil }
@@ -329,6 +333,39 @@ struct CloudVectorsHostedRunTests {
         try CloudVectorsRunner.run(tagger: RunTagger(), environment: corpus.environment(["VERIFY_PRINTED_WALK": "1"]))
         #expect(try corpus.written() == first)
         #expect(first.count == 4)
+    }
+
+    @Test("The printed walk's verification refuses a tagger whose walk without lemmas is not its one pass's, and writes nothing")
+    func verificationFindsADivergentTagger() throws {
+        let corpus = try HostedRunCorpus()
+        defer { corpus.remove() }
+        let faulty = RunTagger(missesFirstWordWithoutLemmas: true)
+        // Without the verification the run writes, as a run with the fault would ship.
+        try CloudVectorsRunner.run(tagger: faulty, environment: corpus.environment())
+        #expect(try corpus.written().count == 4)
+        for name in try corpus.written().keys { try FileManager.default.removeItem(at: corpus.output.appending(path: name)) }
+        #expect {
+            try CloudVectorsRunner.run(tagger: faulty, environment: corpus.environment(["VERIFY_PRINTED_WALK": "1"]))
+        } throws: { error in
+            guard case CloudVectorsRunner.RunError.printedWalkDiverged(let volume, _) = error else { return false }
+            return volume == "frus1969-76v01"
+        }
+        #expect(try corpus.written().isEmpty)
+    }
+
+    @Test("A tagger of NaturalLanguage's first identity writes files that name no tokenizer, as the app's always have")
+    func legacyIdentityWritesNoKey() throws {
+        let corpus = try HostedRunCorpus()
+        defer { corpus.remove() }
+        try CloudVectorsRunner.run(tagger: RunTagger(identity: .legacyNaturalLanguage), environment: corpus.environment())
+        for (name, data) in try corpus.written() {
+            #expect(!String(decoding: data, as: UTF8.self).contains(#""tokenizer""#), "\(name)")
+        }
+        #expect(try corpus.reference(.dictionary).configuration.tokenizer == .legacyNaturalLanguage)
+        try CloudVectorsRunner.run(tagger: RunTagger(), environment: corpus.environment())
+        for (name, data) in try corpus.written() {
+            #expect(String(decoding: data, as: UTF8.self).contains(#""tokenizer":{"name":"RunTagger","version":"1"}"#), "\(name)")
+        }
     }
 
     @Test("Another tagger's identity writes other stamps over the same counts")
