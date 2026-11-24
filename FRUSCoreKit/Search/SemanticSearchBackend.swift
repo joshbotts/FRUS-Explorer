@@ -76,26 +76,54 @@ import Foundation
 ///         line goes with the dateline after it. SNIPPETS MOVE for those Meaning rows
 ///   1.9 — A18 (index version 70): a Meaning result carries its row's `dateISOMax` and `datePrecision`, as a
 ///         keyword result does
+///   2.0 — 2026-11-24: FRUS Explorer Light's S27a — moved into FRUSCoreKit, public, over values: a hit beyond the
+///         library is titled through ``manifestEntry``, the host's manifest, in place of the app's `ManifestStore`,
+///         and the rendered expressions take the generation's model in place of `BundledSemanticVectors`. The three
+///         routes are unchanged; `MeaningSearchRunning`, the app's view models' seam, stays the app's
 @MainActor
-struct SemanticSearchBackend: MeaningSearchRunning {
+public struct SemanticSearchBackend {
 
-    let searcher: SemanticQuerySearcher
-    let searchService: SearchService
-    let manifestStore: ManifestStore
+    /// The Meaning engine: the funnel and the search inside a set.
+    public let searcher: SemanticQuerySearcher
+    /// The index's search service, which gives a hit its row and applies the filters.
+    public let searchService: SearchService
+    /// The manifest's entry for a volume, or `nil` for one it does not list: what titles a hit in a volume the
+    /// index does not hold, and says whether it can be downloaded. The app's `ManifestStore.entry(forVolumeId:)`.
+    public let manifestEntry: (String) -> VolumeManifestEntry?
     /// Read live at run time — the indexed set grows as volumes index.
-    let indexedVolumeIds: () -> Set<String>
+    public let indexedVolumeIds: () -> Set<String>
+
+    /// Creates the engine.
+    ///
+    /// - Parameters:
+    ///   - searcher: The Meaning engine.
+    ///   - searchService: The index's search service.
+    ///   - manifestEntry: The manifest's entry for a volume, read for each hit beyond the library.
+    ///   - indexedVolumeIds: The volumes the index holds, read at each run.
+    public init(searcher: SemanticQuerySearcher, searchService: SearchService,
+                manifestEntry: @escaping (String) -> VolumeManifestEntry?,
+                indexedVolumeIds: @escaping () -> Set<String>) {
+        self.searcher = searcher
+        self.searchService = searchService
+        self.manifestEntry = manifestEntry
+        self.indexedVolumeIds = indexedVolumeIds
+    }
 
     /// Ranked hits requested from the funnel. 100, not the pool's 800: a ten-page semantic
     /// list is already past what a reader triages, and every row costs a keyed lookup.
-    static let hitLimit = 100
+    public static let hitLimit = 100
 
     /// What a Meaning search records as its rendered expression, which the method appendix's CSV
     /// prints verbatim — the honest record of what ran, so it names the bundled generation's
     /// model rather than a literal. Both view models read it, so the twins cannot drift; through
     /// build 50 each spelled `text-embedding-embeddinggemma-300m-qat` itself, which would have
     /// named the 300m beside EmbeddingGemma 2's results (B4).
-    static var renderedExpression: String {
-        let model = BundledSemanticVectors.provenance?.model ?? "unavailable"
+    ///
+    /// - Parameter model: The bundled generation's model (`SemanticVectorsArtifacts.Provenance.model`), or `nil`
+    ///   where the vectors did not load. The app's `renderedExpression` passes `BundledSemanticVectors`'.
+    /// - Returns: The expression.
+    public static func renderedExpression(model: String?) -> String {
+        let model = model ?? "unavailable"
         return "route=semantic; model=\(model); top=\(hitLimit)"
     }
 
@@ -103,10 +131,12 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     /// route and model, and the size of the list it ranked whole, where a search of the series records
     /// the hundred it returns. "top=100" over a ranking of 212 documents would misstate what ran.
     ///
-    /// - Parameter count: The held list's members, every one of which the ranking returns.
+    /// - Parameters:
+    ///   - count: The held list's members, every one of which the ranking returns.
+    ///   - model: The bundled generation's model, or `nil` where the vectors did not load.
     /// - Returns: The expression.
-    static func renderedExpression(rankingAll count: Int) -> String {
-        let model = BundledSemanticVectors.provenance?.model ?? "unavailable"
+    public static func renderedExpression(rankingAll count: Int, model: String?) -> String {
+        let model = model ?? "unavailable"
         return "route=semantic; model=\(model); ranked=\(count)"
     }
 
@@ -116,86 +146,156 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     /// - Parameters:
     ///   - count: The documents ranked inside (`WholeMatchRanking.size`).
     ///   - limit: The ceiling the closest were listed up to.
+    ///   - model: The bundled generation's model, or `nil` where the vectors did not load.
     /// - Returns: The expression.
-    static func renderedExpression(rankingAll count: Int, listing limit: Int) -> String {
-        renderedExpression(rankingAll: count) + "; top=\(limit)"
+    public static func renderedExpression(rankingAll count: Int, listing limit: Int, model: String?) -> String {
+        renderedExpression(rankingAll: count, model: model) + "; top=\(limit)"
     }
 
     /// A hit in a volume this device has not indexed — rendered by the #262 rule (manifest
     /// title, no invented metadata, a download affordance where the manifest has a URL).
-    struct BeyondLibraryHit: Identifiable, Equatable {
-        let volumeID: String
-        let documentID: String
+    public struct BeyondLibraryHit: Identifiable, Equatable, Sendable {
+        public let volumeID: String
+        public let documentID: String
         /// Exact int8 cosine, the same scale the rows' chips show.
-        let score: Double
+        public let score: Double
         /// The volume's manifest title.
-        let volumeTitle: String
+        public let volumeTitle: String
         /// Whether the manifest carries a download URL (side-loaded volumes do not).
-        let isDownloadable: Bool
-        var id: String { "\(volumeID)/\(documentID)" }
+        public let isDownloadable: Bool
+        public var id: String { "\(volumeID)/\(documentID)" }
+
+        /// Creates a hit beyond the library.
+        ///
+        /// - Parameters:
+        ///   - volumeID: The volume's id.
+        ///   - documentID: The document's id.
+        ///   - score: The calibrated cosine.
+        ///   - volumeTitle: The volume's manifest title, or its id where the manifest has none.
+        ///   - isDownloadable: Whether the manifest carries a download URL.
+        public init(volumeID: String, documentID: String, score: Double, volumeTitle: String,
+                    isDownloadable: Bool) {
+            self.volumeID = volumeID
+            self.documentID = documentID
+            self.score = score
+            self.volumeTitle = volumeTitle
+            self.isDownloadable = isDownloadable
+        }
     }
 
     /// What the caption must say — every count the mode owes the reader.
-    struct Disclosure: Equatable {
+    public struct Disclosure: Equatable, Sendable {
         /// Candidates dropped because their volume's shard is not on this device (warming up).
-        var unscoredCandidates: Int
+        public var unscoredCandidates: Int
         /// Distinct volumes those came from.
-        var unscoredVolumes: Int
+        public var unscoredVolumes: Int
         /// Of those volumes, how many have a match-file download under way, as the searcher's
         /// fetch requests were answered (#1527; `SemanticQuerySearcher.Results.downloadingVolumes`).
         /// Zero with Download With Volumes off or offline, and short of ``unscoredVolumes``
         /// whenever a volume's candidates ranked below the searcher's fetch depth.
-        var downloadingVolumes: Int
+        public var downloadingVolumes: Int
         /// Whether SQL filters were intersected against the indexed hits.
-        var filtersApplied: Bool
+        public var filtersApplied: Bool
         /// Indexed hits the filters removed.
-        var filteredOut: Int
+        public var filteredOut: Int
         /// Beyond-library hits present while filters were active — checked against volume
         /// scope only, which the caption must say.
-        var beyondUncheckedByFilters: Bool
+        public var beyondUncheckedByFilters: Bool
         /// The size of the document set the run ranked inside, or `nil` for a run across the
         /// whole series (#1577). While it is set, ``unscoredCandidates`` counts members of the set
         /// and not candidates, and the caption words them so.
-        var rankedWithin: Int? = nil
+        public var rankedWithin: Int? = nil
         /// Members of that set the bundled vectors hold no row for
         /// (`SemanticQuerySearcher.Results.withoutVector`). Zero for a run across the series.
-        var withoutVector: Int = 0
+        public var withoutVector: Int = 0
 
         /// Ranked hits in volumes this device has indexed whose documents its index does not
         /// hold, which cannot be listed (#1577). The vectors are the build's and the volume is the
         /// device's, so the two can disagree: a document upstream added to a volume since the
         /// reader downloaded it, or removed from it since the build's vectors were made. Counted
         /// before the filters are applied, so it is never part of ``filteredOut``.
-        var notIndexedHere: Int = 0
+        public var notIndexedHere: Int = 0
 
         /// Members of the set that were scored, or `nil` for a run across the series: the set less
         /// its members without a vector and those without their match file. It is the number
         /// ranked, not the number listed, which the list's length and the other filters cut.
-        var rankedCount: Int? {
+        public var rankedCount: Int? {
             rankedWithin.map { max(0, $0 - withoutVector - unscoredCandidates) }
+        }
+
+        /// Creates a disclosure.
+        ///
+        /// - Parameters:
+        ///   - unscoredCandidates: Candidates, or members of a set, dropped for want of a match file.
+        ///   - unscoredVolumes: Distinct volumes those came from.
+        ///   - downloadingVolumes: Of those, the ones with a match-file download under way.
+        ///   - filtersApplied: Whether filters were intersected against the indexed hits.
+        ///   - filteredOut: Indexed hits the filters removed.
+        ///   - beyondUncheckedByFilters: Whether hits beyond the library stood under filters they were not checked by.
+        ///   - rankedWithin: The size of the set ranked inside, or `nil` for the whole series.
+        ///   - withoutVector: Members of that set with no vector.
+        ///   - notIndexedHere: Ranked hits in indexed volumes that the index holds no row for.
+        public init(unscoredCandidates: Int, unscoredVolumes: Int, downloadingVolumes: Int, filtersApplied: Bool,
+                    filteredOut: Int, beyondUncheckedByFilters: Bool, rankedWithin: Int? = nil,
+                    withoutVector: Int = 0, notIndexedHere: Int = 0) {
+            self.unscoredCandidates = unscoredCandidates
+            self.unscoredVolumes = unscoredVolumes
+            self.downloadingVolumes = downloadingVolumes
+            self.filtersApplied = filtersApplied
+            self.filteredOut = filteredOut
+            self.beyondUncheckedByFilters = beyondUncheckedByFilters
+            self.rankedWithin = rankedWithin
+            self.withoutVector = withoutVector
+            self.notIndexedHere = notIndexedHere
         }
     }
 
     /// What a run produced.
-    struct Outcome {
-        var results: [SearchResult]
-        var beyondLibrary: [BeyondLibraryHit]
-        var disclosure: Disclosure
+    public struct Outcome: Sendable {
+        public var results: [SearchResult]
+        public var beyondLibrary: [BeyondLibraryHit]
+        public var disclosure: Disclosure
+
+        /// Creates an outcome.
+        ///
+        /// - Parameters:
+        ///   - results: The rows, in rank order.
+        ///   - beyondLibrary: The hits in volumes the index does not hold.
+        ///   - disclosure: What the caption owes the reader.
+        public init(results: [SearchResult], beyondLibrary: [BeyondLibraryHit], disclosure: Disclosure) {
+            self.results = results
+            self.beyondLibrary = beyondLibrary
+            self.disclosure = disclosure
+        }
     }
 
     /// What a ranking of a held list's whole match produced (#1577 lane 6).
-    struct WholeMatchOutcome {
+    public struct WholeMatchOutcome: Sendable {
         /// The rows, the closest first and then those listed unranked, and the disclosure. No hit is beyond the
         /// library: every document a keyword match holds is in the index.
-        var outcome: Outcome
+        public var outcome: Outcome
         /// The keys of the list's whole match, as the index gave them, which the view model keeps with the list so
         /// that a second question asks the index nothing.
-        var matchKeys: [String]
+        public var matchKeys: [String]
         /// What the header and a capture say of the ranking.
-        var ranking: WholeMatchRanking
+        public var ranking: WholeMatchRanking
         /// The trail's signature of the documents the ranking ranked inside
         /// (`SearchScopeSignature.semanticSignature(rankingInside:)`), made with the set.
-        var setSignature: String
+        public var setSignature: String
+
+        /// Creates an outcome of a ranking of a whole match.
+        ///
+        /// - Parameters:
+        ///   - outcome: The rows and the disclosure.
+        ///   - matchKeys: The keys of the list's whole match.
+        ///   - ranking: What the ranking ranked.
+        ///   - setSignature: The trail's signature of the set ranked inside.
+        public init(outcome: Outcome, matchKeys: [String], ranking: WholeMatchRanking, setSignature: String) {
+            self.outcome = outcome
+            self.matchKeys = matchKeys
+            self.ranking = ranking
+            self.setSignature = setSignature
+        }
     }
 
     /// Runs one Meaning search.
@@ -206,7 +306,7 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     ///     `documentIds` is ranked inside where the others narrow afterwards.
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable` untouched — the view models map the
     ///   `.modelNotDownloaded` case to the offer state.
-    func run(query: String, parameters: SearchParameters) async throws -> Outcome {
+    public func run(query: String, parameters: SearchParameters) async throws -> Outcome {
         // `nil` is no set and `[]` is a set that holds nothing: the gate's own contract, which an
         // empty History scope and a disjoint corpus both rely on to match nothing.
         let searched: SemanticQuerySearcher.Results
@@ -284,7 +384,7 @@ struct SemanticSearchBackend: MeaningSearchRunning {
         }
 
         let beyond: [BeyondLibraryHit] = beyondHits.map { hit in
-            let entry = manifestStore.entry(forVolumeId: hit.volumeID)
+            let entry = manifestEntry(hit.volumeID)
             return BeyondLibraryHit(
                 volumeID: hit.volumeID,
                 documentID: hit.documentID,
@@ -334,7 +434,7 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     ///   - parameters: The parameters the layer runs with, the held list's gate among them.
     /// - Returns: The rows, no beyond-library hits, and the disclosure.
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does.
-    func rerank(query: String, base: [SearchResult], parameters: SearchParameters) async throws -> Outcome {
+    public func rerank(query: String, base: [SearchResult], parameters: SearchParameters) async throws -> Outcome {
         let admitted = parameters.documentIds.map(Set.init)
         let members = admitted.map { gate in base.filter { gate.contains($0.id) } } ?? base
         let searched = try await searcher.search(query, within: members.map(\.id), limit: members.count)
@@ -411,8 +511,8 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does, and
     ///   `CancellationError` when the task is cancelled: the kit's statements stop (#1680), the set is not finished,
     ///   and the searcher stops between its steps.
-    func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
-                        parameters: SearchParameters, limit: Int) async throws -> WholeMatchOutcome {
+    public func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
+                               parameters: SearchParameters, limit: Int) async throws -> WholeMatchOutcome {
         let clock = ContinuousClock()
         let keysStart = clock.now
         let kept = base.wholeMatch
@@ -522,71 +622,5 @@ struct SemanticSearchBackend: MeaningSearchRunning {
         let admitted: Set<String>
         /// `SearchScopeSignature.semanticSignature(rankingInside:)` of the set.
         let signature: String
-    }
-}
-
-// MARK: - MeaningSearchRunning
-
-/// What a search view model needs of the Meaning engine: one run.
-///
-/// `SearchViewModel` and `MacSearchViewModel` hold the engine through this protocol, so a test can drive a Meaning
-/// run through the view model with a list of its own. ``SemanticSearchBackend`` cannot be built in a unit test's
-/// host: it needs the query encoder's model and the vector files, and neither is there.
-///
-/// Version history:
-///   1.0 — #1595, #1597, #1598: initial implementation
-@MainActor
-protocol MeaningSearchRunning {
-
-    /// Runs one Meaning search.
-    ///
-    /// - Parameters:
-    ///   - query: The reader's text, verbatim.
-    ///   - parameters: The current search parameters; only their filters are read. A document set among them
-    ///     (`documentIds`) is ranked inside, and the other filters narrow the ranked list.
-    /// - Returns: The ranked rows, the hits beyond the indexed library, and what the caption owes the reader.
-    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, which the view models map to their own states.
-    func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome
-
-    /// Ranks a held list by a question (#1577 lane 4): its members closest first, then those that
-    /// could not be ranked. See `SemanticSearchBackend.rerank(query:base:parameters:)`.
-    ///
-    /// - Parameters:
-    ///   - query: The reader's question, verbatim.
-    ///   - base: The held list's members, in its order.
-    ///   - parameters: The parameters the layer runs with, the held list's gate among them.
-    /// - Returns: The rows, and what the caption owes the reader.
-    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`.
-    func rerank(query: String, base: [SearchResult],
-                parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome
-
-    /// Ranks the whole match of a held list cut at its ceiling (#1577 lane 6), and lists the closest documents up to
-    /// the ceiling. See `SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)`.
-    ///
-    /// - Parameters:
-    ///   - query: The reader's question, verbatim.
-    ///   - base: The held list.
-    ///   - ran: The search that found the list.
-    ///   - parameters: The parameters in force outside the held list.
-    ///   - limit: The ceiling.
-    /// - Returns: The rows, the match's keys, what the ranking ranked, and the set's signature.
-    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`.
-    func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
-                        parameters: SearchParameters, limit: Int) async throws -> SemanticSearchBackend.WholeMatchOutcome
-}
-
-extension MeaningSearchRunning {
-
-    /// A stand-in that ranks nothing: the engine a test builds for a plain Meaning run need not rank a
-    /// held list, and one that is asked to says it cannot run, as an engine with no vectors does.
-    func rerank(query: String, base: [SearchResult],
-                parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome {
-        throw SemanticQuerySearcher.SearchUnavailable.vectorsUnavailable
-    }
-
-    /// A stand-in that ranks no whole match, as ``rerank(query:base:parameters:)``'s ranks no list.
-    func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
-                        parameters: SearchParameters, limit: Int) async throws -> SemanticSearchBackend.WholeMatchOutcome {
-        throw SemanticQuerySearcher.SearchUnavailable.vectorsUnavailable
     }
 }

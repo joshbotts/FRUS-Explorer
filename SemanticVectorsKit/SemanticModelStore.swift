@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Foundation
 
 /// The on-device home of the query-encoder model file — one optional 310 MB GGUF, downloaded at
@@ -39,6 +43,10 @@ import Foundation
 ///   1.1 — B4 (#1659, 2026-10-15): the pinned file is EmbeddingGemma 2's Q8_0 GGUF, 309,855,456
 ///         bytes, where it was EmbeddingGemma 300m's, 229,093,184. A device that holds the 300m
 ///         purges it at launch, since the bundled pin moved (`purgeIfPinChanged()`)
+///   1.2 — 2026-11-24: FRUS Explorer Light's S27a — moved into SemanticVectorsKit from the app, whole and
+///         otherwise unchanged, with CryptoKit behind `canImport` as the kit's artifacts file has it, so a host
+///         outside the app reads the model's name, length and pin, and holds a file to them, by the app's rules;
+///         ``sha256Hex(of:)`` is public
 public actor SemanticModelStore {
 
     /// Directory holding the model file and its marker.
@@ -180,7 +188,7 @@ public actor SemanticModelStore {
     ///
     /// - Parameter url: The file to hash.
     /// - Returns: Lowercase hex.
-    static func sha256Hex(of url: URL) throws -> String {
+    public static func sha256Hex(of url: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var hasher = SHA256()

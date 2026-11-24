@@ -432,8 +432,14 @@ struct SemanticScoreCopyTests {
                 "the row's value does not follow its label, or is not the score's words")
         let chip = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SemanticSearchSharedViews.swift"),
                               encoding: .utf8)
-        #expect(chip.contains("Int64(SemanticScoreCopy.percent(for: score))"),
-                "the chip no longer draws the figure the accessibility value says")
+        // Since FRUS Explorer Light's S27a the chip draws FRUSCoreKit's words for the score, whose figure is the one the
+        // accessibility value says.
+        #expect(chip.contains("Text(SemanticScoreCopy.chipLabel(for: score))"),
+                "the chip no longer draws the score's words")
+        for score in [0.6484375, 0.609375, 0.005, -0.3, 1.2] {
+            #expect(SemanticScoreCopy.chipLabel(for: score) == "Semantic match · \(SemanticScoreCopy.percent(for: score))%",
+                    "the chip no longer draws the figure the accessibility value says")
+        }
     }
 }
 

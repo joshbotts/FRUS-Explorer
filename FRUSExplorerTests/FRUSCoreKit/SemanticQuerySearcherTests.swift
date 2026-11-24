@@ -8,14 +8,26 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
+#if !SWIFT_PACKAGE
+// The packer's shards, which the repository ignores, and the bundled index, read for the suite below.
 /// Where the searcher tests find their inputs: the committed query-vector fixture (so no 310 MB
 /// model is needed — the embed step is injected) and the gitignored local shards (so the suite
 /// self-skips on a checkout that has not regenerated them, the shard-fetcher tests' rule).
 private enum SearcherFixtures {
     static let repoRoot = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     static func shardURL(_ volumeID: String) -> URL {
         repoRoot.appendingPathComponent("Planning/semantic-vectors/shards/\(volumeID).vec")
@@ -57,6 +69,7 @@ private enum SearcherFixtures {
         return row.vector
     }
 }
+#endif
 
 /// Records the volumes the searcher asks to fetch, and answers each request as `AppState` would:
 /// `accepts` says whether a download starts (#1527 review round 1: a declined ask is the switch
@@ -72,6 +85,11 @@ private actor FetchCollector {
     func setAccepts(_ value: Bool) { accepts = value }
 }
 
+#if !SWIFT_PACKAGE
+// It adopts the packer's shards, which the repository ignores, through the app's `SemanticShardStore`, and
+// reads `BundledSemanticVectors`: it skips on a checkout without the shards, and the web edition's Linux CI
+// refuses a skip. `SemanticQueryEncodingTests` below, and the searches of `SemanticSetSearchTests`, drive the
+// kit's searcher in the package over shards they write.
 /// The typed-query searcher (V-5 s3), driven through the injected embed seam with the committed
 /// fixture vectors — the funnel, the drop-and-queue rule, and the twin fold, against the real
 /// bundled corpus and real packer shards. The encoder half has its own gated acceptance suite;
@@ -296,6 +314,7 @@ struct SemanticQuerySearcherTests {
         }
     }
 }
+#endif
 
 /// The request loop behind `SemanticQuerySearcher.Results.downloadingVolumes`, driven without the
 /// shard fixtures the searcher suite needs, so a clean checkout exercises #1527's rule too.
@@ -315,5 +334,141 @@ struct SemanticFetchRequestTests {
             })
         #expect(downloading == started, "the declined frus1969-76v01 was counted: \(downloading.sorted())")
         #expect(await collector.volumeIDs == ["frus1861", "frus1950v02", "frus1969-76v01"])
+    }
+}
+
+// MARK: - The host's encoder
+
+/// An encoder that records each question it is asked and answers the fixture's query vector, or throws `refusal`.
+private actor RecordingEncoder: SemanticQueryEncoding {
+    private(set) var asked: [String] = []
+    private let refusal: (any Error)?
+    init(refusal: (any Error)? = nil) { self.refusal = refusal }
+    func embed(_ query: String) async throws -> [Double] {
+        asked.append(query)
+        if let refusal { throw refusal }
+        return SemanticSetFixture.queryEmbedding
+    }
+}
+
+/// A host's shard source that records each volume it is asked for, over the fixture's own.
+private actor RecordingShards: SemanticShardSource {
+    private(set) var asked: [String] = []
+    private let source: any SemanticShardSource
+    init(_ source: any SemanticShardSource) { self.source = source }
+    func shard(for volumeID: String) async -> SemanticShard? {
+        asked.append(volumeID)
+        return await source.shard(for: volumeID)
+    }
+}
+
+/// A failure that is not a `SearchUnavailable`, which the searcher passes on as an encoder threw it.
+private struct EncoderBroke: Error, Equatable {}
+
+/// The searcher over its host's encoder and shard source (FRUS Explorer Light's S27a), on the synthetic artifacts of
+/// ``SemanticSetFixture``, so that it runs on every checkout and in the package: the question reaches the encoder as
+/// the reader typed it, the encoder's refusals reach the caller as it threw them, and every match file is read
+/// through the host's source. The app's encoder, which applies the query template and keeps its model loaded for 180
+/// seconds, is `SemanticOnDeviceEncoder`, and the searcher holds no encoder state of its own.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S27a: initial implementation
+@Suite("Semantic query searcher — the host's encoder")
+struct SemanticQueryEncodingTests {
+
+    /// A new temporary directory, which the test removes.
+    private func makeDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SemanticEncoding-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    /// A searcher over the fixture with the given encoder and shard source.
+    private func makeSearcher(_ artifacts: SemanticSetFixture.Artifacts, encoder: any SemanticQueryEncoding,
+                              shards: (any SemanticShardSource)? = nil) -> SemanticQuerySearcher {
+        SemanticQuerySearcher(index: artifacts.index, corpus: artifacts.corpus,
+                              shards: shards ?? artifacts.shardStore, encoder: encoder,
+                              requestShardFetch: { _ in false })
+    }
+
+    @Test("Both searches hand the encoder the reader's question as typed, once a search")
+    func theQuestionReachesTheEncoderAsTyped() async throws {
+        let directory = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let encoder = RecordingEncoder()
+        let searcher = makeSearcher(try SemanticSetFixture.writeArtifacts(in: directory), encoder: encoder)
+        let question = "  How did the talks in Geneva end?\n"
+
+        let series = try await searcher.search(question, limit: 10)
+        let inside = try await searcher.search(question, within: SemanticSetFixture.documentSet, limit: 5)
+
+        #expect(!series.hits.isEmpty && !inside.hits.isEmpty)
+        #expect(await encoder.asked == [question, question],
+                "the searcher adds no template and trims nothing: the encoder applies the template itself")
+    }
+
+    @Test("An encoder's refusal reaches the caller as the encoder threw it, from both searches",
+          arguments: [SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded, .queryTooLong,
+                      .encodingFailed("the model did not load"), .vectorsUnavailable])
+    func aRefusalPassesThrough(_ refusal: SemanticQuerySearcher.SearchUnavailable) async throws {
+        let directory = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let searcher = makeSearcher(try SemanticSetFixture.writeArtifacts(in: directory),
+                                    encoder: RecordingEncoder(refusal: refusal))
+
+        await #expect(throws: refusal) { _ = try await searcher.search("q", limit: 10) }
+        await #expect(throws: refusal) {
+            _ = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
+        }
+    }
+
+    @Test("A failure that is not a refusal reaches the caller unchanged")
+    func anotherFailurePassesThrough() async throws {
+        let directory = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let searcher = makeSearcher(try SemanticSetFixture.writeArtifacts(in: directory),
+                                    encoder: RecordingEncoder(refusal: EncoderBroke()))
+
+        await #expect(throws: EncoderBroke()) { _ = try await searcher.search("q", limit: 10) }
+    }
+
+    @Test("A function is an encoder: the fixture's vector through SemanticEmbedFunction ranks as the recorder's does")
+    func aFunctionIsAnEncoder() async throws {
+        let directory = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let artifacts = try SemanticSetFixture.writeArtifacts(in: directory)
+        let byFunction = makeSearcher(artifacts, encoder: SemanticEmbedFunction { _ in SemanticSetFixture.queryEmbedding })
+        let byActor = makeSearcher(artifacts, encoder: RecordingEncoder())
+
+        let one = try await byFunction.search("q", within: SemanticSetFixture.documentSet, limit: 20)
+        let other = try await byActor.search("q", within: SemanticSetFixture.documentSet, limit: 20)
+        #expect(one == other)
+        #expect(one.hits.map { "\($0.volumeID)/\($0.documentID)" }
+                == SemanticSetFixture.bruteForceRanking(of: SemanticSetFixture.documentSet).map(\.key))
+    }
+
+    @Test("Every match file is read through the host's source, each volume once a search inside a set")
+    func theShardsAreTheHostsSource() async throws {
+        let directory = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let artifacts = try SemanticSetFixture.writeArtifacts(in: directory)
+        let shards = RecordingShards(artifacts.shardStore)
+        let searcher = makeSearcher(artifacts, encoder: RecordingEncoder(), shards: shards)
+
+        let inside = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
+        let askedInside = await shards.asked
+        // The members' volumes the vectors cover: the held volume, the twins and the volume whose file is absent. A member
+        // with no vector, in a volume the vectors do not cover or with no volume at all, is not looked for.
+        let covered: Set<String> = [SemanticSetFixture.held, SemanticSetFixture.absent,
+                                    SemanticSetFixture.twinFirst, SemanticSetFixture.twinSecond]
+        #expect(!inside.hits.isEmpty)
+        #expect(askedInside.count == Set(askedInside).count, "a volume is asked for once a search")
+        #expect(Set(askedInside) == covered, "every covered member's volume, and no other, is asked for")
+
+        _ = try await searcher.search("q", limit: 10)
+        let askedSeries = await shards.asked.dropFirst(askedInside.count)
+        #expect(!askedSeries.isEmpty && askedSeries.count == Set(askedSeries).count,
+                "the corpus-wide search asks for each candidate's volume once")
     }
 }

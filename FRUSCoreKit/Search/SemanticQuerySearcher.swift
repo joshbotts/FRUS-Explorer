@@ -13,6 +13,11 @@
 // limitations under the License.
 
 import Foundation
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// Typed natural-language search over the pinned semantic space (V-5 s3): encode the reader's
 /// query on-device, run the shipped funnel, fold edition twins, disclose what could not be
@@ -60,30 +65,46 @@ import Foundation
 ///         so EmbeddingGemma 2's figures read on the scale the 300m's did
 ///   1.5 — #1577 lane 6: `search(_:within:limit:)` stops between its steps when its task is
 ///         cancelled, and asks for no match file once it is
-actor SemanticQuerySearcher {
+///   1.6 — 2026-11-24: FRUS Explorer Light's S27a — moved into FRUSCoreKit, public, and given its host's
+///         encoder (``SemanticQueryEncoding``) and shards (SemanticVectorsKit's `SemanticShardSource`) in place of
+///         the app's model store, shard store and `embedOverride`. How long the encoder stays loaded is the
+///         encoder's own rule, the app's `SemanticOnDeviceEncoder`'s; every search is the same, step for step
+public actor SemanticQuerySearcher {
 
     /// One ranked hit.
-    struct Hit: Equatable, Sendable {
+    public struct Hit: Equatable, Sendable {
         /// Manifest `volumeId`.
-        let volumeID: String
+        public let volumeID: String
         /// TEI document id (`d139`).
-        let documentID: String
+        public let documentID: String
         /// Exact int8 cosine in the pinned space, through the generation's score calibration
         /// (`retrieval.calibratedQueryScore`, B4): the number the Meaning chip shows once clamped
         /// and rounded. Unclamped, so the hits keep the cosine's order exactly.
-        let score: Double
+        public let score: Double
+
+        /// Creates a hit.
+        ///
+        /// - Parameters:
+        ///   - volumeID: The volume's id.
+        ///   - documentID: The document's id.
+        ///   - score: The calibrated cosine.
+        public init(volumeID: String, documentID: String, score: Double) {
+            self.volumeID = volumeID
+            self.documentID = documentID
+            self.score = score
+        }
     }
 
     /// What a search produced, including what it could not score.
-    struct Results: Equatable, Sendable {
+    public struct Results: Equatable, Sendable {
         /// Ranked hits, best first, edition twins folded.
-        let hits: [Hit]
+        public let hits: [Hit]
         /// Candidate documents dropped because their volume's shard is not on this device —
         /// the honest-disclosure counterpart of the axis's silent fence. The top of the order's
         /// fetches are asked for, and where they start the next search is better.
-        let unscoredCandidates: Int
+        public let unscoredCandidates: Int
         /// Distinct volumes those dropped candidates came from.
-        let unscoredVolumes: Int
+        public let unscoredVolumes: Int
         /// Of those volumes, how many have a match-file download under way, as this search's
         /// fetch requests were answered (#1527). Only candidates in the top ``fetchQueueDepth`` of
         /// the order are asked for, so a volume whose candidates all rank below them is counted in
@@ -91,19 +112,19 @@ actor SemanticQuerySearcher {
         /// `AppState.requestSemanticShardForSearch` says no while Download With Volumes is off,
         /// offline, with no fetcher, for a volume with no published file, and for one whose fetch
         /// already failed this session.
-        let downloadingVolumes: Int
+        public let downloadingVolumes: Int
         /// How many documents the search ranked inside, for ``search(_:within:limit:)``: the
         /// distinct keys it was given. `nil` for the corpus-wide search, which ranks the series.
         ///
         /// Every member is in exactly one of three counts, so
         /// `ranked + withoutVector + unscoredCandidates == rankedWithin`, where `ranked` is the
         /// number of members scored (``hits`` is its best `limit`).
-        let rankedWithin: Int?
+        public let rankedWithin: Int?
         /// Members of that set the bundled vectors hold no row for, which no search can rank:
         /// front matter, chapter headings and appendix structure are never embedded, and a
         /// document newer than this build's vectors has none yet. Zero for the corpus-wide
         /// search, whose candidates all come from the vectors.
-        let withoutVector: Int
+        public let withoutVector: Int
 
         /// Creates a result.
         ///
@@ -114,8 +135,8 @@ actor SemanticQuerySearcher {
         ///   - downloadingVolumes: Of those volumes, the ones with a download under way.
         ///   - rankedWithin: The size of the set ranked inside, or `nil` for the whole series.
         ///   - withoutVector: Members of that set with no vector.
-        init(hits: [Hit], unscoredCandidates: Int, unscoredVolumes: Int, downloadingVolumes: Int,
-             rankedWithin: Int? = nil, withoutVector: Int = 0) {
+        public init(hits: [Hit], unscoredCandidates: Int, unscoredVolumes: Int, downloadingVolumes: Int,
+                    rankedWithin: Int? = nil, withoutVector: Int = 0) {
             self.hits = hits
             self.unscoredCandidates = unscoredCandidates
             self.unscoredVolumes = unscoredVolumes
@@ -126,7 +147,7 @@ actor SemanticQuerySearcher {
     }
 
     /// Why a search could not run at all.
-    enum SearchUnavailable: Error, Equatable {
+    public enum SearchUnavailable: Error, Equatable {
         /// The model file is not on this device — the UI's cue to offer the download.
         case modelNotDownloaded
         /// The bundled vector artifacts are unavailable (a build state, not a library state).
@@ -139,30 +160,21 @@ actor SemanticQuerySearcher {
 
     private let index: SemanticVectorIndex
     private let corpus: SemanticCorpusVectors
-    private let modelStore: SemanticModelStore
-    private let shardStore: SemanticShardStore
+    /// The host's match files, read a volume at a time: the app's `SemanticShardStore`.
+    private let shards: any SemanticShardSource
     /// Asks for a background shard fetch for a volume and answers whether a download is under way
     /// for it — `AppState.requestSemanticShardForSearch`, injected so this actor never touches the
     /// main actor itself.
     private let requestShardFetch: @Sendable (String) async -> Bool
-    /// The embed step, injectable so tests can drive the funnel with fixture vectors and no
-    /// 310 MB model. `nil` means the real encoder through the model store's verified door.
-    private let embedOverride: (@Sendable (String) async throws -> [Double])?
-
-    /// The encoder, created lazily on first search and dropped by the idle watchdog.
-    private var encoder: SemanticQueryEncoder?
-    /// Bumped per search; the idle watchdog unloads only if nothing newer ran.
-    private var searchGeneration = 0
-
-    /// How long the encoder stays resident after the last search. The measured cost of being
-    /// wrong in either direction: resident is ~250 MB footprint (the s2 measurement), reload is
-    /// ~0.4 s cold — so a short idle window that drops the big number and re-pays the small one.
-    static let encoderIdleSeconds: UInt64 = 180
+    /// The embed step: the app's on-device encoder (`SemanticOnDeviceEncoder`), a host's own, or the
+    /// fixture vectors a test gives (``SemanticEmbedFunction``), where the app's searcher took an
+    /// `embedOverride`. It keeps itself loaded as long as its own rule says: the searcher has no idle rule.
+    private let encoder: any SemanticQueryEncoding
 
     /// How deep into the Hamming order missing-shard volumes are queued for fetch. Bounded so a
     /// first search does not queue hundreds of files: the pool is 800, but the top of the order
     /// is where the next search's answers live.
-    static let fetchQueueDepth = 100
+    public static let fetchQueueDepth = 100
 
     /// How many volumes a search inside a document set asks for at most, when their match files
     /// are missing (#1577). The corpus-wide bound above is a depth in candidate order and has no
@@ -170,22 +182,29 @@ actor SemanticQuerySearcher {
     /// the bound is a count of volumes, taken from those with most unranked members first, since
     /// they are what the next search gains most from. At the mean file size of 294 KB, 24 volumes
     /// are about 7 MB a search. Download Missing Vectors in Settings fetches the rest.
-    static let setFetchVolumeLimit = 24
+    public static let setFetchVolumeLimit = 24
 
-    init(
+    /// Creates a searcher.
+    ///
+    /// - Parameters:
+    ///   - index: The bundled row index, whose provenance the vectors and the shards share.
+    ///   - corpus: The bundled sign bits, which the corpus-wide search scans.
+    ///   - shards: The host's match files, through which every candidate is scored.
+    ///   - encoder: What embeds the reader's question.
+    ///   - requestShardFetch: Asks for a volume's missing match file and answers whether its download is
+    ///     under way; a host that fetches nothing answers `false`.
+    public init(
         index: SemanticVectorIndex,
         corpus: SemanticCorpusVectors,
-        modelStore: SemanticModelStore,
-        shardStore: SemanticShardStore,
-        requestShardFetch: @escaping @Sendable (String) async -> Bool,
-        embedOverride: (@Sendable (String) async throws -> [Double])? = nil
+        shards: any SemanticShardSource,
+        encoder: any SemanticQueryEncoding,
+        requestShardFetch: @escaping @Sendable (String) async -> Bool
     ) {
         self.index = index
         self.corpus = corpus
-        self.modelStore = modelStore
-        self.shardStore = shardStore
+        self.shards = shards
+        self.encoder = encoder
         self.requestShardFetch = requestShardFetch
-        self.embedOverride = embedOverride
     }
 
     /// Runs one semantic search.
@@ -195,7 +214,7 @@ actor SemanticQuerySearcher {
     ///   - limit: Ranked hits to return after twin folding.
     /// - Returns: Hits plus the unscored disclosure.
     /// - Throws: `SearchUnavailable`.
-    func search(_ query: String, limit: Int = 10) async throws -> Results {
+    public func search(_ query: String, limit: Int = 10) async throws -> Results {
         let (bits, int8) = try await quantizedQuery(query)
 
         let pool = max(limit, index.file.retrieval.rerankPool)
@@ -215,7 +234,7 @@ actor SemanticQuerySearcher {
             guard let located = index.volumeSlot(containing: row) else { continue }
             let volumeID = index.volumes[located.slot].volumeID
             if shards[located.slot] == nil {
-                shards[located.slot] = await shardStore.shard(for: volumeID)
+                shards[located.slot] = await self.shards.shard(for: volumeID)
             }
             guard let shard = shards[located.slot] ?? nil else {
                 unscored += 1
@@ -298,7 +317,7 @@ actor SemanticQuerySearcher {
     ///   - limit: Ranked hits to return.
     /// - Returns: The best `limit` members, best first, with the set's accounting.
     /// - Throws: `SearchUnavailable`, and `CancellationError` when the task is cancelled.
-    func search(_ query: String, within keys: [String], limit: Int) async throws -> Results {
+    public func search(_ query: String, within keys: [String], limit: Int) async throws -> Results {
         let clock = ContinuousClock()
 
         // Keys to corpus rows. A key the vectors hold no row for cannot be ranked by anyone.
@@ -343,7 +362,7 @@ actor SemanticQuerySearcher {
         var volumesAsked = 0
         for slot in Set(members.map(\.slot)).sorted() {
             volumesAsked += 1
-            if let shard = await shardStore.shard(for: index.volumes[slot].volumeID) {
+            if let shard = await self.shards.shard(for: index.volumes[slot].volumeID) {
                 shards[slot] = shard
             }
         }
@@ -429,7 +448,7 @@ actor SemanticQuerySearcher {
     /// - Parameter unrankedByVolume: Volume id to the count of the set's members in it that went
     ///   unranked for want of its match file.
     /// - Returns: The volumes to ask for, most unranked members first.
-    static func volumesWorthFetching(_ unrankedByVolume: [String: Int]) -> [String] {
+    public static func volumesWorthFetching(_ unrankedByVolume: [String: Int]) -> [String] {
         unrankedByVolume
             .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
             .prefix(setFetchVolumeLimit)
@@ -468,7 +487,7 @@ actor SemanticQuerySearcher {
     ///     for a search inside a set the ``setFetchVolumeLimit`` with most unranked members.
     ///   - request: The request, answering whether that volume's download is under way.
     /// - Returns: The volumes answered `true`.
-    static func requestFetches(
+    public static func requestFetches(
         for volumes: Set<String>, using request: @Sendable (String) async -> Bool
     ) async -> Set<String> {
         var downloading: Set<String> = []
@@ -478,42 +497,69 @@ actor SemanticQuerySearcher {
         return downloading
     }
 
-    /// Embeds through the override or the real encoder, managing the encoder's lifetime.
+    /// Embeds through the host's encoder, which throws what it throws: its refusals are
+    /// ``SearchUnavailable``s, passed on as they came.
     private func embed(_ query: String) async throws -> [Double] {
-        if let embedOverride {
-            return try await embedOverride(query)
-        }
-        guard let modelURL = await modelStore.verifiedModelURL() else {
-            throw SearchUnavailable.modelNotDownloaded
-        }
-        let encoder = self.encoder ?? SemanticQueryEncoder()
-        self.encoder = encoder
-        searchGeneration += 1
-        let generation = searchGeneration
-        defer { scheduleIdleUnload(after: generation) }
-        do {
-            try await encoder.load(modelPath: modelURL.path)
-            return try await encoder.encodeQuery(query)
-        } catch SemanticQueryEncoder.EncoderError.queryTooLong {
-            throw SearchUnavailable.queryTooLong
-        } catch let error as SearchUnavailable {
-            throw error
-        } catch {
-            throw SearchUnavailable.encodingFailed("\(error)")
-        }
+        try await encoder.embed(query)
+    }
+}
+
+// MARK: - SemanticQueryEncoding
+
+/// What embeds a reader's question for search by meaning (FRUS Explorer Light's S27a): the app's on-device
+/// encoder, a host's own, or a function a test gives (``SemanticEmbedFunction``).
+///
+/// ``embed(_:)`` is given the reader's text verbatim and applies the query template itself
+/// (`SemanticQueryPrompt.queryPrefix` and the text), as the app's encoder does. It answers the model's
+/// vector at its full width and of unit length, which the searcher cuts to the artifact's shipping width
+/// and quantizes. It refuses with a ``SemanticQuerySearcher/SearchUnavailable``:
+/// ``SemanticQuerySearcher/SearchUnavailable/modelNotDownloaded`` where its model is not there,
+/// ``SemanticQuerySearcher/SearchUnavailable/queryTooLong`` past the model's context, and
+/// ``SemanticQuerySearcher/SearchUnavailable/encodingFailed(_:)`` for anything else. The searcher passes
+/// on whatever it throws as it came, as it passed on what the app's `embedOverride` threw.
+///
+/// How long the encoder keeps its model loaded is the encoder's own rule: the app's drops it 180 seconds
+/// after its last question (`SemanticOnDeviceEncoder`), and the searcher has no idle rule of its own.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S27a: initial implementation, where the app's searcher took an
+///          `embedOverride` and held the app's encoder
+public protocol SemanticQueryEncoding: Sendable {
+
+    /// Embeds the reader's question.
+    ///
+    /// - Parameter query: The reader's text, verbatim; the query template is applied inside.
+    /// - Returns: The model's vector, of unit length.
+    /// - Throws: ``SemanticQuerySearcher/SearchUnavailable``, or what else the encoder throws.
+    func embed(_ query: String) async throws -> [Double]
+}
+
+// MARK: - SemanticEmbedFunction
+
+/// An encoder that is a function: the embed step a test gives as fixture vectors, or a host's encoder
+/// behind a closure, which ``SemanticQuerySearcher`` asks as it asks any ``SemanticQueryEncoding``.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S27a: initial implementation, the app's `embedOverride` as a
+///          ``SemanticQueryEncoding``
+public struct SemanticEmbedFunction: SemanticQueryEncoding {
+
+    /// The function.
+    private let function: @Sendable (String) async throws -> [Double]
+
+    /// Creates an encoder from a function.
+    ///
+    /// - Parameter function: Embeds the reader's text, verbatim, as ``SemanticQueryEncoding/embed(_:)`` does.
+    public init(_ function: @escaping @Sendable (String) async throws -> [Double]) {
+        self.function = function
     }
 
-    /// Drops the encoder after the idle window unless a newer search has run.
-    private func scheduleIdleUnload(after generation: Int) {
-        Task { [weak self] in
-            try? await Task.sleep(nanoseconds: Self.encoderIdleSeconds * 1_000_000_000)
-            await self?.unloadIfIdle(since: generation)
-        }
-    }
-
-    private func unloadIfIdle(since generation: Int) async {
-        guard generation == searchGeneration, let encoder else { return }
-        await encoder.unload()
-        self.encoder = nil
+    /// Embeds the question through the function.
+    ///
+    /// - Parameter query: The reader's text, verbatim.
+    /// - Returns: The function's vector.
+    /// - Throws: What the function throws.
+    public func embed(_ query: String) async throws -> [Double] {
+        try await function(query)
     }
 }

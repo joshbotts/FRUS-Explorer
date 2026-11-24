@@ -8,8 +8,23 @@
 
 import Testing
 import Foundation
-import SwiftData
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if !SWIFT_PACKAGE
+import SwiftData
+#endif
 
 // MARK: - Support
 
@@ -48,13 +63,8 @@ private func makeSetSearcher(
     recorder: FetchRecorder = FetchRecorder(),
     embed: (@Sendable (String) async throws -> [Double])? = { _ in SemanticSetFixture.queryEmbedding }
 ) -> SemanticQuerySearcher {
-    SemanticQuerySearcher(
-        index: artifacts.index,
-        corpus: artifacts.corpus,
-        modelStore: artifacts.modelStore,
-        shardStore: artifacts.shardStore,
-        requestShardFetch: { volumeID in await recorder.record(volumeID) },
-        embedOverride: embed)
+    SemanticSetFixture.searcher(artifacts, embed: embed,
+                                requestShardFetch: { volumeID in await recorder.record(volumeID) })
 }
 
 private func key(_ hit: SemanticQuerySearcher.Hit) -> String { "\(hit.volumeID)/\(hit.documentID)" }
@@ -68,6 +78,9 @@ private func key(_ result: SearchResult) -> String { "\(result.volumeId)/\(resul
 ///
 /// The fixture's set is one the corpus-wide search never returns: 120 documents of another volume
 /// are nearer the query than any member, and they fill the whole candidate pool.
+///
+/// Since FRUS Explorer Light's S27a (2026-11-24) the searcher is FRUSCoreKit's, and the three suites of this file run
+/// in the package's FRUSCoreKitTests too, but for what reads the app's view models, views and history.
 @Suite("Meaning search inside a document set")
 struct SemanticSetSearchTests {
 
@@ -365,9 +378,10 @@ struct SemanticSetBackendTests {
         for volume in SemanticSetFixture.volumes { try await pipeline.indexVolume(volume.id) }
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         let searcher = makeSetSearcher(try SemanticSetFixture.writeArtifacts(in: directory), embed: embed)
+        // An empty manifest, as `ManifestStore(bundledEntries: [])` was: it lists no volume.
         let backend = SemanticSearchBackend(
             searcher: searcher, searchService: service,
-            manifestStore: ManifestStore(bundledEntries: []),
+            manifestEntry: { _ in nil },
             indexedVolumeIds: { indexed })
         return (backend, service)
     }
@@ -509,11 +523,11 @@ struct SemanticSetBackendTests {
         #expect(outcome.disclosure.filteredOut == 0)
         #expect(!outcome.disclosure.filtersApplied)
         let english = Locale(identifier: "en_US")
-        let statement = SemanticMeaningEmptyState.emptyStatement(
+        let statement = SemanticModeStripCopy.emptyStatement(
             disclosure: outcome.disclosure, locale: english)
         #expect(statement.contains("is indexed on this device"))
         #expect(!statement.contains("filters"))
-        let strip = SemanticModeStrip.caption(
+        let strip = SemanticModeStripCopy.caption(
             disclosure: outcome.disclosure, beyondCount: 0, locale: english)
         #expect(strip.contains("2 close matches are not listed"))
         #expect(!strip.contains("Your filters removed"))
@@ -557,7 +571,7 @@ struct SemanticSetBackendTests {
         #expect(outcome.disclosure.notIndexedHere == 2)
         #expect(outcome.disclosure.filteredOut == 0)
         #expect(outcome.disclosure.rankedWithin == nil)
-        let strip = SemanticModeStrip.caption(
+        let strip = SemanticModeStripCopy.caption(
             disclosure: outcome.disclosure, beyondCount: 0, locale: Locale(identifier: "en_US"))
         #expect(strip.contains("across the whole series"))
         #expect(strip.contains("2 close matches are not listed"))
@@ -565,6 +579,8 @@ struct SemanticSetBackendTests {
 
     // MARK: Through the view model
 
+    #if !SWIFT_PACKAGE
+    // The iPhone and iPad view model is the app's.
     /// The emitter itself: the iPhone and iPad view model with a working corpus applied, running a
     /// Meaning search through the real backend, and recording it.
     @Test("With a working corpus applied, the view model lists its members and signs the set")
@@ -602,7 +618,10 @@ struct SemanticSetBackendTests {
             for: SearchParameters(documentIds: SemanticSetFixture.documentSet)))
         _ = container
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // The iPhone and iPad view model is the app's.
     @Test("The live set's size is nil with no set, zero for an empty one, and the count otherwise")
     func documentSetSizeFollowsTheGate() async throws {
         let directory = try makeSetDirectory()
@@ -617,6 +636,7 @@ struct SemanticSetBackendTests {
         viewModel.clearWorkingCorpus()
         #expect(viewModel.documentSetSize == nil)
     }
+    #endif
 }
 
 // MARK: - The record, the copy and the wiring
@@ -629,7 +649,7 @@ struct SemanticSetRecordAndCopyTests {
 
     private static func source(_ path: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
     }
 
@@ -673,6 +693,8 @@ struct SemanticSetRecordAndCopyTests {
         #expect(SearchScopeSignature.semanticSignature(for: parameters).hasSuffix(";\(part)"))
     }
 
+    #if !SWIFT_PACKAGE
+    // The appendix's one-argument `describe(_:)` reads the app's bundled data files.
     @Test("The appendix says a Meaning search ran inside a set, and how large")
     func describeNamesTheSet() throws {
         let ungated = try #require(SearchScopeSignature.describe(SearchScopeSignature.semanticRouteSignature))
@@ -690,7 +712,10 @@ struct SemanticSetRecordAndCopyTests {
         #expect(empty.count == 2)
         #expect(empty[1].contains("no documents"))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchHistoryEntry` is the app's SwiftData model.
     @Test("A Meaning search inside a set that found nothing is never read as a term's absence")
     func gatedZeroIsNotATermAbsence() {
         let gatedZero = SearchHistoryEntry(
@@ -707,7 +732,10 @@ struct SemanticSetRecordAndCopyTests {
         #expect(!appendix.markdown.contains("the term is absent"))
         #expect(appendix.markdown.contains("2 documents"), "the appendix names the set's size")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's view models.
     /// `submittedSearchParameters` freezes the query text and reads the rest live, for a Meaning
     /// row as for a keyword row, so the set signed is the one applied when the row is recorded,
     /// which is in the same turn as the run's completion.
@@ -734,6 +762,7 @@ struct SemanticSetRecordAndCopyTests {
             #expect(source.contains(signature), "\(path) must sign a Meaning run through semanticSignature(for:)")
         }
     }
+    #endif
 
     // MARK: The strip
 
@@ -753,23 +782,23 @@ struct SemanticSetRecordAndCopyTests {
     @Test("The strip says where the ranking ran: the whole series, or the set and its size")
     @MainActor
     func stripSaysWhereTheRankingRan() {
-        let series = SemanticModeStrip.caption(disclosure: nil, beyondCount: 0, locale: Self.enUS)
+        let series = SemanticModeStripCopy.caption(disclosure: nil, beyondCount: 0, locale: Self.enUS)
         #expect(series.contains("across the whole series"))
 
-        let pending = SemanticModeStrip.caption(
+        let pending = SemanticModeStripCopy.caption(
             disclosure: nil, beyondCount: 0, pendingSetSize: 212, locale: Self.enUS)
         #expect(pending.contains("inside the 212 documents you are searching within"))
         #expect(!pending.contains("across the whole series"))
 
-        let one = SemanticModeStrip.caption(
+        let one = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 1), beyondCount: 0, locale: Self.enUS)
         #expect(one.contains("inside the 1 document you are searching within"))
 
-        let grouped = SemanticModeStrip.caption(
+        let grouped = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 1_204), beyondCount: 0, locale: Self.enUS)
         #expect(grouped.contains("inside the 1,204 documents you are searching within"))
 
-        let none = SemanticModeStrip.caption(
+        let none = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 0), beyondCount: 0, locale: Self.enUS)
         #expect(none.contains("holds no documents"))
         #expect(!none.contains("0 documents"))
@@ -780,12 +809,12 @@ struct SemanticSetRecordAndCopyTests {
     @Test("Once a run has rows, the strip describes that run and not the set applied since")
     @MainActor
     func stripDescribesTheRunThatProducedTheRows() {
-        let seriesRun = SemanticModeStrip.caption(
+        let seriesRun = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(), beyondCount: 0, pendingSetSize: 212, locale: Self.enUS)
         #expect(seriesRun.contains("across the whole series"))
         #expect(!seriesRun.contains("212"))
 
-        let setRun = SemanticModeStrip.caption(
+        let setRun = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 40), beyondCount: 0, pendingSetSize: nil,
             locale: Self.enUS)
         #expect(setRun.contains("inside the 40 documents"))
@@ -794,16 +823,16 @@ struct SemanticSetRecordAndCopyTests {
     @Test("Inside a set the strip counts the members with no vector, in the singular at one")
     @MainActor
     func stripCountsMembersWithoutAVector() {
-        let clean = SemanticModeStrip.caption(
+        let clean = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 40), beyondCount: 0, locale: Self.enUS)
         #expect(!clean.contains("cannot be ranked"))
 
-        let one = SemanticModeStrip.caption(
+        let one = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 40, withoutVector: 1), beyondCount: 0,
             locale: Self.enUS)
         #expect(one.contains("1 document in the set has no match data and cannot be ranked."))
 
-        let many = SemanticModeStrip.caption(
+        let many = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 4_000, withoutVector: 1_015), beyondCount: 0,
             locale: Self.enUS)
         #expect(many.contains("1,015 documents in the set have no match data and cannot be ranked."))
@@ -812,15 +841,15 @@ struct SemanticSetRecordAndCopyTests {
     @Test("The strip counts close matches the index does not hold, in either kind of search")
     @MainActor
     func stripCountsMatchesTheIndexLacks() {
-        let none = SemanticModeStrip.caption(
+        let none = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 40), beyondCount: 0, locale: Self.enUS)
         #expect(!none.contains("not listed"))
 
-        let one = SemanticModeStrip.caption(
+        let one = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(notIndexedHere: 1), beyondCount: 0, locale: Self.enUS)
         #expect(one.contains("1 close match is not listed: this device's index does not hold that document."))
 
-        let many = SemanticModeStrip.caption(
+        let many = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(rankedWithin: 4_000, notIndexedHere: 1_047),
             beyondCount: 0, locale: Self.enUS)
         #expect(many.contains(
@@ -833,7 +862,7 @@ struct SemanticSetRecordAndCopyTests {
     @Test("The unranked sentence names Download Missing Vectors inside a set, and only there")
     @MainActor
     func unrankedSentenceNamesTheRightControl() {
-        let inSet = SemanticModeStrip.caption(
+        let inSet = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(unscored: 12, volumes: 3, rankedWithin: 40),
             beyondCount: 0, locale: Self.enUS)
         #expect(inSet.contains("12 documents in 3 volumes could not be ranked"))
@@ -841,7 +870,7 @@ struct SemanticSetRecordAndCopyTests {
         #expect(!inSet.contains("Download Vectors for Every Volume"))
         #expect(!inSet.contains("possible match"))
 
-        let series = SemanticModeStrip.caption(
+        let series = SemanticModeStripCopy.caption(
             disclosure: Self.disclosure(unscored: 12, volumes: 3), beyondCount: 0, locale: Self.enUS)
         #expect(series.contains("12 possible matches in 3 volumes"))
         #expect(series.contains("Download Vectors for Every Volume"))
@@ -913,17 +942,17 @@ struct SemanticSetRecordAndCopyTests {
     @Test("The empty state reads the set's sentence for a run inside a set, and the old one otherwise")
     @MainActor
     func emptyStateFollowsTheRun() {
-        #expect(SemanticMeaningEmptyState.emptyStatement(disclosure: nil, locale: Self.enUS)
+        #expect(SemanticModeStripCopy.emptyStatement(disclosure: nil, locale: Self.enUS)
                 .contains("scorable corpus"))
-        #expect(SemanticMeaningEmptyState.emptyStatement(
+        #expect(SemanticModeStripCopy.emptyStatement(
             disclosure: Self.disclosure(), locale: Self.enUS).contains("scorable corpus"))
-        #expect(SemanticMeaningEmptyState.emptyStatement(
+        #expect(SemanticModeStripCopy.emptyStatement(
             disclosure: Self.disclosure(unscored: 5, volumes: 2), locale: Self.enUS)
             .contains("Download Vectors for Every Volume"))
 
         // Forty in the set, thirty with no vector, ten without their file: none ranked, and the
         // files are what can be fetched.
-        let missingFiles = SemanticMeaningEmptyState.emptyStatement(
+        let missingFiles = SemanticModeStripCopy.emptyStatement(
             disclosure: Self.disclosure(unscored: 10, volumes: 2, rankedWithin: 40, withoutVector: 30),
             locale: Self.enUS)
         #expect(missingFiles.contains("match files for 2 volumes are not on this device"))
@@ -931,11 +960,11 @@ struct SemanticSetRecordAndCopyTests {
         // Forty in the set, five with no vector, the rest ranked: the list is empty because the
         // other filters removed the closest of them. Where no filter removed any, the app does
         // not blame one.
-        let filtered = SemanticMeaningEmptyState.emptyStatement(
+        let filtered = SemanticModeStripCopy.emptyStatement(
             disclosure: Self.disclosure(rankedWithin: 40, withoutVector: 5, filteredOut: 35),
             locale: Self.enUS)
         #expect(filtered.contains("passes your other filters"))
-        let unfiltered = SemanticMeaningEmptyState.emptyStatement(
+        let unfiltered = SemanticModeStripCopy.emptyStatement(
             disclosure: Self.disclosure(rankedWithin: 40, withoutVector: 5, notIndexedHere: 35),
             locale: Self.enUS)
         #expect(!unfiltered.contains("filters"))
@@ -944,6 +973,8 @@ struct SemanticSetRecordAndCopyTests {
 
     // MARK: The prompt
 
+    #if !SWIFT_PACKAGE
+    // `SearchMode` is the app's.
     @Test("The pre-search prompt names the set in both modes, and stands aside without one")
     func promptNamesTheSet() {
         // #1688's fourth line: Keywords read "Enter keywords to search the FRUS corpus." inside a set.
@@ -960,9 +991,12 @@ struct SemanticSetRecordAndCopyTests {
         #expect(SearchMode.meaning.documentSetPrompt(size: 1)?.contains("1 document you") == true)
         #expect(SearchMode.meaning.documentSetPrompt(size: 0)?.contains("holds no documents") == true)
     }
+    #endif
 
     // MARK: The wiring
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's views.
     @Test("Both hosts hand the strip the live set's size, and the iPhone prompt reads it first")
     func hostsPassTheLiveSet() throws {
         let iOS = Self.squeezed(try Self.source("FRUSExplorer/Search/SearchView.swift"))
@@ -982,7 +1016,10 @@ struct SemanticSetRecordAndCopyTests {
                  ?? vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
             """)))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's view models.
     /// The strip's live size and the engine's set are read from one value on each platform: the
     /// parameters the Meaning run is handed. Were the run given other parameters, the strip would
     /// name a set the search does not rank inside.
@@ -1012,7 +1049,10 @@ struct SemanticSetRecordAndCopyTests {
             }
             """)))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's views.
     /// The emptied field's block in `SearchView`'s keywords handler, from its condition to its close.
     private static func emptiedFieldBlock() throws -> Substring {
         let iOS = try source("FRUSExplorer/Search/SearchView.swift")
@@ -1022,7 +1062,10 @@ struct SemanticSetRecordAndCopyTests {
         let blockEnd = try #require(afterHandler[block.upperBound...].range(of: "\n                    }\n"))
         return afterHandler[block.upperBound..<blockEnd.lowerBound]
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's views.
     /// What the emptied field does to the rows (#1758): its block calls `SearchView.endSearch()`, which closes the
     /// facet panel and asks the view model's `endSearchOnScreen()`, whose body this is.
     private static func endSearchOnScreenBody() throws -> Substring {
@@ -1036,7 +1079,10 @@ struct SemanticSetRecordAndCopyTests {
         let functionEnd = try #require(model[function.upperBound...].range(of: "\n    }\n"))
         return model[function.upperBound..<functionEnd.lowerBound]
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's views and view models.
     /// Two places clear a search's rows without running one: the emptied field on iPhone and
     /// iPad, and a rebuilt index on the Mac. Each must clear the Meaning disclosure with the
     /// rows, or the strip goes on describing a run whose rows are gone. Matched on the handler's
@@ -1057,7 +1103,10 @@ struct SemanticSetRecordAndCopyTests {
         #expect(rebuiltBody.contains("searchVM.results = []"), "precondition: this is the block that clears the rows")
         #expect(rebuiltBody.contains("searchVM.semanticDisclosure = nil"))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's views and view models.
     /// The same two places replace the search under way (#1648). Neither runs a search, so nothing else would: a run
     /// still out when the rows are cleared put them back, under the emptied field or over the rebuilt index.
     /// `HybridSearchModeTests.clearingTheListReplacesTheRunUnderWay` drives what the call does.
@@ -1089,6 +1138,7 @@ struct SemanticSetRecordAndCopyTests {
         #expect(rebuiltBody.contains("searchVM.results = []"), "precondition: this is the block that clears the rows")
         #expect(rebuiltBody.contains("searchVM.replaceSearchesUnderWay()"))
     }
+    #endif
 
     // MARK: The timing lines
 
@@ -1109,6 +1159,8 @@ struct SemanticSetRecordAndCopyTests {
         #expect(line == "gated-keyword docs=100 rows=37 rows_ms=812.5 total_ms=2000.0")
     }
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's view models.
     /// Matched on the call inside the condition, not on a window of text: each view model records
     /// the keyword line where the executed parameters carry a set, and nowhere else.
     ///
@@ -1147,12 +1199,13 @@ struct SemanticSetRecordAndCopyTests {
                     "one timing call in each view model")
         }
     }
+    #endif
 
     /// The Meaning line is written on the path that scored something, with the stage times that
     /// path took. Matched on the call and its arguments.
     @Test("The searcher writes the Meaning line from the stages it timed")
     func searcherWritesTheMeaningLine() throws {
-        let searcher = Self.squeezed(try Self.source("FRUSExplorer/Semantic/SemanticQuerySearcher.swift"))
+        let searcher = Self.squeezed(try Self.source("FRUSCoreKit/Search/SemanticQuerySearcher.swift"))
         #expect(searcher.contains(Self.squeezed("""
             SearchTimingLog.record(SearchTimingLog.MeaningInSet(
                 setSize: distinct.count,

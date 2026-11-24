@@ -395,45 +395,6 @@ struct ResultSelectionSession: Equatable, Sendable {
     }
 }
 
-// MARK: - A row with the tags the store has now
-
-extension SearchResult {
-
-    /// This result with another set of the reader's tags and nothing else changed (#1576 lane 5).
-    ///
-    /// A row's tags are read from the index when its search runs. After an Add Tags, or its
-    /// Undo, the store knows the document's tags and the row does not, and a view model swaps
-    /// the row for this one so that the chip shows without another search.
-    ///
-    /// The ids are written in the order `DocumentTagAssignment.tagColumnValue` writes the index's
-    /// column in, which is the order a later search lists them in once the rewrite has run.
-    /// `SearchResult` is the kit's and every field is a `let`; this is the one place the app
-    /// copies one, and `SearchResultTagRefreshTests` fails if a field is added and not carried.
-    ///
-    /// - Parameter tagIds: Every tag the document carries now.
-    /// - Returns: The same result, carrying those tags.
-    func replacingUserTagIds(_ tagIds: Set<UUID>) -> SearchResult {
-        SearchResult(
-            documentId: documentId,
-            volumeId: volumeId,
-            documentNumber: documentNumber,
-            header: header,
-            dateline: dateline,
-            dateISO: dateISO,
-            dateISOMax: dateISOMax,
-            datePrecision: datePrecision,
-            sourceNote: sourceNote,
-            snippet: snippet,
-            bm25Score: bm25Score,
-            semanticScore: semanticScore,
-            subjectTagIds: subjectTagIds,
-            userTagIds: tagIds.map(\.uuidString).sorted(),
-            isEditorialNote: isEditorialNote,
-            isFrontMatter: isFrontMatter,
-            indexedClassification: indexedClassification)
-    }
-}
-
 // MARK: - ResultSelectionCopy
 
 /// The words of selection: the bar, its two menus, the commands and their outcomes, apart from
