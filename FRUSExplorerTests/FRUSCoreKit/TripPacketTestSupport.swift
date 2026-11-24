@@ -44,8 +44,8 @@ extension TripPacketBuilder {
 extension TripPacketModel {
 
     /// `build` as it was declared until the packet moved into FRUSCoreKit: each lookup a suite names none of
-    /// reads the bundled stores, as its default argument did, and a pointed-at lot resolves through the app's
-    /// one-argument resolution, as the model's own call did.
+    /// reads the bundled stores, as its default argument did, and a pointed-at lot resolves through the bundled
+    /// indexes, as the model's own call to the app's one-argument resolution did.
     static func build(
         groups: [(key: String, label: String, category: SourceProvenanceCategory?,
                   repository: String?, lotAsPrinted: String?,
@@ -77,20 +77,11 @@ extension TripPacketModel {
               unresolvedLotCount: unresolvedLotCount, unresolvedDocumentCount: unresolvedDocumentCount,
               researchQuestion: researchQuestion, table: table, facts: facts, substitutes: substitutes,
               references: references, referenceCoverage: referenceCoverage, claimants: claimants,
-              lotResolution: { ArchivalResolver.documentResolution(lotFile: $0) }, citedLots: citedLots)
+              lotResolution: { TripPacketIndexes.bundled.lotResolution(lotFile: $0) }, citedLots: citedLots)
     }
 }
 
 #if SWIFT_PACKAGE
-/// The app's one-argument `ArchivalResolver.documentResolution(lotFile:)` (`ArchivalResolver+App.swift`), over the
-/// stores `SourceExplorerTestSupport.swift` declares.
-extension ArchivalResolver {
-    static func documentResolution(lotFile: String?) -> ArchivalResolution? {
-        documentResolution(lotFile: lotFile, centralFiles: CentralFilesIndexStore.shared,
-                           volumeSources: VolumeSourcesIndexStore.shared, claimants: LotClaimantsIndexStore.shared)
-    }
-}
-
 /// The app's `TripPacketIndexes.bundled` (`TripPacket+App.swift`), over the stores `SourceExplorerTestSupport.swift`
 /// declares.
 extension TripPacketIndexes {

@@ -1334,6 +1334,13 @@ struct TripPacketExporterTests {
             #expect(name.hasPrefix("Archives Visit — ") && name.hasSuffix(".pdf"), "\(name.prefix(30))…")
             let stem = String(name.dropFirst("Archives Visit — ".count).dropLast(".pdf".count))
             #expect(!stem.isEmpty && title.hasPrefix(stem), "the title's own opening was not kept: \(stem.prefix(30))")
+            // And cut no shorter than it must be: the title's next character, past the spaces the cut lets go,
+            // would not fit.
+            let rest = title.dropFirst(stem.count)
+            let spaces = rest.prefix(while: \.isWhitespace)
+            let longer = stem + spaces + rest.dropFirst(spaces.count).prefix(1)
+            #expect(ExportFileName.length(of: "Archives Visit — " + longer + ".pdf") > ExportFileName.maxLength,
+                    "the stem was cut shorter than it must be: \(stem.count) characters")
         }
     }
 

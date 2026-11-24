@@ -27,7 +27,7 @@ import Foundation
 /// The first two were constructed nowhere once the Archives Visit editor became the sheet's only
 /// presenter, and on those paths the project's research question still seeded the inquiry's topic
 /// without the topic field showing it — the mismatch #1366 fixed on the plan path. #1423 deleted
-/// them, and the sheet now takes its ``ArchiveVisitPlan`` directly (`TripPacketSheet.plan`). A new
+/// them, and the sheet now takes its `ArchiveVisitPlan` directly (`TripPacketSheet.plan`). A new
 /// entry point makes a plan (`ArchiveVisitPlan.make`) and presents that, so it follows the same
 /// seed-at-creation rule; it does not get a second way into the sheet.
 ///
@@ -39,8 +39,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-11-23 (FRUS Explorer Light, S30a): declared in FRUSCoreKit, out of
-///          `TripPacketSheet.swift`, with the static collection's rule over its entries as values;
-///          a smart collection's resolution, which runs the app's saved search, stays there
+///          `TripPacketSheet.swift`, whose version history, 1.2 to 2.0, is this type's until now, with
+///          the static collection's rule over its entries as values; a smart collection's resolution,
+///          which runs the app's saved search, stays there
 public enum TripPacketSeed {
 
     /// The static-collection seed rule, separated so it is testable: document and excerpt

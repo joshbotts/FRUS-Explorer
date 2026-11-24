@@ -869,7 +869,8 @@ struct TripPacketBuilderTests {
         #expect(first.restriction?.claimantCount == Self.shippedClaimants("80D212")?.count)
         // Each lot's own lines: what the shipped bundle holds for it, under its own number.
         for lot in target.lots {
-            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted)
+            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted,
+                                                                 indexes: TripPacketIndexes.bundled.archival)
             #expect(lot.resolution == resolution, "Lot \(lot.lotAsPrinted)")
         }
 
@@ -925,7 +926,8 @@ struct TripPacketBuilderTests {
         #expect(target.key == "coll|National Archives|")
         #expect(target.label == "National Archives", "got «\(target.label)»")
         #expect(target.lots.map(\.lotAsPrinted) == ["81D113"])
-        #expect(target.lots.first?.resolution == ArchivalResolver.documentResolution(lotFile: "81D113"))
+        #expect(target.lots.first?.resolution
+                == ArchivalResolver.documentResolution(lotFile: "81D113", indexes: TripPacketIndexes.bundled.archival))
         #expect(target.resolution == nil, "a lot one of two documents cites is not the target's own")
     }
 
@@ -950,7 +952,8 @@ struct TripPacketBuilderTests {
         let target = try #require(model.targets.first)
         #expect(target.lots.isEmpty, "two spellings were read as two lots: \(target.lots.map(\.lotAsPrinted))")
         #expect(target.label == "Subject Files of Edmund S. Muskie, Lot 83D66, RG 59, National Archives")
-        #expect(target.resolution == ArchivalResolver.documentResolution(lotFile: "83D66"))
+        #expect(target.resolution
+                == ArchivalResolver.documentResolution(lotFile: "83D66", indexes: TripPacketIndexes.bundled.archival))
         #expect(target.resolution != nil, "fixture guard: the shipped index must still resolve 83D66")
     }
 
@@ -970,7 +973,8 @@ struct TripPacketBuilderTests {
             recordGroup: "59", lotFile: "66 D 204", seriesName: "Presidential Correspondence:",
             rawText: "Source: National Archives and Records Administration, RG 59, Presidential Correspondence: Lot 66 D 204. Confidential. The message was transmitted by the British Embassy on June 23.",
             citationEra: "structured")
-        let shipped = try #require(ArchivalResolver.documentResolution(lotFile: "66 D 204"),
+        let shipped = try #require(ArchivalResolver.documentResolution(lotFile: "66 D 204",
+                                                                       indexes: TripPacketIndexes.bundled.archival),
                                    "fixture guard: the shipped index must still resolve 66 D 204")
         try #require(shipped.recordGroup == "59")
         for (record, answered) in [(rg330, false), (rg59, true)] {

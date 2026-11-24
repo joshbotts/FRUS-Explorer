@@ -63,17 +63,17 @@ public struct ArchiveVisitOverlay: Equatable, Sendable {
     public var orphanKeys: [String] = []
     /// Derived target key → the key its stored row was minted under, where the two differ
     /// (#1421 review). A row minted before a re-index that only removed spaces from the note it
-    /// was keyed on answers for the target it was minted for (``ArchiveVisitTargetKeys``); its own
+    /// was keyed on answers for the target it was minted for (`ArchiveVisitTargetKeys`); its own
     /// key is left exactly as it was, so a device still on the older index keeps finding it.
     public var storedKeys: [String: String] = [:]
     /// The stored rows that answer for a target another stored row is shown on, by their own
     /// stored key (decision 62): kept, listed under Stored targets with the orphans, never deleted,
     /// and written there by their own key. Which row a target shows is
-    /// ``ArchiveVisitTargetKeys/shownRow(among:answeringFor:)``'s rule.
+    /// `ArchiveVisitTargetKeys.shownRow(among:answeringFor:)`'s rule.
     public var superseded: [String: Superseded] = [:]
 
     /// The key the stored row for derived target `key` carries: its ``storedKeys`` entry, or
-    /// `key` itself. What a write passes to ``ArchiveVisitPlan/targetState(forKey:resolvedBy:mintIfMissing:in:)``.
+    /// `key` itself. What a write passes to `ArchiveVisitPlan.targetState(forKey:resolvedBy:mintIfMissing:in:)`.
     public func storedKey(for key: String) -> String {
         storedKeys[key] ?? key
     }

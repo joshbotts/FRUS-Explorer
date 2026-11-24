@@ -97,7 +97,7 @@ public struct TripPacketTopicSentence: Equatable, Sendable {
     ///
     /// A live `draft` the reader has not yet committed wins: it becomes the ``edited`` sentence
     /// the drafts send, and the field keeps it. With no live draft the field mirrors the plan's
-    /// `stored` topic, which ``ArchiveVisitDerivation`` has already made the edited sentence.
+    /// `stored` topic, which `ArchiveVisitDerivation` has already made the edited sentence.
     ///
     /// The project's research question is deliberately **not** a parameter. A plan's topic is
     /// copied from it only when the plan is created and on Re-seed from Project, never at render
@@ -566,7 +566,7 @@ public struct TripPacketModel: Equatable, Sendable {
         // drawn-from group whose builder key matches a reference group's key becomes ONE
         // target with both claims itemized inside it — never a summed count.
         //
-        // The claimants lookup needs the lot AS PRINTED (`LotClaimantsIndexStore` folds it
+        // The claimants lookup needs the lot AS PRINTED (the claimants index folds it
         // itself), which the display label is not — so it rides the tuple, keyed back here.
         let lotAsPrintedByKey = Dictionary(
             groups.map { ($0.key, $0.lotAsPrinted) },

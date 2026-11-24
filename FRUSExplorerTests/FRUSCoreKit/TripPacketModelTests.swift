@@ -159,7 +159,8 @@ struct RepositoryFactTableTests {
 ///   2.1 — 2026-09-25: #1459 — a curated library heads its own chapter and sorts by its name;
 ///          review, round 1: `build` is driven with an injected table on both channels
 ///   2.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
-///          so the package runs it too
+///          so the package runs it too but for the static seed rule's test over SwiftData entries,
+///          and the rule over values has a test of its own
 @Suite("Trip packet model (#830 T-1)")
 struct TripPacketModelTests {
 
@@ -437,11 +438,11 @@ struct TripPacketModelTests {
 
     // MARK: - The collection seed rule (Archive Visits Phase 0)
 
+    #if !SWIFT_PACKAGE // the app's `CollectionEntry` is a SwiftData model; the rule over values is below
     /// `TripPacketSeed.staticSeedDocuments` is the one place the three collection surfaces
     /// derive a packet's reading list, so its rules are pinned here: excerpts count as the
     /// documents they quote, duplicates collapse first-occurrence-wins, order is `sortOrder`,
     /// and non-document kinds contribute nothing.
-    #if !SWIFT_PACKAGE // the app's `CollectionEntry` is a SwiftData model; the rule over values is below
     @Test("The static seed takes documents and excerpts, deduplicated, in sort order")
     @MainActor
     func staticSeedRule() throws {
@@ -491,6 +492,7 @@ struct TripPacketModelTests {
             (kind: .excerpt, volumeId: "", documentId: "", sortOrder: 4),
             (kind: .prose, volumeId: "v2", documentId: "d9", sortOrder: 5),
             (kind: .document, volumeId: "v2", documentId: "", sortOrder: 6),
+            (kind: .excerpt, volumeId: "", documentId: "d7", sortOrder: 7),
         ])
         #expect(seeded.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d2", "v1/d1"], """
             Expected the excerpt's document first (sortOrder 0), the document second, the duplicate \

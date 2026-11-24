@@ -134,8 +134,8 @@ public enum TripPacketBuilder {
     ///
     /// `indexes` are the bundled indexes the packet reads, as the host loaded them: each lot resolves
     /// through their archival three (``ArchivalResolver/documentResolution(lotFile:indexes:)``), and the
-    /// model reads its series facts, divided lots and substitutes from them. The app passes its stores'
-    /// (`TripPacketIndexes.bundled`, through the overload `ArchiveVisitDerivation` calls).
+    /// model reads its series facts, divided lots, substitutes and footnote-only lots from them. The app
+    /// passes its stores' (`TripPacketIndexes.bundled`, through the overload `ArchiveVisitDerivation` calls).
     public static func build(
         sourceDocuments: [(volumeId: String, documentId: String)],
         referenceDocuments: [(volumeId: String, documentId: String)],
