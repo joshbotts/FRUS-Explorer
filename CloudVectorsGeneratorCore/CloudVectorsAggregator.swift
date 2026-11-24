@@ -44,6 +44,8 @@ import WordCloudKit
 /// Version history:
 ///   1.0 — O-1: initial implementation
 ///   1.1 — #1608: `pack` also writes the keyness reference counted as printed
+///   1.2 — 2026-11-23 (FRUS Explorer Light, S29a): every file's provenance names the tokenizer the
+///          counts were made by, the configuration's
 public struct CloudVectorsAggregator: Sendable {
 
     /// The scope key used for the whole-corpus vectors.
@@ -127,7 +129,8 @@ public struct CloudVectorsAggregator: Sendable {
     ///   - configuration: The full tokenisation stamp the keyness baseline pins itself to. Defaults
     ///     to `tuning` with the diplomatic layer on and no payload digests, which is the right shape
     ///     for a unit test but **not** for a shipped artifact — the runner passes real digests.
-    ///     Each baseline takes it with its own word form, whatever form it names.
+    ///     Each baseline takes it with its own word form, whatever form it names. Its tokenizer is
+    ///     the one every file's provenance names (S29a), NaturalLanguage's by default.
     ///   - printedCorpus: Lens → term → occurrences across the whole corpus, counted as printed
     ///     (#1608) — the printed tally of the pass that produced `volumes`. Required, with no
     ///     default: an omitted tally would write a reference that prices nothing, and every scope
@@ -148,12 +151,17 @@ public struct CloudVectorsAggregator: Sendable {
             }
         }
 
+        let stamp = configuration ?? .init(tuning: tuning, includeDiplomatic: true,
+                                           lexiconsDigest: "", stopwordsDigest: "")
         let documentCount = volumes.reduce(0) { $0 + $1.documentCount }
+        // One tokenizer counted every file of the run, and each says so: the cloud files have no
+        // configuration of their own to say it in (S29a).
         let provenance = CloudVectorsFile.Provenance(
             volumeCount: volumes.count,
             documentCount: documentCount,
             tuning: tuning,
-            topTermsPerList: Self.topTermsPerList
+            topTermsPerList: Self.topTermsPerList,
+            tokenizer: stamp.tokenizer
         )
 
         var coreScopes: [String: [WordCloudLens: [String: Int]]] = bySubseries
@@ -162,8 +170,6 @@ public struct CloudVectorsAggregator: Sendable {
         var volumeScopes: [String: [WordCloudLens: [String: Int]]] = [:]
         for volume in volumes { volumeScopes[volume.volumeId] = volume.counts }
 
-        let stamp = configuration ?? .init(tuning: tuning, includeDiplomatic: true,
-                                           lexiconsDigest: "", stopwordsDigest: "")
         return Output(
             core: file(scopes: coreScopes, generated: generated, provenance: provenance),
             volumes: file(scopes: volumeScopes, generated: generated, provenance: provenance),

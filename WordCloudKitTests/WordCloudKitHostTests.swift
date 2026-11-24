@@ -132,6 +132,7 @@ struct CloudVectorsLoadingTests {
 ///
 /// Version history:
 ///   1.0 — 2026-11-12 (FRUS Explorer Light, S24d): initial implementation
+///   1.1 — 2026-11-23 (FRUS Explorer Light, S29a): the check names the tokenizer the scope was counted by
 @Suite("WordCloudKit — the payload digest on every platform")
 struct WordCloudPayloadDigestTests {
 
@@ -153,10 +154,12 @@ struct WordCloudPayloadDigestTests {
         let stopwords = try #require(WordCloudPayloadDigest.digest(ofFileAt: RepositoryResources.json("word-cloud-stopwords")))
         #expect(reference.configuration.lexiconsDigest == lexicons)
         #expect(reference.configuration.stopwordsDigest == stopwords)
-        // So a scope counted as the generator counted is comparable, as the app's check finds it.
+        // So a scope counted as the generator counted is comparable, as the app's check finds it:
+        // by NaturalLanguage, which the bundled references name by naming no tokenizer (S29a).
+        #expect(reference.configuration.tokenizer == .naturalLanguage)
         #expect(reference.configuration.mismatches(
             against: .standard, includeDiplomatic: true,
-            lexiconsDigest: lexicons, stopwordsDigest: stopwords).isEmpty)
+            lexiconsDigest: lexicons, stopwordsDigest: stopwords, tokenizer: .naturalLanguage).isEmpty)
     }
 
     @Test("A payload that cannot be read has no digest, so it matches no reference")

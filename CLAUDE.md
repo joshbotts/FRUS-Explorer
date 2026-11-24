@@ -379,20 +379,35 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   counts every word as printed (`accumulate(from:into:printedInto:)`), for the keyness reference a
   launch with no lemmatiser compares with; `WordCloudPrintedFormParityTests` holds that tally to a
   `.printed` tokenizer's, and the generator's `VERIFY_PRINTED_WALK=1` run holds it over the corpus.
-  Since FRUS Explorer Light's S24d the web edition compiles it on Linux. NaturalLanguage and `os` are
-  imported behind `canImport(NaturalLanguage)`: `WordCloudTokenizer`'s counting (its configuration
-  and its filters, `accepts(_:)` and `singularize(_:)`, read no tagger and stay on every platform),
-  `WordCloudMultiLensTokenizer`, and `NaturalLanguageReadiness`'s warm-up, gate and engine; where
-  the framework is missing, each declaration that tags is unavailable and says why, so nothing there
-  counts another way. `NaturalLanguageHealth` stays on every platform. CryptoKit is behind
+  Since FRUS Explorer Light's S24d the web edition compiles it on Linux. Since its S29a the two
+  tokenizers read a tagger through a protocol, `WordCloudTagger` (`WordCloudTagger.swift`): each word
+  of a text in order with its range and, when the walk asks (`WordCloudTagReading`), its lemma and its
+  lexical class, and for the entity lenses each name with its type; a tagger comes with its
+  `NaturalLanguageHealth` and its `WordCloudTokenizerIdentity`. Both tokenizers' `accumulate(…tagger:)`
+  count with any tagger on every platform; their `accumulate` without one counts with NaturalLanguage's
+  through the readiness gate (`NaturalLanguageWordCloudTagger`, and `NLTagger` conforms), as before, so
+  the two parity suites hold the app's counts. The clouds' provenance and the references' configuration
+  name the tokenizer; a file that names none was counted by NaturalLanguage at version 1
+  (`WordCloudTokenizerIdentity.legacyNaturalLanguage`), and a stamp of that tokenizer is written without
+  the key, so the bundled files stand byte for byte and the generator writes the bytes it wrote; and
+  `KeynessBaselineFile.Configuration.mismatches(…tokenizer:)` refuses a scope counted by another
+  (`Mismatch.tokenizer`); `CloudVectorsRunner.run(tagger:cloudLenses:environment:)` takes the tagger and
+  the lenses the clouds carry from its caller, and `run()` passes NaturalLanguage's. NaturalLanguage and
+  `os` are imported behind `canImport(NaturalLanguage)`: the gate's taggers' conformances, the tokenizers'
+  counting without a tagger and their scheme lists, and `NaturalLanguageReadiness`'s warm-up, gate and
+  engine; where the framework is missing, each declaration that would tag with it is unavailable and
+  says why, so nothing there counts without a host's tagger. `NaturalLanguageHealth` stays on every
+  platform. CryptoKit is behind
   `canImport` too (`WordCloudPayloadDigest`), and the web edition's package supplies swift-crypto, so
   this package gains no dependency. The kit also holds `Keyness` and `KeynessScore` (`Keyness.swift`,
   from `FRUSExplorer/Analytics/`), `KeynessCloudMeasure`'s two cases (its label stays in
   `KeynessCloud.swift`), the tuning's reading of the settings (`WordCloudTuning.minimumLength(fromSetting:)`
   and its siblings, which `WordCloudSettings` calls) and `CloudVectorsFile(contentsOf:)` and
   `KeynessBaselineFile(contentsOf:)`; `BundledCloudVectors`, `BundledKeynessBaseline` and `KeynessCloud`
-  stay the app's. A WordCloudKitTests suite that tags goes behind `canImport(NaturalLanguage)`, and
-  `WordCloudKitTests/KeynessTests.swift` is compiled into the app's test target too (`project.yml`).
+  stay the app's. A WordCloudKitTests suite that tags with NaturalLanguage goes behind
+  `canImport(NaturalLanguage)`; one that counts over a stand-in tagger runs everywhere
+  (`WordCloudTaggerTests.swift`); and `WordCloudKitTests/KeynessTests.swift` is compiled into the app's
+  test target too (`project.yml`).
 - Test targets: **39 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
 
 ## Coding Standards

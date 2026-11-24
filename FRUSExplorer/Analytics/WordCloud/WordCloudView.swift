@@ -615,6 +615,8 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 ///          press lifts the word where it sits rather than the whole cloud, and its preview draws
 ///          the word level (`cloudWord(_:)`), so a vertical word is not cut to its unrotated frame.
 ///   1.12 — 2026-11-15: #1905 (L15) — a subject scope's fallback title is *Subject*; *Analyze within this subject*
+///   1.13 — 2026-11-23 (FRUS Explorer Light, S29a): Distinctive names a reference counted by another tokenizer
+///          (`Mismatch.tokenizer`), which the app's own counts, all NaturalLanguage's, never meet
 
 struct WordCloudView: View {
 
@@ -1147,6 +1149,9 @@ struct WordCloudView: View {
             case .lexicons, .stopwords:
                 String(localized: "wordcloud.keyness.mismatch.payload",
                        defaultValue: "the bundled word lists have changed since the reference was built")
+            case .tokenizer:
+                String(localized: "wordcloud.keyness.mismatch.tokenizer",
+                       defaultValue: "the reference was counted by another tokenizer")
             }
         }
         // Duplicates are possible: `.lexicons` and `.stopwords` share one description.

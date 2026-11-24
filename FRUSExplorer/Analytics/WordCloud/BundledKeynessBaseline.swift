@@ -103,6 +103,8 @@ struct KeynessReference: Equatable, Sendable {
 ///   1.2 — #1608: the reference counted as printed, read for a verdict with no lemmatiser;
 ///          `Availability.available` carries a ``KeynessReference``; a second caller of
 ///          ``prepare()`` waits for the load in flight
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S29a): the reference is held to the tokenizer the scope
+///          was counted by, NaturalLanguage's, as to its settings (`Mismatch.tokenizer`)
 @MainActor
 enum BundledKeynessBaseline {
 
@@ -255,9 +257,11 @@ enum BundledKeynessBaseline {
             return .unavailable(wordForm == .printed ? .languageAnalysisUnavailable : .noArtifact)
         }
         let digests = bundledPayloadDigests()
+        // Every count the app makes is NaturalLanguage's, through the readiness gate (S29a).
         let mismatches = file.configuration.mismatches(
             against: tuning, includeDiplomatic: includeDiplomatic,
-            lexiconsDigest: digests.lexicons, stopwordsDigest: digests.stopwords)
+            lexiconsDigest: digests.lexicons, stopwordsDigest: digests.stopwords,
+            tokenizer: .naturalLanguage)
         guard mismatches.isEmpty else { return .unavailable(.configurationMismatch(mismatches)) }
         guard let lensFile = file.lenses[lens.rawValue], lensFile.totalTokens > 0 else {
             return .unavailable(.lensNotPriced(lens))
