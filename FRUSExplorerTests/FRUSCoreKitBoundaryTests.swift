@@ -832,13 +832,16 @@ struct FRUSCoreKitBoundaryTests {
 
 /// The other shared kits, each with its suites' folder, keep FRUSCoreKit's rules, each with its own
 /// allowances (FRUS Explorer Light, #1911): FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit,
-/// TEIHeaderKit, SemanticVectorsKit, WordCloudKit, ManifestGeneratorCore and CloudVectorsGeneratorCore.
-/// The web edition compiles them on Linux from a pinned commit (`CLAUDE.md`, "Web edition"). Five of
-/// them are compiled into the app as well (`project.yml`), so the app's build cannot tell a file of
-/// theirs that names the app's code from one that does not; CrossRefKit, GeneratorKit and the two
-/// generators' cores are the package's alone. Before these tests a change that broke one of them on
-/// Linux was found only by the web edition's daily watch, after it landed on `v2`. They read the source
-/// with `FRUSCoreKitBoundaryTests`' scanner, comments and string literals blanked, and its name rules:
+/// TEIHeaderKit, SemanticVectorsKit and WordCloudKit, and eight generators' cores: ManifestGeneratorCore,
+/// CloudVectorsGeneratorCore, and SourceExplorerExportGeneratorCore with the five it builds on. The web
+/// edition compiles them on Linux from a pinned commit (`CLAUDE.md`, "Web edition"). Five of them are
+/// compiled into the app as well (`project.yml`), so the app's build cannot tell a file of theirs that
+/// names the app's code from one that does not; CrossRefKit, GeneratorKit and the cores are the
+/// package's alone, but for two of CollectionAuthorityGeneratorCore's extractors, which import none of
+/// its dependencies and which the unit target compiles too. Before these tests a change that broke one
+/// of them on Linux was found only by the web edition's daily watch, after it landed on `v2`. They read
+/// the source with `FRUSCoreKitBoundaryTests`' scanner, comments and string literals blanked, and its
+/// name rules:
 /// - every import, an attribute or an access level before `import` included, is Foundation, one the kit
 ///   imports behind the `canImport` that selects it, directly inside that branch, or one it may import
 ///   anywhere, which ``Kit`` names with its reason (``kits``).
@@ -856,8 +859,11 @@ struct FRUSCoreKitBoundaryTests {
 ///
 /// What it cannot see: a file of one kit the app compiles naming a declaration of another the app
 /// compiles that its package target does not depend on (WordCloudKit naming a FRUSCoreKit type), which
-/// Xcode's one module builds and the package does not; and what FRUSCoreKit's scans cannot see either
-/// (that suite's note). `swift build` of the kit's target catches both.
+/// Xcode's one module builds and the package does not; a file of a core's that the unit target compiles
+/// too (CollectionAuthorityGeneratorCore's two extractors) naming one of the unit target's, which that
+/// module builds and the package does not, since a kit's own files are read against the app's
+/// declarations alone; and what FRUSCoreKit's scans cannot see either (that suite's note). `swift build`
+/// of the kit's target catches all three.
 ///
 /// Version history:
 ///   1.0 — 2026-11-22 (FRUS Explorer Light, #1911): initial implementation
@@ -866,6 +872,9 @@ struct FRUSCoreKitBoundaryTests {
 ///         ``core(_:suites:dependencies:guarded:declares:)``, whose package dependencies it imports with
 ///         no guard, ManifestGeneratorCore's among them; and a kit's suites take a dependency's guarded
 ///         modules only when that dependency's own suites live in their folder (``suitesGuarded(_:)``)
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S26b's follow-up): the Source Explorer export generator's
+///         core and the five it builds on, which the web edition compiles to hold the kit's Source
+///         Explorer resolution to the export's records, and their suites
 @Suite("Shared kits — Foundation and their own guarded modules, and nothing that lives in the app")
 struct SharedKitsBoundaryTests {
 
@@ -926,7 +935,7 @@ struct SharedKitsBoundaryTests {
                    suitesAnywhere: suiteModules(name), declares: declares)
     }
 
-    /// The nine kits, each with what it imports today: behind a guard, or anywhere with the reason.
+    /// The fifteen kits, each with what it imports today: behind a guard, or anywhere with the reason.
     static let kits: [Kit] = [
         Kit(name: "FTS5Store", suites: "FTS5StoreTests",
             guarded: sqlite.merging(["OSLog": ("canImport(OSLog)", false)]) { kit, _ in kit },
@@ -952,6 +961,28 @@ struct SharedKitsBoundaryTests {
         // The cloud-vector generator's, which the web edition runs with a tagger of its own.
         core("CloudVectorsGeneratorCore", suites: "CloudVectorsGeneratorTests",
              dependencies: ["WordCloudKit", "GeneratorKit"], declares: "CloudVectorsRunner"),
+        // The Source Explorer export generator's, and the five it builds on: the web edition compiles them
+        // to hold the kit's Source Explorer resolution to the export's records.
+        core("LotClaimantsIndexGeneratorCore", suites: "LotClaimantsIndexGeneratorTests",
+             dependencies: ["GeneratorKit", "SourceNoteKit"], declares: "LotClaimantsIndexRunner"),
+        core("CentralFilesIndexGeneratorCore", suites: "CentralFilesIndexGeneratorTests",
+             dependencies: ["GeneratorKit", "SourceNoteKit", "LotClaimantsIndexGeneratorCore"],
+             guarded: ["FoundationNetworking": ("canImport(FoundationNetworking)", false)],
+             declares: "CentralFilesIndexGeneratorRunner"),
+        core("VolumeSourcesIndexGeneratorCore", suites: "VolumeSourcesIndexGeneratorTests",
+             dependencies: ["CentralFilesIndexGeneratorCore", "SourceNoteKit", "GeneratorKit"],
+             guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "VolumeSourcesIndexRunner"),
+        core("CollectionAuthorityGeneratorCore", suites: "CollectionAuthorityGeneratorTests",
+             dependencies: ["SourceNoteKit", "VolumeSourcesIndexGeneratorCore"],
+             guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "CollectionAuthorityRunner"),
+        core("SourceProvenanceIndexGeneratorCore", suites: "SourceProvenanceIndexGeneratorTests",
+             dependencies: ["SourceNoteKit", "GeneratorKit"],
+             guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "SourceProvenanceIndexRunner"),
+        core("SourceExplorerExportGeneratorCore", suites: "SourceExplorerExportGeneratorTests",
+             dependencies: ["SourceNoteKit", "GeneratorKit", "SourceProvenanceIndexGeneratorCore",
+                            "CollectionAuthorityGeneratorCore", "VolumeSourcesIndexGeneratorCore",
+                            "CentralFilesIndexGeneratorCore"],
+             guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "SourceExplorerExportRunner"),
     ]
 
     /// Each Swift file of the kit's folder with its lines of code, and of its suites' folder with the lines
