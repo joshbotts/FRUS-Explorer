@@ -134,6 +134,8 @@ extension AppState {
 ///         plan here rather than in a sheet
 ///   1.4 — 2026-09-30: #1483 — the plan menu's New item reads "New Archives Visit", the iOS
 ///         picker's text under the same key: it creates the plan at once and opens no dialog
+///   1.5 — 2026-11-24 (FRUS Explorer Light, S30b): the Manage sheet's row reads a rename's draft by
+///         FRUSCoreKit's rule (`ArchiveVisitPlanWrites.name(fromDraft:)`); unchanged
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -413,11 +415,11 @@ private struct ManageArchiveVisitRow: View {
     }
 
     private func commitRename() {
-        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
+        let name = ArchiveVisitPlanWrites.name(fromDraft: draftName)
+        if name == nil {
             draftName = plan.name
-        } else if trimmed != plan.name {
-            plan.rename(to: trimmed)
+        } else if let name, name != plan.name {
+            plan.rename(to: name)
             try? modelContext.save()
         }
     }

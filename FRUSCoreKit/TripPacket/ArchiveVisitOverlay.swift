@@ -33,6 +33,9 @@ import Foundation
 ///          stored row is shown on, kept and listed with its own tier, note and exclusion
 ///   1.3 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public, out of
 ///          `ArchiveVisitDerivation.swift`, with the exporter that reads it; unchanged
+///   1.4 — 2026-11-24 (FRUS Explorer Light, S30b): its and ``Superseded``'s memberwise initialisers are spelled
+///          out, public, now that the derivation that builds it is the kit's too, for a host that passes the
+///          exporter an overlay of its own; unchanged
 public struct ArchiveVisitOverlay: Equatable, Sendable {
 
     /// A stored row that answers for a derived target another stored row is shown on (decision
@@ -45,6 +48,12 @@ public struct ArchiveVisitOverlay: Equatable, Sendable {
         /// Whether the row excludes its target from the packet — not applied, since the target
         /// follows the row it shows.
         public let excluded: Bool
+
+        /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+        public init(targetKey: String, excluded: Bool) {
+            self.targetKey = targetKey
+            self.excluded = excluded
+        }
     }
 
     /// The plan's tiers, in order. Empty for a plan that never prioritized.
@@ -72,8 +81,26 @@ public struct ArchiveVisitOverlay: Equatable, Sendable {
     /// `ArchiveVisitTargetKeys.shownRow(among:answeringFor:)`'s rule.
     public var superseded: [String: Superseded] = [:]
 
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`; every field
+    /// defaults to none, as a plan that stores nothing reads.
+    public init(tiers: [ArchiveVisitTier] = [], tierAssignments: [String: UUID] = [:],
+                excludedKeys: Set<String> = [], notes: [String: String] = [:], storedKeyCount: Int = 0,
+                orphanKeys: [String] = [], storedKeys: [String: String] = [:],
+                superseded: [String: Superseded] = [:]) {
+        self.tiers = tiers
+        self.tierAssignments = tierAssignments
+        self.excludedKeys = excludedKeys
+        self.notes = notes
+        self.storedKeyCount = storedKeyCount
+        self.orphanKeys = orphanKeys
+        self.storedKeys = storedKeys
+        self.superseded = superseded
+    }
+
     /// The key the stored row for derived target `key` carries: its ``storedKeys`` entry, or
-    /// `key` itself. What a write passes to `ArchiveVisitPlan.targetState(forKey:resolvedBy:mintIfMissing:in:)`.
+    /// `key` itself. What a write finds a target's stored row by: the kit's
+    /// `ArchiveVisitPlanWrites.targetRow(forKey:resolvedBy:mintIfMissing:among:planId:now:)` and its setters, which
+    /// the app's `ArchiveVisitPlan.targetState(forKey:resolvedBy:mintIfMissing:in:)` and its writes call.
     public func storedKey(for key: String) -> String {
         storedKeys[key] ?? key
     }

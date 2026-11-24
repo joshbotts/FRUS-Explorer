@@ -75,6 +75,9 @@ import SwiftData
 ///         own records line and access line, the packet's own lines (`Target.lots`).
 ///   1.10 — decision 62 (A15): Stored targets also lists each row that answers for a target another
 ///         stored row is shown on, naming the target and saying when the row had excluded its own.
+///   1.11 — 2026-11-24 (FRUS Explorer Light, S30b): a target's tier, exclusion and note are written by the
+///         plan (`setTier`, `setIncluded`, `setNote`), through FRUSCoreKit's rules, and a rename's draft is
+///         read by its rule (`ArchiveVisitPlanWrites.name(fromDraft:)`); nothing the editor does changes.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -377,11 +380,11 @@ struct ArchiveVisitEditorView: View {
     /// Commits the buffered rename: trimmed non-empty renames through `rename(to:)` (the
     /// stamper moves `lastModified` at save); an empty draft reverts to the current name.
     private func commitRename() {
-        let trimmed = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
+        let name = ArchiveVisitPlanWrites.name(fromDraft: nameDraft)
+        if name == nil {
             nameDraft = plan.name
-        } else if trimmed != plan.name {
-            plan.rename(to: trimmed)
+        } else if let name, name != plan.name {
+            plan.rename(to: name)
             try? modelContext.save()
         }
     }
@@ -1466,30 +1469,20 @@ struct ArchiveVisitEditorView: View {
     private func setTier(_ tierId: UUID?, forKey key: String) {
         // Assigning a tier is STATE, so it mints the overlay row (§2a); clearing back to
         // Unprioritized keeps the row — an explicit choice is state too.
-        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
-                                         mintIfMissing: true,
-                                         in: modelContext) else { return }
-        row.tierId = tierId
+        plan.setTier(tierId, forKey: key, resolvedBy: derived?.overlay, in: modelContext)
         try? modelContext.save()
         bump()
     }
 
     private func setIncluded(_ included: Bool, forKey key: String) {
-        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
-                                         mintIfMissing: true,
-                                         in: modelContext) else { return }
-        row.included = included
+        plan.setIncluded(included, forKey: key, resolvedBy: derived?.overlay, in: modelContext)
         try? modelContext.save()
         bump()
     }
 
     private func commitNote() {
         guard let key = noteEditingKey else { return }
-        let trimmed = noteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
-                                         mintIfMissing: true,
-                                         in: modelContext) else { return }
-        row.userNote = trimmed.isEmpty ? nil : trimmed
+        plan.setNote(fromDraft: noteDraft, forKey: key, resolvedBy: derived?.overlay, in: modelContext)
         try? modelContext.save()
         noteEditingKey = nil
         bump()
@@ -1607,6 +1600,8 @@ struct ArchiveVisitEditorView: View {
 ///   1.1 — UI pass: macOS plain-VStack chrome; tier rows gain a context menu and
 ///         `.onDelete` (delete was swipe-only — mouse-unreachable on macOS, and absent
 ///         from iOS edit mode); both routes arm the SAME confirmation.
+///   1.2 — 2026-11-24 (FRUS Explorer Light, S30b): the add, rename, reorder and delete are the plan's
+///         (`addTier`, `relabelTier`, `moveTiers`, `removeTier`), through FRUSCoreKit's rules; unchanged.
 struct ArchiveVisitTierSheet: View {
 
     let plan: ArchiveVisitPlan
@@ -1699,9 +1694,7 @@ struct ArchiveVisitTierSheet: View {
                     }
                 }
                 Button {
-                    var tiers = plan.tiers
-                    tiers.append(ArchiveVisitTier(label: nil, order: tiers.count))
-                    plan.tiers = tiers
+                    plan.addTier()
                     try? modelContext.save()
                 } label: {
                     Label(String(localized: "archiveVisit.tiers.add",
@@ -1807,20 +1800,13 @@ struct ArchiveVisitTierSheet: View {
     }
 
     private func move(from source: IndexSet, to destination: Int) {
-        var tiers = plan.tiers
-        tiers.move(fromOffsets: source, toOffset: destination)
-        for index in tiers.indices { tiers[index].order = index }
-        plan.tiers = tiers
+        plan.moveTiers(fromOffsets: source, toOffset: destination)
         try? modelContext.save()
     }
 
     private func commitRename() {
         guard let tier = renaming else { return }
-        var tiers = plan.tiers
-        if let index = tiers.firstIndex(where: { $0.id == tier.id }) {
-            let trimmed = draftLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-            tiers[index].label = trimmed.isEmpty ? nil : trimmed
-            plan.tiers = tiers
+        if plan.relabelTier(tier.id, toDraft: draftLabel) {
             try? modelContext.save()
         }
         renaming = nil
@@ -1828,15 +1814,10 @@ struct ArchiveVisitTierSheet: View {
 
     private func commitDelete() {
         guard let tier = deleting else { return }
-        var tiers = plan.tiers.filter { $0.id != tier.id }
-        for index in tiers.indices { tiers[index].order = index }
-        plan.tiers = tiers
         // Same-device cleanliness: members drop to Unprioritized NOW rather than dangling.
         // A row referencing this tier from another device still degrades to Unprioritized
         // by the overlay's dangling-id rule.
-        for row in (plan.targets ?? []) where row.tierId == tier.id {
-            row.tierId = nil
-        }
+        plan.removeTier(tier.id)
         try? modelContext.save()
         deleting = nil
     }

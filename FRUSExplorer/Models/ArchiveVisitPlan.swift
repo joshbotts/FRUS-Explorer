@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import CryptoKit
 import Foundation
 import SwiftData
 
@@ -61,6 +60,10 @@ import SwiftData
 ///         item is gated on; `projectIds` documents what a project merge and delete do to it
 ///   1.3 — FRUS Explorer Light: `ArchiveVisitTier` and `ArchiveVisitDeliverables`, the values the plan
 ///         stores, moved to FRUSCoreKit, unchanged but `public`; no stored property changed
+///   1.4 — 2026-11-24 (FRUS Explorer Light, S30b): the derived id, the untitled name, a new plan, the
+///         duplicate and the delete's cascade are FRUSCoreKit's rules over the plan's records
+///         (`ArchiveVisitPlanWrites`), which `make`, `duplicate(in:)` and `deleteWithChildren(in:)` apply
+///         through the context; no stored property changed
 @Model final class ArchiveVisitPlan {
 
     // MARK: - Identity
@@ -183,9 +186,14 @@ import SwiftData
     ///   - activeProject: the project the plan is created under — the active project, or the
     ///     project whose Home creates it — or `nil` in the global context.
     static func make(name: String, activeProject: Project?) -> ArchiveVisitPlan {
-        ArchiveVisitPlan(name: name,
-                         inquiryText: TripPacketTopicSentence.written(activeProject?.researchQuestion),
-                         projectIds: activeProject.map { [$0.id] } ?? [])
+        // The kit's rule (`ArchiveVisitPlanWrites.newPlan`), the record applied to a new row: its id and
+        // fields, the dates the initialiser's own.
+        let record = ArchiveVisitPlanWrites.newPlan(name: name, projectId: activeProject?.id,
+                                                    researchQuestion: activeProject?.researchQuestion)
+        let plan = ArchiveVisitPlan(name: record.name, inquiryText: record.inquiryText,
+                                    projectIds: record.projectIds)
+        plan.id = record.id
+        return plan
     }
 
     /// Resolves `activeProjectId` in `context`, then creates the plan through
@@ -227,12 +235,10 @@ import SwiftData
 
     /// The fallback display name for a plan with an empty `name` (§4a: created plans auto-name
     /// from their seed; an unseeded plan is untitled and renameable in place).
-    static var untitledName: String {
-        String(localized: "archiveVisit.untitled.name", defaultValue: "Untitled Archives Visit")
-    }
+    static var untitledName: String { ArchiveVisitPlanWrites.untitledName }
 
     /// The name shown in lists — the stored name, or the untitled fallback.
-    var displayName: String { name.isEmpty ? Self.untitledName : name }
+    var displayName: String { ArchiveVisitPlanWrites.displayName(of: name) }
 
     // MARK: - Tiers accessor
 
@@ -274,20 +280,14 @@ import SwiftData
     /// exactly the case a random id would hide from that pass. SHA-256 over the UTF-8 of
     /// `"<planId>|<key>"`, first 16 bytes, with RFC-4122 variant bits and a version nibble of 8
     /// (a deterministic custom UUID, deliberately not claiming RFC-4122 v5, which specifies
-    /// SHA-1). Stable across devices, platforms, and app versions by construction.
+    /// SHA-1). Stable across devices, platforms, and app versions by construction. The rule is FRUSCoreKit's
+    /// (``ArchiveVisitPlanWrites/derivedChildId(planId:key:)``), so a host on Linux mints these ids too.
     ///
     /// - Parameters:
     ///   - planId: the owning plan's id.
     ///   - key: the child's stable key — a target key (§2b) or a `volumeId/documentId`.
     static func derivedChildId(planId: UUID, key: String) -> UUID {
-        let digest = SHA256.hash(data: Data("\(planId.uuidString)|\(key)".utf8))
-        var bytes = Array(digest.prefix(16))
-        bytes[6] = (bytes[6] & 0x0F) | 0x80   // version nibble: 8 (custom, deterministic)
-        bytes[8] = (bytes[8] & 0x3F) | 0x80   // RFC-4122 variant: 10xxxxxx
-        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3],
-                           bytes[4], bytes[5], bytes[6], bytes[7],
-                           bytes[8], bytes[9], bytes[10], bytes[11],
-                           bytes[12], bytes[13], bytes[14], bytes[15]))
+        ArchiveVisitPlanWrites.derivedChildId(planId: planId, key: key)
     }
 
     // MARK: - Duplication (§4a)
@@ -303,32 +303,35 @@ import SwiftData
     /// id is a function of `planId | key` and the keys are unchanged. Tier ids are deliberately
     /// NOT re-minted: `ArchiveVisitTarget.tierId` references them, and re-minting would strand
     /// every copied assignment in the implicit Unprioritized group.
+    ///
+    /// The rule is FRUSCoreKit's (``ArchiveVisitPlanWrites/duplicate(of:id:now:)``), over the plan's records,
+    /// which this applies row for row: the copy's id, its fields and each child's key, halves and state, with
+    /// the blobs and each child's reserved `stateData`, which the records do not carry, copied from the rows.
     @discardableResult
     func duplicate(in context: ModelContext) -> ArchiveVisitPlan {
-        let base = name.isEmpty ? Self.untitledName : name
-        let copy = ArchiveVisitPlan(
-            name: String(format: String(localized: "archiveVisit.duplicate.name %@",
-                                        defaultValue: "%@ copy"), base),
-            inquiryText: inquiryText,
-            projectIds: projectIds)
+        let documentRows = documents ?? [], targetRows = targets ?? []
+        let duplicated = ArchiveVisitPlanWrites.duplicate(of: record(documents: documentRows, targets: targetRows))
+        let copy = ArchiveVisitPlan(name: duplicated.name, inquiryText: duplicated.inquiryText,
+                                    projectIds: duplicated.projectIds)
+        copy.id = duplicated.id
         copy.tiersData = tiersData
         copy.deliverableTogglesData = deliverableTogglesData
         context.insert(copy)
 
-        for document in documents ?? [] {
-            let seed = ArchiveVisitDocument(planId: copy.id, documentKey: document.documentKey)
+        for (document, copied) in zip(documentRows, duplicated.documents) {
+            let seed = ArchiveVisitDocument(planId: copy.id, documentKey: copied.documentKey)
             seed.plan = copy
-            seed.includeSource = document.includeSource
-            seed.includeExternalRefs = document.includeExternalRefs
+            seed.includeSource = copied.includeSource
+            seed.includeExternalRefs = copied.includeExternalRefs
             seed.stateData = document.stateData
             context.insert(seed)
         }
-        for target in targets ?? [] {
-            let state = ArchiveVisitTarget(planId: copy.id, targetKey: target.targetKey)
+        for (target, copied) in zip(targetRows, duplicated.targets) {
+            let state = ArchiveVisitTarget(planId: copy.id, targetKey: copied.targetKey)
             state.plan = copy
-            state.tierId = target.tierId
-            state.included = target.included
-            state.userNote = target.userNote
+            state.tierId = copied.tierId
+            state.included = copied.included
+            state.userNote = copied.userNote
             state.stateData = target.stateData
             context.insert(state)
         }
@@ -341,10 +344,14 @@ import SwiftData
     ///
     /// The one supported way to delete a plan: the relationships are `.nullify` (CloudKit
     /// supports no cascade), so a bare `context.delete(plan)` would orphan every child row —
-    /// invisible in the UI but alive in the store and in CloudKit forever.
+    /// invisible in the UI but alive in the store and in CloudKit forever. The cascade is
+    /// FRUSCoreKit's (``ArchiveVisitPlanWrites/deletion(of:)``): every seed and every stored target.
     func deleteWithChildren(in context: ModelContext) {
-        for document in documents ?? [] { context.delete(document) }
-        for target in targets ?? [] { context.delete(target) }
+        let documentRows = documents ?? [], targetRows = targets ?? []
+        let deletion = ArchiveVisitPlanWrites.deletion(of: record(documents: documentRows, targets: targetRows))
+        let documentIds = Set(deletion.documentIds), targetIds = Set(deletion.targetIds)
+        for document in documentRows where documentIds.contains(document.id) { context.delete(document) }
+        for target in targetRows where targetIds.contains(target.id) { context.delete(target) }
         context.delete(self)
     }
 }

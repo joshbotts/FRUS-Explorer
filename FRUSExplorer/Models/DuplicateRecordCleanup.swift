@@ -80,6 +80,9 @@ extension AnnotationReview: DeduplicableRecord {}
 ///          overlay's choice of which stored row a target shows.
 ///   1.3 — #1791: `DuplicateCopies`, the read side, for the five types this pass leaves alone;
 ///          the caveat no longer says the `id` tie-break decides between copies
+///   1.4 — 2026-11-24 (FRUS Explorer Light, S30b): `isKept(_:over:)` is FRUSCoreKit's rule
+///          (`DuplicateRecordOrder`), which it forwards to, since the Archives Visit derivation that shares
+///          it is the kit's; unchanged
 @MainActor
 enum DuplicateRecordCleanup {
 
@@ -223,10 +226,7 @@ enum DuplicateRecordCleanup {
     /// decision 62), so the row a target shows is the one this pass would keep.
     nonisolated static func isKept(_ record: (createdAt: Date?, id: UUID),
                                    over other: (createdAt: Date?, id: UUID)) -> Bool {
-        let l = record.createdAt ?? .distantFuture
-        let r = other.createdAt ?? .distantFuture
-        if l != r { return l < r }
-        return record.id.uuidString < other.id.uuidString
+        DuplicateRecordOrder.isKept(record, over: other)
     }
 }
 
