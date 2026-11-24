@@ -830,15 +830,15 @@ struct FRUSCoreKitBoundaryTests {
 
 // MARK: - SharedKitsBoundaryTests
 
-/// The other shared kits keep FRUSCoreKit's rules, each with its own allowances (FRUS Explorer Light,
-/// #1911): FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit,
-/// WordCloudKit and ManifestGeneratorCore, with their suites' folders, which the web edition compiles
-/// on Linux from a pinned commit (`CLAUDE.md`, "Web edition"). Five of them are compiled into the app
-/// as well (`project.yml`), so the app's build cannot tell a file of theirs that names the app's code
-/// from one that does not; CrossRefKit, GeneratorKit and ManifestGeneratorCore are the package's
-/// alone. Before these tests a change that broke one of them on Linux was found only by the web
-/// edition's daily watch, after it landed on `v2`. They read the source with
-/// `FRUSCoreKitBoundaryTests`' scanner, comments and string literals blanked, and its name rules:
+/// The other shared kits, each with its suites' folder, keep FRUSCoreKit's rules, each with its own
+/// allowances (FRUS Explorer Light, #1911): FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit,
+/// TEIHeaderKit, SemanticVectorsKit, WordCloudKit, ManifestGeneratorCore and CloudVectorsGeneratorCore.
+/// The web edition compiles them on Linux from a pinned commit (`CLAUDE.md`, "Web edition"). Five of
+/// them are compiled into the app as well (`project.yml`), so the app's build cannot tell a file of
+/// theirs that names the app's code from one that does not; CrossRefKit, GeneratorKit and the two
+/// generators' cores are the package's alone. Before these tests a change that broke one of them on
+/// Linux was found only by the web edition's daily watch, after it landed on `v2`. They read the source
+/// with `FRUSCoreKitBoundaryTests`' scanner, comments and string literals blanked, and its name rules:
 /// - every import, an attribute or an access level before `import` included, is Foundation, one the kit
 ///   imports behind the `canImport` that selects it, directly inside that branch, or one it may import
 ///   anywhere, which ``Kit`` names with its reason (``kits``).
@@ -861,6 +861,11 @@ struct FRUSCoreKitBoundaryTests {
 ///
 /// Version history:
 ///   1.0 — 2026-11-22 (FRUS Explorer Light, #1911): initial implementation
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S26b's follow-up): CloudVectorsGeneratorCore, which the web
+///         edition compiles since its S26b, and its suites; a generator core's row,
+///         ``core(_:suites:dependencies:guarded:declares:)``, whose package dependencies it imports with
+///         no guard, ManifestGeneratorCore's among them; and a kit's suites take a dependency's guarded
+///         modules only when that dependency's own suites live in their folder (``suitesGuarded(_:)``)
 @Suite("Shared kits — Foundation and their own guarded modules, and nothing that lives in the app")
 struct SharedKitsBoundaryTests {
 
@@ -910,7 +915,18 @@ struct SharedKitsBoundaryTests {
          kit: "the kit its suites test, a module of the package's; a suite the unit target compiles too imports it inside `#if SWIFT_PACKAGE`"]
     }
 
-    /// The eight kits, each with what it imports today: behind a guard, or anywhere with the reason.
+    /// A generator's core: a package target whose files no app target compiles, but for files that import
+    /// none of the core's package dependencies. So it imports each of them with no guard: wherever a file
+    /// of its that imports one is built, that dependency is a module of its own.
+    static func core(_ name: String, suites: String, dependencies: [String], guarded: [String: Branch] = [:],
+                     declares: String) -> Kit {
+        let reason = "its package dependency, which no guard needs: no app target compiles a file of the core's that imports it (project.yml), so wherever such a file is built it is a module of its own"
+        return Kit(name: name, suites: suites, dependencies: dependencies, guarded: guarded,
+                   anywhere: Dictionary(uniqueKeysWithValues: dependencies.map { ($0, reason) }),
+                   suitesAnywhere: suiteModules(name), declares: declares)
+    }
+
+    /// The nine kits, each with what it imports today: behind a guard, or anywhere with the reason.
     static let kits: [Kit] = [
         Kit(name: "FTS5Store", suites: "FTS5StoreTests",
             guarded: sqlite.merging(["OSLog": ("canImport(OSLog)", false)]) { kit, _ in kit },
@@ -929,10 +945,13 @@ struct SharedKitsBoundaryTests {
         Kit(name: "WordCloudKit", suites: "WordCloudKitTests",
             guarded: crypto.merging(tagging) { kit, _ in kit },
             suitesAnywhere: suiteModules("WordCloudKit"), declares: "WordCloudTokenizer"),
-        Kit(name: "ManifestGeneratorCore", suites: "ManifestGeneratorTests", dependencies: ["TEIHeaderKit"],
-            guarded: ["FoundationNetworking": ("canImport(FoundationNetworking)", false)],
-            anywhere: ["TEIHeaderKit": "its package dependency, which no guard needs: no app target compiles ManifestGeneratorCore (project.yml), so wherever it is built TEIHeaderKit is a module of its own"],
-            suitesAnywhere: suiteModules("ManifestGeneratorCore"), declares: "ManifestGeneratorRunner"),
+        // The generators' cores.
+        core("ManifestGeneratorCore", suites: "ManifestGeneratorTests", dependencies: ["TEIHeaderKit"],
+             guarded: ["FoundationNetworking": ("canImport(FoundationNetworking)", false)],
+             declares: "ManifestGeneratorRunner"),
+        // The cloud-vector generator's, which the web edition runs with a tagger of its own.
+        core("CloudVectorsGeneratorCore", suites: "CloudVectorsGeneratorTests",
+             dependencies: ["WordCloudKit", "GeneratorKit"], declares: "CloudVectorsRunner"),
     ]
 
     /// Each Swift file of the kit's folder with its lines of code, and of its suites' folder with the lines
@@ -950,10 +969,13 @@ struct SharedKitsBoundaryTests {
         kits.first { $0.name == name }
     }
 
-    /// What a kit's suites may import behind a guard: the kit's own guarded modules, and those of the kits
-    /// it depends on, whose suites may share its folder (TEIHeaderKit's are in ManifestGeneratorTests).
+    /// What a kit's suites may import behind a guard: the kit's own guarded modules, and those of each kit
+    /// it depends on that has no suites' folder of its own, since its suites live in this kit's
+    /// (TEIHeaderKit's are in ManifestGeneratorTests). A dependency with a folder of its own keeps its
+    /// modules to its own suites: CloudVectorsGeneratorTests may not import WordCloudKit's NaturalLanguage,
+    /// which rule 1 allows WordCloudKit's tagging code and its suites alone.
     static func suitesGuarded(_ kit: Kit) -> [String: Branch] {
-        kit.dependencies.compactMap { Self.kit(named: $0)?.guarded }
+        kit.dependencies.compactMap { Self.kit(named: $0) }.filter { $0.suites == nil }.map(\.guarded)
             .reduce(kit.guarded) { $0.merging($1) { own, _ in own } }
     }
 
@@ -1110,5 +1132,12 @@ struct SharedKitsBoundaryTests {
         #expect(Self.suitesGuarded(manifest)["FoundationNetworking"]?.condition == "canImport(FoundationNetworking)")
         #expect(Self.suiteImportViolations(in: "#if canImport(FoundationXML)\nimport FoundationXML\n#endif\n",
                                            permitted: Self.suitesGuarded(manifest), anywhere: []).isEmpty)
+        // A dependency with suites of its own keeps its guarded modules to them: WordCloudKit's tagging
+        // modules are not the cloud-vector generator's suites'.
+        let cloud = try #require(Self.kit(named: "CloudVectorsGeneratorCore"))
+        #expect(Self.suitesGuarded(cloud)["NaturalLanguage"] == nil)
+        #expect(Self.suiteImportViolations(in: "#if canImport(NaturalLanguage)\nimport NaturalLanguage\n#endif\n",
+                                           permitted: Self.suitesGuarded(cloud), anywhere: [])
+                == ["2: import NaturalLanguage"])
     }
 }
