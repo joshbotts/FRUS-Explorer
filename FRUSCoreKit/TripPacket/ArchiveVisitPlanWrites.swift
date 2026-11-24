@@ -36,10 +36,13 @@ import Foundation
 /// **A rule stamps no date on a row it changes.** A host stamps its own writes, as the app's
 /// `ModelModificationStamper` does at save. A record a rule mints carries `now` as its creation and
 /// modification date; the app makes its rows through their initialisers, which stamp the moment they
-/// are made, and takes each record's id, keys and values.
+/// are made and derive a child's id as the rule did, and takes each record's keys and values, writing a
+/// stored row's fields only where the rule changes them (``SeedAddition/turnsOnSource``, a target's one
+/// field), as its write sites always have.
 ///
 /// What stays the host's: finding the project a plan is made or re-seeded under, gathering its seeds,
-/// asking the reader before a topic is replaced, and saving.
+/// asking the reader before a topic is replaced, and saving; and the plain writes of one row no rule
+/// covers, a seed's two switches and its Remove.
 ///
 /// Version history:
 ///   1.0 — 2026-11-24 (FRUS Explorer Light, S30b): initial implementation, out of the app's
@@ -160,7 +163,10 @@ public enum ArchiveVisitPlanWrites {
     /// every copied assignment in the implicit Unprioritized group. Every row is created `now`.
     ///
     /// What the records do not carry, the app's reserved `stateData` of each seed and stored target
-    /// and the tiers' and deliverables' blobs as stored, the app copies from the plan's own rows.
+    /// and the tiers' and deliverables' blobs as stored, the app copies from the plan's own rows. A plan
+    /// holding two copies of one child — two devices' mints, which share a derived id until the app's
+    /// cleanup collapses them — gives two records of one id, as the app copies both; a host whose store
+    /// keys a child by its id holds one copy.
     ///
     /// - Parameters:
     ///   - plan: the plan, with its seeds and stored targets.
@@ -252,15 +258,23 @@ public enum ArchiveVisitPlanWrites {
         /// already on is listed too, since the app has always written them (and its stamper dates the
         /// row's change); a host may skip it.
         public let updated: [StoredRow<ArchiveVisitDocumentExport>]
+        /// Whether the add turns the source half on, which each ``updated`` row is written in; when it
+        /// does not, a stored row's source half is left as it was, and is not written.
+        public let turnsOnSource: Bool
+        /// Whether the add turns the references half on, as ``turnsOnSource`` the source half.
+        public let turnsOnExternalRefs: Bool
 
         /// How many NEW seed rows were minted.
         public var mintedCount: Int { inserted.count }
 
         /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
         public init(inserted: [ArchiveVisitDocumentExport],
-                    updated: [StoredRow<ArchiveVisitDocumentExport>]) {
+                    updated: [StoredRow<ArchiveVisitDocumentExport>],
+                    turnsOnSource: Bool = false, turnsOnExternalRefs: Bool = false) {
             self.inserted = inserted
             self.updated = updated
+            self.turnsOnSource = turnsOnSource
+            self.turnsOnExternalRefs = turnsOnExternalRefs
         }
     }
 
@@ -269,8 +283,9 @@ public enum ArchiveVisitPlanWrites {
     /// Upserts by key: a document already seeded gains the requested contributions
     /// (flags turn ON, never off — adding "references" from Source Explorer must not silently
     /// switch off a source contribution another surface added), and a new document mints its
-    /// row with exactly the requested flags, under its derived id. A request for neither half
-    /// writes nothing.
+    /// row with exactly the requested flags, under its derived id. A stored seed is written in the
+    /// requested halves alone (``SeedAddition/turnsOnSource``, ``SeedAddition/turnsOnExternalRefs``).
+    /// A request for neither half writes nothing.
     ///
     /// - Parameters:
     ///   - documents: the documents to add, as `(volumeId, documentId)`.
@@ -308,7 +323,8 @@ public enum ArchiveVisitPlanWrites {
                 includeSource: includeSource, includeExternalRefs: includeExternalRefs,
                 createdAt: now, lastModified: now))
         }
-        return SeedAddition(inserted: inserted, updated: updated)
+        return SeedAddition(inserted: inserted, updated: updated, turnsOnSource: includeSource,
+                            turnsOnExternalRefs: includeExternalRefs)
     }
 
     // MARK: - Re-seed from Project (1e, #1366)
@@ -417,7 +433,12 @@ public enum ArchiveVisitPlanWrites {
     /// note stayed on the first. A new row is minted under the target's current key. The parameter
     /// has no default (#1421 review, round 2): the editor's four write sites are covered by no test,
     /// so a site that dropped it would still compile and would mint the duplicate again. Pass `nil`
-    /// only where nothing has been rendered yet.
+    /// only where nothing has been rendered yet. A host that keeps no rendered state between requests
+    /// passes the overlay of the plan as it stands (``ArchiveVisitDerivation/overlay(for:over:)`` over
+    /// the model it derived, or ``ArchiveVisitDerivation/derive(plan:indexedVolumeIds:dataSource:indexes:)``
+    /// again); with `nil` a re-spelled row is not found under its target's key.
+    ///
+    /// Each write answers the row with its one field changed; the app writes that field alone.
     ///
     /// - Parameters:
     ///   - key: the derived target's key.
@@ -552,11 +573,28 @@ public enum ArchiveVisitPlanWrites {
     /// `destination` (or to the end at the count), as a list's drag moves them, then numbered in
     /// their new order. The move is SwiftUI's `move(fromOffsets:toOffset:)`, which the app's tier
     /// sheet called and a test holds this to.
+    ///
+    /// `destination` is an offset in the list as it was, before the tiers moved: moving the tier at
+    /// index 1 of three down one place is `toOffset: 3`, before the tier then at 3, and `toOffset: 2` leaves
+    /// it where it was. ``movingTier(at:by:in:)`` takes a step instead.
     public static func movingTiers(fromOffsets source: IndexSet, toOffset destination: Int,
                                    in tiers: [ArchiveVisitTier]) -> [ArchiveVisitTier] {
         var moved = moving(tiers, fromOffsets: source, toOffset: destination)
         for index in moved.indices { moved[index].order = index }
         return moved
+    }
+
+    /// The tier at `index` moved `steps` places, up when negative and down when positive, as far as
+    /// the list's ends allow, then the list numbered in its new order: a keyboard's Move Up and Move
+    /// Down, over ``movingTiers(fromOffsets:toOffset:in:)``. An index outside the list moves nothing.
+    public static func movingTier(at index: Int, by steps: Int,
+                                  in tiers: [ArchiveVisitTier]) -> [ArchiveVisitTier] {
+        guard tiers.indices.contains(index) else { return tiers }
+        let target = min(max(index + steps, 0), tiers.count - 1)
+        // SwiftUI's destination counts the list before the move: a tier moved down lands before the tier
+        // after its new place.
+        return movingTiers(fromOffsets: IndexSet([index]),
+                           toOffset: target > index ? target + 1 : target, in: tiers)
     }
 
     /// The elements at `source`, in their order, moved to before the element at `destination`, the

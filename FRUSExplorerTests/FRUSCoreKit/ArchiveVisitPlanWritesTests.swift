@@ -232,6 +232,9 @@ struct ArchiveVisitPlanWritesTests {
         #expect(again.updated.first?.record.includeSource == true,
                 "adding references must not switch off the source another surface added")
         #expect(again.updated.first?.record.includeExternalRefs == true)
+        #expect(!again.turnsOnSource && again.turnsOnExternalRefs,
+                "a stored seed is written in the requested half alone, as the app always wrote it")
+        #expect(first.turnsOnSource && !first.turnsOnExternalRefs)
 
         // A no-claims add writes nothing.
         let none = ArchiveVisitPlanWrites.addingSeeds([("v1", "d2")], includeSource: false,
@@ -381,6 +384,22 @@ struct ArchiveVisitPlanWritesTests {
         #expect(moved.map(\.label) == ["T2", "T0", "T1"])
         #expect(moved.map(\.order) == [0, 1, 2])
         #expect(moved.map(\.id) == [tiers[2].id, tiers[0].id, tiers[1].id])
+    }
+
+    @Test("A tier steps up and down one place at a time, as far as the list's ends")
+    func movingTierBySteps() {
+        let tiers = (0..<3).map { ArchiveVisitTier(label: "T\($0)", order: $0) }
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 1, by: 1, in: tiers).map(\.label) == ["T0", "T2", "T1"])
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 1, by: -1, in: tiers).map(\.label) == ["T1", "T0", "T2"])
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 0, by: 2, in: tiers).map(\.label) == ["T1", "T2", "T0"])
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 2, by: 1, in: tiers) == tiers, "the last tier goes no lower")
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 0, by: -1, in: tiers) == tiers, "the first goes no higher")
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 3, by: -1, in: tiers) == tiers, "an index outside moves nothing")
+        #expect(ArchiveVisitPlanWrites.movingTier(at: 1, by: 1, in: tiers).map(\.order) == [0, 1, 2])
+        // SwiftUI's destination counts the list before the move: down one place is two offsets on.
+        #expect(ArchiveVisitPlanWrites.movingTiers(fromOffsets: IndexSet([1]), toOffset: 2, in: tiers) == tiers)
+        #expect(ArchiveVisitPlanWrites.movingTiers(fromOffsets: IndexSet([1]), toOffset: 3, in: tiers)
+                == ArchiveVisitPlanWrites.movingTier(at: 1, by: 1, in: tiers))
     }
 
     @Test("Removing a tier numbers the rest again and clears its members to Unprioritized")

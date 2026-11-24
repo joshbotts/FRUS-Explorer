@@ -18,11 +18,14 @@ import SwiftData
 // The app's half of an Archives Visit plan's derivation and writes (FRUS Explorer Light, S30b): its SwiftData rows
 // mapped to the research export's records, which FRUSCoreKit's derivation and write rules read
 // (`ArchiveVisitDerivation`, `ArchiveVisitPlanWrites`), and the rows each rule answers applied through the plan's
-// `ModelContext`. The forms here are the ones the views and tests called before the move, under their names, so no
-// call site changes. A rule answers a stored row by its index in the rows it read; each form reads the plan's
-// relationship once and writes through that same array. The app makes a row through its initialiser, which
-// derives its id as the rule did and stamps the moment it is made, and copies what the records do not carry —
-// each row's reserved `stateData`, and the tiers' and deliverables' blobs as stored — from its own rows.
+// `ModelContext`. The forms the views and tests called before the move keep their names and signatures; the editor's
+// target and tier writes, which wrote the rows in the view, are the plan's forms beside them. A rule answers a stored
+// row by its index in the rows it read; each form reads the plan's relationship once and writes through that same
+// array, and writes a stored row's fields only where the rule changes them — a target's one field, a seed's requested
+// halves — as the write sites always did, so no other key of the row is set, observed or synced. The app makes a row
+// through its initialiser, which derives its id as the rule did and stamps the moment it is made, and copies what the
+// records do not carry — each row's reserved `stateData`, and the tiers' and deliverables' blobs as stored — from its
+// own rows.
 //
 // Version history:
 //   1.0 — 2026-11-24 (FRUS Explorer Light, S30b): initial implementation, when the derivation and the plan's
@@ -167,51 +170,49 @@ extension ArchiveVisitPlan {
     }
 
     /// Assigns the target `key` a tier, or Unprioritized with `nil`, minting its row
-    /// (``ArchiveVisitPlanWrites/settingTier(_:forKey:resolvedBy:among:planId:now:)``). `overlay` as
-    /// ``targetState(forKey:resolvedBy:mintIfMissing:in:)`` takes it. The caller saves.
+    /// (``ArchiveVisitPlanWrites/settingTier(_:forKey:resolvedBy:among:planId:now:)``); the row's tier alone is
+    /// written. `overlay` as ``targetState(forKey:resolvedBy:mintIfMissing:in:)`` takes it. The caller saves.
     func setTier(_ tierId: UUID?, forKey key: String, resolvedBy overlay: ArchiveVisitOverlay?,
                  in context: ModelContext) {
         let rows = targets ?? []
-        write(ArchiveVisitPlanWrites.settingTier(tierId, forKey: key, resolvedBy: overlay,
-                                                 among: rows.map(ArchiveVisitTargetExport.init),
-                                                 planId: id),
-              to: rows, in: context)
+        let written = ArchiveVisitPlanWrites.settingTier(tierId, forKey: key, resolvedBy: overlay,
+                                                         among: rows.map(ArchiveVisitTargetExport.init),
+                                                         planId: id)
+        row(written, among: rows, in: context).tierId = written.record.tierId
     }
 
     /// Keeps the target `key` in the packet or excludes it, minting its row
-    /// (``ArchiveVisitPlanWrites/settingIncluded(_:forKey:resolvedBy:among:planId:now:)``). The caller saves.
+    /// (``ArchiveVisitPlanWrites/settingIncluded(_:forKey:resolvedBy:among:planId:now:)``); the row's exclusion
+    /// alone is written. The caller saves.
     func setIncluded(_ included: Bool, forKey key: String, resolvedBy overlay: ArchiveVisitOverlay?,
                      in context: ModelContext) {
         let rows = targets ?? []
-        write(ArchiveVisitPlanWrites.settingIncluded(included, forKey: key, resolvedBy: overlay,
-                                                     among: rows.map(ArchiveVisitTargetExport.init),
-                                                     planId: id),
-              to: rows, in: context)
+        let written = ArchiveVisitPlanWrites.settingIncluded(included, forKey: key, resolvedBy: overlay,
+                                                             among: rows.map(ArchiveVisitTargetExport.init),
+                                                             planId: id)
+        row(written, among: rows, in: context).included = written.record.included
     }
 
     /// Writes the target `key`'s note from the reader's draft, minting its row
-    /// (``ArchiveVisitPlanWrites/settingNote(fromDraft:forKey:resolvedBy:among:planId:now:)``). The caller saves.
+    /// (``ArchiveVisitPlanWrites/settingNote(fromDraft:forKey:resolvedBy:among:planId:now:)``); the row's note
+    /// alone is written. The caller saves.
     func setNote(fromDraft draft: String, forKey key: String, resolvedBy overlay: ArchiveVisitOverlay?,
                  in context: ModelContext) {
         let rows = targets ?? []
-        write(ArchiveVisitPlanWrites.settingNote(fromDraft: draft, forKey: key, resolvedBy: overlay,
-                                                 among: rows.map(ArchiveVisitTargetExport.init),
-                                                 planId: id),
-              to: rows, in: context)
+        let written = ArchiveVisitPlanWrites.settingNote(fromDraft: draft, forKey: key, resolvedBy: overlay,
+                                                         among: rows.map(ArchiveVisitTargetExport.init),
+                                                         planId: id)
+        row(written, among: rows, in: context).userNote = written.record.userNote
     }
 
-    /// Writes `row`, a rule's answer for one target, to `rows`, the stored targets it read: the stored row takes
-    /// the record's tier, exclusion and note, and a minted record becomes a new row.
-    private func write(_ row: ArchiveVisitPlanWrites.TargetRow, to rows: [ArchiveVisitTarget],
-                       in context: ModelContext) {
-        let target: ArchiveVisitTarget
-        switch row {
-        case .stored(let stored): target = rows[stored.index]
-        case .minted(let record): target = insertTarget(record, in: context)
+    /// The row `written`, a rule's answer for one target, names among `rows`, the stored targets it read: the
+    /// stored row, or a new one for a minted record, which its caller writes its one field to.
+    private func row(_ written: ArchiveVisitPlanWrites.TargetRow, among rows: [ArchiveVisitTarget],
+                     in context: ModelContext) -> ArchiveVisitTarget {
+        switch written {
+        case .stored(let stored): rows[stored.index]
+        case .minted(let record): insertTarget(record, in: context)
         }
-        target.tierId = row.record.tierId
-        target.included = row.record.included
-        target.userNote = row.record.userNote
     }
 
     /// A new stored row for `record`, a minted target, under the id its key derives.
@@ -242,14 +243,14 @@ extension ArchiveVisitPlan {
         return addition.mintedCount
     }
 
-    /// Writes `addition` to `rows`, the stored seeds it read: each stored seed it names takes the record's two
-    /// halves, and each new record becomes a row.
+    /// Writes `addition` to `rows`, the stored seeds it read: each stored seed it names is written in the halves the
+    /// add turns on, and those alone, and each new record becomes a row.
     private func apply(_ addition: ArchiveVisitPlanWrites.SeedAddition, to rows: [ArchiveVisitDocument],
                        in context: ModelContext) {
         for update in addition.updated {
             let seed = rows[update.index]
-            seed.includeSource = update.record.includeSource
-            seed.includeExternalRefs = update.record.includeExternalRefs
+            if addition.turnsOnSource { seed.includeSource = update.record.includeSource }
+            if addition.turnsOnExternalRefs { seed.includeExternalRefs = update.record.includeExternalRefs }
         }
         for record in addition.inserted {
             let seed = ArchiveVisitDocument(planId: id, documentKey: record.documentKey)

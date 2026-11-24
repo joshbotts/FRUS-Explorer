@@ -40,7 +40,7 @@ import Foundation
 ///         resolves a write through the rendered overlay
 ///   1.4 — #1421 review, round 2: `targetState`'s `resolvedBy` has no default, so a write site
 ///         cannot drop it and still compile
-///   1.5 — #1456: ``inputSignature(plan:indexedVolumeIds:)``, what ``derive(plan:indexedVolumeIds:dataSource:indexes:)``
+///   1.5 — #1456: `inputSignature(plan:indexedVolumeIds:)`, what ``derive(plan:indexedVolumeIds:dataSource:indexes:)``
 ///         reads from the plan and which of its seeds' volumes are indexed, as one value, so the editor
 ///         re-derives when a write from anywhere else changes it
 ///   1.6 — #1456 review, round 1: the signature's doc names what it does not carry (the index's
@@ -224,7 +224,7 @@ public enum ArchiveVisitDerivation {
 
     /// The ``InputSignature`` of a plan given as the values the derivation reads: each seed row and
     /// each stored state row as it reads them, the inquiry text and the tiers as stored. The rule
-    /// both ``inputSignature(plan:indexedVolumeIds:)`` and the app's form over its rows count by.
+    /// both `inputSignature(plan:indexedVolumeIds:)` and the app's form over its rows count by.
     ///
     /// - Parameters:
     ///   - seeds: every seed row, one entry a row.
@@ -254,7 +254,7 @@ public enum ArchiveVisitDerivation {
     }
 
     /// The volume a seed's `"volumeId/documentId"` key lives in — the one rule both the derivation's
-    /// seed coverage and ``inputSignature(plan:indexedVolumeIds:)`` read a seed's volume by, so the
+    /// seed coverage and `inputSignature(plan:indexedVolumeIds:)` read a seed's volume by, so the
     /// two cannot disagree about which indexed volumes a plan depends on.
     public static func volumeId(ofSeedKey key: String) -> String? {
         key.split(separator: "/").first.map(String.init)

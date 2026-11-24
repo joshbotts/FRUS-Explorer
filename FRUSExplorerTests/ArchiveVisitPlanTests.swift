@@ -30,6 +30,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — Archive Visits Phase 2: initial implementation
 ///   1.1 — FRUS Explorer Light: the export test accepts a format version past 6, which carries plans too
+///   1.2 — FRUS Explorer Light's S30b: the pinned derived id is held to its value, which FRUSCoreKit's
+///          `ArchiveVisitDerivedIdTests` pins with five more on every platform
 @Suite("Archive Visit plan (Phase 2)")
 struct ArchiveVisitPlanTests {
 
@@ -77,6 +79,8 @@ struct ArchiveVisitPlanTests {
     func derivedIdIsPinned() {
         let planId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
         let derived = ArchiveVisitPlan.derivedChildId(planId: planId, key: "class|611.51")
+        #expect(derived.uuidString == "9AE440C6-81FC-8729-ABF1-8F85BDD2FB31",
+                "the id the derivation has always given; a change orphans every stored child row's identity")
         #expect(ArchiveVisitPlan.derivedChildId(planId: planId, key: "class|611.51") == derived)
         // RFC-4122 shape: version nibble 8 (custom deterministic), variant bits 10.
         let bytes = derived.uuid

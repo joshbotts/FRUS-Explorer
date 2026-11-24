@@ -98,7 +98,9 @@ public struct ArchiveVisitOverlay: Equatable, Sendable {
     }
 
     /// The key the stored row for derived target `key` carries: its ``storedKeys`` entry, or
-    /// `key` itself. What a write passes to `ArchiveVisitPlan.targetState(forKey:resolvedBy:mintIfMissing:in:)`.
+    /// `key` itself. What a write finds a target's stored row by: the kit's
+    /// `ArchiveVisitPlanWrites.targetRow(forKey:resolvedBy:mintIfMissing:among:planId:now:)` and its setters, which
+    /// the app's `ArchiveVisitPlan.targetState(forKey:resolvedBy:mintIfMissing:in:)` and its writes call.
     public func storedKey(for key: String) -> String {
         storedKeys[key] ?? key
     }
