@@ -24,34 +24,34 @@ import Foundation
 /// researcher's own use**, and the draft is an email to NARA reference staff. So the packet
 /// pre-fills and lets them edit — and **the exporter reads the edited value, never the stored one**.
 /// A quoted string baked into the export would send NARA a private note.
-struct TripPacketTopicSentence: Equatable, Sendable {
+public struct TripPacketTopicSentence: Equatable, Sendable {
 
     /// What the project holds, if anything.
-    let seed: String?
+    public let seed: String?
     /// What the researcher typed, if they have.
-    var edited: String?
+    public var edited: String?
 
     /// What an export prints: the edit if there is one, else the seed, else the placeholder.
     ///
     /// A project with no research question gets the placeholder rather than an empty paragraph —
     /// an inquiry with a blank topic is the one thing A3 says never to send ("never 'everything
     /// you have'").
-    var forExport: String {
+    public var forExport: String {
         if let edited, !edited.trimmingCharacters(in: .whitespaces).isEmpty { return edited }
         if let seed, !seed.trimmingCharacters(in: .whitespaces).isEmpty { return seed }
         return Self.placeholder
     }
 
     /// Whether the researcher still needs to write this.
-    var needsAttention: Bool { forExport == Self.placeholder }
+    public var needsAttention: Bool { forExport == Self.placeholder }
 
     /// Shown when neither a seed nor an edit exists — deliberately an instruction, not filler.
-    static let placeholder = String(
+    public static let placeholder = String(
         localized: "packet.topic.placeholder",
         defaultValue: "[Describe your research topic in one or two sentences — narrow and specific. NARA asks for a succinct description, never “everything you have”.]")
 
     /// Seeds from a project's research question.
-    static func seeded(from researchQuestion: String?) -> TripPacketTopicSentence {
+    public static func seeded(from researchQuestion: String?) -> TripPacketTopicSentence {
         TripPacketTopicSentence(seed: researchQuestion, edited: nil)
     }
 
@@ -62,7 +62,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// What an Archives Visit copies from a project's research question, at creation
     /// (`ArchiveVisitPlan.make`) and on Re-seed from Project: a blank question would export as the
     /// placeholder anyway, and storing it would make an empty field look like a written topic.
-    static func written(_ text: String?) -> String? {
+    public static func written(_ text: String?) -> String? {
         guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -75,7 +75,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// The one comparison behind both halves of #1366's refresh rule: Re-seed from Project
     /// leaves a topic that already reads the question alone, and the packet sheet's seeded
     /// caption shows only while the field still reads it.
-    static func sameText(_ first: String?, _ second: String?) -> Bool {
+    public static func sameText(_ first: String?, _ second: String?) -> Bool {
         guard let first = written(first), let second = written(second) else { return false }
         return first.trimmingCharacters(in: .whitespacesAndNewlines)
             == second.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -88,7 +88,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// Before #1366 the caption branched on the question alone, which the one construction of the
     /// sheet passed as `nil`, so it could never appear; branching on the question alone would now
     /// be false the other way, captioning a topic the reader has rewritten as the project's.
-    static func showsSeededCaption(draft: String, researchQuestion: String?) -> Bool {
+    public static func showsSeededCaption(draft: String, researchQuestion: String?) -> Bool {
         sameText(draft, researchQuestion)
     }
 
@@ -103,7 +103,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// copied from it only when the plan is created and on Re-seed from Project, never at render
     /// time (#1366, §4 item 1). So an empty stored topic opens an empty field while the drafts
     /// print the placeholder, and the field and the export agree.
-    mutating func openPlanDraft(draft: String, stored: String?) -> String {
+    public mutating func openPlanDraft(draft: String, stored: String?) -> String {
         if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             edited = draft
             return draft
@@ -123,7 +123,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// anything else exactly as typed, so a blank field against a `nil` edit is nothing to commit,
     /// and a field that differs from the edit only by a trailing space is still an edit: the
     /// drafts send the field as typed.
-    static func isUncommitted(draft: String, edited: String?) -> Bool {
+    public static func isUncommitted(draft: String, edited: String?) -> Bool {
         written(draft) != written(edited)
     }
 }
@@ -181,10 +181,14 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///          the record group its notes name (`lotFact(heldUnder:answers:)`), and a collection
 ///          target whose documents cite several lots states each apart (`Target.lots`), counted
 ///          in the triage, instead of one lot's series for all of them
-struct TripPacketModel: Equatable, Sendable {
+///   2.7 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; `build`'s series facts,
+///          substitutes and claimants have no defaults, which named the app's stores, and a pointed-at lot
+///          resolves through `lotResolution`, where it called the app's overload over the stores: the
+///          builder passes its ``TripPacketIndexes``' lookups
+public struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
-    struct Group: Equatable, Sendable, Identifiable {
+    public struct Group: Equatable, Sendable, Identifiable {
 
         /// One document in the group — the roster row chapter 3 prints and the verbatim
         /// note A5 quotes.
@@ -192,35 +196,35 @@ struct TripPacketModel: Equatable, Sendable {
         /// Everything is MATERIALIZED at build (the citation is a formatted string, the
         /// note is the stored text), matching the model's whole design: the packet is a
         /// snapshot the exporter renders, never a set of lookups the exporter performs.
-        struct DocumentRef: Equatable, Sendable, Identifiable {
+        public struct DocumentRef: Equatable, Sendable, Identifiable {
             /// The document's volume.
-            let volumeId: String
+            public let volumeId: String
             /// The document's id within it.
-            let documentId: String
+            public let documentId: String
             /// The history.state.gov-style citation, formatted at build.
-            let citation: String
+            public let citation: String
             /// The file or folder designation the source note cites (a decimal or
             /// subject-numeric file number, a lot's folder), when the parser found one.
-            let fileDesignation: String?
+            public let fileDesignation: String?
             /// The document's own day, as the index dates it — what the citation crib checks a
             /// date-form designation's year against (#1407 review); `nil` when the document is
             /// not dated to the day.
-            let documentDay: DecimalFileSegment.DocumentDay?
+            public let documentDay: DecimalFileSegment.DocumentDay?
             /// The source note as printed in FRUS — what A5 quotes verbatim when the
             /// citation resolves to no NARA series.
-            let sourceNote: String
+            public let sourceNote: String
 
-            var id: String { "\(volumeId)/\(documentId)" }
+            public var id: String { "\(volumeId)/\(documentId)" }
         }
 
         /// The grouping key from `archivalSourceRows`.
-        let id: String
+        public let id: String
         /// What to call it.
-        let label: String
+        public let label: String
         /// Where it is served — or an honest refusal.
-        let facility: ResearchFacility
+        public let facility: ResearchFacility
         /// How many of the reader's documents cite it.
-        let documentCount: Int
+        public let documentCount: Int
         /// The curated row for the cited repository, when one exists (the library groups since
         /// the table gained its library rows; `nil` for every row at T-1).
         ///
@@ -229,26 +233,26 @@ struct TripPacketModel: Equatable, Sendable {
         /// is kept as the fold's own answer for the cited spelling — what tests and diagnostics
         /// read to check that the resolver and the heading name the same row — and must not be
         /// mistaken for the source of a chapter's links.
-        let facts: RepositoryFactRow?
+        public let facts: RepositoryFactRow?
         /// The parser's provenance category — what kind of filing system the citation names.
-        let category: SourceProvenanceCategory?
+        public let category: SourceProvenanceCategory?
         /// The FULL archival resolution, when the citation reached one — title, catalog
         /// URL, HMS/MLR entry numbers, series title. Previously reduced to its `naId` at
         /// this exact seam, which left chapter 5 printing bare NAIDs and A3's four-field
         /// line with nothing to print.
-        let resolution: ArchivalResolution?
+        public let resolution: ArchivalResolution?
         /// NARA's inclusive years for the resolved series, when the facts index has them.
-        let seriesYears: String?
+        public let seriesYears: String?
         /// The group's documents, in reading-list order.
-        let documents: [DocumentRef]
+        public let documents: [DocumentRef]
 
         /// Whether this group can head a packet chapter (D3).
-        var canHeadChapter: Bool { facility.chapterHeading != nil }
+        public var canHeadChapter: Bool { facility.chapterHeading != nil }
 
         /// A3's four-field records line — RG · entry · series title · NAID — or `nil`
         /// when the citation resolved to no series. Composed here so chapter 2 and
         /// chapter 3 cannot format the same fields differently.
-        var recordsLine: String? {
+        public var recordsLine: String? {
             guard let resolution else { return nil }
             var parts: [String] = []
             if let rg = resolution.recordGroup { parts.append("RG \(rg)") }
@@ -269,13 +273,13 @@ struct TripPacketModel: Equatable, Sendable {
     /// footnotes cite this, unprinted" is a different assertion from "the document was
     /// published from this file", and the two are itemized under separate headings inside
     /// one target row (§3d — the evidence-grain form of the #783 separation).
-    struct RefSeeding: Equatable, Sendable {
+    public struct RefSeeding: Equatable, Sendable {
         /// The citing document's volume.
-        let volumeId: String
+        public let volumeId: String
         /// The citing document's id.
-        let documentId: String
+        public let documentId: String
         /// The history.state.gov-style citation, formatted at build.
-        let citation: String
+        public let citation: String
         /// The label the VOLUME printed for the footnote carrying the reference, or `nil` when
         /// it printed none (#1322).
         ///
@@ -286,12 +290,12 @@ struct TripPacketModel: Equatable, Sendable {
         /// reader to the wrong page, so the label is now stored beside the ordinal at harvest and
         /// never derived. It is NOT unique within a document — numbering restarts inside
         /// attachments — so it says what the page prints, never which note.
-        let footnoteLabel: String?
+        public let footnoteLabel: String?
         /// The footnote citation as printed — quoted verbatim, the packet's discipline.
-        let rawText: String
+        public let rawText: String
         /// Whether an `Ibid.` supplied the unit — disclosed on the rendered line, because an
         /// inherited citation is the previous footnote's assertion, not this one's.
-        let inherited: Bool
+        public let inherited: Bool
     }
 
     /// A lot target's access status, stated at the grain the data supports (§3a).
@@ -300,20 +304,20 @@ struct TripPacketModel: Equatable, Sendable {
     /// lots ship, one claimed by 13 series), and the series carry DIFFERENT access statuses —
     /// so this is one line stating the worst COVERED status, the series it belongs to, and how
     /// many claimants are unmeasured. Never a badge: a badge invents certainty.
-    struct TargetRestriction: Equatable, Sendable {
+    public struct TargetRestriction: Equatable, Sendable {
         /// NARA's own words for the most severe measured status ("Restricted - Partly").
-        let worstCoveredStatus: String
+        public let worstCoveredStatus: String
         /// Its severity, for ordering.
-        let worstSeverity: RestrictionSeverity
+        public let worstSeverity: RestrictionSeverity
         /// The claimant series that status belongs to.
-        let claimantSeriesTitle: String?
+        public let claimantSeriesTitle: String?
         /// How many series claim this lot in NARA's catalog (1 = undivided).
-        let claimantCount: Int
+        public let claimantCount: Int
         /// Claimants with no measured access status — absence of a ruling, not openness.
-        let unmeasuredClaimantCount: Int
+        public let unmeasuredClaimantCount: Int
         /// Whether NARA divides this lot across several series — routed into the inquiry
         /// draft as a question when true, because a divided lot IS a question.
-        var isDivided: Bool { claimantCount > 1 }
+        public var isDivided: Bool { claimantCount > 1 }
     }
 
     /// What the builder read of the lots a collection target's documents cite through the National
@@ -325,54 +329,54 @@ struct TripPacketModel: Equatable, Sendable {
     /// the index stores carry more than one lot (323 documents, measured 2026-10-20 over a full v69
     /// index). The target's own label, records line and access line can speak for a lot only when
     /// every one of its documents cites it; otherwise each lot is stated apart, in ``Target/lots``.
-    struct CitedLots: Equatable, Sendable {
+    public struct CitedLots: Equatable, Sendable {
 
         /// One lot as the target's documents cite it.
-        struct Part: Equatable, Sendable {
+        public struct Part: Equatable, Sendable {
             /// The lot as the first document citing it prints it.
-            let lotAsPrinted: String
+            public let lotAsPrinted: String
             /// How many of the target's documents cite it.
-            let documentCount: Int
+            public let documentCount: Int
             /// The record groups those documents' notes name, as numbers (`59`); empty when none
             /// names one.
-            let recordGroups: Set<String>
+            public let recordGroups: Set<String>
             /// The lot's one NARA series, when the bundle holds one under those record groups.
-            let resolution: ArchivalResolution?
+            public let resolution: ArchivalResolution?
         }
 
         /// The record groups the notes citing the target's own lot name — what the claimant line
         /// is read under. Empty when the target has no lot of its own or no note names one.
-        var recordGroups: Set<String> = []
+        public var recordGroups: Set<String> = []
         /// Each lot, in the order its first document was placed, when the target's documents do not
         /// all cite one; empty otherwise.
-        var parts: [Part] = []
+        public var parts: [Part] = []
     }
 
     /// One research target: an archival unit under a claim-free, form-aware key.
-    struct Target: Equatable, Sendable, Identifiable {
+    public struct Target: Equatable, Sendable, Identifiable {
 
         /// One lot a collection target's documents cite, stated apart because they do not all cite
         /// it (#1692): its own records line and access line, which the target's cannot carry.
-        struct Lot: Equatable, Sendable {
+        public struct Lot: Equatable, Sendable {
             /// The lot as the first document citing it prints it.
-            let lotAsPrinted: String
+            public let lotAsPrinted: String
             /// How many of the target's documents cite it.
-            let documentCount: Int
+            public let documentCount: Int
             /// The lot's one NARA series, when the bundle holds one.
-            let resolution: ArchivalResolution?
+            public let resolution: ArchivalResolution?
             /// NARA's inclusive years for that series.
-            let seriesYears: String?
+            public let seriesYears: String?
             /// The lot's claimant-aware access line, when anything is measured or divided.
-            let restriction: TargetRestriction?
+            public let restriction: TargetRestriction?
 
             /// A3's four-field records line — shared composition with ``Group/recordsLine``.
-            var recordsLine: String? {
+            public var recordsLine: String? {
                 TripPacketModel.recordsLine(resolution: resolution, seriesYears: seriesYears)
             }
         }
 
         /// Which citation form keyed this target (§2b's table).
-        enum Form: String, Equatable, Sendable {
+        public enum Form: String, Equatable, Sendable {
             /// A central-file class (`611.51`) — the unit a researcher consults, NOT the
             /// per-document file number (which is the seeding's detail). Keying on the file
             /// number was measured to mint one target per document for the corpus's
@@ -388,13 +392,13 @@ struct TripPacketModel: Equatable, Sendable {
         }
 
         /// The claim-free key (`form|identity`).
-        let key: String
-        let form: Form
+        public let key: String
+        public let form: Form
         /// What to call it.
-        let label: String
+        public let label: String
         /// Where it is served — or an honest refusal.
-        let facility: ResearchFacility
-        let category: SourceProvenanceCategory?
+        public let facility: ResearchFacility
+        public let category: SourceProvenanceCategory?
         /// The curated repository row, when the cited repository has one — looked up in the same
         /// table, by the same fold, as the ``facility`` resolver used, so a library target's row
         /// is the one its chapter heading names (#1459).
@@ -403,27 +407,27 @@ struct TripPacketModel: Equatable, Sendable {
         /// links were its two readers, and both are gone): a chapter finds its links by its heading,
         /// `RepositoryFactTable.row(forHeading:)`. Kept as a test and diagnostic surface — see
         /// ``Group/facts``.
-        let facts: RepositoryFactRow?
+        public let facts: RepositoryFactRow?
         /// The full resolution, when the citation reached one.
-        let resolution: ArchivalResolution?
+        public let resolution: ArchivalResolution?
         /// NARA's inclusive years for the resolved series.
-        let seriesYears: String?
+        public let seriesYears: String?
         /// Documents published FROM this unit (their source notes name it).
-        let drawnFrom: [Group.DocumentRef]
+        public let drawnFrom: [Group.DocumentRef]
         /// Footnotes citing this unit, unprinted.
-        let pointedAt: [RefSeeding]
+        public let pointedAt: [RefSeeding]
         /// The claimant-aware access line, when anything is measured or divided.
-        let restriction: TargetRestriction?
+        public let restriction: TargetRestriction?
         /// Each lot the target's documents cite, when they do not all cite one (#1692); empty for
         /// every other target. The target's own ``resolution`` and ``restriction`` are `nil` then:
         /// they would speak for one lot over documents that cite another.
-        let lots: [Lot]
+        public let lots: [Lot]
 
-        var id: String { key }
-        var canHeadChapter: Bool { facility.chapterHeading != nil }
+        public var id: String { key }
+        public var canHeadChapter: Bool { facility.chapterHeading != nil }
 
         /// A3's four-field records line — shared composition with ``Group/recordsLine``.
-        var recordsLine: String? {
+        public var recordsLine: String? {
             TripPacketModel.recordsLine(resolution: resolution, seriesYears: seriesYears)
         }
     }
@@ -431,39 +435,45 @@ struct TripPacketModel: Equatable, Sendable {
     /// The groups, most-cited first — the DRAWN-FROM channel as built, kept for the
     /// substitute/coverage denominators and the unresolved accounting. The artifact renders
     /// from ``targets``.
-    let groups: [Group]
+    public let groups: [Group]
     /// The research targets, assembled from both channels (§2), in facility-then-label order.
-    let targets: [Target]
+    public let targets: [Target]
     /// Access triage across the whole reading list — the plan-level line and the inquiry's
     /// questions; per-target status lives on ``Target/restriction``.
-    let triage: RestrictionTriage
+    public let triage: RestrictionTriage
     /// Records that must be read online or on film instead of pulled (A6) — the coverage
     /// report's denominators; per-seeding markers come from ``MandatorySubstitutes/matchesByDocument``.
-    let substitutes: MandatorySubstitutes
+    public let substitutes: MandatorySubstitutes
     /// The coverage report's refs line: how many seeded documents the pointed-at channel found
     /// references on, over how many it scanned (references exist on ~4% of documents —
     /// measured 2026-08-26 over the full 552-volume index, 13,750 of 316,839
     /// corpus-wide, and a thin channel must read as sparse data, not as a failed scan).
-    struct ReferenceCoverage: Equatable, Sendable {
-        let documentsWithReferences: Int
-        let documentsScanned: Int
+    public struct ReferenceCoverage: Equatable, Sendable {
+        public let documentsWithReferences: Int
+        public let documentsScanned: Int
+
+        /// The memberwise initialiser, spelt out because a synthesized one is never `public`.
+        public init(documentsWithReferences: Int, documentsScanned: Int) {
+            self.documentsWithReferences = documentsWithReferences
+            self.documentsScanned = documentsScanned
+        }
     }
-    let referenceCoverage: ReferenceCoverage
+    public let referenceCoverage: ReferenceCoverage
     /// Whether every seeded document with a known year predates 1946 — the coverage report's
     /// empty-refs explainer. Lot files and presidential libraries are a post-war filing
     /// practice (measured for #784: the pre-war decades yield 0/0/2 references at the shipped
     /// scope), so an empty pointed-at channel on a pre-1946 reading list is the filing
     /// practice, not a failed scan — and only this flag lets the report say which.
-    let seededSpanPredates1946: Bool
+    public let seededSpanPredates1946: Bool
     /// The inquiry's topic sentence.
-    var topicSentence: TripPacketTopicSentence
+    public var topicSentence: TripPacketTopicSentence
 
     /// Groups that cannot head a chapter, and therefore need the confirm-prompt treatment (D11).
     ///
     /// Reported rather than dropped: a collection the packet cannot place is exactly what the
     /// reader must ring ahead about, and silently omitting it would leave part of their reading
     /// unplanned. A presidential library with a curated row is not among them since #1459.
-    var needingConfirmation: [Group] { groups.filter { !$0.canHeadChapter } }
+    public var needingConfirmation: [Group] { groups.filter { !$0.canHeadChapter } }
 
     /// Assembles the packet.
     ///
@@ -486,10 +496,14 @@ struct TripPacketModel: Equatable, Sendable {
     ///     on BOTH channels as well as read for each target's `facts`, so a target's heading and
     ///     its `facts` come from one row.
     ///   - facts: the series-facts lookup; injected so tests drive the real rules.
+    ///   - substitutes: the A6 lookup over `citedFiles`.
+    ///   - claimants: the divided-lot lookup, given a lot as printed.
+    ///   - lotResolution: a pointed-at lot's resolution, given the lot as printed: the route the
+    ///     builder resolves the drawn-from channel's lots by (`ArchivalResolver.documentResolution`).
     ///   - citedLots: per group key, what the builder read of the lots a collection target's
     ///     documents cite through the National Archives (#1692) — the record groups behind its
     ///     own lot, or each lot apart. A key absent here has neither.
-    static func build(
+    public static func build(
         groups: [(key: String, label: String, category: SourceProvenanceCategory?,
                   repository: String?, lotAsPrinted: String?,
                   resolution: ArchivalResolution?,
@@ -500,18 +514,15 @@ struct TripPacketModel: Equatable, Sendable {
         unresolvedDocumentCount: Int,
         researchQuestion: String?,
         table: RepositoryFactTable = .current,
-        facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) },
-        substitutes: ([MandatorySubstitutes.CitedFile]) -> MandatorySubstitutes = {
-            MandatorySubstitutes.build(citedFiles: $0)
-        },
+        facts: (String) -> SeriesFactsIndex.Facts?,
+        substitutes: ([MandatorySubstitutes.CitedFile]) -> MandatorySubstitutes,
         references: [(key: String, form: Target.Form, label: String,
                       repository: String?, lotAsPrinted: String?,
                       seedings: [RefSeeding])] = [],
         referenceCoverage: ReferenceCoverage = .init(documentsWithReferences: 0,
                                                      documentsScanned: 0),
-        claimants: (String) -> [LotClaimant]? = {
-            LotClaimantsIndexStore.shared?.claimants(forRawLot: $0)
-        },
+        claimants: (String) -> [LotClaimant]?,
+        lotResolution: (String) -> ArchivalResolution?,
         citedLots: [String: CitedLots] = [:]
     ) -> TripPacketModel {
         let built = groups.map { group in
@@ -622,7 +633,7 @@ struct TripPacketModel: Equatable, Sendable {
             // "beyond FRUS" case the channel exists for. Lots resolve through the same
             // offline route the drawn-from channel uses.
             let resolution = reference.form == .lotFile
-                ? reference.lotAsPrinted.flatMap { ArchivalResolver.documentResolution(lotFile: $0) }
+                ? reference.lotAsPrinted.flatMap { lotResolution($0) }
                 : nil
             let category: SourceProvenanceCategory? =
                 reference.form == .lotFile ? .lotFile : .presidentialLibrary
@@ -688,18 +699,18 @@ struct TripPacketModel: Equatable, Sendable {
     /// excluded: the editor still counts that repository, and the packet and its Options do not
     /// (#1459 review, round 1). A target with no heading — the "Confirm before you travel" group —
     /// is not a repository and adds nothing.
-    static func repositoryNames(of targets: [Target]) -> [String] {
+    public static func repositoryNames(of targets: [Target]) -> [String] {
         var seen = Set<String>()
         return targets.compactMap(\.facility.chapterHeading)
             .filter { seen.insert($0).inserted }
     }
 
     /// This plan's repositories — ``repositoryNames(of:)`` over every target.
-    var repositoryNames: [String] { Self.repositoryNames(of: targets) }
+    public var repositoryNames: [String] { Self.repositoryNames(of: targets) }
 
     /// A3's four-field records line, shared by ``Group`` and ``Target`` so no surface can
     /// compose the same fields differently.
-    static func recordsLine(resolution: ArchivalResolution?, seriesYears: String?) -> String? {
+    public static func recordsLine(resolution: ArchivalResolution?, seriesYears: String?) -> String? {
         guard let resolution else { return nil }
         var parts: [String] = []
         if let rg = resolution.recordGroup { parts.append("RG \(rg)") }
@@ -734,7 +745,7 @@ struct TripPacketModel: Equatable, Sendable {
     ///     name (``lotFact(heldUnder:answers:)``), so its claimants are read only when one of them
     ///     is held there; empty, as for a lot file's notes, which name none, reads them whatever
     ///     their record group.
-    static func restriction(
+    public static func restriction(
         resolution: ArchivalResolution?,
         lotAsPrinted: String?,
         citedRecordGroups: Set<String> = [],
@@ -794,7 +805,7 @@ struct TripPacketModel: Equatable, Sendable {
     /// lot none of whose claimants is held under the group it names. `cited` empty — a lot file's
     /// notes, which name no record group — answers whatever the fact's; two record groups are
     /// never both answered, since one series cannot be held under both.
-    static func lotFact(heldUnder recordGroup: String?, answers cited: Set<String>) -> Bool {
+    public static func lotFact(heldUnder recordGroup: String?, answers cited: Set<String>) -> Bool {
         guard !cited.isEmpty else { return true }
         guard let recordGroup else { return false }
         return cited == [SourceExplorerProvenance.recordGroupNumber(recordGroup)]

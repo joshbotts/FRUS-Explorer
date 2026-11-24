@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - VerifiedFact
 
@@ -33,21 +36,21 @@ import Foundation
 /// This nullability is also what makes the T-0 gate incremental: T-1 and T-2 build against a table
 /// with **zero** confirmed rows, and each fact the owner confirms lights up one line rather than the
 /// whole feature waiting on one sitting.
-struct VerifiedFact<Value: Equatable & Sendable>: Equatable, Sendable {
+public struct VerifiedFact<Value: Equatable & Sendable>: Equatable, Sendable {
 
     /// The claim itself.
-    let value: Value
+    public let value: Value
     /// When the owner confirmed it; `nil` means unconfirmed.
-    let verifiedDate: Date?
+    public let verifiedDate: Date?
 
     /// The value, or `nil` when it has never been verified — the only accessor a printer may use.
     ///
     /// Deliberately the *only* way out. `value` is `let` and readable, but a call site that reaches
     /// past this to print an unverified claim is doing so visibly rather than by accident.
-    var printable: Value? { verifiedDate == nil ? nil : value }
+    public var printable: Value? { verifiedDate == nil ? nil : value }
 
     /// Creates an unverified fact — the state every row starts in.
-    static func unverified(_ value: Value) -> VerifiedFact<Value> {
+    public static func unverified(_ value: Value) -> VerifiedFact<Value> {
         VerifiedFact(value: value, verifiedDate: nil)
     }
 }
@@ -60,10 +63,10 @@ struct VerifiedFact<Value: Equatable & Sendable>: Equatable, Sendable {
 /// tail. The NARA side is derived from `series-facts-index.json` instead — see
 /// ``ResearchFacilityResolver`` — which is what shrank hand-curation to the rows where a wrong
 /// sentence is possible at all.
-struct RepositoryFactRow: Equatable, Sendable, Identifiable {
+public struct RepositoryFactRow: Equatable, Sendable, Identifiable {
 
     /// Stable key — the repository string as the corpus cites it.
-    let id: String
+    public let id: String
     /// Every spelling this row answers to, folded through the shared normalizers at lookup.
     ///
     /// **The packet has two key spaces, and these are for the second.** A chapter is headed by a
@@ -74,26 +77,26 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
     /// with `==` served one and silently missed the other — measured over the export sample, 43 of
     /// 126 presidential-library records do not equal any canonical form, including the corpus's
     /// commonest Nixon spelling, which alone rides ~7,000 notes.
-    let matchKeys: [String]
+    public let matchKeys: [String]
     /// What the packet calls this place.
-    let displayName: String
+    public let displayName: String
     /// Postal address. One of the four claims still owner-only.
-    let address: VerifiedFact<String>
+    public let address: VerifiedFact<String>
     /// Reference inquiry address. Also owner-only.
-    let inquiryEmail: VerifiedFact<String>
+    public let inquiryEmail: VerifiedFact<String>
     /// Whether an appointment is required — A1 distinguishes DC-area from other facilities, and
     /// which applies is per-facility policy, hence per-row and owner-confirmed.
-    let appointmentPolicy: VerifiedFact<String>
+    public let appointmentPolicy: VerifiedFact<String>
     /// Links, each independently stamped (D12).
-    let links: [RepositoryLink]
+    public let links: [RepositoryLink]
 
     /// Memberwise, with ``matchKeys`` defaulting to the row's own id.
     ///
     /// Written out rather than synthesised so a row that answers to only one spelling — the common
     /// case — does not have to repeat it.
-    init(id: String, matchKeys: [String]? = nil, displayName: String,
-         address: VerifiedFact<String>, inquiryEmail: VerifiedFact<String>,
-         appointmentPolicy: VerifiedFact<String>, links: [RepositoryLink]) {
+    public init(id: String, matchKeys: [String]? = nil, displayName: String,
+                address: VerifiedFact<String>, inquiryEmail: VerifiedFact<String>,
+                appointmentPolicy: VerifiedFact<String>, links: [RepositoryLink]) {
         self.id = id
         self.matchKeys = matchKeys ?? [id]
         self.displayName = displayName
@@ -107,7 +110,7 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
     ///
     /// A row whose every fact is unverified renders nothing — which is the normal state at T-1 and
     /// must not read as a bug.
-    var hasAnythingToPrint: Bool {
+    public var hasAnythingToPrint: Bool {
         address.printable != nil || inquiryEmail.printable != nil
             || appointmentPolicy.printable != nil || links.contains { $0.isPrintable }
     }
@@ -126,24 +129,24 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
 /// recording where the type lives: **a dead NARA deep link characteristically 301s to a section
 /// index that answers 200**, so a status-code grep calls it a pass. A checker must follow redirects
 /// and compare the destination.
-struct RepositoryLink: Equatable, Sendable, Identifiable {
+public struct RepositoryLink: Equatable, Sendable, Identifiable {
 
     /// The URL.
-    let url: String
+    public let url: String
     /// What it is.
-    let label: String
+    public let label: String
     /// When it was last checked; `nil` means never.
-    let verifiedDate: Date?
-    var id: String { url }
+    public let verifiedDate: Date?
+    public var id: String { url }
 
     /// A link with no stamp is not printed — it is an unverified institutional fact like any other.
-    var isPrintable: Bool { verifiedDate != nil }
+    public var isPrintable: Bool { verifiedDate != nil }
 
     /// How long a stamp stays fresh before the surrounding sentence hedges.
-    static let freshnessWindow: TimeInterval = 180 * 24 * 60 * 60   // ~6 months
+    public static let freshnessWindow: TimeInterval = 180 * 24 * 60 * 60   // ~6 months
 
     /// Whether the sentence around this link should hedge, given `now`.
-    func isStale(asOf now: Date = Date()) -> Bool {
+    public func isStale(asOf now: Date = Date()) -> Bool {
         guard let verifiedDate else { return true }
         return now.timeIntervalSince(verifiedDate) > Self.freshnessWindow
     }
@@ -162,10 +165,11 @@ struct RepositoryLink: Equatable, Sendable, Identifiable {
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
 ///   1.1 — 2026-09-25: #1459 — `row(forHeading:)`, the exact lookup a chapter heading takes
-struct RepositoryFactTable: Equatable, Sendable {
+///   1.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; the table is unchanged
+public struct RepositoryFactTable: Equatable, Sendable {
 
     /// The curated rows.
-    let rows: [RepositoryFactRow]
+    public let rows: [RepositoryFactRow]
 
     /// Folded spelling → row, built once.
     ///
@@ -175,7 +179,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     private let byKey: [String: RepositoryFactRow]
 
     /// Builds the table and its folded index.
-    init(rows: [RepositoryFactRow]) {
+    public init(rows: [RepositoryFactRow]) {
         self.rows = rows
         var table: [String: RepositoryFactRow] = [:]
         for row in rows {
@@ -190,7 +194,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     }
 
     /// Equality ignores the derived index — it is a function of `rows`.
-    static func == (lhs: RepositoryFactTable, rhs: RepositoryFactTable) -> Bool {
+    public static func == (lhs: RepositoryFactTable, rhs: RepositoryFactTable) -> Bool {
         lhs.rows == rhs.rows
     }
 
@@ -199,7 +203,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// A FOLD, deliberately loose: it has to reach `Nixon Presidential Materials` and the
     /// `Dwight D. Eisenhower Library` spelling. That looseness is why a chapter heading is never
     /// looked up here — see ``row(forHeading:)``.
-    func row(for repository: String) -> RepositoryFactRow? {
+    public func row(for repository: String) -> RepositoryFactRow? {
         guard let canonical = CollectionKeying.canonicalRepository(repository) else { return nil }
         return byKey[CollectionKeying.normalized(canonical)]
     }
@@ -215,7 +219,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// case — `series-facts-index.json` carries two reference units, both College Park's — but a
     /// test fixture does. The packet's chapters and drafts and the plan editor's section headers
     /// all look their row up here.
-    func row(forHeading heading: String) -> RepositoryFactRow? {
+    public func row(forHeading heading: String) -> RepositoryFactRow? {
         rows.first { $0.displayName == heading }
     }
 
@@ -245,13 +249,13 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// D12 checker: jfklibrary.org and discoverlbj.org 403 every automated fetch (those two
     /// are owner-asserted, and a checker must treat them as such, never as dead), and the JFK
     /// entry is a faceted search URL that can answer 200 while returning the wrong result set.
-    static let current = RepositoryFactTable(rows: [nacp] + presidentialLibraries)
+    public static let current = RepositoryFactTable(rows: [nacp] + presidentialLibraries)
 
     /// The owner's confirmation date for every fact in this table.
     ///
     /// The owner's date, never the build date: D7's stamp answers "when was this last known true",
     /// and tying it to a build would refresh itself without anyone checking.
-    static let confirmed: Date? = DateComponents(
+    public static let confirmed: Date? = DateComponents(
         calendar: .init(identifier: .gregorian), timeZone: TimeZone(secondsFromGMT: 0),
         year: 2026, month: 11, day: 20).date
 
@@ -262,7 +266,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// site for current guidance (D15), so there is no stable sentence to stamp — the fact was
     /// negated into a link rather than left pending. `printable` returns nil, the exporter prints
     /// the link instead, and no undated claim reaches the reader.
-    static let nacp: RepositoryFactRow = RepositoryFactRow(
+    public static let nacp: RepositoryFactRow = RepositoryFactRow(
         id: ResearchFacilityResolver.collegePark,
         matchKeys: [ResearchFacilityResolver.collegePark, "National Archives"],
         displayName: ResearchFacilityResolver.collegePark,
@@ -288,7 +292,7 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// Keys are the canonical forms `CollectionKeying.repositoryKeywords` produces, so the corpus's
     /// own variants (`Nixon Presidential Materials`, `Gerald R. Ford Presidential Library`) fold
     /// onto them without a hand-written alias list.
-    static let presidentialLibraries: [RepositoryFactRow] = [
+    public static let presidentialLibraries: [RepositoryFactRow] = [
         library("Nixon", "Richard Nixon Presidential Library",
                 visit: "https://www.nixonlibrary.gov/research/research-frequently-asked-questions-faqs",
                 holdings: "https://www.nixonlibrary.gov/research/guide-holdings"),

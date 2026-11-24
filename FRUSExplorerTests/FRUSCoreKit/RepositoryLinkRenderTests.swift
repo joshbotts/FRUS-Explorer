@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - RepositoryLinkRenderTests
 
@@ -31,6 +37,8 @@ import Foundation
 ///          dropped); the confirm-prompt test reads the whole export, since the prompt is
 ///          now its own section rather than part of the inquiry
 ///   1.2 — 2026-09-25: #1459 — a library's links print in its own chapter, not the confirm prompt
+///   1.3 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Repository link rendering (#830 T-3)")
 struct RepositoryLinkRenderTests {
 

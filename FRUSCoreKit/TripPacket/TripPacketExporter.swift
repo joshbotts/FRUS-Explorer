@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - TripPacketExporter
 
@@ -108,33 +111,35 @@ import Foundation
 ///          each divided one, and counts them in the coverage report
 ///   2.8 — decision 62 (A15): the coverage report's stored-rows line counts the rows that answer for
 ///          a target another stored row is shown on
-struct TripPacketExporter {
+///   2.9 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public, with its memberwise
+///          initialiser spelt out so a host can make one; nothing it writes changes
+public struct TripPacketExporter {
 
     /// The packet to render.
-    let model: TripPacketModel
+    public let model: TripPacketModel
     /// The plan's name, for the header.
-    let projectName: String
+    public let projectName: String
     /// When non-nil, render only this facility's slice — the export-scoping amendment.
     /// The value is a `ResearchFacility.chapterHeading`.
-    var facilityScope: String? = nil
+    public var facilityScope: String? = nil
     /// The per-plan deliverable toggles (§3b) — (a)/(b)/(c) on by default, the citation
     /// appendix off. A caller that sets none renders with the defaults; a plan's stored toggles
     /// travel with it, so the same plan renders the same artifact on every device.
-    var deliverables: ArchiveVisitDeliverables = ArchiveVisitDeliverables()
+    public var deliverables: ArchiveVisitDeliverables = ArchiveVisitDeliverables()
     /// A plan's stored per-target state, joined at render time (Archive Visits Phase 3):
     /// exclusions filter the rendered targets, tier assignments group and order them within
     /// each repository (Unprioritized last), notes ride the rows, and the stored-row
     /// accounting feeds the coverage report. `nil` excludes nothing and adds no tier or note.
-    var overlay: ArchiveVisitOverlay? = nil
+    public var overlay: ArchiveVisitOverlay? = nil
     /// When the export was generated, for the header's snapshot caveat. Optional so tests
     /// stay deterministic without injecting a calendar.
-    var generatedOn: Date? = nil
+    public var generatedOn: Date? = nil
     /// How many documents seeded the plan, and how many this device could read — the seed
     /// half of the coverage report, in the resolver's both-numbers grammar. `nil` when the
     /// caller has no seed accounting (the model cannot know it: an unreadable document
     /// never reached the builder).
-    var seededDocumentCount: Int? = nil
-    var resolvedDocumentCount: Int? = nil
+    public var seededDocumentCount: Int? = nil
+    public var resolvedDocumentCount: Int? = nil
     /// The curated repository facts, injected so tests drive the real table rather than a mirror.
     ///
     /// Every section here is headed by a resolved place — College Park, or a presidential
@@ -142,12 +147,30 @@ struct TripPacketExporter {
     /// (`RepositoryFactTable.row(forHeading:)`). The corpus's own repository spellings are folded
     /// once, upstream, by `ResearchFacilityResolver`; the exporter never folds a heading, because
     /// the fold would answer "National Archives at Kansas City" with College Park's row.
-    var factTable: RepositoryFactTable = .current
+    public var factTable: RepositoryFactTable = .current
+
+    /// The memberwise initialiser, spelt out because a synthesized one is never `public`; its labels, their
+    /// order and their defaults are the stored properties'.
+    public init(model: TripPacketModel, projectName: String, facilityScope: String? = nil,
+                deliverables: ArchiveVisitDeliverables = ArchiveVisitDeliverables(),
+                overlay: ArchiveVisitOverlay? = nil, generatedOn: Date? = nil,
+                seededDocumentCount: Int? = nil, resolvedDocumentCount: Int? = nil,
+                factTable: RepositoryFactTable = .current) {
+        self.model = model
+        self.projectName = projectName
+        self.facilityScope = facilityScope
+        self.deliverables = deliverables
+        self.overlay = overlay
+        self.generatedOn = generatedOn
+        self.seededDocumentCount = seededDocumentCount
+        self.resolvedDocumentCount = resolvedDocumentCount
+        self.factTable = factTable
+    }
 
     /// The whole packet, gated by the plan's deliverable toggles (§3b). The header and the
     /// coverage report are not deliverables and always render — the honesty block is not
     /// optional (§3c).
-    func export() -> String {
+    public func export() -> String {
         var sections = [header]
         if deliverables.includeLinks || deliverables.includeTargets {
             for facility in orderedFacilities(in: scopedTargets) {
@@ -168,20 +191,20 @@ struct TripPacketExporter {
     /// Every target this export includes — the plan's targets minus whatever its stored state
     /// excludes. The whole-plan header counts these (#1459): the targets under a repository AND
     /// the ones listed under "Confirm before you travel", which the header used to leave out.
-    var includedTargets: [TripPacketModel.Target] {
+    public var includedTargets: [TripPacketModel.Target] {
         model.targets.filter { overlay?.excludedKeys.contains($0.key) != true }
     }
 
     /// The repositories this export includes a target at, in section order — the list the
     /// whole-plan header counts and draws a chapter for (`TripPacketModel.repositoryNames(of:)`
     /// over ``includedTargets``).
-    var includedRepositories: [String] {
+    public var includedRepositories: [String] {
         TripPacketModel.repositoryNames(of: includedTargets)
     }
 
     /// The targets this export renders under a repository heading — every included target that
     /// has one, or one repository's slice.
-    var scopedTargets: [TripPacketModel.Target] {
+    public var scopedTargets: [TripPacketModel.Target] {
         guard let facilityScope else { return includedTargets.filter(\.canHeadChapter) }
         return includedTargets.filter { $0.facility.chapterHeading == facilityScope }
     }
@@ -190,14 +213,14 @@ struct TripPacketExporter {
     /// than dropped: a collection the packet cannot place is exactly what the reader must ring
     /// ahead about. A target the reader excluded is not listed (#1459); the coverage report
     /// counts it as excluded instead.
-    var unplacedTargets: [TripPacketModel.Target] {
+    public var unplacedTargets: [TripPacketModel.Target] {
         includedTargets.filter { !$0.canHeadChapter }
     }
 
     // MARK: - Header
 
     /// Title, the claim-separated counts, and the snapshot caveat.
-    var header: String {
+    public var header: String {
         var out = ["# Archive visit packet: \(projectName)", ""]
         if let facilityScope {
             out.append("Scoped to \(facilityScope) — one repository's slice of the plan. The "
@@ -240,7 +263,7 @@ struct TripPacketExporter {
     // MARK: - Deliverables (a) + (b): one section per repository
 
     /// A facility's visit-planning links and its target rows.
-    func facilitySection(_ facility: String) -> String {
+    public func facilitySection(_ facility: String) -> String {
         var out = ["## \(facility)", ""]
         // Deliverable (a): the curated link pairs, worst-freshness rule applied per link
         // (D12). Only ever `printable` — an unverified link is omitted, never printed
@@ -276,7 +299,7 @@ struct TripPacketExporter {
     /// Deliverable (b): one target's row — metadata, then its seedings itemized by claim.
     /// A plan's tier rides the heading as a bracket prefix ("[Day one] Lot 67 D 54" — the 1g
     /// grammar), and its note rides the row.
-    func targetRows(_ target: TripPacketModel.Target) -> [String] {
+    public func targetRows(_ target: TripPacketModel.Target) -> [String] {
         let tierPrefix = overlay.flatMap { overlay in
             overlay.tier(for: target.key).map { "[\(overlay.displayName(for: $0))] " }
         } ?? ""
@@ -371,7 +394,7 @@ struct TripPacketExporter {
     /// One draft per facility, because A3 asks for one agency or a group of closely related
     /// agencies per inquiry and A2 requires sending to **only one address**. A packet that
     /// produced a single letter naming three repositories would violate both.
-    var inquiryDrafts: String {
+    public var inquiryDrafts: String {
         var out = ["## Advance inquiry", ""]
 
         let placeable = scopedTargets
@@ -565,7 +588,7 @@ struct TripPacketExporter {
     /// College Park — which only a parser that stored a foreign archive's name could produce
     /// (`IndexingPipeline.baseDocumentSourceRow` stores none), and College Park's pages must not
     /// print beside it if one ever does.
-    var confirmBeforeYouTravel: String {
+    public var confirmBeforeYouTravel: String {
         var out = ["### Confirm before you travel"]
         out.append("These collections could not be placed at a facility from the data this app "
                    + "holds. NARA's own advice is to write, phone or email ahead to confirm the "
@@ -587,7 +610,7 @@ struct TripPacketExporter {
     /// true denominators. **Prints unconditionally and travels with every export**, scoped or
     /// not: an empty channel with no caveat would read as a clearance, which is the exact
     /// error the folded chapters existed to prevent.
-    var coverageReport: String {
+    public var coverageReport: String {
         var out = ["## What this packet covers", ""]
 
         // The seeds, in the resolver's both-numbers grammar — both numbers even when
@@ -816,7 +839,7 @@ struct TripPacketExporter {
     /// **The one exception to the packet's English-literal policy** (see the type doc): these sentences are the
     /// localized `ProvenanceStatement` ones, so the packet says exactly what every other export says. The app ships no
     /// localization, so they read as written; a localized build would have to choose between the two rules here.
-    static var sourceLines: [String] {
+    public static var sourceLines: [String] {
         ProvenanceStatement.block(for: [.frusText, .naraCatalog], restsOnSourceNoteParse: true)
     }
 
@@ -824,12 +847,12 @@ struct TripPacketExporter {
 
     /// How many seedings a target's per-claim list prints before its remainder line.
     /// Matches the packet's 12/8/20 grammar — the 8 tier, like the verbatim-notes cap.
-    static let seedingRowLimit = 8
+    public static let seedingRowLimit = 8
     /// How many targets the inquiry's records-of-interest list names before deferring.
-    static let recordsOfInterestLimit = 12
+    public static let recordsOfInterestLimit = 12
     /// How many verbatim unresolved citations print per target in the inquiry's
     /// help-me-locate lists before they defer to the target list.
-    static let unresolvedNoteLimit = 8
+    public static let unresolvedNoteLimit = 8
 
     // MARK: - Appendix: citation crib (opt-in, §3a)
 
@@ -851,7 +874,7 @@ struct TripPacketExporter {
     /// The pre-fill under each quotation substitutes only what the packet KNOWS (the file
     /// number, the series title, the entry, the record group); everything read off the
     /// physical document — correspondents, type, date — stays as a marked placeholder.
-    var citationCrib: String {
+    public var citationCrib: String {
         var out = [
             "## Citing what you find",
             "",
@@ -890,15 +913,15 @@ struct TripPacketExporter {
     }
 
     /// One worked example the crib prints.
-    struct CribExample {
+    public struct CribExample {
         /// The section heading naming the series type.
-        let heading: String
+        public let heading: String
         /// Which of NARA's examples this is, for the attribution sentence.
-        let naraContext: String
+        public let naraContext: String
         /// NARA's long and short forms, transcribed VERBATIM from the deposited guidance.
-        let quotedForm: [String]
+        public let quotedForm: [String]
         /// The template instantiated with the packet's own fields, placeholders for the rest.
-        let prefill: [String]
+        public let prefill: [String]
     }
 
     /// The examples matching this packet's series types, decimal first.
@@ -913,7 +936,7 @@ struct TripPacketExporter {
     /// Meetings`, `Document Number 89075018`), and the first digit or letter put them in NARA's
     /// template as a decimal or Subject-Numeric file. See ``isDecimalFileDesignation(_:)`` and
     /// ``isSubjectNumericDesignation(_:)``.
-    var cribExamples: [CribExample] {
+    public var cribExamples: [CribExample] {
         var out: [CribExample] = []
         // ALL the plan's targets, not just the placeable ones: a target the packet cannot
         // place still yields records the researcher will cite. A facility scope narrows it,
@@ -1019,7 +1042,7 @@ struct TripPacketExporter {
     // Planning/reference/nara-citing-foreign-affairs-records-2023-09.md — a transcription
     // check, per T-0 §3.5; these strings must match the deposit character for character).
 
-    static let naraExample2 = [
+    public static let naraExample2 = [
         "(long) U.S. Embassy Germany to Department of State, Telegram 507, June 17, 1939, file "
             + "840.48 REFUGEES/1677, 1930-39 Central Decimal File, RG 59: General Records of the "
             + "Department of State, U.S. National Archives. Available on National Archives "
@@ -1028,7 +1051,7 @@ struct TripPacketExporter {
             + "CDF, RG 59, USNA. M1284.",
     ]
 
-    static let naraExample5 = [
+    public static let naraExample5 = [
         "(long) U.S. Embassy Great Britain to Department of State, Telegram 2684, December 8, "
             + "1954, file 611.93/12-854, 1950-54 Central Decimal File, RG 59: General Records of "
             + "the Department of State, U.S. National Archives.",
@@ -1036,7 +1059,7 @@ struct TripPacketExporter {
             + "CDF, RG 59, USNA.",
     ]
 
-    static let naraExample7 = [
+    public static let naraExample7 = [
         "(long) U.S. Embassy Jordan to Department of State, Airgram A-477, April 19, 1965, file "
             + "POL 17-3 JORDAN, 1964-66 Subject-Numeric File, RG 59: General Records of the "
             + "Department of State, U.S. National Archives.",
@@ -1044,7 +1067,7 @@ struct TripPacketExporter {
             + "RG 59, USNA.",
     ]
 
-    static let naraExample8 = [
+    public static let naraExample8 = [
         "(long) CU/AP (Rodis) to CU (McLaughlin), Memorandum, November 5, 1965, file Sports "
             + "General, Interagency Youth Committee General Records, Entry P-5, RG 353: Records "
             + "of Inter- and Intra-department Committee, U.S. National Archives.",
@@ -1066,7 +1089,7 @@ struct TripPacketExporter {
     /// ends in its own (#1392): "…, Document 41, footnote 3.", where the formatter's standalone
     /// form printed "…, Document 41., footnote 3". The plan editor's "Pointed at" rows read this
     /// same function.
-    static func footnoteLine(for seeding: TripPacketModel.RefSeeding) -> String {
+    public static func footnoteLine(for seeding: TripPacketModel.RefSeeding) -> String {
         let citation = CitationPunctuation.withoutTerminalPeriod(seeding.citation)
         guard let label = seeding.footnoteLabel else {
             return String(format: String(
@@ -1088,7 +1111,7 @@ struct TripPacketExporter {
     /// the other kinds arrive as parsed, less a bare "File" (`folderDesignation(_:)`), and 843
     /// library designations corpus-wide end in a period ("files under 741.6111/10–1144."). Naming
     /// none, the citation stands alone and keeps the formatter's period.
-    static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
+    public static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
         guard let designation = document.fileDesignation else { return document.citation }
         return CitationPunctuation.withoutTerminalPeriod(document.citation)
             + " — file " + CitationPunctuation.withoutTerminalPeriod(designation) + "."
@@ -1097,7 +1120,7 @@ struct TripPacketExporter {
     /// The claim-separated counts line — "drawn from 3 documents · cited by 2 footnotes",
     /// NEVER "5" (§3d: counts do not sum across claims, because a document published from a
     /// file and a footnote citing one are different assertions).
-    static func claimCounts(_ target: TripPacketModel.Target) -> String {
+    public static func claimCounts(_ target: TripPacketModel.Target) -> String {
         var parts: [String] = []
         if !target.drawnFrom.isEmpty {
             let n = target.drawnFrom.count
@@ -1115,7 +1138,7 @@ struct TripPacketExporter {
     ///
     /// A lot's lines are indented under its number, so "this lot" in its access line is the lot
     /// above it. The editor's row states the same lines under a localized header.
-    static func lotLines(_ target: TripPacketModel.Target) -> [String] {
+    public static func lotLines(_ target: TripPacketModel.Target) -> [String] {
         target.lots.flatMap { lot -> [String] in
             let n = lot.documentCount
             var lines = ["Lot \(lot.lotAsPrinted) — \(n) document\(n == 1 ? "" : "s")"]
@@ -1129,7 +1152,7 @@ struct TripPacketExporter {
     }
 
     /// The claimant-aware access line (§3a) — one line, never a badge.
-    static func restrictionLines(_ restriction: TripPacketModel.TargetRestriction?) -> [String] {
+    public static func restrictionLines(_ restriction: TripPacketModel.TargetRestriction?) -> [String] {
         guard let restriction else { return [] }
         if restriction.worstCoveredStatus.isEmpty {
             // Divided, nothing measured: "several series, none measured" is itself the
@@ -1168,7 +1191,7 @@ struct TripPacketExporter {
     /// class (`85a.00`, `36J.117271`) — none a decimal file number the example could carry. The
     /// folder titles the first-character gate let through are Department series since #1514 and no
     /// longer reach a central-file target; the test stays as the example's own guarantee.
-    static func isDecimalFileDesignation(_ designation: String) -> Bool {
+    public static func isDecimalFileDesignation(_ designation: String) -> Bool {
         ParsedSourceNote.dotlessFileLocation(of: designation) != nil
             || designation.range(of: #"^\d{3}(?!\d)"#, options: .regularExpression) != nil
     }
@@ -1184,7 +1207,7 @@ struct TripPacketExporter {
     /// Subject-Numeric file) and the STARS record numbers; it admits 3,664 — 3,516 opening with a
     /// handbook category, 138 organization files (`NATO`, `UN`, `AID`, `EEC`, `SEATO`, `OECD`,
     /// `CENTO`) and 10 slips (an OCR `PSL 2`, a decimal number printed after `CF`).
-    static func isSubjectNumericDesignation(_ designation: String) -> Bool {
+    public static func isSubjectNumericDesignation(_ designation: String) -> Bool {
         ParsedSourceNote.subjectNumericFileLocation(of: designation) != nil
             && designation.range(of: #"^\D*\d{4,}"#, options: .regularExpression) == nil
     }
@@ -1192,7 +1215,7 @@ struct TripPacketExporter {
     /// Whether a target is a central-file target — the no-box rule's gate, and the crib's. The
     /// three central filing systems, by the target's category and not its key: a Subject-Numeric
     /// block cited through the National Archives sits on a `coll|` key and is one (#1543).
-    static func isCentralFileTarget(_ target: TripPacketModel.Target) -> Bool {
+    public static func isCentralFileTarget(_ target: TripPacketModel.Target) -> Bool {
         target.category == .centralDecimalFile || target.category == .subjectNumericFile
             || target.category == .centralForeignPolicyFile
     }
@@ -1217,7 +1240,7 @@ struct TripPacketExporter {
     /// 3. **The date is printed in ISO form, not localised.** This line is pasted into an email to
     ///    reference staff and read months later; `8/22/26` is ambiguous across the Atlantic and
     ///    this packet's whole subject is transatlantic archives.
-    static func linkLines(_ links: [RepositoryLink], asOf now: Date = Date()) -> [String] {
+    public static func linkLines(_ links: [RepositoryLink], asOf now: Date = Date()) -> [String] {
         links.filter(\.isPrintable).map { link in
             var line = "\(link.label): \(link.url)"
             if link.isStale(asOf: now), let checked = link.verifiedDate {
@@ -1261,8 +1284,8 @@ struct TripPacketExporter {
     ///   - model: The built packet.
     ///   - overlay: The plan's stored state; `nil` excludes nothing.
     /// - Returns: The repository headings, in section order.
-    static func offeredRepositories(model: TripPacketModel,
-                                    overlay: ArchiveVisitOverlay?) -> [String] {
+    public static func offeredRepositories(model: TripPacketModel,
+                                           overlay: ArchiveVisitOverlay?) -> [String] {
         var exporter = TripPacketExporter(model: model, projectName: "")
         exporter.overlay = overlay
         return exporter.includedRepositories
@@ -1282,8 +1305,8 @@ struct TripPacketExporter {
     ///   - overlay: The plan's stored state; `nil` excludes nothing.
     ///   - repository: The repository heading whose draft to copy.
     /// - Returns: The draft text.
-    static func copiedInquiryDraft(model: TripPacketModel, projectName: String,
-                                   overlay: ArchiveVisitOverlay?, repository: String) -> String {
+    public static func copiedInquiryDraft(model: TripPacketModel, projectName: String,
+                                          overlay: ArchiveVisitOverlay?, repository: String) -> String {
         var exporter = TripPacketExporter(model: model, projectName: projectName)
         exporter.facilityScope = repository
         exporter.overlay = overlay

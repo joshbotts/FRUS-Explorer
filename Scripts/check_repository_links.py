@@ -57,7 +57,7 @@ _REPO = Path(__file__).resolve().parent.parent
 # failure mode a checker must not have. RepositoryFactTable ships 23 links (3 NACP +
 # 10×2 libraries); PublishedSourceLinkTable ships 3 (TS and EAS share the LoC guide).
 TABLES = [
-    (_REPO / "FRUSExplorer/TripPacket/RepositoryFactTable.swift", 20),
+    (_REPO / "FRUSCoreKit/TripPacket/RepositoryFactTable.swift", 20),
     (_REPO / "FRUSExplorer/SourceExplorer/PublishedSourceLinkTable.swift", 3),
 ]
 

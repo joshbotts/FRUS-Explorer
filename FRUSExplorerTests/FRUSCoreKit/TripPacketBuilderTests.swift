@@ -14,7 +14,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SourceNoteKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - TripPacketBuilderTests
 
@@ -48,6 +58,8 @@ import Foundation
 ///          collection whose documents cite several lots names none and states each apart; its
 ///          label names what every document shares; a lot's spellings fold as the lookups fold
 ///          them; and a lot is answered under the record group its note names
+///   2.8 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 

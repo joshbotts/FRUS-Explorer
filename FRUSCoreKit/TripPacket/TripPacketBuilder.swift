@@ -13,6 +13,9 @@
 // limitations under the License.
 
 import Foundation
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - TripPacketBuilder
 
@@ -87,8 +90,12 @@ import Foundation
 ///   1.13 — 2026-11-06 (#1856, index version 73): `centralFileDesignation(_:)` tests sentence 2 alone,
 ///          through `SourceNoteParser.secondSentenceClassificationMarking(fromSourceNote:)`, now that
 ///          the note's marking is also read from later sentences; what it returns is unchanged
+///   1.14 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit with its data source, public; both
+///          builds take the bundled indexes the packet reads (``TripPacketIndexes``), from which the lots
+///          resolve and the model's lookups read, where the app's stores were read through its overload of
+///          the resolution and the model's defaults; the app passes its stores' (`TripPacket+App.swift`)
 @MainActor
-enum TripPacketBuilder {
+public enum TripPacketBuilder {
 
     /// Builds the packet model for a document set — both channels over the same list.
     ///
@@ -103,16 +110,18 @@ enum TripPacketBuilder {
     ///   - researchQuestion: seeds the inquiry's topic sentence (D8).
     ///   - dataSource: the same source the collection blocks use, refined with the packet's
     ///     one extra query (the refs channel).
+    ///   - indexes: the bundled indexes the packet reads, as the two-list entry below reads them.
     ///
     /// `@MainActor`, matching `CollectionGeneratedBlockDataSource` and every existing caller of it:
     /// the heavy work happens inside the awaited pipeline calls, off the main thread.
-    static func build(
+    public static func build(
         documents: [(volumeId: String, documentId: String)],
         researchQuestion: String?,
-        dataSource: some TripPacketReferenceDataSource
+        dataSource: some TripPacketReferenceDataSource,
+        indexes: TripPacketIndexes
     ) async -> TripPacketModel {
         await build(sourceDocuments: documents, referenceDocuments: documents,
-                    researchQuestion: researchQuestion, dataSource: dataSource)
+                    researchQuestion: researchQuestion, dataSource: dataSource, indexes: indexes)
     }
 
     /// The §5 two-list seam (Archive Visits Phase 3): an Archive Visit plan's per-document
@@ -122,11 +131,17 @@ enum TripPacketBuilder {
     /// through the build loops — #783's separation held at the seam rather than by
     /// discipline inside it. The one-list entry above is the case where both lists are the
     /// same reading list, which only the tests now build.
-    static func build(
+    ///
+    /// `indexes` are the bundled indexes the packet reads, as the host loaded them: each lot resolves
+    /// through their archival three (``ArchivalResolver/documentResolution(lotFile:indexes:)``), and the
+    /// model reads its series facts, divided lots and substitutes from them. The app passes its stores'
+    /// (`TripPacketIndexes.bundled`, through the overload `ArchiveVisitDerivation` calls).
+    public static func build(
         sourceDocuments: [(volumeId: String, documentId: String)],
         referenceDocuments: [(volumeId: String, documentId: String)],
         researchQuestion: String?,
-        dataSource: some TripPacketReferenceDataSource
+        dataSource: some TripPacketReferenceDataSource,
+        indexes: TripPacketIndexes
     ) async -> TripPacketModel {
         // The seeded set — for the year test and the date lookups. A document contributes its
         // date whichever channel it feeds, so the pre-1946 flag describes the plan's seeds.
@@ -227,7 +242,8 @@ enum TripPacketBuilder {
             var lotAsPrinted = entry.lotAsPrinted
             // The WHOLE resolution — reducing it to `.naId` here is exactly what starved chapters
             // 2, 3, 5 and 6 of the fields the app already knows.
-            var resolution = ArchivalResolver.documentResolution(lotFile: record.lotFile)
+            var resolution = ArchivalResolver.documentResolution(lotFile: record.lotFile,
+                                                                 indexes: indexes.archival)
             // #1692: a collection's key is its repository and series, so its documents can differ
             // in everything else the label names. It names what they all share, and a lot cited
             // through the National Archives speaks for the target only when every document cites
@@ -235,7 +251,7 @@ enum TripPacketBuilder {
             if key.hasPrefix("coll|") {
                 label = CollectionGeneratedBlocks.tripPacketLabel(for: Self.sharedRecord(of: entry.records))
                 if record.repository == "National Archives" {
-                    let lots = Self.citedLots(in: entry.records)
+                    let lots = Self.citedLots(in: entry.records, indexes: indexes.archival)
                     if lots.count == 1, let lot = lots.first, lot.documentCount == entry.records.count {
                         lotAsPrinted = lot.lotAsPrinted
                         resolution = lot.resolution
@@ -322,6 +338,8 @@ enum TripPacketBuilder {
             // reading list reads as a clean bill of health for the rest.
             unresolvedDocumentCount: sourceDocuments.count - placed,
             researchQuestion: researchQuestion,
+            facts: indexes.facts(forNaId:),
+            substitutes: indexes.substitutes(citedFiles:),
             references: references,
             // Scanned means the documents handed to this builder: the seed resolver already
             // dropped what this device cannot read, so every remaining document's volume has
@@ -330,6 +348,8 @@ enum TripPacketBuilder {
             // documents corpus-wide), never as a failed scan.
             referenceCoverage: .init(documentsWithReferences: documentsWithReferences,
                                      documentsScanned: referenceDocuments.count),
+            claimants: indexes.claimants(forRawLot:),
+            lotResolution: indexes.lotResolution(lotFile:),
             citedLots: citedLots)
     }
 
@@ -347,7 +367,7 @@ enum TripPacketBuilder {
     /// its lot, named its first document's job over every other the same way. Lots are compared
     /// as the bundled lookups fold them (`LotResolutionAcceptance.foldControlNumber`), so `83D066`
     /// and `83D66` are one lot.
-    static func sharedRecord(
+    public static func sharedRecord(
         of records: [CollectionGeneratedBlocks.SourceRecord]
     ) -> CollectionGeneratedBlocks.SourceRecord {
         guard let first = records.first else {
@@ -375,10 +395,11 @@ enum TripPacketBuilder {
     /// them, in the order their first document was placed (#1692).
     ///
     /// The record-group rule is Source Explorer's (`TripPacketModel.lotFact(heldUnder:answers:)`).
-    /// A divided lot has no one series (`ArchivalResolver.documentResolution(lotFile:)`); its
-    /// claimants are read by the model, under the same rule.
-    static func citedLots(
-        in records: [CollectionGeneratedBlocks.SourceRecord]
+    /// A divided lot has no one series (`ArchivalResolver.documentResolution(lotFile:indexes:)`, over
+    /// `indexes`); its claimants are read by the model, under the same rule.
+    public static func citedLots(
+        in records: [CollectionGeneratedBlocks.SourceRecord],
+        indexes: ArchivalIndexes
     ) -> [TripPacketModel.CitedLots.Part] {
         var order: [String] = []
         var byLot: [String: (lotAsPrinted: String, count: Int, recordGroups: Set<String>)] = [:]
@@ -398,7 +419,7 @@ enum TripPacketBuilder {
         }
         return order.compactMap { fold in
             guard let lot = byLot[fold] else { return nil }
-            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted)
+            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted, indexes: indexes)
                 .flatMap {
                     TripPacketModel.lotFact(heldUnder: $0.recordGroup, answers: lot.recordGroups)
                         ? $0 : nil
@@ -439,7 +460,7 @@ enum TripPacketBuilder {
     ///   - record: the stored source note.
     ///   - category: its provenance category.
     ///   - parsed: the note's parse, when the caller holds it; parsed here only when needed.
-    static func targetKey(
+    public static func targetKey(
         for record: CollectionGeneratedBlocks.SourceRecord,
         category: SourceProvenanceCategory?,
         parsed: ParsedSourceNote? = nil
@@ -495,7 +516,7 @@ enum TripPacketBuilder {
 
     /// The same key vocabulary for a footnote citation — what makes a unit cited both ways
     /// land on ONE target.
-    static func referenceKey(
+    public static func referenceKey(
         for citation: ExternalCitation
     ) -> (key: String, form: TripPacketModel.Target.Form, label: String, lotAsPrinted: String?) {
         if citation.anchor == "lotFile", let norm = citation.lotFileNorm, !norm.isEmpty {
@@ -526,13 +547,13 @@ enum TripPacketBuilder {
     /// `.cfpfFile` is excluded for a data reason rather than a shape one: the digitised-range index
     /// covers the Central Decimal File's NAIDs, and the CFPF is a different series, so a 1973–79
     /// citation cannot land in it.
-    static func centralFileIdentifier(in sourceNote: String,
-                                      parser: SourceNoteParser = SourceNoteParser()) -> String? {
+    public static func centralFileIdentifier(in sourceNote: String,
+                                             parser: SourceNoteParser = SourceNoteParser()) -> String? {
         centralFileIdentifier(from: parser.parse(sourceNote))
     }
 
     /// The same rule over an already-parsed note, so the builder parses once.
-    static func centralFileIdentifier(from parsed: ParsedSourceNote) -> String? {
+    public static func centralFileIdentifier(from parsed: ParsedSourceNote) -> String? {
         guard case .centralFiles(_, let fileIdentifier) = parsed else { return nil }
         return fileIdentifier
     }
@@ -548,7 +569,7 @@ enum TripPacketBuilder {
     /// drawn-from line and inside the citation appendix's NARA template. A CFPF identifier passes
     /// through as the parser returns it; a lot's, a library's or a named series' passes through
     /// ``folderDesignation(_:)``, which refuses a bare word the parser mistook for one.
-    static func fileDesignation(from parsed: ParsedSourceNote) -> String? {
+    public static func fileDesignation(from parsed: ParsedSourceNote) -> String? {
         switch parsed {
         case .centralFiles(_, let fileIdentifier):
             return fileIdentifier.map(Self.centralFileDesignation)
@@ -592,7 +613,7 @@ enum TripPacketBuilder {
     /// of Harry McPherson", "filed with the source text"); a handful of real ones go with it
     /// ("File CIA", "SEATO Conference Folder II" read as "Folder II"), which costs the line its
     /// file clause, never a wrong one.
-    static func folderDesignation(_ identifier: String) -> String? {
+    public static func folderDesignation(_ identifier: String) -> String? {
         let head = SourceNoteParser.firstSentence(of: identifier.trimmingCharacters(in: .whitespaces))
         guard head.rangeOfCharacter(from: .decimalDigits) == nil,
               let keyword = head.range(of: #"^(?:files?|filed|folders?|box(?:es)?)\b"#,
@@ -666,7 +687,7 @@ enum TripPacketBuilder {
     /// a file number, plus some markings `classificationMarking` does not recognise, which pass
     /// through whole. The rules are narrow on purpose: a missed cut leaves a designation long,
     /// while a wrong one would cut a real file number short.
-    static func centralFileDesignation(_ identifier: String) -> String {
+    public static func centralFileDesignation(_ identifier: String) -> String {
         let text = identifier.trimmingCharacters(in: .whitespaces)
         var cut = text
         let firstSentence = SourceNoteParser.firstSentence(of: text)
@@ -692,7 +713,7 @@ enum TripPacketBuilder {
 /// the packet runs. `TripPacketBuilder.build` requires the refinement, so there is no silent
 /// "data source without references" path: a caller either supplies the query or does not compile.
 @MainActor
-protocol TripPacketReferenceDataSource: CollectionGeneratedBlockDataSource {
+public protocol TripPacketReferenceDataSource: CollectionGeneratedBlockDataSource {
     /// The documents' `external_citations` rows, keyed `volumeId/documentId`, in
     /// `(noteOrdinal, citationIndex)` order within each document — where FRUS's editorial
     /// footnotes point OUTSIDE the printed record (#784). A document with no references is
@@ -714,19 +735,19 @@ protocol TripPacketReferenceDataSource: CollectionGeneratedBlockDataSource {
 /// to a protocol written for a richer consumer, and pretending otherwise would invite someone to
 /// wire a packet chapter to a method that has never been exercised.
 @MainActor
-struct TripPacketDataSource: TripPacketReferenceDataSource {
+public struct TripPacketDataSource: TripPacketReferenceDataSource {
 
     /// The pipeline every method reads through.
-    let pipeline: IndexingPipeline
+    public let pipeline: IndexingPipeline
 
     /// The manifest entries the citation formatter reads — the same
     /// `diffResult?.known ?? bundledEntries` set `CollectionContentResolver` hands the assembly.
-    let manifestMap: [String: VolumeManifestEntry]
+    public let manifestMap: [String: VolumeManifestEntry]
 
     /// The house citation style — a pure struct, so held rather than re-made per call.
     private let formatter = HistoryAtStateCitationFormatter()
 
-    init(pipeline: IndexingPipeline, manifestMap: [String: VolumeManifestEntry] = [:]) {
+    public init(pipeline: IndexingPipeline, manifestMap: [String: VolumeManifestEntry] = [:]) {
         self.pipeline = pipeline
         self.manifestMap = manifestMap
     }
@@ -740,7 +761,7 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     ///
     /// The number is `CitableDocumentNumber.resolve` of the printed number the builder read
     /// through ``documentNumbers(for:)`` (#1406): parsing it from the id left `d373a` unnumbered.
-    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+    public func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
         let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
         let docMeta = FRUSDocumentMetadata(
             documentId: documentId, documentNumber: docNum,
@@ -750,25 +771,25 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
             ?? "\(volumeId)/\(documentId)"
     }
 
-    func dateMetadata(
+    public func dateMetadata(
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [String: DocumentDateMetadata] {
         (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
     }
 
-    func documentNumbers(
+    public func documentNumbers(
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [String: String] {
         (try? await pipeline.documentNumbersByKey(documents)) ?? [:]
     }
 
-    func externalCitations(
+    public func externalCitations(
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [String: [ExternalCitation]] {
         (try? await pipeline.externalCitationsByKey(documents)) ?? [:]
     }
 
-    func documentSources(
+    public func documentSources(
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [CollectionGeneratedBlocks.SourceRecord] {
         let rows = (try? await pipeline.documentSourcesByKey(documents)) ?? [:]
@@ -784,20 +805,20 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     /// Documents tab) — where the full publication citation is export-grade verbosity and
     /// its Markdown italics markers would render literally. `nil` when the volume is not
     /// indexed or the header is empty; callers fall back to the raw key.
-    func documentHeader(volumeId: String, documentId: String) async -> String? {
+    public func documentHeader(volumeId: String, documentId: String) async -> String? {
         (try? await pipeline.documentHeader(volumeId: volumeId, documentId: documentId)) ?? nil
     }
 
     /// The volume's display title from the manifest, for the same row's caption.
-    func volumeTitle(volumeId: String) -> String? {
+    public func volumeTitle(volumeId: String) -> String? {
         manifestMap[volumeId]?.title
     }
 
     // Unused by the packet — see the type's note.
-    func archivalResolution(recordGroup: String?, lotFile: String?)
+    public func archivalResolution(recordGroup: String?, lotFile: String?)
         -> CollectionGeneratedBlocks.ArchivalLink? { nil }
-    func personMentions(
+    public func personMentions(
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [CollectionGeneratedBlocks.PersonMention] { [] }
-    func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { [] }
+    public func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { [] }
 }

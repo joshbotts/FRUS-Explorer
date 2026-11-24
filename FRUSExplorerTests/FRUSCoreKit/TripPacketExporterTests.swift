@@ -14,8 +14,18 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 import CoreGraphics
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - TripPacketExporterTests
 
@@ -53,6 +63,9 @@ import CoreGraphics
 ///   2.4 — 2026-10-01: #1514's fold-ins — the crib's examples are chosen by tested form, and the
 ///          access block counts divided lots (`dividedPlan`); review round 1: beside a flagged
 ///          series too (`flaggedCountNamesTheDividedLots`)
+///   2.5 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
+///          so the package runs it too, but for the two tests that read the app's PDF back;
+///          the PDF's file name, the kit's rule now, is held apart
 @Suite("Trip packet exporter (Archive Visits Phase 1)")
 struct TripPacketExporterTests {
 
@@ -802,8 +815,14 @@ struct TripPacketExporterTests {
         in dir: URL
     ) async throws -> (model: TripPacketModel, numbered: String, unnumbered: String) {
         let volumeId = "frus1952-54v01p1"
+        // The bundled manifest: `ManifestStore`'s in Xcode, the repository's `manifest.json` in the package.
+        #if SWIFT_PACKAGE
+        let bundled = try testManifestEntries()
+        #else
+        let bundled = ManifestStore().bundledEntries
+        #endif
         let entry = try #require(
-            ManifestStore().bundledEntries.first { $0.volumeId == volumeId },
+            bundled.first { $0.volumeId == volumeId },
             "the bundled manifest must carry \(volumeId)")
         let pipeline = try await Self.indexedPipeline("""
             <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
@@ -1268,6 +1287,7 @@ struct TripPacketExporterTests {
 
     // MARK: - Rendering hygiene
 
+    #if !SWIFT_PACKAGE // the app's renderer draws the PDF with CoreText, and these read it back with CoreGraphics
     /// The PDF share renders the exporter's own string — a readable multi-page PDF, driven
     /// through the real renderer and read back through CGPDFDocument.
     @Test("The PDF renderer paginates the packet into a readable PDF")
@@ -1297,6 +1317,23 @@ struct TripPacketExporterTests {
             let stem = String(name.dropFirst("Archives Visit — ".count).dropLast(".pdf".count))
             #expect(!stem.isEmpty && title.hasPrefix(stem), "the title's own opening was not kept: \(stem.prefix(30))")
             #expect(CGPDFDocument(url as CFURL) != nil, "the produced file is not a PDF")
+        }
+    }
+    #endif
+
+    /// The PDF's name is the kit's rule, which a host names its own PDF by: the prefix, the title with its
+    /// path separators written as `-`, and `.pdf`, the title cut on a whole character so the name fits the
+    /// file system, which the two read-backs above hold through the app's renderer.
+    @Test("The PDF's file name is the title's, cut on a character to fit the file system")
+    func pdfFileNameFitsTheFileSystem() {
+        #expect(TripPacketPDFRenderer.fileName(title: "Berlin/1948: Airlift\\Talks")
+                == "Archives Visit — Berlin-1948- Airlift-Talks.pdf")
+        for title in [String(repeating: "Berlin Airlift ", count: 20), String(repeating: "\u{01D6}", count: 120)] {
+            let name = TripPacketPDFRenderer.fileName(title: title)
+            #expect(ExportFileName.length(of: name) <= ExportFileName.maxLength, "a name of length \(name.count)")
+            #expect(name.hasPrefix("Archives Visit — ") && name.hasSuffix(".pdf"), "\(name.prefix(30))…")
+            let stem = String(name.dropFirst("Archives Visit — ".count).dropLast(".pdf".count))
+            #expect(!stem.isEmpty && title.hasPrefix(stem), "the title's own opening was not kept: \(stem.prefix(30))")
         }
     }
 

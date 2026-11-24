@@ -22,14 +22,14 @@ import Foundation
 /// different citation obligations: NARA's *Citing Foreign Affairs Records* asks a microfilm
 /// citation to name its **publication number** (`M862`), and an online one to carry "the elements
 /// noted above, not just the URL".
-enum SubstituteRoute: String, Sendable, Equatable, CaseIterable {
+public enum SubstituteRoute: String, Sendable, Equatable, CaseIterable {
     /// NARA's scans of a decimal-file serial range.
     case digitizedRange
     /// A roll of Microfilm Publication M862, the 1906–1910 Numerical File.
     case microfilmRoll
 
     /// How the packet names this route in prose.
-    var label: String {
+    public var label: String {
         switch self {
         case .digitizedRange: return "Digitised file range"
         case .microfilmRoll:  return "Microfilm Publication M862"
@@ -93,48 +93,50 @@ enum SubstituteRoute: String, Sendable, Equatable, CaseIterable {
 ///   1.1 — Archive Visits Phase 1: ``matchesByDocument`` + ``CitedFile/documentKey``, so the
 ///          packet's per-target seeding lines can mark a digitised document at the grain the
 ///          match actually has (per citation, never per target)
-struct MandatorySubstitutes: Equatable, Sendable {
+///   1.2 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public; `build` takes its three
+///          indexes from its caller, where its defaults named the app's stores
+public struct MandatorySubstitutes: Equatable, Sendable {
 
     /// One scan or roll the reader must use in place of a pull.
-    struct Row: Equatable, Sendable, Identifiable {
+    public struct Row: Equatable, Sendable, Identifiable {
         /// The NARA NAID of the digitised unit.
-        let naId: String
+        public let naId: String
         /// The unit's title, as NARA states it.
-        let title: String
+        public let title: String
         /// Which substitute form this is.
-        let route: SubstituteRoute
+        public let route: SubstituteRoute
         /// How many images NARA reports for the unit; `0` when it reports none.
-        let objectCount: Int
+        public let objectCount: Int
         /// How many of the reader's documents land in this unit.
-        let documentCount: Int
+        public let documentCount: Int
         /// `false` when at least one document reached this unit alongside other claimants.
         ///
         /// The distinction is the reader's, not the catalogue's: a sole claimant can be walked to
         /// directly, an ambiguous one has to be checked against its neighbours first.
-        let isSoleClaimant: Bool
+        public let isSoleClaimant: Bool
 
-        var id: String { naId }
+        public var id: String { naId }
 
         /// The Catalog record — the form NARA's own citation guidance prints.
-        var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
+        public var catalogURL: URL? { URL(string: "https://catalog.archives.gov/id/\(naId)") }
     }
 
     /// Units to use instead of pulling, most of the reader's documents first.
-    let rows: [Row]
+    public let rows: [Row]
 
     /// Documents whose source note named a file identifier, so a substitute could be looked up.
     ///
     /// The denominator. Reported rather than assumed equal to the packet's document count, because
     /// a note that named no file was never tested and must not read as a tested miss.
-    let documentsTested: Int
+    public let documentsTested: Int
 
     /// Documents that landed in at least one substitute.
-    let documentsWithSubstitute: Int
+    public let documentsWithSubstitute: Int
 
     /// Documents whose decimal class has digitised ranges, none of which covers their serial.
     ///
     /// Counted and stated, never tabled — see the type's rule 2.
-    let partiallyDigitizedCount: Int
+    public let partiallyDigitizedCount: Int
 
     /// Which substitute units each document landed in — `volumeId/documentId` → sorted NAIDs.
     ///
@@ -145,16 +147,16 @@ struct MandatorySubstitutes: Equatable, Sendable {
     /// so mapping it to a whole target would assert coverage of documents that were never tested.
     /// Only documents whose ``CitedFile/documentKey`` was supplied appear; a `nil` key is counted
     /// in the aggregate figures but cannot be marked.
-    var matchesByDocument: [String: [String]] = [:]
+    public var matchesByDocument: [String: [String]] = [:]
 
     /// Whether there is any substitute to print.
-    var isEmpty: Bool { rows.isEmpty }
+    public var isEmpty: Bool { rows.isEmpty }
 
     /// The sentence the chapter owes the reader about its own reach.
     ///
     /// Exists on the model rather than in the exporter so that the numbers and the caveat cannot
     /// drift apart: any surface that prints ``rows`` can print this beside them.
-    var coverageNote: String {
+    public var coverageNote: String {
         guard documentsTested > 0 else {
             return "None of these documents cites a file number the app can test for a digitized "
                 + "substitute, so this chapter can say nothing either way. Ask staff whether any "
@@ -180,17 +182,17 @@ struct MandatorySubstitutes: Equatable, Sendable {
     ///
     /// The year is not decoration — see ``build(citedFiles:ranges:rolls:numericalFile:)`` for why
     /// the two routes cannot be told apart without it.
-    struct CitedFile: Equatable, Sendable {
+    public struct CitedFile: Equatable, Sendable {
         /// The central-file number the source note names, or `nil` when it names none.
-        let identifier: String?
+        public let identifier: String?
         /// The document's year, where the index knows it.
-        let year: Int?
+        public let year: Int?
         /// The citing document, as `volumeId/documentId` — the key ``matchesByDocument`` reports
         /// under. Optional so the aggregate figures never depend on it (Phase 1).
-        let documentKey: String?
+        public let documentKey: String?
 
         /// Memberwise, spelled out so call sites read as pairs rather than as positional tuples.
-        init(identifier: String?, year: Int?, documentKey: String? = nil) {
+        public init(identifier: String?, year: Int?, documentKey: String? = nil) {
             self.identifier = identifier
             self.year = year
             self.documentKey = documentKey
@@ -202,9 +204,13 @@ struct MandatorySubstitutes: Equatable, Sendable {
     /// - Parameters:
     ///   - citedFiles: one entry per document, carrying `nil` where the source note named no file.
     ///     Passing the nils is what keeps ``documentsTested`` honest.
-    ///   - ranges: the digitised decimal-range index; injected so tests drive the real rule.
-    ///   - rolls: the M862 roll-scan index, for the image counts.
-    ///   - numericalFile: the 1906–1910 case-number → roll lookup.
+    ///   - ranges: the digitised decimal-range index, the host's `digitized-ranges-index.json`; injected so
+    ///     tests drive the real rule.
+    ///   - rolls: the M862 roll-scan index, `roll-scans-index.json`, for the image counts.
+    ///   - numericalFile: the 1906–1910 case-number → roll lookup, `central-files-index.json`'s.
+    ///
+    /// None has a default: each named one of the app's stores, and a packet's builder passes them from
+    /// its ``TripPacketIndexes``.
     ///
     /// ## Routing takes BOTH the year and the number's form, because each alone is wrong
     /// Measured against real corpus notes (`source-explorer-export-sample.json`), neither signal
@@ -225,11 +231,11 @@ struct MandatorySubstitutes: Equatable, Sendable {
     /// everything else — later years, unknown years, and dotted numbers inside the band — takes the
     /// decimal-range route. Both real spellings in the transition year then land correctly:
     /// `6775/57` (1907) on the rolls, `811.304M28/45` (1910) in the ranges.
-    static func build(
+    public static func build(
         citedFiles: [CitedFile],
-        ranges: DigitizedRangeIndex? = DigitizedRangeIndexStore.shared,
-        rolls: RollScansIndex? = RollScansIndexStore.shared,
-        numericalFile: NumericalFileIndex? = CentralFilesIndexStore.shared?.numericalFile
+        ranges: DigitizedRangeIndex?,
+        rolls: RollScansIndex?,
+        numericalFile: NumericalFileIndex?
     ) -> MandatorySubstitutes {
         var counts: [String: Int] = [:]
         var meta: [String: (title: String, route: SubstituteRoute, objects: Int)] = [:]

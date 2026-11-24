@@ -3230,7 +3230,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1073–1074 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSCoreKit/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1096–1097 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
@@ -3239,7 +3239,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1077–1078 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1100–1101 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 
@@ -3248,7 +3248,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 #### [Describe your research topic in one or two sentences…
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketModel.swift | TripPacketTopicSentence | lines: 50–51 | key: packet.topic.placeholder -->
+<!-- SOURCE: FRUSCoreKit/TripPacket/TripPacketModel.swift | TripPacketTopicSentence | lines: 50–51 | key: packet.topic.placeholder -->
 
 [Describe your research topic in one or two sentences — narrow and specific. NARA asks for a succinct description, never “everything you have”.]
 
