@@ -118,7 +118,6 @@ public enum SemanticSharedTerms {
     /// How many terms a chip shows. Three is what fits beside the other axes' chips on an iPhone.
     public static let chipTermLimit = 3
 
-
     /// The lens the chip counts under.
     ///
     /// `.allTerms` rather than a curated lens: the point is distinctive vocabulary, and the concept
@@ -166,7 +165,6 @@ public enum SemanticSharedTerms {
         return await evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
                               reference: reference, stopwords: stopwords, tagger: tagger)
     }
-
 
     /// The pass itself, against a reference the caller read: fetch the texts, count each in the
     /// reference's form, and name the rarest words the anchor shares with each candidate.

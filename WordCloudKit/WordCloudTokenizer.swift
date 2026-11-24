@@ -318,7 +318,7 @@ public struct WordCloudTokenizer: Sendable {
     /// settings pane shows cannot drift from what the cloud actually does.
     ///
     /// Note what it does **not** cover: `WordCloudTuning.minimumCount`, which is applied later
-    /// (`WordFrequencyService.finalize`) against accumulated counts rather than per term, and
+    /// (FRUSCoreKit's `WordCloudCount.finalize`) against accumulated counts rather than per term, and
     /// plural folding, which happens during tokenisation and cannot be undone from a term.
     ///
     /// - Parameter term: A lowercased, already-lemmatised candidate.

@@ -68,7 +68,7 @@ public enum WordCloudCount {
     ///
     /// The tokenizer must count in the verdict's form (`NaturalLanguageHealth.wordForm`), since keyness
     /// ranks the result against the reference counted in its stamp's form (#1608): the app builds both
-    /// from one verdict. A host's verdict is its tagger's health.
+    /// from one verdict, and a debug build checks it. A host's verdict is its tagger's health.
     ///
     /// - Parameters:
     ///   - keys: The documents whose text feeds the cloud.
@@ -95,6 +95,10 @@ public enum WordCloudCount {
         progress: WordCloudProgress? = nil,
         isolation: isolated (any Actor)? = #isolation
     ) async throws -> WordCloudResult {
+        // One verdict builds both, as the app's service builds them: a result stamped with one form
+        // and counted in the other would be ranked against the wrong reference, with nothing to say so.
+        assert(tokenizer.wordForm == languageAnalysis.wordForm,
+               "the tokenizer counts in \(tokenizer.wordForm), its verdict in \(languageAnalysis.wordForm)")
         let total = keys.count
         var counts: [String: Int] = [:]
         var tokenTotal = 0

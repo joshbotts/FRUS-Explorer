@@ -126,8 +126,8 @@ extension SearchService {
                 windowText.append(contentsOf: scan.runs)
             }
             if !windowText.isEmpty {
-                // One tokenizer pass per CHUNK rather than per window: `accumulate` builds a fresh
-                // `NLTagger` on every call, and a window-at-a-time loop would construct thousands.
+                // One tokenizer pass per CHUNK rather than per window: NaturalLanguage's tagger builds a
+                // fresh `NLTagger` on every call, and a window-at-a-time loop would construct thousands.
                 windowTokenCount += configuration.tokenizer
                     .accumulate(from: windowText.joined(separator: "\n"), into: &counts, tagger: tagger)
             }

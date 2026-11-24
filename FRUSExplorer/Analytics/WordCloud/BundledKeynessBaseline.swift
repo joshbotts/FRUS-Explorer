@@ -104,8 +104,9 @@ enum BundledKeynessBaseline {
     static var isAvailable: Bool { !files.isEmpty }
 
     /// What this loader holds, as the kit's lookup reads it (S29b): the loaded files and the bundled
-    /// payloads' digests. With nothing loaded it is `KeynessReferences.none`, so the digests are hashed
-    /// only once a reference is there to compare them with, as before.
+    /// payloads' digests. With nothing loaded it is `KeynessReferences.none`, and nothing is hashed; with
+    /// a reference loaded, the first lookup hashes the payloads and the digests are kept, where before the
+    /// first lookup that reached the settings check did. No answer changes.
     static var references: KeynessReferences {
         guard !files.isEmpty else { return .none }
         let digests = bundledPayloadDigests()

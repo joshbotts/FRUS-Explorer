@@ -326,7 +326,9 @@ struct CollocationVocabularyPairingTests {
     // NaturalLanguage (Linux) there are no such lemmas to pair, and the stem test below runs alone.
     @Test("Neighbours counted the app's way are found in the corpus reference")
     @MainActor
-    func lemmaCountsPairWithTheBaseline() throws {
+    func lemmaCountsPairWithTheBaseline() async throws {
+        // The tagger's verdict before the first walk on the main actor, as the app awaits it.
+        _ = await WordCloudTestTagging.readyHealth()
         let reference = try referenceTerms()
         // The SAME construction the word cloud counts with, which is what the reference was built by:
         // the kit's assembly over the bundled lists, which the app's `configured` calls.

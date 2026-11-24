@@ -83,8 +83,8 @@ enum WordCloudResources {
 
 /// The tagger the moved suites count with: NaturalLanguage's where the platform has it, through the
 /// readiness gate, as the app counts; and where it does not (Linux), the stand-in below, as S29a's
-/// suites count there. A case's expectations hold for both, since the stand-in splits and lemmatises
-/// the fixtures' words as NaturalLanguage does (``StandInWordCloudTaggerTests``).
+/// suites count there. A case's expectations hold for both, since the stand-in splits the fixtures'
+/// texts as NaturalLanguage does and gives the lemmas the cases read (``StandInWordCloudTaggerTests``).
 enum WordCloudTestTagging {
 
     /// The tagger a moved suite's count walks.
@@ -95,14 +95,28 @@ enum WordCloudTestTagging {
         StandInWordCloudTagger.fixtures
         #endif
     }
+
+    /// The tagger's verdict once it can walk without blocking: on Apple platforms NaturalLanguage's
+    /// readiness gate's, awaited, as the app awaits it before it counts, so that no case tags on the main
+    /// actor before the warm-up has its verdict (a blocked main thread can wait out the asset budget, and
+    /// on iOS never see the first foreground the warm-up waits for); the stand-in's own where NaturalLanguage
+    /// is missing. A case that counts with ``tagger`` awaits this first.
+    static func readyHealth() async -> NaturalLanguageHealth {
+        #if canImport(NaturalLanguage)
+        await NaturalLanguageReadiness.verdictWhenReady().health
+        #else
+        StandInWordCloudTagger.fixtures.health
+        #endif
+    }
 }
 
 /// A tagger of tables, for the moved suites' counts where NaturalLanguage is missing.
 ///
 /// A word is a run of letters and digits, with an apostrophe or a hyphen kept between two letters; its
-/// lemma is the table's, or none, and its lexical class the table's, or `.other`; it names no one. So it
-/// gives the fixtures' texts the words, lemmas and classes NaturalLanguage gives them, and the kit's
-/// tokenizer counts them alike: the plural fold, the stopwords, the length and the lexicons are the
+/// lemma is the table's, or none; its lexical class the table's, or `.other` (no moved case counts a
+/// part-of-speech lens, so the classes are a few nouns and verbs and held to nothing); it names no one.
+/// So it splits the fixtures' texts as NaturalLanguage does and gives the lemmas the cases read, and the
+/// kit's tokenizer counts them alike: the plural fold, the stopwords, the length and the lexicons are the
 /// tokenizer's own, whatever the tagger.
 struct StandInWordCloudTagger: WordCloudTagger, Sendable {
 
@@ -113,17 +127,16 @@ struct StandInWordCloudTagger: WordCloudTagger, Sendable {
     /// Each word's lexical class, by the word lowercased.
     let classes: [String: WordCloudLexicalClass]
 
-    /// The tables the fixtures' texts need: the printed-form fallback's three documents and the
-    /// suites' passages, with NaturalLanguage's lemmas for the words a dictionary-form count reads.
+    /// The tables the printed-form fallback's three documents need, with NaturalLanguage's lemmas for the
+    /// words its dictionary-form cases read. NaturalLanguage's lemma for some other words differs from
+    /// build to build (macOS 27.2.1's gives "admirals" the abbreviation "adm.", which the tokenizer
+    /// refuses), so the table leaves them to the plural fold, and the cases read none of them.
     static let fixtures = StandInWordCloudTagger(
         identity: WordCloudTokenizerIdentity(name: "StandIn", version: "1"),
         health: .fullyWorking,
-        // NaturalLanguage's own lemmas, its quirks included: it gives "admirals" the abbreviation "adm.",
-        // which the tokenizer refuses, so a dictionary-form count has no admirals.
         lemmas: ["negotiated": "negotiate", "negotiating": "negotiate", "negotiates": "negotiate",
                  "ratified": "ratify", "were": "be", "was": "be", "is": "be", "are": "be",
-                 "delegates": "delegate", "envoys": "envoy", "admirals": "adm.", "terms": "term",
-                 "memorandum": "memorandum", "last": "last"],
+                 "delegates": "delegate", "envoys": "envoy", "terms": "term"],
         classes: ["treaty": .noun, "delegates": .noun, "envoys": .noun, "admirals": .noun, "terms": .noun,
                   "memorandum": .noun, "negotiated": .verb, "negotiating": .verb, "ratified": .verb,
                   "were": .verb])
@@ -177,24 +190,41 @@ struct StandInWordCloudTagger: WordCloudTagger, Sendable {
 @Suite("The stand-in tagger counts the fixtures as NaturalLanguage does (S29b)")
 struct StandInWordCloudTaggerTests {
 
-    @Test("Every fixture text, counted as printed and in dictionary forms, gives NaturalLanguage's counts",
-          arguments: [WordCloudWordForm.printed, .dictionary])
-    func countsAsNaturalLanguageDoes(wordForm: WordCloudWordForm) async throws {
+    /// The tokenizer the cases count with, at the standard settings over the bundled lists.
+    private func tokenizer(_ wordForm: WordCloudWordForm) throws -> WordCloudTokenizer {
+        .configured(tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: wordForm,
+                    stopwords: try WordCloudResources.stopwords(), lexicons: try WordCloudResources.lexicons())
+    }
+
+    @Test("Every fixture text, counted as printed, gives NaturalLanguage's counts: the two split alike")
+    func printedCountsAreNaturalLanguages() async throws {
         // The verdict before the first walk, as the app awaits it.
-        let health = await NaturalLanguageReadiness.verdictWhenReady().health
-        // A host whose language analysis gives no lemmas has no dictionary forms to compare with; its
-        // printed forms are compared all the same.
-        guard wordForm == .printed || health.lemmatizes else { return }
-        let tokenizer = WordCloudTokenizer.configured(
-            tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: wordForm,
-            stopwords: try WordCloudResources.stopwords(), lexicons: try WordCloudResources.lexicons())
+        _ = await WordCloudTestTagging.readyHealth()
+        let tokenizer = try tokenizer(.printed)
         for text in StandInFixtureTexts.all {
             var natural: [String: Int] = [:]
             var standIn: [String: Int] = [:]
             let naturalTotal = tokenizer.accumulate(from: text, into: &natural, tagger: NaturalLanguageWordCloudTagger())
             let standInTotal = tokenizer.accumulate(from: text, into: &standIn, tagger: StandInWordCloudTagger.fixtures)
-            #expect(standIn == natural, "\(wordForm.rawValue): \(text.prefix(60))")
+            #expect(standIn == natural, "\(text.prefix(60))")
             #expect(standInTotal == naturalTotal)
+        }
+    }
+
+    @Test("In dictionary forms, the words the moved cases read are counted as NaturalLanguage counts them")
+    func dictionaryCountsOfTheCasesWordsAreNaturalLanguages() async throws {
+        // A host whose language analysis gives no lemmas has no dictionary forms to compare with.
+        guard await WordCloudTestTagging.readyHealth().lemmatizes else { return }
+        let tokenizer = try tokenizer(.dictionary)
+        let read = ["negotiate", "negotiated", "negotiating", "treaty", "delegate", "envoy", "ratify", "term"]
+        for text in StandInFixtureTexts.all {
+            var natural: [String: Int] = [:]
+            var standIn: [String: Int] = [:]
+            tokenizer.accumulate(from: text, into: &natural, tagger: NaturalLanguageWordCloudTagger())
+            tokenizer.accumulate(from: text, into: &standIn, tagger: StandInWordCloudTagger.fixtures)
+            for word in read {
+                #expect(standIn[word] == natural[word], "\(word) in \(text.prefix(60))")
+            }
         }
     }
 }

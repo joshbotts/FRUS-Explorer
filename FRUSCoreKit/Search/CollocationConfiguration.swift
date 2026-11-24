@@ -23,7 +23,7 @@ import WordCloudKit
 /// The tokenisation a collocation pass runs under, resolved **once**.
 ///
 /// This type exists because of a failure mode the configuration guard cannot catch on its own:
-/// `BundledKeynessBaseline.baseline(for:tuning:includeDiplomatic:languageAnalysis:)` validates the
+/// the reference lookup (`KeynessReferences.baseline`, which the app's `BundledKeynessBaseline` asks) validates the
 /// values a caller *claims*, not the ones its tokenizer was actually built with. Passing
 /// `includeDiplomatic: true` to the guard while constructing the tokenizer with `false` passes every
 /// check and produces a confident, wrong ranking.
@@ -51,8 +51,8 @@ public struct CollocationConfiguration: Sendable {
     /// `excludeBoilerplate` setting **verbatim, not inverted** — see `WordCloudLoader.load`.
     public let includeDiplomatic: Bool
     /// The tagger verdict the pass runs under (#1608). The tokenizer counts in its form, and the
-    /// host hands this same value to `BundledKeynessBaseline.baseline`, which reads the reference
-    /// counted in that form.
+    /// host hands this same value to its reference lookup (`KeynessReferences.baseline`; the app's
+    /// `BundledKeynessBaseline.baseline`), which reads the reference counted in that form.
     public let languageAnalysis: NaturalLanguageHealth
     /// The tokenizer built from exactly those values.
     public let tokenizer: WordCloudTokenizer

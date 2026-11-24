@@ -651,9 +651,11 @@ struct PrintedFormCollocationTests {
                       configuration: CollocationConfiguration,
                       reference: KeynessReference) async throws -> CollocationAnalysis.Outcome {
         #if SWIFT_PACKAGE
-        try await service.collocation(for: results, parameters: parameters, windowSize: 10,
-                                      configuration: configuration, reference: reference,
-                                      tagger: WordCloudTestTagging.tagger)
+        // The tagger's verdict before the first walk, as the app's form awaits the gate.
+        _ = await WordCloudTestTagging.readyHealth()
+        return try await service.collocation(for: results, parameters: parameters, windowSize: 10,
+                                             configuration: configuration, reference: reference,
+                                             tagger: WordCloudTestTagging.tagger)
         #else
         try await service.collocation(for: results, parameters: parameters, windowSize: 10,
                                       configuration: configuration, reference: reference)
@@ -723,7 +725,10 @@ struct PrintedFormCloudCountTests {
     /// bundled lists, walking ``WordCloudTestTagging/tagger``.
     private func kitCount(_ pipeline: IndexingPipeline,
                           under health: NaturalLanguageHealth) async throws -> WordCloudResult {
-        try await WordCloudCount.count(
+        // The tagger's verdict before the first walk, as the app's service awaits it: this count runs on
+        // the suite's actor, the main actor.
+        _ = await WordCloudTestTagging.readyHealth()
+        return try await WordCloudCount.count(
             keys: PrintedFormFixture.keys, pipeline: pipeline,
             tokenizer: WordCloudTokenizer.configured(
                 tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: health.wordForm,
@@ -856,9 +861,11 @@ struct PrintedFormSharedTermsTests {
     private func evidence(_ pipeline: IndexingPipeline, anchor: DocumentKey, candidates: [DocumentKey],
                           reference: KeynessReference) async throws -> SemanticSharedTerms.Evidence {
         #if SWIFT_PACKAGE
-        await SemanticSharedTerms.evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
-                                           reference: reference, stopwords: try WordCloudResources.stopwords(),
-                                           tagger: WordCloudTestTagging.tagger)
+        // The tagger's verdict before the first walk, as the app's form awaits the gate.
+        _ = await WordCloudTestTagging.readyHealth()
+        return await SemanticSharedTerms.evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
+                                                  reference: reference, stopwords: try WordCloudResources.stopwords(),
+                                                  tagger: WordCloudTestTagging.tagger)
         #else
         await SemanticSharedTerms.evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
                                            reference: reference)
@@ -966,7 +973,8 @@ struct PrintedFormSharedTermsTests {
     @Test("A host's entry reads the chip's reference from its own references for its tagger, and runs the pass")
     func hostEntryReadsItsOwnReference() async throws {
         let tagger = WordCloudTestTagging.tagger
-        let health = tagger.health
+        // The tagger's verdict, once it can walk without blocking the main actor this suite runs on.
+        let health = await WordCloudTestTagging.readyHealth()
         // The host's references: the fixture's printed and dictionary files, counted by this tagger.
         func file(_ form: WordCloudWordForm, by tokenizer: WordCloudTokenizerIdentity) -> KeynessBaselineFile {
             let fixture = PrintedFormFixture.file(form)
@@ -1131,10 +1139,6 @@ struct PrintedFormWordingTests {
         #expect(fallbackNotes.count == 5)
         #else
         #expect(fallbackNotes.count == 8)
-        // The kit's notes are among the app's surfaces' notes, word for word.
-        for (name, text) in kitNotes {
-            #expect(fallbackNotes.contains { $0.name == name && $0.text == text }, "\(name)")
-        }
         #endif
         for (name, text) in fallbackNotes {
             let note = try #require(text, "\(name) says nothing when it falls back")

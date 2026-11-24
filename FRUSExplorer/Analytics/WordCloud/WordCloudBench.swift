@@ -76,8 +76,8 @@ struct WordCloudBench: Equatable, Sendable {
     ///
     /// The per-term criteria run through ``WordCloudTokenizer/accepts(_:)`` — the same predicate
     /// the tokenizer applies while counting — so the bench cannot claim a term survives when the
-    /// cloud would drop it. The occurrence threshold is applied here, mirroring
-    /// `WordFrequencyService.finalize`, which is `private static` and so unreachable.
+    /// cloud would drop it. The occurrence threshold is applied here, mirroring the count's
+    /// `finalize` (`WordCloudCount.finalize`, FRUSCoreKit's since FRUS Explorer Light's S29b).
     ///
     /// - Parameters:
     ///   - sample: Candidate terms with their counts.

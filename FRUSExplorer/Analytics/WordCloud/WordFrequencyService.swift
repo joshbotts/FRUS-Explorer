@@ -29,13 +29,17 @@ import Foundation
 /// computation can be long-running; callers should invoke it from a cancellable
 /// background `Task` and show progress.
 ///
+/// ## Memory (#1798)
+/// Each document is tagged inside an autorelease pool of its own, by the count this actor calls:
+/// `WordCloudCount`'s "Memory" has the measurements, the corpus cloud that crashed an M1 iPad Pro
+/// without the pools and the 158 MB it peaks at with them.
+///
 /// ## The count (FRUS Explorer Light, S29b)
 /// The count itself, steps 2 to 4, is FRUSCoreKit's `WordCloudCount`, with `finalize` and the rules by
 /// which a stored result stands in for a fresh count, so that a host counts a scope by the same rules
 /// with a tagger of its own. This actor keeps what is the app's: its caches, in memory and on disk, the
 /// readiness gate it awaits before it counts, and the tokenizer's assembly from the settings and the
-/// bundled lists. It hands the count NaturalLanguage's tagger, so it counts as it did, an autorelease
-/// pool for each document included (#1798, `WordCloudCount`'s "Memory").
+/// bundled lists. It hands the count NaturalLanguage's tagger, so it counts as it did, on this actor.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation

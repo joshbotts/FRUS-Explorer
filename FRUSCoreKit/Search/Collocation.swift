@@ -337,7 +337,8 @@ public enum CollocationAnalysis {
     ///   - anchorLemmas: the query terms in lemma form, excluded from the ranking. A term is not a
     ///     collocate of itself, and with two matches within 2N words each would otherwise appear in
     ///     the other's window.
-    ///   - reference: the corpus counts and true total, from ``BundledKeynessBaseline``.
+    ///   - reference: the corpus counts and true total, from the host's lookup (`KeynessReferences`;
+    ///     the app's `BundledKeynessBaseline`).
     public static func rank(
         counts: [String: Int],
         windowTokenCount: Int,
