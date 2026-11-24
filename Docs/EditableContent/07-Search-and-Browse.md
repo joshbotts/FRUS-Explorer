@@ -320,7 +320,7 @@ Describing these results, ranked by your question
 
 <!-- END SOURCE: search.count.closest.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | key: search.semantic.row.score.a11y %lld -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | key: search.semantic.row.score.a11y %lld -->
 
 *What VoiceOver reads after a result's label when a Meaning search ranked it, on iPhone and iPad: the figure the row's "Semantic match · N%" chip shows, in words. The row is one accessibility element whose label replaces what it draws, so until #1577 lane 3 the chip was not read at all; its label is §7.16's since #1684.*
 
@@ -732,7 +732,7 @@ The set is fixed at capture. Re-running the query later may find different docum
 
 <!-- END SOURCE: corpus.save.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 741–742 | key: corpus.save.truncated.total %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 631–632 | key: corpus.save.truncated.total %@ %@ -->
 
 *Interpolated with the captured and total counts. Since #1577 lane 6 it is also the warning over a ranking of a whole match that could rank none of it, whose rows are then the held list's own, the highest-scoring of the documents it ranked inside; the total is then theirs.*
 
@@ -740,7 +740,7 @@ These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts 
 
 <!-- END SOURCE: corpus.save.truncated.total %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 728–729 | key: corpus.save.truncated.unknown %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 618–619 | key: corpus.save.truncated.unknown %@ -->
 
 *Interpolated with the captured count.*
 
@@ -772,7 +772,7 @@ These %1$@ documents are the %2$@ closest to your question of %3$@ matching docu
 
 <!-- END SOURCE: corpus.save.rankedWholeMatch.unranked %@ %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 770–771 | key: corpus.save.checklistHiding %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 660–661 | key: corpus.save.checklistHiding %@ -->
 
 *Interpolated with the hidden count.*
 
@@ -788,7 +788,7 @@ Checklist mode is hiding %@ reviewed document. It will not be in this corpus.
 
 <!-- END SOURCE: corpus.save.checklistHiding.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 691–692 | key: corpus.save.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 581–582 | key: corpus.save.meaning -->
 
 *The Save Working Corpus sheet's warning for a list saved from a Meaning search (#1598).*
 
@@ -812,7 +812,7 @@ Meaning search — the %@ closest matches
 
 <!-- END SOURCE: corpus.save.source.meaning %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 787–788 | key: corpus.save.source.meaning.one -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 677–678 | key: corpus.save.source.meaning.one -->
 
 *The same, when the search returned one row.*
 
@@ -1256,13 +1256,13 @@ the container is a finding or a filing-cabinet coincidence.*
 
 *The card's Download Search Model button starts the download (B4, 2026-10-15); through build 50 it opened the consent sheet, §1.4c, now retired with the Gemma Terms.*
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 148–149 | key: search.semantic.offer.body -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 121–122 | key: search.semantic.offer.body -->
 
 Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 151–152 | key: search.semantic.offer.body.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 124–125 | key: search.semantic.offer.body.meaning -->
 
 *The same card in Meaning mode, where no keyword search ran: shown when a Meaning search is submitted and the model is not on the device.*
 
@@ -1270,7 +1270,7 @@ A Meaning search ranks documents by what an AI model detects your question to me
 
 <!-- END SOURCE: search.semantic.offer.body.meaning -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 196–197 | key: search.semantic.results.caption -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticFallbackCopy.caption | lines: 423–424 | key: search.semantic.results.caption -->
 
 Ranked by meaning, not keywords, across the whole series — your exact words may not appear.
 
@@ -1282,13 +1282,13 @@ Ranked by meaning, not keywords, across the whole series — your exact words ma
      volume's fetch failed; the second otherwise. Both search surfaces read them from
      SemanticUnscoredCopy. %@ in each is the volume count with its noun ("1 volume", "12 volumes");
      the first was "%lld volumes" until review round 1 (2026-09-30), which read "1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 370–371 | key: search.semantic.empty.warming.v2 %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.warming | lines: 271–272 | key: search.semantic.empty.warming.v2 %@ -->
 
 Match files for %@ are still downloading in the background. Searching again in a moment may find more.
 
 <!-- END SOURCE: search.semantic.empty.warming.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 375–376 | key: search.semantic.empty.notFetching %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.warming | lines: 276–277 | key: search.semantic.empty.notFetching %@ -->
 
 Match files for %@ are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.
 
@@ -1302,37 +1302,37 @@ Match files for %@ are required. Use Download Vectors for Every Volume in Settin
      device's copy of a volume does not hold); no document in the set has match data; the match
      files are downloading; or they are not on the device. The first is also the pre-search prompt for an
      empty set. In the last two %@ is the volume count with its noun. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 463–464 | key: search.semantic.empty.set.none -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 364–365 | key: search.semantic.empty.set.none -->
 
 The set you are searching within holds no documents on this device, so there is nothing to rank.
 
 <!-- END SOURCE: search.semantic.empty.set.none -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 468–469 | key: search.semantic.empty.set.filtered -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 369–370 | key: search.semantic.empty.set.filtered -->
 
 None of the closest matches inside the documents you are searching within passes your other filters.
 
 <!-- END SOURCE: search.semantic.empty.set.filtered -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 470–471 | key: search.semantic.empty.set.notIndexed -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 371–372 | key: search.semantic.empty.set.notIndexed -->
 
 None of the closest matches inside the documents you are searching within is indexed on this device.
 
 <!-- END SOURCE: search.semantic.empty.set.notIndexed -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 474–475 | key: search.semantic.empty.set.noVectors -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 375–376 | key: search.semantic.empty.set.noVectors -->
 
 None of the documents you are searching within can be ranked by meaning: the app has no match data for them. Front matter and chapter headings never have any.
 
 <!-- END SOURCE: search.semantic.empty.set.noVectors -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 479–480 | key: search.semantic.empty.set.warming %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 380–381 | key: search.semantic.empty.set.warming %@ -->
 
 Match files for %@ are still downloading in the background. Searching again in a moment may rank the documents you are searching within.
 
 <!-- END SOURCE: search.semantic.empty.set.warming %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 484–485 | key: search.semantic.empty.set.notFetching %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 385–386 | key: search.semantic.empty.set.notFetching %@ -->
 
 The documents you are searching within could not be ranked: match files for %@ are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
 
@@ -1340,7 +1340,7 @@ The documents you are searching within could not be ranked: match files for %@ a
 
 ---
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 234–235 | key: search.meaning.strip.base -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | property: SemanticModeStripCopy.caption | lines: 137–138 | key: search.meaning.strip.base -->
 
 Meaning search (experimental): ranked by what your question means, across the whole series — your exact words may not appear. Front matter and chapter headings are not reachable this way.
 
@@ -1350,7 +1350,7 @@ Meaning search (experimental): ranked by what your question means, across the wh
      a project's History scope) ranks that set's members and no others, so the strip's opening
      names the set where it said "across the whole series". The block above is still what a search
      of the whole series shows. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 243–244 | key: search.meaning.strip.base.within %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticModeStripCopy.opening | lines: 146–147 | key: search.meaning.strip.base.within %@ -->
 
 Meaning search (experimental): ranked by what your question means, inside the %@ you are searching within — your exact words may not appear. Front matter and chapter headings are not reachable this way. *(%@ is the set's size with its noun, “1 document” or “212 documents”.)*
 
@@ -1358,7 +1358,7 @@ Meaning search (experimental): ranked by what your question means, inside the %@
 
 <!-- The same opening when the set is empty here: a History scope with nothing in it yet, or a
      corpus and a History scope with no document in common. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 239–240 | key: search.meaning.strip.base.emptySet -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticModeStripCopy.opening | lines: 142–143 | key: search.meaning.strip.base.emptySet -->
 
 Meaning search (experimental): the set you are searching within holds no documents on this device, so there is nothing to rank.
 
@@ -1371,13 +1371,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      removed since the build's match data was made. Such a match was dropped without a word, or
      counted under "Your filters removed" when any filter was set. One and many forms; %@ is the
      count. It names no cause, because the app cannot tell which applies. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 415–416 | key: search.meaning.strip.notIndexed.one -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.notIndexedHere | lines: 316–317 | key: search.meaning.strip.notIndexed.one -->
 
 %@ close match is not listed: this device's index does not hold that document.
 
 <!-- END SOURCE: search.meaning.strip.notIndexed.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 417–418 | key: search.meaning.strip.notIndexed.many -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.notIndexedHere | lines: 318–319 | key: search.meaning.strip.notIndexed.many -->
 
 %@ close matches are not listed: this device's index does not hold those documents.
 
@@ -1387,13 +1387,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      forms; %@ is the count. Kept short: it follows the opening, which has just said that front
      matter and chapter headings are not reachable, and on an iPhone the strip sits above the
      results. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 435–436 | key: search.meaning.strip.withoutVector.one -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.withoutVector | lines: 336–337 | key: search.meaning.strip.withoutVector.one -->
 
 %@ document in the set has no match data and cannot be ranked.
 
 <!-- END SOURCE: search.meaning.strip.withoutVector.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 437–438 | key: search.meaning.strip.withoutVector.many -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.withoutVector | lines: 338–339 | key: search.meaning.strip.withoutVector.many -->
 
 %@ documents in the set have no match data and cannot be ranked.
 
@@ -1405,13 +1405,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      ways: the count is of the reader's own documents ("12 documents", not "12 possible matches"),
      and the control named is Download Missing Vectors, which fetches files for downloaded volumes.
      %1$@ is the documents with their noun and %2$@ the volumes with theirs. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 392–393 | key: search.meaning.strip.unranked.downloading %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unranked | lines: 293–294 | key: search.meaning.strip.unranked.downloading %@ %@ -->
 
 %1$@ in %2$@ could not be ranked yet; their match files are downloading.
 
 <!-- END SOURCE: search.meaning.strip.unranked.downloading %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 397–398 | key: search.meaning.strip.unranked.notFetching %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unranked | lines: 298–299 | key: search.meaning.strip.unranked.notFetching %@ %@ -->
 
 %1$@ in %2$@ could not be ranked: their match files are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
 
@@ -1421,7 +1421,7 @@ Meaning search (experimental): the set you are searching within holds no documen
      active (#1127). The claim is precise: the volume scope IS checked for those matches, the other
      filters are NOT — a rewrite that says "filters are ignored" would claim too much, one that
      stays silent would claim too little. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.parts | lines: 202–203 | key: search.meaning.strip.beyondUnchecked -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | property: SemanticModeStripCopy.parts | lines: 105–106 | key: search.meaning.strip.beyondUnchecked -->
 
 Matches in volumes you have not downloaded are checked against your volume scope only, not your other filters.
 
@@ -1433,28 +1433,28 @@ Matches in volumes you have not downloaded are checked against your volume scope
      of its own. VoiceOver reads the whole strip from the row, as at every size. Grown with the text,
      the strip had pushed Search's controls and results off the screen. Keep the row's words short:
      on an iPhone SE they share a line with the glyph and the ⓘ. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.rowTitle | lines: 142–142 | key: search.meaning.strip.row -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.rowTitle | lines: 145–145 | key: search.meaning.strip.row -->
 
 Meaning search (experimental)
 
 <!-- END SOURCE: search.meaning.strip.row -->
 
 <!-- The ⓘ's name, which VoiceOver reads and a touch and hold shows enlarged. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionLabel | lines: 147–147 | key: search.meaning.strip.more.a11y -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionLabel | lines: 150–150 | key: search.meaning.strip.more.a11y -->
 
 About Meaning search
 
 <!-- END SOURCE: search.meaning.strip.more.a11y -->
 
 <!-- What the ⓘ does: VoiceOver's hint, read after its name. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionHelp | lines: 152–153 | key: search.meaning.strip.more.help -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionHelp | lines: 155–156 | key: search.meaning.strip.more.help -->
 
 Shows the strip's whole text at your text size
 
 <!-- END SOURCE: search.meaning.strip.more.help -->
 
 <!-- The title of the sheet the ⓘ opens; its other control is the shared Done. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.sheetTitle | lines: 158–158 | key: search.meaning.strip.sheet.title -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.sheetTitle | lines: 161–161 | key: search.meaning.strip.sheet.title -->
 
 Meaning Search
 
@@ -1711,7 +1711,7 @@ Why it is true: a meaning search hands your words to the model as typed, and onl
 
 *Shown when a submitted keyword search holds nothing it can search for — for example `-korea`, or groups nested more than 32 deep. It replaced "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)" on iOS, where the same code also answered a search with document text, summaries and research notes all turned off; that case now has its own message, below. Keep the pointer to Search Tips: `SearchRefusalMessageTests` requires it. The "for example" is deliberate, because the same message also answers a query with nothing searchable in it at all, such as a lone quotation mark, for which neither reason is true. Both platforms show it under the title Search Error: on the Mac the Search window rendered no search error at all until #1299, so this message, the empty-scope message and the Meaning-mode errors had all been an empty result list there.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 582–583 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 557–558 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
 
 This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.
 
@@ -1731,7 +1731,7 @@ Order results by relevance or by document date
 
 *Shown when a submitted keyword search puts a boolean, a minus sign, a nested group or an unparseable distance inside a `NEAR(…)` — `NEAR(military OR europe, 5)`, `NEAR(military -europe, 5)`, `NEAR(military europe, 3.5)`. Until #1304 the app DEGRADED these: it dropped the NEAR keyword and searched the parentheses as an ordinary boolean group, so the distance was looked for as a word and a minus sign became a corpus-wide exclusion — a plausible count for a search nobody typed. The `%@` is the NEAR as the reader typed it, quoted back so they can see which one. Keep the sentence saying nothing was searched: the reader's next question is whether a partial search ran, and it did not.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 589–590 | key: search.error.malformedNear %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 564–565 | key: search.error.malformedNear %@ | shared: iOS+macOS (single edit point) -->
 
 %@ cannot be searched as written: a NEAR(…) holds only words, phrases and prefixes, with an optional distance. OR, NOT, AND, a minus sign and parentheses cannot go inside one. Nothing was searched, because dropping the NEAR would run a different search.
 
@@ -1751,7 +1751,7 @@ No expression — %@ holds something a NEAR cannot: a boolean, a minus sign, a n
 
 *Shown on iPhone and iPad when a keyword search could run but Include document text, Include summaries and Include research notes under Filters ▸ Search Scope are all off, so there is nowhere to search. A query that cannot run gets the message above instead, whatever the scope. The same section's Include front matter toggle does not count and is usually still on, so the message names the three it means rather than saying every scope is off. Until #1299's follow-up it read "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)". Keep "Filters ▸ Search Scope" and the names of the three toggles, and do not say "every": `SearchRefusalMessageTests` requires all three. The Mac never shows it — its Search window stops a search with all three Search in chips off before it runs, with the macOS message below.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 585–586 | key: search.error.emptyScope.ios | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 560–561 | key: search.error.emptyScope.ios | shared: iOS only -->
 
 Document text, summaries and research notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope.
 
@@ -1835,7 +1835,7 @@ Save this search or its results, select results to act on several at once, searc
 *The lines shown above the results after a command on the picked results (#1576), on iPhone and iPad. Each is also announced to VoiceOver. Mark Reviewed's two lines are the checklist strip's own announcements, "25 results marked reviewed" and "25 results are back in the list".*
 
 ##### Added %1$@ to “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 688–689 | key: search.selection.outcome.added %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 649–650 | key: search.selection.outcome.added %@ %@ -->
 
 *The line after Add to Collection added documents: "Added 31 documents to “Chile”." `%1$@` is the number added, with its noun, and `%2$@` the collection's name. When some were already in the collection, one of the two sentences below follows it.*
 
@@ -1844,7 +1844,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.added %@ %@ -->
 
 ##### %@ was already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 694–695 | key: search.selection.outcome.already.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 655–656 | key: search.selection.outcome.already.one %@ -->
 
 *Follows the line above when one of the documents was already in the collection: "1 was already in it." `%@` is the number.*
 
@@ -1853,7 +1853,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.one %@ -->
 
 ##### %@ were already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 696–697 | key: search.selection.outcome.already.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 657–658 | key: search.selection.outcome.already.many %@ -->
 
 *The same for more than one: "6 were already in it."*
 
@@ -1862,7 +1862,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.many %@ -->
 
 ##### Nothing added: %1$@ was already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 682–683 | key: search.selection.outcome.noneAdded.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 643–644 | key: search.selection.outcome.noneAdded.one %@ %@ -->
 
 *The line when every picked document was already in the collection, for one document. `%1$@` is the number and `%2$@` the collection's name. No Undo is offered beside it.*
 
@@ -1871,7 +1871,7 @@ Nothing added: %1$@ was already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.one %@ %@ -->
 
 ##### Nothing added: %1$@ were already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 684–685 | key: search.selection.outcome.noneAdded.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 645–646 | key: search.selection.outcome.noneAdded.many %@ %@ -->
 
 *The same for more than one: "Nothing added: 6 were already in “Chile”."*
 
@@ -1880,7 +1880,7 @@ Nothing added: %1$@ were already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.many %@ %@ -->
 
 ##### Removed %1$@ from “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 709–710 | key: search.selection.outcome.removed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 670–671 | key: search.selection.outcome.removed %@ %@ -->
 
 *The line after Undo took an add back: "Removed 31 documents from “Chile”." `%1$@` is the number removed, with its noun, and `%2$@` the collection's name.*
 
@@ -1889,7 +1889,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.removed %@ %@ -->
 
 ##### %@ selected result is not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 722–723 | key: search.selection.outcome.dropped.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 683–684 | key: search.selection.outcome.dropped.one %@ -->
 
 *The line when the same search was run again, under a changed filter, and one picked result is no longer in the list. `%@` is the number.*
 
@@ -1898,7 +1898,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.one %@ -->
 
 ##### %@ selected results are not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 724–725 | key: search.selection.outcome.dropped.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 685–686 | key: search.selection.outcome.dropped.many %@ -->
 
 *The same for more than one: "12 selected results are not in this list now."*
 
@@ -1907,7 +1907,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.many %@ -->
 
 ##### Select %@ or fewer
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 596–597 | key: search.selection.overLimit.v3 %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 557–558 | key: search.selection.overLimit.v3 %@ -->
 
 *Why Add to Collection and Add Tags are dimmed, when more results are picked than one of them takes: "Select 1,000 documents or fewer". `%@` is the limit, with its noun. It is said beside each of the two, under its name: in the Actions menu on iPhone and iPad, under the two buttons of the Mac's selection strip, and in a checked result's menu on the Mac. Mark Reviewed stays live. Re-keyed for #1683 (decision 69): it was a line above the results, "Select %@ or fewer to add them to a collection or to tag them.", and beside the commands it no longer says what they are for. Re-keyed in #1576 lane 5 too, when the line came to speak for Add Tags as well.*
 
@@ -1916,7 +1916,7 @@ Select %@ or fewer
 <!-- END SOURCE: search.selection.overLimit.v3 %@ -->
 
 ##### Undo did not finish: %@
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 735–736 | key: search.selection.outcome.undoFailed %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 696–697 | key: search.selection.outcome.undoFailed %@ -->
 
 *The line when the Undo of an add threw. `%@` is the system's own description of the failure. No Undo is offered beside it. It does not say that nothing changed: a removal whose save failed has already taken the documents out of the collection in memory.*
 
@@ -1929,7 +1929,7 @@ Undo did not finish: %@
 *The line shown after Add Tags on search results (#1576 lane 5): above the results on iPhone and iPad, in the strip on the Mac. With one tag the tag is named; with more than one the tags are counted. An Undo is offered beside a line that says something was added.*
 
 ##### Added “%1$@” to %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 632–633 | key: search.selection.outcome.tagged %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 593–594 | key: search.selection.outcome.tagged %@ %@ -->
 
 *One tag was added: "Added “Chile” to 31 documents." `%1$@` is the tag's name and `%2$@` the documents that gained it, with their noun.*
 
@@ -1938,7 +1938,7 @@ Added “%1$@” to %2$@.
 <!-- END SOURCE: search.selection.outcome.tagged %@ %@ -->
 
 ##### Added %1$@ tags to %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 636–637 | key: search.selection.outcome.tagged.tags %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 597–598 | key: search.selection.outcome.tagged.tags %@ %@ -->
 
 *More than one tag was added: "Added 3 tags to 31 documents." `%1$@` is the number of tags and `%2$@` the documents that gained at least one, with their noun.*
 
@@ -1947,7 +1947,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.tagged.tags %@ %@ -->
 
 ##### %@ already had it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 644–645 | key: search.selection.outcome.alreadyTagged %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 605–606 | key: search.selection.outcome.alreadyTagged %@ -->
 
 *Follows the line for one tag when some of the documents carried it already: "6 already had it." `%@` is how many. One form serves one and many.*
 
@@ -1956,7 +1956,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.alreadyTagged %@ -->
 
 ##### %@ already had them.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 645–646 | key: search.selection.outcome.alreadyTagged.tags %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 606–607 | key: search.selection.outcome.alreadyTagged.tags %@ -->
 
 *Follows the line for several tags when some of the documents carried every one of them already: "6 already had them."*
 
@@ -1965,7 +1965,7 @@ Added %1$@ tags to %2$@.
 <!-- END SOURCE: search.selection.outcome.alreadyTagged.tags %@ -->
 
 ##### Nothing added: %1$@ document already had “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 616–617 | key: search.selection.outcome.noneTagged.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 577–578 | key: search.selection.outcome.noneTagged.one %@ %@ -->
 
 *The one document carried the one tag already. No Undo is offered. `%1$@` is the number and `%2$@` the tag's name.*
 
@@ -1974,7 +1974,7 @@ Nothing added: %1$@ document already had “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneTagged.one %@ %@ -->
 
 ##### Nothing added: %1$@ documents already had “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 618–619 | key: search.selection.outcome.noneTagged.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 579–580 | key: search.selection.outcome.noneTagged.many %@ %@ -->
 
 *Every document carried the one tag already: "Nothing added: 37 documents already had “Chile”."*
 
@@ -1983,7 +1983,7 @@ Nothing added: %1$@ documents already had “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneTagged.many %@ %@ -->
 
 ##### Nothing added: %@ document already had those tags.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 624–625 | key: search.selection.outcome.noneTagged.tags.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 585–586 | key: search.selection.outcome.noneTagged.tags.one %@ -->
 
 *The one document carried every one of several tags already.*
 
@@ -1992,7 +1992,7 @@ Nothing added: %@ document already had those tags.
 <!-- END SOURCE: search.selection.outcome.noneTagged.tags.one %@ -->
 
 ##### Nothing added: %@ documents already had those tags.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 626–627 | key: search.selection.outcome.noneTagged.tags.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.tagged(_:alreadyTagged:tagNames:locale:) | lines: 587–588 | key: search.selection.outcome.noneTagged.tags.many %@ -->
 
 *Every document carried every one of several tags already.*
 
@@ -2001,7 +2001,7 @@ Nothing added: %@ documents already had those tags.
 <!-- END SOURCE: search.selection.outcome.noneTagged.tags.many %@ -->
 
 ##### Removed “%1$@” from %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 660–661 | key: search.selection.outcome.untagged %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 621–622 | key: search.selection.outcome.untagged %@ %@ -->
 
 *After Undo of an Add Tags that gave one tag: "Removed “Chile” from 31 documents." Only the tags the command added are taken off. `%2$@` can be fewer than were tagged, when some of those tags were removed another way first.*
 
@@ -2010,7 +2010,7 @@ Removed “%1$@” from %2$@.
 <!-- END SOURCE: search.selection.outcome.untagged %@ %@ -->
 
 ##### Removed %1$@ tags from %2$@.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 664–665 | key: search.selection.outcome.untagged.tags %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.untagged(_:tagNames:locale:) | lines: 625–626 | key: search.selection.outcome.untagged.tags %@ %@ -->
 
 *After Undo of an Add Tags that gave several tags: "Removed 3 tags from 31 documents."*
 
@@ -2023,7 +2023,7 @@ Removed %1$@ tags from %2$@.
 *The help the Mac Search window's Select button shows when the pointer rests on it (#1576 lane 4). The button is in the titlebar beside Checklist; on, every result has a checkbox and a strip above the list holds the commands.*
 
 ##### Select results, to add several to a collection or mark them reviewed at once
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOnHelp | lines: 464–465 | key: search.selection.toggle.on.help -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOnHelp | lines: 425–426 | key: search.selection.toggle.on.help -->
 
 *While selection is off.*
 
@@ -2032,7 +2032,7 @@ Select results, to add several to a collection or mark them reviewed at once
 <!-- END SOURCE: search.selection.toggle.on.help -->
 
 ##### Leave selection and clear the checkboxes
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOffHelp | lines: 470–471 | key: search.selection.toggle.off.help -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOffHelp | lines: 431–432 | key: search.selection.toggle.off.help -->
 
 *While selection is on.*
 
@@ -2112,7 +2112,7 @@ Click the bookmark button in Search to save a search for quick access later.
 
 #### The ways in (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.wordsInMatches -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.wordsInMatches -->
 
 *The More menu's item over a Meaning list, after Save as Working Corpus…. It holds the list on screen as a base and turns the field to Keywords, so that the words typed next are found inside it.*
 
@@ -2120,7 +2120,7 @@ Find Words in These Matches
 
 <!-- END SOURCE: search.layer.start.wordsInMatches -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.rankByMeaning -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.rankByMeaning -->
 
 *The same item over a keyword list or a browse: the field turns to Meaning, and the question typed next reorders the list, closest first.*
 
@@ -2204,7 +2204,7 @@ While you search within results, the field searches by %@. Stop searching within
 
 #### The field (iOS and Mac)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.wordsInMatches -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.wordsInMatches -->
 
 *The search field's prompt while a Meaning list is held.*
 
@@ -2212,7 +2212,7 @@ Words to find in these matches…
 
 <!-- END SOURCE: search.layer.prompt.wordsInMatches -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.rankByMeaning -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.rankByMeaning -->
 
 *The search field's prompt while a keyword list or a browse is held.*
 
@@ -2222,7 +2222,7 @@ A question to rank these results by…
 
 #### The row that names the base (iOS and Mac)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.rowDescription | key: search.layer.base.within %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.rowDescription | key: search.layer.base.within %@ -->
 
 *The row that takes the Keywords | Meaning control's place while a base is held; on the Mac, the row under the working corpus banner, beside which a label names the field's engine. %@ is one of the descriptions below.*
 
@@ -2232,7 +2232,7 @@ Within %@
 
 <!-- END SOURCE: search.layer.base.within %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.accessibilityLabel | key: search.layer.base.a11y %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.accessibilityLabel | key: search.layer.base.a11y %@ -->
 
 *What VoiceOver reads for the row, and announces when the base is held.*
 
@@ -2240,7 +2240,7 @@ Searching within %@
 
 <!-- END SOURCE: search.layer.base.a11y %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning %@ %@ -->
 
 *A Meaning list: its size, then its question in quotation marks.*
 
@@ -2248,7 +2248,7 @@ Searching within %@
 
 <!-- END SOURCE: search.layer.set.meaning %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning.one %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning.one %@ -->
 
 *A Meaning list of one document.*
 
@@ -2256,7 +2256,7 @@ the closest match to “%@”
 
 <!-- END SOURCE: search.layer.set.meaning.one %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords %@ %@ -->
 
 *A keyword list that loaded every match: "212 results" or "1 result", then the words.*
 
@@ -2264,7 +2264,7 @@ the closest match to “%@”
 
 <!-- END SOURCE: search.layer.set.keywords %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cut %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cut %@ %@ %@ -->
 
 *A keyword list cut at its fetch ceiling, whose total is known: the rows loaded, the total, the words. A ranking of it is a ranking of that slice, which this says. Since #1577 lane 6 a question ranks the whole match of such a list, and the row reads “all … results” (below); this shows only for a list whose search the app does not know, which no screen holds today.*
 
@@ -2272,7 +2272,7 @@ the first %1$@ of %2$@ results for “%3$@”
 
 <!-- END SOURCE: search.layer.set.keywords.cut %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cutUnknown %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cutUnknown %@ %@ -->
 
 *The same when the total could not be counted. Since #1577 lane 6, as the block above says, shown only for a list whose search is not known.*
 
@@ -2280,7 +2280,7 @@ the first %1$@ results for “%2$@”
 
 <!-- END SOURCE: search.layer.set.keywords.cutUnknown %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse %@ %@ -->
 
 *A browse with no words, named by its filter: a person, a topic or a subject area.*
 
@@ -2288,7 +2288,7 @@ the first %1$@ results for “%2$@”
 
 <!-- END SOURCE: search.layer.set.browse %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cut %@ %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cut %@ %@ %@ -->
 
 *A browse cut at its fetch ceiling, whose total is known. Since #1577 lane 6 such a browse held for a question reads “all … results” (below); this shows only for a browse whose search is not known.*
 
@@ -2296,7 +2296,7 @@ the first %1$@ of %2$@ results for %3$@
 
 <!-- END SOURCE: search.layer.set.browse.cut %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cutUnknown %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cutUnknown %@ %@ -->
 
 *The same when the total could not be counted. Since #1577 lane 6, as the block above says, shown only for a browse whose search is not known.*
 
@@ -2304,7 +2304,7 @@ the first %1$@ results for %2$@
 
 <!-- END SOURCE: search.layer.set.browse.cutUnknown %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.whole %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.whole %@ %@ -->
 
 *A keyword list cut at its ceiling and held for a question, since #1577 lane 6: the question ranks the whole match, so the row names it whole, by the search's count, then the words.*
 
@@ -2312,7 +2312,7 @@ all %1$@ results for “%2$@”
 
 <!-- END SOURCE: search.layer.set.keywords.whole %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.wholeUnknown %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.wholeUnknown %@ -->
 
 *The same when the search's count failed, until a question has ranked the match and counted it.*
 
@@ -2320,7 +2320,7 @@ every result for “%@”
 
 <!-- END SOURCE: search.layer.set.keywords.wholeUnknown %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.whole %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.whole %@ %@ -->
 
 *A browse cut at its ceiling of 7,500 and held for a question (#1577 lane 6), named by its filter.*
 
@@ -2328,7 +2328,7 @@ all %1$@ results for %2$@
 
 <!-- END SOURCE: search.layer.set.browse.whole %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.wholeUnknown %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.wholeUnknown %@ -->
 
 *The same when the browse's count failed.*
 
@@ -2336,7 +2336,7 @@ every result for %@
 
 <!-- END SOURCE: search.layer.set.browse.wholeUnknown %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.whole %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.whole %@ -->
 
 *A browse cut at its ceiling whose filter has no name to give (#1577 lane 6).*
 
@@ -2344,7 +2344,7 @@ all %@ results of your browse
 
 <!-- END SOURCE: search.layer.set.browse.unnamed.whole %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.wholeUnknown -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.wholeUnknown -->
 
 *The same when its count failed.*
 
@@ -2352,7 +2352,7 @@ every result of your browse
 
 <!-- END SOURCE: search.layer.set.browse.unnamed.wholeUnknown -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed %@ -->
 
 *A browse whose filter has no name to give.*
 
@@ -2360,7 +2360,7 @@ every result of your browse
 
 <!-- END SOURCE: search.layer.set.browse.unnamed %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.one -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.one -->
 
 *The row's second line when Checklist Mode was hiding one of the list's rows as it was held: the layer runs inside the list as it was shown.*
 
@@ -2368,7 +2368,7 @@ every result of your browse
 
 <!-- END SOURCE: search.layer.leftOut.reviewed.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.many -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.many -->
 
 *The same for several.*
 
@@ -2376,7 +2376,7 @@ every result of your browse
 
 <!-- END SOURCE: search.layer.leftOut.reviewed.many -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.one -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.one -->
 
 *The row's second line when the Meaning list had a close match in a volume not downloaded, which has no row to search.*
 
@@ -2384,7 +2384,7 @@ every result of your browse
 
 <!-- END SOURCE: search.layer.leftOut.notDownloaded.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.many -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.many -->
 
 *The same for several.*
 
@@ -2434,7 +2434,7 @@ None of the results you are searching within passes your filters.
 
 <!-- END SOURCE: search.layer.empty.ranked -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.matches %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.matches %@ -->
 
 *Back to a Meaning list of several.*
 
@@ -2442,7 +2442,7 @@ Back to the %@ Matches
 
 <!-- END SOURCE: search.layer.back.matches %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.match -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.match -->
 
 *Back to a Meaning list of one.*
 
@@ -2450,7 +2450,7 @@ Back to the Closest Match
 
 <!-- END SOURCE: search.layer.back.match -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.results %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.results %@ -->
 
 *Back to a keyword list or a browse of several.*
 
@@ -2458,7 +2458,7 @@ Back to the %@ Results
 
 <!-- END SOURCE: search.layer.back.results %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.result -->
+<!-- SOURCE: FRUSCoreKit/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.result -->
 
 *Back to a keyword list of one.*
 
@@ -2888,32 +2888,32 @@ Enter keywords to search the %@ you are searching within. *(%@ is the set's size
      above. In each, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
      ("1 possible match", "1 volume"), from the forms below; the first was "%lld … %lld" until review
      round 1 (2026-09-30), which read "1 possible matches in 1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 349–350 | key: search.semantic.results.unscored.v2 %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unscored | lines: 250–251 | key: search.semantic.results.unscored.v2 %@ %@ -->
 
 %1$@ in %2$@ could not be scored yet; their match files are downloading.
 
 <!-- END SOURCE: search.semantic.results.unscored.v2 %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 354–355 | key: search.semantic.results.unscored.notFetching %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unscored | lines: 255–256 | key: search.semantic.results.unscored.notFetching %@ %@ -->
 
 %1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring.
 
 <!-- END SOURCE: search.semantic.results.unscored.notFetching %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.one -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.one -->
 
 %@ possible match
 
 <!-- END SOURCE: search.semantic.possibleMatches.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.many -->
+<!-- SOURCE: FRUSCoreKit/Search/SemanticSearchCopy.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.many -->
 
 %@ possible matches
 
 <!-- END SOURCE: search.semantic.possibleMatches.many -->
 
 #### The model could not be downloaded. You can try again from…
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 213–214 | key: search.semantic.downloadFailed -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 186–187 | key: search.semantic.downloadFailed -->
 
 The model could not be downloaded. You can try again from the button above, or from Settings.
 

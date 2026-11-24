@@ -8,8 +8,22 @@
 
 import Testing
 import Foundation
-import CryptoKit
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
+#if canImport(CryptoKit)
+import CryptoKit
+#else
+import Crypto
+#endif
 
 /// The query-encoder model store's validation and lifecycle (V-5 s2), against real temp
 /// directories — the store's whole point is filesystem truth, so faking the filesystem would
@@ -22,6 +36,8 @@ import CryptoKit
 /// Version history:
 ///   1.0 — V-5 s2
 ///   1.1 — B4 (2026-10-15): the purge discards a model file an earlier release named
+///   1.2 — 2026-11-24: FRUS Explorer Light's S27a — moved into the kit suites with the store, which is
+///         SemanticVectorsKit's; the two tests of `AppState`'s status, and the hubs' parity suite, are the app's
 @Suite("Semantic model store")
 struct SemanticModelStoreTests {
 
@@ -50,6 +66,8 @@ struct SemanticModelStoreTests {
 
     // MARK: - The settings status
 
+    #if !SWIFT_PACKAGE
+    // `AppState.semanticModelStatus()`, which the settings section reads, is the app's.
     /// **The status carries the verified URL, so the view never asks the actor.**
     ///
     /// `SemanticModelSection`'s path row used to call `SemanticModelStore.verifiedModelURL()`
@@ -83,7 +101,10 @@ struct SemanticModelStoreTests {
         #expect(status.isPresent, "presence and the URL are one fact and cannot disagree")
         #expect(status.bytesOnDisk == Self.fixtureBytes.count)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `AppState.SemanticModelStatus` is the app's.
     /// The stack-not-booted state names no file, and is not "downloaded".
     @Test("An unavailable status has no URL and is not present")
     func unavailableStatusNamesNoFile() {
@@ -91,6 +112,7 @@ struct SemanticModelStoreTests {
         #expect(!AppState.SemanticModelStatus.unavailable.isPresent)
         #expect(!AppState.SemanticModelStatus.unavailable.isAvailable)
     }
+    #endif
 
     @Test("A wrong-length file is refused before any hashing, and nothing lands")
     func wrongLengthRefused() async throws {
@@ -272,6 +294,8 @@ struct SemanticModelStoreTests {
     }
 }
 
+#if !SWIFT_PACKAGE
+// The parity suite reads the app's two hubs.
 /// The model section is mounted by BOTH hand-maintained hub twins, and neither hub carries its
 /// own copy of the strings — the `SemanticStorageSection` parity rule extended to the new
 /// section.
@@ -280,7 +304,7 @@ struct SemanticModelSectionParityTests {
 
     private static func hubSource(_ name: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(
             contentsOf: root.appendingPathComponent("FRUSExplorer/Settings/\(name)"),
             encoding: .utf8)
@@ -304,3 +328,4 @@ struct SemanticModelSectionParityTests {
         }
     }
 }
+#endif

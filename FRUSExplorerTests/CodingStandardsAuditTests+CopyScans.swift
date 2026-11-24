@@ -137,6 +137,9 @@ import Foundation
 ///         the Flows remainder, now in `ArchivalFlowsData.swift`, and seven export caveats, now in
 ///         `ArchivalAnalyticsExport.swift`), so the ceiling is unchanged
 ///   1.22 — 2026-11-15: #1905 (L15) — the subject sheet's exemption quotes *All … subjects*; no entry moves
+///   1.23 — 2026-11-24: FRUS Explorer Light's S27a — one baseline entry re-pointed to the FRUSCoreKit file its string
+///         moved to (the Meaning strip's filters sentence, now in `SemanticSearchCopy.swift`), so the ceiling is
+///         unchanged
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -950,6 +953,7 @@ extension CodingStandardsAuditTests {
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.excludedDocuments %lld"#,
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.subjectTags %lld"#,
         #"../FRUSCoreKit/Search/SearchScopeSignature.swift | appendix.scope.volumes %lld"#,
+        #"../FRUSCoreKit/Search/SemanticSearchCopy.swift | search.meaning.strip.filtered %lld"#,
         #"../FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift | source.explorer.unprinted.row.repeat %lld %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -1116,7 +1120,6 @@ extension CodingStandardsAuditTests {
         #"Search/SearchViewModel.swift | search.narrowing.tags"#,
         #"Search/SearchViewModel.swift | search.narrowing.volumes"#,
         #"Search/SearchViewModel.swift | search.narrowing.years %lld"#,
-        #"Search/SemanticMeaningModeViews.swift | search.meaning.strip.filtered %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.corpus.whole %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,

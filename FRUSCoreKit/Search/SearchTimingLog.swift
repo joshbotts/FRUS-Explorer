@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import Foundation
+// The system's logger on Apple platforms; elsewhere the kit's shim (`Linux/LinuxOSLogShims.swift`), which
+// writes each line to standard error.
+#if canImport(OSLog)
 import OSLog
+#endif
 
 // MARK: - SearchTimingLog
 
@@ -44,6 +48,8 @@ import OSLog
 /// Version history:
 ///   1.0 — #1577 lane 1: initial implementation
 ///   1.1 — #1577 lane 6: ``WholeMatch``, the line for a ranking of a held list's whole match
+///   1.2 — 2026-11-24: FRUS Explorer Light's S27a — moved into FRUSCoreKit unchanged, with the Meaning searcher
+///         and engine that write two of its lines; OSLog behind `canImport`, as the kit's indexing pipeline has it
 enum SearchTimingLog {
 
     /// The log both lines are written to.

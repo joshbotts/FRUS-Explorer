@@ -13,9 +13,24 @@
 // limitations under the License.
 
 import Foundation
-import SwiftData
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if !SWIFT_PACKAGE
+import SwiftData
+#endif
 
 // MARK: - Fixtures
 
@@ -41,8 +56,8 @@ private func heldList(kind: PinnedResultBase.Kind = .keywords, query: String = "
         direction: .rankByMeaning, kind: kind, query: query, rows: rows, members: shown,
         hiddenByChecklist: rows.count - shown.count, notDownloaded: 0, route: .keywords,
         fetchLimit: fetchLimit, totalMatchCount: total, renderedExpression: nil, disclosure: nil,
-        beyondLibraryHits: [], userTagCountScope: ran.map { .match($0) }, historyAnchor: nil,
-        completedSearchAnchor: nil, filterSignature: ran.map { SearchScopeSignature.signature(for: $0) } ?? "")
+        beyondLibraryHits: [], userTagCountScope: ran.map { .match($0) }, setAside: nil,
+        filterSignature: ran.map { SearchScopeSignature.signature(for: $0) } ?? "")
 }
 
 // MARK: - WholeMatchRulesTests
@@ -76,7 +91,7 @@ struct WholeMatchRulesTests {
             rows: (1...100).map { wholeRow("d\($0)", semantic: 0.5) },
             members: (1...100).map { wholeRow("d\($0)", semantic: 0.5) }, hiddenByChecklist: 0, notDownloaded: 0,
             route: .meaning, fetchLimit: 100, totalMatchCount: nil, renderedExpression: nil, disclosure: nil,
-            beyondLibraryHits: [], userTagCountScope: nil, historyAnchor: nil, completedSearchAnchor: nil,
+            beyondLibraryHits: [], userTagCountScope: nil, setAside: nil,
             filterSignature: "")
         #expect(!meaning.ranksWholeMatch, "words are found inside a Meaning list, never a whole match")
     }
@@ -108,6 +123,8 @@ struct WholeMatchRulesTests {
                 == "Within the first 1,000 of 35,275 results for “negotiations”")
     }
 
+    #if !SWIFT_PACKAGE
+    // The appendix's one-argument `describe(_:)` reads the app's bundled data files.
     @Test("The record counts the whole match less the rows hidden as reviewed, and the expression what was ranked and listed")
     func theRecordCountsTheMatch() throws {
         let rows = listRows(1_000)
@@ -131,6 +148,7 @@ struct WholeMatchRulesTests {
         #expect(prose.contains("inside the results of a keyword search for “negotiations” (35,262 documents)"),
                 "\(prose)")
     }
+    #endif
 
     @Test("The set a question would rank is the whole match less the hidden rows, where that is known without reading it")
     func theSetSizeAhead() {
@@ -163,7 +181,7 @@ struct WholeMatchRulesTests {
             direction: .rankByMeaning, kind: .keywords, query: "negotiations", rows: listRows(1_000),
             members: listRows(1_000), hiddenByChecklist: 0, notDownloaded: 0, route: .keywords, fetchLimit: 1_000,
             totalMatchCount: 3_120, renderedExpression: nil, disclosure: nil, beyondLibraryHits: [],
-            userTagCountScope: .match(ran), historyAnchor: nil, completedSearchAnchor: nil,
+            userTagCountScope: .match(ran), setAside: nil,
             filterSignature: SearchScopeSignature.signature(for: ran))
         var live = ran
         live.keywords = "how was the test ban argued"
@@ -239,6 +257,8 @@ struct WholeMatchRulesTests {
 
     // MARK: The sentences
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     /// A ranking of a whole match of `size` documents, listing `loaded` rows, `unranked` of them unranked, `filteredOut`
     /// of the match left out by filters chosen since.
     private func ranking(loaded: Int, shown: Int? = nil, unranked: Int = 0, size: Int, filteredOut: Int = 0,
@@ -251,7 +271,10 @@ struct WholeMatchRulesTests {
                 size: size, filteredOut: filteredOut, notRanked: notRanked, closest: loaded - unranked,
                 isCut: isCut)))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("The header names the closest and the documents they were chosen from, those that pass the filters, and what was not ranked")
     func theHeader() {
         #expect(ranking(loaded: 1_000, size: 35_275).headerDescription == "Closest 1,000 of 35,275 results")
@@ -283,7 +306,10 @@ struct WholeMatchRulesTests {
         #expect(ranking(loaded: 212, unranked: 9, size: 212, notRanked: 9, isCut: false).headerDescription
                 == "212 results · 203 ranked · 9 not ranked")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("A cut ranking is partial evidence, and its capture says the closest it ranked, not the highest-scoring")
     func theCapture() {
         let cut = ranking(loaded: 1_000, size: 35_275)
@@ -321,7 +347,10 @@ struct WholeMatchRulesTests {
         overridden.layerBaseWasCut = true
         #expect(!overridden.didHitFetchLimit)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerEmptyState` is the app's views'.
     @Test("An empty ranking of a whole match whose set held documents says why none was listed, and blames no filter")
     func theEmptyStatement() {
         let filters = "None of the results you are searching within passes your filters."
@@ -356,9 +385,12 @@ struct WholeMatchRulesTests {
         #expect(SearchLayerEmptyState.rankedStatement(route: whole(size: 6, notRanked: 0), disclosure: disclosure(set: 6))
                 == "None of the closest matches inside the documents you are searching within is indexed on this device.")
     }
+    #endif
 
     // MARK: The Mac's help, the seam and the timing line
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerCopy` is the app's views' copy.
     @Test("The Mac's toolbar help says a question ranks every result of a list cut at its ceiling")
     func theMacsHelp() {
         #expect(SearchLayerCopy.searchWithinResultsHelp(.rankByMeaning, isHolding: false, cutAt: 7_500)
@@ -371,7 +403,10 @@ struct WholeMatchRulesTests {
         #expect(SearchLayerCopy.searchWithinResultsHelp(nil, isHolding: true, cutAt: 7_500)
                 == SearchLayerCopy.searchWithinResultsHelp(nil, isHolding: true))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // It reads the app's view model and views.
     @Test("A UI test lowers the keyword ceiling only in UI-test mode, and only to a whole number above zero")
     func theCeilingSeam() {
         let key = UITestSearchCeiling.environmentKey
@@ -383,6 +418,7 @@ struct WholeMatchRulesTests {
         // The unit tests' host asks for none, so the ceiling is the app's own.
         #expect(SearchViewModel.keywordFetchCeiling == SearchViewModel.searchHardLimit)
     }
+    #endif
 
     @Test("The timing line holds counts and durations and nothing else")
     func theTimingLine() {
@@ -436,15 +472,16 @@ struct WholeMatchRankingTests {
         for volume in SemanticSetFixture.volumes { try await pipeline.indexVolume(volume.id) }
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         let artifacts = try SemanticSetFixture.writeArtifacts(in: directory, withShards: withShards)
-        let searcher = SemanticQuerySearcher(
-            index: artifacts.index, corpus: artifacts.corpus, modelStore: artifacts.modelStore,
-            shardStore: artifacts.shardStore, requestShardFetch: { _ in false },
-            embedOverride: { _ in
+        let searcher = SemanticSetFixture.searcher(
+            artifacts,
+            embed: { _ in
                 embedCalls.record()
                 return SemanticSetFixture.queryEmbedding
-            })
+            },
+            requestShardFetch: { _ in false })
+        // An empty manifest, as `ManifestStore(bundledEntries: [])` was: it lists no volume.
         let backend = SemanticSearchBackend(
-            searcher: searcher, searchService: service, manifestStore: ManifestStore(bundledEntries: []),
+            searcher: searcher, searchService: service, manifestEntry: { _ in nil },
             indexedVolumeIds: { Set(SemanticSetFixture.volumes.map(\.id)) })
         return (backend, service)
     }
@@ -458,8 +495,8 @@ struct WholeMatchRankingTests {
             direction: .rankByMeaning, kind: .keywords, query: "talks", rows: rows,
             members: Array(rows.dropFirst(hiding)), hiddenByChecklist: hiding, notDownloaded: 0, route: .keywords,
             fetchLimit: limit, totalMatchCount: total, renderedExpression: nil, disclosure: nil,
-            beyondLibraryHits: [], userTagCountScope: .match(Self.talks), historyAnchor: nil,
-            completedSearchAnchor: nil, filterSignature: "")
+            beyondLibraryHits: [], userTagCountScope: .match(Self.talks), setAside: nil,
+            filterSignature: "")
     }
 
     /// A fresh directory for one test, which `body` is handed and which is removed after it.
@@ -532,10 +569,13 @@ struct WholeMatchRankingTests {
                     "every ranked document, closest first, then the list's unranked rows in its order, up to 20")
             #expect(whole.outcome.results.suffix(2).allSatisfy { $0.semanticScore == nil })
             #expect(whole.ranking == WholeMatchRanking(size: 24, notRanked: 6, closest: 18, isCut: true))
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             let scope = ResultSetScope(loaded: 20, shown: 20, fetchLimit: 20, totalMatchCount: 24,
                                        documentsOnPage: 20, pageCount: 1,
                                        route: .rankedByMeaning(unranked: 2, wholeMatch: whole.ranking))
             #expect(scope.headerDescription == "Closest 18 of 24 results · 6 not ranked")
+            #endif
         }
     }
 
@@ -551,6 +591,8 @@ struct WholeMatchRankingTests {
             #expect(whole.outcome.results.allSatisfy { $0.semanticScore == nil })
             #expect(whole.ranking == WholeMatchRanking(size: 24, notRanked: 24, closest: 0, isCut: true))
             #expect(embedCalls.count == 0, "nothing could be scored, so the question was not encoded")
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             var scope = ResultSetScope(loaded: 10, shown: 10, fetchLimit: 10, totalMatchCount: 24, documentsOnPage: 10,
                                        pageCount: 1, route: .rankedByMeaning(unranked: 10, wholeMatch: whole.ranking))
             scope.layerBaseLabel = "“talks”"
@@ -558,6 +600,7 @@ struct WholeMatchRankingTests {
             #expect(scope.captureProvenanceDescription
                     == "Search results for “talks”, ranked by a question — the highest-scoring 10 of 24 matches",
                     "the list's own rows, recorded as lane 4 recorded them, not as the closest of anything")
+            #endif
         }
     }
 
@@ -618,9 +661,12 @@ struct WholeMatchRankingTests {
                     "no hit is removed after the ranking")
             #expect(scoped.outcome.disclosure.rankedWithin == 6)
             #expect(scoped.setSignature == SearchScopeSignature.semanticSignature(rankingInside: passing))
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             let scope = ResultSetScope(loaded: 4, shown: 4, fetchLimit: 4, totalMatchCount: 24, documentsOnPage: 4,
                                        pageCount: 1, route: .rankedByMeaning(unranked: 0, wholeMatch: scoped.ranking))
             #expect(scope.headerDescription == "Closest 4 of the 6 results that pass your filters")
+            #endif
 
             // A filter that leaves out the whole match lists nothing, and the filters' sentence says so.
             let nothing = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
@@ -628,9 +674,12 @@ struct WholeMatchRankingTests {
                                                            limit: 4)
             #expect(nothing.outcome.results.isEmpty)
             #expect(nothing.ranking == WholeMatchRanking(size: 0, filteredOut: 24, notRanked: 0, closest: 0, isCut: false))
+            #if !SWIFT_PACKAGE
+            // `SearchLayerEmptyState` is the app's views'.
             #expect(SearchLayerEmptyState.rankedStatement(
                 route: .rankedByMeaning(unranked: 0, wholeMatch: nothing.ranking), disclosure: nothing.outcome.disclosure)
                     == SearchLayerEmptyState.rankedStatement)
+            #endif
         }
     }
 
@@ -647,9 +696,12 @@ struct WholeMatchRankingTests {
                                                          parameters: SearchParameters(documentIds: unheld), limit: 4)
             #expect(whole.outcome.results.isEmpty)
             #expect(whole.ranking == WholeMatchRanking(size: unheld.count, notRanked: unheld.count, closest: 0, isCut: true))
+            #if !SWIFT_PACKAGE
+            // `SearchLayerEmptyState` is the app's views'.
             #expect(SearchLayerEmptyState.rankedStatement(
                 route: .rankedByMeaning(unranked: 0, wholeMatch: whole.ranking), disclosure: whole.outcome.disclosure)
                     == "The documents you are searching within could not be ranked: match files for 1 volume are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.")
+            #endif
         }
     }
 
@@ -661,18 +713,17 @@ struct WholeMatchRankingTests {
             let cancelWhileEncoding = CancelSwitch()
             let artifacts = try SemanticSetFixture.writeArtifacts(in: directory,
                                                                   withShards: SemanticSetFixture.volumesWithShards)
-            let searcher = SemanticQuerySearcher(
-                index: artifacts.index, corpus: artifacts.corpus, modelStore: artifacts.modelStore,
-                shardStore: artifacts.shardStore,
+            let searcher = SemanticSetFixture.searcher(
+                artifacts,
+                embed: { _ in
+                    embedCalls.record()
+                    // The function runs in the task of the search that awaits it.
+                    if cancelWhileEncoding.isOn { withUnsafeCurrentTask { $0?.cancel() } }
+                    return SemanticSetFixture.queryEmbedding
+                },
                 requestShardFetch: { volume in
                     fetches.record(volume)
                     return false
-                },
-                embedOverride: { _ in
-                    embedCalls.record()
-                    // The override runs in the task of the search that awaits it.
-                    if cancelWhileEncoding.isOn { withUnsafeCurrentTask { $0?.cancel() } }
-                    return SemanticSetFixture.queryEmbedding
                 })
             // Uncancelled, the search encodes the question once and asks for the absent volume's match file once.
             let control = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
@@ -730,6 +781,8 @@ private final class CancelSwitch: @unchecked Sendable {
 
 // MARK: - WholeMatchViewModelTests
 
+#if !SWIFT_PACKAGE
+// `MeaningSearchRunning` is the app's view models' seam.
 /// A Meaning engine whose ranking of a whole match lists the held list's members in reverse, scored, and records each
 /// call; it can hold its next ranking at its start until a test lets it go.
 @MainActor
@@ -802,7 +855,10 @@ private final class WholeMatchEngine: MeaningSearchRunning {
         held = nil
     }
 }
+#endif
 
+#if !SWIFT_PACKAGE
+// The iPhone and iPad view model is the app's.
 /// A list cut at its ceiling ranked whole through the iPhone and iPad view model (#1577 lane 6), on a real index of
 /// one document more than the 1,000-row keyword ceiling, with a stand-in engine: the call it makes, what it writes with
 /// the rows, the keys it keeps, the record, leaving, and a replaced ranking.
@@ -934,9 +990,12 @@ struct WholeMatchViewModelTests {
         #expect(vm.isSearching == false)
     }
 }
+#endif
 
 // MARK: - WholeMatchScreenWiringTests
 
+#if !SWIFT_PACKAGE
+// It reads the app's views.
 /// The iPhone and iPad screen's half of an empty ranking of a whole match (#1577 lane 6), which no test drives through
 /// the view: the screen asks `SearchLayerEmptyState.rankedStatement(route:disclosure:)` with the rows' route and the
 /// ranking's disclosure, which `WholeMatchRulesTests.theEmptyStatement` holds to its sentences, as the Mac's window
@@ -950,6 +1009,7 @@ struct WholeMatchScreenWiringTests {
     @Test("The layer's empty state asks for the statement by the rows' route and the ranking's disclosure")
     func theEmptyStateAsksByRoute() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         let screen = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"),
                                 encoding: .utf8).filter { !$0.isWhitespace }
         let call = "SearchLayerEmptyState.rankedStatement(route: resultSetScope.route, disclosure: vm.semanticDisclosure)"
@@ -958,3 +1018,4 @@ struct WholeMatchScreenWiringTests {
                 "the screen still says the filters' sentence over every empty ranking")
     }
 }
+#endif
