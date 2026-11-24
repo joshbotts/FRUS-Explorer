@@ -392,57 +392,6 @@ struct UITestMeaningSeamSearchTests {
     }
 }
 
-// MARK: - SemanticScoreCopyTests
-
-/// The score's percentage and the words a row's accessibility value says (#1577 lane 3).
-///
-/// Version history:
-///   1.0 — #1577 lane 3: initial implementation
-@Suite("The semantic score, as a percentage and in words")
-struct SemanticScoreCopyTests {
-
-    @Test("The percentage is the score clamped to 0…1 and rounded")
-    func percent() {
-        #expect(SemanticScoreCopy.percent(for: 1) == 100)
-        #expect(SemanticScoreCopy.percent(for: 0.6484375) == 65)
-        #expect(SemanticScoreCopy.percent(for: 0.609375) == 61)
-        #expect(SemanticScoreCopy.percent(for: 0.004) == 0)
-        #expect(SemanticScoreCopy.percent(for: 0.005) == 1)
-        #expect(SemanticScoreCopy.percent(for: -0.3) == 0)
-        #expect(SemanticScoreCopy.percent(for: 1.2) == 100)
-    }
-
-    @Test("The accessibility value says the chip's figure in words")
-    func accessibilityValue() {
-        #expect(SemanticScoreCopy.accessibilityValue(for: 0.6484375) == "Semantic match 65 percent")
-        #expect(SemanticScoreCopy.accessibilityValue(for: 1) == "Semantic match 100 percent")
-        #expect(SemanticScoreCopy.accessibilityValue(for: -1) == "Semantic match 0 percent")
-    }
-
-    @Test("The iPhone's result row gives its score as its accessibility value, and the chip draws the same figure")
-    func theRowSaysItsScore() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let view = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"), encoding: .utf8)
-        let squeezed = view.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-            .joined().filter { !$0.isWhitespace }
-        // Since #1684 the label is the row as drawn, not the heading alone; the value still follows it.
-        #expect(squeezed.contains(
-            ".accessibilityLabel(SearchResultAccessibility.label(for:result,tags:chips))"
-            + ".accessibilityValue(result.semanticScore.map(SemanticScoreCopy.accessibilityValue(for:))??\"\")"),
-                "the row's value does not follow its label, or is not the score's words")
-        let chip = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SemanticSearchSharedViews.swift"),
-                              encoding: .utf8)
-        // Since FRUS Explorer Light's S27a the chip draws FRUSCoreKit's words for the score, whose figure is the one the
-        // accessibility value says.
-        #expect(chip.contains("Text(SemanticScoreCopy.chipLabel(for: score))"),
-                "the chip no longer draws the score's words")
-        for score in [0.6484375, 0.609375, 0.005, -0.3, 1.2] {
-            #expect(SemanticScoreCopy.chipLabel(for: score) == "Semantic match · \(SemanticScoreCopy.percent(for: score))%",
-                    "the chip no longer draws the figure the accessibility value says")
-        }
-    }
-}
-
 // MARK: - UITestMeaningSeamWiringTests
 
 /// Where the launch asks the seam, read from source (#1577 lane 3). The launch itself cannot be

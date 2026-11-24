@@ -213,7 +213,7 @@ public actor SemanticQuerySearcher {
     ///   - query: The reader's text, verbatim; the query template is applied inside.
     ///   - limit: Ranked hits to return after twin folding.
     /// - Returns: Hits plus the unscored disclosure.
-    /// - Throws: `SearchUnavailable`.
+    /// - Throws: `SearchUnavailable`, or what else the encoder throws, as it threw it.
     public func search(_ query: String, limit: Int = 10) async throws -> Results {
         let (bits, int8) = try await quantizedQuery(query)
 
@@ -316,7 +316,8 @@ public actor SemanticQuerySearcher {
     ///     keys it. Order carries no meaning and a repeated key counts once.
     ///   - limit: Ranked hits to return.
     /// - Returns: The best `limit` members, best first, with the set's accounting.
-    /// - Throws: `SearchUnavailable`, and `CancellationError` when the task is cancelled.
+    /// - Throws: `SearchUnavailable`, or what else the encoder throws, as it threw it, and `CancellationError` when the
+    ///   task is cancelled.
     public func search(_ query: String, within keys: [String], limit: Int) async throws -> Results {
         let clock = ContinuousClock()
 
@@ -462,7 +463,7 @@ public actor SemanticQuerySearcher {
     /// - Parameter query: The reader's text, verbatim.
     /// - Returns: The packed sign bits for the Hamming scan, and the int8 codes and scale for the
     ///   exact cosine.
-    /// - Throws: `SearchUnavailable`.
+    /// - Throws: `SearchUnavailable`, or what else the encoder throws.
     private func quantizedQuery(
         _ query: String
     ) async throws -> (bits: [UInt8], int8: (codes: [Int8], scale: Float)) {

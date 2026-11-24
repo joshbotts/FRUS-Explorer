@@ -1508,6 +1508,7 @@
 		C9E4DBB56CAA92B59F71F2C0 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06A66E5749137D5CDDA2B9BF /* BrowserView.swift */; };
 		C9EE7A1CA4B10B8B789911A0 /* WordCloudLexicons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */; };
 		C9FD74FD4A1409079CB57B86 /* ChronologyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B1FCB97482B12E177439C04 /* ChronologyView.swift */; };
+		C9FEC37EBBA8CF8D21A7D267 /* SemanticScoreCopyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92529C3870EB991452E75A3C /* SemanticScoreCopyTests.swift */; };
 		CA34F5925A472FFE51A1A13A /* PersonClusterer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5A4B3BF98D8A7CB513B9EF /* PersonClusterer.swift */; };
 		CA4A8A677DC33893AA9B5922 /* RISExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142477E4846DDBF3C708E5E6 /* RISExporterTests.swift */; };
 		CA5E4CD61606B24F276EE64D /* DocumentTagAssignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F8FA0DEEA5CAD1582FFE3DC /* DocumentTagAssignment.swift */; };
@@ -2699,6 +2700,7 @@
 		91FB2EDDDBA28505422A42C4 /* ResearchDataImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchDataImportView.swift; sourceTree = "<group>"; };
 		920F35244943433EDF8C238B /* HybridSearchModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridSearchModeTests.swift; sourceTree = "<group>"; };
 		92217F7202A5C90847EDB63E /* WordCloudDriftField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudDriftField.swift; sourceTree = "<group>"; };
+		92529C3870EB991452E75A3C /* SemanticScoreCopyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticScoreCopyTests.swift; sourceTree = "<group>"; };
 		926EAFAD72D744A11A281D36 /* CanonicalVolumeURLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanonicalVolumeURLTests.swift; sourceTree = "<group>"; };
 		9270E34F5FB833B6D4E003BA /* SearchService+Collocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SearchService+Collocation.swift"; sourceTree = "<group>"; };
 		92EC295184D9C9F1DEC172C5 /* BrowseTwoPaneMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseTwoPaneMetricsTests.swift; sourceTree = "<group>"; };
@@ -4542,6 +4544,7 @@
 				8DA9EB4D10A299A33A1B8676 /* SemanticModelStoreTests.swift */,
 				4E64A4D3BACF5F6F3296B99A /* SemanticProjectReachTests.swift */,
 				2C68DDE3B0CFAB1907C0CDED /* SemanticQuerySearcherTests.swift */,
+				92529C3870EB991452E75A3C /* SemanticScoreCopyTests.swift */,
 				91279FE614112412A8C6224D /* SemanticSetFixture.swift */,
 				86D45E66842DD5241F37B92B /* SemanticSetSearchTests.swift */,
 				DD6BEE34A3E1AF22EC74518E /* SemanticSimilarityHostTests.swift */,
@@ -7210,6 +7213,7 @@
 				4A539A73955ABBF29B8EAFC8 /* SemanticModelStoreTests.swift in Sources */,
 				0BC067D582677D2CBA2DB58C /* SemanticProjectReachTests.swift in Sources */,
 				766C0426A34DAF0623FB04BC /* SemanticQuerySearcherTests.swift in Sources */,
+				C9FEC37EBBA8CF8D21A7D267 /* SemanticScoreCopyTests.swift in Sources */,
 				13018790C8A00B85ECC9274C /* SemanticSetFixture.swift in Sources */,
 				D0A5833D94842BA9216FCAE6 /* SemanticSetSearchTests.swift in Sources */,
 				1DA1B05DCFD9DB16EDFA5B93 /* SemanticShardFetcherTests.swift in Sources */,

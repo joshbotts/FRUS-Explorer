@@ -79,7 +79,9 @@ import Foundation
 ///   2.0 — 2026-11-24: FRUS Explorer Light's S27a — moved into FRUSCoreKit, public, over values: a hit beyond the
 ///         library is titled through ``manifestEntry``, the host's manifest, in place of the app's `ManifestStore`,
 ///         and the rendered expressions take the generation's model in place of `BundledSemanticVectors`. The three
-///         routes are unchanged; `MeaningSearchRunning`, the app's view models' seam, stays the app's
+///         routes are unchanged; `MeaningSearchRunning`, the app's view models' seam, stays the app's. The
+///         rendered expressions and ``hitLimit`` are `nonisolated`, so a host formats a trail's expression off the main
+///         actor
 @MainActor
 public struct SemanticSearchBackend {
 
@@ -111,7 +113,7 @@ public struct SemanticSearchBackend {
 
     /// Ranked hits requested from the funnel. 100, not the pool's 800: a ten-page semantic
     /// list is already past what a reader triages, and every row costs a keyed lookup.
-    public static let hitLimit = 100
+    public nonisolated static let hitLimit = 100
 
     /// What a Meaning search records as its rendered expression, which the method appendix's CSV
     /// prints verbatim — the honest record of what ran, so it names the bundled generation's
@@ -122,7 +124,7 @@ public struct SemanticSearchBackend {
     /// - Parameter model: The bundled generation's model (`SemanticVectorsArtifacts.Provenance.model`), or `nil`
     ///   where the vectors did not load. The app's `renderedExpression` passes `BundledSemanticVectors`'.
     /// - Returns: The expression.
-    public static func renderedExpression(model: String?) -> String {
+    public nonisolated static func renderedExpression(model: String?) -> String {
         let model = model ?? "unavailable"
         return "route=semantic; model=\(model); top=\(hitLimit)"
     }
@@ -135,7 +137,7 @@ public struct SemanticSearchBackend {
     ///   - count: The held list's members, every one of which the ranking returns.
     ///   - model: The bundled generation's model, or `nil` where the vectors did not load.
     /// - Returns: The expression.
-    public static func renderedExpression(rankingAll count: Int, model: String?) -> String {
+    public nonisolated static func renderedExpression(rankingAll count: Int, model: String?) -> String {
         let model = model ?? "unavailable"
         return "route=semantic; model=\(model); ranked=\(count)"
     }
@@ -148,7 +150,7 @@ public struct SemanticSearchBackend {
     ///   - limit: The ceiling the closest were listed up to.
     ///   - model: The bundled generation's model, or `nil` where the vectors did not load.
     /// - Returns: The expression.
-    public static func renderedExpression(rankingAll count: Int, listing limit: Int, model: String?) -> String {
+    public nonisolated static func renderedExpression(rankingAll count: Int, listing limit: Int, model: String?) -> String {
         renderedExpression(rankingAll: count, model: model) + "; top=\(limit)"
     }
 
@@ -305,7 +307,7 @@ public struct SemanticSearchBackend {
     ///   - parameters: The current search parameters; only their FILTERS are read, and of those
     ///     `documentIds` is ranked inside where the others narrow afterwards.
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable` untouched — the view models map the
-    ///   `.modelNotDownloaded` case to the offer state.
+    ///   `.modelNotDownloaded` case to the offer state — or what else the searcher's encoder throws, untouched too.
     public func run(query: String, parameters: SearchParameters) async throws -> Outcome {
         // `nil` is no set and `[]` is a set that holds nothing: the gate's own contract, which an
         // empty History scope and a disjoint corpus both rely on to match nothing.
@@ -433,7 +435,7 @@ public struct SemanticSearchBackend {
     ///   - base: The held list's members, in its order.
     ///   - parameters: The parameters the layer runs with, the held list's gate among them.
     /// - Returns: The rows, no beyond-library hits, and the disclosure.
-    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does.
+    /// - Throws: What ``run(query:parameters:)`` throws.
     public func rerank(query: String, base: [SearchResult], parameters: SearchParameters) async throws -> Outcome {
         let admitted = parameters.documentIds.map(Set.init)
         let members = admitted.map { gate in base.filter { gate.contains($0.id) } } ?? base
@@ -508,7 +510,7 @@ public struct SemanticSearchBackend {
     ///     narrow the match before the ranking.
     ///   - limit: The ceiling: the list's own fetch limit.
     /// - Returns: The rows, the match's keys, what the ranking ranked, and the set's signature for the trail.
-    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does, and
+    /// - Throws: What ``run(query:parameters:)`` throws, and
     ///   `CancellationError` when the task is cancelled: the kit's statements stop (#1680), the set is not finished,
     ///   and the searcher stops between its steps.
     public func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,

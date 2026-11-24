@@ -553,8 +553,6 @@ struct WholeMatchRankingTests {
         }
     }
 
-    #if !SWIFT_PACKAGE
-    // `ResultSetScope` is the app's.
     @Test("Where fewer than the ceiling can be ranked, the list's own unranked rows follow the closest, in its order")
     func unrankedRowsFillTheCeiling() async throws {
         try await withDirectory { directory in
@@ -571,16 +569,16 @@ struct WholeMatchRankingTests {
                     "every ranked document, closest first, then the list's unranked rows in its order, up to 20")
             #expect(whole.outcome.results.suffix(2).allSatisfy { $0.semanticScore == nil })
             #expect(whole.ranking == WholeMatchRanking(size: 24, notRanked: 6, closest: 18, isCut: true))
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             let scope = ResultSetScope(loaded: 20, shown: 20, fetchLimit: 20, totalMatchCount: 24,
                                        documentsOnPage: 20, pageCount: 1,
                                        route: .rankedByMeaning(unranked: 2, wholeMatch: whole.ranking))
             #expect(scope.headerDescription == "Closest 18 of 24 results · 6 not ranked")
+            #endif
         }
     }
-    #endif
 
-    #if !SWIFT_PACKAGE
-    // `ResultSetScope` is the app's.
     @Test("With no match file on the device the list's own rows come back, unranked, and the encoder is never loaded")
     func nothingToScore() async throws {
         try await withDirectory { directory in
@@ -593,6 +591,8 @@ struct WholeMatchRankingTests {
             #expect(whole.outcome.results.allSatisfy { $0.semanticScore == nil })
             #expect(whole.ranking == WholeMatchRanking(size: 24, notRanked: 24, closest: 0, isCut: true))
             #expect(embedCalls.count == 0, "nothing could be scored, so the question was not encoded")
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             var scope = ResultSetScope(loaded: 10, shown: 10, fetchLimit: 10, totalMatchCount: 24, documentsOnPage: 10,
                                        pageCount: 1, route: .rankedByMeaning(unranked: 10, wholeMatch: whole.ranking))
             scope.layerBaseLabel = "“talks”"
@@ -600,9 +600,9 @@ struct WholeMatchRankingTests {
             #expect(scope.captureProvenanceDescription
                     == "Search results for “talks”, ranked by a question — the highest-scoring 10 of 24 matches",
                     "the list's own rows, recorded as lane 4 recorded them, not as the closest of anything")
+            #endif
         }
     }
-    #endif
 
     @Test("Keys kept with the list are ranked, not the index's; a corpus applied since and hidden rows narrow the set")
     func theSetIsNarrowed() async throws {
@@ -638,8 +638,6 @@ struct WholeMatchRankingTests {
         }
     }
 
-    #if !SWIFT_PACKAGE
-    // `ResultSetScope` is the app's.
     @Test("Filters chosen since narrow the match before the ranking: the closest of those that pass are listed, those the unfiltered ceiling would cut among them")
     func filtersNarrowTheMatchBeforeTheRanking() async throws {
         try await withDirectory { directory in
@@ -663,9 +661,12 @@ struct WholeMatchRankingTests {
                     "no hit is removed after the ranking")
             #expect(scoped.outcome.disclosure.rankedWithin == 6)
             #expect(scoped.setSignature == SearchScopeSignature.semanticSignature(rankingInside: passing))
+            #if !SWIFT_PACKAGE
+            // `ResultSetScope` is the app's.
             let scope = ResultSetScope(loaded: 4, shown: 4, fetchLimit: 4, totalMatchCount: 24, documentsOnPage: 4,
                                        pageCount: 1, route: .rankedByMeaning(unranked: 0, wholeMatch: scoped.ranking))
             #expect(scope.headerDescription == "Closest 4 of the 6 results that pass your filters")
+            #endif
 
             // A filter that leaves out the whole match lists nothing, and the filters' sentence says so.
             let nothing = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
@@ -673,12 +674,14 @@ struct WholeMatchRankingTests {
                                                            limit: 4)
             #expect(nothing.outcome.results.isEmpty)
             #expect(nothing.ranking == WholeMatchRanking(size: 0, filteredOut: 24, notRanked: 0, closest: 0, isCut: false))
+            #if !SWIFT_PACKAGE
+            // `SearchLayerEmptyState` is the app's views'.
             #expect(SearchLayerEmptyState.rankedStatement(
                 route: .rankedByMeaning(unranked: 0, wholeMatch: nothing.ranking), disclosure: nothing.outcome.disclosure)
                     == SearchLayerEmptyState.rankedStatement)
+            #endif
         }
     }
-    #endif
 
     @Test("A set whose members pass and cannot be ranked, none of them held, lists nothing, and says why rather than blaming the filters")
     func nothingRankedAndNothingHeld() async throws {
@@ -1006,6 +1009,7 @@ struct WholeMatchScreenWiringTests {
     @Test("The layer's empty state asks for the statement by the rows' route and the ranking's disclosure")
     func theEmptyStateAsksByRoute() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         let screen = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"),
                                 encoding: .utf8).filter { !$0.isWhitespace }
         let call = "SearchLayerEmptyState.rankedStatement(route: resultSetScope.route, disclosure: vm.semanticDisclosure)"

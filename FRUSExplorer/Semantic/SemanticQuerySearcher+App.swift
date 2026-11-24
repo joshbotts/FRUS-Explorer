@@ -98,6 +98,7 @@ actor SemanticOnDeviceEncoder: SemanticQueryEncoding {
 ///
 /// Version history:
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S27a — the searcher's initialiser as it was, over the kit's
+///          `init(index:corpus:shards:encoder:requestShardFetch:)`
 extension SemanticQuerySearcher {
 
     /// Creates a searcher over the app's stores.

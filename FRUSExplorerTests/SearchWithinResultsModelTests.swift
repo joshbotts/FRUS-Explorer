@@ -758,10 +758,8 @@ struct SearchLayerRerankTests {
         for volume in SemanticSetFixture.volumes { try await pipeline.indexVolume(volume.id) }
         let service = SearchService(fts5Store: store, pipeline: pipeline)
         let artifacts = try SemanticSetFixture.writeArtifacts(in: directory)
-        let searcher = SemanticQuerySearcher(
-            index: artifacts.index, corpus: artifacts.corpus, modelStore: artifacts.modelStore,
-            shardStore: artifacts.shardStore, requestShardFetch: { _ in false },
-            embedOverride: { _ in SemanticSetFixture.queryEmbedding })
+        let searcher = SemanticSetFixture.searcher(artifacts, embed: { _ in SemanticSetFixture.queryEmbedding },
+                                                   requestShardFetch: { _ in false })
         let backend = SemanticSearchBackend(
             searcher: searcher, searchService: service, manifestStore: ManifestStore(bundledEntries: []),
             indexedVolumeIds: { Set(SemanticSetFixture.volumes.map(\.id)) })

@@ -702,6 +702,8 @@ extension PinnedResultBase {
 ///          inside the filters chosen since: ``wholeMatchSet(_:passing:)``), the rows it lists
 ///          (``wholeMatchSelection(ranked:members:admitted:limit:)``, ``admittedMembers(_:of:)``) and their scores
 ///          (``wholeMatchRows(ranked:fill:rows:)``)
+///   1.3 — 2026-11-24: FRUS Explorer Light's S27a — moved into FRUSCoreKit, public and otherwise unchanged, with the
+///          held list and the Meaning engine, which composes a ranking of a list's whole match through it
 public enum LayeredResultComposer {
 
     /// The rows a keyword search inside a Meaning base found, in the base's order and each with the

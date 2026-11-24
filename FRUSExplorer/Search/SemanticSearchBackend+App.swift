@@ -72,8 +72,9 @@ extension SemanticSearchBackend: MeaningSearchRunning {}
 /// What a search view model needs of the Meaning engine: one run.
 ///
 /// `SearchViewModel` and `MacSearchViewModel` hold the engine through this protocol, so a test can drive a Meaning
-/// run through the view model with a list of its own. ``SemanticSearchBackend`` cannot be built in a unit test's
-/// host: it needs the query encoder's model and the vector files, and neither is there.
+/// run through the view model with a list of its own. ``SemanticSearchBackend`` needs an index, the vectors and an
+/// encoder: the kit's suites build one over synthetic vectors (`SemanticSetFixture`), and a view model's test passes a
+/// list of its own instead.
 ///
 /// Version history:
 ///   1.0 — #1595, #1597, #1598: initial implementation
