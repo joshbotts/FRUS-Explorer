@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - Fixtures
 
@@ -42,8 +48,8 @@ private func base(direction: SearchLayerDirection = .wordsInMatches,
         direction: direction, kind: kind, query: query, rows: rows, members: shown,
         hiddenByChecklist: rows.count - shown.count, notDownloaded: notDownloaded,
         route: route, fetchLimit: fetchLimit, totalMatchCount: total, renderedExpression: nil,
-        disclosure: nil, beyondLibraryHits: [], userTagCountScope: userTagCountScope, historyAnchor: nil,
-        completedSearchAnchor: nil, filterSignature: filterSignature)
+        disclosure: nil, beyondLibraryHits: [], userTagCountScope: userTagCountScope, setAside: nil,
+        filterSignature: filterSignature)
 }
 
 /// `count` rows `d1`… with no score, as a keyword list's are.
@@ -59,6 +65,9 @@ private func keywordRows(_ count: Int) -> [SearchResult] {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — 2026-11-24: FRUS Explorer Light's S27a — moved into the kit suites with the held list, the composer and the
+///         direction, which are FRUSCoreKit's; what reads the app's `SearchMode`, `ResultSetScope`, `SearchLayerCopy`,
+///         `SearchLayerSwap` and data files runs in Xcode alone
 @Suite("Search within results: the held base, the composer and the gate")
 struct SearchLayeringTests {
 
@@ -70,10 +79,13 @@ struct SearchLayeringTests {
         #expect(SearchLayerDirection.starting(over: .keywords) == .rankByMeaning)
         #expect(SearchLayerDirection.starting(over: .wordsInMatches(base: 100)) == nil)
         #expect(SearchLayerDirection.starting(over: .rankedByMeaning(unranked: 0)) == nil)
+        #if !SWIFT_PACKAGE
+        // `fieldEngine` and `baseEngine` name the app's `SearchMode`.
         #expect(SearchLayerDirection.wordsInMatches.fieldEngine == .keywords)
         #expect(SearchLayerDirection.wordsInMatches.baseEngine == .meaning)
         #expect(SearchLayerDirection.rankByMeaning.fieldEngine == .meaning)
         #expect(SearchLayerDirection.rankByMeaning.baseEngine == .keywords)
+        #endif
         #expect(ExecutedSearchRoute.wordsInMatches(base: 1).isLayer)
         #expect(ExecutedSearchRoute.rankedByMeaning(unranked: 3).isLayer)
         #expect(!ExecutedSearchRoute.keywords.isLayer)
@@ -86,7 +98,10 @@ struct SearchLayeringTests {
         #expect(SearchLayerDirection.rankByMeaning.startTitle == "Rank These Results by a Question")
         #expect(SearchLayerDirection.wordsInMatches.fieldPrompt == "Words to find in these matches…")
         #expect(SearchLayerDirection.rankByMeaning.fieldPrompt == "A question to rank these results by…")
+        #if !SWIFT_PACKAGE
+        // `SearchLayerCopy` is the app's views' copy.
         #expect(SearchLayerCopy.closestToAQuestion == "Closest to a Question…")
+        #endif
     }
 
     // MARK: The row that names the base
@@ -212,6 +227,8 @@ struct SearchLayeringTests {
         #expect(browse.captureLabel == "Aerial reconnaissance")
     }
 
+    #if !SWIFT_PACKAGE
+    // The appendix's one-argument `describe(_:)` reads the app's bundled data files.
     @Test("A layer signs as its engine does, with its base last; describe names the base")
     func layeredSignatureRoundTrips() throws {
         let gated = SearchParameters(keywords: "SAVAK", documentIds: ["vol/d1", "vol/d2"])
@@ -245,6 +262,7 @@ struct SearchLayeringTests {
         let unnamed = SearchScopeSignature.signature(for: gated) + ";base=browse:1:"
         #expect(SearchScopeSignature.describe(unnamed)?.last == "inside the results of a browse (1 document)")
     }
+    #endif
 
     // MARK: The composer
 
@@ -319,6 +337,8 @@ struct SearchLayeringTests {
 
     // MARK: What the results header owes a layer
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     private func scope(loaded: Int, shown: Int? = nil, route: ExecutedSearchRoute,
                        fetchLimit: Int = 1_000, total: Int? = nil, filtersNarrowed: Bool = false,
                        inRankOrder: Bool = true, label: String? = nil, baseWasCut: Bool? = nil,
@@ -328,7 +348,10 @@ struct SearchLayeringTests {
                        route: route, layerFiltersNarrowed: filtersNarrowed, listIsInRankOrder: inRankOrder,
                        layerBaseLabel: label, layerBaseWasCut: baseWasCut, layerBaseHiddenByChecklist: baseHidden)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("A ranking is cut where its list was, whatever its own count against the list's total")
     func aRankingIsCutWhereItsListWas() {
         let ranked = ExecutedSearchRoute.rankedByMeaning(unranked: 2)
@@ -353,7 +376,10 @@ struct SearchLayeringTests {
                 "a keyword list is read by its own counts")
         #expect(scope(loaded: 9, route: .keywords, baseHidden: 4).captureChecklistWarning == nil)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("Words found in a list say so, and say the filters too when filters chosen since narrow them")
     func wordsHeaderNamesTheFilters() {
         let route = ExecutedSearchRoute.wordsInMatches(base: 100)
@@ -373,7 +399,10 @@ struct SearchLayeringTests {
         // Only a layer's sentences change: a keyword list ignores the flag.
         #expect(scope(loaded: 7, route: .keywords, filtersNarrowed: true).headerDescription == "7 results")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("A ranking is closest first only in its own order")
     func rankedHeaderFollowsTheSort() {
         let route = ExecutedSearchRoute.rankedByMeaning(unranked: 0)
@@ -383,7 +412,10 @@ struct SearchLayeringTests {
         #expect(scope(loaded: 212, route: .rankedByMeaning(unranked: 9), inRankOrder: false).headerDescription
                 == "212 results · 203 ranked · 9 not ranked")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("A capture inside a layer names both layers")
     func captureNamesBothLayers() {
         let words = scope(loaded: 7, route: .wordsInMatches(base: 100), label: "“how did the embassy”")
@@ -399,9 +431,12 @@ struct SearchLayeringTests {
         #expect(scope(loaded: 3, route: .rankedByMeaning(unranked: 0), total: 3).captureProvenanceDescription
                 == "Search results, ranked by a question")
     }
+    #endif
 
     // MARK: #1683, the counts with no form for one
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("One hidden document, and a Meaning capture of one, read in the singular (#1683)")
     func singularsOfTheCaptureAndTheCaveats() {
         let meaningOne = scope(loaded: 1, route: .meaning, fetchLimit: 100)
@@ -418,7 +453,10 @@ struct SearchLayeringTests {
                 == "Checklist mode is hiding 2 reviewed documents. They will not be in this corpus.")
         #expect(hidingTwo.collocationScopeDescription.hasSuffix(" 2 reviewed documents are excluded."))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `FacetPanelView` is the app's.
     @Test("The facet panel names a layer's list, and one match in the singular (#1683)")
     func facetPreambles() {
         typealias Panel = FacetPanelView
@@ -439,12 +477,16 @@ struct SearchLayeringTests {
         #expect(Panel.preambleHeadline(matchCount: nil, isMeaningSearch: false, layerRoute: nil)
                 == "Describing this result set — total unavailable")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerCopy` is the app's views' copy.
     @Test("A ranking's unranked rows are counted, in the singular for one")
     func unrankedHeader() {
         #expect(SearchLayerCopy.unrankedHeader(1) == "1 result not ranked by meaning")
         #expect(SearchLayerCopy.unrankedHeader(1_204) == "1,204 results not ranked by meaning")
     }
+    #endif
 }
 
 // MARK: - SearchLayerHoldingRulesTests
@@ -505,6 +547,8 @@ struct SearchLayerHoldingRulesTests {
         #expect(unknown.kind == .browse(name: nil) && unknown.describedQuery == nil)
     }
 
+    #if !SWIFT_PACKAGE
+    // `browseName(of:)` reads the app's subject store.
     @Test("A browse is named by its person, then its topic, from the parameters it ran with")
     func browseNameFromTheParameters() {
         #expect(PinnedResultBase.browseName(of: SearchParameters(personRollupId: 7, personLabel: "Dean Rusk"))
@@ -523,6 +567,7 @@ struct SearchLayerHoldingRulesTests {
                 "a topic's name with no topic filter names nothing the browse ran under")
         #expect(PinnedResultBase.browseName(of: SearchParameters(keywords: "containment")) == nil)
     }
+    #endif
 
     @Test("The parameters a held list's rows were found by are its keyword run's, and a Meaning list has none")
     func ranParameters() {
@@ -602,11 +647,16 @@ struct SearchLayerHoldingRulesTests {
 
     // MARK: What a layer's sentences owe
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     private func plainScope(loaded: Int, route: ExecutedSearchRoute, total: Int? = nil) -> ResultSetScope {
         ResultSetScope(loaded: loaded, shown: loaded, fetchLimit: 1_000, totalMatchCount: total,
                        documentsOnPage: min(loaded, 25), pageCount: max(1, (loaded + 24) / 25), route: route)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `ResultSetScope` is the app's.
     @Test("A layer's scope says its list, its filters and its cut, by route, and a list through one engine says none of them")
     func describingALayer() {
         let meaningList = base(query: "how did the embassy", rows: (1...10).map { row("d\($0)", semantic: 0.5) })
@@ -643,6 +693,7 @@ struct SearchLayerHoldingRulesTests {
                 && plain.layerBaseHiddenByChecklist == 0, "a list through one engine owes none of a layer's sentences")
         #expect(!plain.listIsInRankOrder, "the order is the list's, whatever its route")
     }
+    #endif
 
     // MARK: Quoting the list's words (plan of record §6g)
 
@@ -679,6 +730,8 @@ struct SearchLayerHoldingRulesTests {
         #expect(quotable("") == "")
     }
 
+    #if !SWIFT_PACKAGE
+    // The appendix's one-argument `describe(_:)` reads the app's bundled data files.
     /// The row's nine sentences for a list with words, its VoiceOver label, its capture and the appendix: the manuals
     /// print "Within 212 results for “offset agreement”" for the search typed `"offset agreement"`.
     @Test("Every sentence that names a held list quotes one phrase once, and the record keeps its marks")
@@ -739,9 +792,12 @@ struct SearchLayerHoldingRulesTests {
         #expect(SearchScopeSignature.describe(besideRanked)?.last
                 == "inside the results of a keyword search for “\"offset agreement\" wheat” (18 documents)")
     }
+    #endif
 
     // MARK: The Mac's window
 
+    #if !SWIFT_PACKAGE
+    // `AnsweredSearchTrigger` is the app's.
     /// What the Mac's search task asks before it runs a search: whether rows put back on leaving a held list answer it.
     @Test("A trigger answered by the rows put back is skipped once, and any other trigger is searched")
     func answeredTrigger() {
@@ -760,7 +816,10 @@ struct SearchLayerHoldingRulesTests {
         #expect(!another, "a filter edited first is searched")
         #expect(!afterAnother, "and the answer is forgotten once asked about")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerCopy` is the app's views' copy.
     @Test("The Mac's toolbar button keeps its title, and its help says which way it will run or why it will not")
     func macCopy() {
         #expect(SearchLayerCopy.searchWithinResults == "Search Within Results")
@@ -775,6 +834,7 @@ struct SearchLayerHoldingRulesTests {
         #expect(SearchLayerCopy.heldEngineHelp(.keywords).contains("the field searches by Keywords."))
         #expect(SearchLayerCopy.heldEngineHelp(.meaning).contains("the field searches by Meaning."))
     }
+    #endif
 }
 
 // MARK: - SearchLayerSwapRulesTests
@@ -807,6 +867,8 @@ struct SearchLayerSwapRulesTests {
         #expect(SearchLayerDirection.rankByMeaning.swapped == .wordsInMatches)
     }
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     @Test("Words found in a Meaning list swap into a ranking of the words' own results by the list's question")
     func wordsSwapIntoARanking() throws {
         let swap = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
@@ -817,7 +879,10 @@ struct SearchLayerSwapRulesTests {
         #expect(swap.listEngine == .keywords, "the words run through the engine they ran through inside the list")
         #expect(swap.heldList.query == "how did the embassy report", "the row names the held list meanwhile")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     @Test("A ranking swaps into the list's words found in the question's closest matches")
     func aRankingSwapsIntoWords() throws {
         let ranked = try #require(SearchLayerSwap(heldList: keywordList, route: .rankedByMeaning(unranked: 2),
@@ -838,7 +903,10 @@ struct SearchLayerSwapRulesTests {
         #expect(back.direction == .wordsInMatches && back.listQuery == "how did the embassy report"
                 && back.layerQuery == "quillon")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     /// One fixture for each conjunct, each beside the control it differs from in that alone.
     @Test("No swap before a search has run inside the list, nor for a list or a search with no words")
     func whenThereIsNoSwap() {
@@ -859,7 +927,10 @@ struct SearchLayerSwapRulesTests {
         #expect(SearchLayerSwap(heldList: phrase, route: .rankedByMeaning(unranked: 0), layerQuery: "which talks failed")
                 == nil, "nor a list found by a restored phrase alone, whose words are a filter's and not the field's")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     @Test("A swap holds the new list only where the rows on screen are its own search's")
     func theNewListIsTheSearchsOwn() throws {
         let toRanking = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
@@ -875,7 +946,10 @@ struct SearchLayerSwapRulesTests {
         #expect(!toWords.isAnswered(by: .keywords, query: "which talks failed"))
         #expect(!toWords.isAnswered(by: .rankedByMeaning(unranked: 1), query: "which talks failed"))
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     @Test("Swap is titled, named for VoiceOver, and its help names both searches")
     func swapCopy() throws {
         #expect(SearchLayerCopy.swapTitle == "Swap")
@@ -890,7 +964,10 @@ struct SearchLayerSwapRulesTests {
         #expect(SearchLayerCopy.swapHelp(toWords)
                 == "Ask “which talks failed” first, then find “offset agreement” among its closest matches")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE
+    // `SearchLayerSwap` is the app's.
     /// Plan of record §6g: the help names the two searches as the row names the held list.
     @Test("Swap's help quotes a search that is one phrase once, on either side, and any other search as typed")
     func swapHelpQuotesAPhraseOnce() throws {
@@ -912,10 +989,13 @@ struct SearchLayerSwapRulesTests {
         // Only the sentence quotes them once: the swap runs each search as typed.
         #expect(toRanking.listQuery == "\"offset agreement\"" && toWords.layerQuery == "\"offset agreement\"")
     }
+    #endif
 }
 
 // MARK: - QuotedPhraseSiteTests
 
+#if !SWIFT_PACKAGE
+// It reads the app's working corpora and views.
 /// The three places #1726's fix found putting a phrase's own quotation marks inside their own (#1761, decision 86 of the
 /// plan of record from 2026-10-21): a working corpus's query in Working Corpora's provenance line and in the corpora
 /// list's row, and a Corpus Analytics term in its chart headings and its empty state. Each quotes by
@@ -965,3 +1045,4 @@ struct QuotedPhraseSiteTests {
         }
     }
 }
+#endif

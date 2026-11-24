@@ -285,7 +285,8 @@ struct HybridSearchModeTests {
         // A silent inversion here breaks the date sorts' tie-break with no test failing
         // anywhere else, so the mapping is pinned at the source: `bm25Score` must carry the
         // NEGATED cosine (lower-is-better convention) and `semanticScore` the cosine itself.
-        let source = try Self.searchSurfaceSource("FRUSExplorer/Search/SemanticSearchBackend.swift")
+        // FRUSCoreKit's since FRUS Explorer Light's S27a.
+        let source = try Self.searchSurfaceSource("FRUSCoreKit/Search/SemanticSearchBackend.swift")
         #expect(source.contains("bm25Score: -hit.score"))
         #expect(source.contains("semanticScore: hit.score"))
     }

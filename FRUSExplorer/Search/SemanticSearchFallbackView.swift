@@ -30,6 +30,7 @@ import SwiftUI
 ///   1.4 — 2026-10-19: #1685 — the phase machine is `SemanticFallbackSearch`, whose runs write only while they are
 ///         the view's, and the offer card's search runs in the view's one task, keyed on the host's search and on
 ///         the card's requests, where it ran in a `Task` nothing cancelled
+///   1.5 — 2026-11-24: FRUS Explorer Light's S27a — the caption's sentences are FRUSCoreKit's (``SemanticFallbackCopy``)
 struct SemanticSearchFallbackView: View {
 
     /// The executed query, verbatim (the submitted one, never the live field).
@@ -189,21 +190,12 @@ struct SemanticSearchFallbackView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The honesty block: meaning-based, filter-blind, and what was dropped.
+    /// The honesty block: meaning-based, filter-blind, and what was dropped
+    /// (``SemanticFallbackCopy/caption(unscored:unscoredVolumes:downloadingVolumes:filtersActive:locale:)``).
     private func disclosureCaption(unscored: Int, unscoredVolumes: Int,
                                    downloadingVolumes: Int) -> String {
-        var parts: [String] = [String(
-            localized: "search.semantic.results.caption",
-            defaultValue: "Ranked by meaning, not keywords, across the whole series — your exact words may not appear.")]
-        if hasActiveFilters {
-            parts.append(String(localized: "search.semantic.results.filters",
-                                defaultValue: "Your filters are not applied here."))
-        }
-        if unscored > 0 {
-            parts.append(SemanticUnscoredCopy.unscored(
-                candidates: unscored, volumes: unscoredVolumes, downloading: downloadingVolumes))
-        }
-        return parts.joined(separator: " ")
+        SemanticFallbackCopy.caption(unscored: unscored, unscoredVolumes: unscoredVolumes,
+                                     downloadingVolumes: downloadingVolumes, filtersActive: hasActiveFilters)
     }
 
     @ViewBuilder

@@ -14,41 +14,14 @@ import SwiftUI
 /// through the generation's score calibration (B4), which the score's producer applied — a Meaning
 /// hit the query offset, a Related row the document offset. One view, so the fallback card, the
 /// Meaning mode's rows, and the beyond-library rows cannot drift on format.
-/// The percentage itself is ``SemanticScoreCopy``'s, which also words it for an accessibility value.
+/// The words are ``SemanticScoreCopy``'s, in FRUSCoreKit, which also words the score for an accessibility value.
 struct SemanticScoreChip: View {
     let score: Double
 
     var body: some View {
-        Text(String(format: String(
-            localized: "search.semantic.row.score %lld",
-            defaultValue: "Semantic match · %lld%%"), Int64(SemanticScoreCopy.percent(for: score))))
+        Text(SemanticScoreCopy.chipLabel(for: score))
             .font(.caption2)
             .foregroundStyle(.secondary)
-    }
-}
-
-// MARK: - SemanticScoreCopy
-
-/// The semantic score as a percentage, and as the words an accessibility value says (#1577 lane 3).
-///
-/// Outside the chip's view so that a row can say its score without drawing a chip: on iPhone and
-/// iPad a result row is one accessibility element whose label replaces what it draws (the heading
-/// alone until #1684), so the chip inside it was silent to VoiceOver and invisible to a UI test.
-///
-/// Version history:
-///   1.0 — #1577 lane 3: initial implementation
-enum SemanticScoreCopy {
-
-    /// The score as a whole percentage on the chip's scale: clamped to 0…1, then rounded.
-    static func percent(for score: Double) -> Int {
-        Int((min(1.0, max(0.0, score)) * 100).rounded())
-    }
-
-    /// What a row's accessibility value says of its score: "Semantic match 65 percent".
-    static func accessibilityValue(for score: Double) -> String {
-        String(format: String(localized: "search.semantic.row.score.a11y %lld",
-                              defaultValue: "Semantic match %lld percent"),
-               Int64(percent(for: score)))
     }
 }
 

@@ -7,7 +7,17 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// A synthetic semantic corpus for the tests of a Meaning search inside a document set (#1577).
 ///
@@ -43,6 +53,9 @@ import Foundation
 /// Version history:
 ///   1.0 — #1577 lane 1: initial implementation
 ///   1.1 — #1577 lane 6: `writeTEIVolumes(to:omitting:withoutTalks:)` can leave volumes out of a keyword match
+///   1.2 — 2026-11-24: FRUS Explorer Light's S27a — moved into the kit suites with the searcher and the engine:
+///         the match files are read through SemanticVectorsKit's `SemanticShardSource`, the app's store in Xcode and
+///         ``FixtureShardFolder`` in the package, and ``searcher(_:embed:requestShardFetch:)`` makes the searcher
 enum SemanticSetFixture {
 
     /// The vectors' width, native and shipping.
@@ -205,8 +218,34 @@ enum SemanticSetFixture {
     struct Artifacts {
         let index: SemanticVectorIndex
         let corpus: SemanticCorpusVectors
-        let shardStore: SemanticShardStore
+        /// The match files: the app's `SemanticShardStore` in Xcode, ``FixtureShardFolder`` in the package.
+        let shardStore: any SemanticShardSource
         let modelStore: SemanticModelStore
+    }
+
+    /// A searcher over `artifacts`, embedding through `embed`, or with none through the host's own encoder over the
+    /// fixture's model store, which holds no model: in Xcode the app's `SemanticOnDeviceEncoder`, which refuses with
+    /// `modelNotDownloaded`, and in the package, which compiles no encoder, ``NoModelEncoder``, which refuses as it does.
+    ///
+    /// - Parameters:
+    ///   - artifacts: What ``writeArtifacts(in:volumes:withShards:)`` wrote.
+    ///   - embed: The embed step, or `nil` for the host's encoder.
+    ///   - requestShardFetch: The request for a missing match file.
+    /// - Returns: The searcher.
+    static func searcher(_ artifacts: Artifacts, embed: (@Sendable (String) async throws -> [Double])?,
+                         requestShardFetch: @escaping @Sendable (String) async -> Bool) -> SemanticQuerySearcher {
+        let encoder: any SemanticQueryEncoding
+        if let embed {
+            encoder = SemanticEmbedFunction(embed)
+        } else {
+            #if SWIFT_PACKAGE
+            encoder = NoModelEncoder(modelStore: artifacts.modelStore)
+            #else
+            encoder = SemanticOnDeviceEncoder(modelStore: artifacts.modelStore)
+            #endif
+        }
+        return SemanticQuerySearcher(index: artifacts.index, corpus: artifacts.corpus, shards: artifacts.shardStore,
+                                     encoder: encoder, requestShardFetch: requestShardFetch)
     }
 
     /// Writes the corpus binary and the shards of `withShards` under `directory`, and opens them
@@ -251,13 +290,24 @@ enum SemanticSetFixture {
         return Artifacts(
             index: index,
             corpus: try SemanticCorpusVectors(contentsOf: corpusURL, expecting: provenance),
-            shardStore: SemanticShardStore(
+            shardStore: shardSource(
                 directory: shardDirectory, provenance: provenance,
                 expectedCounts: Dictionary(
                     uniqueKeysWithValues: volumes.map { ($0.id, $0.vectors.count) })),
             modelStore: SemanticModelStore(
                 directory: directory.appendingPathComponent("model", isDirectory: true),
                 expectedSHA256: provenance.modelFileSHA256))
+    }
+
+    /// The match files under `directory`, as the host reads them: the app's store in Xcode, the fixture's folder
+    /// reader in the package, which does not compile the app's store.
+    private static func shardSource(directory: URL, provenance: SemanticVectorsArtifacts.Provenance,
+                                    expectedCounts: [String: Int]) -> any SemanticShardSource {
+        #if SWIFT_PACKAGE
+        FixtureShardFolder(directory: directory, provenance: provenance, expectedCounts: expectedCounts)
+        #else
+        SemanticShardStore(directory: directory, provenance: provenance, expectedCounts: expectedCounts)
+        #endif
     }
 
     /// Writes one TEI file per planted volume into `volumesDirectory`, each document a heading and
@@ -284,3 +334,58 @@ enum SemanticSetFixture {
         }
     }
 }
+
+#if SWIFT_PACKAGE
+// MARK: - The package's stand-ins
+
+/// The fixture's match files, read as the app's `SemanticShardStore.shard(for:)` reads them, which the package does not
+/// compile: `<volumeID>.vec`, mapped and validated by SemanticVectorsKit's `SemanticShard`, kept once read, and `nil`
+/// for a file it refuses or does not find.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S27a: initial implementation
+actor FixtureShardFolder: SemanticShardSource {
+
+    private let directory: URL
+    private let provenance: SemanticVectorsArtifacts.Provenance
+    private let expectedCounts: [String: Int]
+    private var mapped: [String: SemanticShard] = [:]
+    private var refused: Set<String> = []
+
+    init(directory: URL, provenance: SemanticVectorsArtifacts.Provenance, expectedCounts: [String: Int]) {
+        self.directory = directory
+        self.provenance = provenance
+        self.expectedCounts = expectedCounts
+    }
+
+    func shard(for volumeID: String) -> SemanticShard? {
+        if let shard = mapped[volumeID] { return shard }
+        if refused.contains(volumeID) { return nil }
+        guard let shard = try? SemanticShard(
+            contentsOf: directory.appendingPathComponent("\(volumeID).vec"),
+            provenance: provenance, expectedDocumentCount: expectedCounts[volumeID]) else {
+            refused.insert(volumeID)
+            return nil
+        }
+        mapped[volumeID] = shard
+        return shard
+    }
+}
+
+/// What the app's `SemanticOnDeviceEncoder` answers over a model store that holds no model, which the package does not
+/// compile: `modelNotDownloaded`, before any encoder is made.
+///
+/// Version history:
+///   1.0 — 2026-11-24: FRUS Explorer Light's S27a: initial implementation
+struct NoModelEncoder: SemanticQueryEncoding {
+
+    let modelStore: SemanticModelStore
+
+    func embed(_ query: String) async throws -> [Double] {
+        guard await modelStore.verifiedModelURL() != nil else {
+            throw SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded
+        }
+        throw SemanticQuerySearcher.SearchUnavailable.encodingFailed("the package compiles no on-device encoder")
+    }
+}
+#endif
