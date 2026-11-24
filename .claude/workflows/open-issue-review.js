@@ -79,7 +79,8 @@ Triage these open issues: ${b.map(n => '#' + n).join(', ')}. For EACH:
    named sites); if it does not hold, say so and rate it accordingly.
 3. reindexNeeded (would a correct fix change what IndexingPipeline stores?), dataRegenNeeded (which generator, or "no"), effort S/M/L, subsystem,
    filesLikely (the files a fix would touch, at their paths at ${BASE}), sharedCode ("no", or which of FRUSCoreKit/, FTS5Store, SourceNoteKit,
-   CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit and ManifestGeneratorCore a fix would touch: such a fix owes a swift test run and keeps
+   CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit, WordCloudKit and the eight generators' cores CLAUDE.md lists (ManifestGeneratorCore,
+   CloudVectorsGeneratorCore, and SourceExplorerExportGeneratorCore with the five it builds on) a fix would touch: such a fix owes a swift test run and keeps
    the Web-edition rules in CLAUDE.md, so say if the obvious fix would break one, for instance by reading UserDefaults or a SwiftData type inside the
    pipeline), webEdition ("none", or what FRUS Explorer Light would meet: an index-version or FTS-generation bump, after which its published server
    refuses exports from the new build until its pin moves; a change to the research-database export; a changed or removed public kit declaration.

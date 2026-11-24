@@ -510,6 +510,9 @@ struct CloudVectorsLanguageAnalysisGuardTests {
 ///
 /// Version history:
 ///   1.0 — #1608: initial implementation
+///   1.1 — 2026-11-24 (FRUS Explorer Light, S26b's follow-up): the walks' agreement with the one pass
+///         is behind `canImport(NaturalLanguage)`, so that this file builds where the framework is
+///         missing
 @Suite("CloudVectors — the keyness reference counted as printed (#1608)")
 struct PrintedKeynessBaselineTests {
 
@@ -734,6 +737,10 @@ struct PrintedKeynessBaselineTests {
         #expect(walks.map(\.lenses) == [[.topics, .allTerms], [.allTerms]])
     }
 
+    // The tokenizers count here with NaturalLanguage's own tagger, so this test is Apple-only: where the
+    // framework is missing (Linux) the tokenizers count only with a host's tagger, and this file's other
+    // tests, which tag nothing, build and run there.
+    #if canImport(NaturalLanguage)
     @Test("Each walk's tally is the lemma pass's printed tally for the lenses it counts, on real prose")
     func verificationWalksAgreeWithTheOnePass() throws {
         let onePass = try #require(WordCloudMultiLensTokenizer(
@@ -768,6 +775,7 @@ struct PrintedKeynessBaselineTests {
         }
         #expect(compared == 2)
     }
+    #endif
 
     // MARK: - A printed reference that lacks a lens
 
