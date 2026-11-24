@@ -67,6 +67,13 @@ import simd
 ///
 /// Version history:
 ///   1.0 — V-4: extracted from the view after the blank-map defect
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — its rules are FRUSCoreKit's and it calls them: the
+///          labelled regions (`SemanticMapLabelLayout.labelledClusters(_:scope:)`), a tap's and a reveal's
+///          region (`SemanticMapPicking.regionName(ofRow:map:clusters:)`), the reveal and the region focus
+///          (`SemanticMapReveal`), a region's and a lasso's capture (`SemanticMapCapture`), a pole's
+///          centroid (`SemanticAxis.centroid(forVolume:index:corpus:)`), the poles' refusals
+///          (`SemanticMapPoles`) and the slice's layout (`SemanticMapSlice`); its state, its camera
+///          moves and its renderer stay here
 @MainActor
 @Observable
 final class SemanticMapModel {
@@ -96,19 +103,9 @@ final class SemanticMapModel {
     /// The axis the corpus is currently laid out along, when it is not on the map's own plane.
     private(set) var slice: SemanticAxis?
 
-    /// The year range a slice's vertical axis spans, and how many documents fell outside it.
-    ///
-    /// **This is what makes the slice a labelled chart** (UI review X-5 / MR-13): the ticks, the
-    /// gutter note and the caveat all read these rather than re-deriving them, so the scale on
-    /// screen is the scale the layout used — the same one-source rule the scope mask follows.
-    struct SliceScale: Equatable {
-        /// The earliest coverage-midpoint year among dated volumes.
-        let minYear: Int
-        /// The latest.
-        let maxYear: Int
-        /// Documents whose volume has no parseable coverage year, laid out in the gutter.
-        let undatedCount: Int
-    }
+    /// The year range a slice's vertical axis spans, and how many documents fell outside it: the
+    /// kit's (`SemanticMapSlice.Scale`), under the name the view and the tick overlay read.
+    typealias SliceScale = SemanticMapSlice.Scale
 
     /// The active slice's scale, or `nil` on the map's own plane.
     private(set) var sliceScale: SliceScale?
@@ -148,33 +145,11 @@ final class SemanticMapModel {
     /// sum: here it is the reference frame.
     private(set) var scope: SemanticMapColouring.ScopeMask?
 
-    /// How many in-scope documents a region needs before its name is drawn.
-    ///
-    /// A label sits at the region's WHOLE-CORPUS centroid, which is where its members are only if it
-    /// has members. One in-scope document out of nine thousand puts a name in the middle of a field
-    /// of ghosts, and the reader has no way to see that it describes a single point. Five is a
-    /// judgement rather than a measurement, and a low one: it drops the degenerate case without
-    /// pretending to a threshold nobody has calibrated.
-    static let minimumLabelledInScope = 5
-
-    /// The regions to label, re-counted against the scope.
-    ///
-    /// Two things happen here and both are necessary. A region with (almost) nothing in scope is
-    /// **dropped**, because the artifact's cluster centres are whole-corpus and scoping to one
-    /// subseries otherwise left the label layer choosing its dozen from all 172 regions, most of them
-    /// naming a place that now held nothing but ghosts.
-    /// And a surviving region's `documentCount` is **replaced by its in-scope count**, because the
-    /// label layer ranks by size and keeps a dozen: rank by the series and a narrow scope gives its
-    /// labels to the corpus's biggest regions rather than to the ones it fills.
+    /// The regions to label, re-counted against the scope: `SemanticMapLabelLayout.labelledClusters`'s
+    /// rule, whose note says why a region with (almost) nothing in scope is dropped and a survivor's
+    /// count is its in-scope count.
     var labelledClusters: [SemanticMapArtifacts.Cluster] {
-        guard let scope else { return clusters }
-        return clusters.compactMap { cluster in
-            guard let count = scope.regionCounts[UInt16(clamping: cluster.id)],
-                  count >= Self.minimumLabelledInScope else { return nil }
-            return SemanticMapArtifacts.Cluster(
-                id: cluster.id, terms: cluster.terms, documentCount: count,
-                centreX: cluster.centreX, centreY: cluster.centreY, eraCounts: cluster.eraCounts)
-        }
+        SemanticMapLabelLayout.labelledClusters(clusters, scope: scope)
     }
 
     /// The volumes chosen as the axis's poles, low end first.
@@ -387,19 +362,15 @@ final class SemanticMapModel {
             #endif
             return
         }
-        // The cluster comes from the artifact by ROW, not from the hit: a slice re-lays the same
+        // The region comes from the artifact by ROW, not from the hit: a slice re-lays the same
         // documents out, so a position means something different, but a row still means the same
         // document and therefore the same region.
-        let clusterID = map.placement(at: hit.row)?.cluster ?? SemanticMapArtifacts.unclustered
-        let region = clusterID == SemanticMapArtifacts.unclustered
-            ? nil
-            : clusters.first { $0.id == Int(clusterID) }
         selection = SemanticMapPicking.Selection(
             row: hit.row,
             volumeID: document.volumeID,
             documentID: document.documentID,
             position: hit.position,
-            regionName: region.map { $0.terms.prefix(3).joined(separator: " ") },
+            regionName: SemanticMapPicking.regionName(ofRow: hit.row, map: map, clusters: clusters),
             isDownloaded: isReadable(document.volumeID))
     }
 
@@ -434,8 +405,7 @@ final class SemanticMapModel {
     /// - Returns: What happened — and `.notReady` is the case that matters, see `RevealOutcome`.
     @discardableResult
     func reveal(documentKey key: String, isReadable: (String) -> Bool) -> RevealOutcome {
-        let parts = key.split(separator: "/", maxSplits: 1)
-        guard parts.count == 2 else {
+        guard let parts = SemanticMapReveal.documentKey(key) else {
             pendingRevealKey = nil
             return .notFound
         }
@@ -444,50 +414,23 @@ final class SemanticMapModel {
             return .notReady
         }
         pendingRevealKey = nil
-        guard let row = index.row(documentID: String(parts[1]), volumeID: String(parts[0])),
-              let placement = map.placement(at: row) else { return .notFound }
-        // Region identity by ROW and from `clusters`, exactly as `select(at:)` derives it — a reveal
-        // and a tap on the same document must produce the same card, or the two paths disagree
-        // about which region a document is in.
-        let region = placement.cluster == SemanticMapArtifacts.unclustered
-            ? nil
-            : clusters.first { $0.id == Int(placement.cluster) }
-        let position = SIMD2(Float(placement.x), Float(placement.y))
+        // Where it lands is the kit's (`SemanticMapReveal.reveal`): region identity by ROW and from
+        // `clusters`, exactly as `select(at:)` derives it, and the camera at the reveal's half-extent.
+        guard let revealed = SemanticMapReveal.reveal(
+            volumeID: parts.volumeID, documentID: parts.documentID, index: index, map: map,
+            clusters: clusters, isReadable: isReadable) else { return .notFound }
         // Only now, having found the document: a reveal that fails must not clear a region card the
         // reader opened. The two cards are alternatives, so a SUCCESSFUL reveal replaces one with
         // the other, exactly as `select(at:)` does.
         selectedRegion = nil
-        selection = SemanticMapPicking.Selection(
-            row: row,
-            volumeID: String(parts[0]),
-            documentID: String(parts[1]),
-            position: position,
-            regionName: region.map { $0.terms.prefix(3).joined(separator: " ") },
-            isDownloaded: isReadable(String(parts[0])))
-        // Close enough to read the neighbourhood, not so close the surrounding language is off
-        // screen — the question a reveal answers is "what is this document *near*", and a camera
-        // pinned to the point alone would answer "where is this document", which the selection
-        // marker already does.
-        moveCamera(to: SemanticMapCamera(centre: position, halfExtent: Self.revealHalfExtent))
+        selection = revealed.selection
+        moveCamera(to: revealed.camera)
         return .revealed
     }
 
-    /// The three ways a reveal can end.
-    ///
-    /// **`.notReady` exists because collapsing it into failure shipped a broken feature.** The map
-    /// opens, `prepare()` starts uploading 314,616 points, and the continuation can arrive before
-    /// the index exists — at which point a `Bool`-returning reveal says "false", the caller records
-    /// the continuation as applied, and the retry that would have worked never happens. The document
-    /// simply never gets selected, which is exactly what a reader reported. `setScope` had solved
-    /// the same race years earlier by deferring; this is the same lesson arriving late.
-    enum RevealOutcome: Equatable {
-        /// Selected, and the camera moved to it.
-        case revealed
-        /// The map is loaded and has no such document — 2,356 display rows were never embedded.
-        case notFound
-        /// The map is not loaded yet. Ask again; do not record this as an answer.
-        case notReady
-    }
+    /// The three ways a reveal can end: the kit's (`SemanticMapReveal.Outcome`), whose note says why
+    /// `.notReady` is not a failure.
+    typealias RevealOutcome = SemanticMapReveal.Outcome
 
     /// A reveal asked for before the map could honour it.
     ///
@@ -499,11 +442,6 @@ final class SemanticMapModel {
     /// whatever happens to the caller's state.
     private(set) var pendingRevealKey: String?
 
-    /// How much of the map a reveal leaves in view, in grid units.
-    ///
-    /// `nonisolated` because it is a constant, and because a test asserting it is closer than the
-    /// default camera has no reason to hop to the main actor to read a number.
-    nonisolated static let revealHalfExtent: Float = 900
 
     /// Focuses a region by artifact cluster id (#1051 B-7 — Browse's "See on the semantic map").
     ///
@@ -528,9 +466,9 @@ final class SemanticMapModel {
             return .notReady
         }
         pendingFocusRegion = nil
-        guard Self.regionFocusApplies(requestDigest: digest,
-                                      artifactDigest: BundledSemanticMap.index?.layoutIdentity),
-              let region = clusters.first(where: { $0.id == id }) else {
+        guard let focused = SemanticMapReveal.focus(
+            regionID: id, digest: digest, artifactDigest: BundledSemanticMap.index?.layoutIdentity,
+            clusters: clusters) else {
             #if DEBUG
             print("[SemanticMapModel] focusRegion(\(id)) refused: digest or id did not land")
             #endif
@@ -542,9 +480,8 @@ final class SemanticMapModel {
         // A successful focus replaces a document card with the region card, exactly as
         // `select(at:)` swaps the two — and a FAILED one must not clear anything.
         selection = nil
-        selectedRegion = region
-        let position = SIMD2(Float(region.centreX), Float(region.centreY))
-        moveCamera(to: SemanticMapCamera(centre: position, halfExtent: Self.regionFocusHalfExtent))
+        selectedRegion = focused.region
+        moveCamera(to: focused.camera)
         return .revealed
     }
 
@@ -559,25 +496,6 @@ final class SemanticMapModel {
     /// See ``PendingRegionFocus``.
     private(set) var pendingFocusRegion: PendingRegionFocus?
 
-    /// Whether a cluster-focus request may land on the loaded artifact.
-    ///
-    /// Extracted and `nonisolated` so the rule the never-persist policy hangs on is a
-    /// testable equation rather than an inline `==` a refactor could drop.
-    ///
-    /// - Parameters:
-    ///   - requestDigest: The digest the request was minted against.
-    ///   - artifactDigest: The loaded artifact's digest.
-    /// - Returns: `true` only when both exist and agree.
-    nonisolated static func regionFocusApplies(requestDigest: String?,
-                                               artifactDigest: String?) -> Bool {
-        guard let requestDigest, let artifactDigest else { return false }
-        return requestDigest == artifactDigest
-    }
-
-    /// How much of the map a region focus leaves in view, in grid units — wider than a
-    /// document reveal, because the question is "what is this group and what sits around
-    /// it", not "where is this point".
-    nonisolated static let regionFocusHalfExtent: Float = 3600
 
 
     /// Gathers the selected region as a capture, ready to become a working corpus.
@@ -597,24 +515,11 @@ final class SemanticMapModel {
         guard let region = selectedRegion,
               let map = BundledSemanticMap.vectors,
               let index else { return nil }
-        let found = SemanticMapPicking.rows(
-            inCluster: UInt16(region.id),
-            count: index.documentCount,
-            clusterAt: { map.placement(at: $0)?.cluster ?? SemanticMapArtifacts.unclustered },
-            limit: SemanticMapPicking.corpusCaptureLimit,
-            scopeMask: scope?.flags)
-        var keys: [String] = []
-        keys.reserveCapacity(found.rows.count)
-        for row in found.rows {
-            guard let document = index.document(at: row) else { continue }
-            keys.append("\(document.volumeID)/\(document.documentID)")
-        }
-        // The region's own name, so the saved corpus is identifiable in a list months later. The
-        // lasso derives its name from whichever regions it happened to cross; here there is exactly
-        // one, and it is the thing the reader pointed at.
-        return SemanticMapPicking.LassoResult(
-            documentKeys: keys, total: found.total,
-            regionNames: [region.terms.prefix(3).joined(separator: " ")])
+        // The kit's capture (`SemanticMapCapture.region`), named for the region itself, so the saved
+        // corpus is identifiable in a list months later. The lasso derives its name from whichever
+        // regions it happened to cross; here there is exactly one, and it is the thing the reader
+        // pointed at.
+        return SemanticMapCapture.region(region, map: map, index: index, scopeMask: scope?.flags)
     }
 
 
@@ -661,38 +566,12 @@ final class SemanticMapModel {
             inside: lassoPath, positions: positions, camera: camera, size: size,
             limit: SemanticMapPicking.corpusCaptureLimit,
             scopeMask: scope?.flags)
-        guard !found.rows.isEmpty else {
-            // **Empty is not the same as nothing happened, once a scope is active.** Unscoped, an
-            // empty lasso means the reader enclosed bare canvas and no card is the right answer.
-            // Scoped, they may have drawn a careful ring around a dense grey mass — every point of it
-            // excluded — and silence reads as a broken control rather than as an answer. So the card
-            // appears and says so.
-            lassoResult = scope == nil
-                ? nil
-                : SemanticMapPicking.LassoResult(documentKeys: [], total: 0, regionNames: [])
-            return
-        }
-
-        // Resolve identity only for the rows that will be kept. `document(at:)` mints a String and
-        // walks a volume's id segments; doing it for a discarded row is pure waste.
-        var keys: [String] = []
-        keys.reserveCapacity(found.rows.count)
-        var regionCounts: [Int: Int] = [:]
-        for row in found.rows {
-            guard let document = index.document(at: row) else { continue }
-            keys.append("\(document.volumeID)/\(document.documentID)")
-            if let placement = map.placement(at: row),
-               placement.cluster != SemanticMapArtifacts.unclustered {
-                regionCounts[Int(placement.cluster), default: 0] += 1
-            }
-        }
-        let names = regionCounts.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
-            .prefix(3)
-            .compactMap { entry in
-                clusters.first { $0.id == entry.key }?.terms.prefix(2).joined(separator: " ")
-            }
-        lassoResult = SemanticMapPicking.LassoResult(
-            documentKeys: keys, total: found.total, regionNames: Array(names))
+        // The kit resolves what it caught (`SemanticMapCapture.lasso`): the kept keys, named by the
+        // regions it caught most of, and — once a scope is active — an empty capture rather than none,
+        // since silence over a ring of grey reads as a broken control rather than as an answer.
+        lassoResult = SemanticMapCapture.lasso(
+            rows: found.rows, total: found.total, isScoped: scope != nil,
+            map: map, index: index, clusters: clusters)
     }
 
     /// Clears the last lasso result.
@@ -707,11 +586,8 @@ final class SemanticMapModel {
     /// - Parameter volumeID: The volume.
     /// - Returns: Its centroid, or `nil` when the artifact does not carry one.
     func centroid(forVolume volumeID: String) -> [Float]? {
-        guard let index,
-              let vectors = BundledSemanticVectors.corpusVectors,
-              let slot = index.volumes.firstIndex(where: { $0.volumeID == volumeID }),
-              let stored = vectors.centroid(at: slot) else { return nil }
-        return SemanticAxis.dequantize(codes: stored.codes, scale: stored.scale)
+        guard let index, let vectors = BundledSemanticVectors.corpusVectors else { return nil }
+        return SemanticAxis.centroid(forVolume: volumeID, index: index, corpus: vectors)
     }
 
     /// Makes the selected document's volume one of the axis's poles.
@@ -725,57 +601,25 @@ final class SemanticMapModel {
                  reapplyLens: (() -> Void)? = nil) {
         if isPositive { poles.positive = volumeID } else { poles.negative = volumeID }
         axisNotice = nil
-        guard let negativeID = poles.negative, let positiveID = poles.positive else { return }
-        // **Refusing silently is what this used to do, and it read as a broken button.** An axis
-        // needs two volumes: the poles are volume centroids, not the documents tapped, so two
-        // documents from the same volume have no direction between them and drawing one would be
-        // rounding error. That is a real constraint and worth stating, but the surface said nothing
-        // at all — the reader chose "…to here" and the map simply did not change, with no way to
-        // tell a refusal from a bug. The refusal stands; it now explains itself.
-        guard negativeID != positiveID else {
-            if isPositive { poles.positive = nil } else { poles.negative = nil }
-            axisNotice = String(
-                localized: "semanticMap.axis.sameVolume",
-                defaultValue: "An axis runs between two volumes, and both of these documents are in the same one. Pick a document from a different volume as the second end.")
+        // The pair's fate is the kit's (`SemanticMapPoles.resolve`), whose note gives the three
+        // refusals and why each says what it says. What happens to this model's state is this:
+        // a refusal clears the end just set, so the reader's earlier choice survives; a pair completed
+        // before the artifact is ready is REMEMBERED, not resolved, with `poles` cleared so the axis
+        // card does not sit half-drawn while the load runs — the view re-applies it after `prepare()`,
+        // beside its deferred-reveal retry, and the refusals then run with knowable causes.
+        switch SemanticMapPoles.resolve(negative: poles.negative, positive: poles.positive,
+                                        isReady: index != nil, centroid: centroid(forVolume:)) {
+        case .incomplete:
             return
-        }
-        // A completed pair before the artifact is ready is REMEMBERED, not resolved (W-2, the
-        // F-28 remainder). During the load a centroid is missing because NOTHING has loaded, so
-        // every message below would name a cause it cannot know — and the noSummary branch used
-        // to fire here, telling a Handoff reader their build "has no language summary" for a
-        // volume it simply had not read yet. `poles` is cleared so the axis card does not sit
-        // half-drawn while the load runs; the view re-applies after `prepare()`, beside its
-        // deferred-reveal retry, and the refusals then run with knowable causes.
-        // The same-volume refusal stays ABOVE this guard on purpose: it is index-independent,
-        // and deferring it would swallow the one refusal a reader can hit before the load ends.
-        guard index != nil else {
-            requestedPoles = (negativeID, positiveID)
+        case .refused(let refusal):
+            if isPositive { poles.positive = nil } else { poles.negative = nil }
+            axisNotice = refusal.notice
+        case .deferred(let negative, let positive):
+            requestedPoles = (negative, positive)
             poles = (nil, nil)
-            return
+        case .axis(let axis):
+            setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
         }
-        // **Two causes, two messages.** These were one branch with one sentence, and that sentence
-        // named a cause it could not know: a volume the artifact carries no summary for was reported
-        // to the reader as two volumes being "too alike", which is a confident diagnosis of the
-        // wrong thing. A missing centroid is a property of the build; a cancelling difference is a
-        // property of the two volumes. Only the second is about their likeness.
-        guard let negative = centroid(forVolume: negativeID),
-              let positive = centroid(forVolume: positiveID) else {
-            if isPositive { poles.positive = nil } else { poles.negative = nil }
-            axisNotice = String(
-                localized: "semanticMap.axis.noSummary",
-                defaultValue: "This version of the app has no language summary for one of these volumes, so it cannot place an axis between them. Try a different volume as that end.")
-            return
-        }
-        guard let axis = SemanticAxis.between(
-            negative: negative, negativeLabel: negativeID,
-            positive: positive, positiveLabel: positiveID) else {
-            if isPositive { poles.positive = nil } else { poles.negative = nil }
-            axisNotice = String(
-                localized: "semanticMap.axis.tooAlike",
-                defaultValue: "These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
-            return
-        }
-        setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
     }
 
     /// Clears the poles and returns to the map's own plane.
@@ -839,76 +683,24 @@ final class SemanticMapModel {
         }
         guard let index, let vectors = BundledSemanticVectors.corpusVectors else { return }
 
-        // Year per ROW, resolved once per volume rather than once per document: 553 lookups instead
-        // of 314,616.
-        var yearByRow = [Int16](repeating: 0, count: map.documentCount)
-        var minYear = Int.max, maxYear = Int.min
-        for volume in index.volumes {
-            guard let rows = index.rows(forVolume: volume.volumeID),
-                  let year = yearForVolume(volume.volumeID) else { continue }
-            minYear = min(minYear, year); maxYear = max(maxYear, year)
-            for row in rows where row < yearByRow.count { yearByRow[row] = Int16(clamping: year) }
+        // The layout is the kit's (`SemanticMapSlice.layout`): x the projection of each row's sign
+        // bits, scaled to the band the corpus spans, y its volume's coverage year, undated volumes in a
+        // gutter below every dated one.
+        let layout = SemanticMapSlice.layout(along: axis, map: map, index: index, corpus: vectors,
+                                             yearForVolume: yearForVolume)
+        let points = layout.positions.map {
+            SemanticMapRenderer.MapPoint(position: $0, colourIndex: 0, flags: 0)
         }
-        let yearSpan = Float(max(1, maxYear - minYear))
-
-        let extent = Float(SemanticAxis.sliceExtent)
-
-        // Project first, then scale to what was actually observed. A sign-bit cosine against a
-        // difference-of-centroids axis concentrates near zero — most of the corpus is unrelated to
-        // both poles — so the true range is a narrow band and an unscaled slice is a vertical smear.
-        // The ORDER along the axis is the content; the absolute magnitude of a sign-bit cosine is not
-        // interpretable on its own, so filling the width costs no meaning. The caveat says it.
-        var projections = [Float](repeating: 0, count: map.documentCount)
-        var lowest = Float.greatestFiniteMagnitude
-        var highest = -Float.greatestFiniteMagnitude
-        vectors.withSignBits { base, count in
-            for row in 0..<min(count, map.documentCount) {
-                let value = axis.project(signBitsAt: base, row: row,
-                                         bytesPerRow: vectors.bytesPerRow)
-                projections[row] = value
-                lowest = min(lowest, value)
-                highest = max(highest, value)
-            }
-        }
-        let spread = max(1e-6, highest - lowest)
-
-        var points = [SemanticMapRenderer.MapPoint]()
-        points.reserveCapacity(map.documentCount)
-        // Dated years occupy the upper band; undated volumes go to a GUTTER below it, separated by
-        // a gap no dated year can occupy. The first version plotted them at the exact vertical
-        // centre — an unknown date drawn *as* a mid-century date, on the surface whose header
-        // exists to say what is and is not a measurement (UI review X-5, filed independently on
-        // all three platforms).
-        var undated = 0
-        for row in 0..<map.documentCount {
-            let x = ((projections[row] - lowest) / spread) * 2 - 1
-            let year = Int(yearByRow[row])
-            let normalisedYear: Float
-            if year == 0 {
-                undated += 1
-                normalisedYear = Self.sliceGutterY
-            } else {
-                // Dated band: [-0.82, 1], leaving [-1, -0.9] to the gutter.
-                let t = Float(year - minYear) / yearSpan
-                normalisedYear = -0.82 + t * 1.82
-            }
-            points.append(SemanticMapRenderer.MapPoint(
-                position: SIMD2<Int16>(Int16(clamping: Int(x * extent)),
-                                       Int16(clamping: Int(normalisedYear * extent))),
-                colourIndex: 0, flags: 0))
-        }
-        sliceScale = SliceScale(minYear: minYear == Int.max ? 0 : minYear,
-                                maxYear: maxYear == Int.min ? 0 : maxYear,
-                                undatedCount: undated)
-        positions = points.map(\.position)
+        sliceScale = layout.scale
+        positions = layout.positions
         renderer.setPoints(points)
         renderer.setScopeFlags(scope?.flags ?? [])
-        renderer.frameAll(extent: extent)
+        renderer.frameAll(extent: Float(SemanticAxis.sliceExtent))
         camera = renderer.camera
     }
 
     /// The gutter's normalised y for undated volumes: below every dated year, with a visible gap.
-    nonisolated static let sliceGutterY: Float = -0.96
+    nonisolated static var sliceGutterY: Float { SemanticMapSlice.gutterY }
 
     /// Where a dated year lands on the slice's normalised vertical axis.
     ///
@@ -919,8 +711,7 @@ final class SemanticMapModel {
     ///   - scale: The slice's recorded scale.
     /// - Returns: Normalised y in the dated band [-0.82, 1].
     nonisolated static func sliceY(forYear year: Int, scale: SliceScale) -> Float {
-        let span = Float(max(1, scale.maxYear - scale.minYear))
-        return -0.82 + (Float(year - scale.minYear) / span) * 1.82
+        SemanticMapSlice.y(forYear: year, scale: scale)
     }
 
     /// Reads the artifact's own placements into renderer points.
@@ -1159,6 +950,11 @@ final class SemanticMapModel {
 ///         the map failed to appear at all
 ///   1.2 — #1274: `onNavigateAway`, forwarded to the scope bar so its Topic-index door closes the
 ///         sheet this map is presented in
+///   1.3 — 2026-11-24: FRUS Explorer Light's S28a — the rules among its statics are FRUSCoreKit's, which
+///         they forward to: the slice's caveat and ticks (`SemanticMapSlice`), a volume's year and its
+///         plurality provenance (`SemanticMapVolumes`), the scope's summary
+///         (`SemanticMapColouring.scopeSummary(documents:volumes:ofVolumes:)`), a continuation's settling
+///         (`SemanticMapReveal`), and a capture's name and source description (`SemanticMapCapture`)
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -1557,7 +1353,7 @@ struct SemanticMapSpikeView: View {
     /// - Parameter outcome: The reveal's result, or `nil` when the continuation carried no document.
     /// - Returns: `true` when the answer is final.
     nonisolated static func continuationIsSettled(_ outcome: SemanticMapModel.RevealOutcome?) -> Bool {
-        outcome != .notReady
+        SemanticMapReveal.continuationIsSettled(outcome)
     }
 
     /// Applies a Handoff continuation's scope and lens, once (UI review F-28).
@@ -1660,24 +1456,8 @@ struct SemanticMapSpikeView: View {
     ///   - positive: The high-end pole.
     /// - Returns: The sentence.
     static func sliceCaveat(from negative: String, to positive: String) -> String {
-        let bits = BundledSemanticVectors.index?.provenance.shippingDims
-        let position = bits.map {
-            String(format: String(
-                localized: "semanticMap.caveat.slice.position.v2 %@ %@ %lld",
-                defaultValue: """
-                    Left to right is how far each document leans from %1$@ toward %2$@. The reading \
-                    is approximate — it comes from a compact %3$lld-bit summary of each document — \
-                    so treat a clear side as meaningful and a small gap as noise.
-                    """), negative, positive, Int64($0))
-        } ?? String(format: String(
-            localized: "semanticMap.caveat.slice.position.nobits.v2 %@ %@",
-            defaultValue: """
-                Left to right is how far each document leans from %1$@ toward %2$@. The reading is \
-                approximate, so treat a clear side as meaningful and a small gap as noise.
-                """), negative, positive)
-        let vertical = String(localized: "semanticMap.caveat.slice.vertical.v2",
-                              defaultValue: "Up and down is the volume’s coverage midpoint, not each document’s own date.")
-        return position + " " + vertical
+        SemanticMapSlice.caveat(from: negative, to: positive,
+                                shippingDims: BundledSemanticVectors.index?.provenance.shippingDims)
     }
 
     /// A volume's coverage era, from the manifest.
@@ -1708,58 +1488,22 @@ struct SemanticMapSpikeView: View {
     /// - Parameter volumeID: The volume.
     /// - Returns: The midpoint year, when the manifest has a range.
     private func yearForVolume(_ volumeID: String) -> Int? {
-        guard let entry = appState.manifestStore.entry(forVolumeId: volumeID) else { return nil }
-        // The manifest stores coverage as ISO-ish strings; the leading four characters are the year,
-        // which is all a vertical axis over 160 years of corpus needs.
-        let years = [entry.dateRange.earliest, entry.dateRange.latest]
-            .compactMap { $0.flatMap { Int($0.prefix(4)) } }
-            .filter { $0 > 1700 && $0 < 2200 }
-        guard !years.isEmpty else { return nil }
-        return years.reduce(0, +) / years.count
+        SemanticMapVolumes.coverageYear(of: appState.manifestStore.entry(forVolumeId: volumeID))
     }
 
-    /// The fewest source notes a volume needs before the lens will colour it.
-    ///
-    /// **Ten, and the number is a judgement backed by a measurement.** Fifteen of the 523 covered
-    /// volumes rest on a single parsed note — `frus1898` carries 1,194 documents on the map and one
-    /// note — and the argmax over one note is not a finding about an archive. Twenty-four volumes sit
-    /// at ten or fewer and twenty-nine at twenty or fewer, so the curve is flat here and the exact
-    /// cut is not load-bearing; what matters is that a volume's colour rests on more than a handful.
-    ///
-    /// Without it the map drew a boundary a reader could see and could not explain: `frus1898`
-    /// (1,194 documents, one note) took the "Other / Unclassified" colour while `frus1899` (810
-    /// documents, no notes) took the absence colour, two adjacent volumes of identical editorial
-    /// character separated by whether one note happened to parse.
-    static let minimumProvenanceNotes = 10
+    /// The fewest source notes a volume needs before the lens will colour it: the kit's
+    /// (`SemanticMapVolumes.minimumProvenanceNotes`), whose note gives the measurement behind ten.
+    static var minimumProvenanceNotes: Int { SemanticMapVolumes.minimumProvenanceNotes }
 
-    /// The category a volume's source notes name most often, when there are enough of them.
-    ///
-    /// **A plurality, not a majority** — it holds under half the notes for 86 of the 499 volumes
-    /// this returns (523 are covered; 24 fall under the floor) — and the caption under the map
-    /// says so. Ties break on the category order in
-    /// `SourceProvenanceCategory.allCases` rather than arbitrarily, because a Swift dictionary has no
-    /// stable iteration order and a tie broken by iteration would recolour the map between launches.
+    /// The category a volume's source notes name most often, when there are enough of them: a
+    /// plurality, not a majority, by the kit's rule (`SemanticMapVolumes.dominantProvenance(byVolume:)`).
     ///
     /// - Parameter byVolume: The aggregate's per-volume table.
     /// - Returns: The dominant category per volume, omitting volumes below the evidence floor.
     static func dominantProvenance(
         byVolume: [VolumeProvenance]
     ) -> [String: SourceProvenanceCategory] {
-        var result: [String: SourceProvenanceCategory] = [:]
-        result.reserveCapacity(byVolume.count)
-        for volume in byVolume where volume.totalNotes >= minimumProvenanceNotes {
-            var best: SourceProvenanceCategory?
-            var bestCount = 0
-            for category in SourceProvenanceCategory.allCases {
-                let count = volume.count(for: category)
-                if count > bestCount {
-                    bestCount = count
-                    best = category
-                }
-            }
-            if let best { result[volume.volumeId] = best }
-        }
-        return result
+        SemanticMapVolumes.dominantProvenance(byVolume: byVolume)
     }
 
     /// The dominant-category table, built once and kept.
@@ -1947,13 +1691,7 @@ struct SemanticMapSpikeView: View {
     ///   - max: Latest.
     /// - Returns: Rounded tick years within the range, ascending.
     nonisolated static func tickYears(min: Int, max: Int) -> [Int] {
-        guard max > min else { return [min] }
-        let span = max - min
-        // A step that yields <= 5 ticks, rounded to decades where the span allows.
-        let rough = Swift.max(1, span / 4)
-        let step = rough <= 5 ? 5 : rough <= 10 ? 10 : rough <= 20 ? 20 : rough <= 25 ? 25 : 50
-        let first = ((min + step - 1) / step) * step
-        return Array(stride(from: first, through: max, by: step))
+        SemanticMapSlice.tickYears(min: min, max: max)
     }
 
     @ViewBuilder
@@ -2752,11 +2490,9 @@ struct SemanticMapSpikeView: View {
         // Names are NOT unique by design, and both `SearchFilterView` and `SettingsView` look
         // corpora up BY NAME — so two lassos over the same regions must not produce the same string.
         // The capture time disambiguates them and is also the most useful thing to see in a list.
-        let regions = result.regionNames.isEmpty
-            ? String(localized: "semanticMap.lasso.defaultName", defaultValue: "Map selection")
-            : result.regionNames.joined(separator: ", ")
-        let stamp = Date().formatted(date: .abbreviated, time: .shortened)
-        let name = "\(regions) — \(stamp)"
+        // The name and the description are the kit's (`SemanticMapCapture`).
+        let name = SemanticMapCapture.corpusName(regionNames: result.regionNames,
+                                                 stamp: SemanticMapCapture.stamp(for: Date()))
         let corpus = WorkingCorpus(
             name: name,
             documentKeys: result.documentKeys,
@@ -2767,11 +2503,7 @@ struct SemanticMapSpikeView: View {
             // that scope's documents, and its provenance is the one place that fact survives after
             // the map is closed — without it, two lassos over the same region under two different
             // scopes are indistinguishable in the corpora list.
-            sourceDescription: scopeLabel.map { label in
-                String(format: String(localized: "semanticMap.lasso.source.scoped %@",
-                                      defaultValue: "Semantic map selection, scoped to %@"), label)
-            } ?? String(localized: "semanticMap.lasso.source",
-                        defaultValue: "Semantic map selection"),
+            sourceDescription: SemanticMapCapture.sourceDescription(scopeLabel: scopeLabel),
             indexedVolumeCountAtCapture: appState.indexedVolumeIds.count,
             wasTruncatedAtCapture: result.isTruncated,
             totalMatchCountAtCapture: result.total)
@@ -3131,15 +2863,9 @@ struct SemanticMapSpikeView: View {
         savedCorpusName = nil
     }
 
-    /// How much of the corpus a scope holds, and at what grain.
-    ///
-    /// **It says "every document in", and that phrase is the honest part.** Every scope this control
-    /// offers is a set of VOLUMES — a subseries, an administration's volumes, a detected topic's
-    /// volumes — so scoping to *Nuclear Nonproliferation* lights all 7,702 documents in the 26
-    /// volumes carrying that tag, not the documents about nonproliferation. On a chart that
-    /// distinction hides inside a bar; on a map the reader watches those documents land in regions
-    /// named `salmon constantinople`, and without this sentence the obvious reading is that the
-    /// model placed them badly.
+    /// How much of the corpus a scope holds, and at what grain: the kit's sentence
+    /// (`SemanticMapColouring.scopeSummary(documents:volumes:ofVolumes:)`), whose note says why it names
+    /// whole volumes.
     ///
     /// - Parameters:
     ///   - documents: Documents in scope.
@@ -3147,19 +2873,7 @@ struct SemanticMapSpikeView: View {
     ///   - ofVolumes: Volumes the artifact places.
     /// - Returns: The sentence.
     static func scopeSummary(documents: Int, volumes: Int, ofVolumes: Int) -> String {
-        guard documents > 0 else {
-            return String(localized: "semanticMap.scope.empty",
-                          defaultValue: "No mapped documents in this scope.")
-        }
-        // "mapped documents in whole volumes" rather than "every document in": the map places
-        // 314,483 rows against the app's 316,839, because chapter divs, front matter and appendices
-        // carry no vector. "Every document" was the wrong word by ~2,356 rows, and on a surface whose
-        // whole job is to be honest about what a model can and cannot say, the wrong word is the
-        // failure.
-        return String(format: String(
-            localized: "semanticMap.scope.summary.v3 %@ %lld %lld",
-            defaultValue: "In scope: %@ mapped documents — whole volumes, %lld of %lld."),
-            documents.formatted(.number), Int64(volumes), Int64(ofVolumes))
+        SemanticMapColouring.scopeSummary(documents: documents, volumes: volumes, ofVolumes: ofVolumes)
     }
 
     /// The lenses this build can actually draw.

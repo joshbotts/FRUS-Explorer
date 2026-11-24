@@ -1883,84 +1883,84 @@ inside the results of a browse (%@)
 <!-- END SOURCE: appendix.scope.base.browse.unnamed %@ -->
 
 #### Corpus: the map is a bundled artifact covering all %1$lld…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 152–153 | key: semanticMap.export.caveat.corpus.whole %lld -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 175–176 | key: semanticMap.export.caveat.corpus.whole %lld -->
 
 Corpus: the map is a bundled artifact covering all %1$lld documents in the published series, and draws them whether or not a volume has been downloaded.
 
 <!-- END SOURCE: semanticMap.export.caveat.corpus.whole %lld -->
 
 #### Only the %@ indexed on this device can be opened from it.
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 159–160 | key: semanticMap.export.caveat.corpus.reach %@ -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 182–183 | key: semanticMap.export.caveat.corpus.reach %@ -->
 
 Only the %@ indexed on this device can be opened from it. *(Interpolated with the indexed volumes as a count and its noun — “1 volume”, “12 volumes” (#1374 review, round 1, where it read “1 volume(s)”).)*
 
 <!-- END SOURCE: semanticMap.export.caveat.corpus.reach %@ -->
 
 #### The current scope covers %1$lld of those documents; every…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 165–166 | key: semanticMap.export.caveat.scoped %lld -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 188–189 | key: semanticMap.export.caveat.scoped %lld -->
 
 The current scope covers %1$lld of those documents; every count in this export is taken inside that scope.
 
 <!-- END SOURCE: semanticMap.export.caveat.scoped %lld -->
 
 #### How to read position: the projection preserves local…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 177–178 | key: semanticMap.export.caveat.layout -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 200–201 | key: semanticMap.export.caveat.layout -->
 
 How to read position: the projection preserves local similarity, so documents near each other are alike. Distances between far-apart regions are not meaningful, and neither is direction — there is no axis, no scale and no origin.
 
 <!-- END SOURCE: semanticMap.export.caveat.layout -->
 
 #### This surface is experimental. The regions are found by a…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 179–180 | key: semanticMap.export.caveat.experimental -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 202–203 | key: semanticMap.export.caveat.experimental -->
 
 This surface is experimental. The regions are detected by an AI model and a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings.
 
 <!-- END SOURCE: semanticMap.export.caveat.experimental -->
 
 #### Coverage: %1$lld regions cover %2$lld documents. The other…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 182–183 | key: semanticMap.export.caveat.unclustered %lld %lld %lld -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 205–206 | key: semanticMap.export.caveat.unclustered %lld %lld %lld -->
 
 Coverage: %1$lld regions cover %2$lld documents. The other %3$lld sit between regions and belong to none: a regions table cannot list them, and on the map they are drawn with no region name.
 
 <!-- END SOURCE: semanticMap.export.caveat.unclustered %lld %lld %lld -->
 
 #### Method: %1$@ from %2$lld dimensions (neighbors %3$lld)…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 188–189 | key: semanticMap.export.caveat.method %@ %lld %lld %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 211–212 | key: semanticMap.export.caveat.method %@ %lld %lld %@ %@ -->
 
 Method: %1$@ from %2$lld dimensions (neighbors %3$lld), clustered with %4$@. Labels: %5$@.
 
 <!-- END SOURCE: semanticMap.export.caveat.method %@ %lld %lld %@ %@ -->
 
 #### Artifact: generated %1$@, provenance %2$@. The layout is…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 193–194 | key: semanticMap.export.caveat.artifact %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 216–217 | key: semanticMap.export.caveat.artifact %@ %@ -->
 
 Artifact: generated %1$@, provenance %2$@. The layout is pinned to a fixed seed, so the same artifact always draws the same map.
 
 <!-- END SOURCE: semanticMap.export.caveat.artifact %@ %@ -->
 
 #### Color lens in effect when this export was taken: %1$@. The…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 197–198 | key: semanticMap.export.caveat.lens %@ -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 220–221 | key: semanticMap.export.caveat.lens %@ -->
 
 Color lens in effect when this export was taken: %1$@. The lens changes only what the points are colored by, never where they sit.
 
 <!-- END SOURCE: semanticMap.export.caveat.lens %@ -->
 
 #### The map artifact stores positions and region membership…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 200–201 | key: semanticMap.export.caveat.identity -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 223–224 | key: semanticMap.export.caveat.identity -->
 
 The map artifact stores positions and region membership only — no document titles and no dates — so an export from it can name regions and counts, and cannot name a document.
 
 <!-- END SOURCE: semanticMap.export.caveat.identity -->
 
 #### Frame: rendered at %1$lld × %2$lld points, centered on grid…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 237–238 | key: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 260–261 | key: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
 
 Frame: rendered at %1$lld × %2$lld points, centered on grid (%3$lld, %4$lld) — %5$@. Those coordinates are the artifact’s own grid, recorded so this exact view can be restored; they are not a measurement, and the projection has no axis, no scale and no origin.
 
 <!-- END SOURCE: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
 
 #### Region names shown: %1$lld of %2$lld, chosen to fit this…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 245–246 | key: semanticMap.export.caveat.frame.labels %lld %lld -->
+<!-- SOURCE: FRUSCoreKit/Semantic/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 268–269 | key: semanticMap.export.caveat.frame.labels %lld %lld -->
 
 Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s window is a different shape and re-runs the same rule against it, so a reader at the screen sees a different set of names — a region named here can be unnamed there, and the reverse.
 

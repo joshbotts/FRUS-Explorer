@@ -8,7 +8,17 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 // MARK: - ClustersAxisTests
 
@@ -23,6 +33,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #1051 B-7: initial implementation
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites with the axis, the bundled
+///          files read through `SemanticMapFixture`, the digest's rule the kit's `SemanticMapReveal`'s;
+///          the browse save's capture and description
 @Suite("Clusters browse axis (#1051 B-7)")
 struct ClustersAxisTests {
 
@@ -125,10 +138,10 @@ struct ClustersAxisTests {
     /// it was not. `regionFocusRefusedAcrossRelayout` below is the test those words belong to.
     @Test("The digest guard's mechanics: equal applies, unequal or missing refuses")
     func regionFocusDigestGuard() {
-        #expect(SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: "abc"))
-        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: "def"))
-        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: nil, artifactDigest: "abc"))
-        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: nil))
+        #expect(SemanticMapReveal.regionFocusApplies(requestDigest: "abc", artifactDigest: "abc"))
+        #expect(!SemanticMapReveal.regionFocusApplies(requestDigest: "abc", artifactDigest: "def"))
+        #expect(!SemanticMapReveal.regionFocusApplies(requestDigest: nil, artifactDigest: "abc"))
+        #expect(!SemanticMapReveal.regionFocusApplies(requestDigest: "abc", artifactDigest: nil))
     }
 
     /// R-1b: a cluster focus minted before a relayout must not apply after it — driven against
@@ -141,8 +154,7 @@ struct ClustersAxisTests {
     /// makes the refusal below meaningful rather than trivially true.
     @Test("A cluster focus is refused across a relayout that keeps the vector family")
     func regionFocusRefusedAcrossRelayout() throws {
-        let url = try #require(Bundle.main.url(forResource: "semantic-map-index",
-                                               withExtension: "json"))
+        let url = try SemanticMapFixture.resource("semantic-map-index", "json")
         let raw = try Data(contentsOf: url)
         let shipped = try JSONDecoder().decode(SemanticMapArtifacts.MapIndex.self, from: raw)
 
@@ -160,9 +172,9 @@ struct ClustersAxisTests {
         #expect(rebuilt.layoutIdentity != shipped.layoutIdentity,
                 "the layout identity must move when the family digest does not")
 
-        #expect(SemanticMapModel.regionFocusApplies(requestDigest: shipped.layoutIdentity,
+        #expect(SemanticMapReveal.regionFocusApplies(requestDigest: shipped.layoutIdentity,
                                                     artifactDigest: shipped.layoutIdentity))
-        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: shipped.layoutIdentity,
+        #expect(!SemanticMapReveal.regionFocusApplies(requestDigest: shipped.layoutIdentity,
                                                      artifactDigest: rebuilt.layoutIdentity), """
             A focus minted before the relayout applied after it — it would land on whatever \
             different cluster now wears that id, which is the NVR §4.5 hazard this guard exists \
@@ -170,12 +182,27 @@ struct ClustersAxisTests {
             """)
 
         // The defect itself, pinned so nobody "simplifies" the guard back onto the family digest.
-        #expect(SemanticMapModel.regionFocusApplies(requestDigest: shipped.provenanceDigest,
+        #expect(SemanticMapReveal.regionFocusApplies(requestDigest: shipped.provenanceDigest,
                                                     artifactDigest: rebuilt.provenanceDigest), """
             Documents what R-1b found: a guard comparing the vector family digest PASSES across a \
             relayout. This assertion is expected to hold; it is here so that a change making it \
             fail is noticed as a change of premise, not as a fix.
             """)
+    }
+
+    // MARK: The browse save
+
+    @Test("A cluster's capture is capped at the record's budget, counts the whole, and is named as the map names it")
+    func captureIsCappedAndNamed() {
+        let region = cluster(id: 5, count: 9_000, terms: ["shah", "iran", "iranian", "mosadeq"])
+        let keys = (0..<9_000).map { "v/d\($0)" }
+        let capture = ClustersAxis.capture(keys: keys, cluster: region)
+        #expect(capture.documentKeys == Array(keys.prefix(SemanticMapPicking.corpusCaptureLimit)))
+        #expect(capture.total == 9_000)
+        #expect(capture.isTruncated)
+        #expect(capture.regionNames == ["shah iran iranian"])
+        #expect(!ClustersAxis.capture(keys: ["v/d1"], cluster: region).isTruncated)
+        #expect(ClustersAxis.corpusSourceDescription == "Semantic cluster, browsed")
     }
 
     // MARK: Membership enumeration — the real packer, the real reader
@@ -227,8 +254,7 @@ struct ClustersAxisTests {
     // MARK: The live bundled artifacts
 
     private static func bundledMapIndex() throws -> SemanticMapArtifacts.MapIndex {
-        let url = try #require(Bundle.main.url(forResource: "semantic-map-index",
-                                               withExtension: "json"))
+        let url = try SemanticMapFixture.resource("semantic-map-index", "json")
         return try JSONDecoder().decode(SemanticMapArtifacts.MapIndex.self,
                                         from: Data(contentsOf: url))
     }
@@ -264,14 +290,12 @@ struct ClustersAxisTests {
     @Test("The shipped binary's membership matches the shipped index's counts")
     func shippedMembershipMatchesCounts() throws {
         let mapIndex = try Self.bundledMapIndex()
-        let vectorsURL = try #require(Bundle.main.url(forResource: "semantic-vectors-index",
-                                                      withExtension: "json"))
+        let vectorsURL = try SemanticMapFixture.resource("semantic-vectors-index", "json")
         let vectorsFile = try JSONDecoder().decode(SemanticVectorsArtifacts.Index.self,
                                                    from: Data(contentsOf: vectorsURL))
         #expect(mapIndex.provenanceDigest == vectorsFile.provenanceDigest,
                 "the bundled pair must be one generation — mixing is refused at runtime")
-        let binURL = try #require(Bundle.main.url(forResource: "semantic-map",
-                                                  withExtension: "bin"))
+        let binURL = try SemanticMapFixture.resource("semantic-map", "bin")
         let map = try SemanticMapVectors(contentsOf: binURL,
                                          provenance: vectorsFile.provenance,
                                          expectedDocumentCount: vectorsFile.documentCount)

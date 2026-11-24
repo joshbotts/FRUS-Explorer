@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import Foundation
-import simd
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// What the map's colour means.
 ///
@@ -27,7 +31,9 @@ import simd
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the colouring, public,
+///          without `simd`, whose `SIMD4` is the standard library's
+public enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// The regions the layout found. The map's own structure, and the only lens whose data lives in
     /// the map artifact itself.
     case cluster
@@ -41,7 +47,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// libraries across the space"*.
     case provenance
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     /// Whether this lens can be drawn from what this build carries.
     ///
@@ -52,7 +58,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     ///
     /// - Parameter volumeProvenance: The per-volume provenance table, when the artifact has one.
     /// - Returns: `true` when the lens has data to draw.
-    func isAvailable(volumeProvenance: [VolumeProvenance]?) -> Bool {
+    public func isAvailable(volumeProvenance: [VolumeProvenance]?) -> Bool {
         switch self {
         case .cluster, .era, .availability: return true
         case .provenance: return !(volumeProvenance ?? []).isEmpty
@@ -60,7 +66,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     }
 
     /// The user-facing name.
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .cluster:
             return String(localized: "semanticMap.lens.cluster", defaultValue: "Regions")
@@ -87,7 +93,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     ///
     /// Both figures are measured from the bundled `source-provenance-index.json`, and
     /// `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured` recomputes them through
-    /// `SemanticMapSpikeView.dominantProvenance`, so a regenerated index that moves either fails
+    /// `SemanticMapVolumes.dominantProvenance`, so a regenerated index that moves either fails
     /// the suite. They moved at #1543: the Subject-Numeric File became a category, 37 volumes
     /// changed winner (30 to it), and the plurality-only count went from 75 to 86. The caption had
     /// said 73, a figure two regenerations old.
@@ -95,7 +101,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// `cluster` gets one too, for a different reason: its key can name only one of the sixteen
     /// colours it uses (`namesEveryColour`), so the caption is what stops the other fifteen from
     /// looking like an unlabelled code.
-    var caption: String? {
+    public var caption: String? {
         switch self {
         case .cluster:
             return String(localized: "semanticMap.lens.cluster.caption",
@@ -114,7 +120,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// slots — adjacency, not identity, is what its colour conveys, and the region *names* are drawn
     /// on the map itself. Every other lens names each colour exactly once, and
     /// `SemanticMapSurfaceTests` holds them to it against the slots the colouring actually hands out.
-    var namesEveryColour: Bool {
+    public var namesEveryColour: Bool {
         switch self {
         case .cluster: return false
         case .era, .availability, .provenance: return true
@@ -123,7 +129,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 
     /// The legend, in palette-index order — so a caller can label the colours without knowing how
     /// the indices are assigned.
-    var legend: [String] {
+    public var legend: [String] {
         switch self {
         case .cluster:
             // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 172
@@ -158,10 +164,13 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-enum SemanticMapColouring {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit with the lens, public;
+///          ``scopeSummary(documents:volumes:ofVolumes:)``, the scope's sentence, out of
+///          `SemanticMapSpikeView`
+public enum SemanticMapColouring {
 
     /// How many palette slots the renderer holds.
-    static let paletteSize = 16
+    public static let paletteSize = 16
 
     /// Builds colour indices for every document.
     ///
@@ -172,7 +181,7 @@ enum SemanticMapColouring {
     ///   - eraForVolume: A volume's coverage era.
     ///   - isDownloaded: Whether a volume is indexed on this device.
     /// - Returns: One palette index per document, in row order.
-    static func indices(
+    public static func indices(
         for lens: SemanticMapLens,
         map: SemanticMapVectors,
         index: SemanticVectorIndex,
@@ -234,14 +243,14 @@ enum SemanticMapColouring {
     /// draw brightly, how much is in scope, and which regions still have anything in them — and they
     /// all come from one pass over the volume ranges. Computing them separately is how the count
     /// under the map and the points on it start disagreeing.
-    struct ScopeMask: Equatable, Sendable {
+    public struct ScopeMask: Equatable, Sendable {
         /// One byte per document: `0` in scope, `1` out. **The same array the GPU gets and picking
         /// reads**, which is the point — a mask stored twice is a mask that can differ from itself.
-        let flags: [UInt8]
+        public let flags: [UInt8]
         /// Documents in scope.
-        let documentCount: Int
+        public let documentCount: Int
         /// Volumes in scope that the artifact actually covers.
-        let volumeCount: Int
+        public let volumeCount: Int
         /// Documents in scope per cluster id, for the clusters that have any.
         ///
         /// **Counts rather than a membership set, and the difference is visible on screen.** The
@@ -250,7 +259,7 @@ enum SemanticMapColouring {
         /// regions in the *series*, which under a narrow scope may hold three documents each, while
         /// the region the scope actually fills goes unnamed. A region with nothing in scope is absent
         /// entirely rather than present with zero.
-        let regionCounts: [UInt16: Int]
+        public let regionCounts: [UInt16: Int]
     }
 
     /// Builds the scope mask for a set of volumes.
@@ -262,7 +271,7 @@ enum SemanticMapColouring {
     /// - Returns: The mask, or `nil` for an unscoped map — `nil` rather than an all-zero mask so
     ///   every caller can tell "no scope" from "a scope that happens to include everything", and so
     ///   the unscoped path allocates nothing.
-    static func scopeMask(
+    public static func scopeMask(
         volumeIDs: Set<String>?,
         map: SemanticMapVectors,
         index: SemanticVectorIndex
@@ -296,6 +305,37 @@ enum SemanticMapColouring {
                          volumeCount: volumes, regionCounts: regionCounts)
     }
 
+    /// How much of the corpus a scope holds, and at what grain.
+    ///
+    /// **It says "every document in", and that phrase is the honest part.** Every scope this control
+    /// offers is a set of VOLUMES — a subseries, an administration's volumes, a detected topic's
+    /// volumes — so scoping to *Nuclear Nonproliferation* lights all 7,702 documents in the 26
+    /// volumes carrying that tag, not the documents about nonproliferation. On a chart that
+    /// distinction hides inside a bar; on a map the reader watches those documents land in regions
+    /// named `salmon constantinople`, and without this sentence the obvious reading is that the
+    /// model placed them badly.
+    ///
+    /// - Parameters:
+    ///   - documents: Documents in scope.
+    ///   - volumes: Volumes in scope.
+    ///   - ofVolumes: Volumes the artifact places.
+    /// - Returns: The sentence.
+    public static func scopeSummary(documents: Int, volumes: Int, ofVolumes: Int) -> String {
+        guard documents > 0 else {
+            return String(localized: "semanticMap.scope.empty",
+                          defaultValue: "No mapped documents in this scope.")
+        }
+        // "mapped documents in whole volumes" rather than "every document in": the map places
+        // 314,483 rows against the app's 316,839, because chapter divs, front matter and appendices
+        // carry no vector. "Every document" was the wrong word by ~2,356 rows, and on a surface whose
+        // whole job is to be honest about what a model can and cannot say, the wrong word is the
+        // failure.
+        return String(format: String(
+            localized: "semanticMap.scope.summary.v3 %@ %lld %lld",
+            defaultValue: "In scope: %@ mapped documents — whole volumes, %lld of %lld."),
+            documents.formatted(.number), Int64(volumes), Int64(ofVolumes))
+    }
+
     /// The palette a lens draws with.
     ///
     /// Deliberately not one scheme for everything: `era` is ordered and gets a sequential ramp,
@@ -304,7 +344,7 @@ enum SemanticMapColouring {
     ///
     /// - Parameter lens: The active lens.
     /// - Returns: RGBA colours, palette-index ordered.
-    static func palette(for lens: SemanticMapLens) -> [SIMD4<Float>] {
+    public static func palette(for lens: SemanticMapLens) -> [SIMD4<Float>] {
         switch lens {
         case .cluster:
             // Slot 0 is the unclustered 28% — deliberately dim, so the regions read as figure and
@@ -396,7 +436,7 @@ enum SemanticMapColouring {
     ///   - hueDegrees: OKLCh hue in degrees.
     ///   - alpha: Straight alpha, passed through untouched.
     /// - Returns: Gamma-encoded sRGB with the given alpha.
-    static func oklch(lightness: Float, chroma: Float, hueDegrees: Float, alpha: Float)
+    public static func oklch(lightness: Float, chroma: Float, hueDegrees: Float, alpha: Float)
         -> SIMD4<Float> {
         let radians = hueDegrees * .pi / 180
         let a = chroma * cos(radians)
@@ -426,7 +466,7 @@ enum SemanticMapColouring {
             : 1.055 * pow(clamped, 1 / 2.4) - 0.055
     }
 
-    static func hsb(hue: Float, saturation: Float, brightness: Float, alpha: Float)
+    public static func hsb(hue: Float, saturation: Float, brightness: Float, alpha: Float)
         -> SIMD4<Float> {
         let sector = (hue - hue.rounded(.down)) * 6
         let fraction = sector - sector.rounded(.down)

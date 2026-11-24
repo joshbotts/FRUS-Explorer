@@ -13,8 +13,16 @@
 // limitations under the License.
 
 import Foundation
+// Linux's Foundation declares the geometry types itself; on Apple platforms a package module needs
+// CoreGraphics for their Equatable and their members.
+#if canImport(CoreGraphics)
 import CoreGraphics
-import simd
+#endif
+// SemanticVectorsKit is a module of its own in a package; Xcode compiles its sources into the app
+// target (project.yml), where its types are already in this module and the import is compiled out.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// Finds the document under a tap.
 ///
@@ -40,7 +48,11 @@ import simd
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
-enum SemanticMapPicking {
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into FRUSCoreKit, public, CoreGraphics behind
+///          `canImport` and without `simd`; the hit test and the lasso in the map's own coordinates, which
+///          their view-point forms call, ``regionName(ofRow:map:clusters:)``, which a tap and a reveal both
+///          name a point's region by, and ``positions(of:)``, the plane's positions for a host's picks
+public enum SemanticMapPicking {
 
     /// What a completed lasso enclosed, resolved to what a `WorkingCorpus` needs.
     ///
@@ -48,38 +60,67 @@ enum SemanticMapPicking {
     /// than the capture limit those two differ, and the difference is the whole content of
     /// `WorkingCorpus.wasTruncatedAtCapture` / `totalMatchCountAtCapture`. Collapsing them would make
     /// every over-large capture claim to be the whole answer.
-    struct LassoResult: Equatable, Sendable {
+    public struct LassoResult: Equatable, Sendable {
         /// `"volumeId/documentId"` keys, capped at the capture limit.
-        let documentKeys: [String]
+        public let documentKeys: [String]
         /// Every document inside the lasso, capped or not.
-        let total: Int
+        public let total: Int
         /// The regions the lasso touched, most-enclosed first, for naming the corpus.
-        let regionNames: [String]
+        public let regionNames: [String]
+
+        /// Creates a capture.
+        /// - Parameters:
+        ///   - documentKeys: `"volumeId/documentId"` keys, capped at the capture limit.
+        ///   - total: Every document inside, capped or not.
+        ///   - regionNames: The regions it touched, for naming the corpus.
+        public init(documentKeys: [String], total: Int, regionNames: [String]) {
+            self.documentKeys = documentKeys
+            self.total = total
+            self.regionNames = regionNames
+        }
 
         /// Whether the capture stopped short of what the reader drew.
-        var isTruncated: Bool { total > documentKeys.count }
+        public var isTruncated: Bool { total > documentKeys.count }
     }
 
     /// The document a tap selected, resolved to something a reader can act on.
-    struct Selection: Equatable, Sendable, Identifiable {
+    public struct Selection: Equatable, Sendable, Identifiable {
         /// The artifact row.
-        let row: Int
+        public let row: Int
         /// The volume the document belongs to.
-        let volumeID: String
+        public let volumeID: String
         /// The document's id within that volume.
-        let documentID: String
+        public let documentID: String
         /// Where it sits on the grid, for drawing the marker on the document rather than the finger.
-        let position: SIMD2<Float>
+        public let position: SIMD2<Float>
         /// The region it falls in, when it falls in one — 28% of the corpus is unclustered.
-        let regionName: String?
+        public let regionName: String?
         /// Whether this device can actually open it.
         ///
         /// **The map draws all 553 volumes and a reader has downloaded some of them.** Without this
         /// the obvious implementation offers "Open" on every document and fails on most of them; the
         /// `availability` lens exists to show the same fact at corpus scale.
-        let isDownloaded: Bool
+        public let isDownloaded: Bool
 
-        var id: Int { row }
+        /// Creates a selection.
+        /// - Parameters:
+        ///   - row: The artifact row.
+        ///   - volumeID: The document's volume.
+        ///   - documentID: The document's id within it.
+        ///   - position: Where it sits on the grid.
+        ///   - regionName: Its region's name, or `nil` between regions.
+        ///   - isDownloaded: Whether the host can open it.
+        public init(row: Int, volumeID: String, documentID: String, position: SIMD2<Float>,
+                    regionName: String?, isDownloaded: Bool) {
+            self.row = row
+            self.volumeID = volumeID
+            self.documentID = documentID
+            self.position = position
+            self.regionName = regionName
+            self.isDownloaded = isDownloaded
+        }
+
+        public var id: Int { row }
     }
 
     /// The most documents a lasso will put in a working corpus.
@@ -97,22 +138,22 @@ enum SemanticMapPicking {
     ///
     /// Exceeding it is not an error. The capture records `wasTruncatedAtCapture` and the full count,
     /// which is the model's existing vocabulary for precisely this situation.
-    static let corpusCaptureLimit = 7_500
+    public static let corpusCaptureLimit = 7_500
 
     /// How close a tap must land, in view points, to select a document.
     ///
     /// Sized for a fingertip rather than a cursor: on a dense map an exact hit is impossible, and a
     /// tap that selects nothing feels broken where a tap that selects a neighbour merely feels
     /// approximate — which is what the map is.
-    static let tapRadius: CGFloat = 22
+    public static let tapRadius: CGFloat = 22
 
     /// What a tap found.
-    struct Hit: Equatable, Sendable {
+    public struct Hit: Equatable, Sendable {
         /// The artifact row, which is what turns into a document id.
-        let row: Int
+        public let row: Int
         /// Its grid position, for drawing the selection where the document actually is rather than
         /// where the finger landed.
-        let position: SIMD2<Float>
+        public let position: SIMD2<Float>
     }
 
     /// Finds every document inside a freeform region the reader drew.
@@ -142,7 +183,7 @@ enum SemanticMapPicking {
     ///   `isTruncated`, so counting ghosts in one and not the other would report a cap that never
     ///   applied. With no mask — or one whose length does not match `positions`, which is a stale
     ///   mask and is ignored — the total is every document inside the path, as before.
-    static func rows(
+    public static func rows(
         inside path: [CGPoint],
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
@@ -156,6 +197,30 @@ enum SemanticMapPicking {
         let polygon = path.map {
             SemanticMapLabelLayout.unproject($0, camera: camera, size: size)
         }
+        return rows(insideGrid: polygon, positions: positions, limit: limit, scopeMask: scopeMask)
+    }
+
+    /// Finds every document inside a region given in the map's own coordinates.
+    ///
+    /// What ``rows(inside:positions:camera:size:limit:scopeMask:)`` runs once it has turned the
+    /// reader's path into grid space, for a host that holds the lasso there already — a server that
+    /// takes a polygon in the map's coordinates and holds no view. The rule, the cap, the total and
+    /// the scope's gate are that method's, word for word.
+    ///
+    /// - Parameters:
+    ///   - polygon: The closed path in grid space. Fewer than 3 points selects nothing.
+    ///   - positions: The **displayed** grid positions, one per row.
+    ///   - limit: Keep at most this many rows.
+    ///   - scopeMask: The active scope, when there is one; a mask whose length does not match
+    ///     `positions` is stale and is ignored.
+    /// - Returns: The kept rows, ascending, and every in-scope document inside the path.
+    public static func rows(
+        insideGrid polygon: [SIMD2<Float>],
+        positions: [SIMD2<Int16>],
+        limit: Int,
+        scopeMask: [UInt8]? = nil
+    ) -> (rows: [Int], total: Int) {
+        guard polygon.count >= 3, limit > 0 else { return ([], 0) }
 
         // A bounding box first: most of the corpus is outside any lasso, and a box test is two
         // comparisons against the crossing test's walk of every edge.
@@ -210,7 +275,7 @@ enum SemanticMapPicking {
     ///   - scopeMask: The active scope, when there is one. A mask whose length does not match
     ///     `count` is stale and is ignored, matching the lasso.
     /// - Returns: The kept rows, ascending, and every in-scope row in the region.
-    static func rows(
+    public static func rows(
         inCluster cluster: UInt16,
         count: Int,
         clusterAt: (Int) -> UInt16,
@@ -238,7 +303,7 @@ enum SemanticMapPicking {
     ///   - x: Grid x.
     ///   - y: Grid y.
     /// - Returns: Whether the point is inside.
-    static func contains(polygon: [SIMD2<Float>], x: Float, y: Float) -> Bool {
+    public static func contains(polygon: [SIMD2<Float>], x: Float, y: Float) -> Bool {
         var inside = false
         var j = polygon.count - 1
         for i in 0..<polygon.count {
@@ -263,7 +328,7 @@ enum SemanticMapPicking {
     ///   - size: The view's size in points.
     ///   - radius: How far a tap may miss, in view points.
     /// - Returns: The nearest document within the radius, or `nil` when the tap landed on empty map.
-    static func hit(
+    public static func hit(
         at point: CGPoint,
         positions: [SIMD2<Int16>],
         camera: SemanticMapCamera,
@@ -282,6 +347,30 @@ enum SemanticMapPicking {
         let gridPerPointX = scale.x * 2 / Float(size.width)
         let gridPerPointY = scale.y * 2 / Float(size.height)
         let tolerance = Float(radius) * max(gridPerPointX, gridPerPointY)
+        return hit(nearGrid: target, tolerance: tolerance, positions: positions, scopeMask: scopeMask)
+    }
+
+    /// Finds the document nearest a point in the map's own coordinates, within a tolerance in grid
+    /// units.
+    ///
+    /// What ``hit(at:positions:camera:size:radius:scopeMask:)`` runs once it has turned the tap and
+    /// its radius into grid space, for a host that holds them there already — a server that is asked
+    /// in the map's coordinates and holds no view. The scan, its cheap rejection, its tie rule and the
+    /// scope's gate are that method's.
+    ///
+    /// - Parameters:
+    ///   - target: The point, in grid units.
+    ///   - tolerance: How far a pick may miss, in grid units.
+    ///   - positions: The **displayed** grid positions, one per row.
+    ///   - scopeMask: The active scope, when there is one; a mask whose length does not match
+    ///     `positions` is stale and is ignored.
+    /// - Returns: The nearest document within the tolerance, or `nil` when there is none.
+    public static func hit(
+        nearGrid target: SIMD2<Float>,
+        tolerance: Float,
+        positions: [SIMD2<Int16>],
+        scopeMask: [UInt8]? = nil
+    ) -> Hit? {
         let toleranceSquared = tolerance * tolerance
 
         var bestRow = -1
@@ -313,5 +402,51 @@ enum SemanticMapPicking {
 
         guard bestRow >= 0 else { return nil }
         return Hit(row: bestRow, position: bestPosition)
+    }
+
+    /// The name of the region a row falls in, or `nil` when it falls between regions.
+    ///
+    /// **By ROW, from the artifact, never from a position**: a slice re-lays the same documents out,
+    /// so a position means something different there, but a row still means the same document and
+    /// therefore the same region. A tap and a reveal on one document name it the same way through
+    /// this, or the two paths would disagree about which region a document is in. The name is the
+    /// region's first three terms, the map's own form of it.
+    ///
+    /// - Parameters:
+    ///   - row: The artifact row.
+    ///   - map: The mapped placements.
+    ///   - clusters: The artifact's regions.
+    /// - Returns: The region's name, or `nil` between regions.
+    public static func regionName(ofRow row: Int, map: SemanticMapVectors,
+                                  clusters: [SemanticMapArtifacts.Cluster]) -> String? {
+        let clusterID = map.placement(at: row)?.cluster ?? SemanticMapArtifacts.unclustered
+        let region = clusterID == SemanticMapArtifacts.unclustered
+            ? nil
+            : clusters.first { $0.id == Int(clusterID) }
+        return region.map { $0.terms.prefix(3).joined(separator: " ") }
+    }
+
+    /// The map's own plane: each row's grid position as the artifact places it, in row order.
+    ///
+    /// The **displayed** positions the hit test and the lasso scan while no slice is drawn. The app's
+    /// model reads them out of the same block as it fills the renderer's points; a host that draws
+    /// elsewhere and picks here takes them from this.
+    ///
+    /// - Parameter map: The mapped placements.
+    /// - Returns: One position per document.
+    public static func positions(of map: SemanticMapVectors) -> [SIMD2<Int16>] {
+        var positions = [SIMD2<Int16>]()
+        positions.reserveCapacity(map.documentCount)
+        map.withPlacements { base, count in
+            for row in 0..<count {
+                let offset = row * SemanticMapArtifacts.bytesPerDocument
+                positions.append(SIMD2<Int16>(
+                    Int16(bitPattern: base.loadUnaligned(
+                        fromByteOffset: offset, as: UInt16.self).littleEndian),
+                    Int16(bitPattern: base.loadUnaligned(
+                        fromByteOffset: offset + 2, as: UInt16.self).littleEndian)))
+            }
+        }
+        return positions
     }
 }

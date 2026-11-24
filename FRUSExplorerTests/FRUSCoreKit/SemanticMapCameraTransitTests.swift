@@ -8,7 +8,17 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 // MARK: - SemanticMapCameraTransitTests
 
@@ -21,6 +31,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — visual-marketing plan §3.2 M-1: initial implementation
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites
 @Suite("Semantic map — camera transit")
 struct SemanticMapCameraTransitTests {
 

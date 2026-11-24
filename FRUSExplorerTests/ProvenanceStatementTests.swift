@@ -318,7 +318,8 @@ struct AnalyticsExportSourcesTests {
         "Analytics/CrossReferenceAnalyticsView.swift": [nil],
         "Analytics/PersonAnalyticsView.swift": ["[.frusText, .ohPeopleRegister]"],
         "Analytics/WordCloud/WordCloudView.swift": ["[.frusText, .appWordLists]"],
-        "Semantic/Map/SemanticMapExport.swift": ["[.frusText, .appModel]"],
+        // S28a: the map's export moved into the kit with the map's rules.
+        "../FRUSCoreKit/Semantic/SemanticMapExport.swift": ["[.frusText, .appModel]"],
         "../FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift": [nil, "[.frusText, .ohSubjects]", nil, nil],
         "../FRUSCoreKit/Analytics/Export/ArchivalAnalyticsExport.swift": [
             "rankingSources(lens: lens, weight: weight, glossesWritten: glossesWritten)", nil, nil, nil, nil],

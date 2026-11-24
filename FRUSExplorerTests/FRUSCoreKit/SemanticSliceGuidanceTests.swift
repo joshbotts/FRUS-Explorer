@@ -14,7 +14,17 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds SemanticVectorsKit as a module of its own; Xcode compiles it into the app.
+#if canImport(SemanticVectorsKit)
+import SemanticVectorsKit
+#endif
 
 /// A slice must refuse out loud, refuse for the right reason, and be introduced before it is made.
 ///
@@ -33,13 +43,19 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — build 42: after the silent refusal, and the conflated diagnosis that replaced it
+///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites: the refusals are the kit's
+///          (`SemanticMapPoles`), whose rule the package tests directly and whose copy is read from its
+///          file; the model's handling of them and the selection card's introduction are the app's
 @Suite("Semantic slices refuse out loud and for the right reason")
 @MainActor
 struct SemanticSliceGuidanceTests {
 
+    #if !SWIFT_PACKAGE
+    // The app's model, which applies the kit's refusals to its state.
     /// A model with no map artifact loaded — enough for every guard that fires before the centroid
     /// lookup, which is the same-volume rule.
     private func makeModel() -> SemanticMapModel { SemanticMapModel() }
+    #endif
 
     private func noYears(_ volumeID: String) -> Int? { nil }
 
@@ -55,11 +71,13 @@ struct SemanticSliceGuidanceTests {
     /// was about identifiers rather than about anything a reader sees. Passing the real copy into
     /// the test instead would just duplicate it here, where it could drift; reading source is what
     /// the other suites in this repo do for exactly this reason.
-    private func copy(forKey key: String) throws -> String {
+    private func copy(forKey key: String,
+                      in file: String = "FRUSCoreKit/Semantic/SemanticMapSlice.swift") throws -> String {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
-                .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
+                .deletingLastPathComponent()
+                .appending(path: file),
             encoding: .utf8)
         let pattern = try Regex(#"localized:\s*"# + "\"" + NSRegularExpression.escapedPattern(for: key)
                                 + "\"" + #",\s*\n?\s*defaultValue:\s*"((?:[^"\\]|\\.)*)""#)
@@ -70,6 +88,8 @@ struct SemanticSliceGuidanceTests {
 
     // MARK: - The same-volume refusal
 
+    #if !SWIFT_PACKAGE
+    // Drives the app's model.
     @Test("Two poles in one volume are refused, with a reason naming the actual constraint")
     func sameVolumeIsExplained() throws {
         let model = makeModel()
@@ -119,6 +139,56 @@ struct SemanticSliceGuidanceTests {
         #expect(model.axisNotice == nil, "a stale refusal survived a return to the map")
         #expect(model.poles.negative == nil && model.poles.positive == nil)
     }
+    #endif
+
+    // MARK: - The kit's rule, as a host meets it
+
+    @Test("A pair in one volume is refused before the artifact is ready, for the actual constraint")
+    func kitRefusesOneVolume() {
+        let refused = SemanticMapPoles.resolve(negative: "frus1861", positive: "frus1861",
+                                               isReady: false, centroid: { _ in nil })
+        #expect(refused == .refused(.sameVolume), "got \(refused)")
+        #expect(SemanticMapPoles.Refusal.sameVolume.notice.contains("same one"))
+    }
+
+    @Test("One end alone is an intermediate state, not a refusal")
+    func kitWaitsForTheSecondEnd() {
+        let ends: [(String?, String?)] = [("frus1861", nil), (nil, "frus1861"), (nil, nil)]
+        for (negative, positive) in ends {
+            #expect(SemanticMapPoles.resolve(negative: negative, positive: positive, isReady: true,
+                                             centroid: { _ in [1, 0] }) == .incomplete)
+        }
+    }
+
+    @Test("A pair completed before the artifact is ready is remembered, not diagnosed")
+    func kitDefersBeforeTheLoad() {
+        #expect(SemanticMapPoles.resolve(negative: "frus1861", positive: "frus1946v06", isReady: false,
+                                         centroid: { _ in nil })
+                == .deferred(negative: "frus1861", positive: "frus1946v06"))
+    }
+
+    @Test("A missing centroid and a cancelling difference are two refusals, and two volumes make an axis")
+    func kitNamesEachCause() {
+        let centroids: [String: [Float]] = ["a": [1, 0, 0], "b": [0, 1, 0], "twin": [1, 0, 0]]
+        #expect(SemanticMapPoles.resolve(negative: "a", positive: "missing", isReady: true,
+                                         centroid: { centroids[$0] }) == .refused(.noSummary))
+        #expect(SemanticMapPoles.resolve(negative: "a", positive: "twin", isReady: true,
+                                         centroid: { centroids[$0] }) == .refused(.tooAlike))
+        guard case .axis(let axis) = SemanticMapPoles.resolve(
+            negative: "a", positive: "b", isReady: true, centroid: { centroids[$0] }) else {
+            Issue.record("two differing volumes made no axis"); return
+        }
+        #expect(axis == SemanticAxis.between(negative: [1, 0, 0], negativeLabel: "a",
+                                             positive: [0, 1, 0], positiveLabel: "b"))
+    }
+
+    @Test("Each refusal's notice is its copy, and the three are distinct")
+    func kitNoticesAreTheCopy() throws {
+        for refusal in SemanticMapPoles.Refusal.allCases {
+            #expect(refusal.notice == (try copy(forKey: "semanticMap.axis.\(refusal.rawValue)")))
+        }
+        #expect(Set(SemanticMapPoles.Refusal.allCases.map(\.notice)).count == 3)
+    }
 
     // MARK: - The reasons stay distinct
 
@@ -147,11 +217,14 @@ struct SemanticSliceGuidanceTests {
 
     // MARK: - The slice is introduced before it is made
 
+    #if !SWIFT_PACKAGE
+    // Reads the app's view.
     /// Slices are reachable only from the selection card, so the card is the only place that can
     /// explain what a slice adds — and the caution that makes it usable judiciously.
     @Test("The selection card says what a slice adds, and that any two volumes produce one")
     func selectionCardIntroducesTheSlice() throws {
-        let text = try copy(forKey: "semanticMap.axis.whatItAdds")
+        let text = try copy(forKey: "semanticMap.axis.whatItAdds",
+                            in: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift")
         #expect(!text.isEmpty)
         // The distinction from the map: the map has no nameable direction, a slice does.
         #expect(text.lowercased().contains("direction"), """
@@ -170,6 +243,7 @@ struct SemanticSliceGuidanceTests {
         let source = try String(
             contentsOf: URL(fileURLWithPath: #filePath)
                 .deletingLastPathComponent().deletingLastPathComponent()
+                .deletingLastPathComponent()
                 .appending(path: "FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift"),
             encoding: .utf8)
         let card = try #require(source.range(of: "private var selectionCard: some View"))
@@ -181,4 +255,5 @@ struct SemanticSliceGuidanceTests {
             slice will not read.
             """)
     }
+    #endif
 }
