@@ -649,7 +649,7 @@ The app already has the habit in one place: an entry kind a later build wrote is
 
 ### 7.4 The upgrade
 
-**A function in FRUSCoreKit, over values.** It takes a 1.0 collection as the research export already carries one (`CollectionExport` with its entries) and gives the new value. It reads no store and writes none, so it runs in `swift test`, with a fixture for every stored state.
+**A function in FRUSCoreKit, over values.** It takes a 1.0 collection as the research export already carries one (`CollectionExport` with its entries) and gives the new value. It reads no store and writes none, so it runs in `swift test`, with a fixture for every stored state. The app writes what it answers through its own context, as it applies the rows an Archives Visit's rules answer.
 
 | 1.0 holds | The new record holds |
 |---|---|
@@ -666,7 +666,7 @@ The app already has the habit in one place: an entry kind a later build wrote is
 | an entry's headnote draft | a copy of it, so that a delete on a 1.0 device cannot remove it (`Collection.swift:885-889`) |
 | a kind this build does not know | carried as stored, and inert |
 
-**The same ids.** The new collection and its entries take the ids of the old. So every pointer the app keeps to a collection still finds it, a second run finds the work done, and two devices that both upgrade produce records the duplicate cleanup can pair.
+**The same ids.** The new collection and its entries take the ids of the old. So every pointer the app keeps to a collection still finds it, a second run finds the work done, and two devices that both upgrade produce records the duplicate cleanup can pair. A headnote draft's copy takes an id derived from its entry's, as an Archives Visit derives a child row's (`ArchiveVisitPlanWrites.swift:76`), so two devices make the same copy.
 
 **When it runs.** On a build that has the new types, after the first iCloud import of a launch has settled, which is where the app's other repairs wait (`SummarizationPromptSeeder.swift:165-168`); or at once on a device with no iCloud account. Until then a 1.0 collection is listed, previewed and exported through the same function, and is not editable, with one button to upgrade it now.
 
