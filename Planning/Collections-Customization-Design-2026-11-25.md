@@ -33,7 +33,7 @@ That is five asks:
 - The revision read, besides: the review and its eight reports; `Completed/Collections-Rework-Scope.md`, which the first form had not read; the Editorial Methodology of `frus1977-80v06`; and, for §7, the model container, the CloudKit inventory, the duplicate cleanup, the research import plan and the collection file's format.
 - **Nothing in §3 to §9 has been reviewed.** The review judged the first form. Its reviewers and skeptics were not asked about this one.
 
-**The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its seven boards are still those of the first form, and are being redrawn for this one to show:
+**The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its seven boards were redrawn for this form:
 
 - the export sheet on an iPhone (§5.1);
 - the collection's settings on the Mac, with the template gallery first (§5.2);
@@ -42,7 +42,7 @@ That is five asks:
 - the three openings of document 475, with their contents rows, and the volume's own uses of brackets (§3.3);
 - a contents list in the three citation styles (§6).
 
-The session wrote the boards and did not see them rendered: this container cannot open the canvas.
+The session wrote the boards and did not see them rendered: this container cannot open the canvas. One error of the first form's boards is corrected in these: they drew the editors' bracketed *13* in document 475's first line as a footnote's number.
 
 ---
 
@@ -213,7 +213,7 @@ Each part is named here against the render model (`FRUSDocumentRenderModel`, `FR
 | **Citation** | made from the volume and the document's number, in the collection's style (§6) | its link to history.state.gov, and the address 1.0 prints under it | leads the document, or is a small line above it |
 | **Headnote** | the entry's headnote draft | its line of attribution | on or off |
 | ***The document, as the volume prints it*** | | | |
-| **Printed heading** | the document's own heading node (`.heading`, `:62`) | its footnote calls, which from 1955 include the source note's | prints wherever the text prints. Where the text does not, it is a line read from the index (§3.4) |
+| **Printed heading** | the document's own heading node (`.heading`, `:62`) | its footnote calls, which from 1955 include the source note's; the collection's number, where this heading leads | prints wherever the text prints. Where the text does not, it is a line read from the index (§3.4) |
 | **Text** | every other body node, in order: the source note's marker where the volume leads with it, the opener with its classification marking and dateline (`.letterOpener`, `:68`), the paragraphs, the closer | the printed dateline, the marking, the signature | Full · Summary · None |
 | **The volume's notes** | the footnote bodies, with the source note among them (`type: .source`, `:84`) | the calls stay in the text in every case | All · The source note only · None (§3.5) |
 | ***The author's research*** | | | |
