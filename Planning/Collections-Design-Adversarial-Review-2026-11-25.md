@@ -2,7 +2,7 @@
 
 **Status: LIVE, 2026-11-25.** The review the owner asked for the same day ("Adversarially review the hybrid C option"), of `Collections-Customization-Design-2026-11-25.md` as it stood at `617b36b`: its recommended hybrid (§4.5), which is the parts inspector entered from the preview through the Adjust switch, with the template gallery first. Both forms of the preview's tap were reviewed: opening the inspector on a part, and opening a popover on the page. Read against `v2` at `efd73ec`. Nothing in the app or its tests changed.
 
-**The design was revised afterwards, on the owner's word.** This review is of its first form, which is in history at `aad7636`, and the section numbers below are that form's. The second form's §11 lists each finding here with where it is answered, and its §12 the checks still owed. No one has reviewed the second form.
+**The design was revised afterwards, twice, on the owner's word.** This review is of its first form, which is in history at `aad7636`, and the section numbers below are that form's. The second form (`58cc047`) listed each finding here with where it was answered, and `Collections-Design-Second-Review-2026-11-25.md` reviewed that form: of the seventeen findings here it found three answered, thirteen answered in part and one not. The third form's §11 says what is still open from this review, and its §12 the runs still owed. No one has reviewed the third form.
 
 **The verdict in one line:** the hybrid does not stand as written. No finding was refuted, and the design's central claims about marks, datelines, the ten parts, templates and simplicity each fail on evidence in the tree or in the volumes.
 
@@ -229,7 +229,9 @@ Each was attacked and held.
 
 ## 6. Defects of the app as it ships, met on the way
 
-None is this design's doing. Each was confirmed by a skeptic's re-read of the code; none was seen in a running app, and none is filed.
+None is this design's doing. Each was confirmed by a skeptic's re-read of the code; none was seen in a running app.
+
+**Filed on 2026-11-25, on the owner's word,** after the session read each again at its lines: 1 is #1994, 2 #1991, 3 #1995, 4 #1992, 5 #1996, 6 #1997 and 7 #1998. Two were wider than this list has them: the source note prints twice before 1955 too (#1991), and any entry added later lands after the blocks, with or without a template (#1995).
 
 1. **A *Header & Dateline* contents list prints no dateline for most documents,** since the collection reads a dateline only where it is the document's own top-level block (G7). A test pins this as intended.
 2. **With Footnotes and Source note both on, the source note is printed twice** in volumes from 1955: once among the footnotes and once as *Source:*. *Full text as printed* and *Everything included* turn both on (`CollectionExporter.swift:226-229`).

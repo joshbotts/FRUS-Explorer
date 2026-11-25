@@ -2,6 +2,8 @@
 
 **Status: LIVE, 2026-11-25.** The review the owner asked for ("Adversarially review the revised design. Also check how the .fruscollection export format will be affected."), of `Collections-Customization-Design-2026-11-25.md` in its second form, as it stood at `88780fc`. Read against `v2` at `efd73ec`. Nothing in the app or its tests changed.
 
+**The design was revised afterwards, on the owner's word, and the defects of §6 were filed.** This review is of the design's second form, which is in history at `58cc047`, and the section numbers below are that form's. The third form's §11 lists each finding here with where it is answered, and its §12 the runs still owed. No one has reviewed the third form.
+
 **The verdict in one line:** the second form does not stand as written either. No finding was refuted. Its storage can lose work, and what it says of the `.fruscollection` file is wrong: the file need not change version, and a 1.0 app should go on opening it.
 
 **Where the findings fall.** The first review's central objections are answered in part (§0). Most of the new findings are about what the revision added: the two record types and their upgrade, version 3 of the file, a number at each lead, the notes as one choice, a look chosen in the export sheet, and a wording table that holds the mark itself.
@@ -412,7 +414,9 @@ Each was attacked and held.
 
 ## 6. Defects of the app as it ships, met on the way
 
-None is this design's doing. They are beyond the seven of the record's §2.8. Each was confirmed by a skeptic's re-read of the code unless it says otherwise; none was seen in a running app, and none is filed.
+None is this design's doing. They are beyond the seven of the record's §2.8. Each was confirmed by a skeptic's re-read of the code unless it says otherwise; none was seen in a running app.
+
+**Filed on 2026-11-25, on the owner's word,** after the session read each again at its lines: 8 is #1999, 9 #2000, 10 #1993, 11 #2001, 12 #2002, 13 #1992 and #2003, 14 #1997, 15 #2004, 16 #2005, 17 #2006 and 18 #2007. Items 13 and 14 are in part further cases of the first review's fourth and sixth, and share their issues.
 
 8. **A `.fruscollection` carries a headnote as its draft's id,** so a file opened on its author's own account makes a collection that shares the original's drafts (H7).
 9. **BibTeX, RIS, the Zotero send and the file's note texts ignore a section's or a document's research-notes setting** (H8).
@@ -420,7 +424,7 @@ None is this design's doing. They are beyond the seven of the record's §2.8. Ea
 11. **Word numbers the volume's footnotes by its own count** when footnotes are on, where the web page and the PDF print the volume's numbers (H17).
 12. **A *Header & Dateline* row for a volume from 1955 carries two numbers,** the row's and the volume's: "4.  1. Letter From…" (`CollectionExporter.swift:682-683`).
 13. **A citation record's title can end in "[1]",** and an editorial note's is its id, since the collection reads a heading at the top level and writes a footnote call into it (`CollectionContentAssembly.swift:1518-1522`; `ZoteroJSONExporter.swift:159-160`). Derived from the code and the TEI.
-14. **The preview's refresh list omits four fields, not one:** the title override, the collection's headnote default, the project stamp and the query log (`CollectionPreviewView.swift:211-266`).
+14. **The preview's refresh list omits two fields its page draws, not one:** the title override and the collection's headnote default (`CollectionPreviewView.swift:211-266`) *(corrected on filing, #1997: this review first said four. The project stamp and the query log are not in the list either, but the preview's own options draw neither, `:519-531`, so nothing on its page waits for them)*.
 15. **A document entered twice has duplicate element ids in the exported web page** (`CollectionItemHTMLRenderer.swift:784-787`).
 16. **An Apple Intelligence headnote adds no source to the export's statement of sources** (`CollectionExporter.swift:1317-1319`). The headnote keeps its own line of attribution.
 17. **In the Collections list, Rename, Duplicate and the rest are context-menu items with no VoiceOver action;** each note's switch in a document's inspector speaks the same name; the section pill is about 24 points high; the template cards' type is fixed in points.

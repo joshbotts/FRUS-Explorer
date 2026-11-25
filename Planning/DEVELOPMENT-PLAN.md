@@ -12457,3 +12457,22 @@ A cloud session, on the owner's word of 2026-11-25: the Collections feature does
 - **Checks:** none run, and nothing compiled changed. The canvas was not redrawn.
 
 **Owed by the owner now:** the review's §8, which reopens the design's Q2, Q3, Q4, Q6 and Q7 and adds three questions; the runs of its §7, of which the collection file opened in build 1861 is the cheapest; and whether the eighteen defects are to be filed.
+
+**The issues filed, and a third form of the design,** on the owner's word ("Revise the design record to address the second review's findings. File the issues."):
+- **Seventeen issues, #1991 to #2007,** for the eighteen defects the two reviews listed: two of the second review's were further cases of two of the first's, and one of its items was two defects. The PDF's contents list was the owner's #1984 already.
+  - Each was read again at its lines before it was filed. None was reproduced in a running app, and each issue says so.
+  - One was narrower than the review had it: the preview's refresh misses two fields its page draws, not four (#1997). Two of the first review's were wider: the source note prints twice before 1955 too (#1991), and any entry added later lands after the blocks (#1995).
+  - Four issues were corrected after filing, where the session's own text was loose (#1997, #2003, #2005, #2007).
+- **The design record is in its third form, and does less than either earlier one.**
+  - **Storage:** 1.0's two record types, with four optional properties: a citation style, which line leads a document, the collection's own words for the app's labels, and a document's date line. No new record types and no upgrade. One CloudKit promotion, each property with its control in the same lane.
+  - **The collection file** keeps its version and its floor. New settings are optional keys, and a headnote travels as its text.
+  - **The page:** nothing the volume prints is replaced. A title of the author's stands above the fixed words *In the volume:*. No number stands at a document's head. The notes stay two switches, with a rule that prints the source note once. The Note on the Text is a block.
+  - **One plan for three formats,** in the kit, which is where ten of the eighteen issues end.
+  - **A template in the export sheet** for PDF, Word and Web page, writing nothing, with the template's own blocks in place of the collection's.
+  - **The interface is 1.0's three surfaces, trimmed.** The collection's settings open on 13 controls, and hold 37 with *Customize* open, where there are 24 today. A section's sheet holds its own 6 where it shows 21. A picker's *Default* names what it follows and the value in force there.
+  - **Seven lanes,** of which the first two need nothing new stored; ten questions for the owner (§10); each finding of the second review beside its answer (§11); the runs owed (§12).
+- **The canvas was redrawn for the third form:** nine boards, two of them new. The session did not see them rendered.
+- **Nothing in the third form's proposal has been reviewed.** Its citations of the tree were printed and read again, and its text corrected where it was loose: what the Zotero send reads, what a 1.0 app shows of a headnote that travels as text, and what a picker says where nothing above sets a value.
+- **Checks:** none run, and nothing compiled changed.
+
+**Owed by the owner now:** the ten answers of the design's §10; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12, of which a hand-made collection file opened in build 1861 is the cheapest.

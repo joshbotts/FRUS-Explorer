@@ -1,21 +1,27 @@
 # Collections: export in two taps, and fine-tune every part of a document — a design, 2026-11-25
 
-**Status: PROPOSED on 2026-11-25, and revised the same day after an adversarial review. Nothing is built, and no code changed.** §10 asks the owner for nine decisions. §9's lanes are written so that the next plan of record can take them as rows. §12 lists the checks that need a device before a lane starts.
+**Status: PROPOSED on 2026-11-25; third form, revised after two adversarial reviews. Nothing is built, and no code changed.** §10 asks the owner for ten decisions. §9's lanes are written so that the next plan of record can take them as rows. §12 lists the runs that need a device before a lane starts.
 
-**This is the record's second form.** The first recommended a parts inspector entered from the preview. `Collections-Design-Adversarial-Review-2026-11-25.md` found that it did not stand as written: 50 findings, none refuted, 17 distinct at S1 or S2. The owner then asked for this revision, and offered a new model type with a one-way upgrade as its base. Five things changed:
+**This is the record's third form.**
 
-- **Nothing the volume prints is replaced.** A title or a date line of the author's is added above the document, and the volume's heading stays under it, named in words. The first form replaced the heading and marked the replacement with brackets (§3).
-- **A template chosen at export is for that export, and a template chosen for the collection asks first.** The first form rewrote the collection at the tap (§4.3, §4.4).
-- **The settings on screen are those of what is selected.** The first form had a switch for the scope (§4.2).
-- **Pointing at the page is the Mac's alone** (§5.3).
-- **Collections move to two new record types, by a one-way upgrade that deletes nothing** (§7).
+- The first recommended a parts inspector entered from the preview. `Collections-Design-Adversarial-Review-2026-11-25.md` found 50 findings in it, none refuted.
+- The second kept the document as the volume prints it, and added two record types with an upgrade, a number at each document's head, the notes as one choice, a template in the export sheet and a table of words. `Collections-Design-Second-Review-2026-11-25.md` found 59 findings in it, none refuted, most of them in what it added.
+- The owner then asked for this revision. **It does less than either.** What changed from the second form:
 
-§11 lists every finding of the review with the section that answers it. The first form is in the repository's history at `aad7636`. The review cites its section numbers, which this form does not keep.
+| | The second form | This form |
+|---|---|---|
+| **Storage** | two new record types and a one-way upgrade | the two record types 1.0 has, with four optional properties added; no upgrade (§7) |
+| **The collection file** | version 3, refused by 1.0 | the same version and the same floor; new settings as optional keys (§7.4) |
+| **The notes** | one choice of three | 1.0's two switches, with the source note printed once (§3.5) |
+| **Numbers** | the collection's own number at each document's head | none there; the contents rows numbered alike in every format (§3.8) |
+| **The mark** | *Printed heading:*, in a table of words the author may change | *In the volume:*, fixed, over the document; a date line only under a title (§3.4) |
+| **The Note on the Text** | a block and a switch | a block (§3.6) |
+| **A template in the export sheet** | for every format, with the collection's blocks told apart by who placed them | for PDF, Word and Web page; the template's own blocks in place of the collection's (§4.4) |
+| **The settings** | a new list for each thing selected, with no *Default* | 1.0's three surfaces, trimmed, with a *Default* that says what it is (§4.2, §5.2) |
 
-**Reviewed adversarially the same day, and it does not stand as written either.** `Collections-Design-Second-Review-2026-11-25.md` records six reviewers' 59 findings, none refuted: once merged, 1 at S1, 20 at S2 and 27 at S3. Its §2 is on the `.fruscollection` file, where §7.6 below is wrong: the file need not change version, and a 1.0 app should go on opening it. Its §8 says what the design becomes, and withdraws the upgrade of §7.4 as designed.
-- This record is left as it was reviewed, so that the review can be read against it.
-- Thirteen statements about the app as it ships, or about the volumes, were false. Each is corrected where it stands and marked *(corrected, second review …)*.
-- The proposal's own claims that the review supersedes are listed in the review's §5 and are not edited here. Read §3 to §9 with the review beside them.
+§11 lists every finding of the second review with the section that answers it. The earlier forms are in the repository's history: the first at `aad7636`, the second at `58cc047`. The reviews cite their section numbers, which this form does not keep.
+
+**The defects of 1.0 that the two reviews met are filed,** on the owner's word: #1991 to #2007, beside the owner's own #1984 (§2.8).
 
 **What this is.** The owner's words of 2026-11-25:
 
@@ -23,31 +29,30 @@
 
 That is five asks:
 
-1. a quick export from a template (§5.1);
+1. a quick export from a template (§4.4, §5.1);
 2. every part of a document adjustable, in a simpler interface than today's (§3 to §5);
 3. the author's own headings, datelines and labels, marked (§3);
 4. a citation style for the collection (§6);
 5. other authorial capabilities (§8).
 
-§2 says where the feature, as 1.0 (1861) ships it, falls short of each.
+**How far this form goes on each, said plainly.** It meets 1 and 4. On 3 it gives the author a title, a date line and their own words for the app's labels, and it does not give them a page from which the volume's heading or dateline is gone (§3.1; Q2 asks). On 2 it fixes how a document is drawn and trims the three settings surfaces; it does not replace them with a new one (Q1 asks).
 
-**How it was read.** In a cloud session with no Xcode, on 2026-11-25, from `v2` at `efd73ec` (#1988's merge). Nothing was built or run. Every statement about behaviour is read from the code, from both manuals or from the public TEI, and carries its file and line at that commit.
+**How it was read.** In a cloud session with no Xcode, on 2026-11-25, from `v2` at `efd73ec` (#1988's merge). Nothing was built or run. Every statement about behaviour is read from the code, from both manuals, from the Agentic Analysis Guide or from the public TEI, and carries its file and line at that commit.
 
-- §2 is the first form's reading of the app, with the six corrections the review made to it and the seven defects the review met on the way (§2.8).
-- The examples are real: document 475 of `frus1946v06` and its neighbours, from the public TEI (`HistoryAtState/frus`), with the volume's title, editors and year from the bundled manifest. The counts over volumes are the review's, made by parsing eight volumes.
-- The revision read, besides: the review and its eight reports; `Completed/Collections-Rework-Scope.md`, which the first form had not read; the Editorial Methodology of `frus1977-80v06`; and, for §7, the model container, the CloudKit inventory, the duplicate cleanup, the research import plan and the collection file's format.
-- §3 to §9 were reviewed after they were written; the notice above says where.
+- §2 is the first form's reading of the app, with the nineteen corrections the two reviews made to it and to later sections.
+- The examples are real: document 475 of `frus1946v06` and its neighbours, from the public TEI (`HistoryAtState/frus`). The counts over volumes are the reviews', made by parsing eight volumes, and recounted by a skeptic with scripts of its own.
+- Before the seventeen issues were filed, the session read each defect again at its lines. One was narrower than the review had it, and its issue says so (#1997).
+- **Nothing in §3 to §9 of this form has been reviewed.**
 
-**The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its seven boards were redrawn for this form:
+**The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its nine boards were redrawn for this form:
 
-- the export sheet on an iPhone (§5.1);
-- the collection's settings on the Mac, with the template gallery first (§5.2);
-- a document's settings on the Mac, and on an iPhone (§5.2);
-- the Mac's preview with *Show Parts* on (§5.3);
-- the three openings of document 475, with their contents rows, and the volume's own uses of brackets (§3.3);
-- a contents list in the three citation styles (§6).
+- the export sheet on iPhone, with a template for one export;
+- the collection's settings behind the Mac's gear, 13 controls in view, and the question a template asks before it changes a collection;
+- a document's settings on the Mac and on iPhone, and a section's sheet;
+- *Show Parts* in the Mac's preview, which is a later lane;
+- three openings of document 475 with the mark, and a contents list in three citation styles.
 
-The session wrote the boards and did not see them rendered: this container cannot open the canvas. One error of the first form's boards is corrected in these: they drew the editors' bracketed *13* in document 475's first line as a footnote's number.
+The session wrote the boards and did not see them rendered: this container cannot open the canvas. They draw one example collection, six of Kennan's telegrams from `frus1946v06`, whose headings, datelines and source notes were read from the public TEI.
 
 ---
 
@@ -55,21 +60,19 @@ The session wrote the boards and did not see them rendered: this container canno
 
 **What is wrong today** (§2):
 
-- **Every document is drawn one way, and the three formats disagree about that way.** A document prints the citation as a heading and then the volume's own heading under it. The PDF prints one line of a source note above the text, ends its contents list where the cover page ends, and gives each research note a page of its own. The Word file ignores the contents-list style.
-- **The controls are many, and they are sorted by where a value is stored.** Collection settings holds 24. A document's inspector holds nine settings, eight of them a picker with a *Default* choice. A section's sheet shows 21 controls, of which six are the section's.
-- **A template is a one-way trip, and it is not offered at export.** One tap overwrites eight fields with no undo. The export sheet chooses a format and nothing else, and nothing exports a collection from the Collections list.
-- **Collections cite in one style.** The app has three formatters, and the collection's assembly names one of them in its code.
+- **Every document is drawn one way, and the three formats disagree about that way.** A document prints the citation as a heading and then the volume's own heading under it. The PDF prints one line of a source note above the text and ends its contents list where its first page ends. Word numbers the volume's footnotes by its own count. With both note switches on, the source note prints twice.
+- **The controls are many, and they are sorted by where a value is stored.** Collection settings holds 24. A document's inspector holds nine settings, eight of them a picker with a *Default* choice that does not say what the default is. A section's sheet shows 21 controls, of which six are the section's.
+- **A template is a one-way trip, and it is not offered at export.** One tap overwrites eight fields with no undo. Nothing exports a collection from the Collections list.
+- **Collections cite in one style.**
 
 **What is proposed:**
 
-- **The document prints as the volume prints it, and the author's words stand above it.** A title, a date line, the collection's own number and the citation are the author's lines. The volume's heading follows as *Printed heading:*, with its footnote calls, and the dateline stays in the text where the volume has it (§3.1 to §3.4).
-- **Marked in words.** No brackets, which the volumes use for their own editors' additions. A generated *Note on the Text* says what the author added and what the collection leaves out (§3.6).
-- **Export is a look, a format and a button**, from the editor, the Collections list and the Mac's menu. A template chosen there is for that export and writes nothing (§5.1).
-- **One list of settings for each thing that can be selected:** the collection, a section, a document. Each row shows what is in force and says in words where the value comes from. There is no *Default* choice and no switch for the scope (§4, §5.2).
-- **The template gallery first.** The collection's settings open on the six templates and the title page: 14 controls in view against today's 24. Opened fully they are 31, seven more than today (§5.5).
-- **A citation style per collection**, over the three formatters the app has (§6).
-- **One plan for three formats:** the kit resolves each document's lines once, and HTML, PDF and Word draw that plan (§3.8).
-- **Two new record types and one CloudKit deploy.** 1.0's collections are upgraded once, by a function tested over values, and are left where they are (§7).
+- **The document prints as the volume prints it, and the author's words stand above it.** A title and a date line are the author's; the words *In the volume:* then mark where the volume's own begin (§3.1 to §3.4).
+- **One plan for three formats.** The kit resolves each document's lines once, and the web page, the PDF and Word draw that plan. That is where most of the filed defects end (§3.8).
+- **A template in the export sheet,** for that export, for the three formats that are renderings. It writes nothing to the collection (§4.4).
+- **1.0's three settings surfaces, trimmed.** The collection's opens on the six templates and the title page, 13 controls where there are 24. A section's sheet holds the section's six where it shows 21. A picker's *Default* says what it follows and what that is (§5.2, §5.5).
+- **Four new facts, stored where collections are stored today:** a citation style, which line leads a document, the collection's own words for the app's labels, and a document's date line. One CloudKit promotion of four fields (§7).
+- **The collection file keeps its version.** A 1.0 app opens a file the new version writes (§7.4).
 
 ---
 
@@ -77,9 +80,9 @@ The session wrote the boards and did not see them rendered: this container canno
 
 ### 2.1 "Export a collection very quickly"
 
-- **The export sheet chooses a format and nothing else.** It shows the collection's one-line composition summary, six format cards and the Zotero row (`CollectionExportSheet.swift:220-240`, `:342-371`). It opens on PDF every time (`@State private var selectedFormat: ExportFormat = .pdf`, `:60`), whatever the collection last exported as. It writes nothing to a collection (`:19-22`).
-- **A template is applied somewhere else.** On an iPhone the path from the Collections list to a PDF under another template is: the collection's row, *Collection settings*, a template chip, Back, scroll to *Actions*, *Export…*, *Export PDF* *(corrected, second review: this record first counted a format card, which a PDF does not need, since the sheet opens on PDF)*. On the Mac the templates are in a 420-point popover behind the toolbar's gear (`MacCollectionManagerView.swift:1172-1262`).
-- **Nothing exports from a list.** The iOS Collections list's context menu offers Rename, Duplicate, Word Cloud, Create Static Snapshot and Delete (`CollectionListView.swift:350-387`), and the file names no exporter. On the Mac both ways in, the toolbar's *Export…* and the Collection menu's *Export Collection…* (⇧⌘E), set the same flag that opens the sheet (`MacCollectionManagerView.swift:1759`, `:1111`).
+- **The export sheet chooses a format and nothing else.** It shows the collection's one-line composition summary, six format cards and the Zotero row (`CollectionExportSheet.swift:220-240`, `:342-371`). It opens on PDF every time (`:60`), whatever the collection last exported as. It writes nothing to a collection (`:19-22`).
+- **A template is applied somewhere else.** On an iPhone the path from the Collections list to a PDF under another template is: the collection's row, *Collection settings*, a template chip, Back, scroll to *Actions*, *Export…*, *Export PDF*. On the Mac the templates are in a 420-point popover behind the toolbar's gear (`MacCollectionManagerView.swift:1172-1262`).
+- **Nothing exports from a list.** The iOS Collections list's context menu offers Rename, Duplicate, Word Cloud, Create Static Snapshot and Delete (`CollectionListView.swift:350-387`). On the Mac both ways in, the toolbar's *Export…* and the Collection menu's *Export Collection…* (⇧⌘E), open the same sheet (`MacCollectionManagerView.swift:1759`, `:1111`).
 
 ### 2.2 "Customize how each document is displayed"
 
@@ -88,96 +91,103 @@ Every document is drawn in one order, whatever the template. From the HTML rende
 1. the citation as an `<h2>`, linked to history.state.gov, or the entry's title override in its place (`:296-309`);
 2. the document's address, as a paragraph of its own (`:304-306`);
 3. the headnote, when on (`:317-319`);
-4. the text, with **the volume's own heading, a second `<h2>`** (`FRUSRenderNodeHTMLSerializer.swift:740-741`), and its dateline. In the volumes before 1955 the text opens with the source note's marker, on a line above that heading. In most documents the dateline is drawn inside an opener's block, beside the classification marking (`:749-750`), and not as a block of its own;
+4. the text, with **the volume's own heading, a second `<h2>`** (`FRUSRenderNodeHTMLSerializer.swift:740-741`), and its dateline. In the volumes before 1955 the text opens with the source note's mark, on a line above that heading. In most documents the dateline is drawn inside an opener's block, beside the classification marking (`:749-750`);
 5. the source note under the word *Source:* (`:379-382`);
 6. the *See also:* line (`:386-394`);
 7. each research note, under *Research Note* (`:397-409`).
 
-What the author can change in that, for one document:
+What the author can change in that, for one document: the text of line 1 (*Title override*), how much of the text prints, and six switches (highlights, research notes, source note, footnotes, related documents, headnote).
 
-- the text of line 1 (*Title override*, `CollectionEntryInspector.swift:385-403`), which leaves the volume's heading standing under it;
-- how much of the text prints (full, a summary, none);
-- six switches: highlights, research notes, source note, footnotes, related documents, headnote.
+What the author cannot change: which of the two headings leads; anything about a date; the address line; any label (*Contents*, *Summary*, *Source:* and *Research Note* are literals in the renderer, `:560`, `:359`, `:380`, `:400`); the order of the parts.
 
-What the author cannot change:
+**Why a title of one's own matters.** Documents 470, 473, 474, 475, 476, 477, 480 and 486 of `frus1946v06` all carry one heading: *The Chargé in the Soviet Union (Kennan) to the Secretary of State*. Under *Header & Dateline* the eight contents rows are identical and carry no date (#1994). Under *Citation* every row is the same citation of some 200 characters, ending in a different number. Document 475 is the telegram a reader knows as the Long Telegram.
 
-- which of the two headings leads;
-- anything about a date;
-- the address line;
-- any label. *Contents*, *Summary*, *Source:* and *Research Note* are literals in the renderer (`CollectionItemHTMLRenderer.swift:560`, `:359`, `:380`, `:400`); *Headnote* and *See also:* are the app's strings (`:450`, `:387`);
-- the order of the parts.
-
-**Why a title of one's own matters.** Documents 470, 473, 474, 475, 476, 477, 480 and 486 of `frus1946v06` all carry one heading: *The Chargé in the Soviet Union (Kennan) to the Secretary of State*. Under *Header & Dateline* the eight contents rows are identical and carry no date. The collection reads a dateline only where it is a document's own top-level block (`CollectionContentAssembly.swift:1468-1482`), all eight keep theirs inside an opener, and a test pins the result (`CollectionResolutionTests.swift:450-452`). Under *Citation* every row is the same citation of some 200 characters, ending in a different number. Document 475 is the telegram a reader knows as the Long Telegram.
-
-**The outline does not show the override.** A document's row reads the indexed header (`CollectionEntryRows.swift:972`), on the Mac too (`MacCollectionManagerView.swift:2022-2028`), so a title the author gave appears in the preview and the export and not in the list they arrange.
+**The outline does not show the override.** A document's row reads the indexed header (`CollectionEntryRows.swift:972`), on the Mac too (`MacCollectionManagerView.swift:2022-2028`).
 
 ### 2.3 Three formats, three layouts
 
-The preview is the HTML export, and its own caption says so: *Preview of the HTML export — PDF and Word pagination will differ* (`CollectionPreviewView.swift:419`). The other two formats differ in more than pagination:
+The preview is the HTML export, and its own caption says so (`CollectionPreviewView.swift:419`). The other two formats differ in more than pagination:
 
 | | HTML and the preview | PDF | Word |
 |---|---|---|---|
-| The source note | after the text, whole | **above** the headnote and the text, in a rectangle 14 points high, which at 9 points is one line (`PDFCollectionExporter.swift:752-762`; `draw` lays out only the lines its rectangle holds, `:1523-1538`) | after the text, whole |
-| A research note | under the document | **a page of its own for each**, in one frame, so a note longer than the page is cut off (`:852-889`) | under the document |
-| The contents list | every row | **the cover page only**: the loop stops when the page is full (`guard y >= M + 50 else { break }`, `:634`) | a Word field, with rows cached until Word rebuilds it |
-| The contents-list style | honoured | honoured (`:638`) | **never read**: the file names neither `tocStyle` nor `tocLabel`; the cached rows print the citation even where the entry has a title override (`DocxCollectionExporter.swift:1905`) |
-| The volume's heading | a second `<h2>` | 13 points bold, the citation heading's own size and weight (`:1063`, `:688`) | Heading 3 under Heading 2 |
-| *Summary* over a summary | printed (`CollectionItemHTMLRenderer.swift:359`) | not printed | printed (`:737`) |
-| Between documents | no break | a new page | no break; a page of the volume turning inside a text is a hard page break (`:1164-1167`) |
+| The source note | after the text, whole | **above** the headnote and the text, in a rectangle one line high (`PDFCollectionExporter.swift:752-762`, `:1523-1538`) | after the text, whole |
+| A research note | under the document | **a page of its own for each**, in one frame, so a long note is cut off (`:852-889`) | under the document |
+| The contents list | every row | **the first page only** (`:634`; #1984) | a Word field, with rows cached until Word rebuilds it |
+| The contents rows' numbers | the list's own, which also count section headings and blocks (#1993) | each document's, documents alone (`:630-638`) | each document's, in the cached rows (`DocxCollectionExporter.swift:1898-1906`) |
+| The contents-list style | honoured | honoured (`:638`) | **never read** (`:1905`) |
+| A footnote's number | the volume's printed label | the volume's printed label | **Word's own count** (#2001) |
+| The volume's heading | a second `<h2>` | 13 points bold, the citation heading's own size (`:1063`, `:688`) | Heading 3 under Heading 2 |
+| *Summary* over a summary | printed | not printed | printed |
+| Between documents | no break | a new page | no break |
 | Page numbers | none | every page | none |
-
-By the arithmetic of its row heights, a PDF's cover holds about ten documents in *Citation* style: a row is capped at 40 points with 6 below it, on a page with some 500 points left under the title. That figure is read from the code and was not measured on a build.
 
 ### 2.4 "Yet the interface is very complicated"
 
-Counted from the code, on iOS and iPadOS. The review recounted these and they held.
+Counted from the code, field by field. Both reviews recounted these and they held.
 
 | Surface | Controls | Of which |
 |---|---|---|
-| **Collection settings** (iPhone screen, iPad sheet; `CollectionEditorView.swift:806-830`, `:880-913`) | 24 | 8 name and title page, 6 templates, 9 composition (one of them conditional), 1 smart-collection link |
+| **Collection settings** (iPhone screen, iPad sheet; `CollectionEditorView.swift:806-830`, `:880-913`) | 24 | 8 name and title page (three of them switches for the colophon, the project stamp and the query log), 6 templates, 9 composition (one of them conditional), 1 smart-collection link |
 | **A document's inspector** (`CollectionEntryInspector.swift:348-366`) | 9 settings, and more | Title override; *Body depth* and *Summary prompt*, each with a *Default* choice; six *Default / On / Off* pickers. Then a switch per research note, a switch per highlight, and the headnote card's Edit and Generate |
-| **Section Defaults** (a heading's sheet; `CollectionEntryRows.swift:192-195`) | 21 | **15 are the whole collection's** (six attributes and nine composition controls) and 6 are the section's |
+| **Section Defaults** (a heading's sheet; `CollectionEntryRows.swift:192-195`) | 21 | **15 are the whole collection's** and 6 are the section's. The section's text depth is a menu on its row, and its title a field there |
+| **The export sheet** | 7 | six format cards and the Zotero row; the collection file adds a switch for research notes |
 
 What makes the count hard to carry:
 
-- **The same setting is in more than one place under more than one name.** The Section Defaults sheet is the inspector opened with its defaults, and one default shows the collection's own settings (`showsCollectionSettings = true`, `CollectionEntryInspector.swift:159`; `:301-303`). So a heading's sheet opens on the collection's *Description*, *Subtitle*, *Author line* and *Append colophon page on export*, which Collection settings calls *Note*, *Subtitle (title page)*, the author field and *Include colophon* (`CollectionCompositionRows.swift:388-427`; `CollectionEditorView.swift:1044-1075`).
-- **A section's text depth is not in its sheet.** It is the *Section body* menu on the heading's row (`CollectionEntryRows.swift:177-185`).
+- **The same setting is in more than one place under more than one name.** The Section Defaults sheet is the inspector opened with one default that shows the collection's own settings (`showsCollectionSettings = true`, `CollectionEntryInspector.swift:159`). So a heading's sheet opens on the collection's *Description*, *Subtitle*, *Author line* and *Append colophon page on export*, which Collection settings calls *Note*, *Subtitle (title page)*, the author field and *Include colophon* (`CollectionCompositionRows.swift:388-427`; `CollectionEditorView.swift:1044-1075`).
 - **Eight pickers ask the author to think in inheritance.** Each offers *Default*, and under it a caption, *Default → On*, which does not say whether the section or the collection decided (`CollectionEntryInspector.swift:631-650`).
-- **The settings are sorted by where they are stored.** To change how one document looks, the author must first know whether the thing is a collection setting, a section default or a document override, and go there.
-- **The Mac has four places of its own:** the gear's popover for the collection; a trailing column for a document; the New Collection form that Add to Collection opens, which carries the whole composition section (`CollectionEditorView.swift:481-510`); and no toolbar control for the preview, which the Collection menu's *Show Preview* (⌥⌘P) turns on and off (`MacCollectionManagerView.swift:1648-1793`; `FRUSExplorerApp.swift:4543-4551`).
+- **The Mac has four places of its own:** the gear's popover for the collection; a trailing column for a document; the New Collection form that Add to Collection opens, which carries the whole composition section (`CollectionEditorView.swift:481-510`); and the preview, which the Collection menu's *Show Preview* (⌥⌘P) turns on and off.
 
 ### 2.5 The templates
 
 - **One tap, at once, with no undo** (`CollectionCompositionRows.swift:284-286`; `CollectionEditorView.swift:1935-1943`). It overwrites eight fields (`CollectionExporter+App.swift:29-39`).
-- **Apparatus only accumulates.** A template adds the blocks it calls for and removes none, so a collection that has tried all six holds all five blocks.
-- **"In force" is a comparison.** A card is marked when the collection's eight fields equal its recipe (`matches`, `CollectionExporter+App.swift:46-56`). Change one switch and no card is marked; nothing records which template the author started from.
-- **A new collection follows none of the six.** The model's defaults are the full text with footnotes and research notes, and no source note (`Collection.swift:132`, `:143`, `:218`), which is no template's recipe.
+- **Apparatus only accumulates.** A template adds the blocks it calls for and removes none.
+- **"In force" is a comparison.** A card is marked when the collection's eight fields equal its recipe (`matches`, `CollectionExporter+App.swift:46-56`). Nothing is stored about which template was applied (`CollectionExporter.swift:50-51`).
+- **A new collection follows none of the six.** The model's defaults are the full text with footnotes and research notes, and no source note (`Collection.swift:132`, `:143`, `:218`).
 - **A template cannot say how a document is laid out**, since no setting does (§2.2).
 
 ### 2.6 The preview
 
-- **It forgets the author's place.** Each edit regenerates the page a second later and loads it whole (`webView.loadHTMLString`, `CollectionPreviewView.swift:882-887`), and the file holds no code that keeps or restores a scroll position.
+- **It forgets the author's place.** Each edit regenerates the page a second later and loads it whole (`CollectionPreviewView.swift:882-887`).
 - **It is not joined to the outline.** Choosing a row does not bring its document into view, and tapping a document in the preview does nothing.
-- **It shows the first 20 documents** until *Render All* (`initialDocumentCap`, `:153`), and one format (§2.3).
-- **It builds its export options by hand** (`:521-531`), apart from `CollectionExportOptions(composing:)`, which the export sheet and the assembly use (`CollectionExporter.swift:592-604`).
+- **It shows the first 20 documents** until *Render All* (`:153`), and one format.
+- **It builds its export options by hand** (`:519-531`), apart from the options the export sheet takes. It draws neither the project stamp nor the query log.
 
-### 2.7 Citations
+### 2.7 Citations, and the exports that are not renderings
 
-- **The assembly names its formatter.** `BatchContext.formatter` is typed `HistoryAtStateCitationFormatter` and built as one (`CollectionContentAssembly.swift:797`, `:917`). The document heading, a *Citation* contents row, an excerpt's source line, the *See also* line and the Bibliography's rows all come from it.
-- **The app has three styles and a preference.** `CitationStyle` is *History at State*, *Chicago* and *Turabian* (`CitationFormatter.swift:30-43`). Settings ▸ Display chooses one. It is mirrored to the reader's other devices only while a device's own sync switch is on, and that switch is off by default (`SettingsSyncCoordinator.swift:12-14`; `SettingsView.swift:93`). The reader's Copy Citation uses it (`DocumentViewModel.swift:213`). A collection does not read it.
-- **The exporters read one kind of italics.** Chicago and Turabian mark the title `*…*`; the history.state.gov style marks the series' name `_…_`. All three exporters turn `_…_` into italics and nothing else (`CollectionItemHTMLRenderer.swift:1222`, `DocxCollectionExporter.swift:1982`, `PDFCollectionExporter.swift:1569`).
+- **The assembly names its formatter.** `BatchContext.formatter` is typed `HistoryAtStateCitationFormatter` (`CollectionContentAssembly.swift:797`, `:917`). The document heading, a *Citation* contents row, an excerpt's source line, the *See also* line and the Bibliography's rows all come from it.
+- **The app has three styles and a preference** (`CitationFormatter.swift:30-43`). It is mirrored to the reader's other devices only while a device's own sync switch is on, which is off by default (`SettingsSyncCoordinator.swift:12-14`). A collection does not read it.
+- **The exporters read one kind of italics**, `_…_`, where Chicago and Turabian write `*…*` (`CollectionItemHTMLRenderer.swift:1222`).
+- **Four of the sheet's seven exports are not renderings:** BibTeX, RIS, the Zotero send and the collection file.
+  - BibTeX and RIS read one of the collection's settings, whether research notes are on (`BibTeXCollectionExporter.swift:63`, `ZoteroCollectionExporter.swift:65-69`).
+  - The Zotero send reads none (`CollectionExportSheet.swift:734-735`).
+  - None of the three reads a section's or a document's (#2000).
+  - The file is the collection's source and reads none.
 
-### 2.8 Seven defects of 1.0, met on the way
+### 2.8 Defects of 1.0, filed as seventeen issues
 
-The review's skeptics confirmed each by re-reading the code. None was seen in a running app, and none is filed (Q9). The lane that would end each is in §9.
+The two reviews met rows 1 to 17 on the way. Each was confirmed by a skeptic's re-read of the code, row 17 excepted, and read again by the session before it was filed. **None was seen in a running app.** Row 18 is the owner's own report of the day before.
 
-1. **A *Header & Dateline* contents list prints no dateline for most documents** (§2.2).
-2. **With Footnotes and Source note both on, the source note prints twice:** once among the footnotes and once as *Source:*. That holds before 1955 too, where the source note is also a footnote and the index stores it *(corrected, second review: this record first said in the volumes from 1955)*. *Full text as printed* and *Everything included* turn both on (`CollectionExporter.swift:226-229`, `:246-250`).
-3. **After a template is applied, a document added later lands after its back-matter blocks** (`CollectionEditorView.swift:1922-1925`; `CollectionAddDocumentsSheet.swift:154`; `CollectionDocumentAppend.swift:101-103`).
-4. **A footnote call in a heading is written "[1]" into the heading the collection reads** (`CollectionContentAssembly.swift:1522`).
-5. **Duplicate does not copy *Stamp active project* or *Append the query log*** (`Collection.swift:799-831`), though its comment says every setting is copied.
-6. **A title override typed in the inspector may not reach the preview until something else changes:** the preview's refresh list hashes no `titleOverride` (`CollectionPreviewView.swift:211-266`).
-7. **A title override at Summary or None depth, and in every contents row, prints alone and unmarked**, but for the document's address (`CollectionExporter.swift:747-763`).
+| | The defect | Issue |
+|---|---|---|
+| 1 | A *Header & Dateline* contents list prints no dateline for most documents: the collection reads one only where it is a top-level block | #1994 |
+| 2 | With Footnotes and Source note both on, the source note prints twice, in every era | #1991 |
+| 3 | An entry added to a collection lands after its back-matter blocks | #1995 |
+| 4 | A numbered footnote call is written "[n]" into the heading the collection reads, so contents rows and citation records' titles end in "[1]" | #1992 |
+| 5 | Duplicate does not copy the project stamp or the query log; the snapshot copies fields by name and none of a smart collection's blocks | #1996 |
+| 6 | The preview does not refresh on a title override or the Headnotes default | #1997 |
+| 7 | A title override prints with nothing of the volume's beside it at Summary or Index depth and in every contents row | #1998 |
+| 8 | The collection file carries a headnote as its draft's id, so a file opened on its author's account shares the original's drafts | #1999 |
+| 9 | BibTeX, RIS, the Zotero send and a shared file's note texts ignore a section's or a document's research-notes setting | #2000 |
+| 10 | The three formats number contents rows differently | #1993 |
+| 11 | Word numbers the volume's footnotes by its own count | #2001 |
+| 12 | The heading the collection reads carries the volume's own number, so a row reads "4.  1. Letter From…" and a citation record's title "Document 1: 1. Letter From…" | #2002 |
+| 13 | An editorial note has no heading in a collection: its heading is inside a wrapper the collection does not look into | #2003 |
+| 14 | A document entered twice has duplicate element ids in the web page | #2004 |
+| 15 | An Apple Intelligence headnote adds no source to the export's statement of sources | #2005 |
+| 16 | Four accessibility defects: the list's row actions, the per-note switches' names, the section pill's height, the template cards' fixed type | #2006 |
+| 17 | With footnotes left out of a web page, each footnote call is still a button whose popover was not written | #2007 |
+| 18 | The PDF's contents list stops at the end of its first page | #1984, the owner's, of 2026-11-24 |
 
 ---
 
@@ -185,52 +195,36 @@ The review's skeptics confirmed each by re-reading the code. None was seen in a 
 
 ### 3.1 Nothing the volume prints is replaced
 
-The first form let the author's heading stand in place of the volume's, and the author's date line in place of the printed dateline. The volumes themselves say what that costs.
+This stands from the second form, and both reviews left it standing.
 
-- **A dateline is the document's text.** Document 475's reads *Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]*. It sits in the telegram's own opener, beside the classification marking. A date line typed in its place takes the hour of dispatch and the time of receipt off the page.
-- **A heading carries more than its words.** From 1955 the source note is a footnote on the heading: in 361 of 390 documents of `frus1961-63v11`, 263 of 280 of `frus1969-76v17` and 323 of 374 of `frus1955-57v24`. A heading that is not drawn leaves a note that nothing calls.
-- **Brackets already mean something.** The first line of document 475 reads *Answer to Dept's 284, Feb 3 [13]*, and the bracketed *13* is the editors' correction. Its dateline's *[Received …]* is the editors' addition. 24 of the 852 datelines of `frus1950v06` are wholly bracketed by the volume, as *[Washington, undated.]* is. The volumes' own statement of method, from `frus1977-80v06`:
+- **A dateline is the document's text.** Document 475's reads *Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]*, in the telegram's own opener, beside the classification marking. A date line typed in its place takes the hour of dispatch and the time of receipt off the page.
+- **A heading carries more than its words.** From 1955 the source note is a footnote on the heading: in 361 of 390 documents of `frus1961-63v11`. A heading that is not drawn leaves a note that nothing calls.
+- **Brackets already mean something.** The first line of document 475 reads *Answer to Dept's 284, Feb 3 [13]*, and the bracketed *13* is the editors' correction.
 
-  > "The documents are reproduced as exactly as possible … A heading has been supplied by the editors for each document included in this volume. … Other mistakes and omissions in documents are corrected by bracketed insertions: a correction is set in italic type; an addition in roman type. … All brackets that appear in the original text are so identified in footnotes."
+So: **a document prints as the volume prints it, whole or not at all, and the author's words are added above it.** The author's title leads; it takes the heading's size and the contents row. The volume's own heading and dateline follow, untouched.
 
-So this form's rule: **a document prints as the volume prints it, whole or not at all, and the author's words are added above it.**
+**What the author does not get** is a page from which the volume's heading or dateline is gone. Q2 asks whether that is wanted, and says what it would owe.
 
-That is the series' own practice in its later volumes. Their editors supply a heading for every document and say so once, in the statement of method; no heading carries a sign *(corrected, second review EDI-8: this record first said it of the series. Of the eight volumes read, the four from 1961–63 on carry the sentence and the four earlier ones do not)*. A collection does the same, one level up:
-
-- the author's title **leads**: it takes the heading's size and the contents row;
-- the volume's heading stays under it, smaller, after the words *Printed heading:*, with its footnote calls;
-- the words are the mark. They are read aloud, where a bracket is not (NVDA at its default speaks none), and they collide with nothing the volumes print;
-- the Note on the Text says it once more, for the whole collection (§3.6).
-
-**Is this what "overriding" asked for?** In what a reader of the export sees first, yes: the contents list and each document's head carry the author's words. What the author does not get is a page from which the volume's heading is gone. Q2 asks whether that is wanted, and says what it would owe.
-
-**1.0's titles keep their meaning.** A title override prints above the volume's heading today (§2.2). Under this rule it still does, so no title already typed changes what it says.
+**1.0's titles keep their meaning.** A title override prints above the volume's heading today (§2.2). It still does.
 
 ### 3.2 What a document is made of
 
-Each part is named here against the render model (`FRUSDocumentRenderModel`, `FRUSRenderNode.swift:510-528`), since a part a setting names must be something an exporter can draw or leave out whole.
+Each part is named against the render model (`FRUSDocumentRenderModel`, `FRUSRenderNode.swift:510-528`).
 
-| Part | What it is in the model | What rides with it | The choices |
-|---|---|---|---|
-| ***The author's lines*** | | | |
-| **Your title** | the entry's own field, which is 1.0's `titleOverride` | the collection's number, where the collection numbers its documents | given or not, for one document |
-| **Your date line** | a second field of the entry's (Q7) | nothing. No date the app computes with changes, so the Chronology keeps the volume's | given or not, for one document |
-| **Citation** | made from the volume and the document's number, in the collection's style (§6) | its link to history.state.gov, and the address 1.0 prints under it | leads the document, or is a small line above it |
-| **Headnote** | the entry's headnote draft | its line of attribution | on or off |
-| ***The document, as the volume prints it*** | | | |
-| **Printed heading** | the document's own heading node (`.heading`, `:62`) | its footnote calls, which from 1955 include the source note's; the collection's number, where this heading leads | prints wherever the text prints. Where the text does not, it is a line read from the index (§3.4) |
-| **Text** | every other body node, in order: the source note's marker where the volume leads with it, the opener with its classification marking and dateline (`.letterOpener`, `:68`), the paragraphs, the closer | the printed dateline, the marking, the signature | Full · Summary · None |
-| **The volume's notes** | the footnote bodies, with the source note among them (`type: .source`, `:84`) | the calls stay in the text in every case | All · The source note only · None (§3.5) |
-| ***The author's research*** | | | |
-| **Highlights** | the reader's highlights, painted over the text | | on or off, and which |
-| **Your notes** | the reader's research notes on the document | their label | on or off, and which |
-| **See also** | the documents this one cites that are also in the collection | | on or off |
-
-Three things the first form offered are gone, each because the model has no such block:
-
-- **A hidden or replaced heading.** The heading carries calls, and in the volumes before 1955 it is not the first block: the source note's marker leads 690 of the 692 documents of `frus1946v06`.
-- **A hidden or replaced dateline.** It is inside the opener, beside the marking, in 663 of those 692, and an opener is drawn as one block (`FRUSRenderNodeHTMLSerializer.swift:749-750`).
-- **Footnotes and Source note as two switches.** The source note is one of the footnotes (§3.5).
+| Part | What it is in the model | The choices |
+|---|---|---|
+| ***The author's lines*** | | |
+| **Title** | the entry's `titleOverride`, as now | given or not, for one document |
+| **Date line** | a new field of the entry's (Q7) | given or not, for a document that has a title |
+| **Headnote** | the entry's headnote draft, with its line of attribution | on or off |
+| ***The citation*** | made from the volume and the document's number, in the collection's style (§6), with its link | leads the document, or is a small line above it (§3.3) |
+| ***The document, as the volume prints it*** | | |
+| **The volume's heading** | the document's one heading node (`.heading`, `:62`), with its footnote calls | prints wherever the text prints. Where the text does not, its words are a line of their own (§3.4) |
+| **Text** | every other body node, in order: the opener with its marking and dateline, the paragraphs, the closer | Full · Summary only · Index / outline, as now |
+| **Footnotes** | the footnote bodies | on or off, as now |
+| **Source note** | one of those bodies (`type: .source`, `:84`), and the copy the index stores | on or off, as now; printed once (§3.5) |
+| ***The author's research*** | | |
+| **Highlights**, **Research notes**, **See also** | as now | on or off, and which, as now |
 
 ### 3.3 Three openings
 
@@ -248,216 +242,207 @@ SECRET              Moscow, February 22, 1946—9 p.m. [Received February 22—3
 511. Answer to Dept's 284, Feb 3 [13] involves questions so intricate …
 ```
 
-**The printed heading leads**, with the citation as a small line above it:
+**The volume's heading leads**, with the citation as a small line above it:
 
 ```
 Foreign Relations of the United States, 1946, … Document 475.     ← small
 
-4. The Chargé in the Soviet Union (Kennan) to the Secretary of State   ← heading size
+The Chargé in the Soviet Union (Kennan) to the Secretary of State   ← heading size
 SECRET              Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]
 511. Answer to Dept's 284, Feb 3 [13] involves questions so intricate …
 ```
 
-**Your title**, which leads wherever one is given, under either setting:
+**A title of the author's**, which leads wherever one is given:
 
 ```
-4. The Long Telegram                                              ← heading size
-Moscow, 22 February 1946                                          ← your date line
+The Long Telegram                                                 ← heading size
+Moscow, 22 February 1946                                          ← the author's date line
 Foreign Relations of the United States, 1946, … Document 475.     ← small
 
-Printed heading: The Chargé in the Soviet Union (Kennan) to the Secretary of State
+In the volume: The Chargé in the Soviet Union (Kennan) to the Secretary of State
 SECRET              Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]
 511. Answer to Dept's 284, Feb 3 [13] involves questions so intricate …
 ```
 
-- **The document's own blocks are never parted.** Everything of the author's stands above the first of them, so no exporter draws a line between two nodes of the volume's.
-- **The words *Printed heading:* are no part of the document's text.** Each exporter adds them outside the walk that counts highlight offsets, as *Source:* is added today, and as the reader draws a figure's caption outside it. No stored highlight moves.
-- **The number is the collection's** (§4.3): 4 of 6 here. It is what tells eight documents with one heading apart, in the contents list and to a reader moving by headings. The volume's own number stays in the citation. Its form is a question for the owner: the later volumes number their documents in print, and *4.* beside *Document 475* must not be taken for the volume's.
-- **The source note's marker** stands on a line above the printed heading in the volumes before 1955, where the volume has it. The figures leave it out.
+- **No number stands at a document's head.** The second form put the collection's own there. From the volumes for 1952–1954 on, the volume's number already opens the heading ("1. Letter From…"), and the indexes and the volumes' notes cite by it, so a second number beside it misdirects (#2002; the second review's H14).
+- **Which line leads is one setting of the collection's,** *Opening*, with two values. A title leads under either.
+- **The words *In the volume:* are no part of the document's text.** Each exporter adds them outside the walk that counts highlight offsets, as *Source:* is added today. The second review tested that claim and it held.
 
-### 3.4 A title never prints without the volume's own words beside it
+### 3.4 The author's lines are marked by where the volume's begin
 
-1.0 breaks this in two places (§2.8, defect 7). The rule, for every place a title of the author's prints:
+**One fixed label.** *In the volume:* prints before the volume's heading whenever a title of the author's stands above the document. Everything above it is the author's or the citation; everything from it down is the volume's.
 
-- **At the document's head, at every depth of text:** the title, the citation, and the printed heading. Where the text does not print, the printed heading is a line read from the index's stored heading, with its calls taken out.
-- **In a contents row:** the title, with a second line under it in small type, which is the printed heading and dateline in *Header & Dateline* style, and the citation in *Citation* style.
-- **In the outline:** the title, with the printed heading as the row's second line (§2.2).
-- **In Word's contents list:** the same two lines (§3.8).
-- **In no citation record.** The BibTeX, RIS and Zotero items are built from the volume's heading, and stay so.
+- **It is not the author's to change.** It is not in the table of §5.2, and it cannot be emptied. The second form's *Printed heading* was in that table.
+- **It is true of every volume.** 22 of the manifest's 553 are electronic-only, of which "printed" is untrue.
+- **A date line is given only under a title,** so it always stands above the label. The second form let one be typed alone, with no rule for where it printed.
+- **It is words,** so it is read aloud, and it collides with nothing the volumes print.
 
-**One reading of the printed heading and dateline.** Today the collection reads them from the top-level blocks only. The kit would hold one function that every one of those places calls. It reads:
+**A title never prints without the volume's own words beside it** (#1998):
 
-- the heading, with its calls kept apart from its words;
-- the dateline, at the top level, in the opener, or in the closer (23 documents of `frus1946v06` have it only there);
-- for an editorial note, its own heading;
-- from the index, where the volume is not on the device. The index already stores the dateline of an opener (`IndexingPipeline.extractDateline`, `IndexingPipeline.swift:7347-7358`). Where neither has it, the line is not printed and the citation leads.
+- **At the document's head, at every depth of text:** the title, the citation, and the volume's heading after the label. Where the text does not print, the heading's words are a line read from the reading below.
+- **In a contents row:** the title, and the author's date line where there is one. Under it, a second line in small type: in *Header & Dateline* style, *In the volume:* and the volume's heading and dateline; in *Citation* style, the citation.
+- **In the outline:** the title, with the volume's heading as the row's second line.
 
-That ends defects 1 and 4.
+**One reading of a heading and a dateline,** in the kit, which every one of those places calls. It returns, apart from each other:
 
-### 3.5 The volume's notes are one choice of three
+- the heading's words;
+- the number the volume prints before them, from the 1952–1954 volumes on (#2002);
+- the heading's footnote calls (#1992);
+- the dateline's words, from the top level, the opener or the closer, and its calls (#1994);
+- for an editorial note, the heading inside its wrapper (#2003).
 
-1.0 has two switches, Footnotes and Source note. They are not two things:
+Where the volume is on the device it reads the model. Where it is not, it reads the index, which holds less: no dateline that sits only in a closer, and a note inside a dateline run into its text (`IndexingPipeline.swift:7347-7358`). The outline reads the index always, as it does today.
 
-- From 1955 the source note is the first footnote, and it prints with the others whenever footnotes are on, with no test of its type. The Source-note switch decides only a second copy, printed as *Source:* from the index. That is defect 2.
-- Before 1955 it is the note that leads the document, and it is a footnote in the model too (`FRUSDocumentParser.swift:1719-1726`).
+**The citation records.** A BibTeX, RIS or Zotero item is built from the volume's heading and never from the author's title; that stays. Whether its title takes the new reading, and so loses "[1]" and the doubled number, is Q9.
 
-So the part has three values, which are the three the kit's own first enumeration had (`CollectionFootnoteStyle`, `CollectionExporter.swift:339-346`):
+### 3.5 The notes stay two switches, and the source note prints once
 
-| Value | What prints |
-|---|---|
-| **All** | every note the volume prints, the source note among them, once |
-| **The source note only** | the source note, as *Source:* after the text; the other notes' calls stay in the text |
-| **None** | no note; the calls stay in the text |
+The second form made Footnotes and Source note one choice of three. The second review showed that one key cannot hold a section or a document that sets one of 1.0's two switches and inherits the other (its H12). So the switches stay as they are stored, and the plan decides what prints:
 
-1.0's pair maps onto them with nothing lost: footnotes on gives *All* whatever the other switch says, which is what prints today less the second copy. The six templates' recipes give *All* for two, *The source note only* for two and *None* for two.
+| Where the volume has the source note | Both on | Footnotes on, Source note off | Footnotes off, Source note on | Both off |
+|---|---|---|---|---|
+| **A footnote on the heading** (from 1955) | among the footnotes, once | among the footnotes, as now | *Source:* after the text, as now | not printed; its call stays at the heading |
+| **A line above the heading, unnumbered** (before 1955) | *Source:* after the text, once; the unlabelled copy among the footnotes is left out | among the footnotes, as now | *Source:* after the text, as now | not printed |
+
+- **That ends #1991.** Which copy stays differs by era for a reason: from 1955 the heading's call must keep its note, and before 1955 the footnote copy carries no label, where the *Source:* line does.
+- **The app's glyph on the line above the heading,** before 1955, prints only where its note is in the footnote list. Today it stays when the note does not.
+- **Where the text is not printed,** Source note on prints the *Source:* line, whatever Footnotes says, as now.
+- **A call whose note is not printed is text, not a button** (#2007). The calls stay: they are in the volume's text, and they tell a reader that a note exists.
+- **Word prints the volume's numbers** (#2001): the plan carries each note's printed label.
 
 ### 3.6 The Note on the Text
 
-A block the collection generates, as it generates a Bibliography. It is the collection's statement of method, and it says, from what the collection does:
+A block the collection generates, as it generates a Bibliography. It is the collection's statement of method, written from the plan that prints:
 
-- **Titles.** *The compiler has supplied a title for 3 documents. Each stands above its document, and the heading the volume prints follows it as "Printed heading".*
-- **Dates.** That a date line under a title is the compiler's, and that the document's own dateline is in its text.
-- **Numbers.** That the documents are numbered in the order of the collection, and that each volume's own number is in the citation.
-- **What is left out.** Footnotes, and that their numbers remain in the text; source notes; the text itself where a document is a citation or a summary. Each is said for the whole collection, or with the documents named where it holds for some.
-- **Summaries and headnotes.** That summaries were written by Apple Intelligence, and which headnotes the compiler wrote or edited.
-- **Excerpts.** That quoted passages are excerpts, and how they were checked.
+- that titles, and date lines under them, are the compiler's, and that each stands above the words *In the volume*;
+- what is left out: footnotes, with their numbers remaining in the text; source notes; the text itself where a document is a citation or a summary. Each is said for the whole collection, or with the documents named;
+- that summaries were written by Apple Intelligence, and which headnotes the compiler wrote;
+- that quoted passages are excerpts, and how they were checked;
+- which of the app's labels the compiler renamed (§5.2).
 
-**When it prints.** By default, whenever it has something to say about a document whose text prints: a title or a date line added, a number given, or notes left out. A collection of citations alone gets none. It prints at the end, before the colophon. The author may move it as any block, or remove it (Q2).
+**It is a block and nothing else.** It is a row in the outline, placed, moved and removed as a Bibliography is. It prints where its row is, and only if it has something to say. There is no switch for it.
 
-**What cannot be removed** is on the page itself: the words *Printed heading:* under a title, and the line of attribution under a summary.
+- **Each of the six templates places it,** last. A collection that exists today has none until its author adds one or chooses a template.
+- **Where it would have something to say and the collection has none,** the collection's settings say so in a line, with *Add*.
+- **In 1.0 it is inert.** It is a new block type, and 1.0 keeps a block type it does not know in its place and skips it (`CollectionContentAssembly.swift:964-965`).
 
-Every sentence above is a draft. The wording is the owner's, as every string in `Docs/EditableContent/` is.
+Its sentences are written from the volumes actually in the collection, since the series' conventions differ by era: the volumes before 1952 print no document numbers, and the statement that the editors supplied each heading is in the prefaces from 1961–63 on, of the eight volumes read. The wording is the owner's, as every string in `Docs/EditableContent/` is.
 
 ### 3.7 The export's own statement of sources
 
-With the colophon on, every rich format prints a block of sources. For a collection of documents it says: *Read from the text and editorial apparatus of the FRUS volumes, and from no other source*; and where the author wrote prose, *The app never mixes them into the published text* (`ProvenanceSource.swift:141-142`, `:151-152`). The set is derived from the kinds of item (`CollectionExporter.swift:1313-1333`).
+With the colophon on, an export says where its content came from. Two sentences of that statement are shared with the analytics exports, the Archives Visit packet and the method appendix (`ProvenanceStatement.swift:51-59`), and are left alone.
 
-A title above a document makes both sentences doubtful. So:
-
-- the plan derives a source for the author's own lines, as the set is derived from the items now;
-- the two sentences are reworded to say what stays true: that the documents' text and apparatus are the volumes', and that the author's lines stand apart from them and are named.
+- **A collection gets a sentence of its own** for the author's lines: that titles, date lines and headnotes the compiler wrote stand apart from the volumes' text and are named.
+- **A generated headnote adds the app's model as a source** (#2005). Today only a summary body does.
 
 ### 3.8 One plan for three formats
 
 Today each exporter decides for itself what a document's parts are, in what order, under what words. §2.3 is the result.
 
-- **FRUSCoreKit resolves each document into a plan:** the lines that will print, in order, each with its text, its role (title, citation, printed heading, text, note …), its label and its number. The assembly builds it where it already resolves the cascade (`resolveEntry`, `CollectionContentAssembly.swift:944-1165`).
-- **HTML, PDF and Word draw the plan in order.** None decides a part's presence, place or wording. A format keeps its own typography and pagination.
-- **§2.3's differences end as a consequence:** the source note follows the text in the PDF and prints whole, a research note flows under its document, and the contents list continues onto further pages.
-- **The highlight walk is untouched.** The volume's heading and dateline are part of a document's flat text (`appendFlatText`, `FRUSRenderNode.swift:666`), which highlight offsets count. Under §3.1 every node of the document is drawn, so each exporter's counter walks what it walks today.
+- **FRUSCoreKit resolves each document into a plan:** the lines that will print, in order, each with its text, its role, its heading level and its label. The assembly builds it where it already resolves the cascade (`resolveEntry`, `CollectionContentAssembly.swift:944-1165`).
+- **The web page, the PDF and Word draw the plan in order.** None decides a part's presence, place or wording. A format keeps its own typography and pagination.
+- **What ends as a consequence:** the source note follows the text in the PDF and prints whole; a research note flows under its document; the contents list runs past the first page (#1984); the rows are numbered alike, documents only (#1993); the contents-list style holds in Word.
+- **The highlight walk is untouched.** Every node of the document is drawn, so each exporter's counter walks what it walks today.
 
-**Word's contents list needs a decision of its own.** It is a field, `TOC \o "1-2" \h \z \u`, written dirty so that Word rebuilds it on first open from the heading styles (`DocxCollectionExporter.swift:1865`, `:1873-1874`). After that rebuild its rows are whatever the Heading 2 paragraphs say, and no label of the plan's survives. Two ways to make the rows the plan's:
+**Word's contents list needs a decision of its own.** It is a field that Word rebuilds on first open from the heading styles (`DocxCollectionExporter.swift:1865`, `:1873-1874`), after which no label of the plan's survives. Two ways to make the rows the plan's: plain rows, each linked to its document, with a page-number field at its end (recommended); or a field built from entries the app marks. Which of the two Word and Pages show correctly is not known here, and §12 owes that run.
 
-- **Plain rows, each linked to its document, with a page-number field at its end** (recommended). The rows are text the app wrote, so they match the other two formats and carry a title's second line. Only the page numbers are fields.
-- **A contents field built from entries the app marks** in place of heading styles, which Word can rebuild whole.
+**The export's own accessibility,** for all three openings:
 
-Which of the two Word and Pages show correctly is not known here. §12 owes that run before the lane writes either.
-
-**The export's own accessibility.** In the HTML and in Word the title is the document's heading, and the printed heading is a heading one level down whose text begins with its two words. The PDF has no tags, title or links today, and this design adds none: the web page and the Word file are the accessible exports, and a tagged PDF is a candidate (§8).
+- The line that leads a document is its heading. Under a title the volume's heading is one level down, with *In the volume:* inside its text.
+- Where the volume's heading leads, the citation is a line before it. The plan names each document's region by its heading, so that a reader moving by headings is told which document the line belongs to.
+- The web page's *Footnotes* heading over each document's notes is one level below the document's, and is carried in the plan.
+- The PDF has no tags, title or links, and this design adds none. The web page and the Word file are the accessible exports; a tagged PDF is a candidate (§8).
 
 ---
 
-## 4. A template, and the author's changes on top of it
+## 4. Settings
 
-### 4.1 One set of settings, at three scopes
+### 4.1 What is stored today is kept
 
-Every setting of §3.2 that is a choice, and not a document's own content, is a key of one value, the same value at every scope:
+The second form put one value at every scope. This form keeps 1.0's fields and says which exist where, with nothing invented for a cell that is empty.
 
-| Setting | Values |
-|---|---|
-| Opening | The citation leads · The printed heading leads |
-| Text | Full · Summary · None, and the prompt a summary is written with |
-| The volume's notes | All · The source note only · None |
-| Headnote | on, off |
-| Your notes | on, off |
-| Highlights | on, off |
-| See also | on, off |
+| Setting | The collection | A section | A document |
+|---|---|---|---|
+| Text depth | yes | yes | yes |
+| Summary prompt | yes | yes | yes |
+| Footnotes; Source note | yes | yes | yes |
+| Highlights; Research notes | yes | yes | yes, and which |
+| Headnote | yes | **no** | yes, with its card |
+| See also | **no** | yes | yes |
+| Contents-list style; word cloud; colophon; project stamp; query log | yes | | |
+| **Opening** (new) | yes | | |
+| **Citation style** (new) | yes | | |
+| **The collection's words** (new) | yes | | |
+| Title | | | yes, as now |
+| **Date line** (new) | | | yes |
 
-- **The collection holds every key.** A section or a document holds only the keys it changes.
-- **A value comes from the nearest scope that sets it:** the document; else the section that encloses it, and then each section outside that one, since sections nest three deep (`CollectionOutline.swift:275-282`); else the collection.
-- **Content is not a setting.** A document's title and date line, which notes and which highlights, and its headnote's text belong to that document and to no scope above it.
+- **A value comes from the nearest scope that sets it:** the document; else the section that encloses it, and each section outside that one, since sections nest three deep (`CollectionOutline.swift:275-282`); else the collection. That is 1.0's cascade.
+- **The two empty cells stay empty.** A section's headnote default and the collection's See also are candidates (§8), each a field and a deploy of its own.
 
-The first form's grid of parts and scopes had cells with nothing to store them, and this value closes them. The collection gets a setting for See also, which 1.0 lacks. A section's headnote is followed by its documents, which 1.0's cascade does not do; a section's See also is followed in 1.0 already *(corrected, second review: this record first said 1.0 followed neither; `CollectionContentAssembly.swift:611-612`, `:1103`)*. The summary prompt has a row, under Text.
+### 4.2 A *Default* that says what it is
 
-**What every row does:**
+1.0's pickers offer *Default*, *On* and *Off*. The second form took *Default* away and gave each row a way back. The second review showed what that leaves undefined: a setting held at the value it would inherit anyway, and a second control on every row that no board drew.
 
-1. **It shows what is in force**, as a switch or a menu that names its value in full. No row offers *Default*.
-2. **It says in words where the value comes from:** *From the collection*, *From the section "Kennan's reporting"*, or *Changed for this document*. The words are on the row and are spoken. No dot stands in for them.
-3. **A changed row carries its own way back:** *Use the section's* or *Use the collection's*, which removes the change.
-4. **A row whose value is set elsewhere offers the way there:** *Go to the section*. So a change is always made where it is seen, or the author is taken to where it is set.
-5. **A row that cannot apply says why, and keeps its value:** Highlights reads *Prints with the text* and is dimmed while the text is left out.
-
-### 4.2 The settings on screen are those of what is selected
-
-No control changes the scope. The scope is the selection:
-
-- **The collection** is the first row of its own outline, and the gear selects it. It is reachable whatever else is selected (§5.7) *(corrected, second review INT-6: this record first said this is what the build-28 tester asked for. The tester asked that the collection's attributes be reachable "after refocusing on a document", and the state reported was "not reachable without clearing the selection", which selecting the collection's row is)*.
-- **A section** is its heading's row.
-- **A document** is its row.
-
-The surface is titled by what it holds: *Kennan from Moscow, 1946*; *Section: Kennan's reporting*; *Document 475*.
-
-At a wider scope a row cannot show what is in force for every document under it, so it says how many differ: *Footnotes: All · 2 documents differ*. The count opens the list of them, and each name selects that document.
+- **The three states stay, in one control.** The first choice is renamed for what it does: *Follow the section: On*, or *Follow the collection: Off*. It names the scope that decides and the value in force there.
+- **Where nothing above sets a value, the first choice says so:** *Not set above: Off*. That is See also outside a section that sets it, since the collection has no setting for it (§4.1).
+- **A document set to *On* under a collection that is on reads *On*.** It is set on purpose and does not follow a later change, which is what it does in 1.0. Nothing calls it "changed".
+- **At the collection, a row says how many set their own:** *Footnotes: On · 2 set their own*. The count opens the list of them, with each one's value, and *Clear* returns the ones chosen to following. That is the way back for many documents at once.
 
 ### 4.3 A template
 
-- **A template is a recipe for the collection's set of §4.1**, with the contents-list style, the word cloud and the apparatus blocks it calls for. That is L25's recipe (`CollectionPreset.Recipe`, `CollectionExporter.swift:201-250`) with two keys added, Opening and Numbering.
-- **The collection records the template it follows.** "In force" is a stored fact, and the gallery marks that card. The collection's own changes are counted by comparing its values with the recipe: *Following Full text as printed · 3 changes of your own*. *Review* lists them, each with *Use the template's*.
-- **Choosing a template for the collection asks first**, and lists what the choice would do: each setting that would change, old to new; each block it would add; each block the last template placed that this one does not call for, which it would remove. The author may untick any line. Changes made to sections and documents are not touched, and the question says how many there are.
-- **A template owns only the blocks it placed and the author left alone.** A block the author added, moved or retitled is theirs, and no template removes it. The apparatus stays rows in the outline, as decision A11 made it (§5.7).
-- **A document arrives ahead of the back matter.** A document added to a collection goes before the run of apparatus blocks at its end, and not after it (defect 3).
-- **A shipped template's recipe is fixed** from the version that ships it. A different look is a new template with a new name.
+- **A template is a recipe for the collection's settings,** as L25 made it (`CollectionPreset.Recipe`, `CollectionExporter.swift:201-250`), with *Opening* added and the Note on the Text among its blocks.
+- **"In force" stays a comparison,** as in 1.0. Nothing is stored about which template was applied, so no other build or file can leave that record stale. Where no recipe equals the collection's settings, a line names the nearest and counts the differences: *Closest to Full text as printed: 2 settings differ*.
+- **Choosing a template for the collection asks first,** and lists what the choice would do: each setting that would change, old to new; each block it would add; and, unticked, each generated block its recipe does not call for. Settings that sections and documents set for themselves are not touched, and the question says how many there are.
+- **Nothing records what placed a block.** The second form did, and could say nothing true of a block placed before it existed.
+- **An entry added to a collection goes ahead of the blocks at its end** (#1995): a document, a passage, a heading or a note block alike.
 
-**The six of decision 139, with the two new keys.** A proposal, for Q4:
+**The six of decision 139, with Opening.** A proposal, for Q4:
 
-| Template | Opening | Numbering | Text | The volume's notes |
-|---|---|---|---|---|
-| Full text as printed | The printed heading leads | On | Full | All |
-| Full text with your annotations | The printed heading leads | On | Full | The source note only |
-| Summaries with overview | The printed heading leads | On | Summary | None |
-| Citations with your notes | The citation leads | Off | None | None |
-| Citations with archival sources | The citation leads | Off | None | The source note only |
-| Everything included | The citation leads | Off | Full | All |
+| Template | Opening |
+|---|---|
+| Full text as printed | The volume's heading leads |
+| Full text with your annotations | The volume's heading leads |
+| Summaries with overview | The volume's heading leads |
+| Citations with your notes | The citation leads |
+| Citations with archival sources | The citation leads |
+| Everything included | The citation leads |
 
-The last two columns are L25's recipes, restated in §3.5's terms.
+A collection that exists today has no Opening set, which reads as *The citation leads*: it prints as it does. Under this table it would then stand one setting away from a template it equals today.
 
-- **Numbering is the collection's alone:** the documents numbered 1 to *n* in its order, at each lead and in each contents row.
-- **A new collection starts under *Full text as printed*,** with that template's two blocks in place and its first document arriving ahead of them.
-- **An upgraded collection keeps 1.0's layout.** 1.0 had no say about the opening, so the upgrade records *The citation leads* and no numbering as that collection's own, whatever template its other settings match (§7.4) *(corrected, second review H13: 1.0 does number the documents in its contents list, in all three formats and in three ways; what it does not print is a number at a document's head)*. It prints as it did, apart from §2.8's defects.
+### 4.4 A template for one export
 
-### 4.4 A template at export is for that export
+The export sheet offers the six for the export in hand (§5.1).
 
-The export sheet lists *As this collection is set* first, and then the six (§5.1). Choosing one of the six:
+- **For PDF, Word and Web page.** BibTeX, RIS, the Zotero send and the collection file are not renderings, and the sheet shows no template for them.
+- **It writes nothing to the collection.** The kit resolves a copy of the collection's values in which the recipe's settings are the template's (`CollectionContentAssembly` already resolves from values).
+- **The template's blocks stand in for the collection's.** For that export the collection's generated blocks are left out, and the template's own print, each in the place the template gives it: a Chronology at the front, the rest at the end, the Note on the Text last. This can be computed on today's values.
+- **What stays the collection's:** its documents, sections, note blocks and passages; each title and date line; what a section or a document sets for itself; the citation style, the words, the title page, the colophon, the stamp and the query log.
+- **A template says what it needs before the export.**
+  - *Summaries with overview* needs Apple Intelligence and a summary prompt. A recipe holds no prompt, so the collection's own is used, and where it has none the row says so and cannot be chosen. It writes a summary for each document that has none, and keeps them, as any summary export does.
+  - The two templates with headnotes on print a headnote only where one is stored. The sheet's sentence counts them: *Headnotes for 4 of 6 documents*. No placeholder line is printed in an exported file.
+- **The sheet's sentence says what will print,** from the resolved copy: how much text, which notes, which blocks, and how many documents set something of their own.
 
-- **writes nothing.** The kit resolves a copy of the collection's values in which the recipe's keys are the template's. The assembly already resolves from values (`CollectionContentAssembly` over `CollectionExport`), so no stored record is touched;
-- **takes the template as it is** for what a recipe has a say in, and the collection's own for what no template touches: the citation style, the labels, the title page, the colophon;
-- **keeps what the author set for particular sections and documents:** a title, a date line, the notes chosen, and a document set to print in full. The sheet's sentence counts them: *6 documents as citations with your notes. 1 document keeps its own settings.*
-- **prints the template's blocks at the end,** with any block the author placed where it stands, and without the blocks the collection's own template placed.
-
-To make a template the collection's own is an act in the editor (§4.3).
+The source note printed twice (#1991) has to be ended first, or the first template listed prints it.
 
 ### 4.5 A smart collection
 
-A collection linked to a saved search prints that search's documents, and the preview shows them; neither editor lists them *(corrected, second review INT-7: this record first said it lists them; `CollectionOutline+App.swift:214-224`)*. They are made from the results at each resolve and are not stored (`CollectionContentAssembly.swift:181-182`, `:731-756`). So:
+A collection linked to a saved search prints that search's documents, and the preview shows them. Neither editor lists them: its outline holds one sentence and its apparatus rows (`CollectionOutline+App.swift:214-224`).
 
-- **It has one scope, the collection's:** the template, the set of §4.1, the title page, the citation style.
-- **A document of its list has no settings.** Selecting one says so, and offers *Create Static Snapshot*, which is the way to a collection whose documents can be changed one by one.
-- **The snapshot carries every setting.** It is made by copying the collection's value whole, and not field by field (§7.6).
+- **It has the collection's settings and no others,** as today.
+- **The sentence in its outline gains *Create Static Snapshot*,** which is the way to a collection whose documents can be set one by one. Today the snapshot is offered only in the two lists.
+- **The snapshot carries every setting and the smart collection's own blocks** (#1996).
 
 ### 4.6 Words
 
-The first form's words collided with the app's and the volumes' own. This form's:
-
-| The first form said | This form says | Why |
+| Elsewhere it was | This form says | Why |
 |---|---|---|
-| Heading | **Your title**; **Printed heading** | a section has a heading too |
-| Reference | **Citation** | *references* are the app's cross-references |
-| Dateline, as printed, your own or hidden | **Your date line**; the printed dateline is part of the text | §3.1 |
-| Not printed | **Left out** | the volumes' own footnotes say *Not printed.* Document 475's first one begins with those words |
-| Footnotes; Source note | **The volume's notes** | §3.5 |
-| 4 notes; 2 notes | **4 footnotes**; **2 of your notes** | two kinds of note |
-| This document · This section · Whole collection | no control | §4.2 |
-| Your settings | **3 changes of your own** | nothing is kept aside |
+| *Look* (the second form's sheet) | **Template for this export** | one thing had two names |
+| *Printed heading* | **In the volume:** | true of every volume, and fixed |
+| *The volume's notes*, one choice of three | **Footnotes**; **Source note** | 1.0's names, which need no relearning |
+| *Your notes* | **Research notes** | 1.0's name; a *note block* and the *Note on the Text* are different things |
+| *Not printed* (the first form) | **Left out** | the volumes' own footnotes say *Not printed.* |
+| *Back matter*, for switches that print at the front | no such group | the project stamp is on the title page and the word cloud opens the collection |
+| *Default* | **Follow the section: On** | §4.2 |
 
 ---
 
@@ -465,132 +450,120 @@ The first form's words collided with the app's and the volumes' own. This form's
 
 ### 5.1 Export
 
-The same sheet on every platform.
+The sheet 1.0 has, with one section added and its order kept: what will print, then the format, as now.
 
-- **Look.** *As this collection is set* leads, and names the template the collection follows and the count of the author's changes. Then the six templates. One line under the list: *A template chosen here is for this export.*
-- **Format.** PDF, Word and Web page as one control. *More formats* opens BibTeX, RIS and `.fruscollection`. The Zotero row stays as it is.
-- **What will print**, in a sentence (§4.4).
-- **Export**, which is the one button pinned under the list. The first form pinned two, which the review judged would leave under one row in view at the largest text sizes on an iPhone SE.
+- **What will print**, in a sentence, first, as now.
+- **Format.** The six cards and the Zotero row, as now. It opens on the format this collection last exported as on this device.
+- **Template for this export,** shown for PDF, Word and Web page: *As this collection is set*, chosen when the sheet opens, and the six. A line under the list: *A template chosen here is for this export. The collection keeps its own settings.*
+- **Export**, the one button pinned under the list.
 
-It opens on *As this collection is set* and on the format this collection last exported as on this device. That memory is the device's own and is not a fact about the collection.
+Where it opens from: the editor's *Export…*, as now; **the Collections list**, in a collection's context menu on iOS and in the Mac's Manage Collections sheet, each with a VoiceOver action (#2006); and the Mac's Collection menu (⇧⌘E, as now).
 
-Where it opens from:
+- **The four exports that are not renderings** show no template, and say why. Which research notes they carry is #2000: today BibTeX and RIS follow the collection's switch alone, the Zotero send follows none, and the file's own switch carries every note.
+- **There is no Export Again.** The sheet opens on the last format and on the collection as it is set, so *Export…* then *Export* is that export.
 
-- the editor's *Export…*, as now;
-- **the Collections list:** *Export…* in a collection's context menu, on iOS and in the Mac's Manage Collections sheet;
-- **the Mac's Collection menu:** *Export Collection…* (⇧⌘E, as now);
-- **Export Again**, beside each of those, once the collection has been exported on this device. Its label says what it will do: *Export Again: PDF, as this collection is set*. Before a first export it is not offered.
+This puts a choice about content back in the export sheet, which `Collections-Rework-Scope.md` took out. What differs: the six switches it removed do not return; the choice is of one named recipe, for three formats; the collection's own settings are what the sheet opens on; and the sheet still writes nothing. Q3 asks.
 
-The quotation check (the manuals' *The Excerpt Check*) and the missing-volume and summary-generation waits stay in the sheet. Export Again runs them too, and stops on the sheet when one has something to say.
+### 5.2 The three surfaces, trimmed
 
-**This puts a choice about content back in the export sheet,** which `Collections-Rework-Scope.md` took out so that export would be "format + destination". What differs: the six switches it removed do not return; the choice is of one named recipe; the collection's own look is the default; and the sheet still writes nothing.
+**The collection's settings** (the gear, on every platform, as now):
 
-### 5.2 Settings, by what is selected
+- **In view when it opens:** the template gallery, with the line that names the template in force or the nearest; the title page's five fields (name, description, subtitle, author line, introduction); the linked saved search; and *Customize*.
+- **Under *Customize*:** the nine composition controls as they are; *Opening*; *Citation style*; the colophon, the project stamp and the query log; and *Wording*.
 
-**The collection** (its first row, or the gear):
+**A section's sheet** holds the section's six pickers and nothing of the collection's. Its title and its text depth stay on its row.
 
-- **In view when it opens:** the template gallery, with the line *Following … · 3 changes of your own · Review*; the title page's five fields (name, description, subtitle, author line, introduction); the linked saved search; and *Customize*.
-- **Under *Customize*:**
-  - *Each document:* the seven settings of §4.1, and Numbering;
-  - *Lists and citations:* the contents-list style, the citation style;
-  - *Back matter:* Note on the Text, colophon, project stamp, query log, word cloud;
-  - *Wording:* the collection's own words (below).
+**A document's inspector** is 1.0's: the title; the date line under it, once there is a title; text depth and the summary prompt; six pickers; then which notes, which highlights and the headnote's card.
 
-**A section** (its heading's row): its title, and the seven settings of §4.1 as its documents' own.
+**The same setting has one name everywhere.** Today the collection's description is *Note* in one place and *Description* in another, and three more differ likewise (§2.4).
 
-**A document** (its row):
+**The collection's words.** A table of the labels the app prints over the author's own material and over the apparatus, each with a field: *Contents*, *Headnote*, *Summary*, *Research Note*, *See also*, and the five apparatus titles. A course reader's *Research Note* becomes *Commentary*, and a Bibliography *Works Cited*.
 
-- *Yours:* your title, your date line, the headnote and its card, your notes and which, highlights and which, See also;
-- *From the volume:* Opening, Text, the volume's notes.
+- **Not in the table:** *In the volume:*, which is the mark; *Source:*, which the volumes print themselves from the 1955–57 volumes at least; and *Footnotes*, which heads the volume's notes.
+- **A field cannot be emptied,** and the Note on the Text lists the labels that were renamed.
 
-**The opening, drawn where it is set.** A document's settings begin with its opening as it will print: the lines of §3.3, drawn natively from the plan. On iPad and iPhone the settings cover the page (§5.3), so this is where a title typed there is seen at once. It is new in this form.
+**The Mac's New Collection form,** which Add to Collection opens, becomes a name and the gallery.
 
-**The collection's own words.** The owner asked for "my own … labels". A table of the words the app prints, each with a field: *Contents*, *Headnote*, *Summary*, *Research Note*, *See also*, *Printed heading*, and the five apparatus titles. So a course reader's *Research Note* becomes *Commentary*, and a Bibliography *Works Cited*.
+### 5.3 The preview
 
-- They are the collection's apparatus and carry no mark. None is a word of the volume's.
-- ***Source:* is not in the table.** From the 1955–57 volumes at least, the volumes print that word themselves, at the head of the source note *(corrected, second review EDI-8: this record first said from 1961; 323 of the 332 source notes of `frus1955-57v24` open with it)*. A word the volume prints is not the collection's to change.
-
-**The Mac's New Collection form,** which Add to Collection opens, becomes a name and the gallery. Today it carries the whole composition section (§2.4).
-
-### 5.3 The preview, and pointing at it
-
-**On every platform the preview is the proof of the export.** Three things it lacks today come first, since anything else depends on them:
+**Four repairs, on every platform,** in a lane of their own:
 
 - it keeps the author's place when the page reloads;
 - choosing a row brings its document into view, and renders it if it is past the first 20;
-- each document on the page is named by its entry and not by its document, so that a document entered twice is two places.
+- each document on the page is named by its entry, so that a document entered twice is two places (#2004);
+- it refreshes on every setting its page draws (#1997).
 
-**Pointing is the Mac's.** There the settings are a column beside the page, and both stay in view.
+**Pointing is the Mac's, and later.** There the settings are a column beside the page.
 
-- ***Show Parts*** is a switch on the preview and in the View menu. On, each part of a document is outlined, with its name on the outline's own corner, and a line under the document names what is left out. Off, the page is the proof, and its links work.
-- **A click on a part selects that document's row and opens that part's row in the column.** Keyboard focus goes with it, and the column's title says what is now selected. Nothing opens over the page.
-- **Every part is reachable without the page,** through the column, by keyboard and by VoiceOver. The page is never the only way.
+- ***Show Parts*** is a switch on the preview and in the View menu. On, each part of a document is outlined, with its name on the outline's own corner.
+- **A click on a part selects that document's row and brings that part's control into view in the column.** Keyboard focus stays where the click was, and VoiceOver is told what is selected. The second form moved focus to the control, which for a text field could put the next keystroke into a title.
+- **Every part is reachable without the page.**
 
-**On iPad and iPhone the way in is the row.** On iPad a document's settings are a sheet over both columns (`CollectionEditorView.swift:863-873`). On iPhone the outline and the preview are never on screen together (`:738-745`). So a tap on the page cannot be answered beside the page on either, and the opening drawn in the settings (§5.2) is what shows a change as it is made. Pointing on iPad would need a settings column that the editor draws itself, as the reader draws its Research rail since R6a. That is a candidate (§8) and no part of the lanes.
+On iPad a document's settings are a sheet over both columns (`CollectionEditorView.swift:863-873`), and on iPhone the outline and the preview are never on screen together (`:738-745`), so a tap on the page cannot be answered beside it on either.
 
 ### 5.4 On each platform
 
 | | Mac | iPad | iPhone |
 |---|---|---|---|
-| **Layout** | Outline · preview · settings column, as now, with a toolbar control for the preview | Outline · preview, with settings as a sheet, as now | Outline, with Preview behind the segmented control, as now |
-| **The collection** | Its first row, or the gear; shown in the column | The gear's sheet, as now | The *Collection settings* row, as now |
+| **Layout** | Outline · preview · settings column, as now, with a toolbar control for the preview | Outline · preview, with settings as sheets, as now | Outline, with Preview behind the segmented control, as now |
+| **The collection** | The gear's popover, as now | The gear's sheet, as now | The *Collection settings* row, as now |
 | **A section** | Its heading's row | The heading's pill | The heading's pill |
-| **A document** | Its row, or a click on it in the preview | Its row or its Configure pill | Its row |
+| **A document** | Its row | Its row or its Configure pill | Its row |
 | **Templates** | A grid, three rows of two | The same grid | Rows, each with its line of description |
-| **Show Parts** | Yes | No | No |
 | **Export** | The sheet; the Collection menu; Manage Collections | The sheet; the list's context menu | The sheet; the list's context menu |
-
-An outline row leads with the author's title where there is one, with the printed heading as its second line.
 
 ### 5.5 The count
 
-Counted from §5.2's own lists, the way §2.4 counts today's.
+Counted field by field, the way §2.4 counts today's.
 
-| Scope | Today | This design | |
+| Surface | Today | This design | |
 |---|---|---|---|
-| **The collection** | 24, all in view | **14 in view; 31 with *Customize* open** | Six new settings: Opening, Numbering, See also for the collection, the citation style, the Note on the Text, the wording table. Two new controls: *Review* and *Customize*. One fewer where two switches became one choice |
-| **A section** | 21 in its sheet, and one menu on its row; 7 are the section's | **9** | The collection's 15 leave the sheet. The section's own go from 7 to 9, its title and Opening among them |
-| **A document** | 9, then a switch per note and per highlight | **10**, then the same | Two switches became one choice; Opening and the date line are new |
-| **The export sheet** | 7 | **12** | Seven looks, three formats, More formats, the Zotero row |
+| **The collection's settings** | 24, all in view | **13 in view; 37 with *Customize* open** | New: *Customize* itself, Opening, the citation style, and ten label fields |
+| **A section's sheet** | 21 | **6** | The collection's 15 leave it |
+| **A document's inspector** | 9 | **10** | The date line |
+| **The export sheet** | 7 | **14** for PDF, Word and Web page; 7 for the others | Seven templates |
 
-Each count includes the summary prompt, which shows only where the text is a summary, as §2.4's does.
+Uncounted in both columns: a switch for each note and each highlight, the headnote's card, the file's switch for research notes, and, new, the list a row's *2 set their own* opens.
 
-*(Corrected, second review INT-1: two of today's figures stand on a different basis from the design's. Today's 7 for a section leaves out the heading's own title field, which the design's 9 counts. Today's 7 for the sheet counts each of six format cards, where the design's 12 counts More formats as one. The review's H19 recounts the design's own figures.)*
+**The design does not reduce the number of settings.** It adds thirteen fields to the collection's, ten of them the labels the owner asked for. What it reduces:
 
-The design does not reduce the number of settings. It adds six to the collection's, each one asked for or owed. What it reduces:
+- **what is in view** when the collection's settings open, from 24 to 13;
+- **a section's sheet,** from 21 to the 6 that are the section's;
+- **what a picker leaves unsaid:** *Default* names what it follows and what that is;
+- **what a first export needs,** which is no setting at all, from the list as well as from the editor.
 
-- **what is in view** when the collection's settings open, from 24 to 14;
-- **the places a setting can be,** from three surfaces under two sets of names to one list for each thing selected;
-- **what a row asks:** none asks the author to choose *Default*;
-- **what a first export needs,** which is no setting at all.
+### 5.6 What the earlier forms proposed, and why it is gone
 
-### 5.6 The alternatives, and why this one
-
-The first form set out three interfaces. Where each stands now:
-
-- **Templates only (Option A).** Two surfaces and nothing to learn. It cannot meet *fine-tune any aspect*, and it removes what the app does today. It is this design's first screen and not its only one.
-- **One inspector with a scope switch (Option B as first drawn).** Withdrawn. The switch was a mode: it moved back to *This document* when a row was selected, so a change meant for the collection landed on one document. The app built an inspector headed by a two-way switch once and took it out (§5.7).
-- **Popovers on the page (Option C as first drawn).** Withdrawn. A native popover would be anchored to a rectangle of a page that is discarded and reloaded a second after each change made in it, and on iPad and iPhone the page is not in view while a setting is changed.
-
-What is recommended is Option B's list without its switch, behind Option A's gallery, with Option C's pointing where the page and the settings can be seen together, which is the Mac.
+| Proposed | In | Why it is gone |
+|---|---|---|
+| A heading or dateline of the author's in the volume's place, in brackets | the first | The volumes use brackets for their own editors' additions; a dateline is the document's text |
+| One inspector with a switch for the scope | the first | The switch was a mode |
+| Popovers on the page | the first | The page is discarded and reloaded under them, and is not in view on iPad or iPhone |
+| The collection as the first row of its own outline | the second | On the Mac its settings then replaced the selected document's in the one column |
+| Rows with no *Default* and a way back | the second | A value held at what it would inherit had no rule; the way back was a second control nobody drew |
+| The notes as one choice of three | the second | It cannot hold half of 1.0's pair |
+| The collection's number at each document's head | the second | The volumes' own numbers are already there |
+| Two record types and an upgrade | the second | Two devices could each delete the other's copy (§7.5) |
+| Version 3 of the collection file | the second | Nothing required it (§7.4) |
+| A record of what placed each block | the second | Nothing true could be said of a block placed before it |
+| The opening drawn at the head of a document's settings | the second | It could not share the screen with the field at the largest text sizes. A candidate now (§8) |
+| Export Again | the second | It could not repeat an export, and saved one tap |
 
 ### 5.7 Four arrangements this app built and withdrew
 
-The first form proposed each of these without naming its history.
-
 | Arrangement | What happened before | This form |
 |---|---|---|
-| An inspector headed by a segmented switch | Built as *Document \| Composition*, and removed by Composer v2 (`CollectionEditorView.swift:2045-2049`) | No switch. The selection is the scope (§4.2) |
-| The collection's settings shown in the inspector when nothing is selected | A build-28 tester reported them out of reach once a document was focused (`Completed/188-189-Tester-Feedback-Build28-Plan.md`, 188-E). Composer v2 moved them behind the gear | The gear always reaches them, whatever is selected, and they are never drawn beside a document's (`MacCollectionManagerView.swift:1068-1072`) |
-| Content choices in the export sheet | Six controls, deleted by the Collections rework | One choice of a named recipe that writes nothing (§5.1). It is a partial return, and Q3 asks |
-| Collection-level switches for apparatus | Decision A11 chose placeable rows, since "toggles create a parallel structure system" (`Completed/Collections-Authoring-Scope.md:198`) | Rows, as now. The first form's five switches are gone |
+| An inspector headed by a segmented switch | Built as *Document \| Composition*, and removed by Composer v2 (`CollectionEditorView.swift:2045-2049`) | None |
+| The collection's settings shown in the inspector when nothing is selected | A build-28 tester asked for them to be reachable "after refocusing on a document"; the session that took the report found them "not reachable without clearing the selection" (`Completed/188-189-Tester-Feedback-Build28-Plan.md`, 188-E). Composer v2 moved them behind the gear | Behind the gear, as now |
+| Content choices in the export sheet | Six controls, deleted by the Collections rework | One choice of a named recipe, for three formats, that writes nothing. A partial return, and Q3 asks |
+| Collection-level switches for apparatus | Decision A11 chose placeable rows (`Completed/Collections-Authoring-Scope.md:198`) | Rows, as now, the Note on the Text among them |
 
 ---
 
 ## 6. Citation styles
 
-- **One setting for the collection:** History at State, Chicago, Turabian. It governs every place a citation prints: the citation at a document's head, a contents row in *Citation* style, an excerpt's source line, the *See also* line, and the Bibliography's and the Chronology's rows.
-- **An upgraded collection keeps history.state.gov style**, so its exports do not move. Q5 asks what a new collection starts with.
+- **One setting for the collection:** History at State, Chicago, Turabian. It governs every place a citation prints: at a document's head, a contents row in *Citation* style, an excerpt's source line, the *See also* line, and the Bibliography's and the Chronology's rows.
+- **A collection that exists today has none set, which reads as History at State.** Q5 asks what a new collection starts with.
 
 For document 475, as the three formatters write it:
 
@@ -600,183 +573,144 @@ For document 475, as the three formatters write it:
 | Chicago | *Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI*, edited by Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, 1969), Document 475. |
 | Turabian | *Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI*. Edited by Rogers P. Churchill and William Slany. Washington, D.C.: Government Printing Office, 1969. Document 475. |
 
-**What it takes in the kit.**
+**What it takes in the kit.** `BatchContext.formatter` becomes `any CitationFormatter`, made from the collection's style. The assembly hands every exporter one kind of italics. The Bibliography sorts by volume and number, so a style changes no order. Both reviews tested these and they held.
 
-- `BatchContext.formatter` becomes `any CitationFormatter`, made from the collection's style (`CollectionContentAssembly.swift:797`, `:917`).
-- The assembly hands every exporter one kind of italics, turning `*…*` into `_…_` where a citation is made, so no exporter learns a second marker (§2.7).
-- The Bibliography sorts by volume and number, not by the citation's text (`CollectionGeneratedBlocks.swift:304-333`), so a style changes no order.
+**Three things still open,** and Q5 puts them to the owner:
 
-**Two things the first form claimed and this one does not.**
-
-- **A short form** (*FRUS*, 1946, vol. VI, doc. 475) is not in the core. Year, volume and document name more than one volume for 133 of the manifest's 553, and for 48 even with a part added; 99 titles have no volume number. *FRUS, 1945, vol. I* is both the Potsdam volume and the general one, which the app met in #1388 (`VolumeLabels.swift:60-66`). A short form needs a rule that is unique over the whole manifest before it is shown to anyone. It is a candidate (§8).
-- **That each style is right in every place.** The review found it plausible that the app's Chicago has a note's shape and its Turabian a bibliography entry's, while a collection has both places, and that neither names the document cited. The two manuals could not be fetched. Q5 puts it to the owner, who can judge it at sight; §12 owes the desk check.
+- **Whether each style is right in each place.** The app's Chicago may have a note's shape and its Turabian a bibliography entry's, while a collection has both places, and neither names the document cited. The two manuals could not be fetched.
+- **The *See also* line joins its citations with a semicolon** after taking one period off each (`CollectionItemHTMLRenderer.swift:390-392`), which runs Turabian's three sentences together.
+- **A short form** (*FRUS*, 1946, vol. VI, doc. 475) is not in the core. Year, volume and document name more than one volume for 133 of the manifest's 553. It is a candidate (§8).
 
 ---
 
-## 7. What is stored: two new record types, and a one-way upgrade
+## 7. What is stored
 
-### 7.1 Why new types
+### 7.1 Four optional properties on the two record types 1.0 has
 
-The owner offered it: "you can base the collections revamp on a new model type and make conversion a one-way upgrade process." It would help, for three reasons, and the first is the weightiest.
-
-1. **The settings of §4 do not fit 1.0's fields without two forms of the same fact.** 1.0 stores eight composition fields on a collection and eight override fields on an entry, with footnotes and source note as a pair. §4 needs one value at every scope, a three-way choice where the pair was, and a recorded template. On the existing types that means new fields beside the old ones, and build 1861 goes on writing the old ones. A template chip tapped on an iPhone running 1861 would rewrite the eight fields under a recorded template that no longer describes them, which is the review's DATA-4. With new types, 1861 cannot write a record it does not know.
-2. **Every stored state of a 1.0 collection gets one stated meaning,** by a function that takes the old values and gives the new, with a fixture for each state and a report the author can read (§7.4). The review asked for that table (INT-5).
-3. **Every copy can go through one value.** Duplicate copies its fields by name and misses two (§2.8, defect 5). Create Static Snapshot copies eight (`SmartCollectionSnapshot.swift:112-134`). Built value-first, a copy is the value read and written back under new ids (§7.6).
-
-**What new types do not settle:**
-
-- two builds that both know the new types but differ in what settings they know (§7.3 gives the rule);
-- two devices changing one record's settings before either syncs: the later writer's value stands;
-- whether a device updated later receives records of a type it did not know when they were uploaded. §12 owes that run before the lane starts.
-
-### 7.2 The two types
-
-Working names: `DocumentCollection` and `DocumentCollectionEntry`. The lane may choose others, and the choice is permanent, since a CloudKit record type is never renamed. They follow CloudKit's rules as the existing models do: every property optional or with a default, the relationship optional with an inverse.
-
-| | `DocumentCollection` | `DocumentCollectionEntry` |
+| Property | Holds | When it is absent |
 |---|---|---|
-| **Identity and structure** | `id`, `createdAt`, `lastModified`, `formatVersion` | the same four; `collectionId` and the relationship; `sortOrder`, `level`, `kind` |
-| **Content**, each a property, since the app queries or sorts by several and each one's meaning is fixed | name, description, subtitle, author line, introduction and its rich text; the projects; the linked saved search | the document and its volume; **title** and **date line**; a heading's or a note block's text and rich text; an excerpt's four anchors; an apparatus block's type, and the template that placed it; the notes and highlights chosen; the headnote draft |
-| **Presentation**, one value | the template it follows; **the settings value**: every key of §4.1, and the collection's alone (numbering, contents-list style, citation style, the wording table, the five back-matter switches) | **the settings value**: only the keys this row changes |
-| **Where it came from** | when it was upgraded, and the 1.0 record's date at that moment (§7.5) | |
+| `Collection.citationStyle` | the style's name | History at State |
+| `Collection.opening` | which line leads | the citation leads |
+| `Collection.labelsJSON` | the collection's own words, as a map from a label's name to its text | the app's words |
+| `CollectionEntry.dateLine` | a document's date line (Q7) | none |
 
-**Presentation is one value for each record,** stored as text, with keys FRUSCoreKit declares. `SyncedPreferences.listOrderJSON` already has that shape. The reason is the same as in the first form, and the review found it sound: *fine-tune any aspect* is a list that will grow, and a key added later is not a CloudKit schema change, where a property added later is a deploy.
+- **The Note on the Text needs no property.** It is a new value of a field every block already has.
+- **Nothing else moves.** The eight composition fields, the entry's override fields and `titleOverride` stay what they are and stay the store of what they hold.
+- **No record of a template** is kept (§4.3).
 
-### 7.3 The rule for writing a settings value
+**One CloudKit promotion of four fields.** Each has its control in the lane that adds it (§9, lane 3), so the owner's write on a Development build can set all four before the deploy. CloudKit makes a field only from the first record that carries a value (`CloudKitSchemaInventory.swift:514-516`), which is why a property must not land in one lane and its control in the next. The second form cut its lanes that way.
 
-The review's first finding was that a build which decodes the keys it knows and writes the value back erases the rest. The rule:
+### 7.2 What build 1861 does
 
-1. **Each record carries `formatVersion`:** the lowest version of the collections format that can write the record without loss. Everything in §3 to §6 is version 1.
-2. **A build writes a record only where the record's version is no higher than its own.** Otherwise the collection opens for reading there, with one line saying why. It can be read, previewed and exported, with a notice that settings from a later version are not applied.
-3. **A later setting raises a record's version only when the record first uses it.** That is the collection file's own rule, write the minimum (`NativeCollectionFormat.swift:347-351`).
-4. **A decoder passes over a key it does not know,** and rule 2 means it is never asked to write one back.
-5. **A test holds it:** a value with an unknown key and a higher version, given to the current code, is not written.
+It reads none of the four, so it prints 1.0's layout: the citation leading, History at State, the app's words, no date line. Nothing the volume prints is ever left out by the new settings, so nothing 1861 prints is false.
 
-The app already has the habit in one place: an entry kind a later build wrote is never written back (`Collection.swift:684-691`).
+**What is not established** is what happens to the four on a record that a 1.0 device then changes, and what a device updated later holds for them on a record it imported before. The first review left that as a run (its G17), and it is still owed before lane 3 (§12). What is at risk is a style, an opening, a set of labels and a date line, which can be given again.
 
-### 7.4 The upgrade
+### 7.3 The labels value
 
-**A function in FRUSCoreKit, over values.** It takes a 1.0 collection as the research export already carries one (`CollectionExport` with its entries) and gives the new value. It reads no store and writes none, so it runs in `swift test`, with a fixture for every stored state. The app writes what it answers through its own context, as it applies the rows an Archives Visit's rules answer.
+It is one text property holding a map, as `SyncedPreferences.listOrderJSON` holds two lists (`ListOrderPreferences.swift:31-33`). The first review's first finding was that a build which decodes the keys it knows and writes the value back erases the rest, which is how that property is read (`:71-74`). Here the value is read and written as a plain map from name to text, so a build that does not know a label's name carries it through. A test holds that: a value with a name the build does not know survives an edit of another.
 
-| 1.0 holds | The new record holds |
-|---|---|
-| name, note, subtitle, author line, introduction, projects, saved-search link | the same |
-| the eight composition fields | the collection's settings, every key set |
-| those eight equal to a template's recipe (`matches`) | that template, recorded; otherwise none, and the gallery says the settings came from 1.0 |
-| nothing about the opening, numbering or a citation style | *The citation leads*, no numbering, History at State: what 1.0 prints *(corrected, second review H13: 1.0 numbers its contents rows; it prints no number at a document's head)* |
-| Footnotes and Source note, as a pair | the volume's notes, as §3.5 maps them |
-| colophon, project stamp, query log, word cloud | the same four switches |
-| an entry's kind, level, order, document, text, rich text, excerpt anchors, block type, notes and highlights chosen | the same, under the same ids |
-| `titleOverride` | the title, with the meaning it has now (§3.1) |
-| the eight override fields; *Default* | the keys the entry changes; a *Default* is a key not held |
-| an apparatus block | the block, as the author's own, since 1.0 did not record what placed it |
-| an entry's headnote draft | a copy of it, so that a delete on a 1.0 device cannot remove it (`Collection.swift:885-889`) |
-| a kind this build does not know | carried as stored, and inert |
+### 7.4 The collection file
 
-**The same ids.** The new collection and its entries take the ids of the old. So every pointer the app keeps to a collection still finds it, a second run finds the work done, and two devices that both upgrade produce records the duplicate cleanup can pair *(corrected, second review H1: the cleanup names ten types and neither of these, and for copies that share an id and a creation date the device's own fetch order decides which is kept, `DuplicateRecordCleanup.swift:64-66`, `:243-245`)*. A headnote draft's copy takes an id derived from its entry's, as an Archives Visit derives a child row's (`ArchiveVisitPlanWrites.swift:76`), so two devices make the same copy.
+The file stays what it is (the second review's §2 sets out its rules, each with its line).
 
-**When it runs.** On a build that has the new types, after the first iCloud import of a launch has settled, which is where the app's other repairs wait (`SummarizationPromptSeeder.swift:165-168`) *(corrected, second review H2: the wait those repairs use is eight seconds of quiet after any import event, `FRUSExplorerApp.swift:3379-3384`, and not the end of a first import)*; or at once on a device with no iCloud account. Until then a 1.0 collection is listed, previewed and exported through the same function, and is not editable, with one button to upgrade it now.
+- **No change of version, and the floor stays 1.** Five rounds of additions have ridden version 2 as optional keys, by the format's rule that the floor rises "only when *ignoring* a field would corrupt meaning" (`NativeCollectionFormat.swift:91-93`).
+- **New optional keys:** the collection's `citationStyle`, `opening` and `labels`; an entry's `dateLine`. Each is written only where it is set.
+- **Writing the minimum stays.** A collection that uses nothing new, and has no headnote, is written as the bytes 1.0 writes today, so the manuals' sentence stays true and the Guide's fixtures stay green.
+- **The Note on the Text travels as a block.** A 1.0 app keeps a block type it does not know, inert.
+- **A headnote travels as its text, with who wrote it, and not as a draft's id** (#1999; Q10).
+  - Every import makes a draft of its own.
+  - A file from 1.0 that carries an id is given a copy of the draft where the id resolves.
+  - A 1.0 app that opens the new file shows no headnote. That is what a recipient on another account sees today. On its author's own account 1.0 found the draft by its id, and that is lost.
+- **A 1.0 app, given a file the new version writes,** ignores the new keys and shows 1.0's layout.
+- **The new version, given a file from 1.0 or from an outside tool,** reads it as today. Nothing says of it that its settings "came from 1.0".
 
-**It writes, and deletes nothing.** The 1.0 records stay as they are. A build that has the new types no longer lists them. Settings ▸ Data & Recovery says how many there are and keeps the report.
+**What the lane owes for the file:** the Guide's §15 (its two examples, its checker, its account of versions), both manuals' sentence, the sheet's hint, two ranged blocks of `Docs/EditableContent/08-Reading-Research-Collections.md` (`:897`, `:3226`), and the format's own tests. And one run first: a hand-made file with the new keys opened in build 1861 by each of its three paths (§12).
 
-- The inventory's interlock binds a pass that "both writes an undeployed type and destroys its source" (`CloudKitSchemaInventory.swift:485-490`). This one destroys nothing, so an undeployed write would cost a failed upload and no data. What keeps such a build from shipping is the archive's schema check (#1531) *(corrected, second review H5: the check does not require an identifier listed as awaiting a writer, `Scripts/check_cloudkit_schema.py:151-154`)*.
-- It writes on a context the modification stamper does not observe, as Import from JSON does, so an upgraded record keeps the 1.0 record's dates.
+### 7.5 The other carriers
 
-**The report,** shown once and kept: each collection, the template it now follows or that its settings came from 1.0, and what will print differently. That last list is §2.8's defects where they touch the collection, and the Note on the Text where it has something to say.
+- **The research export** takes format version 8, with a `Fields` case for each of the four properties (`CLAUDE.md`, *Import from JSON*) and a fixture of version 8. An older file imported over a newer library then keeps the library's four, by the plan's own rule (`ResearchImportPlan.swift:31-33`). A version-7 importer refuses a version-8 file whole, as it would any later file.
+- **Duplicate and Create Static Snapshot** copy every stored property, held by a test that walks the schema (#1996).
+- **No index version.**
+- **The web edition** reads collections through the same kit values and follows by its own rules (`CLAUDE.md`, *Web edition*).
 
-### 7.5 The hard cases
+### 7.6 The route not taken
 
-| Case | What happens |
-|---|---|
-| **Two devices upgrade one collection** before either has the other's records | The same ids, and the same content where both held the same 1.0 state. The cleanup keeps one: the copy changed since its upgrade, else the one made from the later 1.0 state. An entry deleted on one device after its upgrade can come back from the other's copy, and can be deleted again |
-| **A device on 1.0 changes a collection after it was upgraded** | The new record does not follow. A newer build sees that the 1.0 record is later than the date kept at the upgrade, says so on that collection, and offers *Upgrade That Version as a Copy*. Nothing is merged *(corrected, second review H3: in 1.0 an edit to an entry does not move its collection's date, `Collection.swift:28-29`, so this test misses most changes)* |
-| **A collection made in the new version** | Does not appear on a device running 1.0. The release notes say so |
-| **A collection deleted in the new version** | Its 1.0 record is deleted with it, after one question that says devices on 1.0 will lose it too. Otherwise another device would upgrade it again |
-| **A collection deleted on a 1.0 device after its upgrade** | The upgraded collection stays |
-| **A research export of format 7 or earlier, or a collection file of version 1 or 2, is imported** | Its collections pass through the same function |
-| **A smart collection** | Its link is carried, and so are any entries from before the link, as stored |
-| **A device offline at its first launch of the new build** | Its 1.0 collections are listed, previewed and exported, and each can be upgraded by its button |
+The owner offered a new model type with a one-way upgrade, and the second form took it. The second review found that the upgrade as designed could delete the work done after it:
 
-### 7.6 What carries the new types
+- Two devices that upgrade one collection make twins with one id and one set of dates. For such copies the tree's own comment says its cleanup "can keep a different copy and delete the one the first device kept, and after sync no copy is left" (`DuplicateRecordCleanup.swift:243-245`). The owner's library already holds copies made this way by an earlier migration (`:249-251`).
+- Nothing but the twin recorded the upgrade, so a new device or a rebuilt store could upgrade again from the 1.0 state.
 
-- **The research export takes format version 8.** It carries the new types, and a 1.0 collection not yet upgraded is exported as its upgrade. `ResearchImportPlan.ModelType` gains the two types at version 8 (`ResearchImportPlan.swift:216`), and a fixture of version 8 joins the seven. A version-7 importer refuses a version-8 file whole, as it would any later file.
-- **The collection file takes version 3,** and a 1.0 app refuses to open one, with the message it has for a later file (`NativeCollectionFormat.swift:318`). Writing the minimum, so that an untouched collection is still a version-2 file, would need a second function from the new values back to the old. This design does not propose it: one-way is what the owner offered.
-- **Duplicate and Create Static Snapshot** read the value and write it under new ids.
-- **One test walks every copy.** It reads the two models' stored properties from the schema, as `CloudKitSchemaInventoryTests` does, and fails when a property is in no mapping. Duplicate, the snapshot, the file, the export and the upgrade are each held to a round trip of a fixture with every field set.
-- **What asks before a delete** reads the value too. Today the question before a row is deleted reads a hand-kept list of fields (`CollectionEntryRows.swift:357-375`), and so does the preview's refresh list (§2.8, defect 6).
-- **No index version.** Nothing here changes what is indexed, the reader's page or `renderingVersion`.
-- **The web edition** resolves collections through the same kit values, and follows by its own rules (CLAUDE.md, *Web edition*). The lane writes its line of hand-over.
+**The reason for new types has gone with the notes as one choice.** The second form needed them because one value at every scope did not fit 1.0's fields. With the fields kept (§4.1), the new facts are four, and they fit.
 
-### 7.7 What it costs
-
-- **About fifty files of the app and twenty-five of its tests name the two model types** (53 and 26 by a search at `efd73ec`), in twelve of the app's folders. Each changes, most of them by the type's name alone.
-- **One CloudKit promotion of two record types and their fields**, by the R-7 gate: the inventory, `identifiersAwaitingDeploy`, the owner's write on a Development build, the Dashboard's deploy, and `check_cloudkit_schema.py` before an archive. The two 1.0 types stay in Production, which is append-only. A later release may take them out of the model, as R-2b took out the session models, which needs no deploy.
-- **A fork while devices are on different versions** (§7.5, rows 2 and 3).
-- **A collection file made by the new version cannot be opened by 1.0** (§7.6).
-
-### 7.8 The other way
-
-Keep `Collection` and `CollectionEntry`, and add properties. It costs no renaming and no fork. It keeps the first reason of §7.1: two forms of the same fact, one of which 1861 goes on writing. And it leaves a device updated from 1861 holding nothing in the new properties of a record it had already imported, if the mirror does not fetch such a record again, which the review could not settle (its G17). Q6 asks.
+If new record types are wanted for another reason, they need a different upgrade: started by the owner on one device and not by a launch; recorded on the 1.0 record, or by its removal, so that no other device repeats it; the new types read one copy of each id and never deleted by the cleanup, as #1791 ruled for notes; and a rule for an older export imported over an upgraded library. Q6 asks.
 
 ---
 
 ## 8. Other authorial capabilities
 
-Candidates, in the order this design would take them. Q8 asks which. Two of the first form's nine moved into the core: the collection's own words (§5.2), and its numbering at the lead and in the contents list (§4.3) *(corrected, second review H13: a number in the contents list is not new; 1.0 prints one)*.
+Candidates, in the order this design would take them. Q8 asks which.
 
-1. **Selected passages as a document's text.** A fourth choice for Text: the passages the author highlighted in the document, in its order, with a sign where text is left out, under the document's own heading and dateline. It is what a course reader does most: abridge. The highlights, their stored passages and the per-document choice of which already exist (`selectedHighlightIds`); the excerpt check would cover them. The sign for an omission is not brackets (§3.1), and is the lane's first question.
-2. **The collection's numbers in its indexes.** The Persons and Thematic indexes could cite *Documents 3, 7 and 12* of the collection, where they now cite each volume's number.
-3. **Where notes go.** Before the text, as an introduction to a document, or after it, as now.
-4. **Save as Template.** An edited look kept under a name for other collections. It is authored content, so it is a record type of its own and not a field of the one-record preferences, whose rules would lose it. If it is wanted, it should be decided before §7's deploy, so that its type rides the same promotion.
-5. **A date alone in contents rows.** *22 February 1946* in place of the printed dateline, from the date the index stores, in the form the Chronology prints.
-6. **The page.** Letter or A4; each document on a new page, or run on; page numbers in Word as in the PDF.
-7. **Several formats in one export**, such as the PDF with its `.bib`.
-8. **Same settings as…** Copy one document's changes to others, or to its section.
-9. **See also, by page.** The line lists the documents a document cites that are also in the collection (`relatedDocumentTargets`, `CollectionContentAssembly.swift:1182-1194`). A reference to a printed page is stored under its page (`CrossReferenceStore.swift:757-759`), so it matches none, and the volumes through the 1950s refer by page: of the six documents the canvas uses, none cites another by its number. The app already maps a cited page to the documents on it (`cited-page-map.json`).
-10. **A short citation form** (§6), once it has a rule over the manifest.
-11. **A tagged PDF**, with a title and links, from the roles the plan gives each line (§3.8).
-12. **A settings column on iPad,** drawn by the editor itself, and pointing there once it exists (§5.3).
+1. **Selected passages as a document's text.** A fourth choice for text depth: the passages the author highlighted, in the document's order, with a sign where text is left out. It is what a course reader does most: abridge. The passages must then travel in the collection file as text, as a quoted passage does, since highlights do not travel (`NativeCollectionFormat.swift:55-58`). The sign for an omission is not brackets (§3.1).
+2. **Save as Template.** An edited set of settings kept under a name for other collections. It is authored content, so it is a record type of its own, with a deploy of its own, and a collection file can carry the settings but not the template.
+3. **The collection's own numbers,** at each document's head and in its indexes together, or not at all: the Persons and Thematic indexes would cite *Documents 3, 7 and 12* of the collection. In a form and a word that no volume prints.
+4. **Where notes go.** Before the text, as an introduction to a document, or after it, as now.
+5. **A date alone in contents rows.** *22 February 1946*, from the date the index stores, in the form the Chronology prints. It is a choice of form for every row, where a date line is one document's.
+6. **A section's headnote default, and See also for the collection** (§4.1's two empty cells).
+7. **The page.** Letter or A4; each document on a new page, or run on; page numbers in Word.
+8. **Several formats in one export**, such as the PDF with its `.bib`.
+9. **Same settings as…** Copy one document's settings to others.
+10. **See also, by page.** The line matches a reference's target against the collection's documents, and a reference to a printed page is stored under its page (`CrossReferenceStore.swift:757-759`), so it matches none. The volumes through the 1950s refer by page. The app already maps a cited page to the documents on it.
+11. **A short citation form**, once it has a rule that is unique over the manifest.
+12. **A tagged PDF**, with a title and links, from the roles the plan gives each line.
+13. **The opening drawn in a document's settings,** and **a settings column on iPad** with pointing there, as the reader draws its Research rail since R6a.
 
-Considered and not proposed: editing a source note's text or a footnote (it is the volume's editors' annotation of the text); a document printed without its heading or its dateline (§3.1; Q2 asks); fonts and colours (no theming engine, item 9 of `Collections-Authoring-Scope.md`); editing inside the preview (its item 1), which this design keeps to: on the Mac a click selects, and nothing on the page becomes editable.
+Considered and not proposed: editing a source note's text or a footnote; a document printed without its heading or its dateline (§3.1; Q2 asks); fonts and colours (no theming engine, item 9 of `Collections-Authoring-Scope.md`); editing inside the preview (its item 1).
 
 ---
 
 ## 9. Lanes
 
-None needs an index version. Each lane's own size is said by what it touches; no estimate of time is given.
+None needs an index version. No estimate of time is given; a lane's size is said by what it touches.
 
 | Lane | What | Stored data | Changes exports | Before it starts |
 |---|---|---|---|---|
-| **1. Export from anywhere, under a look for one export** | The sheet's look row, resolving a changed copy of the values and writing nothing; *Export…* in the Collections list and Manage Collections; the format remembered on the device; Export Again; the export's run moved out of the sheet's view, where it sits today (`CollectionExportSheet.swift:447`) | None | No | Q3 |
-| **2. One plan for three formats** | §3.8; the parts named against the render model (§3.2); the one reading of a printed heading and dateline (§3.4); the volume's notes printed once (§3.5); a title never alone (§3.4); Word's contents list; defects 1, 2, 4, 6 and 7 | None | **Yes**, and the list is §2.8's with §2.3's | The Word and Pages run (§12) |
-| **3. The new record types and the upgrade** | §7 whole, under today's screens: the composition controls and the *Default / On / Off* pickers write the new values. No screen changes but what the upgrade adds | Two record types: **one CloudKit deploy**; research export 8; collection file 3 | No | Q6; the two-device run (§12) |
-| **4. What the settings can say** | The template recorded and asked before; Opening, Numbering, the citation style, the date line, the wording table; the Note on the Text; the statement of sources; a document arriving ahead of the back matter (defect 3). Each with a plain control in today's surfaces, so that it can be used and checked | Keys of the settings value; no deploy | Only where used, and the Note where it has something to say | Lanes 2 and 3; Q2, Q4, Q5, Q7 |
-| **5. Settings by what is selected** | §5.2 on three platforms: the collection as the outline's first row, the gallery first, the lists for a section and a document, the opening drawn in the settings, a smart collection's one scope, the Mac's New Collection form | None | No | Lane 4; Q1 |
-| **6. The Mac's preview points** | §5.3: the page keeps its place, a row brings its document into view, *Show Parts*, a click selects | None | No | Lane 5 |
-| **7. From §8** | As Q8 decides | Keys of the settings value; a record type if saved templates are taken | Only where used | Lane 3 |
+| **1. Export from the lists** | *Export…* in the Collections list and Manage Collections; the format remembered on the device; the export sheet's fit at the largest text sizes | None | No | Nothing |
+| **2. One plan for three formats** | §3.8; the one reading (§3.4); the source note once (§3.5); a title never alone, with *In the volume:* (§3.4); Word's contents list and its footnote numbers | None | **Yes.** It ends #1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003 and #2007 | Q2, Q9; the Word and Pages run |
+| **3. The four new facts** | §7: the four properties, each with a plain control in today's surfaces; the Note on the Text as a block; the statement of sources (#2005); the collection file's keys and a headnote's text (#1999); the research export's version 8 | Four properties: **one CloudKit promotion** | Only where used | Lane 2; Q4, Q5, Q6, Q7, Q10; the two-device run and the file run |
+| **4. The three surfaces, trimmed** | §5.2 and §4.2: the gallery first; a section's sheet without the collection's 15; *Default* that says what it is; *n set their own*; a template that asks first; the snapshot from a smart collection's editor; the Mac's New Collection form; #2006 | None | No | Lane 3; Q1 |
+| **5. A template for one export** | §4.4 and §5.1 | None | No: a new choice, and nothing an existing export prints moves | Lanes 2 and 4; Q3 |
+| **6. The preview** | §5.3's four repairs on every platform (#1997, #2004); then, on the Mac, *Show Parts* | None | No, if the web page's ids keep their form for a document entered once | Lane 4 |
+| **7. From §8** | As Q8 decides | As each needs | Only where used | Lane 3 |
 
-**Lanes 1 and 2 do not wait for the new types.** Both work on 1.0's values, and either could ship as a small release's row. Lane 1 answers the first ask by itself.
+**Three issues stand outside the lanes,** each a small change of its own: #1995 (where an added entry goes), #1996 (what Duplicate and the snapshot copy) and #2000 (the four exports and a document's research notes).
+
+**Lanes 1 and 2 need nothing new stored.** Either could ship as a small release's row.
 
 **What each lane owes, beyond the landing runs the plan of record names.**
 
-- **Shared code** (lanes 1, 2, 3, 4 and 7): `swift build --target FRUSCoreKit` and `swift test`, with the unit target and the Mac build.
-  - `CollectionRenderingPinTests` pins the HTML page and the Word package by SHA-256. Lane 2 moves both, and re-takes each with its reason: the source note printed once is a change to the HTML too.
-  - The PDF has no pin. `CollectionExportParityTests` (#960) holds the three exporters to one inventory of blocks, which a source note cut to a line and a contents list cut at a page both pass. Lane 2 takes it to the blocks' order, a source note longer than a line, a research note longer than a page and a contents list longer than the cover.
-  - `CollectionResolutionTests.swift:450-452` pins a dateline in an opener as absent from the header. Lane 2 changes that expectation, and says why there.
-- **The CloudKit gate** (lane 3; CLAUDE.md, *CloudKit schema-deploy gate*), and with it the research export's version 8, its fixture and its `ModelType` cases; the copy test of §7.6; the upgrade's fixtures; the report.
-- **The six UI suites of `CollectionEditorTitleTests.swift`** hold the editor. Lane 3 must leave them green without a change, which is the evidence that the storage moved and the behaviour did not. Lane 5 rewrites what several walk; each is brought to the new surface in the same change, with its reason, and read first in `UI-Test-Destinations-Runbook.md`.
-- **Strings and screens** (lanes 1, 4, 5, 6): the blocks of `Docs/EditableContent/08-Reading-Research-Collections.md` and the ranges they move. For lane 3 those include the fourteen ranged blocks that cite `Collection.swift`, whose strings the new types must use too; both manuals' chapter 12; the captures that show the editor (`ipad/collections-editor`, `macos/collections`), store frame 07 if its screen changes, and the tour's step 16. `CollectionTests.swift:5644-5653` pins two source lines of the export sheet, which lane 1 rewrites.
-- **Accessibility, in the lane and not after it.** The first form named none.
+- **Shared code** (lanes 2, 3, 5 and 6): `swift build --target FRUSCoreKit` and `swift test`, with the unit target and the Mac build.
+  - `CollectionRenderingPinTests` pins the HTML page, the Word package, and the BibTeX and RIS files by SHA-256. Lane 2 moves the first two, and the last two if Q9 is yes; each is re-taken with its reason.
+  - `CollectionResolutionTests` pins a dateline in an opener as absent (`:450-452`) and a digest of a dump that prints the header, the dateline and the Zotero title (`:706`). Lane 2 moves both.
+  - `CollectionExportContrastTests` fails on a rule of the export's layer that draws text and is not in its list. Lanes 2 and 3 add rules.
+  - The PDF has no pin. `CollectionExportParityTests` (#960) holds the three exporters to one inventory of blocks. Lane 2 takes it to the blocks' order, a source note longer than a line, a research note longer than a page, a contents list longer than a page, and a row's number.
+- **The CloudKit gate** (lane 3; `CLAUDE.md`, *CloudKit schema-deploy gate*), with the research export's version 8, its fixture and its `Fields` cases.
+- **Strings and screens.** `Docs/EditableContent/08-Reading-Research-Collections.md` has 26 ranged blocks that cite `CollectionExporter.swift`, which lane 2 rewrites, and 14 that cite `Collection.swift`, which lane 3 adds properties to. Both manuals' chapter 12; the captures that show the editor; the tour's step 16. `CollectionTests.swift:5644-5653` pins two source lines of the export sheet.
+- **The six UI suites of `CollectionEditorTitleTests.swift`** hold the editor's name, subtitle and note fields, the colophon switch, the saved-search link and Open Document. They drive no composition control, so they are no evidence about one. Lane 4 brings each to its surface in the same change.
+- **Accessibility, in the lane and not after it.** Each check says what holds it: a suite, with its devices, or a walk by a person. The UI test target is iOS; nothing automated holds the Mac.
 
-| Lane | The check |
-|---|---|
-| 1 | The sheet at the largest text sizes on iPhone 17 and iPhone SE, with one button pinned, as a fit suite. VoiceOver: each look speaks its name, its line and whether it is chosen, and the group says once that the choice is for this export |
-| 2 | In the HTML and in Word, the title is the document's heading and the printed heading is one level down, with its two words inside its text |
-| 4 | *Printed heading:* and a collection's number, heard in VoiceOver on iPhone and Mac at its defaults |
-| 5 | VoiceOver, for each of the three lists: a row speaks its name, its value and where the value comes from, and a way back says what it removes. Fit at AX3 and AX5 for the gallery and the rows, on iPhone 17 and iPhone SE. Hit areas of 44 points, by a suite, as `SearchHitAreaTests` holds Search's. On the Mac, every row by keyboard alone |
-| 6 | A click on a part moves keyboard focus to that part's row and VoiceOver announces what is selected. Every part reachable without the page. *Show Parts* says its state |
+| Lane | The check | Held by |
+|---|---|---|
+| 1 | The export sheet at the default size, AX3 and AX5: when it opens, the sentence, the format and *Export* are in view | A fit suite on iPhone 17 and iPhone SE |
+| 1 | The list row's *Export…* as a VoiceOver action | A suite that reads the action's name; the service cannot perform one |
+| 2 | In the web page and in Word, for each of the three openings: which line is the document's heading, and that *In the volume:* is inside the volume's heading | A kit test over the plan and the HTML |
+| 3 | The four new controls speak their name and value; the wording table's ten fields each have a label | A VoiceOver suite on iPhone 17 and iPad Pro 13-inch |
+| 4 | A picker's first choice is spoken as *Follow the section: On*; *2 set their own* is a button with that name | The same suite |
+| 4 | The gallery and the section pill at AX3 and AX5, proved on the card's own label; the pill's hit area | A fit suite on an iPhone and an iPad; a hit-area suite |
+| 5 | A template that cannot be chosen says why, in words that are spoken | The VoiceOver suite |
+| 6 | On the Mac, a click on a part announces what is selected and leaves focus where it was; every part reachable from the column by keyboard alone | A walk |
 
-**Order.** 1 and 2 first, in either order. Then 3, 4, 5, 6. Lane 3 is the largest by files touched; lane 5 is the one that answers *very complicated*.
+**Order.** 1 and 2 first, in either order; then 3, 4, 5, 6.
 
 ---
 
@@ -784,88 +718,105 @@ None needs an index version. Each lane's own size is said by what it touches; no
 
 Each with a recommendation. Nothing in §9 starts before the questions in its row are answered.
 
-- **Q1. The interface.** **The gallery first; one list of settings for each thing selected; pointing on the Mac (recommended, §5)**. Or templates only. Or wait for a settings column on iPad before any of it.
-- **Q2. The author's title, and its mark.**
-  - **The title leads, and the volume's heading follows it as *Printed heading:* (recommended, §3.1).** Or the volume's heading follows with no words, and the Note on the Text alone says which is whose.
-  - **The Note on the Text prints by default and the author may remove it (recommended, §3.6).** Or it cannot be removed.
-  - **A document printed without its volume's heading is not offered (recommended).** If it is wanted, it owes three things: the source note's call re-homed in the volumes from 1955; each such document listed in a Note that then cannot be removed; and a word on the page, since a bracket would be read as the volume's.
-- **Q3. Templates.** **A template chosen in the export sheet is for that export and writes nothing; one chosen for the collection is recorded, and asks first (recommended, §4.3, §4.4).** Or the export sheet stays format and destination, as the Collections rework left it, and templates are chosen in the editor alone.
-- **Q4. What leads a document, and what a new collection starts under.** **§4.3's table: the printed heading leads, with the collection's number, in *Full text as printed*, *Full text with your annotations* and *Summaries with overview*, and the citation leads in the other three; a new collection starts under *Full text as printed*; an upgraded collection keeps 1.0's layout (recommended).** Or the citation leads in all six and nothing is numbered, which is 1.0's layout everywhere. And the form of the number (§3.3).
-- **Q5. Citation styles.** **A new collection takes the style chosen in Settings ▸ Display (recommended)**, or history.state.gov always. And whether the app's Chicago and Turabian are right as they stand for a line at a document's head and for a bibliography's row (§6).
-- **Q6. Storage.** **Two new record types and a one-way upgrade that deletes nothing (recommended, §7)**; or new properties on the existing types (§7.8). And the two types' names, which are permanent.
-- **Q7. A date line of the author's.** **Kept, for one document at a time, printed under the title, with the printed dateline untouched (recommended, since it was asked for)**; or dropped, now that the printed dateline stays and a contents row can carry it.
-- **Q8. Which of §8's twelve,** and in what order. **Recommended for the first pass: 1 (selected passages) and 4 (Save as Template), the second because its record type should ride §7's deploy.**
-- **Q9. The seven defects of §2.8.** **File each as an issue now (recommended)**, so that they are tracked whether or not these lanes are taken; or leave them to lanes 2, 3 and 4.
+- **Q1. The interface.** **1.0's three surfaces, trimmed and renamed (recommended, §5.2).** Or a new single inspector, which two forms of this record proposed and two reviews took apart; it could be tried again later, on the plan and the four facts this form adds.
+- **Q2. The mark, and what the author may not do.**
+  - **The words *In the volume:*, fixed, before the volume's heading wherever a title stands above it (recommended, §3.4).** The wording is yours.
+  - **A document printed without its volume's heading or dateline is not offered (recommended).** If it is wanted, it owes: the source note's call re-homed in the volumes from 1955; each such document listed in a Note that cannot be removed; and a word on the page.
+- **Q3. A template in the export sheet.** **For PDF, Word and Web page, for that export, writing nothing (recommended, §4.4).** Or the sheet stays format and destination, as the Collections rework left it.
+- **Q4. What leads a document, and what a new collection starts with.**
+  - **§4.3's table: the volume's heading leads in the two full-text templates and in the summaries (recommended);** or the citation leads in all six.
+  - **A new collection keeps 1.0's settings, with the volume's heading leading (recommended):** the full text, footnotes and the author's research notes. Or it starts under *Full text as printed*, which leaves the author's research notes out. Or it is exactly as 1.0 makes it.
+- **Q5. Citation styles.** **A new collection takes the style chosen in Settings ▸ Display (recommended)**, or History at State always. And whether the app's Chicago and Turabian are right as they stand for a line at a document's head, a row of a list and a *See also* line (§6).
+- **Q6. Storage.** **Four optional properties on the record types 1.0 has (recommended, §7.1)**; or new record types, with the upgrade §7.6 says they would need.
+- **Q7. A date line of the author's.** **Kept, for a document that has a title, above the words *In the volume:* (recommended, since it was asked for)**; or dropped, now that the volume's dateline stays and a contents row carries it.
+- **Q8. Which of §8's thirteen,** and in what order. **Recommended for the first pass: 1 (selected passages).**
+- **Q9. Whether a citation record's title takes the new reading of a heading** (#1992, #2002). **Yes (recommended):** a Zotero item is then titled "Document 1: Letter From President Carter…", without the doubled number or "[1]". It changes what a send or a file carries.
+- **Q10. Whether a headnote travels in the collection file as its text** (#1999). **Yes, always, with who wrote it (recommended):** it was written for the collection, as a note block was. Or only when research notes are included; or not at all, which is what a recipient gets today.
 
 And one that is not a question of design: **whether lanes 1 and 2 go ahead by themselves**, before the answers to the rest.
 
 ---
 
-## 11. The review's findings, and where each is answered
+## 11. The second review's findings, and where each is answered
 
 Each is answered in the design's text. None is tested, and §12 says which need a run.
 
 | Finding | Answer | Where |
 |---|---|---|
-| **G1** A build that does not know a key erases it | A version on each record, and a build writes only what it can write whole; a test | §7.3 |
-| **G2** A template chosen at export rewrites the collection | At export it writes nothing; for the collection it asks first and lists each change and each block; nothing is kept aside to be lost | §4.3, §4.4 |
-| **G3** A smart collection has no place for any of it | One scope; a document of its list has no settings; the snapshot copies the value whole | §4.5, §7.6 |
-| **G4** The scope is a mode | No switch; the selection is the scope; a wider row counts the documents that differ | §4.2 |
-| **G5** The control count goes up | Counted the same way, and said: seven more controls at the collection, 14 in view where there were 24 | §5.5 |
-| **G6** A title already typed has no rule | It keeps its meaning; it never prints without the volume's words; the upgrade's table | §3.1, §3.4, §7.4 |
-| **G7** The ten parts are not blocks | Each part named against the render model; no hidden heading or dateline; the notes one choice of three; one reading of a printed heading and dateline | §3.2, §3.4, §3.5 |
-| **G8** A dateline is not the editors' to replace | It stays in the text; the author's date line stands above, for one document | §3.1, §3.2 |
-| **G9** Brackets are the volumes' own sign | The mark is words | §3.1 |
-| **G10** A collection that only hides prints no Note | It prints whenever it has something to say of a document whose text prints | §3.6 |
-| **G11** The export's sources block would be false | A source for the author's lines, and the two sentences reworded | §3.7 |
-| **G12** Word's contents list is a field Word rebuilds | Two ways to make the rows the plan's, and a run before either | §3.8, §12 |
-| **G13** Pointing works on the Mac alone | It is the Mac's; nothing opens over the page; names on each outline; documents named by entry; the cap | §5.3 |
-| **G14** Back matter after the first document | A document arrives ahead of the back matter | §4.3 |
-| **G15** The short form names more than one volume | Out of the core until it has a rule over the manifest | §6, §8 |
-| **G16** No lane carries an accessibility check | A check for each lane, in the lane | §9 |
-| **G17** A device updated later may hold nothing for the new values | No field is added to a type 1.0 knows. The same question for a new type is the first run owed | §7.1, §12 |
-| INT-4 Arrangements built and withdrawn before | Named, each with what differs | §5.7 |
-| INT-8 Cells of the grid with nothing to store them | One value at every scope; the summary prompt under Text; a row that cannot apply says why | §4.1 |
-| INT-10 Words that already mean something else | A table of the words | §4.6 |
-| DATA-4 Build 1861 changes what the recorded template describes | 1861 cannot write the new types; an older file's template is found by comparison as it is upgraded | §7.1, §7.4 |
-| DATA-8 A carrier, a consequence and a gate left out | The snapshot carries the value; a version-7 importer refuses a version-8 file; one test over every copy | §7.6 |
-| DATA-9 "No further deploy" | Withdrawn. A setting added later is no deploy; a record type is, and a saved template is one | §7.2, §8 |
-| DATA-10 Export Again with no remembered format | Not offered before a first export on the device | §5.1 |
-| ENG-9 Five things the lanes left out | The delete question and the preview's refresh list read the value; the Mac's New Collection form; the pinned source lines; the ranges that cite `Collection.swift` | §7.6, §5.2, §9 |
-| EDI-9 *Source:* replaced with no mark | Not in the wording table | §5.2 |
-| EDI-10 One formatter for every place | Open, and put to the owner | §6, Q5 |
-| A11Y-1 The change shown by a dot alone | Words on the row, spoken, with the row's own way back | §4.1 |
-| A11Y-9 The PDF has no tags | Said; the web page and Word are the accessible exports; a candidate | §3.8, §8 |
-| A11Y-10 Two pinned buttons at the largest sizes | One | §5.1 |
+| **H1** Two devices that upgrade can each delete the other's copy | There is no upgrade | §7.6 |
+| **H2** Only the twin records an upgrade | None | §7.6 |
+| **H3** The fork's test reads one date | No fork: 1.0 and the new version write the same records | §7.2 |
+| **H4** An older export over an upgraded library | The plan's own rule, with a `Fields` case for each new property | §7.5 |
+| **H5** "One promotion" beside a later first writer | Four properties, each with its control in the same lane | §7.1 |
+| **H6** The file need not change version | It does not | §7.4 |
+| **H7** A headnote as its draft's id | Its text travels; an import makes its own draft; filed | §7.4, #1999 |
+| **H8** Four exports ignore a document's notes setting | Filed; until then the sheet says so | §5.1, #2000 |
+| **H9** A look and the four that are not renderings | A template is for three formats | §4.4 |
+| **H10** A template's blocks and the author's | The template's blocks stand in for the collection's, for that export; nothing records a placer | §4.3, §4.4 |
+| **H11** Three templates need what the collection may lack | Each says what it needs before the export; no placeholder in an exported file; #1991 first | §4.4 |
+| **H12** The notes as one choice | The two switches stay; the plan prints the source note once | §3.5 |
+| **H13** 1.0 numbers its rows in three ways | The plan numbers documents only, alike; no setting | §3.8, #1993 |
+| **H14** Two numberings on one page | No number at a document's head | §3.3, #2002 |
+| **H15** The date line has no words | It is given only under a title, above *In the volume:*; or dropped | §3.4, Q7 |
+| **H16** The Note under a look; row and switch | A block, in every recipe, written from the plan that prints | §3.6, §4.4 |
+| **H17** Word numbers footnotes itself | The plan carries each note's label; filed | §3.5, #2001 |
+| **H18** The mark could be renamed | Fixed, and true of every volume; a contents row's second line has it | §3.4, §5.2 |
+| **H19** The count is 41 | Recounted field by field | §5.5 |
+| **H20** A value held at what it would inherit | It is set, and shown as set; *Default* says what it follows; a way back for many | §4.2 |
+| **H21** The sheet at the largest sizes | The sheet's order is 1.0's; a fit suite, and a run | §5.1, §9, §12 |
+| INT-2 What is new for one document | Said: a date line | §5.5, the head of this record |
+| INT-6 The Mac's column | The gear's popover, as now | §5.4 |
+| INT-7, ENG-9 A smart collection has nothing to select | Nothing is selected; the snapshot is offered in the editor | §4.5 |
+| INT-8, FMT-10 Export Again | Gone | §5.1 |
+| INT-9 A new collection's default | Put to the owner with what each choice leaves out | Q4 |
+| INT-10, ENG-10 Words | A table; *Footnotes* is not renamed and is in the plan | §4.6, §5.2, §3.8 |
+| ENG-4 Where an added entry goes | Every kind; filed | §4.3, #1995 |
+| ENG-5, FMT-6 What the lanes left out | Named | §9, §7.4 |
+| ENG-6, FMT-8, EDI-10 One reading, two sources; the records; a dateline's calls | The reading returns each apart and says what the index lacks; the records are Q9 | §3.4 |
+| ENG-7, EDI-7 The shared sentences | Left alone; a sentence of the collection's own | §3.7 |
+| ENG-8 The preview's repairs | A lane for every platform | §5.3, §9 |
+| DATA-7, DATA-8, DATA-9 The upgrade's table; other writers; the copy test | No upgrade and no value of keys but the labels' map; the copy test walks properties | §7.3, §7.5 |
+| DATA-10 The snapshot's blocks | Carried; filed | §4.5, #1996 |
+| FMT-7 A round trip of every field | Not claimed; the file writes what it is set to write | §7.4 |
+| FMT-9 Candidates that cannot travel | Said of each | §8 |
+| EDI-8 Statements true of one era | Corrected; the Note is written from the volumes in the collection | §3.6 |
+| EDI-9 The source note before 1955 | A row of its own | §3.5 |
+| A11Y-2 Focus on the Mac | Focus stays where the click was | §5.3 |
+| A11Y-4 The citation before the heading | The plan names each document's region; a check for all three openings | §3.8, §9 |
+| A11Y-5, A11Y-9 Fixed type, the pill, the list's actions, the switches' names | Filed, and in lane 4 | #2006 |
+| A11Y-6 A row's second control | One control a row | §4.2 |
+| A11Y-7 Checks for five lanes of seven | A check for each lane that has a screen, each with what holds it | §9 |
+| A11Y-8 The drawn opening | Not in the core | §8 |
 
-**What the review found sound, and this form still relies on:** §2's counts; one deploy, with a later key no schema change; no index version; the highlight-offset premise; that a title reaches no citation record; that AI text keeps its label; that a citation style changes no order; that a click can be classified with no change to the exported HTML, since the page already carries `section#doc-…`, `h2.doc-heading` and `section.footnotes-section`.
+**From the first review, still open under this form:** what a device updated later holds for a new property (its G17), which is §12's first run; and Word's contents list (its G12), which is §12's fourth.
 
 ---
 
-## 12. Checks owed, each needing a device, an app or a desk
+## 12. Runs owed, each needing a device, an app or an opened file
 
-| Before | The check |
+| When | The run |
 |---|---|
-| **Lane 3** | Two devices on one iCloud account, B kept on 1861. On A, a build with a new record type creates a record of it. (1) Does B, on 1861, go on syncing its own data? (2) Update B: does it show A's record, with A not touching it again? If not, does Fix iCloud Sync bring it? (3) With a 1.0 collection on both, upgrade on A, then on B before B has imported: what does the cleanup keep? |
-| **Lane 2, its Word half** | A `.docx` whose contents list is plain linked rows with a page-number field each, and one whose list is a field over marked entries, each opened in Word and in Pages, with fields updated |
-| **Lane 2** | Export `frus1961-63v11` d1 under *Full text as printed* in 1.0 and count the source note (defect 2). On the Mac with the preview on, type a title override and wait five seconds (defect 6) |
-| **Lane 4** | *Printed heading:* and a numbered lead, read by VoiceOver on iPhone and Mac at its default punctuation. The app's Chicago and Turabian against the two manuals, for a note and for a bibliography's entry |
-| **Lane 5** | On iPad Pro 13-inch and iPad mini with a document's settings up, how much of the preview shows beside the sheet |
-| **Lane 6** | The Mac's preview keeping its place across a reload, with a long collection |
-
-Two checks the review owed no longer apply: a heading not drawn, opened in Word (no heading is undrawn); and a bracketed heading read by VoiceOver (no bracket is added).
+| **Before lane 3** | Two devices on one iCloud account, B kept on 1861. On A, a build with one of the new properties sets it on a collection B already holds. Let B import; rename the collection on B and read the property on A. Update B; read the property on B before A touches the collection again; then rename on B and read on A |
+| **Before lane 3** | A hand-made collection file carrying the new keys, opened in build 1861 from *Import Collection…*, from Finder and from Files |
+| **Before lane 3** | In 1.0: export a collection with a written headnote, import the file on the same device, edit the copy's headnote and read the original's (#1999) |
+| **Before lane 2** | A `.docx` whose contents list is plain linked rows with a page-number field each, and one whose list is a field over marked entries, each opened in Word and in Pages. And a note with the volume's own number as its mark |
+| **Before lane 2** | In 1.0: export `frus1961-63v11` d1 under *Full text as printed* and count the source note (#1991); export a collection with one section heading as a web page and read its contents rows' numbers (#1993); export `frus1946v06` d475 to Word and read the number after "[13]" (#2001) |
+| **In lane 1** | The built sheet on iPhone 17 and iPhone SE at the default size, AX3 and AX5 |
+| **In lane 6** | In 1.0, with the preview on, switch Headnotes alone and wait five seconds (#1997). Then the Mac's preview keeping its place across a reload, with a long collection |
+| **A desk, any time** | The app's Chicago and Turabian against the two manuals, for a note, a list and a bibliography's entry |
 
 ---
 
 ## 13. Files
 
-- **This document**, and the review of its first form: `Planning/Collections-Design-Adversarial-Review-2026-11-25.md`, with the eight reports under `Planning/collections-design-review/`.
-- **The canvas:** <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>, seven boards. It is private to the owner's account; its source is not in the repository.
+- **This document,** and the two reviews of its earlier forms: `Planning/Collections-Design-Adversarial-Review-2026-11-25.md` with `Planning/collections-design-review/`, and `Planning/Collections-Design-Second-Review-2026-11-25.md` with `Planning/collections-design-review-2/`.
+- **The issues:** #1991 to #2007, filed on 2026-11-25, and #1984.
+- **The canvas:** <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>, nine boards of this form, its Version 12. It is private to the owner's account; its source is not in the repository.
 - **Read, at `efd73ec`:**
-  - the model: `FRUSExplorer/Models/Collection.swift`, `ModelContainer+FRUS.swift`, `CloudKitSchemaInventory.swift`, `DuplicateRecordCleanup.swift`, `ListOrderPreferences.swift`;
-  - the kit: `FRUSCoreKit/Collections/CollectionExporter.swift`, `CollectionContentAssembly.swift`, `CollectionItemHTMLRenderer.swift`, `DocxCollectionExporter.swift`, `CollectionGeneratedBlocks.swift`, `NativeCollectionFormat.swift`; `FRUSCoreKit/Citation/CitationFormatter.swift`, `CitationParser.swift`; `FRUSCoreKit/TEI/FRUSRenderNode.swift`, `FRUSRenderNodeHTMLSerializer.swift`, `FRUSDocumentParser.swift`, `ASTToRenderNodeConverter.swift`; `FRUSCoreKit/Search/IndexingPipeline.swift` (the stored heading and dateline); `FRUSCoreKit/Export/ResearchDataEnvelope.swift`, `ResearchImportPlan.swift`; `FRUSCoreKit/TripPacket/ArchiveVisitPlanWrites.swift`;
-  - the app: `FRUSExplorer/Collections/` (`CollectionEditorView.swift`, `CollectionEntryInspector.swift`, `CollectionEntryRows.swift`, `CollectionCompositionRows.swift`, `MacCollectionManagerView.swift`, `CollectionListView.swift`, `CollectionExportSheet.swift`, `CollectionPreviewView.swift`, `PDFCollectionExporter.swift`, `CollectionExporter+App.swift`);
-  - the manuals' chapter 12, and the three earlier designs under `Completed/`;
-  - the public TEI of eight volumes, among them `frus1946v06` and the Editorial Methodology of `frus1977-80v06`.
+  - the model: `FRUSExplorer/Models/Collection.swift`, `GeneratedSummary.swift`, `ModelContainer+FRUS.swift`, `CloudKitSchemaInventory.swift`, `DuplicateRecordCleanup.swift`;
+  - the kit: `FRUSCoreKit/Collections/CollectionExporter.swift`, `CollectionContentAssembly.swift`, `CollectionItemHTMLRenderer.swift`, `DocxCollectionExporter.swift`, `BibTeXCollectionExporter.swift`, `ZoteroCollectionExporter.swift`, `CollectionGeneratedBlocks.swift`, `NativeCollectionFormat.swift`; `FRUSCoreKit/Citation/CitationFormatter.swift`, `ZoteroJSONExporter.swift`; `FRUSCoreKit/TEI/FRUSRenderNode.swift`, `FRUSRenderNodeHTMLSerializer.swift`, `FRUSDocumentParser.swift`, `ASTToRenderNodeConverter.swift`; `FRUSCoreKit/Search/IndexingPipeline.swift` where it stores a heading and a dateline; `FRUSCoreKit/Export/ResearchImportPlan.swift`;
+  - the app: `FRUSExplorer/Collections/` (`CollectionEditorView.swift`, `CollectionEntryInspector.swift`, `CollectionEntryRows.swift`, `CollectionEntryData.swift`, `CollectionCompositionRows.swift`, `MacCollectionManagerView.swift`, `CollectionListView.swift`, `CollectionExportSheet.swift`, `CollectionPreviewView.swift`, `PDFCollectionExporter.swift`, `CollectionExporter+App.swift`, `NativeCollectionFormat+App.swift`);
+  - the manuals' chapter 12, `Docs/Agentic-Analysis-Guide.md` §15, and the three earlier designs under `Completed/`;
+  - the public TEI of eight volumes.
 - **Not read:** `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift`, `CollectionPickerSheet.swift` beyond its purpose, and the web edition's repository.
-- **Not done:** no build, no test run and no capture. This form was reviewed after it was written (the notice at its head). The counts of §2.4 and §5.5 are of lists, not of a running screen, and §2.3's page arithmetic is an estimate.
+- **Not done:** no build, no test run, no capture, and no review of this form. The counts of §2.4 and §5.5 are of lists, not of a running screen.
