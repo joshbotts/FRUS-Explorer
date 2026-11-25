@@ -2,6 +2,8 @@
 
 **Status: LIVE, 2026-11-25.** The review the owner asked for the same day ("Adversarially review the hybrid C option"), of `Collections-Customization-Design-2026-11-25.md` as it stood at `617b36b`: its recommended hybrid (§4.5), which is the parts inspector entered from the preview through the Adjust switch, with the template gallery first. Both forms of the preview's tap were reviewed: opening the inspector on a part, and opening a popover on the page. Read against `v2` at `efd73ec`. Nothing in the app or its tests changed.
 
+**The design was revised afterwards, on the owner's word.** This review is of its first form, which is in history at `aad7636`, and the section numbers below are that form's. The second form's §11 lists each finding here with where it is answered, and its §12 the checks still owed. No one has reviewed the second form.
+
 **The verdict in one line:** the hybrid does not stand as written. No finding was refuted, and the design's central claims about marks, datelines, the ten parts, templates and simplicity each fail on evidence in the tree or in the volumes.
 
 ---
@@ -279,5 +281,5 @@ The session's own reading of the findings. Nothing here is decided, and the desi
 
 - **This document.**
 - `Planning/collections-design-review/`: `reviewer-brief.md` and `skeptic-brief.md`; the five reviewers' reports (`reviewer-INT.md`, `-ENG.md`, `-DATA.md`, `-A11Y.md`, `-EDI.md`); the three skeptics' (`skeptic-A-INT-DATA.md`, `skeptic-B-ENG-EDI.md`, `skeptic-C-A11Y.md`). They are as returned, and they name files under the session's scratch folder, which is gone: the boards' source there is what the canvas holds.
-- **The design it reviews:** `Planning/Collections-Customization-Design-2026-11-25.md`, which now opens with a notice of this review and carries §4's six corrections.
+- **The design it reviews:** `Planning/Collections-Customization-Design-2026-11-25.md` in its first form, at `aad7636`, which opens with a notice of this review and carries §4's six corrections. The file now holds the second form.
 - **Not done:** no build, test or run. The session wrote §2's directions and §7; no reviewer or skeptic was asked to judge them.

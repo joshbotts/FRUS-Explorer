@@ -12430,3 +12430,16 @@ A cloud session, on the owner's word of 2026-11-25: the Collections feature does
   - **Seven defects of the app as it ships were met on the way** (the review's §6), none filed: among them a *Header & Dateline* contents list that prints no dateline for most documents, a source note printed twice when Footnotes and Source note are both on, and documents added after a template landing behind its back matter.
 
 **Owed by the owner now:** the review's §7, which reopens the design's Q1 to Q4 and Q6 and asks whether a dateline of the author's is wanted at all; and whether any of the seven defects is to be filed.
+
+**The design record revised, on the owner's word** ("Revise the design record to address the review's findings. If it would be helpful, you can base the collections revamp on a new model type and make conversion a one-way upgrade process."). `Planning/Collections-Customization-Design-2026-11-25.md` is rewritten as its second form; the first is in history at `aad7636`. Its §11 lists each of the review's findings with the section that answers it.
+- **Nothing the volume prints is replaced.** A title, a date line and the collection's own number stand above a document, and the volume's heading follows as *Printed heading:* with its calls. The mark is words. Brackets, the hidden heading and the hidden dateline are gone, and Footnotes and Source note are one choice of three, which ends the source note printed twice.
+- **A template chosen at export is for that export and writes nothing;** one chosen for the collection is recorded and asks first, listing each change.
+- **The settings on screen are those of what is selected,** with the collection as the first row of its own outline and no scope switch. The count is stated as it is: 14 controls in view at the collection where there are 24, and 31 with everything open.
+- **Pointing at the page is the Mac's.** The four arrangements the app built and withdrew before are named, each with what differs.
+- **Two new record types and a one-way upgrade that deletes nothing** (its §7), recommended chiefly because the settings do not fit 1.0's fields without two forms of one fact that build 1861 would go on writing. The upgrade is a function over values in the kit; the 1.0 records stay; each record carries a version that a build which knows less does not write over.
+- **Seven lanes,** each with an accessibility check, and lanes 1 and 2 able to go ahead of the new types.
+- **Read for the revision:** the review's eight reports; `Completed/Collections-Rework-Scope.md`; the Editorial Methodology of `frus1977-80v06`; the model container, the CloudKit inventory, the duplicate cleanup, the import plan and the collection file's format. Document 475's opening was read again from the TEI: its first line holds the editors' own bracketed correction, and its first footnote begins "Not printed".
+- **The canvas's seven boards** are still the first form's, and are to be redrawn to the second.
+- **Checks:** none run, and nothing compiled changed. **The second form has not been reviewed.**
+
+**Owed by the owner now:** the nine answers of the revised design's §10, whether lanes 1 and 2 go ahead by themselves, and the runs of its §12, of which the two-device run comes before the lane that adds the record types.
