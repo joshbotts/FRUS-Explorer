@@ -316,13 +316,17 @@ The quotation check (the manuals' *The Excerpt Check*) and the missing-volume an
 
 *The preview is where the author chooses.*
 
-- Hovering a part in the preview outlines it. A click or tap opens a small popover on it, with that part's choices and nothing else: for a heading, *The volume's heading · The citation · Your own*, a field, and *Apply to: this document · this section · all documents*.
+- **Adjust is a switch on the preview, and it is the signal.** Off, the page is the proof of the export, with nothing drawn on it, and its links work. On, every part of a document is outlined, with its name in the margin beside it, and a line under the document lists the parts that do not print, so that each can be brought back.
+  - This was added on 2026-11-25, on the owner's question whether the preview would show what can be changed. As first written the only signal was an outline under the pointer, which a finger does not have, and a reader on an iPhone or iPad would have had to tap to find out.
+  - It is a switch and not a standing decoration because the preview is the proof of what exports, and because a tap must still scroll the page and follow a link when the author is reading.
+  - What stands outside a document (the title page, the contents list, a section heading, a note block, an apparatus block) would take the same outline and name, each opening its own settings. The canvas does not draw those.
+- A click or tap on a part opens a small popover on it, with that part's choices and nothing else: for a heading, *The volume's heading · The citation · Your own*, a field, and *Apply to: this document · this section · all documents*.
 - The outline stays for structure: order, sections, adding.
 - The settings shrink to the template and the collection-wide page.
 
 **For it:** nothing to find. The author never needs to know that a line is called a dateline or where its setting lives, and choosing the scope at the moment of change teaches the cascade in plain words. **Against it:**
 
-- a part that is hidden cannot be pointed at, so a list of parts is needed anyway to bring one back;
+- a part that does not print has no place on the page, so Adjust lists it under the document, which is a list of parts all the same;
 - a web view's contents are a poor home for VoiceOver and the keyboard, so every choice would need a second route;
 - it is the most new machinery: the page must name its parts, report a tap, and keep its place through a reload (§2.6).
 
@@ -333,6 +337,8 @@ The quotation check (the manuals' *The Excerpt Check*) and the missing-volume an
 - The **template gallery** is the first thing in the inspector and the first thing in the export sheet. An author who wants a default never goes further (§4.1).
 - The **parts list** is the one place every setting lives, at three scopes.
 - The **preview points into it:** a tap on a part in the preview selects that document's row in the outline and opens the inspector on that part, at document scope. The reverse holds too: choosing a row brings its document into view, and the preview keeps its place when the page reloads.
+
+Adjust (§4.4) is the same switch here, and the inspector's list is its key: choosing a part's row outlines that part in the preview, as tapping the part chooses its row.
 
 That gives Option C's directness for what can be seen and Option B's completeness for what cannot, with one set of controls to build, test and translate. The pointing arrives as its own lane (§8, lane 5), after the inspector works without it.
 
