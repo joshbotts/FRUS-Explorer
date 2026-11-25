@@ -12583,3 +12583,5 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 - Before Wave 4: CR's findings answered, the Word and Pages run, and three runs in 1.0. Before L43: the two-device run, a hand-made collection file opened in 1.0, and the desk check of Chicago and Turabian (the plan's §2 and §4).
 - With their rows: the Mac's title bar (F2), #1923's resume, the Note on the Text's sentences, the sign for an omission, what a saved template holds, where the page's choices are kept, the short citation form's rule, the line of coverage's wording and three blocks' titles.
 - For the release: the build numbers, the date the Office publishes, the CloudKit promotion and *What's New in This Version*.
+
+**Opened as #2011** on the owner's word ("Try to open the PR"), on 2026-11-25, against `v2` at `9325f79d`, which had not moved since the plan was begun. Until that word the session could read the repository and not write to it, and the plan was a file of the session's. Documents only. Ready for review and mergeable with no conflict, with auto-merge off; no CI check runs on it. Its merge is the next record's.
