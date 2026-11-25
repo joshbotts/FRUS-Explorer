@@ -171,7 +171,7 @@ The parts are what a reader of the export sees, top to bottom. Every surface in 
 | **Source note** | On or off, under *Source:* | On or off, under the collection's word for it |
 | **Highlights** | On or off, and which | Unchanged |
 | **Your notes** | On or off, and which, under *Research Note* | The same, under the collection's word for them; before or after the text is §7's |
-| **See also** | On or off | Unchanged |
+| **See also** | On or off, for a document or a section; the collection has no setting for it, and no template turns it on | Unchanged. It lists only what the document cites by document, and nothing it cites by page (§7, candidate 9) |
 
 Two things follow.
 
@@ -422,6 +422,7 @@ Candidates, in the order this design would take them. Q8 asks which.
 6. **The page.** Letter or A4; each document on a new page, or run on; page numbers in Word as in the PDF. Three switches, no fonts.
 7. **Several formats in one export**, such as the PDF with its `.bib`.
 8. **Same settings as…** Copy one document's changes to others, or to its section.
+9. **See also, by page.** The *See also* line lists the documents a document refers to that are also in the collection (`relatedDocumentTargets`, `CollectionContentAssembly.swift:1182-1194`). It matches each reference's target against the collection's documents by volume and document id, and a reference to a printed page is stored under its page (`CrossReferenceStore.swift:757-759`), so it matches none. The volumes through the 1950s refer by page: of the six documents the canvas uses, 470 cites `#pg_676`, 475 cites four pages of `frus1943v03` and 486 cites `#pg_776`, and none cites another document by its number, so the line prints nothing for any of them. The app already maps a cited page to the documents on it (`cited-page-map.json`); a page that holds one document could join the line.
 
 Considered and not proposed: editing a source note's text or a footnote (it is the volume's editors' annotation of the text, and §5's reasoning for a heading does not reach it; hiding it, or adding a note of one's own, covers the need); fonts and colours (§3.6, item 9); a recipe written as text for the author to edit (the `.fruscollection` file already is one, for whoever wants it).
 
