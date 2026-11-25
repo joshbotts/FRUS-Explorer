@@ -12,6 +12,11 @@
 
 §11 lists every finding of the review with the section that answers it. The first form is in the repository's history at `aad7636`. The review cites its section numbers, which this form does not keep.
 
+**Reviewed adversarially the same day, and it does not stand as written either.** `Collections-Design-Second-Review-2026-11-25.md` records six reviewers' 59 findings, none refuted: once merged, 1 at S1, 20 at S2 and 27 at S3. Its §2 is on the `.fruscollection` file, where §7.6 below is wrong: the file need not change version, and a 1.0 app should go on opening it. Its §8 says what the design becomes, and withdraws the upgrade of §7.4 as designed.
+- This record is left as it was reviewed, so that the review can be read against it.
+- Thirteen statements about the app as it ships, or about the volumes, were false. Each is corrected where it stands and marked *(corrected, second review …)*.
+- The proposal's own claims that the review supersedes are listed in the review's §5 and are not edited here. Read §3 to §9 with the review beside them.
+
 **What this is.** The owner's words of 2026-11-25:
 
 > "I am not satisfied with the Collections feature. I am not able to customize how each document is displayed, yet the interface is very complicated. I want to be able to export a collection very quickly using sensible default templates (the new ones we created last week are good starting points). I also want to be able to fine-tune any aspect of the collection, including overriding headings, datelines, and other labels derived from the source TEI with my own headings and labels, marked appropriately. I want to be able to choose what citation format to use if the contents are listed that way. Consider other authorial capabilities along these lines as well. Consider what kinds of user interface alternatives might help me preserve clean simplicity for default situations and also wield powerful customizability for other times."
@@ -31,7 +36,7 @@ That is five asks:
 - §2 is the first form's reading of the app, with the six corrections the review made to it and the seven defects the review met on the way (§2.8).
 - The examples are real: document 475 of `frus1946v06` and its neighbours, from the public TEI (`HistoryAtState/frus`), with the volume's title, editors and year from the bundled manifest. The counts over volumes are the review's, made by parsing eight volumes.
 - The revision read, besides: the review and its eight reports; `Completed/Collections-Rework-Scope.md`, which the first form had not read; the Editorial Methodology of `frus1977-80v06`; and, for §7, the model container, the CloudKit inventory, the duplicate cleanup, the research import plan and the collection file's format.
-- **Nothing in §3 to §9 has been reviewed.** The review judged the first form. Its reviewers and skeptics were not asked about this one.
+- §3 to §9 were reviewed after they were written; the notice above says where.
 
 **The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its seven boards were redrawn for this form:
 
@@ -73,7 +78,7 @@ The session wrote the boards and did not see them rendered: this container canno
 ### 2.1 "Export a collection very quickly"
 
 - **The export sheet chooses a format and nothing else.** It shows the collection's one-line composition summary, six format cards and the Zotero row (`CollectionExportSheet.swift:220-240`, `:342-371`). It opens on PDF every time (`@State private var selectedFormat: ExportFormat = .pdf`, `:60`), whatever the collection last exported as. It writes nothing to a collection (`:19-22`).
-- **A template is applied somewhere else.** On an iPhone the path from the Collections list to a PDF under another template is: the collection's row, *Collection settings*, a template chip, Back, scroll to *Actions*, *Export…*, a format card, *Export PDF*. On the Mac the templates are in a 420-point popover behind the toolbar's gear (`MacCollectionManagerView.swift:1172-1262`).
+- **A template is applied somewhere else.** On an iPhone the path from the Collections list to a PDF under another template is: the collection's row, *Collection settings*, a template chip, Back, scroll to *Actions*, *Export…*, *Export PDF* *(corrected, second review: this record first counted a format card, which a PDF does not need, since the sheet opens on PDF)*. On the Mac the templates are in a 420-point popover behind the toolbar's gear (`MacCollectionManagerView.swift:1172-1262`).
 - **Nothing exports from a list.** The iOS Collections list's context menu offers Rename, Duplicate, Word Cloud, Create Static Snapshot and Delete (`CollectionListView.swift:350-387`), and the file names no exporter. On the Mac both ways in, the toolbar's *Export…* and the Collection menu's *Export Collection…* (⇧⌘E), set the same flag that opens the sheet (`MacCollectionManagerView.swift:1759`, `:1111`).
 
 ### 2.2 "Customize how each document is displayed"
@@ -167,7 +172,7 @@ What makes the count hard to carry:
 The review's skeptics confirmed each by re-reading the code. None was seen in a running app, and none is filed (Q9). The lane that would end each is in §9.
 
 1. **A *Header & Dateline* contents list prints no dateline for most documents** (§2.2).
-2. **With Footnotes and Source note both on, the source note prints twice** in the volumes from 1955: once among the footnotes and once as *Source:*. *Full text as printed* and *Everything included* turn both on (`CollectionExporter.swift:226-229`, `:246-250`).
+2. **With Footnotes and Source note both on, the source note prints twice:** once among the footnotes and once as *Source:*. That holds before 1955 too, where the source note is also a footnote and the index stores it *(corrected, second review: this record first said in the volumes from 1955)*. *Full text as printed* and *Everything included* turn both on (`CollectionExporter.swift:226-229`, `:246-250`).
 3. **After a template is applied, a document added later lands after its back-matter blocks** (`CollectionEditorView.swift:1922-1925`; `CollectionAddDocumentsSheet.swift:154`; `CollectionDocumentAppend.swift:101-103`).
 4. **A footnote call in a heading is written "[1]" into the heading the collection reads** (`CollectionContentAssembly.swift:1522`).
 5. **Duplicate does not copy *Stamp active project* or *Append the query log*** (`Collection.swift:799-831`), though its comment says every setting is copied.
@@ -190,7 +195,7 @@ The first form let the author's heading stand in place of the volume's, and the 
 
 So this form's rule: **a document prints as the volume prints it, whole or not at all, and the author's words are added above it.**
 
-That is the series' own practice. Its editors supply a heading for every document and say so once, in the statement of method; no heading carries a sign. A collection does the same, one level up:
+That is the series' own practice in its later volumes. Their editors supply a heading for every document and say so once, in the statement of method; no heading carries a sign *(corrected, second review EDI-8: this record first said it of the series. Of the eight volumes read, the four from 1961–63 on carry the sentence and the four earlier ones do not)*. A collection does the same, one level up:
 
 - the author's title **leads**: it takes the heading's size and the contents row;
 - the volume's heading stays under it, smaller, after the words *Printed heading:*, with its footnote calls;
@@ -372,7 +377,7 @@ Every setting of §3.2 that is a choice, and not a document's own content, is a 
 - **A value comes from the nearest scope that sets it:** the document; else the section that encloses it, and then each section outside that one, since sections nest three deep (`CollectionOutline.swift:275-282`); else the collection.
 - **Content is not a setting.** A document's title and date line, which notes and which highlights, and its headnote's text belong to that document and to no scope above it.
 
-The first form's grid of parts and scopes had cells with nothing to store them, and this value closes them. The collection gets a setting for See also, which 1.0 lacks. A section's headnote and See also are followed by its documents, which 1.0's cascade does not do. The summary prompt has a row, under Text.
+The first form's grid of parts and scopes had cells with nothing to store them, and this value closes them. The collection gets a setting for See also, which 1.0 lacks. A section's headnote is followed by its documents, which 1.0's cascade does not do; a section's See also is followed in 1.0 already *(corrected, second review: this record first said 1.0 followed neither; `CollectionContentAssembly.swift:611-612`, `:1103`)*. The summary prompt has a row, under Text.
 
 **What every row does:**
 
@@ -386,7 +391,7 @@ The first form's grid of parts and scopes had cells with nothing to store them, 
 
 No control changes the scope. The scope is the selection:
 
-- **The collection** is the first row of its own outline, and the gear selects it. It is reachable whatever else is selected, which the build-28 tester asked for (§5.7).
+- **The collection** is the first row of its own outline, and the gear selects it. It is reachable whatever else is selected (§5.7) *(corrected, second review INT-6: this record first said this is what the build-28 tester asked for. The tester asked that the collection's attributes be reachable "after refocusing on a document", and the state reported was "not reachable without clearing the selection", which selecting the collection's row is)*.
 - **A section** is its heading's row.
 - **A document** is its row.
 
@@ -418,7 +423,7 @@ The last two columns are L25's recipes, restated in §3.5's terms.
 
 - **Numbering is the collection's alone:** the documents numbered 1 to *n* in its order, at each lead and in each contents row.
 - **A new collection starts under *Full text as printed*,** with that template's two blocks in place and its first document arriving ahead of them.
-- **An upgraded collection keeps 1.0's layout.** 1.0 had no say about the opening, so the upgrade records *The citation leads* and no numbering as that collection's own, whatever template its other settings match (§7.4). It prints as it did, apart from §2.8's defects.
+- **An upgraded collection keeps 1.0's layout.** 1.0 had no say about the opening, so the upgrade records *The citation leads* and no numbering as that collection's own, whatever template its other settings match (§7.4) *(corrected, second review H13: 1.0 does number the documents in its contents list, in all three formats and in three ways; what it does not print is a number at a document's head)*. It prints as it did, apart from §2.8's defects.
 
 ### 4.4 A template at export is for that export
 
@@ -433,7 +438,7 @@ To make a template the collection's own is an act in the editor (§4.3).
 
 ### 4.5 A smart collection
 
-A collection linked to a saved search lists that search's documents. They are made from the results at each resolve and are not stored (`CollectionContentAssembly.swift:181-182`, `:731-756`). So:
+A collection linked to a saved search prints that search's documents, and the preview shows them; neither editor lists them *(corrected, second review INT-7: this record first said it lists them; `CollectionOutline+App.swift:214-224`)*. They are made from the results at each resolve and are not stored (`CollectionContentAssembly.swift:181-182`, `:731-756`). So:
 
 - **It has one scope, the collection's:** the template, the set of §4.1, the title page, the citation style.
 - **A document of its list has no settings.** Selecting one says so, and offers *Create Static Snapshot*, which is the way to a collection whose documents can be changed one by one.
@@ -503,7 +508,7 @@ The quotation check (the manuals' *The Excerpt Check*) and the missing-volume an
 **The collection's own words.** The owner asked for "my own … labels". A table of the words the app prints, each with a field: *Contents*, *Headnote*, *Summary*, *Research Note*, *See also*, *Printed heading*, and the five apparatus titles. So a course reader's *Research Note* becomes *Commentary*, and a Bibliography *Works Cited*.
 
 - They are the collection's apparatus and carry no mark. None is a word of the volume's.
-- ***Source:* is not in the table.** From 1961 the volumes print that word themselves, at the head of the source note. A word the volume prints is not the collection's to change.
+- ***Source:* is not in the table.** From the 1955–57 volumes at least, the volumes print that word themselves, at the head of the source note *(corrected, second review EDI-8: this record first said from 1961; 323 of the 332 source notes of `frus1955-57v24` open with it)*. A word the volume prints is not the collection's to change.
 
 **The Mac's New Collection form,** which Add to Collection opens, becomes a name and the gallery. Today it carries the whole composition section (§2.4).
 
@@ -549,6 +554,8 @@ Counted from §5.2's own lists, the way §2.4 counts today's.
 | **The export sheet** | 7 | **12** | Seven looks, three formats, More formats, the Zotero row |
 
 Each count includes the summary prompt, which shows only where the text is a summary, as §2.4's does.
+
+*(Corrected, second review INT-1: two of today's figures stand on a different basis from the design's. Today's 7 for a section leaves out the heading's own title field, which the design's 9 counts. Today's 7 for the sheet counts each of six format cards, where the design's 12 counts More formats as one. The review's H19 recounts the design's own figures.)*
 
 The design does not reduce the number of settings. It adds six to the collection's, each one asked for or owed. What it reduces:
 
@@ -656,7 +663,7 @@ The app already has the habit in one place: an entry kind a later build wrote is
 | name, note, subtitle, author line, introduction, projects, saved-search link | the same |
 | the eight composition fields | the collection's settings, every key set |
 | those eight equal to a template's recipe (`matches`) | that template, recorded; otherwise none, and the gallery says the settings came from 1.0 |
-| nothing about the opening, numbering or a citation style | *The citation leads*, no numbering, History at State: what 1.0 prints |
+| nothing about the opening, numbering or a citation style | *The citation leads*, no numbering, History at State: what 1.0 prints *(corrected, second review H13: 1.0 numbers its contents rows; it prints no number at a document's head)* |
 | Footnotes and Source note, as a pair | the volume's notes, as §3.5 maps them |
 | colophon, project stamp, query log, word cloud | the same four switches |
 | an entry's kind, level, order, document, text, rich text, excerpt anchors, block type, notes and highlights chosen | the same, under the same ids |
@@ -666,13 +673,13 @@ The app already has the habit in one place: an entry kind a later build wrote is
 | an entry's headnote draft | a copy of it, so that a delete on a 1.0 device cannot remove it (`Collection.swift:885-889`) |
 | a kind this build does not know | carried as stored, and inert |
 
-**The same ids.** The new collection and its entries take the ids of the old. So every pointer the app keeps to a collection still finds it, a second run finds the work done, and two devices that both upgrade produce records the duplicate cleanup can pair. A headnote draft's copy takes an id derived from its entry's, as an Archives Visit derives a child row's (`ArchiveVisitPlanWrites.swift:76`), so two devices make the same copy.
+**The same ids.** The new collection and its entries take the ids of the old. So every pointer the app keeps to a collection still finds it, a second run finds the work done, and two devices that both upgrade produce records the duplicate cleanup can pair *(corrected, second review H1: the cleanup names ten types and neither of these, and for copies that share an id and a creation date the device's own fetch order decides which is kept, `DuplicateRecordCleanup.swift:64-66`, `:243-245`)*. A headnote draft's copy takes an id derived from its entry's, as an Archives Visit derives a child row's (`ArchiveVisitPlanWrites.swift:76`), so two devices make the same copy.
 
-**When it runs.** On a build that has the new types, after the first iCloud import of a launch has settled, which is where the app's other repairs wait (`SummarizationPromptSeeder.swift:165-168`); or at once on a device with no iCloud account. Until then a 1.0 collection is listed, previewed and exported through the same function, and is not editable, with one button to upgrade it now.
+**When it runs.** On a build that has the new types, after the first iCloud import of a launch has settled, which is where the app's other repairs wait (`SummarizationPromptSeeder.swift:165-168`) *(corrected, second review H2: the wait those repairs use is eight seconds of quiet after any import event, `FRUSExplorerApp.swift:3379-3384`, and not the end of a first import)*; or at once on a device with no iCloud account. Until then a 1.0 collection is listed, previewed and exported through the same function, and is not editable, with one button to upgrade it now.
 
 **It writes, and deletes nothing.** The 1.0 records stay as they are. A build that has the new types no longer lists them. Settings ▸ Data & Recovery says how many there are and keeps the report.
 
-- The inventory's interlock binds a pass that "both writes an undeployed type and destroys its source" (`CloudKitSchemaInventory.swift:485-490`). This one destroys nothing, so an undeployed write would cost a failed upload and no data. What keeps such a build from shipping is the archive's schema check (#1531).
+- The inventory's interlock binds a pass that "both writes an undeployed type and destroys its source" (`CloudKitSchemaInventory.swift:485-490`). This one destroys nothing, so an undeployed write would cost a failed upload and no data. What keeps such a build from shipping is the archive's schema check (#1531) *(corrected, second review H5: the check does not require an identifier listed as awaiting a writer, `Scripts/check_cloudkit_schema.py:151-154`)*.
 - It writes on a context the modification stamper does not observe, as Import from JSON does, so an upgraded record keeps the 1.0 record's dates.
 
 **The report,** shown once and kept: each collection, the template it now follows or that its settings came from 1.0, and what will print differently. That last list is §2.8's defects where they touch the collection, and the Note on the Text where it has something to say.
@@ -682,7 +689,7 @@ The app already has the habit in one place: an entry kind a later build wrote is
 | Case | What happens |
 |---|---|
 | **Two devices upgrade one collection** before either has the other's records | The same ids, and the same content where both held the same 1.0 state. The cleanup keeps one: the copy changed since its upgrade, else the one made from the later 1.0 state. An entry deleted on one device after its upgrade can come back from the other's copy, and can be deleted again |
-| **A device on 1.0 changes a collection after it was upgraded** | The new record does not follow. A newer build sees that the 1.0 record is later than the date kept at the upgrade, says so on that collection, and offers *Upgrade That Version as a Copy*. Nothing is merged |
+| **A device on 1.0 changes a collection after it was upgraded** | The new record does not follow. A newer build sees that the 1.0 record is later than the date kept at the upgrade, says so on that collection, and offers *Upgrade That Version as a Copy*. Nothing is merged *(corrected, second review H3: in 1.0 an edit to an entry does not move its collection's date, `Collection.swift:28-29`, so this test misses most changes)* |
 | **A collection made in the new version** | Does not appear on a device running 1.0. The release notes say so |
 | **A collection deleted in the new version** | Its 1.0 record is deleted with it, after one question that says devices on 1.0 will lose it too. Otherwise another device would upgrade it again |
 | **A collection deleted on a 1.0 device after its upgrade** | The upgraded collection stays |
@@ -715,7 +722,7 @@ Keep `Collection` and `CollectionEntry`, and add properties. It costs no renamin
 
 ## 8. Other authorial capabilities
 
-Candidates, in the order this design would take them. Q8 asks which. Two of the first form's nine moved into the core: the collection's own words (§5.2), and its numbering at the lead and in the contents list (§4.3).
+Candidates, in the order this design would take them. Q8 asks which. Two of the first form's nine moved into the core: the collection's own words (§5.2), and its numbering at the lead and in the contents list (§4.3) *(corrected, second review H13: a number in the contents list is not new; 1.0 prints one)*.
 
 1. **Selected passages as a document's text.** A fourth choice for Text: the passages the author highlighted in the document, in its order, with a sign where text is left out, under the document's own heading and dateline. It is what a course reader does most: abridge. The highlights, their stored passages and the per-document choice of which already exist (`selectedHighlightIds`); the excerpt check would cover them. The sign for an omission is not brackets (§3.1), and is the lane's first question.
 2. **The collection's numbers in its indexes.** The Persons and Thematic indexes could cite *Documents 3, 7 and 12* of the collection, where they now cite each volume's number.
@@ -861,4 +868,4 @@ Two checks the review owed no longer apply: a heading not drawn, opened in Word 
   - the manuals' chapter 12, and the three earlier designs under `Completed/`;
   - the public TEI of eight volumes, among them `frus1946v06` and the Editorial Methodology of `frus1977-80v06`.
 - **Not read:** `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift`, `CollectionPickerSheet.swift` beyond its purpose, and the web edition's repository.
-- **Not done:** no build, no test run, no capture, and no review of this form. The counts of §2.4 and §5.5 are of lists, not of a running screen, and §2.3's page arithmetic is an estimate.
+- **Not done:** no build, no test run and no capture. This form was reviewed after it was written (the notice at its head). The counts of §2.4 and §5.5 are of lists, not of a running screen, and §2.3's page arithmetic is an estimate.
