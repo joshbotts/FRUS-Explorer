@@ -12396,3 +12396,95 @@ FRUS Explorer Light's phase 4 row S30b (Mac check 41 in its plan), the last of i
 **Owed by the owner:** Mac check 41, listed in the pull request, which runs an Archives Visit's packet in the app; then the merge. FRUS Explorer Light's next pin move (its S27c) carries it with #1982, #1985 and #1987.
 
 **Not done:** the UI suites, iOS 26.x, a device and a signed run.
+
+## Session 2026-11-25 — Collections: a design for export from a template and for fine-tuning each part of a document
+
+A cloud session, on the owner's word of 2026-11-25: the Collections feature does not let a document's display be customized and is complicated all the same; a collection should export quickly from a template; any aspect should be adjustable, the volume's headings and datelines replaced by the compiler's own and marked; a collection should choose its citation style; and other authorial capabilities and interface alternatives were to be considered. On `claude/collections-customization-export-djkc0u`, cut from `v2` at `efd73ec` (#1988). Read-only but for two documents: no code changed, and nothing a target compiles.
+
+**What was written:** `Planning/Collections-Customization-Design-2026-11-25.md`, a design with eight decisions for the owner (its §9) and six lanes (its §8), and a design canvas of seven mockups, private to the owner's account, which the design links.
+
+**What the reading found** (the design's §2, each with its file and line):
+- A document prints the citation as a heading and the volume's own heading under it, and the author can replace only the first. No label, order or address line can change.
+- The three formats differ: the PDF prints a source note above the text and only its first line, stops its contents list at the end of the cover page and gives each research note a page; the Word file never reads the contents-list style.
+- Collection settings holds 24 controls, a document's inspector nine settings (eight of them a picker with a *Default* choice), and a section's sheet 21, of which six are the section's.
+- A template applies at once with no undo, adds apparatus that no other template removes, and is not offered at export. Nothing exports a collection from the Collections list.
+- The collection's assembly names one citation formatter, though the app has three and a synced preference.
+
+**What it proposes:** ten named parts of a document; a template, then the collection's, a section's and a document's changes, each shown as what is in force with a dot and a Reset; templates the collection records and can switch back from; export as a template, a format and a button, from the list and the menu too; one inspector in place of three settings surfaces, entered from the preview; brackets and a generated Note on the Text for a heading or dateline of the compiler's; a citation style per collection with a short form; one plan that HTML, PDF and Word all draw; and two stored values behind one CloudKit deploy.
+
+**How it was read.** Three sub-agents inventoried the iOS editor, the Mac window and the exporters; the session re-read in the code each claim the design relies on. The examples are documents 470 to 486 of `frus1946v06`, from the public TEI, with citations worked by hand from `CitationFormatter.swift`.
+
+**Checks:** none run. The container has no Swift toolchain and no Xcode; nothing compiled changed. The line anchors in the design were each printed and read back at `efd73ec`.
+
+**Owed by the owner:** the eight answers of the design's §9, and whether its lane 1 goes ahead by itself. The plan of record is not changed: the lanes wait for the owner's word and for the next plan to take them as rows.
+
+**Not done:** no build, test or capture; the canvas's boards were written and not seen rendered; `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift` and the web edition's repository were not read.
+
+**Later in the same session, on the owner's questions:**
+- **See also:** the six documents the canvas uses cite each other by page and never by document, so the line prints nothing for them; the session's Option B board had invented one, and was corrected. The design's §7 gained a ninth candidate.
+- **Adjust:** asked whether the preview would show what can be changed, the session added a switch to Option C that outlines and names each part, and redrew its board.
+- **An adversarial review of the recommended hybrid,** on the owner's word ("Adversarially review the hybrid C option"): `Planning/Collections-Design-Adversarial-Review-2026-11-25.md`, with the reviewers' and skeptics' reports in `Planning/collections-design-review/`.
+  - Five reviewers (interaction, engineering, stored data, accessibility, editorial integrity) returned 50 findings. Three skeptics refuted none, re-rated sixteen down, and merged them to 17 distinct findings at S1 or S2 and 12 at S3.
+  - **The hybrid does not stand as written.** The volumes print bracketed datelines of their own, so brackets cannot mark the compiler's words; a dateline is the document's text with the editors' additions; from 1955 a document's source note hangs off its heading, so the ten parts are not separable blocks; a template chosen in the export sheet would rewrite the collection at the tap; by the design's own count the controls go up, not down; and pointing works on the Mac alone.
+  - **The design record** carries a notice of the review and six corrections of statements about the app as it ships, each marked. Its proposal is left as reviewed.
+  - **Seven defects of the app as it ships were met on the way** (the review's §6), none filed: among them a *Header & Dateline* contents list that prints no dateline for most documents, a source note printed twice when Footnotes and Source note are both on, and documents added after a template landing behind its back matter.
+
+**Owed by the owner now:** the review's §7, which reopens the design's Q1 to Q4 and Q6 and asks whether a dateline of the author's is wanted at all; and whether any of the seven defects is to be filed.
+
+**The design record revised, on the owner's word** ("Revise the design record to address the review's findings. If it would be helpful, you can base the collections revamp on a new model type and make conversion a one-way upgrade process."). `Planning/Collections-Customization-Design-2026-11-25.md` is rewritten as its second form; the first is in history at `aad7636`. Its §11 lists each of the review's findings with the section that answers it.
+- **Nothing the volume prints is replaced.** A title, a date line and the collection's own number stand above a document, and the volume's heading follows as *Printed heading:* with its calls. The mark is words. Brackets, the hidden heading and the hidden dateline are gone, and Footnotes and Source note are one choice of three, which ends the source note printed twice.
+- **A template chosen at export is for that export and writes nothing;** one chosen for the collection is recorded and asks first, listing each change.
+- **The settings on screen are those of what is selected,** with the collection as the first row of its own outline and no scope switch. The count is stated as it is: 14 controls in view at the collection where there are 24, and 31 with everything open.
+- **Pointing at the page is the Mac's.** The four arrangements the app built and withdrew before are named, each with what differs.
+- **Two new record types and a one-way upgrade that deletes nothing** (its §7), recommended chiefly because the settings do not fit 1.0's fields without two forms of one fact that build 1861 would go on writing. The upgrade is a function over values in the kit; the 1.0 records stay; each record carries a version that a build which knows less does not write over.
+- **Seven lanes,** each with an accessibility check, and lanes 1 and 2 able to go ahead of the new types.
+- **Read for the revision:** the review's eight reports; `Completed/Collections-Rework-Scope.md`; the Editorial Methodology of `frus1977-80v06`; the model container, the CloudKit inventory, the duplicate cleanup, the import plan and the collection file's format. Document 475's opening was read again from the TEI: its first line holds the editors' own bracketed correction, and its first footnote begins "Not printed".
+- **The canvas's seven boards were redrawn** to the second form, and published in one call: the export sheet with *As this collection is set* first; the collection's settings with the gallery first; a document's settings on the Mac and on an iPhone, each opening with the document's opening lines; *Show Parts* in the Mac's preview; the three openings of document 475 beside the volume's own uses of brackets; and a contents list in three citation styles. The first form's boards had drawn the editors' bracketed *13* in document 475's first line as a footnote's number, which these correct. They were written and not seen rendered.
+- **Checks:** none run, and nothing compiled changed. **The second form has not been reviewed.**
+
+**Owed by the owner now:** the nine answers of the revised design's §10, whether lanes 1 and 2 go ahead by themselves, and the runs of its §12, of which the two-device run comes before the lane that adds the record types.
+
+**An adversarial review of the second form, with the `.fruscollection` file,** on the owner's word ("Adversarially review the revised design. Also check how the .fruscollection export format will be affected."): `Planning/Collections-Design-Second-Review-2026-11-25.md`, with the reviewers' and skeptics' reports in `Planning/collections-design-review-2/`.
+- **Six reviewers** (interaction, engineering, stored data and the upgrade, the collection file and the other carriers, editorial integrity, accessibility) returned 59 findings. **Three skeptics refuted none,** re-rated ten down and left three as plausible pending a run. Merged: 1 at S1, 20 at S2, 27 at S3.
+- **The second form does not stand as written either.** Most findings fall on what the revision added.
+  - **The upgrade can delete the work done after it** (S1, read and not run). Two devices that upgrade one collection make exact twins, and the cleanup's own comment says it can keep a different copy on each, "and after sync no copy is left". The owner's library already holds such copies from R-2a's migration. Nothing but the twin records the upgrade, so a new device or a rebuilt store can upgrade again; the fork's test reads a date most edits do not move; an older export over an upgraded library has no rule.
+  - **The collection file need not change.** The record's §7.6 said version 3, refused by 1.0. Every addition is one a 1.0 reader ignores, and the format's rule keeps the floor at 1 for that case. A refusal would break a pinned test, the Agentic Analysis Guide's §15 and a sentence in both manuals, and build 1861 would not show the promised message unless the file carried the keys §7.6 declined to write. The session had read the format before any reviewer returned and written the same down.
+  - **A look chosen in the export sheet** has no meaning for four of the sheet's seven exports, cannot tell a template's blocks from the author's on 1.0's values, and three of the six need a prompt, Apple Intelligence or stored summaries.
+  - **A number at each lead collides with the volumes' own:** from 1955 a heading opens with the volume's number, and 1.0 already numbers its contents rows, in three ways. **The date line has no words on the page,** and the words *Printed heading* are in the table of words an author may change. **The notes as one choice** cannot hold a pair of which one half is inherited. **The count is 41, not 31.**
+- **The design record** carries a notice of the review and thirteen corrections of statements about the app as it ships or about the volumes, each marked. Its proposal is left as reviewed.
+- **Eleven more defects of the app as it ships were met** (the review's §6), none seen in a running app and none filed: among them a collection file that carries a headnote as its draft's id, so that a file opened on its author's own account shares the original's drafts; four exports that ignore a document's research-notes setting; and Word numbering the volume's footnotes by its own count.
+- **What the review's §8 proposes,** as the session's reading and decided by no one: the file keeps its version and its floor; the upgrade as designed is withdrawn, and the session's recommendation moves to keeping the two record types and adding only the new facts; the notes stay two switches; no number at the lead; the author's lines marked as a block in words the author cannot change; the Note on the Text a block alone; a look for PDF, Word and Web page only.
+- **Checks:** none run, and nothing compiled changed. The canvas was not redrawn.
+
+**Owed by the owner now:** the review's §8, which reopens the design's Q2, Q3, Q4, Q6 and Q7 and adds three questions; the runs of its §7, of which the collection file opened in build 1861 is the cheapest; and whether the eighteen defects are to be filed.
+
+**The issues filed, and a third form of the design,** on the owner's word ("Revise the design record to address the second review's findings. File the issues."):
+- **Seventeen issues, #1991 to #2007,** for the eighteen defects the two reviews listed: two of the second review's were further cases of two of the first's, and one of its items was two defects. The PDF's contents list was the owner's #1984 already.
+  - Each was read again at its lines before it was filed. None was reproduced in a running app, and each issue says so.
+  - One was narrower than the review had it: the preview's refresh misses two fields its page draws, not four (#1997). Two of the first review's were wider: the source note prints twice before 1955 too (#1991), and any entry added later lands after the blocks (#1995).
+  - Four issues were corrected after filing, where the session's own text was loose (#1997, #2003, #2005, #2007).
+- **The design record is in its third form, and does less than either earlier one.**
+  - **Storage:** 1.0's two record types, with four optional properties: a citation style, which line leads a document, the collection's own words for the app's labels, and a document's date line. No new record types and no upgrade. One CloudKit promotion, each property with its control in the same lane.
+  - **The collection file** keeps its version and its floor. New settings are optional keys, and a headnote travels as its text.
+  - **The page:** nothing the volume prints is replaced. A title of the author's stands above the fixed words *In the volume:*. No number stands at a document's head. The notes stay two switches, with a rule that prints the source note once. The Note on the Text is a block.
+  - **One plan for three formats,** in the kit, which is where ten of the eighteen issues end.
+  - **A template in the export sheet** for PDF, Word and Web page, writing nothing, with the template's own blocks in place of the collection's.
+  - **The interface is 1.0's three surfaces, trimmed.** The collection's settings open on 13 controls, and hold 37 with *Customize* open, where there are 24 today. A section's sheet holds its own 6 where it shows 21. A picker's *Default* names what it follows and the value in force there.
+  - **Seven lanes,** of which the first two need nothing new stored; ten questions for the owner (§10); each finding of the second review beside its answer (§11); the runs owed (§12).
+- **The canvas was redrawn for the third form:** nine boards, two of them new. The session did not see them rendered.
+- **Nothing in the third form's proposal has been reviewed.** Its citations of the tree were printed and read again, and its text corrected where it was loose: what the Zotero send reads, what a 1.0 app shows of a headnote that travels as text, and what a picker says where nothing above sets a value.
+- **Checks:** none run, and nothing compiled changed.
+
+**Owed by the owner now:** the ten answers of the design's §10; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12, of which a hand-made collection file opened in build 1861 is the cheapest.
+
+**The third form amended: a template is two steps,** on the owner's direction after reading it ("Let's treat templates as a two-step process. The first focuses on how documents are presented. The second focuses on what apparatus complements to the documents are added.").
+- **Step 1, Documents,** sets seven of the collection's settings: the new *Opening*, and the six that 1.0's settings screen already heads *Document content* and *Your annotations*. **Step 2, Apparatus,** is eight complements: the contents list and the word cloud, which 1.0 heads *Analysis & apparatus*, the five blocks, and the Note on the Text.
+- **The six templates of decision 139 divide** into six document templates, each with the apparatus it added now *suggested* for it. Choosing in step 1 does not change step 2. Nothing new is stored: a block's tick is its row in the outline, and "in force" stays a comparison, of step 1's seven settings alone.
+- **In the export sheet** the two steps are two menus where the third form first had a list of seven, each opening on the collection's own, for PDF, Word and Web page. The apparatus for one export is its own choice, which answers the second review's finding that a template could not tell its own blocks from the author's.
+- **The collection's settings** open on ten controls, each step behind a row that says what is set. *Customize* is gone, and so is the question a template asked before it changed a collection: each step's change is shown where it is made, with *Undo*.
+- **The count is 48 controls on four screens** where 1.0 has 24 on one, and no screen holds more than 14. The record says so, and lists where a reviewer would start on the amendment.
+- **Three of the six names** describe apparatus that step 1 no longer adds, and the record proposes others (its new Q11). The plan of record's decision 139 is not touched.
+- **The canvas:** the export sheet, the collection's settings and a new board of the two steps open were redrawn, and the other boards' control labels brought to 1.0's own (*Body depth*, *Archival source note*, *Highlights in body*). Not seen rendered.
+- **Checks:** none run, and nothing compiled changed. The amendment has not been reviewed.
+
+**Owed by the owner now:** the eleven answers of the design's §10, of which Q3, Q4 and Q11 are about the two steps; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12.

@@ -1,0 +1,143 @@
+ID: INT-1
+Verdict: CONFIRMED, RE-RATED
+Severity: S2
+Why: The tap is the commit as written: record §3.3 "A template chosen anywhere, in the inspector or in the export sheet, becomes the collection's, and is saved as every edit is", §4.1 "Choosing a template here is choosing it for the collection", and the board has Close with no Cancel and selects on the tap (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/Main.dc.html:19, :107). §3.4 keeps one copy ("The author's own settings, kept while a template is in force") and §3.3 says "Changing a setting while a template is in force makes the collection's own version of it", with no line on where the earlier version goes, so §3.3's "No template is a one-way trip" is overstated. It is S2, not S1: what can be displaced is collection-level choices a person can make again, since §3.3 keeps "Per-document and per-section changes ... through every switch". The rule cited for S1 is about deleting a row (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryRows.swift:288-296), and the template tap as shipped already overwrites the eight fields and asks nothing (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionCompositionRows.swift:284-286; /home/user/FRUS-Explorer/Docs/iOS-User-Manual.md:1128).
+Duplicates: DATA-6 and ENG-8 (the single kept copy); DATA-2 and ENG-8 (the tap that commits, in lane 1). One finding, S2.
+
+ID: INT-2
+Verdict: CONFIRMED
+Severity: S2
+Why: Record §3.2 rule 2 says the scope "follows what is selected", so a click on another row moves the layer the next switch writes to, and neither §3.2 nor §4.3 gives a wider scope any count of what overrides it. The board agrees: the selected row and the page do not change with the scope (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionB.dc.html:39-42), one card carries the template's name, a count and Reset at every scope, the count being the document row's own (:41, :133-139), and Reset clears every part (:269-271). "Only signal is its own segment" is overstated for the Mac board, which also changes a caption and a foot line (:142, :177, :228-233); the iPhone board changes neither (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/PartsPhone.dc.html:30-43). The cascade is as the finding says, nested three deep and walked by ancestor, with depth 0 before the first heading (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionOutline.swift:28-29, :56-58, :275-282).
+Duplicates: A11Y-2.
+
+ID: INT-3
+Verdict: CONFIRMED
+Severity: S2
+Why: Recounted by §2.4's rule, which counts each field, switch, picker and template singly (24 = 8 + 6 + 9 + 1; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:806-816 with /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionCompositionRows.swift:113-204), §4.3's collection scope holds the scope control, six templates, Reset, ten parts, thirteen items "around the documents" and three of "wording": 34, and 47 with the title page's four fields and §7's eleven labels counted singly. A document holds 15 against 9 (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryInspector.swift:390-397, :687-742, :788-789, :937-941), or 12 without the three controls at its head. One correction: "13 against 7" for a section takes the section's own controls, while §2.4's figure for that surface is 21, so by the record's rule the heading's sheet on iPhone and iPad shrinks (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryRows.swift:192-195 opens the inspector with showsCollectionSettings at its default of true) and only the Mac's grows, from 7. §4.3's "the 24, 9 and 21 controls of §2.4 become one list of ten rows and two groups" does compare controls with rows and groups.
+Duplicates: none.
+
+ID: INT-4
+Verdict: CONFIRMED, RE-RATED
+Severity: S3
+Why: Two of the four are earlier arrangements in kind, and for each the cause the tree records is absent from the hybrid: the "Document | Composition" segment went with the iPad's standing column, "so the reading surface stays clear" (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryInspector.swift:119-124, :147-152; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:832-836, :2045-2049), and the export sheet lost its content controls because they were "re-decided every export and never persisted" (/home/user/FRUS-Explorer/Planning/Completed/Collections-Rework-Scope.md:16, :55), where the record's template is stored (§3.3). The second is not the same thing: the build-28 report was that "collection-level attributes are not reachable without clearing the selection", and its remedy was to put them in the entry's inspector (/home/user/FRUS-Explorer/Planning/Completed/188-189-Tester-Feedback-Build28-Plan.md:271-274, :285-287), which a scope control at the inspector's head does, beside the gear §4.6 keeps. The fourth is overstated: A11 weighed toggles in place of placeable entries (/home/user/FRUS-Explorer/Planning/Completed/Collections-Authoring-Scope.md:198), the record keeps the entries (§3.6), and the code already plans to surface the blocks in settings "as present/insert controls" (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionCompositionRows.swift:185-188); what is left is that a switch cannot show a block placed twice or moved (/home/user/FRUS-Explorer/Docs/iOS-User-Manual.md:1087). It is true that §3.6 names none of this, which is an omission that harms no one, so S3.
+Duplicates: none.
+
+ID: INT-5
+Verdict: CONFIRMED
+Severity: S2
+Why: The record leaves a stored title's fate open: §3.1 calls titleOverride "the field the app already has" for Your own and says "What changes is where it prints: in place of the volume's heading, not above it", §3.3 holds an existing collection as it is only "until its author chooses a template again", and §3.4 stores a document's "own heading choice" as a key apart from the text. Every board draws three heading choices for §3.1's four (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionB.dc.html:236-240; /tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/PartsPhone.dc.html:51-53; /tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionC.dc.html:265), and the one left out is the one §3.3 says an existing collection keeps. Entries from before the headnote cascade do hold an explicit value (/home/user/FRUS-Explorer/FRUSExplorer/Models/Collection.swift:570-577), and §3.2 rule 3 gives a dot only to "a part that differs from the layer beneath", so an override equal to its parent has no dot and no rule for what a switch flipped back stores. One overstatement: a title above the volume's heading is inside §3.1's third choice as its "Today" column words it ("The citation, or a title override in its place") and §5's "Neither" bullet covers it, so the state is unmapped to a control rather than outside the four.
+Duplicates: DATA-5 (the stored title), A11Y-5 (three segments for four values), EDI-2 (the same title's missing mark).
+
+ID: INT-6
+Verdict: CONFIRMED
+Severity: S2
+Why: Both halves of the mechanism are in the code. A back-matter block goes to the end when it is inserted (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:1922-1925; /home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionGeneratedBlockType.swift:87-93), and every way a document is added takes one past the highest position (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift:154, :170-173), the bulk add saying the documents "sit together after everything the collection holds" (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionDocumentAppend.swift:101-103). A static collection prints in that order; only the smart path sorts blocks to front and back (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionContentAssembly.swift:510-515, :530-531). Q4 has the two blocks "arrive with its first document", and neither §3.3, §4.1 nor lane 1 moves the append. It is today's behaviour after a template (/home/user/FRUS-Explorer/Docs/iOS-User-Manual.md:1056, "appears at the end of its list"), which the recommended default would put on every new collection's quick path.
+Duplicates: none.
+
+ID: INT-7
+Verdict: CONFIRMED, RE-RATED
+Severity: S3
+Why: The facts hold: §4.5 lands the tap "at document scope", the popover board keeps the last Apply to across parts and offers "All documents" beside a typed heading (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionC.dc.html:292, :305, :347-352) though §3.1 limits Your own to "one document", and a document held twice shares one element id (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift:784-788; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift:126-129). But document scope for a tap on a document's part is the record's stated default, the scope control is in the inspector that opens, and the preview shows the result, so "the wrong layer" is a cost of discovery and not an error a person cannot see. "The opposite meaning" is overstated, since both controls name the layer a change is stored at. The part of this that is S2, the iPad's sheet over the page it points at (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:863-873), is ENG-5's.
+Duplicates: ENG-5 (the sheet over the page), A11Y-7 (no gutter for the names), ENG-7 (the repeated document), INT-2 (scope as a mode).
+
+ID: INT-8
+Verdict: CONFIRMED
+Severity: S2
+Why: The smart-collection half stands and carries the S2: its documents are synthesised with every override nil and no entry behind them (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionContentAssembly.swift:731-756), its Contents lists only apparatus (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:1150-1151), and the record names smart collections only in §2.1 and §2.4. The grid half is right in kind and overcounted. By the code and §3.4 three cells have nothing to store them: See also at Whole collection (CollectionContentAssembly.swift:1103, and §3.1 says so itself), Headnote at This section (:1084-1086), and Dateline at Whole collection, which §3.4's list for the collection's value omits; "Your own" beyond one document is a choice §3.1 withholds, not a missing layer. The summary prompt, set today at three layers (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionCompositionRows.swift:130-137; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryInspector.swift:712-731), appears in the record only in §2.4.
+Duplicates: DATA-3, A11Y-6, ENG-7 (smart collections).
+
+ID: INT-9
+Verdict: CONFIRMED, RE-RATED
+Severity: S3
+Why: §4.6 does give the iPhone "Tap its row" and nothing from the preview, and the iPhone shows Outline or Preview, never both, with the inspector pushed (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:725-747, :681-691), so the loop is today's length. That is S3: nothing a person does on an iPhone today gets longer, and §4.6 states what the iPhone gets. What the record owes is one sentence, because §4.4 says Adjust was added for "a reader on an iPhone or iPad" while §4.6 gives the iPhone's preview no tap. The line on a popover becoming a sheet is from memory in the finding, and nothing readable here settles it.
+Duplicates: ENG-5 (its iPhone half), A11Y-7 (no margin for the names).
+
+ID: INT-10
+Verdict: CONFIRMED
+Severity: S3
+Why: Each collision is where the finding puts it: the strip's "Not printed" under a footnote reading "Not printed." (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionC.dc.html:151, :176) and in the graph's own strings (/home/user/FRUS-Explorer/FRUSExplorer/CrossReference/CrossReferenceGraphView.swift:1028, :1323); "Delete Heading?" for a section heading and "%lld notes" for research notes (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryRows.swift:383, :1186-1189) against the board's "4 notes" for footnotes (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/OptionB.dc.html:203). The scope has three sets of names on three boards, two of them the record's own (§3.2 "Whole collection", §4.4 "all documents"); "Not printed" and "4 notes" are the boards' words, not the record's.
+Duplicates: A11Y-7 (the strip's name).
+
+ID: DATA-1
+Verdict: CONFIRMED, RE-RATED
+Severity: S2
+Why: The record has no write rule: §3.4 gives "a decoder that reads a key it does not know as absent", "Reset is the removal of a key" and "a key added later is not a schema change", and its one stated cost is two devices on one build. No codec in the tree keeps a key it does not know: the one JSON object in a synced text property decodes a fixed struct and encodes it whole (/home/user/FRUS-Explorer/FRUSExplorer/Models/ListOrderPreferences.swift:71-74, :277-285), and the hand-written "evolvable" decoder covers reading an older value only (/home/user/FRUS-Explorer/FRUSCoreKit/Models/ArchiveVisitValues.swift:56-60). So a build one lane behind drops the later keys on any write, and choosing a template in the export sheet is such a write (§4.1). It is S2 rather than S1: it needs two builds on one account after lane 6 has shipped, and what goes is settings and a few typed words, the loss §3.4 itself prices as "a setting to make again". It is still the rule this storage choice most needs, since later keys are its whole case (§3.4, Q6) and the app elsewhere refuses to write back what a build does not know (/home/user/FRUS-Explorer/FRUSExplorer/Models/Collection.swift:684-691).
+Duplicates: ENG-2. One finding, S2.
+
+ID: DATA-2
+Verdict: CONFIRMED
+Severity: S2
+Why: Lane 1's row is "applying a template as Collection settings does today", and that is one tap that writes eight fields and inserts entries with no way back (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionCompositionRows.swift:284-286; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionExporter+App.swift:29-39; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:1935-1943), where today's sheet writes nothing to the collection (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionExportSheet.swift:19-22, and no assignment to the collection anywhere in the file). The record's own §2.5 calls this "One tap, at once, with no undo", its remedy is lane 3, and an Undo "while the sheet is open" appears only in Q3's other branch. One correction: §8's "Stored data: None" and "changes no stored data" are about new stored properties, as lane 3's cell shows, so the record is silent here and not false. applyPreset is private to each editor and works through its outline (CollectionEditorView.swift:1929-1935; /home/user/FRUS-Explorer/FRUSExplorer/Collections/MacCollectionManagerView.swift:1866-1874), so a sheet opened from the list needs its own way to place blocks.
+Duplicates: ENG-8 (first half), INT-1.
+
+ID: DATA-3
+Verdict: CONFIRMED
+Severity: S2
+Why: The record names smart collections twice, both in §2 (lines 66 and 123), and no board names them. A smart collection's documents are synthesised with every override nil and no entry behind them (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionContentAssembly.swift:181-182, :731-756), while the preview draws them (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionPreviewView.swift:462-477), so §4.5's tap has no row to select and §3.4's displayJSON has nothing to sit on. Create Static Snapshot copies named fields and leaves "the headnote default, the front matter and the settings" at their defaults (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/SmartCollectionSnapshot.swift:92-98, :112-134), and §3.4's list of what carries the two values omits it.
+Duplicates: A11Y-6, ENG-7, INT-8.
+
+ID: DATA-4
+Verdict: CONFIRMED, RE-RATED
+Severity: S3
+Why: True as read: §3.4's "What an older build does with them" says what 1861 draws and not what it writes, 1861's template tap rewrites the eight fields and appends blocks (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionExporter+App.swift:29-39; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:1935-1943), and a replacement from a version-7 file writes the file's settings and keeps the library's for what that version lacks (/home/user/FRUS-Explorer/FRUSCoreKit/Export/ResearchImportPlan.swift:31-33, :1057-1064). It is S3: it needs two builds on one account or an older file, nothing typed is lost, and §3.4 already concedes that the two builds export differently. One part is not the design's doing: 1861 overwriting settings in one tap is 1861's own behaviour (record §2.5), which no later build can stop.
+Duplicates: none.
+
+ID: DATA-5
+Verdict: CONFIRMED
+Severity: S2
+Why: §3.1 says "What changes is where it prints: in place of the volume's heading, not above it", §3.3 holds an existing collection only "until its author chooses a template again", §5 prints the Note "whenever the collection replaces a heading or a dateline", and §3.4 stores the heading choice apart from the text. So at the first template chosen, a title typed under today's caption, "Overrides the document title in the table of contents and the export heading" (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryInspector.swift:398-399), either becomes a bracketed replacement or stops printing, and the record does not say which. 1861 goes on printing the same field as the heading, above the volume's (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionExporter.swift:747-750). The export sheet as drawn shows a template, a format and a sentence, so the first sight of the change is the file.
+Duplicates: INT-5, A11Y-5; EDI-2 is the same field's missing mark.
+
+ID: DATA-6
+Verdict: CONFIRMED
+Severity: S2
+Why: §1 says a template tried at export "is undone by choosing the old one", while §3.4 holds one set of the author's settings and, on a block, only "that a template placed it", and the board has one "Your settings" row (/tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/canvas/project/Main.dc.html:87-90). So a second edited version has no place, and a template's block the author deleted is called for again on the way back, since a block is an entry and nothing records its removal (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:1911-1927). Blocks placed before the update carry no flag, a template being "never stored" today (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionExporter.swift:50-51). The renumbering cost is real and small: a front-matter insert renumbers every entry, and "a position written, even unchanged, stamps the entry modified" (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEntryData.swift:297-302; CollectionEditorView.swift:1899-1900).
+Duplicates: INT-1, ENG-8 (second half).
+
+ID: DATA-7
+Verdict: PLAUSIBLE
+Severity: S2, unsettled; it is not a finding against the two-value design in particular
+Why: Nothing readable here settles it. The tree says the mirror works from a stored change token and that a store believing it has caught up "never re-downloads" (/home/user/FRUS-Explorer/FRUSExplorer/Models/ModelContainer+FRUS.swift:478-482; /home/user/FRUS-Explorer/FRUSExplorer/Models/PendingStoreReset.swift:155-158), but another note speaks of "the initial sync after a schema change" bringing records in again (/home/user/FRUS-Explorer/FRUSExplorer/Models/DuplicateRecordCleanup.swift:44-46), which points the other way. Apple's pages "Syncing a Core Data Store with CloudKit" and "Creating a Core Data Model for CloudKit", fetched today, say an import is "all of the changed records since the last fetch" and that with added fields "older versions of your app have access to every record a user creates, but not every field"; neither says what a device holds once it updates. If the hazard is real it is the same for a property per setting (Q6's other branch) and for every field earlier builds added (/home/user/FRUS-Explorer/FRUSExplorer/Models/CloudKitSchemaInventory.swift:64-99), and I found no note of it having happened. The app has a manual way back, Re-download everything from iCloud (/home/user/FRUS-Explorer/FRUSExplorer/Settings/DataRecoveryView.swift:160-182), for a person who knows to use it before writing.
+Check owed: The finding's two-device run, with two steps added. While B is still on 1861, rename the styled collection on B and read styleJSON on A, which shows whether an older build's write of another field keeps the value. After B updates, change only the collection's name on B and read styleJSON on A again.
+Duplicates: none.
+
+ID: DATA-8
+Verdict: CONFIRMED
+Severity: S3
+Why: The snapshot copies named fields and nothing else (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/SmartCollectionSnapshot.swift:112-134). A file at a later format version is refused whole (/home/user/FRUS-Explorer/FRUSCoreKit/Export/ResearchImportPlan.swift:669-671, :704-706; the current version is 7 at /home/user/FRUS-Explorer/FRUSCoreKit/Export/ResearchDataEnvelope.swift:1417), which is the importer's standing rule for any bump and so is a consequence the record leaves unsaid, not a defect of this design. Duplicate already drops two settings its comment says it copies (/home/user/FRUS-Explorer/FRUSExplorer/Models/Collection.swift:794-795, :809-814 against :87 and :101), and its one test checks that the copy stands alone (/home/user/FRUS-Explorer/FRUSExplorerTests/CollectionTests.swift:13309-13323).
+Duplicates: DATA-3 (the snapshot).
+
+ID: DATA-9
+Verdict: CONFIRMED
+Severity: S3
+Why: §1's "what a later lane adds needs no further deploy" does not hold for Q7's recommended "a field of SyncedPreferences": a stored property on a mirrored model is a Production deploy (/home/user/FRUS-Explorer/CLAUDE.md, "CloudKit schema-deploy gate"; /home/user/FRUS-Explorer/FRUSExplorer/Models/SyncedPreferences.swift:77-81). The one-record rules are as described: the earliest record is read and the rest are deleted where settings sync is on (/home/user/FRUS-Explorer/FRUSExplorer/Models/ListOrderPreferences.swift:303-312; /home/user/FRUS-Explorer/FRUSExplorer/Settings/SettingsSyncCoordinator.swift:141-149). It is narrower than it reads: Save as Template is §7's fifth candidate, outside Q8's recommended first pass, and lane 6's cell already says "Save as Template per Q7". The aside is right too (see Errors, §2.7).
+Duplicates: ENG-2 (its last evidence line).
+
+ID: DATA-10
+Verdict: CONFIRMED
+Severity: S3
+Why: Half of it is the record's own statement: lane 1's cell reads "None (the remembered format is the device's)", so where the format lives is said. What is not said is what Export Again does where nothing is remembered; §4.1's "it exports as a PDF with no choice made" implies PDF, which is what the sheet opens on today (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionExportSheet.swift:60). One case has no answer at all: a remembered .fruscollection after the collection is linked to a saved search, which is not offered that format (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionExporter+App.swift:176-179).
+Duplicates: none.
+
+**Errors in the design record found on the way** (/home/user/FRUS-Explorer/Planning/Collections-Customization-Design-2026-11-25.md)
+- Line 94 (§2.2), "Under Header & Dateline a contents list of them differs only in its dates": all eight telegrams keep their dateline inside an opener (public TEI, counted today), the assembly reads top-level nodes only (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionContentAssembly.swift:1468-1482), and the kit's suite pins such a dateline as nil (/home/user/FRUS-Explorer/FRUSExplorerTests/FRUSCoreKit/CollectionResolutionTests.swift:450-452), so the rows carry no date. Named by EDI-6.
+- Line 152 (§2.7), the citation preference "syncs": only while a device-local switch is on, and it is off by default (/home/user/FRUS-Explorer/FRUSExplorer/Settings/SettingsSyncCoordinator.swift:12-14, :61; /home/user/FRUS-Explorer/FRUSExplorer/Settings/SettingsView.swift:93). Named by DATA-9.
+- Line 56 (§1), "what a later lane adds needs no further deploy", against line 475 (Q7), which recommends a new field of SyncedPreferences.
+- Line 201 (§3.3), "A shipped template's recipe does not change afterwards. A different look is a new template with a new name", against line 203 and its table, which give three shipped names a new heading arrangement.
+- Line 311 (§4.3), "the 24, 9 and 21 controls of §2.4 become one list of ten rows and two groups": the two groups alone list sixteen items, and by §2.4's rule the collection's scope holds at least 34 controls.
+- Line 230 (§3.4), "CollectionExportOptions(composing:) is already the one place a collection's settings become options": the preview builds its own by hand (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionPreviewView.swift:493, :521-531). Named by ENG-9.
+- Line 183 (§3.2), "the document, else its section, else the collection ... That is today's cascade": a headnote skips the section and See also has no collection layer (CollectionContentAssembly.swift:1084-1086, :1103), and a section is up to three nested headings (/home/user/FRUS-Explorer/FRUSCoreKit/Collections/CollectionOutline.swift:275-282).
+- Line 161 (§3.1), "Every surface in §4 lists these ten and no others", against line 174 ("the collection has no setting for it") and against every board's three heading choices for §3.1's four.
+- Line 223 (§3.4): the collection's value lists "the heading and the reference" and no dateline, though lines 205-212 give every template a dateline and line 445 puts "the heading, reference and dateline parts" in lane 3.
+- Line 320 (§4.4) says Adjust answers "a reader on an iPhone or iPad", while line 351 (§4.6) gives the iPhone "Tap its row" and no tap in the preview.
+- Line 133 (§2.4), "The Mac has three places of its own": the New Collection sheet opened from Add to Collection is a fourth, with the whole composition form (/home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionEditorView.swift:481-510; /home/user/FRUS-Explorer/FRUSExplorer/Collections/CollectionPickerSheet.swift:323-325). Named by ENG-9.
+- Line 23, "The two earlier Collections designs": /home/user/FRUS-Explorer/Planning/Completed/ holds three, and the second names the third as its convention (/home/user/FRUS-Explorer/Planning/Completed/Collections-Manager-UX-Scope.md:5); Collections-Rework-Scope.md is where the export sheet's "format + destination" was decided.
+
+**Not checked**
+- Nothing was built or run. Every statement about what a device does is from the code, the record or the boards' source.
+- How NSPersistentCloudKitContainer imports after an update and merges two devices' writes (DATA-7, and §3.4's "separate properties would keep both changes"). Two Apple pages were fetched and do not say; the repository's own design note marks per-field merging "[UNVERIFIED by test]" (/home/user/FRUS-Explorer/Planning/Completed/258-Custom-Volume-Scopes-Design.md:156-161).
+- Why Composer v2 withdrew the segment and the ribbon. No design document for it is in the tree and this checkout holds 54 commits, so I had the code's comments only.
+- The web edition's side of DATA-8, the PDF and Word exporters, the UI suites, Docs/EditableContent, the macOS manual beyond line 777, and the boards OptionA, Marks and Citations.
+- Whether any test walks every stored property through the snapshot, the .fruscollection writer or the importer. I searched /home/user/FRUS-Explorer/FRUSExplorerTests for a stored-property walk and for callers of duplicate(in:) and no further.
+- The frequency claims in INT-2 and INT-7 and the popover line in INT-9, which need people and devices.
+- Of the public TEI, one volume. The fetch of frus1946v06.xml worked (5,749,095 bytes, saved under /tmp/claude-0/-home-user-FRUS-Explorer/7afd2999-14be-5996-b04c-68176ebd1f6c/scratchpad/skeptic/tei/): 692 document divisions, the first dateline inside an opener in 663, and documents 470, 473, 474, 475, 476, 477, 480 and 486 under one heading, each with its dateline in an opener. None of my twenty findings rests on a TEI count.
