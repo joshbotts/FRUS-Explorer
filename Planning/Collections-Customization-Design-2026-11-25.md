@@ -467,7 +467,7 @@ Each with a recommendation. Nothing in §8 starts before its questions are answe
 - **Q5. A new collection's citation style.** **The one chosen in Settings ▸ Display (recommended)**, since that is the reader's stated preference and the reader's Copy Citation already follows it; or history.state.gov always. Either way a collection that exists today keeps history.state.gov.
 - **Q6. Storage.** **Two text properties and one deploy (recommended, §3.4)**; or a property per setting, each with a deploy of its own.
 - **Q7. Where saved templates live,** if Q8 takes them: a new model type, which is a CloudKit record type and a research-export type; **a field of `SyncedPreferences` (recommended as the smaller)**; or the device alone.
-- **Q8. Which of §7's eight,** and in what order. **Recommended for the first pass: 1 (selected passages) and 2 (the collection's own words), with 3 (numbering) next.**
+- **Q8. Which of §7's nine,** and in what order. **Recommended for the first pass: 1 (selected passages) and 2 (the collection's own words), with 3 (numbering) next.**
 
 And one that is not a question of design: **whether lane 1 goes ahead by itself**, before the answers to the rest.
 
