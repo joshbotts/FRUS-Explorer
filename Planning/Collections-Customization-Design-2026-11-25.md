@@ -1,6 +1,6 @@
 # Collections: export in two taps, and fine-tune every part of a document — a design, 2026-11-25
 
-**Status: PROPOSED on 2026-11-25; third form, revised after two adversarial reviews and amended the same day on the owner's direction. Nothing is built, and no code changed.** §10 asks the owner for eleven decisions. §9's lanes are written so that the next plan of record can take them as rows. §12 lists the runs that need a device before a lane starts.
+**Status: PROPOSED on 2026-11-25; third form, revised after two adversarial reviews and amended twice the same day on the owner's direction. Nothing is built, and no code changed.** §10 asks the owner for twelve decisions. §9's lanes are written so that the next plan of record can take them as rows. §12 lists the runs that need a device before a lane starts.
 
 **This is the record's third form.**
 
@@ -35,6 +35,19 @@ So a template is two choices, made in that order and each alone (§4.3). What mo
 
 This form as first written is at `f7d40e6`. The amendment has not been reviewed either, and §11 says where a reviewer would start.
 
+**Amended a second time the same day, on the owner's direction.** The owner asked whether the app's existing features offer further apparatus for a collection. The session answered with a list, and the owner said:
+
+> "Add these to the collections update plan"
+
+So §8 has a second part, §8.2: thirteen candidates for a collection's apparatus, each with where the app holds its data today. What moved with it:
+
+- **§4.3 and §4.4** each say that a block's tick does not tell the author whether the block will have anything to list.
+- **§5.5** says what each block taken would add to step 2's count.
+- **§9** has lane 8, **§10** has Q12, **§11** says where a reviewer would start on it, and **§12** has three more runs.
+- **Nothing in the core changed.** Step 2 is still the eight complements of §4.3 until Q12 is answered, and the canvas was not redrawn.
+
+The record before this amendment is at `94719de`.
+
 **The defects of 1.0 that the two reviews met are filed,** on the owner's word: #1991 to #2007, beside the owner's own #1984 (§2.8).
 
 **What this is.** The owner's words of 2026-11-25:
@@ -57,6 +70,9 @@ That is five asks:
 - The examples are real: document 475 of `frus1946v06` and its neighbours, from the public TEI (`HistoryAtState/frus`). The counts over volumes are the reviews', made by parsing eight volumes, and recounted by a skeptic with scripts of its own.
 - Before the seventeen issues were filed, the session read each defect again at its lines. One was narrower than the review had it, and its issue says so (#1997).
 - **Nothing in §3 to §9 of this form has been reviewed.**
+- **The second amendment was read in another cloud session,** the same day, from `v2` at `94719de`. Its code is `efd73ec`'s, since #2008 added planning files only. That container has no Swift toolchain either, and nothing was built or run.
+  - Its counts over volumes are from two bundled files, `volume-annotations-index.json` and `document-subject-index.json`.
+  - Its examples are the eight telegrams of §2.2, read from the public TEI of `frus1946v06` as fetched that day (§13 names the file).
 
 **The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. Its nine boards were redrawn for this form:
 
@@ -89,6 +105,7 @@ The session wrote the boards and did not see them rendered: this container canno
 - **1.0's three settings surfaces, trimmed.** The collection's opens on ten controls where there are 24: the two steps, each a row that says what is set, and the title page. A section's sheet holds the section's six where it shows 21. A picker's *Default* says what it follows and what that is (§5.2, §5.5).
 - **Four new facts, stored where collections are stored today:** a citation style, which line leads a document, the collection's own words for the app's labels, and a document's date line. One CloudKit promotion of four fields (§7).
 - **The collection file keeps its version.** A 1.0 app opens a file the new version writes (§7.4).
+- **More apparatus, as candidates** (§8.2): a line that says what a block can fill, four new blocks, two blocks from the author's own material, and six additions to the blocks 1.0 has. Each is read from data the app already holds. None is in the core, and Q12 asks which.
 
 ---
 
@@ -447,6 +464,8 @@ Each suggested set also has the Note on the Text. Three of the six names describ
 - **Choosing in step 1 does not change step 2.** After a document template is chosen, step 2's row offers its suggested set in one tap: *Suggested for Full text as printed: Bibliography, Sources & Archives. Add.*
 - **Neither step touches** what a section or a document sets for itself, a title or a date line, the summary prompt, the citation style, the wording or the title page. Each row of step 1 says how many set their own (§4.2).
 
+**A tick does not say whether its block will have anything to list.** The Persons Index fills from the people a volume's editors tagged, and 265 of the 553 volumes tag none. A collection of the eight telegrams of §2.2 gets the one row that says nothing was found (`CollectionGeneratedBlocks.swift:184`), and three of the six suggested sets have that block. §8.2's first candidate is a line that says so, at the tick and on the page. Its other twelve are further blocks and additions to the five; each block taken would add a tick here.
+
 **What is and is not stored:**
 
 - **"In force" stays a comparison,** as in 1.0, and is step 1's alone: seven settings against six recipes. Nothing is stored about which template was chosen, so no other build or file can leave that record stale. Where no recipe equals the collection's settings, step 1's row names the nearest and counts the differences: *Like Full text as printed · 2 differ*. Step 2 needs no comparison: its row lists what the collection has.
@@ -475,6 +494,7 @@ The export sheet offers both steps for the export in hand (§5.1).
   - The summaries need Apple Intelligence and a summary prompt. A template holds no prompt, so the collection's own is used, and where it has none the item says so and cannot be chosen. It writes a summary for each document that has none, and keeps them, as any summary export does.
   - The two document templates with headnotes on print a headnote only where one is stored. The sheet's sentence counts them: *Headnotes for 4 of 6 documents*. No placeholder line is printed in an exported file.
   - *None*, where the Note on the Text would have something to say, says so: *No Note on the Text: one title of yours goes unexplained.*
+  - What a block cannot fill is not said, in 1.0 or in this design as it stands. A suggested set with the Persons Index, chosen for a collection whose volumes tag no one, prints a block of one row. §8.2's A1 would say so in the sheet's sentence.
 - **The sheet's sentence says what will print,** from the resolved copy: how much text, which notes, which apparatus, and how many sections and documents set something of their own.
 
 The source note printed twice (#1991) has to be ended first, or the first document template listed prints it.
@@ -610,6 +630,8 @@ No screen holds more than 14. What it reduces:
 - **what a picker leaves unsaid:** *Default* names what it follows and what that is;
 - **what a first export needs,** which is no setting at all, from the list as well as from the editor.
 
+**§8.2 would add to step 2.** Each block taken from it (A2 to A7) is one more tick: with all six, step 2 would hold 20 controls where this count has 14. A1 adds a line under a tick and no control. A8 to A13 change what is already printed and need no control.
+
 ### 5.6 What the earlier forms proposed, and why it is gone
 
 | Proposed | In | Why it is gone |
@@ -731,6 +753,8 @@ If new record types are wanted for another reason, they need a different upgrade
 
 ## 8. Other authorial capabilities
 
+### 8.1 For a document and its page
+
 Candidates, in the order this design would take them. Q8 asks which.
 
 1. **Selected passages as a document's text.** A fourth choice for text depth: the passages the author highlighted, in the document's order, with a sign where text is left out. It is what a course reader does most: abridge. The passages must then travel in the collection file as text, as a quoted passage does, since highlights do not travel (`NativeCollectionFormat.swift:55-58`). The sign for an omission is not brackets (§3.1).
@@ -749,11 +773,181 @@ Candidates, in the order this design would take them. Q8 asks which.
 
 Considered and not proposed: editing a source note's text or a footnote; a document printed without its heading or its dateline (§3.1; Q2 asks); fonts and colours (no theming engine, item 9 of `Collections-Authoring-Scope.md`); editing inside the preview (its item 1).
 
+### 8.2 More apparatus, from what the app already holds
+
+The owner's question of 2026-11-25, after the first amendment: whether the app's existing features offer further apparatus for a collection. They do. Thirteen candidates follow, A1 to A13, in the order this design would take them within each group. Q12 asks which.
+
+Each is read from the code and the bundled files at `94719de`. **No block was resolved in a running app.** The examples are the eight telegrams of §2.2.
+
+**What a block costs, which is why these are cheap.**
+
+- **A block is a value of a field every block's row has** (`Collection.swift:651-661`). A new one needs no CloudKit change. A 1.0 app leaves a type it does not know in its place and skips it (`CollectionContentAssembly.swift:964-965`), as §3.6 says of the Note on the Text.
+- **Its rows are never stored** (`CollectionGeneratedBlocks.swift:112-113`). They are resolved at each preview and export from the index, the bundled files and the author's store, so a block added to an old collection fills at once.
+- **A row is a text, a second text, a link and an indent** (`CollectionExporter.swift:1196-1218`), and each exporter draws every block by one rule. A block that needs columns would change all three exporters.
+- **The four menus that add a block list every type** (`CollectionEditorView.swift:1350`, `:1486`; `MacCollectionManagerView.swift:1712`; `FRUSExplorerApp.swift:4523`), so a new type appears in each.
+- **What a new block owes:** a read on the blocks' data source (`CollectionGeneratedBlocks.swift:30-82`); a resolver; a title, a symbol and a usual place; and a line in the rule that says what an export drew on (`CollectionExporter.swift:1326-1332`).
+
+**The thirteen.**
+
+| | Candidate | What it prints | Where the app has it today |
+|---|---|---|---|
+| | ***What a block can fill*** | | |
+| A1 | A line of coverage | Under a block's tick and its printed title: what the collection's volumes give it | Browse's Editors' Annotations; the People browser's caption |
+| | ***New blocks, from the index*** | | |
+| A2 | Abbreviations & Terms | Each abbreviation the documents use, with the volume's definition | The reader's term cards |
+| A3 | Unprinted material cited | The archival files the documents' footnotes point to | Source Explorer's *Unprinted Material*; the Archives Visit packet |
+| A4 | Documents cited, not included | The documents the collection's documents cite and the collection does not hold | The cross-reference graph; the *See also* line |
+| A5 | Subject Index | The Office of the Historian's subject terms, each with its documents | Browse's Subject Index; the Facets; Related Documents |
+| | ***Blocks from the author's own material*** | | |
+| A6 | Marked passages | The collection's highlights as quotations, by colour | *Add Highlighted Passages…* |
+| A7 | Abstracts | Each document's stored summary, as a list | Summaries and headnotes |
+| | ***Additions to the blocks 1.0 has*** | | |
+| A8 | Sources & Archives, by file class | Central files grouped by class, with the class in words; a scan's link | The Archives Visit packet; Archival Analytics; Source Explorer |
+| A9 | Persons Index, with life dates and posts | A person's years and posts beside the volume's description | The person sheet |
+| A10 | Bibliography, by volume | A volume cited once, with its documents and their pages | The manifest; the page index |
+| A11 | Chronology, by administration | A heading where the presidency changes | Browse's administrations; the analytics presets |
+| A12 | The word cloud's terms as a table | The counted terms; the terms that set the collection apart | The Word Cloud's list and its *Distinctive* measure |
+| A13 | The Note on the Text: the files read | Which file of each volume the text was read from, and what an update has changed | The corrections check; the update review |
+
+**A1. A line that says what a block can fill.** The blocks fill from what a volume's editors marked, and that differs by era. From the bundled file, by its fields:
+
+| Block | Fills from | Volumes that give it nothing, of 553 |
+|---|---|---|
+| Persons Index | people the editors tagged (`people`) | 265, which hold 195,385 of the 314,510 documents |
+| Sources & Archives | a source note of either form (`sourceCitation`, `sourceFileNumber`) | 53 |
+| The *See also* line; Documents cited, not included (A4) | a reference to a document (`xrefDocuments`) | 299, of which 271 refer by page |
+| Abbreviations & Terms (A2) | a linked abbreviation (`abbreviations`) | 241 |
+| Chronology; Bibliography | every document | none |
+| Thematic Index | the author's own tags | |
+
+- **In `frus1946v06` no person is tagged and no document cites another by document,** in 692 documents. So for the eight telegrams the Persons Index is the one row *Nothing to list* (`CollectionGeneratedBlocks.swift:189-192`) and the *See also* line is empty. The same volume lists 120 abbreviations and links them in 476 documents.
+- **The app already says this elsewhere.** The People browser and Person Analytics carry a line: *People are tagged in 288 of 553 volumes, and only those volumes' people appear here. In the others, search for the names.* (`AnnotationsAxisViews.swift:472-482`, `:517-523`). The Persons Index is the same data without the line.
+- **Where the line would show:** under a block's tick in step 2 and on its row in the outline; in the export sheet's sentence (§4.4); and on the page under the block's title, where a block is empty or partly filled. The wording is the owner's.
+- **What it reads:** `VolumeAnnotationsIndex` (`VolumeAnnotations.swift:332`), which the kit declares and the app loads once (`VolumeAnnotationsStore.swift:26`). It would be passed to the blocks' data source as the archival indexes are (`CollectionContentAssembly.swift:96`).
+- **What it cannot say.** The file counts by volume: how many of a volume's documents carry a layer, and not which. The line can say that a volume's editors tagged no one. Which documents of a tagged volume name no one is the block's own reading.
+
+**A2. Abbreviations & Terms.**
+
+- **What it prints.** For the eight telegrams, five rows, each in the words of the volume's own *List of abbreviations, symbols, and code names*:
+
+  | Term | The volume's definition | Documents |
+  |---|---|---|
+  | AP | Associated Press | 477 |
+  | Dept | Department (usually the Department of State) | 470, 475, 477, 486 |
+  | Politburo | the Political Bureau of the Central Committee of the All Union Communist Party (of Bolsheviks) | 473, 474, 486 |
+  | Sov | Soviet | 480 |
+  | UNO | United Nations Organization | 474, 475, 480 |
+
+- **Why.** An export loses the definitions.
+  - In the reader a term opens a card.
+  - The web page writes the term as a `frusexplorer://gloss/…` link (`FRUSRenderNodeHTMLSerializer.swift:899-902`). A browser cannot follow it, and where the app is installed it opens the app to a refusal (`AppActivityTypes.swift:44-52`).
+  - Word and the PDF write the term as plain text (`DocxCollectionExporter.swift:1455`; `PDFCollectionExporter.swift:1376`).
+- **Reach.** 312 volumes link a term in at least one document, 113,012 documents in all. By the file's eras, 4 of them are in the band for 1932–1944 and none is earlier.
+- **What the index holds, and what it lacks.** Each volume's list is a table (`terms`, `IndexingPipeline.swift:8876-8885`), read by `allTerms(forVolumeId:)` (`PersonMentionStore.swift:1081`). Which document uses which term is not stored: people have a table of mentions (`IndexingPipeline.swift:8734-8742`) and terms have none. The links are in each document's parse (`FRUSASTNode.swift:305`; `ASTToRenderNodeConverter.swift:447-457`).
+- **Two ways to fill it** (Q12):
+  - *A table of term mentions, written at the next index version.* The block is then read as the Persons Index is. It would also read the terms that `frus1981-88v16` names on each document's `@ana`, as #1599 did for that volume's people. An index version re-indexes every volume on every device, so this waits for one that other work also needs.
+  - *The parse, at export.* It needs no index version. But a preview parses its first 20 documents (`CollectionPreviewView.swift:153`) and no volume that is not on the device, so a preview's block would be shorter than its export's.
+- **Not proposed:** finding a volume's terms by matching words in a document's stored text. The editors' links are the authority.
+- **What it would also allow.** With the block in a collection, the web page's link on a term could lead to the term's row. That changes how a document's text is written, and belongs with lane 2's plan if it is wanted.
+
+**A3. Unprinted material cited.**
+
+- **What it prints.** The archival files that the documents' footnotes point to and the volumes do not print, grouped by file, each with the document, the note's printed number and the editors' words. In the telegrams:
+  - Document 475's note 44: *Not printed; in this telegram the Department informed the Chargé: "We should welcome receiving from you an interpretive analysis …" (861.00/2–1246).* That is the Department's telegram 284, which the Long Telegram answers.
+  - Document 474's note 39 quotes a memorandum of H. Freeman Matthews of February 11, 1946, from 761.00/2–1146.
+- **Where the app has it.** The index stores each such pointer (`external_citations`, `IndexingPipeline.swift:8973-8991`): 19,616 to a lot or a library's collection and 30,527 to a central file, from the footnotes of 441 volumes (`Generators-Runbook.md`, `ExternalCitationIndexGenerator`). Source Explorer shows a document's as *Unprinted Material* (`SourceExplorerResolution.swift:356`, `:506`), and one read answers for a list of documents (`IndexingPipeline.swift:10186`).
+- **It overlaps the Archives Visit packet.** *Add to Archives Visit…* builds a packet from a collection with these pointers in it (`CollectionEditorView.swift:1364-1372`). The packet is a PDF of its own, for a visit. The block is the same facts in the collection's export, for its reader.
+- **Three rules it must keep:**
+  - **It is a block of its own, and never a part of Sources & Archives.** The index keeps where a document came from and what an editor mentioned in separate tables, so that the two are never added (`IndexingPipeline.swift:8969-8972`).
+  - **It lists what the footnote grammar reads, and says so.** Document 474's note 43, *Despatch 2442, February 12, from Moscow, not printed*, names no file and would not be listed.
+  - **A row prints a note's number only where the volume printed one.** The number is not unique in a document and is absent for some (`IndexingPipeline.swift:14632-14642`); Source Explorer's rows follow the same rule.
+- **Central files are in.** The packet leaves pointers to a central file out, since they would flood it (`TripPacketBuilder.swift:281-284`). In the volumes before 1955 they are the only pointers there are, as in the two notes above.
+
+**A4. Documents cited, not included.**
+
+- **What it prints.** The documents that the collection's documents cite and the collection does not hold, most cited first, each with the documents that cite it. It is a reading list that the editors made.
+- **Where the app has it.** The *See also* line reads each document's references (`CollectionContentAssembly.swift:88-89`; `CollectionContentResolver.swift:533-537`) and keeps those inside the collection (`CollectionContentAssembly.swift:1182-1194`). The block is what the line leaves out.
+- **Reach.** 254 volumes hold a reference to a document, in 31,493 documents. By the file's eras, 6 of them are in the bands before 1951.
+- **The telegrams cite no document, and three cite pages.**
+  - Document 475's note 45 refers to *Foreign Relations*, 1943, vol. III, pp. 531–532 and 542–543. Since index version 71 a page of another volume is stored as a citation of the document on it, where the page holds one (`IndexingPipeline.swift:1614-1622`).
+  - Documents 470 and 486 each refer to a page of their own volume, which is stored under the page (`CrossReferenceStore.swift:757-759`). That is §8.1's item 10, and this block needs the same join.
+- **The other direction is weaker.** Which documents elsewhere cite the collection's is known for the volumes on the device (`CrossReferenceStore.swift:700`). For the rest the bundled file holds counts and volumes, and no titles (`CrossReference/ResolvedEdgeIndex.swift:39-43`).
+- **A list, and not a picture.** The authoring design declined graph images in exports (`Completed/Collections-Authoring-Scope.md:160`), and said the line and a block carry the same information in the artifact's own idiom.
+
+**A5. Subject Index.**
+
+- **What it prints.** The Office of the Historian's subject terms that the collection's documents carry, each with its documents. It would stand beside the Thematic Index, which lists the author's own tags.
+- **Where the app has it.** `document-subject-index.json`: 491 subjects over 238,302 documents (`RelatedDocuments/DocumentSubjectIndex.swift:67`, `:299`).
+- **It is the weakest of the four, and the file says why.** Its own statement of provenance: *Detected topics from case-insensitive string matching of subject names and variants, NOT semantic analysis — treat as recall-oriented candidates rather than ground truth.*
+  - For the telegrams it gives *Harvest* for document 474, *Energy* for 486 and *Radio* for 470.
+  - The Long Telegram has twelve, from *Peace* to *Propaganda*.
+  - The subjects that reach three or more of the eight are *War* and *Labor*.
+- **Printed as an index, the matches would read as the editors' judgement.** A floor, a subject in at least three of the collection's documents, removes the single matches and leaves the broad ones. Q12 asks whether it is offered at all.
+
+**A6. Marked passages.**
+
+- **What it prints.** The collection's highlights as quotations, each with its citation, grouped by colour.
+- **1.0 already does most of this.** *Add Highlighted Passages…* lists the highlights of the collection's documents and adds the chosen ones as passages (`CollectionEditorView.swift:1341-1348`; `CollectionExcerpts.swift:196-216`). A passage is frozen when it is added, is placed by the author, and travels in the collection file as its text.
+- **What a block would add, and lose.** It would follow the highlights as they change, with nothing to place. It would not travel: highlights are not in the collection file (§8.1's item 1), so a recipient's block would be empty.
+- **What it would need:** each entry's own choice of highlights (`CollectionContentAssembly.swift:1054-1060`). A block is given the collection's documents and not its entries (`CollectionGeneratedBlocks.swift:155-160`). And `ExcerptVerifier` over each passage before it prints.
+
+**A7. Abstracts.**
+
+- **What it prints.** A list of the documents, each with a summary of a paragraph. It is what the analytical *List of Papers* is in the 152 volumes that print one.
+- **Where the app has it.** A summary stored for a document under a prompt (`CollectionContentAssembly.swift:111`), with who wrote it (`SummaryTypes.swift:85-91`).
+- **A block may not generate** (`CollectionGeneratedBlocks.swift:22-23`). It would print the summaries that are stored, the collection's prompt first, as a headnote's fallback does (`CollectionContentAssembly.swift:1353-1382`). And it would say how many: *Abstracts for 4 of 6 documents*, as §4.4 says of headnotes.
+- **It adds the app's model to the statement of sources** where a summary was generated (§3.7).
+- **Summaries are not in the collection file,** so a recipient's block lists their own, or none.
+
+**A8. Sources & Archives, by file class.**
+
+- **Today a central file is a group of one.** The block's key for a central file carries the file's own number (`CollectionGeneratedBlocks.swift:474-488`). So the eight telegrams make eight groups of one document each. Their source notes are eight file numbers in five classes, four of them in 861.00. Measured for the packet, a project of 30 documents from before 1950 made some 25 groups where a researcher consults perhaps three classes (`TripPacketBuilder.swift:34-37`).
+- **The packet already groups by class** (`TripPacketBuilder.swift:436-446`), and the index stores each note's class (`IndexingPipeline.swift:8921`). The block's read does not select it (`IndexingPipeline.swift:6490-6492`).
+- **The class can be said in words** for the files of 1910 to 1973, from the Department's own filing manuals (`DecimalClassLabelTable.swift:141`; `SubjectNumericLabelTable.swift:226`). Worked by hand from the bundled table, 861.00 reads *Union of Soviet Socialist Republics — Political affairs*.
+- **A scan's link, where there is one.** That is narrow:
+  - 2,449 documents of 1906 to 1910 resolve to a digitized roll (`RollScansIndex.swift:46-54`).
+  - 5,326 decimal citations fall inside a digitized range, nearly all in the file on the war of 1914–1918 (`SourceExplorer/DigitizedRangeIndex.swift:95-106`). A range is a file's and never a document's, and a row must say so.
+- **The classification marking** is stored beside the class (`IndexingPipeline.swift:8920`) and could print on a document's row.
+
+**A9. Persons Index, with life dates and posts.**
+
+- The person sheet prints a person's years and posts (`POCOMIndex.swift:326-338`, `:89`), joined through the name authority (`PersonAuthorityIndex.swift:131`). The bundled files hold 12,839 authority entries and 1,243 careers.
+- The block's read brings a name, the volume's description and a role (`PersonMentionStore.swift:418-419`). It does not bring the id the sheet joins on, which the rollup holds (`IndexingPipeline.swift:8858-8860`).
+- It helps only where people are tagged (A1).
+
+**A10. Bibliography, by volume.**
+
+- The block cites each document in full. So the eight telegrams are eight entries of some 200 characters that differ in their last number, as §2.2 says of contents rows.
+- By volume it is one entry, with its documents listed and the pages each is printed on (`PageRangeStore.swift:242`).
+- The formatters have a form for a document and none for a volume (`CitationFormatter.swift:20-22`), so each of §6's three styles needs one.
+
+**A11. Chronology, by administration.** A heading in the list where the presidency changes, from the dates the app holds for each administration (`AdministrationProfilesData.swift:113-126`). It suits a collection that spans years, and adds nothing to one of six weeks.
+
+**A12. The word cloud's terms as a table.**
+
+- **The image has no text beside it.** Its alternative text is one sentence, the same for every collection (`CollectionItemHTMLRenderer.swift:622`; `DocxCollectionExporter.swift:1935`). §3.8 names the web page and Word as the accessible exports.
+- **The terms are counted and then dropped.** The drawing counts every term, places at most 140 and returns a picture (`WordCloudExport.swift:171-190`). An exporter is handed a PNG and its size (`CollectionExporter.swift:1696-1710`).
+- **A table of the terms and their counts,** under the image, is the same data. In the app the cloud's list is what a VoiceOver reader is given in its place (`KeynessCloud.swift:40`).
+- **Distinctive terms is a second list from the same count:** the terms that set the collection apart from the corpus, by the measure the Word Cloud calls *Distinctive* (`KeynessCloud.swift:188`), which already takes a collection as its scope (`WordCloudScope.swift:63`). It owes the caveats that measure carries on screen.
+
+**A13. The Note on the Text: the files read.**
+
+- §3.6's Note says what was left out and who wrote what. It does not say which text was read.
+- Since index version 75 the index records the file each volume was indexed from, by its git blob SHA-1 and its size (`IndexingPipeline.swift:14585-14592`). It also records which documents an update changed, and when (`IndexingPipeline.swift:9836-9843`).
+- So the Note could carry a sentence for each volume: its file, and any of the collection's documents that an update has changed. It lets a reader of the export find the same text. `frus1946v06` as fetched on 2026-11-25 is 5,749,095 bytes, blob `728cd5b9`.
+
+**Considered and not proposed:**
+
+- **Pictures of the graph, the co-mention network or the semantic map.** The authoring design declined graph images (`Completed/Collections-Authoring-Scope.md:160`). The map's clusters are the weakest ground for print: their labels are sampled terms and not subject headings, 29.3% of documents belong to none, and a cluster's id changes when the map is regenerated (`ClustersAxis.swift:29-40`).
+- **Suggested Next's ranking, as further reading.** Two of its axes are named experimental (`SimilarityModel.swift:64`, `:85`), and what it ranks depends on the volumes a device holds. A4 is the list the editors made.
+- **Senders and recipients, participants and Subject lines.** The annotations file counts them by volume: a heading marks its sender or recipient in 239,793 documents. The index reads none of them for a document, so each would be a new parse and an index version, and is not something the app holds today. An index of correspondents would suit the volumes before 1955 better than any block above.
+- **The Archives Visit packet inside a collection.** It is an export of its own, with drafts of letters. A3 and A8 take from it what a collection's reader can use.
+
 ---
 
 ## 9. Lanes
 
-None needs an index version. No estimate of time is given; a lane's size is said by what it touches.
+None needs an index version, unless Q12 gives lane 8 a table of term mentions (§8.2, A2). No estimate of time is given; a lane's size is said by what it touches.
 
 | Lane | What | Stored data | Changes exports | Before it starts |
 |---|---|---|---|---|
@@ -763,7 +957,8 @@ None needs an index version. No estimate of time is given; a lane's size is said
 | **4. The three surfaces, trimmed** | §5.2, §4.2 and §4.3: the two steps in the collection's settings, with the recipe divided in the kit; a section's sheet without the collection's 15; *Default* that says what it is; *n set their own*; the snapshot from a smart collection's editor; the Mac's New Collection form; #2006 | None | No | Lane 3; Q1, Q11 |
 | **5. The two steps for one export** | §4.4 and §5.1 | None | No: two new choices, and nothing an existing export prints moves | Lanes 2 and 4; Q3 |
 | **6. The preview** | §5.3's four repairs on every platform (#1997, #2004); then, on the Mac, *Show Parts* | None | No, if the web page's ids keep their form for a document entered once | Lane 4 |
-| **7. From §8** | As Q8 decides | As each needs | Only where used | Lane 3 |
+| **7. From §8.1** | As Q8 decides | As each needs | Only where used | Lane 3 |
+| **8. More apparatus** | §8.2, as Q12 decides: the line of coverage (A1) first, then each block or addition as a small change of its own | None. An index version if A2 takes a table of term mentions | **Yes**, where a block is used, and wherever a collection has a block that A1 or A8 to A11 change | Lane 2 for what prints; lane 4 for A1's line at the tick; Q12; the three runs |
 
 **Three issues stand outside the lanes,** each a small change of its own: #1995 (where an added entry goes), #1996 (what Duplicate and the snapshot copy) and #2000 (the four exports and a document's research notes).
 
@@ -771,12 +966,20 @@ None needs an index version. No estimate of time is given; a lane's size is said
 
 **What each lane owes, beyond the landing runs the plan of record names.**
 
-- **Shared code** (lanes 2 to 6): `swift build --target FRUSCoreKit` and `swift test`, with the unit target and the Mac build.
+- **Shared code** (lanes 2 to 6, and 8): `swift build --target FRUSCoreKit` and `swift test`, with the unit target and the Mac build.
   - Lane 4 divides `CollectionPreset.Recipe` in two. Decision 139's table stays as data, each case a document recipe with its suggested apparatus, and `CollectionTests.swift:3450-3565` goes on holding it. That suite's tests of what a template writes and of which card is *Active* (`:3546-3550`) move to the two steps.
   - `CollectionRenderingPinTests` pins the HTML page, the Word package, and the BibTeX and RIS files by SHA-256. Lane 2 moves the first two, and the last two if Q9 is yes; each is re-taken with its reason.
   - `CollectionResolutionTests` pins a dateline in an opener as absent (`:450-452`) and a digest of a dump that prints the header, the dateline and the Zotero title (`:706`). Lane 2 moves both.
   - `CollectionExportContrastTests` fails on a rule of the export's layer that draws text and is not in its list. Lanes 2 and 3 add rules.
   - The PDF has no pin. `CollectionExportParityTests` (#960) holds the three exporters to one inventory of blocks. Lane 2 takes it to the blocks' order, a source note longer than a line, a research note longer than a page, a contents list longer than a page, and a row's number.
+- **Lane 8, for each block or addition:**
+  - A new block type is a case in every `switch` over the types, and the compiler names each: the title, the symbol, the usual place, the resolver, and what an export drew on.
+  - `CollectionResolutionTests` resolves a fixture's Bibliography, Chronology, Sources & Archives and Thematic Index and pins the result (`:157-160`). A8, A10 and A11 move that pin, and A1 does where a fixture's block is empty. The same fixture holds that a type the build does not know is skipped (`:161`).
+  - `CollectionRenderingPinTests` pins pages whose blocks are given as rows (`CollectionRenderingTests.swift:225-233`), so it moves only where a row is drawn differently, as A12's table would be. `CollectionExportParityTests` holds the three exporters to one inventory of blocks.
+  - The blocks' own rules are tested over two fixture data sources (`CollectionTests.swift:5434`; `CitationFormatterTests.swift:950`). A new read on the blocks' data source is a new requirement of its protocol, which both must answer.
+  - A block's name is a string of the kit (`CollectionGeneratedBlockType.swift:54-71`). Both manuals name the five blocks and say what an empty one prints (`Docs/iOS-User-Manual.md:1077-1087`, its §12.5; `Docs/macOS-User-Manual.md:818`).
+  - A block that reads a bundled file names its source in the statement of sources (§3.7).
+  - If A2 takes a table: an index version, with the files regenerated at every bump (`CLAUDE.md`, *Command-line tools*). No CloudKit change in either case.
 - **The CloudKit gate** (lane 3; `CLAUDE.md`, *CloudKit schema-deploy gate*), with the research export's version 8, its fixture and its `Fields` cases.
 - **Strings and screens.** `Docs/EditableContent/08-Reading-Research-Collections.md` has 26 ranged blocks that cite `CollectionExporter.swift`, which lane 2 rewrites, and 14 that cite `Collection.swift`, which lane 3 adds properties to. Both manuals' chapter 12; the captures that show the editor; the tour's step 16. `CollectionTests.swift:5644-5653` pins two source lines of the export sheet.
 - **The six UI suites of `CollectionEditorTitleTests.swift`** hold the editor's name, subtitle and note fields, the colophon switch, the saved-search link and Open Document. They drive no composition control, so they are no evidence about one. Lane 4 brings each to its surface in the same change.
@@ -794,8 +997,10 @@ None needs an index version. No estimate of time is given; a lane's size is said
 | 4 | On the Mac, a step opened in place in the gear's popover: what is reachable by keyboard alone, and what scrolls | A walk |
 | 5 | A menu's item that cannot be chosen says why, in words that are spoken | The VoiceOver suite |
 | 6 | On the Mac, a click on a part announces what is selected and leaves focus where it was; every part reachable from the column by keyboard alone | A walk |
+| 8 | A1's line under a tick is spoken with the tick's name and value | Lane 4's VoiceOver suite |
+| 8 | A12's terms are a table with a header for each column, in the web page and in Word | A kit test over the HTML and the Word package |
 
-**Order.** 1 and 2 first, in either order; then 3, 4, 5, 6.
+**Order.** 1 and 2 first, in either order; then 3, 4, 5, 6. Lane 8's A1 is built with lane 4's ticks; what it and the blocks print comes after lane 2.
 
 ---
 
@@ -816,7 +1021,7 @@ Each with a recommendation. Nothing in §9 starts before the questions in its ro
 - **Q5. Citation styles.** **A new collection takes the style chosen in Settings ▸ Display (recommended)**, or History at State always. And whether the app's Chicago and Turabian are right as they stand for a line at a document's head, a row of a list and a *See also* line (§6).
 - **Q6. Storage.** **Four optional properties on the record types 1.0 has (recommended, §7.1)**; or new record types, with the upgrade §7.6 says they would need.
 - **Q7. A date line of the author's.** **Kept, for a document that has a title, above the words *In the volume:* (recommended, since it was asked for)**; or dropped, now that the volume's dateline stays and a contents row carries it.
-- **Q8. Which of §8's thirteen,** and in what order. **Recommended for the first pass: 1 (selected passages).**
+- **Q8. Which of §8.1's thirteen,** and in what order. **Recommended for the first pass: 1 (selected passages).**
 - **Q9. Whether a citation record's title takes the new reading of a heading** (#1992, #2002). **Yes (recommended):** a Zotero item is then titled "Document 1: Letter From President Carter…", without the doubled number or "[1]". It changes what a send or a file carries.
 - **Q10. Whether a headnote travels in the collection file as its text** (#1999). **Yes, always, with who wrote it (recommended):** it was written for the collection, as a note block was. Or only when research notes are included; or not at all, which is what a recipient gets today.
 
@@ -825,6 +1030,12 @@ Each with a recommendation. Nothing in §9 starts before the questions in its ro
   - **Step 2 is the eight complements with three shortcuts,** *Suggested for…*, *All* and *None* **(recommended).** Or named sets of your own choosing in their place.
   - **The contents-list style and the word cloud are step 2's (recommended),** as 1.0 heads them *Analysis & apparatus*. Or the contents-list style goes with the documents.
   - **The colophon, the project stamp and the query log sit under step 2 and no shortcut sets them (recommended).** Or they stay with the title page, where 1.0 has them.
+
+- **Q12. More apparatus** (§8.2). The owner asked for these to be in this record. Which are built, and in what order, is still to decide.
+  - **Which of the thirteen, and in what order. Recommended for the first pass: A1 (what a block can fill), A2 (Abbreviations & Terms), A3 (Unprinted material cited) and A8 (Sources & Archives by file class).** A1 is recommended whatever else is taken: three of the six suggested sets have a block that 265 volumes cannot fill.
+  - **How A2 learns which terms a document uses. A table of term mentions at the next index version (recommended):** the block is then read as the Persons Index is, and a preview shows what its export prints. Or the parse at export, which needs no index version.
+  - **Whether A5, the Subject Index, is offered. Not as the data stands (recommended).** Or with a floor of three documents and the file's own caveat printed under its title.
+  - **Whether a suggested set gains a block. None does (recommended):** the six sets are decision 139's table, divided, and a new block is offered by its tick, by *All* and by the outline's menu. Or *Abbreviations & Terms* joins the sets whose documents print in full.
 
 And one that is not a question of design: **whether lanes 1 and 2 go ahead by themselves**, before the answers to the rest.
 
@@ -891,6 +1102,17 @@ Each is answered in the design's text. None is tested, and §12 says which need 
 - **A step opened in place in the Mac's popover** is 14 controls in 420 points, above the ten already there.
 - **The first tap no longer gives what a template of decision 139 gives.** It gives the documents; the apparatus is a second tap (Q3).
 
+**Where a reviewer would start on the second amendment** (§8.2), which no one has reviewed either:
+
+- **No block was resolved.** The telegrams' rows in A2 to A4 were read from the TEI by a script of the session's and from the grammar's rules. Whether the index holds the two pointers of A3 is a run (§12).
+- **A1 reads a file that counts by volume,** at one index version and one commit of the corpus: version 75, `6170e4b32`. A printed line must not say more than the file holds: not which documents, and not what a volume corrected since now carries.
+- **A2's two routes each cost what no block of 1.0's costs:** an index version, or a preview that differs from its export.
+- **A3 is as complete as a grammar.** A reader may take it for every unprinted paper the editors mention. It lists the ones a footnote gives a file for.
+- **A5's examples are this record's own argument against it.**
+- **A6 is nearly what *Add Highlighted Passages…* does,** and it does not travel in the collection file.
+- **A8 to A11 change blocks that exports already print.** Every collection that has such a block prints differently afterwards, and §8.2 gives no setting that keeps the old form.
+- **Six more ticks** would take step 2 from 14 controls to 20 (§5.5). The owner's complaint of 1.0 was that it is complicated.
+
 ---
 
 ## 12. Runs owed, each needing a device, an app or an opened file
@@ -905,6 +1127,9 @@ Each is answered in the design's text. None is tested, and §12 says which need 
 | **In lane 1** | The built sheet on iPhone 17 and iPhone SE at the default size, AX3 and AX5 |
 | **In lane 4** | The Mac's gear popover with step 2 opened in place: what is in view at 420 points, and what scrolls |
 | **In lane 6** | In 1.0, with the preview on, switch Headnotes alone and wait five seconds (#1997). Then the Mac's preview keeping its place across a reload, with a long collection |
+| **Before lane 8** | In 1.0: a collection of documents 470, 473 to 477, 480 and 486 of `frus1946v06`, with a Persons Index and a Sources & Archives block. Read both in the preview. From the code the first is the one row *Nothing to list*, and the second is eight groups of one document (§8.2, A1 and A8) |
+| **Before lane 8** | In 1.0's Source Explorer: the *Unprinted Material* rows of `frus1946v06` d474 and d475, against their notes 39 and 44 (A3) |
+| **Before lane 8** | In 1.0: one of those documents exported in full as a web page, opened in a browser on a Mac that has the app and on one that does not. Click *Dept* (A2) |
 | **A desk, any time** | The app's Chicago and Turabian against the two manuals, for a note, a list and a bibliography's entry |
 
 ---
@@ -922,3 +1147,18 @@ Each is answered in the design's text. None is tested, and §12 says which need 
   - the public TEI of eight volumes.
 - **Not read:** `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift`, `CollectionPickerSheet.swift` beyond its purpose, and the web edition's repository.
 - **Not done:** no build, no test run, no capture, and no review of this form. The counts of §2.4 and §5.5 are of lists, not of a running screen.
+- **Read for the second amendment, at `94719de`:**
+  - the blocks and their seam: `FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift` and `CollectionGeneratedBlockType.swift`, the blocks' data source in `CollectionContentAssembly.swift`, and the four menus that add a block;
+  - the index: the schema in `FRUSCoreKit/Search/IndexingPipeline.swift`, and its reads for source notes, footnote citations, revisions and the file a volume was indexed from; `FRUSCoreKit/Models/PersonMentionStore.swift`;
+  - what each candidate draws on:
+    - `FRUSCoreKit/Browser/VolumeAnnotations.swift`, `FRUSExplorer/Browser/AnnotationsAxisViews.swift`;
+    - `FRUSCoreKit/SourceExplorer/SourceExplorerResolution.swift`, `RollScansIndex.swift`, `DigitizedRangeIndex.swift`; `FRUSCoreKit/TripPacket/TripPacketBuilder.swift`; `SourceNoteKit/FootnoteCitationGrammar.swift`;
+    - `FRUSCoreKit/CrossReference/CrossReferenceStore.swift`, `ResolvedEdgeIndex.swift`;
+    - `FRUSCoreKit/RelatedDocuments/DocumentSubjectIndex.swift`, `SimilarityModel.swift`; `FRUSCoreKit/Semantic/ClustersAxis.swift`;
+    - `FRUSCoreKit/Analytics/DecimalClassLabelTable.swift`, `WordCloud/KeynessCloud.swift`; `FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift`;
+    - `FRUSCoreKit/Models/POCOMIndex.swift`; `FRUSExplorer/Collections/CollectionExcerpts.swift`; `FRUSExplorer/App/AppActivityTypes.swift`;
+  - the bundled `volume-annotations-index.json`, `document-subject-index.json` and `decimal-class-labels.json`, and the counts of `person-authority-index.json` and `pocom-index.json`;
+  - `Planning/Editors-Annotations-Design-2026-11-06.md`, `Planning/Generators-Runbook.md` and `Completed/Collections-Authoring-Scope.md`;
+  - the public TEI of `frus1946v06`, fetched from `HistoryAtState/frus` on 2026-11-25: 5,749,095 bytes, git blob `728cd5b9abc0bc3ac3df2703508d5443f382b555`.
+- **Not read for it:** how each exporter draws a block's rows, beyond the row's shape; the Mac's editor beyond its Apparatus menu; the web edition's repository.
+- **Not done for it:** no build, no test run, no block resolved, and no review. The canvas was not redrawn: its boards draw step 2's eight.
