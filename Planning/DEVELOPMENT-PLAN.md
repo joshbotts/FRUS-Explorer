@@ -12488,3 +12488,38 @@ A cloud session, on the owner's word of 2026-11-25: the Collections feature does
 - **Checks:** none run, and nothing compiled changed. The amendment has not been reviewed.
 
 **Owed by the owner now:** the eleven answers of the design's §10, of which Q3, Q4 and Q11 are about the two steps; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12.
+
+## Session 2026-11-25 — Collections: more apparatus from what the app already holds, added to the design
+
+A cloud session, on two messages of the owner's of 2026-11-25. The first was a question: "Does the app's existing features offer opportunities for any additional apparatus elements for collections?" The second, on the session's answer: "Add these to the collections update plan". On `claude/vibrant-bohr-2vt0g3`, cut from `v2` at `94719de` (#2008). Read-only but for two documents: no code changed, and nothing a target compiles.
+
+**What was written:** the design record, `Planning/Collections-Customization-Design-2026-11-25.md`, amended a second time.
+- Its §8 has a second part, §8.2: thirteen candidates for a collection's apparatus, A1 to A13, each with where the app holds its data today and its file and line.
+- With it: lane 8 (§9), Q12 (§10), where a reviewer would start (§11), three runs (§12) and what was read (§13). §4.3, §4.4 and §5.5 each gained a paragraph.
+- **The core is unchanged.** Step 2 is still the eight complements of §4.3 until Q12 is answered, and the canvas was not redrawn.
+
+**What the reading found** (the record's §8.2):
+- **A block's tick does not say whether the block will fill.** The Persons Index lists the people a volume's editors tagged, and 265 of the 553 volumes tag none. The record's own example volume, `frus1946v06`, is one of them, and three of the six suggested sets have the block. The Editors' Annotations file already holds the counts a line would need, and the People browser already carries such a line.
+- **Four blocks the index could fill:**
+  - the volumes' abbreviations with their definitions, which an export loses today;
+  - the archival files the footnotes point to;
+  - the documents cited and not included;
+  - the Office's subject terms, which is the weakest: the file calls its own matches candidates, and gives the Long Telegram *Mediation* and *Civil war*.
+- **Two from the author's own material:** highlights gathered as passages, and stored summaries as a list of abstracts.
+- **Six additions to the blocks 1.0 has:** Sources & Archives grouped by file class, with the class in words; life dates and posts in the Persons Index; a Bibliography by volume; a Chronology by administration; the word cloud's terms as a table; and the files read, in the Note on the Text.
+- **Not proposed:** pictures of the graph or the map; Suggested Next's ranking; an index of correspondents, which the index does not read for a document.
+
+**How it was read.** By the session alone, with no sub-agent, from the kit, the app and five bundled files.
+- The examples are documents 470 to 486 of `frus1946v06`, read from the public TEI by a script of the session's: the five abbreviations the eight telegrams link, and the notes of documents 474 and 475 that give a file for an unprinted paper.
+- The counts over volumes are from `volume-annotations-index.json` and `document-subject-index.json`.
+- The 89 line anchors the amendment added were each printed and read back at `94719de`.
+
+**Two corrections of the session's own answer,** which the record carries and the chat did not:
+- The answer called highlights gathered as passages a new block. *Add Highlighted Passages…* already makes passages of the same highlights, and they travel in the collection file where a block's rows would not (A6).
+- The answer said a scan's link exists mostly for 1906 to 1910. The larger group is the file on the war of 1914–1918: 5,326 decimal citations fall inside a digitized range, against 2,449 documents of 1906 to 1910 that resolve to a roll (A8).
+
+**Checks:** none run. The container has no Swift toolchain and no Xcode, and nothing compiled changed. No block was resolved in a running app.
+
+**Owed by the owner:** Q12, with the eleven before it; and the three runs the record's §12 lists before lane 8, each a few minutes in 1.0. The plan of record is not changed.
+
+**Not done:** no build, test or capture; the amendment has not been reviewed; the canvas's boards still draw step 2's eight.
