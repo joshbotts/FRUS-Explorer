@@ -12396,3 +12396,26 @@ FRUS Explorer Light's phase 4 row S30b (Mac check 41 in its plan), the last of i
 **Owed by the owner:** Mac check 41, listed in the pull request, which runs an Archives Visit's packet in the app; then the merge. FRUS Explorer Light's next pin move (its S27c) carries it with #1982, #1985 and #1987.
 
 **Not done:** the UI suites, iOS 26.x, a device and a signed run.
+
+## Session 2026-11-25 — Collections: a design for export from a template and for fine-tuning each part of a document
+
+A cloud session, on the owner's word of 2026-11-25: the Collections feature does not let a document's display be customized and is complicated all the same; a collection should export quickly from a template; any aspect should be adjustable, the volume's headings and datelines replaced by the compiler's own and marked; a collection should choose its citation style; and other authorial capabilities and interface alternatives were to be considered. On `claude/collections-customization-export-djkc0u`, cut from `v2` at `efd73ec` (#1988). Read-only but for two documents: no code changed, and nothing a target compiles.
+
+**What was written:** `Planning/Collections-Customization-Design-2026-11-25.md`, a design with eight decisions for the owner (its §9) and six lanes (its §8), and a design canvas of seven mockups, private to the owner's account, which the design links.
+
+**What the reading found** (the design's §2, each with its file and line):
+- A document prints the citation as a heading and the volume's own heading under it, and the author can replace only the first. No label, order or address line can change.
+- The three formats differ: the PDF prints a source note above the text and only its first line, stops its contents list at the end of the cover page and gives each research note a page; the Word file never reads the contents-list style.
+- Collection settings holds 24 controls, a document's inspector nine settings (eight of them a picker with a *Default* choice), and a section's sheet 21, of which six are the section's.
+- A template applies at once with no undo, adds apparatus that no other template removes, and is not offered at export. Nothing exports a collection from the Collections list.
+- The collection's assembly names one citation formatter, though the app has three and a synced preference.
+
+**What it proposes:** ten named parts of a document; a template, then the collection's, a section's and a document's changes, each shown as what is in force with a dot and a Reset; templates the collection records and can switch back from; export as a template, a format and a button, from the list and the menu too; one inspector in place of three settings surfaces, entered from the preview; brackets and a generated Note on the Text for a heading or dateline of the compiler's; a citation style per collection with a short form; one plan that HTML, PDF and Word all draw; and two stored values behind one CloudKit deploy.
+
+**How it was read.** Three sub-agents inventoried the iOS editor, the Mac window and the exporters; the session re-read in the code each claim the design relies on. The examples are documents 470 to 486 of `frus1946v06`, from the public TEI, with citations worked by hand from `CitationFormatter.swift`.
+
+**Checks:** none run. The container has no Swift toolchain and no Xcode; nothing compiled changed. The line anchors in the design were each printed and read back at `efd73ec`.
+
+**Owed by the owner:** the eight answers of the design's §9, and whether its lane 1 goes ahead by itself. The plan of record is not changed: the lanes wait for the owner's word and for the next plan to take them as rows.
+
+**Not done:** no build, test or capture; the canvas's boards were written and not seen rendered; `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift` and the web edition's repository were not read.
