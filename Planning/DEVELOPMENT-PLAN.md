@@ -12476,3 +12476,15 @@ A cloud session, on the owner's word of 2026-11-25: the Collections feature does
 - **Checks:** none run, and nothing compiled changed.
 
 **Owed by the owner now:** the ten answers of the design's §10; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12, of which a hand-made collection file opened in build 1861 is the cheapest.
+
+**The third form amended: a template is two steps,** on the owner's direction after reading it ("Let's treat templates as a two-step process. The first focuses on how documents are presented. The second focuses on what apparatus complements to the documents are added.").
+- **Step 1, Documents,** sets seven of the collection's settings: the new *Opening*, and the six that 1.0's settings screen already heads *Document content* and *Your annotations*. **Step 2, Apparatus,** is eight complements: the contents list and the word cloud, which 1.0 heads *Analysis & apparatus*, the five blocks, and the Note on the Text.
+- **The six templates of decision 139 divide** into six document templates, each with the apparatus it added now *suggested* for it. Choosing in step 1 does not change step 2. Nothing new is stored: a block's tick is its row in the outline, and "in force" stays a comparison, of step 1's seven settings alone.
+- **In the export sheet** the two steps are two menus where the third form first had a list of seven, each opening on the collection's own, for PDF, Word and Web page. The apparatus for one export is its own choice, which answers the second review's finding that a template could not tell its own blocks from the author's.
+- **The collection's settings** open on ten controls, each step behind a row that says what is set. *Customize* is gone, and so is the question a template asked before it changed a collection: each step's change is shown where it is made, with *Undo*.
+- **The count is 48 controls on four screens** where 1.0 has 24 on one, and no screen holds more than 14. The record says so, and lists where a reviewer would start on the amendment.
+- **Three of the six names** describe apparatus that step 1 no longer adds, and the record proposes others (its new Q11). The plan of record's decision 139 is not touched.
+- **The canvas:** the export sheet, the collection's settings and a new board of the two steps open were redrawn, and the other boards' control labels brought to 1.0's own (*Body depth*, *Archival source note*, *Highlights in body*). Not seen rendered.
+- **Checks:** none run, and nothing compiled changed. The amendment has not been reviewed.
+
+**Owed by the owner now:** the eleven answers of the design's §10, of which Q3, Q4 and Q11 are about the two steps; whether lanes 1 and 2 go ahead by themselves; and the runs of its §12.
