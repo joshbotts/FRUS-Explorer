@@ -12523,3 +12523,63 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 **Owed by the owner:** Q12, with the eleven before it; and the three runs the record's §12 lists before lane 8, each a few minutes in 1.0. The plan of record is not changed.
 
 **Not done:** no build, test or capture; the amendment has not been reviewed; the canvas's boards still draw step 2's eight.
+
+## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
+
+**What was asked.** The owner's words: "Let's develop an updated plan of record. Assess open issues and triage them into fix waves. Try to consolidate fixes that touch the same code. Include the collections overhaul in the plan. The goal should be preparing the app to accommodate a new FRUS release in early December and then shipping an update to the App Store after that release." It is the new plan's decision 145. A cloud session, from `v2` at `9325f79d` (#2009), on `claude/plan-of-record-2026-11-25`.
+
+**What changed** (documents only; no source, test, resource or manual):
+- **`Planning/Plan-Of-Record-2026-11-25.md`, the live plan.**
+  - Its rows: thirty pull requests, L26 to L55, in six waves; a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
+  - Where each of the 42 open issues goes: 39 in a row, and #1723, #1696 and #234 not in this update. Where each of the five findings the 2026-11-15 plan sent to the first update goes (F1, F2, F7, F11 and D1).
+  - What each row touches, and the files two rows meet in, with the order that settles each.
+  - The Collections design's lanes as rows (its §1c): seven of the eight, since the owner's answer on the export sheet leaves lane 5 unbuilt.
+  - A calendar with targets to Wave 3, and arithmetic after it.
+- **Moved to `Completed/`:** `Plan-Of-Record-2026-11-15.md`, its head now marked superseded and kept as the record of decisions 126 to 144.
+  - Its head is one paragraph, where the two plans archived before it have two, so that no line below it moved: the Collections design's first review and its reviewers' reports cite it by line.
+  - The live pointers to it now name the archived path, or the new plan where they meant the live one: `Completed/README.md` (a 2026-11-25 move entry, and its *Deliberately NOT here* list, which gains the Collections design and the device pass's two records), `Visual-Marketing-Plan.md` (its §7 struck rows untouched), `website-drafts/README.md`, the cross-platform review's `STATUS.md`, the UI and UX review's status line, `R6-Device-Pass-2026-11-18.md`, `iPhone-Duo-Assessment-2026-11-19.md`, and the first Collections review's citation of four of its lines.
+  - The 2026-10-21 plan's status line and its review's dated note named it at `../`; they now name it in their own folder.
+  - Dated records are left as written: this log's entries, the archived plans' bodies, and the reviewers' and skeptics' reports of the two Collections reviews.
+
+**How it was read.**
+- **The issues.** Thirteen whole on GitHub, with their comments (none has any). The seventeen Collections issues from the design's §2.8 and the two reviews' §6, which give each its file and line; nine older ones from the 2026-11-15 plan; #1946 and #1931 from the sessions that filed them. #1973 by its title, FRUS Explorer Light's COORDINATION §5 and the code alone: GitHub's pages stopped answering before it could be read whole. The code was checked at `9325f79d` for fourteen of them.
+- **The runbook**, `New-Volume-Release-Plan.md`, and the corpus: `HistoryAtState/frus` at `216cdb76` has changed no file under `volumes/` since `6170e4b32`, the commit the bundled indexes were built at.
+- **The Collections design** and its two reviews; and, for the rows the owner's answers added, the collection's model, the index's tables, the three Zotero sends, the entitlements, the stores a Debug build opens and the archive's CloudKit gate. Each line anchor the plan adds was printed and read back at `9325f79d`.
+
+**The session's wrong answer, and the owner's word on it.** The first draft put #1990 after the update. Asked how it handled #1990 and #1723, the session said, among its reasons, that the cross-reference graph draws documents and not archival collections or classes. It had not read the graph's code. The owner: "Include 1990 in the plan. Double check your claim that cross reference graph only draws documents." The graph has drawn both since #837 and #834 (`CrossReferenceGraphDisplay.swift:36-64`). The plan's decision 146 records the error, and row L42 is written from the code.
+
+**The owner's answers,** asked for one at a time ("Can you walk me through open decisions one by one? Present recommendations as well as other options. Include an option for “tell me more” that will explain the decision and options in further detail and allow for follow up questions."). Thirty-seven, the plan's decisions 147 to 183: the draft's ten questions, and the Collections design's twelve, which the first answer brought in.
+- **Where the owner chose against the session's recommendation:**
+  - 147: all eight Collections lanes in this update, where the draft had the lanes that store nothing new.
+  - 148: one update, when the volume and the overhaul are both done, where the draft had the volume first. The runbook's D-1 keeps its first half, the silent gap; its second, the short one, gives way for this release.
+  - 154: the mark is *As published:*, the owner's own words, for the design's *In the volume:*.
+  - 156: the export sheet stays format and destination, so the design's lane 5 is not built.
+  - 158: the volume's heading leads in four of the six templates, a third reading of the design's table.
+  - 181: the graph's Archives Visit takes both halves.
+- **What the answers made of the draft:** seventeen rows became thirty; the update gained a CloudKit promotion (five stored fields, or six, and one record type); index version 76 gained a table of term mentions (decision 172); there are two TestFlight builds, one after Waves 1 and 2 and the release candidate (decision 151); the Collections design is reviewed before its lanes are built (decision 149); and the Office's release is taken in at once, with the queue paused (decision 152).
+
+**Corrections of the session's own text,** found while the answers were written into the plan. The plan carries all five, and the chat named the first three:
+- **Lane 7 is nine of the design's thirteen candidates.** The walk-through counted ten, taking the two halves of candidate 13 apart.
+- **The new stored fields are five, or six.** The session had counted six. A section's headnote default could ride `CollectionEntry.includeHeadnote`, which every entry stores; but a heading made before the Composer redesign holds an explicit `false` there, by that property's own comment. The review is asked which.
+- **An ellipsis is the editors' mark too.** For the sign that marks an omission in selected passages, the session had named brackets and asterisks as taken. By `FRUS-History-Feature-Assessment-2026-11-09.md` an ellipsis is the editors' from 1925 to 1991. The plan proposes words, and leaves the choice to the owner.
+- **L29 and L41 edit one function,** `CollectionExportSheet.sendToZoteroLibrary()`, where a first pass had them in different functions. L41 is developed after L29 merges.
+- **The two-device run can be made in CloudKit's Development environment** with two Debug builds, by `FRUSStoreConfiguration`'s own note. The session had first put that as its own reading.
+
+**The calendar is arithmetic.** At two rows merged a day with no day lost, the submission falls about 2026-12-20. Apple's notice for this year's holidays was looked for and not found; in 2024 it said reviews could take longer from December 20 to 26 (MacRumors, 2024-12-02).
+
+**Checked:**
+- `planOfRecordMatchesTheVisualMarketingPlan`'s two conditions, recomputed in Python over the new tree:
+  - one live plan of record, `Plan-Of-Record-2026-11-25.md`, with no "Status: SUPERSEDED" in it;
+  - its *§7 struck* line equal to the Visual Marketing Plan's strikes (0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15, over 17 rows).
+- The plan against itself, by a script of the session's that is not committed: each of the 42 issues once in §1a; the rows' table and §1a in agreement; a brief for each of the table's 38 rows, in its order; decisions 145 to 183 each once; every table's column count; and every path it names, at `9325f79d`.
+- The archived plan differs from the plan as it stood at one line, its status. The lines the first Collections review and its reviewers' reports cite (136, 277, 278, 286, 306, 473 and 484) read as they did.
+- No test reads any other file this change touches. The tests that read `Planning/` are the plan-of-record gate, the workflow-script scan, which reads `.js` and `.mjs` files, the suites that read the semantic shards, and package suites that name data files and documents this change leaves alone.
+- No Swift, test, resource, manual or EditableContent file changed, so no unit run, `swift test` or build was owed. This container has no Swift toolchain, so none was run.
+
+**Not done, and for the owner:**
+- **No app was built or run.** Rows L43 to L55 are read from a design nobody has reviewed, and are provisional until CR and C2.
+- The Collections design's own text is not yet brought to the answers. That is CR's first step.
+- The rows have no issues of their own beyond the 39 they close. Filing any is on the owner's word.
+- Before Wave 4: CR's findings answered, the Word and Pages run, and three runs in 1.0. Before L43: the two-device run, a hand-made collection file opened in 1.0, and the desk check of Chicago and Turabian (the plan's §2 and §4).
+- With their rows: the Mac's title bar (F2), #1923's resume, the Note on the Text's sentences, the sign for an omission, what a saved template holds, where the page's choices are kept, the short citation form's rule, the line of coverage's wording and three blocks' titles.
+- For the release: the build numbers, the date the Office publishes, the CloudKit promotion and *What's New in This Version*.

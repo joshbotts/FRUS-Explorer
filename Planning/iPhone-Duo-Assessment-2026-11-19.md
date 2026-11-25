@@ -1,6 +1,6 @@
 # R6b — FRUS Explorer on the iPhone Duo simulator
 
-*Written 2026-11-19 by R6b's session, for row R6b of the plan of record (`Plan-Of-Record-2026-11-15.md`, §1), from `v2` at `1f6b51c1` (R6's records, #1954), which is 1.0 (1823). The aim, from the owner's word of 2026-11-18: find what misbehaves on the Duo and mitigate it, not design for the inner screen.*
+*Written 2026-11-19 by R6b's session, for row R6b of the plan of record (`Completed/Plan-Of-Record-2026-11-15.md`, §1), from `v2` at `1f6b51c1` (R6's records, #1954), which is 1.0 (1823). The aim, from the owner's word of 2026-11-18: find what misbehaves on the Duo and mitigate it, not design for the inner screen.*
 
 ## In short
 

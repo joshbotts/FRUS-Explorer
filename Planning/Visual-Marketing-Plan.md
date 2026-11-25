@@ -8,7 +8,7 @@ Reconciles against `Planning/Completed/Map-Figure-Export-And-Visual-Outputs.md` 
 12, 13 and 16 are open. The build-51 screenshot sweep (S0 to S5, #1749 to #1755) did steps 10 and
 15. Of GATE A only the owner's entry of the privacy label in App Store Connect is left: its EULA
 half is moot since decision 17 (2026-10-15), and the label is decided, Data Not Collected
-(`Plan-Of-Record-2026-11-15.md` §2). *Until 2026-10-21 this line read: steps 0–4, 6–9, 11 and 14
+(`Completed/Plan-Of-Record-2026-11-15.md` §2). *Until 2026-10-21 this line read: steps 0–4, 6–9, 11 and 14
 done; 5, 10, 12, 13, 15 and 16 and GATE A's owner half open.* **§4.3, §5 and §7's figures were
 re-measured on 2026-10-01** against the bundle at `v2` `dc17d945`, and the map's again on 2026-10-10
 after its relayout: the manifest holds 553 volumes
@@ -569,7 +569,7 @@ first sitting:
   label — ~~**no `PrivacyInfo.xcprivacy` exists anywhere in the repo**~~ the manifest exists since
   PR #1191 (`FRUSExplorer/Resources/PrivacyInfo.xcprivacy`, declaring no collected data types), so
   what remains is the App Store Connect label itself. **Decided 2026-10-15: Data Not Collected**
-  (decision 35); the owner enters it at submission (`Plan-Of-Record-2026-11-15.md` §2). Neither is visual; both are
+  (decision 35); the owner enters it at submission (`Completed/Plan-Of-Record-2026-11-15.md` §2). Neither is visual; both are
   hard blockers that surface the week you planned to submit.
 - ~~**GATE B — start the full 552-volume download and index now.**~~ **ALREADY SATISFIED, verified
   2026-08-31.** The author's own Mac carries **552 volumes / 316,839 documents** — the whole manifest,

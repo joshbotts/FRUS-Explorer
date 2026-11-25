@@ -1,6 +1,6 @@
 # R6 — the device pass of 1.0 (1823)
 
-*Written 2026-11-18 by R6's session, for row R6 of the plan of record (`Plan-Of-Record-2026-11-15.md`, §1), from the R6 bullet, R2c's pass (`Completed/Plan-Of-Record-2026-10-21.md` §4), the review's device-only checks (`UI-UX-Adversarial-Review-2026-11-15.md` §6), the log entries of L11 to R5, both TestFlight notes and sitting T2's four findings (the plan's §5). The owner tests the devices; the session records each result here by ID, then in the R6 bullet and the session log.*
+*Written 2026-11-18 by R6's session, for row R6 of the plan of record (`Completed/Plan-Of-Record-2026-11-15.md`, §1), from the R6 bullet, R2c's pass (`Completed/Plan-Of-Record-2026-10-21.md` §4), the review's device-only checks (`UI-UX-Adversarial-Review-2026-11-15.md` §6), the log entries of L11 to R5, both TestFlight notes and sitting T2's four findings (the plan's §5). The owner tests the devices; the session records each result here by ID, then in the R6 bullet and the session log.*
 
 ## The pass as set up
 

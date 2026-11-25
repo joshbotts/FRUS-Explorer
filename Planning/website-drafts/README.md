@@ -1,7 +1,7 @@
 # Website drafts
 
 **Status: DRAFT, 2026-10-27.** None of these files is published, and none is a copy of record. The
-work they wait for is the plan of record's decision 101 (`../Completed/Plan-Of-Record-2026-10-21.md`, carried in `../Plan-Of-Record-2026-11-15.md` §3): the
+work they wait for is the plan of record's decision 101 (`../Completed/Plan-Of-Record-2026-10-21.md`, carried in `../Completed/Plan-Of-Record-2026-11-15.md` §3): the
 website's pages are generated, reviewed and revised after 1.0 (1861) is submitted. Until then, §2's
 website step stands: at submission the Privacy Policy and Support pages go up as `Docs/` holds them.
 
