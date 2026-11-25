@@ -12419,3 +12419,14 @@ A cloud session, on the owner's word of 2026-11-25: the Collections feature does
 **Owed by the owner:** the eight answers of the design's §9, and whether its lane 1 goes ahead by itself. The plan of record is not changed: the lanes wait for the owner's word and for the next plan to take them as rows.
 
 **Not done:** no build, test or capture; the canvas's boards were written and not seen rendered; `CollectionAddDocumentsSheet.swift`, `CollectionRichTextEditor.swift` and the web edition's repository were not read.
+
+**Later in the same session, on the owner's questions:**
+- **See also:** the six documents the canvas uses cite each other by page and never by document, so the line prints nothing for them; the session's Option B board had invented one, and was corrected. The design's §7 gained a ninth candidate.
+- **Adjust:** asked whether the preview would show what can be changed, the session added a switch to Option C that outlines and names each part, and redrew its board.
+- **An adversarial review of the recommended hybrid,** on the owner's word ("Adversarially review the hybrid C option"): `Planning/Collections-Design-Adversarial-Review-2026-11-25.md`, with the reviewers' and skeptics' reports in `Planning/collections-design-review/`.
+  - Five reviewers (interaction, engineering, stored data, accessibility, editorial integrity) returned 50 findings. Three skeptics refuted none, re-rated sixteen down, and merged them to 17 distinct findings at S1 or S2 and 12 at S3.
+  - **The hybrid does not stand as written.** The volumes print bracketed datelines of their own, so brackets cannot mark the compiler's words; a dateline is the document's text with the editors' additions; from 1955 a document's source note hangs off its heading, so the ten parts are not separable blocks; a template chosen in the export sheet would rewrite the collection at the tap; by the design's own count the controls go up, not down; and pointing works on the Mac alone.
+  - **The design record** carries a notice of the review and six corrections of statements about the app as it ships, each marked. Its proposal is left as reviewed.
+  - **Seven defects of the app as it ships were met on the way** (the review's §6), none filed: among them a *Header & Dateline* contents list that prints no dateline for most documents, a source note printed twice when Footnotes and Source note are both on, and documents added after a template landing behind its back matter.
+
+**Owed by the owner now:** the review's §7, which reopens the design's Q1 to Q4 and Q6 and asks whether a dateline of the author's is wanted at all; and whether any of the seven defects is to be filed.

@@ -2,6 +2,11 @@
 
 **Status: PROPOSED, 2026-11-25. Nothing is built, and no code changed.** §9 asks the owner for eight decisions; §8's lanes are written so that the next plan of record can take them as rows.
 
+**Reviewed adversarially the same day, and it does not stand as written.** `Collections-Design-Adversarial-Review-2026-11-25.md` records five reviewers' 50 findings, none refuted: 17 distinct findings at S1 or S2 and 12 at S3. Its §7 says what the recommendation becomes, and it reopens Q1 to Q4 and Q6 below.
+- This record is left as it was reviewed, so that the review can be read against it.
+- Six statements about the app as it ships were false. Each is corrected where it stands and marked *(corrected, review …)*.
+- The proposal's own claims that the review supersedes are listed in the review's §4 and are not edited here. Read §3 to §9 with the review beside them.
+
 **What this is.** The owner's words of 2026-11-25:
 
 > "I am not satisfied with the Collections feature. I am not able to customize how each document is displayed, yet the interface is very complicated. I want to be able to export a collection very quickly using sensible default templates (the new ones we created last week are good starting points). I also want to be able to fine-tune any aspect of the collection, including overriding headings, datelines, and other labels derived from the source TEI with my own headings and labels, marked appropriately. I want to be able to choose what citation format to use if the contents are listed that way. Consider other authorial capabilities along these lines as well. Consider what kinds of user interface alternatives might help me preserve clean simplicity for default situations and also wield powerful customizability for other times."
@@ -20,7 +25,7 @@ That is five asks, and this document takes them in order:
 
 - Three sub-agents inventoried the iOS and iPadOS editor, the Mac's Collections window, and the three exporters. Each claim of theirs that this document relies on was then re-read in the code by the session; §2 cites the lines.
 - The examples are real: document 475 of `frus1946v06` and its neighbours, read from the public TEI (`HistoryAtState/frus`, `volumes/frus1946v06.xml`), with the volume's title, editors and year from the bundled manifest. The citations are what `CitationFormatter.swift`'s three formatters write for it, worked by hand from their code.
-- The two earlier Collections designs were read first: `Completed/Collections-Authoring-Scope.md` (2026-07-02) and `Completed/Collections-Manager-UX-Scope.md` (2026-07-04). §3.6 says where this design departs from them.
+- Two of the three earlier Collections designs were read first: `Completed/Collections-Authoring-Scope.md` (2026-07-02) and `Completed/Collections-Manager-UX-Scope.md` (2026-07-04). The third, `Completed/Collections-Rework-Scope.md`, which made the export sheet format and destination, was not *(corrected, review INT-4: this record first said there were two)*. §3.6 says where this design departs from the two that were read.
 
 **The mockups** are on a design canvas, private to the owner's account: <https://claude.ai/artifact/VeyxgRtvZQG3noP8fExKci>. It holds seven boards:
 
@@ -72,7 +77,7 @@ Every document is drawn in one order, whatever the template. From the HTML rende
 1. the citation as an `<h2>`, linked to history.state.gov, or the entry's title override in its place (`:296-309`);
 2. the document's address, as a paragraph of its own (`:304-306`);
 3. the headnote, when on (`:317-319`);
-4. the text, which opens with **the volume's own heading, a second `<h2>`** (`FRUSRenderNodeHTMLSerializer.swift:740-741`), and its dateline (`:743-744`);
+4. the text, with **the volume's own heading, a second `<h2>`** (`FRUSRenderNodeHTMLSerializer.swift:740-741`), and its dateline. In the volumes before 1955 the text opens with the source note's marker, on a line above that heading; and in most documents the dateline is drawn inside an opener's block, beside the classification marking (`:749-750`), and not as a block of its own *(corrected, review ENG-3: this record first said the text opens with the heading)*;
 5. the source note under the word *Source:* (`:379-382`);
 6. the *See also:* line (`:386-394`);
 7. each research note, under *Research Note* (`:397-409`).
@@ -91,7 +96,7 @@ What the author cannot change:
 - any label. *Contents*, *Summary*, *Source:* and *Research Note* are literals in the renderer (`CollectionItemHTMLRenderer.swift:560`, `:359`, `:380`, `:400`); *Headnote* and *See also:* are the app's strings (`:450`, `:387`);
 - the order of the parts.
 
-**Why a heading of one's own matters.** Documents 470, 473, 474, 475, 476, 477, 480 and 486 of `frus1946v06` all carry one heading: *The Chargé in the Soviet Union (Kennan) to the Secretary of State*. Under *Header & Dateline* a contents list of them differs only in its dates. Under *Citation* every row is the same citation of some 200 characters, ending in a different number. Document 475 is the telegram a reader knows as the Long Telegram, and nothing in the collection can say so in its heading without leaving the volume's heading beside it.
+**Why a heading of one's own matters.** Documents 470, 473, 474, 475, 476, 477, 480 and 486 of `frus1946v06` all carry one heading: *The Chargé in the Soviet Union (Kennan) to the Secretary of State*. Under *Header & Dateline* the eight rows are identical and carry no date: the collection reads a dateline only where it is a document's own top-level block (`CollectionContentAssembly.swift:1468-1482`), all eight keep theirs inside an opener, and a test pins the result (`CollectionResolutionTests.swift:450-452`) *(corrected, review EDI-6: this record first said the rows differ only in their dates)*. Under *Citation* every row is the same citation of some 200 characters, ending in a different number. Document 475 is the telegram a reader knows as the Long Telegram, and nothing in the collection can say so in its heading without leaving the volume's heading beside it.
 
 **The outline does not show the override either.** A document's row reads the indexed header (`CollectionEntryRows.swift:972`), on the Mac too (`MacCollectionManagerView.swift:2022-2028`), so a title the author gave appears in the preview and the export and not in the list they arrange.
 
@@ -130,7 +135,7 @@ What makes the count hard to carry:
 - **A section's text depth is not in its sheet.** It is the *Section body* menu on the heading's row (`CollectionEntryRows.swift:177-185`), while the sheet's doc comment says the picker leads it (`CollectionEntryInspector.swift:763-764`).
 - **Eight pickers ask the author to think in inheritance.** Each offers *Default*, and under it a caption, *Default → On*, which does not say whether the section or the collection decided (`CollectionEntryInspector.swift:631-650`). One sentence at the foot of the group explains the rule (`:790-791`).
 - **The settings are sorted by where they are stored.** To change how one document looks, the author must first know whether the thing is a collection setting (the gear), a section default (a heading's pill or its row) or a document override (Configure), and go there.
-- **The Mac has three places of its own:** the gear's popover for the collection, a trailing column for a document, and no toolbar control for the preview, which the Collection menu's *Show Preview* (⌥⌘P) turns on and off (`MacCollectionManagerView.swift:1648-1793`; `FRUSExplorerApp.swift:4543-4551`).
+- **The Mac has four places of its own:** the gear's popover for the collection; a trailing column for a document; the New Collection form that Add to Collection opens, which carries the whole composition section (`CollectionEditorView.swift:481-510`) *(corrected, review ENG-9: this record first counted three)*; and no toolbar control for the preview, which the Collection menu's *Show Preview* (⌥⌘P) turns on and off (`MacCollectionManagerView.swift:1648-1793`; `FRUSExplorerApp.swift:4543-4551`).
 
 ### 2.5 The templates
 
@@ -149,7 +154,7 @@ What makes the count hard to carry:
 ### 2.7 Citations
 
 - **The assembly names its formatter.** `BatchContext.formatter` is typed `HistoryAtStateCitationFormatter` and built as one (`CollectionContentAssembly.swift:797`, `:917`). The document heading, a *Citation* contents row, an excerpt's source line, the *See also* line and the Bibliography's rows all come from it. The inspector's placeholder builds a second (`CollectionEntryInspector.swift:1306`).
-- **The app has three styles and a preference.** `CitationStyle` is *History at State*, *Chicago* and *Turabian* (`CitationFormatter.swift:30-43`). Settings ▸ Display chooses one, it syncs (`SyncedPreferences.citationStyleRaw`), and the reader's Copy Citation uses it (`DocumentViewModel.swift:213`). A collection does not read it.
+- **The app has three styles and a preference.** `CitationStyle` is *History at State*, *Chicago* and *Turabian* (`CitationFormatter.swift:30-43`). Settings ▸ Display chooses one; it is mirrored to the reader's other devices only while a device's own sync switch is on, and that switch is off by default (`SyncedPreferences.citationStyleRaw`; `SettingsSyncCoordinator.swift:12-14`; `SettingsView.swift:93`) *(corrected, review DATA-9: this record first said it syncs)*; and the reader's Copy Citation uses it (`DocumentViewModel.swift:213`). A collection does not read it.
 - **The exporters read one kind of italics.** Chicago and Turabian mark the title `*…*`; the history.state.gov style marks the series' name `_…_`. All three exporters turn `_…_` into italics and nothing else (`CollectionItemHTMLRenderer.swift:1222`, `DocxCollectionExporter.swift:1982`, `PDFCollectionExporter.swift:1569`), so the other two styles would print their asterisks.
 
 ---
@@ -227,7 +232,7 @@ Every new setting lives in one of two values, each a small object of optional ke
   - On a heading: the same keys, as the section's.
   - On an apparatus block: that a template placed it (§3.3).
 
-The eight composition fields and the entry's override fields stay as they are and stay authoritative for what they hold. `CollectionExportOptions(composing:)` is already the one place a collection's settings become options (`CollectionExporter.swift:592-604`), and it reads the style there.
+The eight composition fields and the entry's override fields stay as they are and stay authoritative for what they hold. `CollectionExportOptions(composing:)` is where the export sheet and the assembly turn a collection's settings into options (`CollectionExporter.swift:592-604`), and it reads the style there. The preview builds its options by hand and would have to do the same (`CollectionPreviewView.swift:521-531`) *(corrected, review ENG-9: this record first called it the one place)*.
 
 **Why two values and not a property per setting.**
 
