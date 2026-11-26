@@ -4088,7 +4088,7 @@ On the owner's word ("start the plan of record from PR2011. note that PR2017 mer
 
 ## Session 2026-11-26 — CR: the Collections design brought to the owner's answers and reviewed a third time, with three changes to index version 76 taken the same day
 
-Row CR of the plan of record from 2026-11-25 (decision 149), started from the plan's session on the Mac, and planning only: no build, no app run. The last merge before this entry is #2016's, as `b3acd7ad`, on 2026-11-26 at 12:48:45 UTC. #2017 is open at the head of the queue, and L26 is built after it and not pushed.
+Row CR of the plan of record from 2026-11-25 (decision 149), started from the plan's session on the Mac, and planning only: no build, no app run. The last merge before this entry is L26's, #2019, as `bbe6686c`, on 2026-11-26 at 21:53:08 UTC, after #2017's (`d8b70f5f`). The review was read on `v2` at `b3acd7ad`, before either merged. Its commits were rebased onto L26's merge.
 
 **What was done, in order**
 - **The design's text brought to decisions 153 to 174** (`b3542992`), so that the review read what will be built:
@@ -4154,5 +4154,8 @@ Row CR of the plan of record from 2026-11-25 (decision 149), started from the pl
 
 **For the owner**
 - **C2's rest:** the re-cut of the rows, the pace, and the design's status.
-- **The pull request,** on the owner's word, after #2017 and L26 in the queue. By `git merge-tree` with L26's branch at `20eabba9`, the plan of record merges cleanly. Only this log meets it, where both branches append an entry. The rebase on L26's merge keeps both, L26's first.
+- **The pull request,** opened on the owner's word ("Yes. Open PR after L26 merge") once L26 had merged. In the rebase onto `bbe6686c`:
+  - this log kept #2017's, L26's and this entry in that order;
+  - the plan of record kept L26's decision 191 and dropped CR's copy;
+  - L53's brief was brought to decision 191.
 - **The design's status** stays PROPOSED until C2.
