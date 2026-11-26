@@ -5,7 +5,7 @@ a table that index version 76 stores and row L26 builds. Anything more the block
 before L26 lands, or waits for the build after 1.1. Read from L26's branch at `40f70883` and the public TEI at corpus
 `216cdb764`, the commit L26 measured. Nothing was built or run in the app.
 
-**The verdict, and the owner's word.** The block needs one thing more: **which part of a document each term is linked in.**
+**The verdict, and the owner's word.** The block needs one thing more: **which part of a document each term is linked in.** It is decision 188 of the plan of record.
 `term_mentions (volume_id, document_id, term_ref)` records that a document links a term, and not where. A quarter of the
 document–term pairs are linked only inside notes. So a block that lists every row lists terms the page does not print,
 under four of the six document templates. Put to the owner the same day ("Should L26 add a parts column to
@@ -53,26 +53,35 @@ has 498,757 rows for 113,714 documents, because the index counts a few more divi
 **The design's example hides it.** The eight telegrams of `frus1946v06` (§2.2) link every term in their text, and the
 script reproduces A2's five rows from them. Two documents of `frus1969-76v06` show the rest:
 
-- **d1** links *NIE*, *SNIE* and *Limdis* only in its source note: "…NIC Files, Job 74–R1012A, NIEs and SNIEs. Secret;
-  Sensitive; Limdis; Controlled Dissem."
+- **d1** links *NIE* and *Limdis* only in its source note: "…NIC Files, Job 74–R1012A, NIEs and SNIEs. Secret;
+  Sensitive; Limdis; Controlled Dissem." It links *SNIE* there and in its text too ("SNIE 14–69"). *Corrected after
+  skeptic C; the draft had SNIE among the source-note-only terms.*
 - **d4** links *CINCPAC* and *COMUSMACV* only in its footnote 3.
 
 ## What prints, by document template
 
 From the design's §4.3 table and its §3.5:
 
-- ***Full text as printed***, ***Full text with everything***: every part prints, and the block is exact either way.
+- ***Full text as printed***, ***Full text with everything***: every part prints but `@ana`. The block is exact except
+  for the 419 pairs that `frus1981-88v16` names on `@ana` alone, which no export prints (DATA-7). *Corrected after
+  skeptic C; the draft said "exact either way".*
 - ***Full text with your annotations***: footnotes off and source notes on, so a term linked only in other footnotes
   does not print.
 - ***Summaries***, ***Citations with your notes***, ***Citations with source notes***: the text does not print. The
   heading's words print as a line (§3.4). The source note prints as the *Source:* line where Source note is on, as plain
-  text from the index's copy (`doc.sourceNoteText`, `CollectionItemHTMLRenderer.swift:379-382`). About four pairs in five
-  then name a term the page does not show.
+  text from the index's copy (`doc.sourceNoteText`, `CollectionItemHTMLRenderer.swift:379-382`). Under *Citations with
+  source notes* about four pairs in five (79.1%) then name a term the page does not show. Under *Summaries* and
+  *Citations with your notes*, where only the heading prints, it is 99.2%. *Corrected after skeptic C; the draft gave
+  four in five for all three.*
 
 Decision 173 puts the block in no suggested set. But step 2's *All* adds it to any collection, one that prints citations
 alone included.
 
-## What was proposed for L26, and taken
+## What was proposed for L26, and taken (decision 188)
+
+As L26 built it, on its branch at `78b172cf`: `term_mentions.parts`, with the flags below. `termsLinked(inDocument:volumeId:)` returns `[LinkedTerm]`, each with its `TermMentionParts`. The review's reviewers then found two more things version 76 needed, and the owner took both. One is a `terms` row for each spelling of a two-spelling entry (decision 189, `254283cc`). The other is, on an edge resolved from a page, the page and how it was resolved (decision 190, `20eabba9`). The third review's §2 gives all three.
+
+The proposal, as sent:
 
 - `term_mentions` gains `parts INTEGER NOT NULL`, flags OR'd over the document: the text 1, the heading 2, a footnote
   4, the source note 8, named on `@ana` 16. One row per document and term, as now, so L26's counts stand.
