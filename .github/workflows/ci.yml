@@ -1,0 +1,179 @@
+# CI for FRUS Explorer: three checks on every pull request to v2 and every push to it.
+#
+# Written on 2026-11-26 on the owner's word ("Yes, all three"). CLAUDE.md's *Build & Test
+# Commands* says what it covers and what stays on the Mac: the UI suites, which need devices and
+# runtimes this image lacks; the kits' Linux build, which FRUS Explorer Light's daily
+# upstream-watch makes at v2's head; and the CloudKit Production check, which needs the owner's
+# token. The checks are advisory: no branch rule requires them for a merge.
+#
+#   A · hygiene                  Scripts/check_repo_hygiene.py, on Linux, in seconds: the rules
+#                                no test checks.
+#   B · build and package tests  swift test, the package's suites, which Xcode never runs; the
+#                                iOS app and both test targets compiled (build-for-testing); the
+#                                Mac app compiled; and no compiler warning but the two known ones.
+#   C · unit tests               FRUSExplorerTests on the iPhone 17 under iOS 27.0.
+#
+# B and C run on GitHub's `xcode-27` image, a preview (actions/runner-images#14404), with Xcode
+# 27.2 selected, as on the Mac. A simulator build is signed ad hoc with no team, which embeds the
+# app's entitlements without an Apple account; the unit-test host never starts CloudKit. The Mac
+# app is compiled and not signed. Each job keeps its logs as an artifact for 14 days.
+name: ci
+
+on:
+  pull_request:
+    branches: [v2]
+  push:
+    branches: [v2]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SIMULATOR: platform=iOS Simulator,name=iPhone 17,OS=27.0
+  AD_HOC: CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
+
+jobs:
+  hygiene:
+    name: A · hygiene
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: The rules no test checks
+        run: python3 Scripts/check_repo_hygiene.py
+
+  build:
+    name: B · build and package tests
+    runs-on: xcode-27
+    timeout-minutes: 150
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - name: Xcode and Swift
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs"
+          xcodebuild -version
+          swift --version
+      - name: swift build --target FRUSCoreKit
+        run: swift build --target FRUSCoreKit
+      - name: swift test
+        run: |
+          log="$RUNNER_TEMP/logs/swift-test.log"
+          status=0
+          swift test > "$log" 2>&1 || status=$?
+          grep -E '^(✔|✘) Test run with' "$log" || true
+          runs=$(grep -c -E '^(✔|✘) Test run with' "$log" || true)
+          echo "swift test: exit $status, $runs test runs reported" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            grep -E '^✘|error:' "$log" | head -100
+            tail -40 "$log"
+            exit "$status"
+          fi
+          if [ "$runs" -lt 1 ]; then
+            echo "::error::swift test reported no test run, so it checked nothing"
+            exit 1
+          fi
+      - name: The iOS app and both test targets (build-for-testing)
+        run: |
+          log="$RUNNER_TEMP/logs/ios-build-for-testing.log"
+          status=0
+          xcodebuild build-for-testing -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+            -destination "$SIMULATOR" -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            $AD_HOC > "$log" 2>&1 || status=$?
+          grep -E '^\*\* .* (SUCCEEDED|FAILED) \*\*' "$log" || true
+          if [ "$status" -ne 0 ]; then
+            grep -E 'error:' "$log" | sort -u | head -60
+            tail -40 "$log"
+            exit "$status"
+          fi
+      - name: The Mac app (compiled, not signed)
+        run: |
+          log="$RUNNER_TEMP/logs/mac-build.log"
+          status=0
+          xcodebuild build -project FRUSExplorer.xcodeproj -scheme FRUSExplorerMac \
+            -destination "platform=macOS,arch=arm64" -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO > "$log" 2>&1 || status=$?
+          grep -E '^\*\* .* (SUCCEEDED|FAILED) \*\*' "$log" || true
+          if [ "$status" -ne 0 ]; then
+            grep -E 'error:' "$log" | sort -u | head -60
+            tail -40 "$log"
+            exit "$status"
+          fi
+      # CLAUDE.md's *Coding Standards*: zero source warnings under strict concurrency, seen only in
+      # a clean build, which every run here is. The two known residues are not the app's to fix.
+      - name: No compiler warning but the two known ones
+        run: |
+          python3 - "$RUNNER_TEMP/logs/ios-build-for-testing.log" "$RUNNER_TEMP/logs/mac-build.log" <<'PY'
+          import sys
+          known = ("redundant conformance of 'GeneratedSummary' to protocol 'Sendable'",
+                   "Metadata extraction skipped, no AppIntents.framework dependency found")
+          found = set()
+          for path in sys.argv[1:]:
+              with open(path, encoding="utf-8", errors="replace") as log:
+                  for line in log:
+                      if "warning:" in line and not any(residue in line for residue in known):
+                          found.add(line.strip())
+          for line in sorted(found):
+              print(line[:600])
+          print("{} warning(s) beyond the two known ones".format(len(found)))
+          sys.exit(1 if found else 0)
+          PY
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs
+          path: ${{ runner.temp }}/logs/
+          retention-days: 14
+
+  unit-tests:
+    name: C · unit tests
+    runs-on: xcode-27
+    timeout-minutes: 240
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - name: Xcode
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs"
+          xcodebuild -version
+      # The target named, so no UI suite runs; a stalled test ends at its allowance, not the job's.
+      - name: FRUSExplorerTests on the iPhone 17 under iOS 27.0
+        run: |
+          log="$RUNNER_TEMP/logs/unit-tests.log"
+          status=0
+          xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+            -destination "$SIMULATOR" -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -only-testing FRUSExplorerTests \
+            -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600 \
+            $AD_HOC > "$log" 2>&1 || status=$?
+          summary=$(grep -E '^(✔|✘) Test run with|Executed [0-9,]+ tests?, with' "$log" | tail -3 || true)
+          echo "$summary"
+          { echo '```'; echo "unit tests: exit $status"; echo "$summary"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$status" -ne 0 ]; then
+            grep -E '^✘|error:|failed' "$log" | head -100
+            tail -40 "$log"
+            exit "$status"
+          fi
+          if ! grep -q -E '^✔ Test run with' "$log"; then
+            echo "::error::no test run was reported, so the target checked nothing"
+            exit 1
+          fi
+      - name: Keep the log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-test-log
+          path: ${{ runner.temp }}/logs/
+          retention-days: 14

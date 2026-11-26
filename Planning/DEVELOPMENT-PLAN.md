@@ -3972,3 +3972,29 @@ On the owner's word ("check pr 2014 and run the local-only steps"), a session on
 **For the owner**
 - **`/context`** in a fresh session, for `CLAUDE.md`'s token count; a session cannot run it.
 - **#2014's branch** on `origin`, `claude/focused-faraday-j53vwe`, to delete on the owner's word.
+
+## Session 2026-11-26 — CI: three advisory checks on every pull request, the rules no test checks on Linux, and the build, the package's suites and the unit target on GitHub's Xcode 27 runner
+
+On the owner's word ("Yes, all three"), after the owner asked which CI checks would help. The repository had none: no workflow, no GitHub Actions run ever, and `v2` unprotected, so every pull request merged with no check, and a test ran only when a session ran it on the Mac. GitHub's hosted runners cost nothing for a public repository, and the `xcode-27` image (a preview, actions/runner-images#14404) carries Xcode 27.0 to 27.2 and the iOS 27.0 simulators the suites pin.
+
+**#2016's merge**
+- Merged as `b3acd7ad` by the owner on 2026-11-26 at 12:48:45 UTC, a minute after it opened (12:47:35 UTC), auto-merge off. It closed no issue. The merge's tree is the pull request's head (`ff22a67e`, tree `52fda562`), and `v2` stood at `8df01632` while it was open. Its branch is still on `origin`.
+
+**What changed**
+- **`.github/workflows/ci.yml`** (new): three jobs on every pull request to `v2`, every push to it and by hand, all advisory, since no branch rule requires them.
+  - **A · hygiene**, on Ubuntu 24.04: `Scripts/check_repo_hygiene.py`.
+  - **B · build and package tests**, on `xcode-27` with Xcode 27.2: `swift build --target FRUSCoreKit`; `swift test`, its count of test runs read back; `build-for-testing` of the `FRUSExplorer` scheme for the iPhone 17 under iOS 27.0, which compiles the iOS app, its widgets and both test targets (the scheme builds the Mac app for running, not for testing); the `FRUSExplorerMac` scheme compiled without signing; and a step that fails on any compiler warning but the `GeneratedSummary` and `appintentsmetadataprocessor` residues.
+  - **C · unit tests**, on `xcode-27`: `FRUSExplorerTests` alone on the iPhone 17 under iOS 27.0, each test allowed 600 seconds, its counts in the job's summary.
+  - **Signing:** a simulator build is signed ad hoc with no team (`CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=`), which embeds the entitlements without an Apple account, for the keychain suites. The unit-test host never starts CloudKit (`XCTestConfigurationFilePath`), and both script phases run only when archiving, so no build reads anything that lives only on the Mac. Each job keeps its logs as an artifact for 14 days.
+- **`Scripts/check_repo_hygiene.py`** (new): six checks that no test makes. The website's pages and the paste kit `--check`; every JSON under `FRUSExplorer/Resources/` parses; each TestFlight note at most 4,000 characters by Python's `len()`; the workflow scripts parse, by Node on CI and JavaScriptCore on a Mac; and no tracked file holds a conflict marker at the start of a line.
+- **`CLAUDE.md`**: a paragraph on CI under the lock's habits.
+
+**Checks**
+- **`check_repo_hygiene.py`**: all six pass here, the workflow scripts by JavaScriptCore, and it writes nothing. Each check fails on a broken copy, naming what broke: a 3,000-character limit, an unterminated template literal, a trailing comma in a JSON file and a tracked conflict marker; a marker in the middle of a line passes.
+- **The workflow** parses as YAML, and its warnings filter compiles as bash runs it: it fails on a new warning and passes on the two residues alone.
+- **The jobs' first run is this pull request's own**, on GitHub; the session's next entry, or this pull request's description, has its result.
+
+**Not in CI, by design**: the UI suites, which need devices and runtimes the image lacks and long allowances; the kits' Linux build, which FRUS Explorer Light's daily upstream-watch makes at `v2`'s head; the CloudKit Production check, which needs the owner's token; and the link check, an owner-run release step.
+
+**For the owner**
+- **Requiring B for `v2`**, once the checks have run green for a while on the preview image: a branch rule in the repository's settings.

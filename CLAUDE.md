@@ -51,6 +51,8 @@ Four habits go with the lock:
 - Keep one simulator booted, and shut it down after its run.
 - Put steps that must follow one another with nothing between them, such as a build and the runs that must use it, in one script under one `heavy.sh` call. Waiters are not served in order (L20, 2026-11-16), and a queued job builds the tree as it stands when it takes the lock, with any edit made while it waited.
 
+**CI** (`.github/workflows/ci.yml`, since 2026-11-26) runs three advisory checks on every pull request to `v2` and every push to it: **A** `Scripts/check_repo_hygiene.py`, the rules no test checks (run it yourself before a pull request: it takes seconds); **B** `swift test`, `build-for-testing` and the Mac build, with no warning but the two known ones; **C** `FRUSExplorerTests` on the iPhone 17 under iOS 27.0. B and C run on GitHub's `xcode-27` image, a preview. The UI suites, device checks and the kits' Linux build stay where they were.
+
 **Run all tests (iOS Simulator):**
 ```bash
 Scripts/heavy.sh xcodebuild test \
