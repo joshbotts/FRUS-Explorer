@@ -576,7 +576,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         its volume, `document_cache.document_order`, written by every store pass, by which a volume
 ///         lists, then rowid (#1978); an editorial note's own source note, dateline and marking, read
 ///         under its wrapper where it prints a source note of its own (`ownFieldNodes(of:)`, #1854); each
-///         document's linked terms, `term_mentions` (decision 172); and the page each division begins
+///         document's linked terms, `term_mentions` (decision 172), with the parts of the document
+///         that link each, `parts` (decision 188); and the page each division begins
 ///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
 ///         See the v76 note
 public actor IndexingPipeline {
@@ -1746,6 +1747,16 @@ public actor IndexingPipeline {
     ///     for a collection's *Abbreviations & Terms* block. On the full index at 76: 498,757 rows for
     ///     113,714 documents in 312 volumes, 809 of them naming a term the volume's list lacks
     ///     (`frus1981-88v16`: 419 rows for its 88 documents).
+    ///   - **Where each term is linked** (decision 188, CR's reading of the block): `parts`, the parts
+    ///     of the document that link the term OR'd together (``TermMentionParts``: text 1, heading 2,
+    ///     footnote 4, source note 8, `@ana` 16), which the walk carries down
+    ///     (``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termParts:part:)``),
+    ///     so the block can list only the terms a page prints. On the full index: 124,616 rows
+    ///     (25.0%) are linked only in notes, 72,777 in the source note alone; 326,903 in the text
+    ///     alone. Read pair by pair against CR's own walk of the TEI, all 497,026 pairs it finds
+    ///     carry the same flags; the 1,731 rows it does not find are in the 669 divisions the index
+    ///     stores as documents and it does not (prefaces, term lists, prose sections). The rows
+    ///     are the ones the table held without the column, and no bundled file reads it.
     ///   - **The page each division begins on** (F7, decision 178): `division_start_pages`, the start
     ///     page the parse settles for every division with an `xml:id` (`VolumeFullParseResult.divisionStartPages`)
     ///     and dropped for all but a document and an editorial note, in a table of its own so that no
@@ -6812,7 +6823,7 @@ public actor IndexingPipeline {
             var docCrossRefs: [CrossReferenceRow] = []
             var docPersonRefs: Set<String> = []
             var docPageRanges: [PageRangeRow] = []
-            var docTermRefs: Set<String> = []
+            var docTermParts: [String: TermMentionParts] = [:]
             Self.collectDocumentRefs(
                 from: astDoc.nodes,
                 volumeId: volumeId, documentId: did,
@@ -6820,17 +6831,21 @@ public actor IndexingPipeline {
                 personRefs: &docPersonRefs,
                 personListVolumes: &personListVolumes,
                 pageRanges: &docPageRanges,
-                termRefs: &docTermRefs
+                termParts: &docTermParts
             )
             crossRefs.append(contentsOf: docCrossRefs)
             // #1599: the people the document names on its `@ana`, beside those its text marks.
             docPersonRefs.formUnion(Self.annotatedPersonRefs(astDoc.annotatedReferences,
                                                              persons: listedPersonIds))
-            // Decision 172: and the terms it names there, beside those its text links.
-            docTermRefs.formUnion(Self.annotatedTermRefs(astDoc.annotatedReferences, terms: listedTermIds))
+            // Decision 172: and the terms it names there, beside those its text links, as a part
+            // of their own that prints nothing (decision 188).
+            for ref in Self.annotatedTermRefs(astDoc.annotatedReferences, terms: listedTermIds) {
+                docTermParts[ref, default: []].insert(.annotation)
+            }
             // Sorted, so two indexes of one file hold their rows in one order.
-            for ref in docTermRefs.sorted() {
-                termMentionRows.append(TermMentionRow(volumeId: volumeId, documentId: did, termRef: ref))
+            for (ref, parts) in docTermParts.sorted(by: { $0.key < $1.key }) {
+                termMentionRows.append(TermMentionRow(volumeId: volumeId, documentId: did,
+                                                      termRef: ref, parts: parts))
             }
             // #1503: the page the document begins on, ahead of the breaks inside it — often a
             // break between documents, which no document's nodes hold. The parser gives one to a
@@ -8011,8 +8026,8 @@ public actor IndexingPipeline {
     /// `personListVolumes` receives every volume a person ref NAMES (`personRefListVolume`), which
     /// `personRefs` cannot carry because its refs are already normalised to the bare fragment.
     ///
-    /// The walk without the terms: ``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termRefs:)``
-    /// with a set of term refs it drops, for a caller that reads the other four.
+    /// The walk without the terms: ``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termParts:part:)``
+    /// with the terms it collects dropped, for a caller that reads the other four.
     nonisolated static func collectDocumentRefs(
         from nodes: [FRUSASTNode],
         volumeId: String,
@@ -8025,17 +8040,24 @@ public actor IndexingPipeline {
         personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow]
     ) {
-        var termRefs = Set<String>()
+        var termParts: [String: TermMentionParts] = [:]
         collectDocumentRefs(from: nodes, volumeId: volumeId, documentId: documentId,
                             parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                             citingNote: citingNote, crossRefs: &crossRefs, personRefs: &personRefs,
                             personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                            termRefs: &termRefs)
+                            termParts: &termParts)
     }
 
-    /// The walk, with the terms its `<gloss>` links name (decision 172, index version 76):
-    /// `termRefs` receives each link's target normalised to its bare id (``normalizeTermRef(_:)``),
-    /// once a document however often it is linked, as `personRefs` receives the people.
+    /// The walk, with the terms its `<gloss>` links name (decisions 172 and 188, index version 76):
+    /// `termParts` receives each link's target normalised to its bare id (``normalizeTermRef(_:)``),
+    /// once a document however often it is linked, as `personRefs` receives the people, with the
+    /// parts of the document that link it OR'd together (``TermMentionParts``).
+    ///
+    /// `part` is the part `nodes` sit in, which the walk carries down to each link: a heading in
+    /// the document's text is `.heading`; a source note, and everything inside it, `.sourceNote`;
+    /// any other note `.footnote`. A note on the heading is therefore the note's part, which is how
+    /// the source note is printed from 1955, and an editorial note's own text is the part it sits
+    /// in, the document's text.
     nonisolated static func collectDocumentRefs(
         from nodes: [FRUSASTNode],
         volumeId: String,
@@ -8047,7 +8069,8 @@ public actor IndexingPipeline {
         personRefs: inout Set<String>,
         personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow],
-        termRefs: inout Set<String>
+        termParts: inout [String: TermMentionParts],
+        part: TermMentionParts = .text
     ) {
         for (index, node) in nodes.enumerated() {
             switch node {
@@ -8078,16 +8101,18 @@ public actor IndexingPipeline {
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: part)
 
             // ── Term links (decision 172) ──────────────────────────────────────
             case .gloss(let ref, let children):
-                if let ref, let normalised = normalizeTermRef(ref) { termRefs.insert(normalised) }
+                if let ref, let normalised = normalizeTermRef(ref) {
+                    termParts[normalised, default: []].insert(part)
+                }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: part)
 
             // ── Person-name links ──────────────────────────────────────────────
             case .persName(let ref, let children):
@@ -8099,7 +8124,7 @@ public actor IndexingPipeline {
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: part)
 
             // ── Page breaks ────────────────────────────────────────────────────
             case .pageBreak(let pageNumber):
@@ -8116,12 +8141,16 @@ public actor IndexingPipeline {
                 let noteText = truncateContext(
                     FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
+                // Decision 188: a source note, and everything inside it, is the source note's part;
+                // any other note is a footnote's.
+                let notePart: TermMentionParts =
+                    type == .source || part == .sourceNote ? .sourceNote : .footnote
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: refType,
                     enclosingText: noteText.isEmpty ? nil : noteText,
                     citingNote: children,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: notePart)
 
             // ── Editorial notes — captures enclosing text ──────────────────────
             case .editorialNote(let children):
@@ -8134,7 +8163,17 @@ public actor IndexingPipeline {
                     enclosingText: editorialText.isEmpty ? nil : editorialText,
                     citingNote: nil,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: part)
+
+            // ── The heading (decision 188) ─────────────────────────────────────
+            // Its words are the heading's part where it sits in the document's text. A note on it
+            // takes the note's part, above: from 1955 the source note is a footnote on the heading.
+            case .head(let children):
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part == .text ? .heading : part)
 
             // ── All other nodes — recurse into children ────────────────────────
             default:
@@ -8142,7 +8181,7 @@ public actor IndexingPipeline {
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
-                    termRefs: &termRefs)
+                    termParts: &termParts, part: part)
             }
         }
     }
@@ -9155,15 +9194,19 @@ public actor IndexingPipeline {
         // Decision 172, index version 76: which document links which of its volume's terms, written
         // as `person_mentions` is, from the `<gloss>` links in each document's parse and, for
         // `frus1981-88v16`, the terms its documents name on `@ana`. One row a document and term,
-        // however often the term is linked. Read by a collection's *Abbreviations & Terms* block
-        // (the Collections design's A2), which joins it to `terms` for each term's definition. No
-        // id column: the key is the row, so two indexes of one file hold the same rows. Filled by
-        // the version's re-index; empty until each volume's next pass.
+        // however often the term is linked, with the parts of the document that link it OR'd
+        // together (`parts`, decision 188: text 1, heading 2, footnote 4, source note 8, `@ana` 16;
+        // `TermMentionParts`). Read by a collection's *Abbreviations & Terms* block (the
+        // Collections design's A2), which joins it to `terms` for each term's definition and keeps
+        // a term where a part that links it prints. No id column: the key is the row, so two
+        // indexes of one file hold the same rows. Filled by the version's re-index; empty until
+        // each volume's next pass.
         try exec("""
             CREATE TABLE IF NOT EXISTS term_mentions (
                 volume_id   TEXT NOT NULL,
                 document_id TEXT NOT NULL,
                 term_ref    TEXT NOT NULL,
+                parts       INTEGER NOT NULL,
                 PRIMARY KEY (volume_id, document_id, term_ref)
             )
             """)
@@ -10830,18 +10873,23 @@ public actor IndexingPipeline {
         }
     }
 
-    /// Writes a volume's `term_mentions` rows in one transaction (decision 172).
+    /// Writes a volume's `term_mentions` rows in one transaction (decisions 172 and 188). A second
+    /// row for one document and term, which only a volume that repeats a document's id gives, ORs
+    /// its parts into the first rather than being dropped.
     private func auxInsertTermMentions(_ rows: [TermMentionRow]) throws {
         guard !rows.isEmpty else { return }
         try inTransaction {
-            let stmt = try auxPrepare(
-                "INSERT OR IGNORE INTO term_mentions (volume_id, document_id, term_ref) VALUES (?, ?, ?)")
+            let stmt = try auxPrepare("""
+                INSERT INTO term_mentions (volume_id, document_id, term_ref, parts) VALUES (?, ?, ?, ?)
+                ON CONFLICT (volume_id, document_id, term_ref) DO UPDATE SET parts = parts | excluded.parts
+                """)
             defer { sqlite3_finalize(stmt) }
             for row in rows {
                 defer { sqlite3_reset(stmt) }
                 sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 3, row.termRef, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 4, Int64(row.parts.rawValue))
                 try auxStep(stmt)
             }
         }
@@ -14937,7 +14985,8 @@ private struct VolumeIndexData: Sendable {
     /// R-5 P1: the per-document hashes the store pass compares against the previous index.
     var documentRevisions: [DocumentRevisionRow] = []
     let personMentions: [PersonMentionRow]
-    /// Decision 172, index version 76: each document's linked terms, stored as `term_mentions`.
+    /// Decision 172, index version 76: each document's linked terms, with the parts that link each
+    /// (decision 188), stored as `term_mentions`.
     let termMentions: [TermMentionRow]
     /// F7, index version 76: the page each division begins on, stored as `division_start_pages`.
     let divisionStartPages: [DivisionStartPageRow]
@@ -15162,6 +15211,8 @@ private struct TermMentionRow: Sendable {
     let documentId: String
     /// The term's id in the volume's list (`terms.ref`), as ``IndexingPipeline/normalizeTermRef(_:)`` reads it.
     let termRef: String
+    /// The parts of the document that link it, OR'd together (decision 188).
+    let parts: TermMentionParts
 }
 
 private struct PersonRow: Sendable {

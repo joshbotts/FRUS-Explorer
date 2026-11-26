@@ -544,13 +544,18 @@ A useful sanity check when a person's counts look low.
 
 **`terms`** — per-volume glossary entries (abbreviations and their definitions).
 
-**`term_mentions`** — from index version 76, `(volume_id, document_id, term_ref)`: the terms of its
-volume's list a document links, one row per document and term however often it links it, written
-as `person_mentions` is from the document's `<gloss>` links and, for 1981–88 vol. XVI, from the
-terms its documents name on their own `@ana`. Join it to `terms` on `(volume_id, term_ref = ref)`
-for the definition. On a full index of the 553 catalogue volumes at version 76: 498,757 rows for
-113,714 documents in 312 volumes; 809 rows name a term their volume's list does not hold, and the
-join drops them. Before 76 the table is empty.
+**`term_mentions`** — from index version 76, `(volume_id, document_id, term_ref, parts)`: the terms
+of its volume's list a document links, one row per document and term however often it links it,
+written as `person_mentions` is from the document's `<gloss>` links and, for 1981–88 vol. XVI, from
+the terms its documents name on their own `@ana`. `parts` says where the document links the term,
+as flags OR'd together: 1 its text, 2 its heading, 4 a footnote, 8 its source note and anything
+inside it, 16 its `@ana`, which prints nothing. A note on the heading counts as the note, so from
+1955, where the source note is a footnote on the heading, a term in it is 8, not 2. Test a flag
+with `&`: `parts & 8` is a term the source note links, and `parts & 19 = 0` one linked only in
+notes. Join it to `terms` on `(volume_id, term_ref = ref)` for the definition. On a full index of
+the 553 catalogue volumes at version 76: 498,757 rows for 113,714 documents in 312 volumes, a
+quarter of them (124,616) linked only in notes; 809 rows name a term their volume's list does not
+hold, and the join drops them. Before 76 the table is empty.
 
 **`volume_structures`** — one JSON blob per volume describing its section tree. Parse it in the
 client; don't try to query into it with SQL string functions. From index version 75 the row also
@@ -3416,7 +3421,8 @@ terms are here because they appear in the outputs.
   that 138 rows the TEI tags as editorial notes are printed documents that now carry their own
   source note, 131 their dateline, and a source row each (#1854), and §4.4's `classification` row
   that 114 of those rows carry a marking (114,244 rows in all). §4.3 gains `term_mentions`, each
-  document's linked terms (498,757 rows for 113,714 documents in 312 volumes), and
+  document's linked terms with the parts of the document that link each (498,757 rows for 113,714
+  documents in 312 volumes, a quarter of them linked only in notes; decision 188), and
   `division_start_pages`, the page each division begins on (24,009 rows in 552 volumes), which no
   `page_ranges` row holds where the break falls between two divisions. Measured on two full
   indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 75 and at 76: every other table

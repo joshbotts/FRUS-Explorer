@@ -10644,14 +10644,15 @@ struct IndexVersion76Tests {
 
             let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
             let d1 = try await store.termsLinked(inDocument: "d1", volumeId: "frus1946v06")
-            #expect(d1.map(\.term) == ["Dept", "UNO"])
-            #expect(d1.first?.definition == "Department of State")
-            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1946v06").map(\.term) == ["Sov"])
+            #expect(d1.map(\.entry.term) == ["Dept", "UNO"])
+            #expect(d1.first?.entry.definition == "Department of State")
+            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1946v06").map(\.entry.term) == ["Sov"])
             #expect(try await store.termsLinked(inDocument: "d3", volumeId: "frus1946v06").isEmpty)
 
-            // The rows themselves: one a document and term, the dangling link's among them.
+            // The rows themselves: one a document and term, the dangling link's among them, each
+            // with its parts (decision 188): d1's in its text, d2's on its @ana alone.
             let rows = try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
-            #expect(rows == ["d1 t_Dept1", "d1 t_Gone1", "d1 t_UNO1", "d2 t_Sov1"])
+            #expect(rows == ["d1 t_Dept1 1", "d1 t_Gone1 1", "d1 t_UNO1 1", "d2 t_Sov1 16"])
 
             // A correction that drops d1's links leaves none of its rows behind.
             let corrected = documents.enumerated().map { index, xml in
@@ -10661,7 +10662,69 @@ struct IndexVersion76Tests {
                 .write(to: dir.appendingPathComponent("volumes/frus1946v06.xml"), atomically: true, encoding: .utf8)
             try await pipeline.indexVolume("frus1946v06")
             #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
-                    == ["d2 t_Sov1"])
+                    == ["d2 t_Sov1 16"])
+        }
+    }
+
+    @Test("Each linked term records the parts of its document that link it: text, heading, footnote, source note, @ana (decision 188)")
+    func linkedTermsRecordTheirParts() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let terms = """
+                <div subtype="index" type="section" xml:id="terms">
+                  <head>Abbreviations and Terms</head>
+                  <list type="terms">
+                    <item><hi rend="strong"><term xml:id="t_CINCPAC1">CINCPAC</term>,</hi> Commander in Chief, Pacific</item>
+                    <item><hi rend="strong"><term xml:id="t_DOD1">DOD</term>,</hi> Department of Defense</item>
+                    <item><hi rend="strong"><term xml:id="t_JCS1">JCS</term>,</hi> Joint Chiefs of Staff</item>
+                    <item><hi rend="strong"><term xml:id="t_Limdis1">Limdis</term>,</hi> limited distribution</item>
+                    <item><hi rend="strong"><term xml:id="t_NIE1">NIE</term>,</hi> National Intelligence Estimate</item>
+                    <item><hi rend="strong"><term xml:id="t_NSC1">NSC</term>,</hi> National Security Council</item>
+                  </list>
+                </div>
+                """
+            let documents = [
+                // From 1955 the source note is a footnote on the heading: JCS is the heading's alone,
+                // Limdis the source note's, NIE both the source note's and the text's, NSC the text's,
+                // and CINCPAC a footnote's alone (frus1969-76v06 d4's shape, which CR's reading names).
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Memorandum From the <gloss target="#t_JCS1">JCS</gloss> to the Secretary of Defense<note n="1" type="source" xml:id="d1fn1">Source: National Archives. Secret; <gloss target="#t_Limdis1">Limdis</gloss>. The <gloss target="#t_NIE1">NIE</gloss> is attached.</note></head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> met on the <gloss target="#t_NIE1">NIE</gloss>.<note n="2" xml:id="d1fn2">The <gloss target="#t_CINCPAC1">CINCPAC</gloss> cable is not printed.</note></p>
+                </div>
+                """,
+                // Named on @ana alone, and on @ana and in the text.
+                """
+                <div type="document" xml:id="d2" n="2" ana="#t_DOD1 #t_NSC1"><head>2. Paper</head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> paper.</p>
+                </div>
+                """,
+                // An editorial note's own text is the document's text; its note is a footnote.
+                """
+                <div type="document" subtype="editorial-note" xml:id="d3" n="3"><head>3. Editorial Note</head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> discussed it.<note n="1" xml:id="d3fn1">See the <gloss target="#t_JCS1">JCS</gloss> paper.</note></p>
+                </div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1969-76v06", front: terms, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1969-76v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1969-76v06")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let d1 = try await store.termsLinked(inDocument: "d1", volumeId: "frus1969-76v06")
+            #expect(d1.map(\.entry.term) == ["CINCPAC", "JCS", "Limdis", "NIE", "NSC"])
+            #expect(d1.map(\.parts) == [.footnote, .heading, .sourceNote, [.sourceNote, .text], .text])
+            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1969-76v06").map(\.parts)
+                    == [.annotation, [.annotation, .text]])
+            #expect(try await store.termsLinked(inDocument: "d3", volumeId: "frus1969-76v06").map(\.parts)
+                    == [.footnote, .text])
+
+            // The column holds the flags as SQL reads them: text 1, heading 2, footnote 4, source
+            // note 8, @ana 16.
+            #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1969-76v06") == [
+                "d1 t_CINCPAC1 4", "d1 t_JCS1 2", "d1 t_Limdis1 8", "d1 t_NIE1 9", "d1 t_NSC1 1",
+                "d2 t_DOD1 16", "d2 t_NSC1 17",
+                "d3 t_JCS1 4", "d3 t_NSC1 1",
+            ])
         }
     }
 
@@ -10729,7 +10792,7 @@ struct IndexVersion76Tests {
         return rows
     }
 
-    /// `term_mentions` rows for a volume as `"<document> <term>"`, sorted.
+    /// `term_mentions` rows for a volume as `"<document> <term> <parts>"`, sorted.
     private func rawTermMentions(_ dbURL: URL, volumeId: String) throws -> [String] {
         var db: OpaquePointer?
         guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
@@ -10737,7 +10800,7 @@ struct IndexVersion76Tests {
         }
         defer { sqlite3_close_v2(db) }
         var stmt: OpaquePointer?
-        guard sqlite3_prepare_v2(db, "SELECT document_id, term_ref FROM term_mentions WHERE volume_id = ?",
+        guard sqlite3_prepare_v2(db, "SELECT document_id, term_ref, parts FROM term_mentions WHERE volume_id = ?",
                                  -1, &stmt, nil) == SQLITE_OK else {
             throw IndexingError.databaseOpenFailed(message: String(cString: sqlite3_errmsg(db)))
         }
@@ -10745,7 +10808,7 @@ struct IndexVersion76Tests {
         sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
         var rows: [String] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
-            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(String(cString: sqlite3_column_text(stmt, 1)))")
+            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(String(cString: sqlite3_column_text(stmt, 1))) \(sqlite3_column_int64(stmt, 2))")
         }
         return rows.sorted()
     }
