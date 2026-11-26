@@ -167,7 +167,7 @@ Each names the findings it merges, the skeptics' verdict, and the direction the 
 
 ### G16 — No lane carries an accessibility check (A11Y-8)
 
-*CONFIRMED, S2.* §8 names pins, the CloudKit gate, strings, captures and six UI suites, none of which listens to VoiceOver. The plan's comparable rows carried a VoiceOver case, hit areas with a suite, and fit runs at AX3 (`Plan-Of-Record-2026-11-15.md:277-278`, `:286`, `:306`, `:473`). The record states no focus or speech for the tap. **Direction:** add the focus rule, the announcement and their suites to lanes 4 and 5, and size the lanes with them.
+*CONFIRMED, S2.* §8 names pins, the CloudKit gate, strings, captures and six UI suites, none of which listens to VoiceOver. The plan's comparable rows carried a VoiceOver case, hit areas with a suite, and fit runs at AX3 (`Completed/Plan-Of-Record-2026-11-15.md:277-278`, `:286`, `:306`, `:473`). The record states no focus or speech for the tap. **Direction:** add the focus rule, the announcement and their suites to lanes 4 and 5, and size the lanes with them.
 
 ### G17 — A device updated later may hold nothing for the new values (DATA-7)
 

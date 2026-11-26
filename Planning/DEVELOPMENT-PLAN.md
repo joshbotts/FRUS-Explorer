@@ -12523,3 +12523,108 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 **Owed by the owner:** Q12, with the eleven before it; and the three runs the record's §12 lists before lane 8, each a few minutes in 1.0. The plan of record is not changed.
 
 **Not done:** no build, test or capture; the amendment has not been reviewed; the canvas's boards still draw step 2's eight.
+
+## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty-two rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
+
+**What was asked.** The owner's words: "Let's develop an updated plan of record. Assess open issues and triage them into fix waves. Try to consolidate fixes that touch the same code. Include the collections overhaul in the plan. The goal should be preparing the app to accommodate a new FRUS release in early December and then shipping an update to the App Store after that release." It is the new plan's decision 145. A cloud session, from `v2` at `9325f79d` (#2009), on `claude/plan-of-record-2026-11-25`.
+
+**What changed** (documents only; no source, test, resource or manual):
+- **`Planning/Plan-Of-Record-2026-11-25.md`, the live plan.**
+  - Its rows: thirty-two pull requests, L26 to L57, in six waves (thirty, to L55, when the pull request opened; L56 and L57 were added after it, below); a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
+  - Where each of the 42 open issues goes: 39 in a row, and #1723, #1696 and #234 not in this update. Where each of the five findings the 2026-11-15 plan sent to the first update goes (F1, F2, F7, F11 and D1).
+  - What each row touches, and the files two rows meet in, with the order that settles each.
+  - The Collections design's lanes as rows (its §1c): seven of the eight, since the owner's answer on the export sheet leaves lane 5 unbuilt.
+  - A calendar with targets to Wave 3, and arithmetic after it.
+- **Moved to `Completed/`:** `Plan-Of-Record-2026-11-15.md`, its head now marked superseded and kept as the record of decisions 126 to 144.
+  - Its head is one paragraph, where the two plans archived before it have two, so that no line below it moved: the Collections design's first review and its reviewers' reports cite it by line.
+  - The live pointers to it now name the archived path, or the new plan where they meant the live one: `Completed/README.md` (a 2026-11-25 move entry, and its *Deliberately NOT here* list, which gains the Collections design and the device pass's two records), `Visual-Marketing-Plan.md` (its §7 struck rows untouched), `website-drafts/README.md`, the cross-platform review's `STATUS.md`, the UI and UX review's status line, `R6-Device-Pass-2026-11-18.md`, `iPhone-Duo-Assessment-2026-11-19.md`, and the first Collections review's citation of four of its lines.
+  - The 2026-10-21 plan's status line and its review's dated note named it at `../`; they now name it in their own folder.
+  - Dated records are left as written: this log's entries, the archived plans' bodies, and the reviewers' and skeptics' reports of the two Collections reviews.
+
+**How it was read.**
+- **The issues.** Thirteen whole on GitHub, with their comments (none has any). The seventeen Collections issues from the design's §2.8 and the two reviews' §6, which give each its file and line; nine older ones from the 2026-11-15 plan; #1946 and #1931 from the sessions that filed them. #1973 by its title, FRUS Explorer Light's COORDINATION §5 and the code alone: GitHub's pages stopped answering before it could be read whole. The code was checked at `9325f79d` for fourteen of them.
+- **The runbook**, `New-Volume-Release-Plan.md`, and the corpus: `HistoryAtState/frus` at `216cdb76` has changed no file under `volumes/` since `6170e4b32`, the commit the bundled indexes were built at.
+- **The Collections design** and its two reviews; and, for the rows the owner's answers added, the collection's model, the index's tables, the three Zotero sends, the entitlements, the stores a Debug build opens and the archive's CloudKit gate. Each line anchor the plan adds was printed and read back at `9325f79d`.
+
+**The session's wrong answer, and the owner's word on it.** The first draft put #1990 after the update. Asked how it handled #1990 and #1723, the session said, among its reasons, that the cross-reference graph draws documents and not archival collections or classes. It had not read the graph's code. The owner: "Include 1990 in the plan. Double check your claim that cross reference graph only draws documents." The graph has drawn both since #837 and #834 (`CrossReferenceGraphDisplay.swift:36-64`). The plan's decision 146 records the error, and row L42 is written from the code.
+
+**The owner's answers,** asked for one at a time ("Can you walk me through open decisions one by one? Present recommendations as well as other options. Include an option for “tell me more” that will explain the decision and options in further detail and allow for follow up questions."). Thirty-seven, the plan's decisions 147 to 183: the draft's ten questions, and the Collections design's twelve, which the first answer brought in.
+- **Where the owner chose against the session's recommendation:**
+  - 147: all eight Collections lanes in this update, where the draft had the lanes that store nothing new.
+  - 148: one update, when the volume and the overhaul are both done, where the draft had the volume first. The runbook's D-1 keeps its first half, the silent gap; its second, the short one, gives way for this release.
+  - 154: the mark is *As published:*, the owner's own words, for the design's *In the volume:*.
+  - 156: the export sheet stays format and destination, so the design's lane 5 is not built.
+  - 158: the volume's heading leads in four of the six templates, a third reading of the design's table.
+  - 181: the graph's Archives Visit takes both halves.
+- **What the answers made of the draft:** seventeen rows became thirty; the update gained a CloudKit promotion (five stored fields, or six, and one record type); index version 76 gained a table of term mentions (decision 172); there are two TestFlight builds, one after Waves 1 and 2 and the release candidate (decision 151); the Collections design is reviewed before its lanes are built (decision 149); and the Office's release is taken in at once, with the queue paused (decision 152).
+
+**Corrections of the session's own text,** found while the answers were written into the plan. The plan carries all five, and the chat named the first three:
+- **Lane 7 is nine of the design's thirteen candidates.** The walk-through counted ten, taking the two halves of candidate 13 apart.
+- **The new stored fields are five, or six.** The session had counted six. A section's headnote default could ride `CollectionEntry.includeHeadnote`, which every entry stores; but a heading made before the Composer redesign holds an explicit `false` there, by that property's own comment. The review is asked which.
+- **An ellipsis is the editors' mark too.** For the sign that marks an omission in selected passages, the session had named brackets and asterisks as taken. By `FRUS-History-Feature-Assessment-2026-11-09.md` an ellipsis is the editors' from 1925 to 1991. The plan proposes words, and leaves the choice to the owner.
+- **L29 and L41 edit one function,** `CollectionExportSheet.sendToZoteroLibrary()`, where a first pass had them in different functions. L41 is developed after L29 merges.
+- **The two-device run can be made in CloudKit's Development environment** with two Debug builds, by `FRUSStoreConfiguration`'s own note. The session had first put that as its own reading.
+
+**The calendar is arithmetic.** At two rows merged a day with no day lost, the submission falls about 2026-12-20. Apple's notice for this year's holidays was looked for and not found; in 2024 it said reviews could take longer from December 20 to 26 (MacRumors, 2024-12-02).
+
+**Checked:**
+- `planOfRecordMatchesTheVisualMarketingPlan`'s two conditions, recomputed in Python over the new tree:
+  - one live plan of record, `Plan-Of-Record-2026-11-25.md`, with no "Status: SUPERSEDED" in it;
+  - its *§7 struck* line equal to the Visual Marketing Plan's strikes (0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15, over 17 rows).
+- The plan against itself, by a script of the session's that is not committed: each of the 42 issues once in §1a; the rows' table and §1a in agreement; a brief for each of the table's 38 rows, in its order; decisions 145 to 183 each once; every table's column count; and every path it names, at `9325f79d`.
+- The archived plan differs from the plan as it stood at one line, its status. The lines the first Collections review and its reviewers' reports cite (136, 277, 278, 286, 306, 473 and 484) read as they did.
+- No test reads any other file this change touches. The tests that read `Planning/` are the plan-of-record gate, the workflow-script scan, which reads `.js` and `.mjs` files, the suites that read the semantic shards, and package suites that name data files and documents this change leaves alone.
+- No Swift, test, resource, manual or EditableContent file changed, so no unit run, `swift test` or build was owed. This container has no Swift toolchain, so none was run.
+
+**Not done, and for the owner:**
+- **No app was built or run.** Rows L43 to L55 are read from a design nobody has reviewed, and are provisional until CR and C2.
+- The Collections design's own text is not yet brought to the answers. That is CR's first step.
+- The rows have no issues of their own beyond the 39 they close. Filing any is on the owner's word.
+- Before Wave 4: CR's findings answered, the Word and Pages run, and three runs in 1.0. Before L43: the two-device run, a hand-made collection file opened in 1.0, and the desk check of Chicago and Turabian (the plan's §2 and §4).
+- With their rows: the Mac's title bar (F2), #1923's resume, the Note on the Text's sentences, the sign for an omission, what a saved template holds, where the page's choices are kept, the short citation form's rule, the line of coverage's wording and three blocks' titles.
+- For the release: the build numbers, the date the Office publishes, the CloudKit promotion and *What's New in This Version*.
+
+**Opened as #2011** on the owner's word ("Try to open the PR"), on 2026-11-25, against `v2` at `9325f79d`, which had not moved since the plan was begun. Until that word the session could read the repository and not write to it, and the plan was a file of the session's. Documents only. Ready for review and mergeable with no conflict, with auto-merge off; no CI check runs on it. Its merge is the next record's.
+
+**A row added after it opened, on the owner's word.** The owner: "Can we include a session in the plan that adds an option in chronology to save a chronological scope as a working corpus?" It is the plan's decision 184 and row **L56**, in Wave 3 after L42, the graph's saves, since both make the same record. The plan has thirty-one rows since; its title and counts say so. #2011 was still open and unmerged, and `v2` had not moved, so the row went into the same pull request.
+- **What was read first,** at `9325f79d`: Chronology's screen and view model, the kit's rules for it, the index's reads of a range of dates, the working corpus's record, and the three places that capture one (Search's sheet, the map and the Clusters index).
+- **Why it needs a row.** Search does not run on a range of dates alone: a search with no words runs only on a person or a subject (`SearchParameters.supportsFilterOnlySearch`). So *Search in this range* sets a filter and waits for words, and no route leads from a range to a working corpus.
+- **What the row is.** A kit rule and one read in the index, and the action on the screen. It stores nothing new, so there is no CloudKit change and no index version.
+  - The save reads the range itself, since the list is cut at 5,000 rows and a corpus holds 7,500 keys.
+  - A single year can pass 7,500 on a device with the whole series: the twelve volumes of the 1945 subseries hold 11,567 documents, by the bundled manifest and vectors index.
+- **Four things are the owner's,** each with what the row proposes (the plan's §4):
+  - what a saved range holds: every document whose dates overlap it, as Search's date filter means a range, or only those dated inside it;
+  - over 7,500: the range cut at the last whole day that fits, or a refusal, or the first 7,500 with the truncation recorded;
+  - the name: by rule, as the map's and the Clusters index's, or asked for, as Search's sheet does;
+  - whether the legend's volume filter narrows the save.
+- **Found while it was read, and not filed** (the plan's §5); each is read from the code and was not seen in the app:
+  - *Search in this range* writes its two days through a formatter set to UTC over a local midnight (`ChronologyView.swift:1206-1215`), so east of Greenwich it hands Search the day before, at both ends. The kit's `isoDay` records the same defect as fixed there.
+  - Both of Chronology's hand-offs read the pickers and not the range the screen loaded.
+  - The headline counts one thing while the list is under its cap and another once it is over.
+  - A word cloud for a range of dates reads at most the first 5,000 documents, and its resolver has no field that says a range was cut.
+- **Three sentences were reworded** that named the Collections rows as "the rows from L34 on". L56 has a later number and is not one of them.
+- **Checked again:** the session's script over the plan (a brief for each of the table's 39 rows, in its order; decisions 145 to 184 each once; every path named), and the plan-of-record gate's two conditions. Documents only, as before: no unit run, `swift test` or build was owed, and none could be run here.
+
+**The owner's word on the row, the same evening.** "I accept your recommendations. File the issue". They are the plan's decisions 185 and 186.
+- **Decision 185: L56's four choices, each as the row proposed.** A saved range holds every document whose dates overlap it, and the save says how many of each of the three kinds it holds. Over 7,500 documents the save offers the range cut at the last whole day that fits. The corpus is named by rule. The legend's filter does not narrow the save. The row's brief now states each as decided, with what was not taken, and the plan's §4 no longer lists them.
+- **Decision 186: the day-early finding is filed, as #2012,** labelled *bug*, *iOS*, *Mac* and *needs local testing*. The plan places it in L56, whose candidate it was: §1a has a forty-third row, and L56's brief takes it first, as a commit of its own.
+- **What was checked before it was filed.**
+  - Search's two view models, to see that neither rewrites the two strings it is handed. The Mac's parses and writes them in the device's zone; iPhone's and iPad's in GMT, both ways.
+  - The two expressions, a local midnight written in the device's zone and in UTC, emulated with Python's `zoneinfo` for nine zones and two days. Los Angeles, New York and UTC agree with Chronology's own query; Berlin, Kolkata, Tokyo, Sydney and Auckland are a day early at both ends; London is a day early on 1 October 1962, in British Summer Time, and right on the 31st. It is an emulation and not Foundation: this container has no Swift toolchain, and swift.org cannot be reached from it.
+  - The comments of the two formatters that write a day correctly, `ChronologyGrouping.isoDay` and `WordCloudScope.isoFormatter()`. Each records this defect as one fixed in it.
+- **The issue says** what was read, what was emulated, and that nothing was seen in the app. It proposes one change, to hand Search the days the screen loaded, which also has both hand-offs name the range the screen shows.
+- **Found while it was written, and not filed** (the plan's §5): on iPhone and iPad, Search keeps a filter day as a `Date` at midnight GMT, and its two pickers are in the device's zone. West of UTC a picker would show the day before the day the filter uses, for a range that came by a hand-off or from a saved search, while the query's days are right. The issue names it under *Not claimed*, so that a run in New York is not misread as this defect.
+- **Checked again:** the session's script (43 issues in §1a, 40 of them in a row; decisions 145 to 186 each once) and the plan-of-record gate's two conditions.
+
+**The second finding filed, on the owner's word.** Asked whether to file it too, the owner: "Yes". It is #2013, labelled *bug*, *UI*, *iOS* and *needs local testing*, and the plan's decision 187.
+- **What it says.** On iPhone and iPad, Search turns its date filter's day strings into dates, and back, in GMT (`SearchViewModel.swift:2784-2789`, `:2864-2868`), while the filter's two pickers are in the device's zone. Three things follow, by the reading:
+  - after a hand-off or a saved search, the pickers show the day before, west of UTC, over a query with the right days;
+  - a picked day can be written as the day before or the day after, by the zone and the time of day the date carries;
+  - *Visualize in Corpus Analytics* reads the filter's years in the device's zone, so a chart of 1961 to 1963 followed to Search and back would return as 1960 to 1963.
+- **What was read for it,** beyond what #2012 took: both view models' conversions; the filter view's pickers, and that nothing in the app or the kit sets a zone in a view's environment; Corpus Analytics' hand-off, which writes `yyyy-01-01`; a saved search's own conversions, which are GMT both ways and so store and return the same strings in any zone; and the tests that set the filter's dates.
+- **A test in the repository holds one half of it.** `SearchViewTests.dateRangeFilterIncludedInParameters` sets local midnights and expects their days. By the reading it passes at or west of UTC, which is where it is run, and would not in Berlin or Tokyo. It was not run there.
+- **Emulated,** as #2012 was, with Python's `zoneinfo`: a day string read at midnight GMT and shown in six zones, and a picked day written back by the time of day it carries. Not Foundation.
+- **Not known,** and the issue says so: the time of day a date carries after a pick, on which the second of the three turns; and the zone a project's default dates are built in.
+- **The plan places it in a row of its own, L57, in Wave 2.** No other row edits Search's view model. Its first and third symptoms would show in New York with no zone changed, so the row can show its defect on the owner's Mac, and the early build's device pass can read the result. The row and its wave are the plan's reading, and the owner's to change. Waves 1 and 2 are then nine rows in their four days, one more than two a day covers, and the plan's calendar says so.
+- **#2012's text was brought to it:** its note on this finding now names #2013.
+- **Checked again:** the session's script (44 issues in §1a, 41 of them in a row; a brief for each of the table's 40 rows; decisions 145 to 187 each once) and the plan-of-record gate's two conditions.

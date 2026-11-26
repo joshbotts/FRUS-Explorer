@@ -266,13 +266,45 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     the dated memos and results at the Planning root (the C-3 designs and results, the agentic
     guide's reviews and assessments, and the 2026-10 and 2026-11 assessments).
 
-**Deliberately NOT here** (live at `Planning/` root — verified 2026-11-15, by listing the
+- **The 2026-11-25 move (1 document)** — moved with the plan of record that replaced the
+  2026-11-15 one, four days after 1.0 (1861) was released, when the owner asked for a plan to an
+  update that takes in the Office's next volume and builds the Collections overhaul (the live
+  plan's decision 145). **Residue is carried by the live plan**, in its §1 to §5.
+  - **The superseded plan of record**: `Plan-Of-Record-2026-11-15.md` (superseded 2026-11-25, ten
+    days old). It is the record of decisions 126 to 144; Track A's rows L15 to L25, N1 and C1; R5,
+    R6, R6a, R6b, R7 and R3; the sittings T2, W1 and W2; index version 75; and two uploads, 1.0
+    (1823) to TestFlight and 1.0 (1861), submitted on 2026-11-20 and released on 2026-11-21. Its
+    §3, the release after 1.0, is the live plan's Track B; what was still open of its §4 and §5 is
+    the live plan's §4 and §5.
+  - **Its head is one paragraph**, where the two plans archived before it have two, so that every
+    line below it keeps its number: the Collections design's first review and its reviewers'
+    reports cite this plan by line.
+  - **Pointers to this file.** The live plan's status line, §0 and §6. `../Visual-Marketing-Plan.md`
+    (the privacy label's two mentions name this directory), `../website-drafts/README.md`
+    (decision 101), `../Cross-Platform-UI-Adversarial-Review/STATUS.md` (the carried list, which
+    names the live plan's §5 with this plan's beside it), `../UI-UX-Adversarial-Review-2026-11-15.md`
+    (its status line: this plan's rows took its 1.0 findings, and the live plan's §5 carries the
+    rest), `../R6-Device-Pass-2026-11-18.md` and `../iPhone-Duo-Assessment-2026-11-19.md` (the row
+    each was written for) and `../Collections-Design-Adversarial-Review-2026-11-25.md` (the four
+    lines it cites). In this directory, the 2026-10-21 plan's status line and its review's dated
+    note, which named this plan at `../`, now name it here. Dated records were left as written:
+    `DEVELOPMENT-PLAN.md`'s entries, the archived plans' bodies, and the reviewers' and skeptics'
+    reports under `../collections-design-review/` and `../collections-design-review-2/`.
+
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-11-25, by listing the
 directory):
-- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-11-15`; every
-  superseded one is in this directory, `Plan-Of-Record-2026-10-21` since 2026-11-15), the review it
-  was written from (`UI-UX-Adversarial-Review-2026-11-15`, until its 1.0 rows merge and its backlog
-  is filed or declined), the log (`DEVELOPMENT-PLAN`, its entries from 2026-10-01; the earlier ones
+- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-11-25`; every
+  superseded one is in this directory, `Plan-Of-Record-2026-11-15` since 2026-11-25), the review
+  the plan before it was written from (`UI-UX-Adversarial-Review-2026-11-15`, until its backlog is
+  filed or declined), the log (`DEVELOPMENT-PLAN`, its entries from 2026-10-01; the earlier ones
   are `DEVELOPMENT-PLAN-to-2026-09` here) and the spec;
+- **the Collections design, and the first update's findings** —
+  `Collections-Customization-Design-2026-11-25` and its two reviews
+  (`Collections-Design-Adversarial-Review-2026-11-25`, `Collections-Design-Second-Review-2026-11-25`),
+  with their reviewers' folders (`collections-design-review/`, `collections-design-review-2/`),
+  until its lanes are built (the live plan's §1c); `R6-Device-Pass-2026-11-18` and
+  `iPhone-Duo-Assessment-2026-11-19`, with their captures, until F1, F2, F7, F11 and D1 have
+  landed (the live plan's §1b);
 - **the manuals' review** — `Manual-Update-Build-49-Owner-Review` (the worklist for the owner's
   review, which waits past build 52, the live plan's decision 94) and `Manual-Revisions-Pending`
   (the lanes' 137 proposals of the build-49 wave, which the manual update of 2026-10-07 read and

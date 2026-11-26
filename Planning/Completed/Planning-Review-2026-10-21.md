@@ -1,6 +1,6 @@
 # Planning review, for the next plan of record — 2026-10-21
 
-> **Moved to `Completed/` on 2026-11-15**, with the plan it was written from, when `../Plan-Of-Record-2026-11-15.md` superseded that plan (its §6). Its fifteen questions were answered on 2026-10-21 as that plan's decisions 84 to 98, and its tiers' residue is the live plan's §3 and §5.
+> **Moved to `Completed/` on 2026-11-15**, with the plan it was written from, when `Plan-Of-Record-2026-11-15.md` superseded that plan (its §6). Its fifteen questions were answered on 2026-10-21 as that plan's decisions 84 to 98, and its tiers' residue is the live plan's §3 and §5.
 
 **Status: DECIDED 2026-10-21, and carried into `Plan-Of-Record-2026-10-21.md`.** The owner answered §4's fifteen questions the same day (§5), and the new plan is built from those answers, its decisions 84 to 98, and from this review's findings. Written against `v2` at `f962077e` (S5 merged, no pull request open), the review proposed and decided nothing. Its §1 table is as proposed but for one row, corrected when the change was made (`external-citation-sample.json`), and the plan it names as superseded is now `Completed/Plan-Of-Record-2026-10-14.md`.
 

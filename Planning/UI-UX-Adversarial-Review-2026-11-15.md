@@ -1,6 +1,6 @@
 # UI and UX adversarial review, for the submission of 1.0 (1861) — 2026-11-15
 
-**Status: LIVE — the review the plan of record's decision 126 asks for** (`Plan-Of-Record-2026-11-15.md`, whose rows L17 to L21 take its 1.0 findings and whose §5 carries the rest). The rows are filed as #1917 to #1921 on the owner's word of 2026-11-15 (the plan's decision 127): L17 #1917, L18 #1918, L19 #1919, L20 #1920, L21 #1921. The owner took its 2 S1s and 23 S2s for 1.0 the same evening (the plan's decision 133), and settled §7's naming question (decision 135). Read against `v2` at `4a269a35`. Nothing in the app, its tests or its manuals was changed by it. It stays at the Planning root until its 1.0 rows have merged and its backlog has been filed as issues or declined, on the owner's word.
+**Status: LIVE — the review the plan of record's decision 126 asks for** (`Completed/Plan-Of-Record-2026-11-15.md`, whose rows L17 to L21 took its 1.0 findings; `Plan-Of-Record-2026-11-25.md` §5 carries the rest). The rows are filed as #1917 to #1921 on the owner's word of 2026-11-15 (the plan's decision 127): L17 #1917, L18 #1918, L19 #1919, L20 #1920, L21 #1921. The owner took its 2 S1s and 23 S2s for 1.0 the same evening (the plan's decision 133), and settled §7's naming question (decision 135). Read against `v2` at `4a269a35`. Nothing in the app, its tests or its manuals was changed by it. It stays at the Planning root until its 1.0 rows have merged and its backlog has been filed as issues or declined, on the owner's word.
 
 ---
 

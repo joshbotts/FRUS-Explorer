@@ -23,7 +23,7 @@ issue. It is listed here so that it has one home, and so that the package can be
 `Planning/Completed/` once the owner has said yes or no to each. Every line was re-checked against
 the tree at `v2` `dc17d945`.
 
-**Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-11-15.md` §5, *Parked* and P2's accessibility sweep; before it `Planning/Completed/Plan-Of-Record-2026-10-21.md` §5, `Planning/Completed/Plan-Of-Record-2026-10-14.md` §6f and `Planning/Completed/Plan-Of-Record-2026-10-11.md` §5c, "Designed
+**Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-11-25.md` §5, *Parked* and P2's accessibility sweep; before it `Planning/Completed/Plan-Of-Record-2026-11-15.md` §5, `Planning/Completed/Plan-Of-Record-2026-10-21.md` §5, `Planning/Completed/Plan-Of-Record-2026-10-14.md` §6f and `Planning/Completed/Plan-Of-Record-2026-10-11.md` §5c, "Designed
 and not built, parked"; the list was first written as §4 of the plan it replaced, now
 `Planning/Completed/Plan-Of-Record-2026-09-28.md`), so nothing more is owed here:
 - **F-22** — a reader that follows the system text size (`HTMLTemplate.swift:170` still pins
