@@ -56,6 +56,8 @@ import SourceNoteKit
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-27: #1014 W-1
+///   1.1 — 2026-11-26 (decision 191): an `Ibid.` naming a subject-numeric file of its own is
+///          counted apart from the bare ones (`inheritsRepository`)
 public enum IbidGapMeasurement {
 
     // MARK: - Report
@@ -85,6 +87,11 @@ public enum IbidGapMeasurement {
         public var blockedByPublicationAdmitted = 0
         /// Nothing citable precedes the `Ibid.` in its document.
         public var noPriorCitation = 0
+        /// Not bare: an `Ibid.` naming a subject-numeric file of its own under its referent's
+        /// repository, which the harvest reads from version 76 (decision 191). Counted apart.
+        public var inheritsRepository = 0
+        /// …of which the repository was the document's own source note.
+        public var inheritsRepositoryFromSourceNote = 0
         /// `Ibid., Central Files, 684A.86/8–956` — an `Ibid.` clause carrying its own admitted
         /// class. Already harvested; context for the `ibidStandsAlone` decision in step 2.
         public var explicitIbidAdmitted = 0
@@ -160,6 +167,7 @@ public enum IbidGapMeasurement {
         // Returned as the first failing guard's name so a refused inheritance can say WHY in
         // the report and the samples.
         let verdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { schedule.composes($0) }
+        let parser = SourceNoteParser()
 
         var report = Report()
         report.generated = generated
@@ -180,13 +188,20 @@ public enum IbidGapMeasurement {
             bandVolumes[band, default: []].insert(volumeId)
 
             var walker = FootnoteIbidGapWalker(admissionVerdict: verdict)
+            // Decision 191: each document's source note seeds an `Ibid.` that names a file of its
+            // own, as the harvest seeds it (`ExternalCitationIndexRunner`).
+            var sourceNotes: [String: String] = [:]
+            for note in DocumentNoteExtractor.extract(fromXML: data) where !note.documentId.isEmpty {
+                sourceNotes[note.documentId] = note.note
+            }
             for document in DocumentFootnoteExtractor.extract(fromXML: data) {
                 report.documentsScanned += 1
                 bandDocuments[band, default: 0] += 1
                 bandFootnotes[band, default: 0] += document.footnotes.count
                 report.footnotesScanned += document.footnotes.count
 
-                walker.beginDocument()
+                let sourceNote = sourceNotes[document.documentId]
+                walker.beginDocument(sourceNote: sourceNote.map { parser.parse($0) }, note: sourceNote)
                 for note in document.footnotes {
                     let result = walker.scan(note: note)
                     var tally = bandTallies[band] ?? GapTally()
@@ -196,6 +211,13 @@ public enum IbidGapMeasurement {
                     tally.ambiguousClauses += result.ambiguousClauses
 
                     for observation in result.observations {
+                        // Decision 191: an `Ibid.` that names a file of its own is not a bare one,
+                        // so it is counted apart and the bare-`Ibid.` tally keeps its meaning.
+                        if case let .inheritsRepository(_, distance) = observation.outcome {
+                            tally.inheritsRepository += 1
+                            if distance == nil { tally.inheritsRepositoryFromSourceNote += 1 }
+                            continue
+                        }
                         tally.bareIbidClauses += 1
                         var sample = Sample(volumeId: volumeId,
                                             documentId: document.documentId, band: band,
@@ -236,6 +258,8 @@ public enum IbidGapMeasurement {
                         case .noPriorCitation:
                             tally.noPriorCitation += 1
                             sample.outcome = "noPriorCitation"
+                        case .inheritsRepository:
+                            continue  // counted above
                         }
                         let seen = (seenPerOutcome[sample.outcome] ?? 0) + 1
                         seenPerOutcome[sample.outcome] = seen
@@ -269,6 +293,8 @@ public enum IbidGapMeasurement {
             overall.blockedByPublication += tally.blockedByPublication
             overall.blockedByPublicationAdmitted += tally.blockedByPublicationAdmitted
             overall.noPriorCitation += tally.noPriorCitation
+            overall.inheritsRepository += tally.inheritsRepository
+            overall.inheritsRepositoryFromSourceNote += tally.inheritsRepositoryFromSourceNote
             overall.explicitIbidAdmitted += tally.explicitIbidAdmitted
             overall.ambiguousClauses += tally.ambiguousClauses
             overall.directAdmitted += tally.directAdmitted
@@ -347,6 +373,8 @@ public enum IbidGapMeasurement {
           beyond reach: \(o.beyondReach.values.reduce(0, +)) (\(o.beyondReachAdmitted) admitted); \
         blocked by publication: \(o.blockedByPublication) (\(o.blockedByPublicationAdmitted) admitted); \
         no prior citation: \(o.noPriorCitation)
+          Ibid. naming a subject-numeric file under its referent's repository (decision 191): \
+        \(o.inheritsRepository) (\(o.inheritsRepositoryFromSourceNote) from the source note)
           explicit Ibid. already harvested: \(o.explicitIbidAdmitted); ambiguous clauses: \
         \(o.ambiguousClauses)
           parity: direct \(o.directAdmitted) + \(o.directAdmittedInArchivalClauses) in \

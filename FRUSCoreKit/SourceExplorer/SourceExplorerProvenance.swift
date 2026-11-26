@@ -48,6 +48,8 @@ import SourceNoteKit
 ///   1.2 — 2026-11-10 (FRUS Explorer Light, S22b): moved into FRUSCoreKit, public; `lotCards` is handed the
 ///          series facts too, which name a divided lot's creator, and the app's overload without them passes
 ///          its store (`SourceExplorerProvenance+App.swift`)
+///   1.3 — 2026-11-26 (L26, decision 191): `unprintedPointerSource(for:)` gives a subject-numeric class
+///          pointer the volumes' chip; the schedule's stays with the decimal classes it composes
 public enum SourceExplorerProvenance {
 
     /// Which producer answered for a lot file's **Record Group** row.
@@ -94,10 +96,23 @@ public enum SourceExplorerProvenance {
     /// A lot or library pointer is gated by nothing — the footnote named it and the app stored it —
     /// so those stay `.frusText`.
     ///
+    /// **A subject-numeric class is `.frusText` too (decision 191, index version 76).** It shares
+    /// the class anchor, and `ExternalCitation.decimalClass`'s form tells it apart
+    /// (`CollectionKeying.isSubjectNumericClass`). Its row exists because the footnote named the
+    /// Central Files and a category on the grammar's own list (`ParsedSourceNote
+    /// .subjectNumericCategories`), the rule that reads every subject-numeric source note: no
+    /// bundled schedule composed it. The schedule's chip would also say so wrongly aloud, since
+    /// its partner is "the State Department's decimal classification schedule". The Central
+    /// Foreign Policy File's anchor is named by the footnote, like a lot, and falls to the
+    /// default arm.
+    ///
     /// - Parameter citation: the stored citation behind the row.
-    /// - Returns: `.stateDeptSchedule` for a central-file-class pointer, `.frusText` otherwise.
+    /// - Returns: `.stateDeptSchedule` for a decimal central-file-class pointer, `.frusText`
+    ///   otherwise.
     public static func unprintedPointerSource(for citation: ExternalCitation) -> ProvenanceSource {
-        citation.anchor == "centralFileClass" ? .stateDeptSchedule : .frusText
+        guard citation.anchor == "centralFileClass" else { return .frusText }
+        let subjectNumeric = citation.decimalClass.map(CollectionKeying.isSubjectNumericClass) ?? false
+        return subjectNumeric ? .frusText : .stateDeptSchedule
     }
 
     // MARK: - Lot cards (#1589)

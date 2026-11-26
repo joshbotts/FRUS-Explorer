@@ -445,6 +445,34 @@ struct TripPacketBuilderTests {
         #expect(model.referenceCoverage.documentsScanned == 2)
     }
 
+    /// Decision 191 (index version 76) gives the pointed-at table two kinds of row more, and the
+    /// packet still leaves out the central files: a subject-numeric class has the class anchor, and
+    /// a Central Foreign Policy File citation names no collection, so every one would key to a
+    /// single "Department of State" target.
+    @MainActor
+    @Test("The refs channel leaves out subject-numeric classes and the Central Foreign Policy File")
+    func refsChannelLeavesOutThePostwarCentralFiles() async {
+        let subjectNumeric = ExternalCitation(
+            anchor: "centralFileClass", repository: "Department of State", collection: nil,
+            lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
+            rawText: "Department of State, Central Files, POL 27 VIET S", noteOrdinal: 0,
+            decimalClass: "POL 27 VIET S", noteLabel: "1")
+        let foreignPolicyFile = ExternalCitation(
+            anchor: "centralForeignPolicyFile", repository: "Department of State", collection: nil,
+            lotFile: nil, lotFileNorm: nil, fileId: "D780382–0612", inherited: false,
+            rawText: "National Archives, RG 59, Central Foreign Policy File, D780382–0612",
+            noteOrdinal: 1, noteLabel: "2")
+        let stub = Stub(sources: [], citations: ["v1/d1": [subjectNumeric, foreignPolicyFile]])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1")], researchQuestion: nil, dataSource: stub)
+        #expect(model.targets.isEmpty, """
+            A central-file citation minted a target: \(model.targets.map(\.key)). The packet's \
+            pointed-at channel takes lots and libraries only (`ExternalCitation.isInPacketChannel`).
+            """)
+        #expect(model.referenceCoverage.documentsWithReferences == 0)
+        #expect(model.referenceCoverage.documentsScanned == 1)
+    }
+
     /// `referenceKey` speaks the same vocabulary as `targetKey` — the merge above depends
     /// on it, so the mapping is pinned directly too.
     @MainActor

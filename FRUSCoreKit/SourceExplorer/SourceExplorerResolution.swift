@@ -52,6 +52,8 @@ import SourceNoteKit
 ///         `load()` ran, with the twins' `loadUnprintedPointers(sourceNote:)`, `resolveCountrySeries()` and
 ///         `loadRelatedDocuments(for:)`, and `resolvingAgain()` for a load of the document a view already
 ///         shows; `UnprintedPointer` and its render-time join, `resolve(_:authority:)`, from `SourceExplorerView`
+///   1.1 — 2026-11-26 (L26, decision 191): `packetPointers`, the rows "Add unprinted references (N)" counts,
+///         which leave out the central files as the packet does
 public struct SourceExplorerResolution: Sendable {
 
     /// The source note as the host passed it: blank for a document that prints none.
@@ -80,6 +82,16 @@ public struct SourceExplorerResolution: Sendable {
 
     /// The document's footnote pointers at material FRUS did not print, in reading order (step 6, #829a).
     public internal(set) var unprintedPointers: [UnprintedPointer] = []
+
+    /// The pointers the Archives Visit packet's pointed-at channel takes (`ExternalCitation
+    /// .isInPacketChannel`): the lot and library rows of ``unprintedPointers``. Both twins' Add to
+    /// Archives Visit menus count and offer these, since the packet leaves out the central files'
+    /// rows, the class anchor's and from index version 76 the Central Foreign Policy File's
+    /// (decision 191). Counting the whole list offered "Add unprinted references (3)" for a
+    /// document whose three rows were all classes, an option that added nothing.
+    public var packetPointers: [UnprintedPointer] {
+        unprintedPointers.filter { $0.citation.isInPacketChannel }
+    }
 
     /// The documents from the same archival collection (step 7): `.notRun` until the step, and when there
     /// is no index.

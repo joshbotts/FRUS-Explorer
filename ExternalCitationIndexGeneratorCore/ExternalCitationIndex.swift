@@ -38,6 +38,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — 2026-11-26 (L26, decision 191): the class axis takes the subject-numeric files of 1963–73, and
+///          `Coverage` counts them and the Central Foreign Policy File's citations, which join no axis
 public struct ExternalCitationIndex: Codable, Sendable, Equatable {
 
     /// One archival unit's references, broken down by the volume whose footnotes made them.
@@ -153,7 +155,8 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
 
         /// References naming a **central-file class** — the decimal channel. Admitted by the
         /// shipped rule: the clause carries a class followed by its document serial
-        /// (`793.94/9732`) and the key composes under the 1910-1949 schedule.
+        /// (`793.94/9732`) and the key composes under the 1910-1949 schedule. From index version
+        /// 76 the subject-numeric files of 1963–73 too (``subjectNumericReferences``, decision 191).
         public let decimalReferences: Int
         /// Of those, the ones whose class came from a bare `Ibid.` inheriting an earlier
         /// footnote's class (#1014 W-1b) rather than from a class written in the clause. Any
@@ -166,8 +169,13 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         /// file rather than pointing outside itself. Stored and counted, never drawn; measured at
         /// 74-76% pre-war, which is the single most important number about this channel.
         public let decimalSameClassReferences: Int
-        /// Candidates refused for being **subject-numeric** (`POL 27 VIET S`) rather than decimal.
-        /// Out of scope by decision, counted so the scope is a decision rather than a gap.
+        /// **Subject-numeric** candidates (`POL 27 VIET S`) the shipped rule refuses: every one
+        /// before index version 76; from 76, those whose clause names no Central Files, or only the
+        /// White House's or the Central Foreign Policy File, or whose lead the source-note grammar
+        /// does not read (decision 191). Counted so the rule's reach is a figure rather than a gap.
+        /// It is the direct pass's count: an `Ibid.` naming a file of its own names no repository in
+        /// its clause and is counted here, and again in ``subjectNumericReferencesInherited`` when
+        /// the walker gives it its referent's Central Files.
         public let decimalSubjectNumericRefused: Int
         /// Candidates carrying a serial whose key does **not** compose under the shipped schedule.
         /// Refused — but the shipped country table is incomplete (~290 codes measured against 198
@@ -188,6 +196,22 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         /// it, and nothing COULD: the one check available without a fingerprint — every stored key
         /// still composes — passes when the vocabulary grows, which is the direction that drifted.
         public let decimalVocabulary: DecimalVocabulary
+
+        // MARK: The post-1963 central files (decision 191, index version 76)
+
+        /// Of ``decimalReferences``, the **subject-numeric** files of 1963–73 (`POL 27 VIET S`):
+        /// admitted where the clause names the Central Files, or its `Ibid.` inherits them, and the
+        /// lead is one the source-note grammar reads. The class axis carries both filing systems, and
+        /// `CollectionKeying.isSubjectNumericClass` tells a key's.
+        public let subjectNumericReferences: Int
+        /// Of those, the ones an `Ibid.` gave: a bare one inheriting a subject-numeric class, or
+        /// one naming its own file under its referent's repository.
+        public let subjectNumericReferencesInherited: Int
+        /// Citations of the **Central Foreign Policy File** (1973 on), direct and by `Ibid.`:
+        /// counted, and in no axis, since the authority holds no record for the file.
+        public let foreignPolicyFileReferences: Int
+        /// Of those, the ones an `Ibid.` gave.
+        public let foreignPolicyFileReferencesInherited: Int
 
         /// A fingerprint of the class and country KEYS `DecimalScheduleComposition.composes` reads.
         ///
@@ -224,7 +248,10 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
                     decimalSameClassReferences: Int, decimalSubjectNumericRefused: Int,
                     decimalNotComposingRefused: Int,
                     decimalNotInSharedVocabularyRefused: Int,
-                    decimalVocabulary: DecimalVocabulary) {
+                    decimalVocabulary: DecimalVocabulary,
+                    subjectNumericReferences: Int = 0, subjectNumericReferencesInherited: Int = 0,
+                    foreignPolicyFileReferences: Int = 0,
+                    foreignPolicyFileReferencesInherited: Int = 0) {
             self.volumesScanned = volumesScanned
             self.volumesWithReferences = volumesWithReferences
             self.documentsScanned = documentsScanned
@@ -249,6 +276,10 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
             self.decimalNotComposingRefused = decimalNotComposingRefused
             self.decimalNotInSharedVocabularyRefused = decimalNotInSharedVocabularyRefused
             self.decimalVocabulary = decimalVocabulary
+            self.subjectNumericReferences = subjectNumericReferences
+            self.subjectNumericReferencesInherited = subjectNumericReferencesInherited
+            self.foreignPolicyFileReferences = foreignPolicyFileReferences
+            self.foreignPolicyFileReferencesInherited = foreignPolicyFileReferencesInherited
         }
     }
 
@@ -281,16 +312,18 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
     /// two-axis shape `provenance-flow-index.json` and `collection-usage-index.json` already use.
     ///
     /// The vocabulary is `collection-usage-index.json`'s, **not namespaced**, so a key here is the
-    /// key `ArchivalCollectionsData` already ranks and `decimal-class-labels.json` already glosses.
+    /// key `ArchivalCollectionsData` already ranks and `decimal-class-labels.json` already glosses —
+    /// or `subject-numeric-labels.json`, for the subject-numeric keys decision 191 admits.
     public let classTargetKeys: [String]
     /// Class keys reached as a citing document's **own** class, sorted.
     ///
-    /// **This vocabulary holds BOTH filing systems, and the target one does not.** Subject-numeric
-    /// designators (`POL 1 CHICOM USSR`, `DEF 18`) are out of scope as harvest TARGETS by owner
-    /// decision — the footnote grammar refuses them — but a citing document filed under one is
-    /// simply a fact about that document, and dropping it would discard real pairs whose target is
-    /// a decimal file. So a pair may read `POL 1 CHICOM USSR -> 763.72`, meaning a
-    /// subject-numeric-filed document cited a decimal one. Branch on
+    /// **This vocabulary holds BOTH filing systems, and since the artifact built for index version
+    /// 76 the target one does too (decision 191).** Until then subject-numeric designators (`POL 1 CHICOM USSR`, `DEF 18`) were out of
+    /// scope as harvest TARGETS by owner decision, the footnote grammar refusing them, while a
+    /// citing document filed under one was simply a fact about that document, and dropping it would
+    /// have discarded real pairs whose target is a decimal file. So a pair may read `POL 1 CHICOM
+    /// USSR -> 763.72`, meaning a subject-numeric-filed document cited a decimal one, and since
+    /// decision 191 also `POL 27 VIET S -> POL 27 VIET S`. Branch on
     /// `CollectionKeying.isSubjectNumericClass` before grouping or labelling.
     public let classSourceKeys: [String]
     /// Per-target-class references by volume, sorted by `key`.

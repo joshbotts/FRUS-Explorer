@@ -642,6 +642,60 @@ struct ExternalCitationIndexRunnerTests {
         #expect(result.index.coverage.decimalReferences == 1, "the direct class reference alone")
     }
 
+    /// Decision 191 (the artifact built for index version 76): a subject-numeric file the footnote
+    /// places in the Central Files, or whose `Ibid.` inherits them, joins the class axis, and the
+    /// Central Foreign Policy File is counted and joined to nothing. The refusals are priced by
+    /// reason, and an `Ibid.` naming a file of its own is refused by the direct pass (it names no
+    /// repository) before the walker gives it its referent's.
+    @Test("The post-1963 central files: subject-numeric classes join the axis, the Foreign Policy File is counted")
+    func postwarCentralFilesAreCounted() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-191-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let files = [
+            // The joinable lot volume the brokenJoin guard requires.
+            try volume("frus1952-54v01", documents: [
+                (source: "Source: Department of State, Conference Files: Lot 60 D 627, CF 200.",
+                 footnotes: ["A copy is in Department of State, S/S – NSC Files: Lot 63 D 351."]),
+            ], in: root),
+            try volume("frus1964-68v01", documents: [
+                (source: "Source: National Archives, RG 59, Central Files 1964–66, POL 27 VIET S. Secret.",
+                 footnotes: [
+                    "Ibid., POL 15 VIET S.",
+                    "Department of State, Central Files, POL 27 VIET S.",
+                    "Ibid.",
+                    "Department of State, Central Files, NCO 10 UN.",
+                    "The memorandum is in the Johnson Library, White House Central Files, PR 8–1.",
+                 ]),
+            ], in: root),
+            try volume("frus1977-80v01", documents: [
+                (source: "Source: National Archives, RG 59, Central Foreign Policy File, D770001–0001. Secret.",
+                 footnotes: [
+                    "National Archives, RG 59, Central Foreign Policy File, D780382–0612.",
+                    "Ibid., D780383–0190.",
+                 ]),
+            ], in: root),
+        ]
+        let result = try build(files)
+        let coverage = result.index.coverage
+        #expect(coverage.subjectNumericReferences == 3, "one from the source note, one direct, one bare Ibid.")
+        #expect(coverage.subjectNumericReferencesInherited == 2)
+        #expect(coverage.decimalReferences == 3, "the class channel counts both filing systems")
+        #expect(coverage.decimalReferencesInherited == 2)
+        #expect(coverage.decimalSubjectNumericRefused == 3, """
+            The direct pass refuses three: the Ibid. naming its own file (no repository in its \
+            clause), the lead no source note is read by, and the White House's file.
+            """)
+        #expect(coverage.foreignPolicyFileReferences == 2)
+        #expect(coverage.foreignPolicyFileReferencesInherited == 1)
+        let subjectNumericKeys = result.index.classTargetKeys.filter(CollectionKeying.isSubjectNumericClass)
+        #expect(subjectNumericKeys.count == 2, "\(subjectNumericKeys)")
+        #expect(subjectNumericKeys.contains { $0.hasPrefix("POL 15") }
+                && subjectNumericKeys.contains { $0.hasPrefix("POL 27") })
+        #expect(result.index.targetIds.allSatisfy { $0.hasPrefix("lot:") || $0.hasPrefix("txt:") },
+                "the Foreign Policy File joined a collection: \(result.index.targetIds)")
+    }
+
     @Test("Two builds of the same corpus are byte-identical")
     func isDeterministic() throws {
         let files = try fixtureCorpus()

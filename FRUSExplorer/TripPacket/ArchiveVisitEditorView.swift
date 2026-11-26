@@ -78,6 +78,8 @@ import SwiftData
 ///   1.11 — 2026-11-24 (FRUS Explorer Light, S30b): a target's tier, exclusion and note are written by the
 ///         plan (`setTier`, `setIncluded`, `setNote`), through FRUSCoreKit's rules, and a rename's draft is
 ///         read by its rule (`ArchiveVisitPlanWrites.name(fromDraft:)`); nothing the editor does changes.
+///   1.12 — 2026-11-26 (L26, decision 191): a seed's reference count reads the packet's channel through
+///         `ExternalCitation.isInPacketChannel`, which leaves out the Central Foreign Policy File as well.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -1559,7 +1561,7 @@ struct ArchiveVisitEditorView: View {
         var facts: [String: SeedFacts] = [:]
         for seed in seeds {
             let key = "\(seed.volumeId)/\(seed.documentId)"
-            let relevant = (citations[key] ?? []).filter { $0.anchor != "centralFileClass" }
+            let relevant = (citations[key] ?? []).filter(\.isInPacketChannel)
             facts[key] = SeedFacts(
                 header: await dataSource.documentHeader(volumeId: seed.volumeId,
                                                         documentId: seed.documentId),

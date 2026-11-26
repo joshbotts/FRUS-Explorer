@@ -579,7 +579,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         document's linked terms, `term_mentions` (decision 172), with the parts of the document
 ///         that link each, `parts` (decision 188); a `terms` row for each spelling of a term-list item
 ///         (decision 189); on an edge resolved from a page, the page and how, `cited_page_id` and
-///         `page_resolution` (decision 190); and the page each division begins
+///         `page_resolution` (decision 190); the footnote grammar's post-1963 central files, a
+///         Subject-Numeric file's class row and the Central Foreign Policy File's, with each document's walk
+///         seeded from its source note and the packet's channel one list, `ExternalCitation.anchorsOutsideThePacket`
+///         (decision 191); and the page each division begins
 ///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
 ///         See the v76 note
 public actor IndexingPipeline {
@@ -1791,6 +1794,20 @@ public actor IndexingPipeline {
     ///     each names its division (the Preface, the Introduction, the list of the administration's
     ///     volumes, the Sources, the Abbreviations, the Persons, the Index): 24,009 rows in 552
     ///     volumes. `page_ranges` is unchanged, row for row.
+    ///   - **The post-1963 central files in the footnote grammar** (decision 191, CR's C2-5; the owner's
+    ///     "Every reader now" and both `Ibid.` readings). The class channel refused every Subject-Numeric
+    ///     designator; it now admits one whose clause names the Central Files, not the White House's
+    ///     nor the Central Foreign Policy File alone, under a lead the source notes read
+    ///     (`FootnoteIbidGapWalker.subjectNumericVerdict`), and an `Ibid.` that names a file of its own
+    ///     takes its referent's Central Files within three notes or, first in the document, the
+    ///     source note's (`inheritsRepository`). The Central Foreign Policy File, which had no anchor, is
+    ///     `centralForeignPolicyFile`: `repository` the Department, no collection, its film number in
+    ///     `file_id`, by `Ibid.` too. Each document's walk is seeded from its parsed source note, as
+    ///     `ExternalCitationIndexRunner` seeds it. On a full index built as the app builds it:
+    ///     `external_citations` 50,173 rows → 65,549, 7,075 subject-numeric (3,052 by `Ibid.`, 1,631
+    ///     keys, 93 volumes) and 8,313 of the file (426 by `Ibid.`, 62 volumes), each the count
+    ///     `external-citation-index.json` regenerated with it gives; every other row as it was but 12 bare
+    ///     `Ibid.`s whose last citation is now the file, which had taken a library or a lot before it.
     ///   Every other table holds the same rows at 75 and 76, read table by table with the id columns
     ///   set aside.
     public static let currentDateIndexVersion: Int = 76
@@ -6813,10 +6830,14 @@ public actor IndexingPipeline {
         // reference in `external-citation-index.json` are the same walk over the same clauses.
         // The schedule guard degrades exactly as the direct pass above does: a missing labels
         // artifact refuses rather than admits.
-        var ibidWalker = FootnoteIbidGapWalker(
-            admissionVerdict: FootnoteIbidGapWalker.shippedAdmissionVerdict { [classSchedule] in
-                classSchedule?.composes($0) ?? false
-            })
+        let admissionVerdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { [classSchedule] in
+            classSchedule?.composes($0) ?? false
+        }
+        var ibidWalker = FootnoteIbidGapWalker(admissionVerdict: admissionVerdict)
+        // Decision 191: the document's own source note seeds an `Ibid.` that names a file of its
+        // own, first in the document. Parsed only where it could be a Central Files or Central
+        // Foreign Policy File note; every other note seeds nothing.
+        let seedParser = SourceNoteParser()
 
         // #1978: `position` is the row's place in its volume, the order a fresh index writes them in.
         for (position, astDoc) in astDocs.enumerated() {
@@ -6888,8 +6909,13 @@ public actor IndexingPipeline {
             pageRangeRows.append(contentsOf: docPageRanges)
 
             if !astDoc.isFrontMatter {
-                footnoteScanner.beginDocument()
-                ibidWalker.beginDocument()
+                // Decision 191: the document's own source note seeds an `Ibid.` that names a file
+                // of its own first in the document. Every note is parsed for it, as
+                // `ExternalCitationIndexRunner` parses every one, so the table and the artifact
+                // seed the same documents; a word test ahead of the parse would be a second rule.
+                let seed = sourceNote.map { note in (parsed: seedParser.parse(note), note: note) }
+                footnoteScanner.beginDocument(sourceNote: seed?.parsed)
+                ibidWalker.beginDocument(sourceNote: seed?.parsed, note: seed?.note)
                 for (ordinal, footnote) in Self.collectBodyFootnotes(from: astDoc.nodes)
                     .enumerated() {
                     // `ordinal` is a reading POSITION among the notes this walk keeps; `label` is
@@ -6907,16 +6933,14 @@ public actor IndexingPipeline {
                     }
                     // #834: central-file classes, continuing the same `citation_index` sequence so
                     // the primary key still separates every citation in the note. The rule is the
-                    // one `ExternalCitationIndexRunner` ships — serial-carrying, composing under
-                    // the schedule, in the shared vocabulary, subject-numeric out — because a table
-                    // admitting what the artifact refused would make the graph and Archival
-                    // Analytics disagree about the same footnote.
+                    // one `ExternalCitationIndexRunner` ships — the shared verdict chain itself:
+                    // serial-carrying and composing under the schedule for a decimal class, and,
+                    // from version 76, the Central Files named and a lead the source notes read for a
+                    // subject-numeric one (decision 191) — because a table admitting what the
+                    // artifact refused would make the graph and Archival Analytics disagree about
+                    // the same footnote.
                     for candidate in FootnoteCitationScanner.classCandidates(inNote: note)
-                    where candidate.refusal == nil
-                        && !candidate.isSubjectNumeric
-                        && candidate.evidence.carriesSerial
-                        && SourceNoteParser.decimalClassKey(candidate.classKey) != nil
-                        && (classSchedule?.composes(candidate.classKey) ?? false) {
+                    where admissionVerdict(candidate) == nil {
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
                             noteLabel: noteLabel,
@@ -6933,9 +6957,15 @@ public actor IndexingPipeline {
                     // rows carry, and the same `citation_index` sequence. The walker sees EVERY
                     // note (its cross-footnote state is the point), and only the admitted-class
                     // observations become rows.
+                    // Decision 191: and an `Ibid.` naming a subject-numeric file of its own under
+                    // its referent's repository, inherited in the same sense.
                     for observation in ibidWalker.scan(note: note).observations {
-                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
-                        else { continue }
+                        let key: String
+                        switch observation.outcome {
+                        case let .inheritsAdmittedClass(admitted, _, _): key = admitted
+                        case let .inheritsRepository(named, _): key = named
+                        default: continue
+                        }
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
                             noteLabel: noteLabel,
@@ -7170,6 +7200,12 @@ public actor IndexingPipeline {
             repository = library
             collection = name
             fileId = identifier
+        case .cfpfFile(let film):
+            // Decision 191: the Department's file from 1973, under the repository a lot's is, its
+            // film number where the footnote gives one. No collection name: the authority holds no
+            // record for the file, and lot 12D215, whose aliases name it, would claim it by name.
+            repository = "Department of State"
+            fileId = film
         default:
             break
         }
@@ -10674,17 +10710,20 @@ public actor IndexingPipeline {
     /// small minority of documents, ≲6%) is an artifact claim about the WHOLE series; this is
     /// the same measurement over the index this device actually holds, so a sparsity caption
     /// can state a measured local fact instead of asserting the corpus. The filter matches
-    /// the packet's own channel rule exactly — the class anchor is excluded, as
-    /// `TripPacketBuilder`'s refs loop excludes it — so the number describes the channel the
-    /// captions caption.
+    /// the packet's own channel rule exactly — the anchors `ExternalCitation.anchorsOutsideThePacket`
+    /// names are excluded, as `TripPacketBuilder`'s refs loop excludes them — so the number
+    /// describes the channel the captions caption. The list is constants, so the statement is
+    /// built from it rather than bound.
     ///
     /// - Returns: `(documentsWithReferences, indexedDocuments)` — both numbers, always, per
     ///   the house coverage grammar. `(0, 0)` on an empty index.
     public func externalCitationSparsity() throws -> (documentsWithReferences: Int,
                                                       indexedDocuments: Int) {
+        let excluded = ExternalCitation.anchorsOutsideThePacket
+            .map { "'\($0)'" }.joined(separator: ", ")
         let refsSQL = """
             SELECT COUNT(DISTINCT volume_id || '/' || document_id)
-            FROM external_citations WHERE anchor != 'centralFileClass'
+            FROM external_citations WHERE anchor NOT IN (\(excluded))
             """
         let stmt = try auxPrepare(refsSQL)
         defer { sqlite3_finalize(stmt) }
@@ -15093,7 +15132,9 @@ public struct IndexedVolumeFile: Sendable, Equatable, Hashable {
 /// moment that is added to a "documents from this collection" total the two claims are one wrong
 /// number — which is precisely what #783 removed.
 public struct ExternalCitation: Sendable, Equatable, Identifiable {
-    /// `"lotFile"`, `"presidentialLibrary"`, or `"centralFileClass"` (#834).
+    /// `"lotFile"`, `"presidentialLibrary"`, `"centralFileClass"` (#834) — a decimal class, or from
+    /// index version 76 a subject-numeric file of 1963–73, which ``decimalClass``'s form tells
+    /// apart — or, from version 76, `"centralForeignPolicyFile"` (decision 191).
     public let anchor: String
     /// The repository, when the citation names one.
     public let repository: String?
@@ -15114,7 +15155,9 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// A reading POSITION among the notes the harvest keeps, which is not the number the volume
     /// printed — see `noteLabel`.
     public let noteOrdinal: Int
-    /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`.
+    /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`, or from
+    /// index version 76 a subject-numeric designator, `POL 27 VIET S` (decision 191).
+    /// `CollectionKeying.isSubjectNumericClass` tells the two filing systems apart.
     public let decimalClass: String?
     /// The label the VOLUME printed for the citing note — the trimmed `@n`, `nil` when the volume
     /// printed none (#1322).
@@ -15168,9 +15211,30 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
         // thing about it.
         if let decimalClass, !decimalClass.isEmpty { return decimalClass }
         if let lotFile, !lotFile.isEmpty { return "Lot \(lotFile)" }
+        // Decision 191: the file's own name, which the row keeps out of `collection` so that no
+        // authority join can claim it; its film number is `fileId`, drawn beside it.
+        if anchor == FootnoteArchivalCitation.Anchor.centralForeignPolicyFile.rawValue {
+            return Self.centralForeignPolicyFileName
+        }
         let parts = [repository, collection].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? rawText : parts.joined(separator: ", ")
     }
+
+    /// The Central Foreign Policy File's name, as its citations print it: the label of a
+    /// `centralForeignPolicyFile` row (decision 191). A proper name, like a row's repository.
+    public static let centralForeignPolicyFileName = "Central Foreign Policy File"
+
+    /// The anchors the Archives Visit packet's pointed-at channel leaves out: the central-file class,
+    /// deferred by #784's own scope, and from index version 76 the Central Foreign Policy File
+    /// (decision 191), whose rows name no collection and would all key to one "Department of State"
+    /// target. `TripPacketBuilder`, the plan editor's per-seed counts and
+    /// `IndexingPipeline.externalCitationSparsity()` read the channel through this one list, so the
+    /// packet, its counts and its sparsity caption describe the same citations.
+    public static let anchorsOutsideThePacket = ["centralFileClass", "centralForeignPolicyFile"]
+
+    /// Whether the Archives Visit packet's pointed-at channel takes this citation: a lot or a
+    /// library one (``anchorsOutsideThePacket``).
+    public var isInPacketChannel: Bool { !Self.anchorsOutsideThePacket.contains(anchor) }
 
     /// Creates a citation.
     ///

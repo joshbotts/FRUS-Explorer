@@ -652,12 +652,20 @@ fragment** (mean 50.8 characters — `822.154/375`, `Lot 57D284, Box 111`), not 
 `LIKE '%Department of Commerce%'` over it measures the parser's fragment and returns 0 where the TEI
 footnotes carry the name 254 times; for an institution named in footnotes, parse `<note>` in the
 TEI. And **the table is a grammar, not a transcript**: it captures lot, presidential-library and
-decimal-class anchors only. A Federal Records Center accession, a bare `RG 40`, or a subject-numeric
-key (`FT 7 GATT`, `STR 13-1`, `ORG 1 COM–STATE` — 7,337 refused corpus-wide on the bundled index
-regenerated for version 69, 6,752 before it, so every post-1963 pointer of that form is invisible
-here) is not a row: `SUM(raw_text LIKE '%RG 59%')` = 781 while
-`'%RG 40%'` = 0 against 13 `RG 40` footnote occurrences in the TEI. A zero in this channel for a
-record group, an accession or a subject-numeric file is a grammar limit, not an absence.
+central-file anchors only. **Since version 76 the central files are the Department's after 1963 as well
+(decision 191).** A Subject-Numeric file (`POL 27 VIET S`) is a `centralFileClass` row like a decimal one,
+its designator in `decimal_class` (a digit opens a decimal number, letters a designator), where the
+footnote's clause names the Central Files or its `Ibid.` inherits them: 7,075 rows on a full index, 3,052
+of them inherited, in 93 volumes. The Central Foreign Policy File, the Department's file from 1973, is
+`anchor = 'centralForeignPolicyFile'`, `repository` 'Department of State', `collection` NULL, its film
+number (`D780382–0612`, `P850056–2302`) in `file_id`: 8,313 rows, 426 inherited, 7,569 with a film
+number, in 62 volumes. A Federal Records Center accession, a bare `RG 40`, or a subject-numeric key
+the footnote places in no repository, in the White House Central Files or under a lead no source note
+is read by (3,826 refused corpus-wide on the bundled index regenerated for version 76, against 7,849,
+every one, before it) is not a row: `SUM(raw_text LIKE '%RG 40%')` = 0 against 13 `RG 40` footnote
+occurrences in the TEI. Nor is a designation with no number (`Central Files, POL US–USSR`), which the
+class grammar does not read in a footnote. A zero in this channel for a record group, an accession or a
+subject-numeric file is a grammar limit, not an absence.
 
 **These two tables must never be blended into one provenance count.** A `document_sources` row says
 a document *came from* an archive. An `external_citations` row says an editor *mentioned* one. The
@@ -1752,7 +1760,7 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 - The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than
   reporting an empty pre-war roadmap as an archival absence.
 - The pointed-at channel (external_citations) has no row before 1910-12-06, stores the citation
-  fragment, not the sentence, and holds lot, library and decimal anchors only. Say so before
+  fragment, not the sentence, and holds lot, library and central-file anchors only. Say so before
   ranking anything on it.
 ```
 
@@ -1903,7 +1911,9 @@ index and the manifest's 552 TEI files, `Department of State`:
 | body chapter / subchapter / compilation / section `<head>`s | 260 in 107 volumes |
 | `external_citations.raw_text LIKE '%RG 59%'` | 781 rows |
 
-The first two rows drop the second editions, as §12 did until v1.44. Dropping the first editions
+The last row is a control for an index from before version 76 only: from 76 the table reads the
+post-1963 central files (decision 191), whose citations print RG 59, and a full index holds 9,165
+such rows. The first two rows drop the second editions, as §12 did until v1.44. Dropping the first editions
 instead adds 4 documents to the first (93,824 against 93,828 at index version 71) and 9
 occurrences to the second (in the TEI of 2026-11-03).
 
@@ -2334,7 +2344,7 @@ The stack, and the question each artifact answers:
 | Artifact | Answers | Scale |
 |---|---|---|
 | `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 11,041 class keys |
-| `external-citation-index.json` | what the editors cited and did **not** print | 19,616 lot/library refs + 30,527 class refs, 441 volumes |
+| `external-citation-index.json` | what the editors cited and did **not** print | 19,604 lot/library refs + 37,602 class refs (7,075 of them Subject-Numeric, decision 191) + 8,313 Central Foreign Policy File refs, which join no axis, 443 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
 | `collection-authority.json` | which collection is this note naming, under every spelling | 3,977 collections, 1,014 with a NAID |
 | `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 174 of 698 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 698 series, 398 creator headings, 174 with a coverage pair |
@@ -3438,9 +3448,15 @@ terms are here because they appear in the outputs.
   cited and how the document was chosen, `first` marking the index's own choice (decision 190;
   §6.6 shows how to leave those out), and
   `division_start_pages`, the page each division begins on (24,009 rows in 552 volumes), which no
-  `page_ranges` row holds where the break falls between two divisions. Measured on two full
+  `page_ranges` row holds where the break falls between two divisions. §4.3's `external_citations`
+  reads the post-1963 central files (decision 191): a Subject-Numeric file is a class row and the
+  Central Foreign Policy File an anchor of its own, its film number in `file_id` (50,173 rows →
+  65,549, 7,075 and 8,313 of them, on a full index built as the app builds it; the 12 bare `Ibid.`s
+  whose last citation is the file no longer inherit a library or a lot before it), and §14.2 says
+  its `RG 59` control is for an index before 76. Measured on two full
   indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 75 and at 76: every other table
-  holds the same rows. §14.11's row for `volume-annotations-index.json` gives the file's version,
+  holds the same rows. §14.11's rows give `external-citation-index.json`, regenerated with it, and
+  `volume-annotations-index.json`'s version,
   76: its source-note and classification counts move in the 47 volumes of the 138, its terms counts
   in the 31 volumes decision 189 gives more rows, and its abbreviations by 14 documents in 6; no
   volume crosses a layer's threshold.

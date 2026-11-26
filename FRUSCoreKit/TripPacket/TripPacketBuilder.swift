@@ -96,6 +96,10 @@ import SourceNoteKit
 ///          the resolution and the model's defaults; the app passes its stores' (`TripPacket+App.swift`)
 ///   1.15 — 2026-11-24 (FRUS Explorer Light, S30b): documentation only — the two-list entry's caller,
 ///          `ArchiveVisitDerivation`, is the kit's, and the app passes its stores through its form of `derive`
+///   1.16 — 2026-11-26 (L26, decision 191): the pointed-at channel leaves out the Central Foreign Policy
+///          File's rows as it leaves out the class anchor's, so the packet lists what it listed before; it
+///          reads the rule from `ExternalCitation.isInPacketChannel`, as the plan editor and the sparsity
+///          query do
 @MainActor
 public enum TripPacketBuilder {
 
@@ -281,8 +285,11 @@ public enum TripPacketBuilder {
         // ── The pointed-at channel (§2): footnotes citing archival units FRUS did not print
         // from. Lot and library citations only — the class anchor is deferred by design
         // (#784's own scope), and admitting it would flood the packet with the corpus's
-        // commonest footnote idiom. Keys share the drawn-from vocabulary above, so a unit
-        // cited both ways becomes ONE target with both claims itemized inside it.
+        // commonest footnote idiom. The Central Foreign Policy File's anchor (decision 191,
+        // index version 76) is left out for the same reason: its rows name no collection, so
+        // every one of them would key to the one "Department of State" target. Keys share the
+        // drawn-from vocabulary above, so a unit cited both ways becomes ONE target with both
+        // claims itemized inside it.
         var refGrouped: [String: (form: TripPacketModel.Target.Form, label: String,
                                   repository: String?, lotAsPrinted: String?,
                                   seedings: [TripPacketModel.RefSeeding])] = [:]
@@ -290,8 +297,7 @@ public enum TripPacketBuilder {
         var documentsWithReferences = 0
         for document in referenceDocuments {
             let documentKey = "\(document.volumeId)/\(document.documentId)"
-            let relevant = (externalCitations[documentKey] ?? [])
-                .filter { $0.anchor != "centralFileClass" }
+            let relevant = (externalCitations[documentKey] ?? []).filter(\.isInPacketChannel)
             guard !relevant.isEmpty else { continue }
             documentsWithReferences += 1
             for citation in relevant {

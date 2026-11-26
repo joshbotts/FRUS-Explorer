@@ -230,6 +230,8 @@ public struct ArchivalRanking: Sendable, Equatable {
 ///          from the app's store at each reading, which a non-public form still reads there; the app's
 ///          `make(authority:usage:coverage:external:labels:)` passes its stores to that form
 ///          (`ArchivalCollectionsData+App.swift`)
+///   1.8 — 2026-11-26 (L26, decision 191): the class lens's pointer weight folds a subject-numeric key to
+///          its category and number, as the documents and volumes weights do
 public struct ArchivalCollectionsData: Sendable {
 
     /// The authority id of the `Central Files` umbrella — the record the design hides by
@@ -424,10 +426,14 @@ public struct ArchivalCollectionsData: Sendable {
                 collectionPointers[band][targetId, default: 0] += count
             }
             // #834: the class lens gains the same weight, banded by the same rule, so a reader can
-            // switch lenses without the axis meaning something different.
+            // switch lenses without the axis meaning something different. Folded to the grain the
+            // other two weights rank (`tallyClasses`), since the artifact built for index version 76
+            // holds subject-numeric targets too (decision 191): raw, `POL 27 VIET S` would rank
+            // beside `POL 27` and take neither its gloss nor its leaves. A decimal key folds to itself.
             external.forEachClassReference { classKey, volumeId, count in
                 guard let band = bandByVolume[volumeId] else { return }
-                classPointers[band][classKey, default: 0] += count
+                let group = CollectionKeying.subjectNumericGroup(classKey) ?? classKey
+                classPointers[band][group, default: 0] += count
             }
         }
 

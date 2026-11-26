@@ -148,6 +148,8 @@ struct FeatureInfoItem: Identifiable {
 ///         on the Mac, where the popover also shows
 ///   1.13 — 2026-11-20, for 1.0 (1861): the Mac scrolls too, through `InfoPopoverScrolling`; a long
 ///         popover ran off its screen there with nothing to scroll (the owner's finding).
+///   1.14 — 2026-11-26 (L26, decision 191): Flows' scope row names a Subject-Numeric file beside a decimal
+///         number, since from index version 76 its central-file counts hold both.
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -367,7 +369,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     title: String(localized: "archival.info.flows.scope.title",
                                   defaultValue: "What Flows reads, and what it does not"),
                     detail: String(localized: "archival.info.flows.scope.detail",
-                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite.\n\nMost central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between separate archival locations. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere different.")),
+                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417 or, from February 1963, POL 27 VIET S. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite.\n\nMost central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between separate archival locations. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere different.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.ibid.title",
                                   defaultValue: "An “Ibid.” is followed, which is a reading"),
