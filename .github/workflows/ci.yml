@@ -54,7 +54,7 @@ jobs:
   build:
     name: B · build and package tests
     runs-on: xcode-27
-    timeout-minutes: 150
+    timeout-minutes: 180
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
@@ -66,11 +66,16 @@ jobs:
           swift --version
       - name: swift build --target FRUSCoreKit
         run: swift build --target FRUSCoreKit
+      # One test at a time. In parallel on this image's three cores, CPU-bound tests hold every
+      # thread of the cooperative pool: on this workflow's first run (2026-11-26) unrelated suites in
+      # FRUSCoreKitTests all ended near 73 s while CitationMatchingEngineTests' 129 s sweep ran, and
+      # the Zotero suite's two public-client tests, whose sleeps are real, failed their 10 s bounds
+      # at 60 s. Swift Testing runs in parallel unless --no-parallel is passed explicitly.
       - name: swift test
         run: |
           log="$RUNNER_TEMP/logs/swift-test.log"
           status=0
-          swift test > "$log" 2>&1 || status=$?
+          swift test --no-parallel > "$log" 2>&1 || status=$?
           grep -E '^(✔|✘) Test run with' "$log" || true
           runs=$(grep -c -E '^(✔|✘) Test run with' "$log" || true)
           echo "swift test: exit $status, $runs test runs reported" | tee -a "$GITHUB_STEP_SUMMARY"
