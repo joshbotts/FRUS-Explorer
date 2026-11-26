@@ -12524,13 +12524,13 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 
 **Not done:** no build, test or capture; the amendment has not been reviewed; the canvas's boards still draw step 2's eight.
 
-## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty-one rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
+## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty-two rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
 
 **What was asked.** The owner's words: "Let's develop an updated plan of record. Assess open issues and triage them into fix waves. Try to consolidate fixes that touch the same code. Include the collections overhaul in the plan. The goal should be preparing the app to accommodate a new FRUS release in early December and then shipping an update to the App Store after that release." It is the new plan's decision 145. A cloud session, from `v2` at `9325f79d` (#2009), on `claude/plan-of-record-2026-11-25`.
 
 **What changed** (documents only; no source, test, resource or manual):
 - **`Planning/Plan-Of-Record-2026-11-25.md`, the live plan.**
-  - Its rows: thirty-one pull requests, L26 to L56, in six waves (thirty, to L55, when the pull request opened; L56 was added after it, below); a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
+  - Its rows: thirty-two pull requests, L26 to L57, in six waves (thirty, to L55, when the pull request opened; L56 and L57 were added after it, below); a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
   - Where each of the 42 open issues goes: 39 in a row, and #1723, #1696 and #234 not in this update. Where each of the five findings the 2026-11-15 plan sent to the first update goes (F1, F2, F7, F11 and D1).
   - What each row touches, and the files two rows meet in, with the order that settles each.
   - The Collections design's lanes as rows (its §1c): seven of the eight, since the owner's answer on the export sheet leaves lane 5 unbuilt.
@@ -12615,3 +12615,16 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 - **The issue says** what was read, what was emulated, and that nothing was seen in the app. It proposes one change, to hand Search the days the screen loaded, which also has both hand-offs name the range the screen shows.
 - **Found while it was written, and not filed** (the plan's §5): on iPhone and iPad, Search keeps a filter day as a `Date` at midnight GMT, and its two pickers are in the device's zone. West of UTC a picker would show the day before the day the filter uses, for a range that came by a hand-off or from a saved search, while the query's days are right. The issue names it under *Not claimed*, so that a run in New York is not misread as this defect.
 - **Checked again:** the session's script (43 issues in §1a, 40 of them in a row; decisions 145 to 186 each once) and the plan-of-record gate's two conditions.
+
+**The second finding filed, on the owner's word.** Asked whether to file it too, the owner: "Yes". It is #2013, labelled *bug*, *UI*, *iOS* and *needs local testing*, and the plan's decision 187.
+- **What it says.** On iPhone and iPad, Search turns its date filter's day strings into dates, and back, in GMT (`SearchViewModel.swift:2784-2789`, `:2864-2868`), while the filter's two pickers are in the device's zone. Three things follow, by the reading:
+  - after a hand-off or a saved search, the pickers show the day before, west of UTC, over a query with the right days;
+  - a picked day can be written as the day before or the day after, by the zone and the time of day the date carries;
+  - *Visualize in Corpus Analytics* reads the filter's years in the device's zone, so a chart of 1961 to 1963 followed to Search and back would return as 1960 to 1963.
+- **What was read for it,** beyond what #2012 took: both view models' conversions; the filter view's pickers, and that nothing in the app or the kit sets a zone in a view's environment; Corpus Analytics' hand-off, which writes `yyyy-01-01`; a saved search's own conversions, which are GMT both ways and so store and return the same strings in any zone; and the tests that set the filter's dates.
+- **A test in the repository holds one half of it.** `SearchViewTests.dateRangeFilterIncludedInParameters` sets local midnights and expects their days. By the reading it passes at or west of UTC, which is where it is run, and would not in Berlin or Tokyo. It was not run there.
+- **Emulated,** as #2012 was, with Python's `zoneinfo`: a day string read at midnight GMT and shown in six zones, and a picked day written back by the time of day it carries. Not Foundation.
+- **Not known,** and the issue says so: the time of day a date carries after a pick, on which the second of the three turns; and the zone a project's default dates are built in.
+- **The plan places it in a row of its own, L57, in Wave 2.** No other row edits Search's view model. Its first and third symptoms would show in New York with no zone changed, so the row can show its defect on the owner's Mac, and the early build's device pass can read the result. The row and its wave are the plan's reading, and the owner's to change. Waves 1 and 2 are then nine rows in their four days, one more than two a day covers, and the plan's calendar says so.
+- **#2012's text was brought to it:** its note on this finding now names #2013.
+- **Checked again:** the session's script (44 issues in §1a, 41 of them in a row; a brief for each of the table's 40 rows; decisions 145 to 187 each once) and the plan-of-record gate's two conditions.
