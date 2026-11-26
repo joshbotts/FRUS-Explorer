@@ -10501,3 +10501,105 @@ struct ArchivalNeighbourOrderTests {
         #expect(try sorted(["d7", "d007", "D7"]) == ["D7", "d007", "d7"])
     }
 }
+
+// MARK: - Index version 76 (plan of record row L26)
+
+/// What index version 76 stores more: an editorial note's own source note, dateline and marking
+/// (#1854), a document's linked terms (decision 172) and the page each division begins on (F7,
+/// decision 178).
+@Suite("IndexingPipeline — index version 76")
+struct IndexVersion76Tests {
+
+    /// A volume holding `documents`, each a whole `<div>`, in one compilation.
+    private func volumeXML(volumeId: String, front: String = "", bodyLead: String = "",
+                           documents: [String], back: String = "") -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0"
+             xml:id="\(volumeId)">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt></fileDesc></teiHeader>
+          <text>
+            <front>\(front)</front>
+            <body>\(bodyLead)
+              <div type="compilation" xml:id="comp1"><head>Compilation</head>
+              \(documents.joined(separator: "\n"))
+              </div>
+            </body>
+            <back>\(back)</back>
+          </text>
+        </TEI>
+        """
+    }
+
+    /// `frus1941-43` d291 as the TEI encodes it: a memorandum tagged as an editorial note, with an
+    /// inline source note, a marking in its opener and a dateline (#1854).
+    private let taggedMemorandum = """
+        <div frus:doc-dateTime-max="1942-06-15T23:59:59-05:00"
+             frus:doc-dateTime-min="1942-06-15T00:00:00-05:00" n="291"
+             subtype="editorial-note" type="document" xml:id="d291">
+          <note rend="inline" type="source">Department of Defense Files</note>
+          <head><hi rend="italic">Memorandum by Prime Minister Churchill</hi></head>
+          <opener>
+            <seg rendition="#left"><hi rend="smallcaps">secret</hi></seg>
+            <dateline rendition="#right">[<placeName><hi rend="smallcaps">London</hi></placeName>,]
+              <date calendar="gregorian" when="1942-06-15">June 15, 1942</date>.</dateline>
+          </opener>
+          <p>Operations in 1942 or 1943 must be considered together.</p>
+        </div>
+        """
+
+    /// A real editorial note: no source note of its own. The opener is the fixture's, to show
+    /// that nothing under a wrapper is read for a note that prints no source of its own.
+    private let realEditorialNote = """
+        <div n="292" subtype="editorial-note" type="document" xml:id="d292">
+          <head>Editorial Note</head>
+          <opener><seg rendition="#left"><hi rend="smallcaps">secret</hi></seg>
+            <dateline>Washington, June 20, 1942.</dateline></opener>
+          <p>The President and the Prime Minister met at Hyde Park.</p>
+        </div>
+        """
+
+    @Test("An editorial note that prints a source note of its own stores it, its dateline and its marking (#1854)")
+    func taggedDocumentStoresItsOwnFields() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try volumeXML(volumeId: "frus1941-43", documents: [taggedMemorandum, realEditorialNote])
+                .write(to: dir.appendingPathComponent("volumes/frus1941-43.xml"),
+                       atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1941-43")
+
+            let rows = Dictionary(uniqueKeysWithValues: try await pipeline.documents(forVolume: "frus1941-43")
+                .map { ($0.documentId, $0) })
+            let memorandum = try #require(rows["d291"])
+            #expect(memorandum.sourceNote == "Department of Defense Files")
+            #expect(memorandum.dateline == "[London,] June 15, 1942.")
+            #expect(memorandum.isEditorialNote, "the TEI tags it an editorial note, and the badge stays")
+            #expect(try await pipeline.storedClassification(volumeId: "frus1941-43", documentId: "d291") == "Secret")
+
+            // The real editorial note reads as it did: no note, no dateline, no source row.
+            let note = try #require(rows["d292"])
+            #expect(note.sourceNote == nil)
+            #expect(note.dateline == nil, "a wrapper with no source note of its own gave its dateline")
+            #expect(note.isEditorialNote)
+            #expect(try await pipeline.storedClassification(volumeId: "frus1941-43", documentId: "d292") == nil)
+        }
+    }
+
+    @Test("The public extractors read under the wrapper only where it holds a source note of its own (#1854)")
+    func extractorsReadUnderTheWrapperByItsOwnNote() {
+        let own: [FRUSASTNode] = [.editorialNote([
+            .footnote(id: nil, type: .source, printedNumber: nil, children: [.text("Hopkins Papers")]),
+            .head(children: [.text("Prime Minister Churchill to President Roosevelt")]),
+            .opener(children: [.dateline(children: [.text("London, June 16, 1942.")])]),
+        ])]
+        #expect(IndexingPipeline.extractSourceNote(from: own) == "Hopkins Papers")
+        #expect(IndexingPipeline.extractDateline(from: own) == "London, June 16, 1942.")
+
+        let none: [FRUSASTNode] = [.editorialNote([
+            .head(children: [.text("Editorial Note")]),
+            .opener(children: [.dateline(children: [.text("London, June 16, 1942.")])]),
+        ])]
+        #expect(IndexingPipeline.extractSourceNote(from: none) == nil)
+        #expect(IndexingPipeline.extractDateline(from: none) == nil)
+    }
+}

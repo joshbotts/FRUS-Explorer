@@ -7391,6 +7391,34 @@ public actor IndexingPipeline {
         return ASTToRenderNodeConverter.renderingVersion(for: converter.convert(document))
     }
 
+    /// The nodes a document's own source note, dateline and opener's marking are read from: its
+    /// nodes, or, for a document the TEI tags as an editorial note and that prints a source note of
+    /// its own, the nodes inside the `.editorialNote` wrapper (#1854, index version 76).
+    ///
+    /// The parser wraps a `subtype="editorial-note"` document, and a legacy `type="editorialNote"`
+    /// division, in one `.editorialNote` node, and the three extractors read only a document's top
+    /// level, so until 76 the index stored no source note, dateline or source row for any of them.
+    /// For a real editorial note that is right: it prints none. But 138 of the 8,468 documents so
+    /// tagged in the 553 catalogue volumes carry a `<note type="source">` of their own, 119 of them
+    /// under an opener with a dateline: memoranda, telegrams, letters and minutes, 132 of them in
+    /// the volumes covering 1932–1954 (`frus1941-43` d291, *Memorandum by Prime Minister
+    /// Churchill*, prints *Department of Defense Files*, *SECRET* and *[London,] June 15, 1942*).
+    ///
+    /// The wrapper's own source note decides, so a real editorial note keeps reading as it did:
+    /// one that prints no note of its own gives none of the three, as before, whatever its text
+    /// quotes. The **Editorial Note** badge stays, since the TEI tags the document so. Public
+    /// callers read through it unchanged, so a host hashing a parsed document as the index stamps
+    /// it (``contentHash(header:dateline:sourceNote:bodyText:)``) reads the same strings.
+    ///
+    /// - Parameter nodes: A document's nodes, as the parse gives them.
+    /// - Returns: The wrapper's children where the document is one wrapped editorial note holding a
+    ///   source note of its own; otherwise `nodes`.
+    nonisolated static func ownFieldNodes(of nodes: [FRUSASTNode]) -> [FRUSASTNode] {
+        guard nodes.count == 1, case .editorialNote(let children) = nodes[0],
+              locateSourceNote(in: children) != nil else { return nodes }
+        return children
+    }
+
     /// The document's printed dateline — the first `<dateline>`, at the top level or inside an
     /// `<opener>` — or nil when it prints none.
     ///
@@ -7398,14 +7426,22 @@ public actor IndexingPipeline {
     /// `<placeName>Washington</placeName>, <date>October 1, 1962</date>.`, and the space join this
     /// replaced stored it as "Washington , October 1, 1962 ." for 96.7% of the corpus's datelines.
     /// Footnotes stay in, as they always have; only the separator changed.
+    ///
+    /// Read from ``ownFieldNodes(of:)``, so an editorial note that prints a source note of its own
+    /// gives its dateline too (#1854, index version 76).
     public nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
+        datelineAtOwnLevel(ownFieldNodes(of: nodes))
+    }
+
+    /// The first `<dateline>` among `nodes`, or inside an `<opener>` among them.
+    private nonisolated static func datelineAtOwnLevel(_ nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             switch node {
             case .dateline:
                 let t = node.printedText(excludingFootnotes: false).normalizedWhitespace
                 return t.isEmpty ? nil : t
             case .opener(let c):
-                if let dl = extractDateline(from: c) { return dl }
+                if let dl = datelineAtOwnLevel(c) { return dl }
             default: break
             }
         }
@@ -7424,10 +7460,13 @@ public actor IndexingPipeline {
     /// (`SourceNoteParser.classificationMarking(fromOpenerLines:)`) gives it; measured over the 553
     /// manifest volumes at corpus `6170e4b32`, no opener holds two.
     ///
+    /// Read from ``ownFieldNodes(of:)``, so an editorial note that prints a source note of its own
+    /// gives its opener's marking too (#1854, index version 76): 107 of the 138 print one.
+    ///
     /// - Parameter nodes: The document's nodes, as the parse gives them.
     /// - Returns: The marking ("Secret; Priority"), or `nil` when the opener prints none.
     nonisolated static func extractOpenerClassification(from nodes: [FRUSASTNode]) -> String? {
-        for node in nodes {
+        for node in ownFieldNodes(of: nodes) {
             guard case .opener(let openerChildren) = node else { continue }
             for child in openerChildren {
                 guard case .unknown(let name, _, let segChildren) = child, name == "seg" else { continue }
@@ -7596,7 +7635,17 @@ public actor IndexingPipeline {
     /// `[Source: …]` bracket wrapper collapses to `Source: …` — one stored shape across
     /// both encodings, and the `Source:` prefix is preserved so `SourceNoteParser`'s
     /// narrative branch (→ `citation_era='structured'` rows) fires.
+    ///
+    /// The chain runs over ``ownFieldNodes(of:)``: for a document the TEI tags as an editorial
+    /// note, over the nodes inside its wrapper, where the note is (#1854, index version 76). The
+    /// generators' mirror, `DocumentNoteExtractor`, reads such a document the same way.
     public nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+        locateSourceNote(in: ownFieldNodes(of: nodes))
+    }
+
+    /// The locator chain itself, over the nodes it is given: ``extractSourceNote(from:)``'s
+    /// patterns 1 to 4 and the deferred fallback.
+    private nonisolated static func locateSourceNote(in nodes: [FRUSASTNode]) -> String? {
         // Patterns 1 + 2: <head>-nested notes (1955+ encodings). A whole-note candidate
         // without a `Source:` prefix is deferred (see the pattern-2 gate in the doc
         // comment): when a top-level note also exists, the top-level text is the real
