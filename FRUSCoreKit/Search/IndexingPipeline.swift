@@ -572,6 +572,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `allDocumentKeys()` are public, unchanged, since the word cloud's count, which moved into the kit
 ///         (`WordCloudCount`), reads a scope's text with the first, for a host that counts a scope, the
 ///         corpus included, as the app does; nothing the indexer stores or reads changes
+///  4.67 — 2026-11-26 (#1978, plan of record row L26): `currentDateIndexVersion` → 76 — a document's
+///         place in its volume, `document_cache.document_order`, written by every store pass; a volume
+///         lists by it, then rowid (see the v76 note)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1707,7 +1710,17 @@ public actor IndexingPipeline {
     ///   revision hashes, their dates, pages, people, terms and sources, and each volume's outline).
     ///   Without the bump only the volumes indexed after the update would have a record, and an export
     ///   could not name the rest.
-    public static let currentDateIndexVersion: Int = 75
+    /// - v75→76 — version 1.1's index (plan of record of 2026-11-25, row L26). What a re-index stores
+    ///   more:
+    ///   - **A document's place in its volume** (#1978): `document_cache.document_order`, the row's
+    ///     position in the parse's list, which every store pass writes and the upsert sets. A row keeps
+    ///     its rowid across passes, since the FTS5 tables key on it, so rowid order was the order rows
+    ///     were first written, and a document a later version or a corrected file added listed last:
+    ///     in the owner's Mac library, upgraded in place, 361 of the 553 volumes listed in another
+    ///     order than a fresh index of the same files at corpus `6170e4b32`. `documents(forVolume:)`,
+    ///     `document(forDocumentNumber:inVolume:)` and `documentRevisions(forVolumeId:)` read it, then
+    ///     rowid. Without the bump an upgraded library keeps every such volume out of its file's order.
+    public static let currentDateIndexVersion: Int = 76
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3509,18 +3522,53 @@ public actor IndexingPipeline {
 
     // MARK: - Browser Query (used by BrowserViewModel)
 
-    /// Returns all documents for a volume in insertion order (source document order).
+    /// Whether this index's `document_cache` has `document_order` (#1978, index version 76), read
+    /// once: one a read-write open of a build at 76 or later wrote or migrated does; one from
+    /// before 76 opened read-only does not (`init(readingIndexAt:fts5Store:resources:volumesDirectory:)`,
+    /// which runs no migration), and its volumes list in rowid order, as they always did.
+    private var documentOrderColumn: Bool?
+
+    /// The `ORDER BY` a volume's `document_cache` rows are read in: `document_order, rowid`, or
+    /// `rowid` on an index with no `document_order` (``documentOrderColumn``).
+    private var volumeOrder: String {
+        if documentOrderColumn == nil {
+            var stmt: OpaquePointer?
+            defer { sqlite3_finalize(stmt) }
+            var found = false
+            if sqlite3_prepare_v2(auxDb, "PRAGMA table_info(document_cache)", -1, &stmt, nil) == SQLITE_OK {
+                while sqlite3_step(stmt) == SQLITE_ROW {
+                    if let name = sqlite3_column_text(stmt, 1), String(cString: name) == "document_order" {
+                        found = true
+                        break
+                    }
+                }
+            }
+            documentOrderColumn = found
+        }
+        return documentOrderColumn == true ? "document_order, rowid" : "rowid"
+    }
+
+    /// Returns all documents for a volume in its file's order.
     ///
     /// Reads `document_cache` which is populated by `indexVolume`. Returns an empty
     /// array if the volume has not been indexed.
     ///
+    /// **The order is `document_order`, then rowid (#1978, index version 76).** It was rowid alone,
+    /// documented as insertion order. But the store pass's upsert keeps a row's rowid, which the
+    /// FTS5 tables key on, so rowid order is the order the rows were first written: a document a
+    /// later index version began to hold, or a corrected file added, listed last. In the owner's
+    /// Mac library, upgraded in place, 361 of the 553 volumes listed in another order than a fresh
+    /// index of the same files, `frus1969-76ve09p1`'s Notes on U.S. Covert Actions last where the
+    /// file has them third. Every pass writes `document_order`, so the volumes list in their files'
+    /// order from the version's re-index on; before it the column is `NULL` and rowid decides.
+    ///
     /// - Parameter volumeId: The volume to query.
-    /// - Returns: `DocumentBrowserEntry` values ordered by their rowid.
+    /// - Returns: `DocumentBrowserEntry` values in the volume's order.
     public func documents(forVolume volumeId: String) throws -> [DocumentBrowserEntry] {
         let sql = """
             SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
             FROM document_cache WHERE volume_id = ?
-            ORDER BY rowid
+            ORDER BY \(volumeOrder)
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -3551,6 +3599,10 @@ public actor IndexingPipeline {
     /// out the actual document row in any realistically-sized volume.
     ///
     /// - Parameters:
+    /// Where two documents carry the same number, the first in the volume's order answers
+    /// (`document_order`, then rowid, as ``documents(forVolume:)`` lists them; #1978).
+    ///
+    /// - Parameters:
     ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
     ///   - volumeId: The volume to query.
     /// - Returns: The matching entry, or `nil`.
@@ -3561,7 +3613,7 @@ public actor IndexingPipeline {
         let sql = """
             SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
             FROM document_cache WHERE volume_id = ? AND document_number = ?
-            ORDER BY rowid
+            ORDER BY \(volumeOrder)
             LIMIT 1
             """
         let stmt = try auxPrepare(sql)
@@ -6651,7 +6703,8 @@ public actor IndexingPipeline {
                 classSchedule?.composes($0) ?? false
             })
 
-        for astDoc in astDocs {
+        // #1978: `position` is the row's place in its volume, the order a fresh index writes them in.
+        for (position, astDoc) in astDocs.enumerated() {
             let did = astDoc.documentId
             let header     = Self.extractHeader(from: astDoc.nodes)
             let dateline   = Self.extractDateline(from: astDoc.nodes)
@@ -6808,7 +6861,8 @@ public actor IndexingPipeline {
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote,
                 isFrontMatter: astDoc.isFrontMatter,
-                despatchSerial: despatchSerial
+                despatchSerial: despatchSerial,
+                documentOrder: position
             ))
         }
 
@@ -8675,6 +8729,7 @@ public actor IndexingPipeline {
                 is_editorial_note INTEGER NOT NULL DEFAULT 0,
                 is_front_matter   INTEGER NOT NULL DEFAULT 0,
                 despatch_serial   TEXT,
+                document_order    INTEGER,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -8716,6 +8771,12 @@ public actor IndexingPipeline {
         // shape here: `document_cache` rows carry USER content (summary_text, note_text) that a
         // drop would destroy, which is why this table never took that pattern.
         try? exec("ALTER TABLE document_cache ADD COLUMN despatch_serial TEXT")
+        // #1978, index version 76: a document's place in its volume, which every store pass writes.
+        // A row keeps its rowid across passes (the upsert below, since the FTS5 tables key on it),
+        // so rowid order is the order the rows were FIRST written, and a document a later version
+        // or a corrected file added listed last. `NULL` until the volume's next pass, which the
+        // version's re-index runs; `documents(forVolume:)` then falls back to rowid order.
+        try? exec("ALTER TABLE document_cache ADD COLUMN document_order INTEGER")
         // R-5 §8.2 Q-9: which parse version wrote a revision row, so a volume removed and
         // re-downloaded across a parse change is REBASELINED rather than stamped as changed.
         // `CREATE TABLE IF NOT EXISTS` is a no-op on an existing table, so without this the column
@@ -9370,12 +9431,16 @@ public actor IndexingPipeline {
     /// The `DO UPDATE SET` list names the corpus columns, so only the
     /// `frus_documents` sync trigger (`AFTER UPDATE OF header, dateline,
     /// source_note, body_text`) fires — `user_content` is untouched.
+    ///
+    /// Because the row keeps its rowid, rowid order is the order rows were first written, not
+    /// the volume's: `document_order` is the place this pass gives the row, and the listing reads
+    /// it (#1978, index version 76).
     private static let documentCacheUpsertSQL = """
         INSERT INTO document_cache
         (volume_id, document_id, document_number, header, dateline, source_note, body_text,
          subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
-         is_front_matter, despatch_serial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         is_front_matter, despatch_serial, document_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(volume_id, document_id) DO UPDATE SET
           document_number   = excluded.document_number,
           header            = excluded.header,
@@ -9385,7 +9450,8 @@ public actor IndexingPipeline {
           subject_tag_ids   = excluded.subject_tag_ids,
           is_editorial_note = excluded.is_editorial_note,
           is_front_matter   = excluded.is_front_matter,
-          despatch_serial   = excluded.despatch_serial
+          despatch_serial   = excluded.despatch_serial,
+          document_order    = excluded.document_order
         """
 
     private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
@@ -9426,6 +9492,11 @@ public actor IndexingPipeline {
                 sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
                 sqlite3_bind_int(stmt, 13, row.isFrontMatter  ? 1 : 0)
                 auxBindOptional(stmt, 14, row.despatchSerial)
+                if let order = row.documentOrder {
+                    sqlite3_bind_int64(stmt, 15, Int64(order))
+                } else {
+                    sqlite3_bind_null(stmt, 15)
+                }
                 try auxStep(stmt)
             }
         }
@@ -9853,10 +9924,22 @@ public actor IndexingPipeline {
 
     /// Every revision row for a volume, in document order (R-5 P1). The read API P2's surfaces and
     /// the tests use; a caller that wants "what changed" filters on `changedAt != nil`.
+    ///
+    /// Document order is the volume's, as ``documents(forVolume:)`` lists it (#1978): a revision row
+    /// keeps its rowid across passes as a cache row does, so rowid order put a document a later
+    /// pass added last. A row whose document has left the index (`'vanished'`) has no place, and
+    /// follows the rest in rowid order.
     public func documentRevisions(forVolumeId volumeId: String) throws -> [DocumentRevision] {
+        let order = volumeOrder == "rowid" ? "r.rowid"
+            : "c.document_order IS NULL, c.document_order, r.rowid"
         let stmt = try auxPrepare("""
-            SELECT document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
-              FROM document_revisions WHERE volume_id = ? ORDER BY rowid
+            SELECT r.document_id, r.content_hash, r.body_hash, r.changed_at, r.change_kind,
+                   r.reviewed_at
+              FROM document_revisions r
+              LEFT JOIN document_cache c
+                ON c.volume_id = r.volume_id AND c.document_id = r.document_id
+             WHERE r.volume_id = ?
+             ORDER BY \(order)
             """)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
@@ -15173,6 +15256,12 @@ struct DocumentCacheRow: Sendable {
     /// numbered it — `74`, `25½`, `4 (Greek Series)`. `nil` for every document that prints none,
     /// which is the overwhelming majority: the serial is a pre-decimal-file convention.
     let despatchSerial: String?
+    /// The document's place in its volume, from 0: its position in the parse's list of the
+    /// volume's rows, the order a fresh index writes them in (#1978, index version 76). Written by
+    /// every store pass, which a row's rowid is not, so a volume lists in its file's order however
+    /// long the library has kept it. `nil` for a row read back by ``IndexingPipeline/fetchCache``,
+    /// which does not read it.
+    var documentOrder: Int? = nil
 }
 
 // MARK: - IndexingError
