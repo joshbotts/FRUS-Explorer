@@ -11,7 +11,8 @@
 #   B · build and package tests  swift test, the package's suites, which Xcode never runs; the
 #                                iOS app and both test targets compiled (build-for-testing); the
 #                                Mac app compiled; and no compiler warning but the two known ones.
-#   C · unit tests               FRUSExplorerTests on the iPhone 17 under iOS 27.0.
+#   C · unit tests               FRUSExplorerTests on the iPhone 17 under iOS 27.0, and when it
+#                                fails, what the result bundle records of each failure.
 #
 # B and C run on GitHub's `xcode-27` image, a preview (actions/runner-images#14404), with Xcode
 # 27.2 selected, as on the Mac. A simulator build is signed ad hoc with no team, which embeds the
@@ -167,8 +168,10 @@ jobs:
         run: |
           log="$RUNNER_TEMP/logs/unit-tests.log"
           status=0
+          touch "$RUNNER_TEMP/test-start"
           xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
             -destination "$SIMULATOR" -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -resultBundlePath "$RUNNER_TEMP/unit-tests.xcresult" \
             -only-testing FRUSExplorerTests \
             -skip-testing 'FRUSExplorerTests/RichTextRestingCapTests/theColorPickerKeepsTheBlockOpen()' \
             -test-timeouts-enabled YES -default-test-execution-time-allowance 1200 \
@@ -186,6 +189,40 @@ jobs:
             echo "::error::no test run was reported, so the target checked nothing"
             exit 1
           fi
+      # A crash of the test host leaves no reason in the console log. xcodebuild restarts the host and
+      # runs the tests it had not reached. On this workflow's fifth run (2026-11-26) it then named, as
+      # the one failing test, a test that had passed: the host died after the next one passed, between
+      # two tests. The result bundle records each crash and attaches its report, so a failed run keeps
+      # the failures the bundle records, their attachments and any crash report the run left on the
+      # runner. The bundle itself is not kept: on the Mac a run of one suite made one of 67 MB.
+      - name: What a failure left
+        if: failure()
+        run: |
+          bundle="$RUNNER_TEMP/unit-tests.xcresult"
+          out="$RUNNER_TEMP/logs/failure"
+          mkdir -p "$out/crash-reports"
+          if [ -d "$bundle" ]; then
+            xcrun xcresulttool get test-results summary --path "$bundle" --compact > "$out/summary.json" || true
+            { echo '```'; python3 - "$out/summary.json" <<'PY' || true; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              summary = json.load(f)
+          print("the result bundle: {} tests, {} passed, {} failed, {} skipped".format(
+              summary.get("totalTestCount"), summary.get("passedTests"),
+              summary.get("failedTests"), summary.get("skippedTests")))
+          for failure in summary.get("testFailures", []):
+              print("--- " + str(failure.get("testIdentifierString") or failure.get("testName")))
+              print(failure.get("failureText", ""))
+          PY
+            # It names every test it skips, a line each, so its output is not kept.
+            xcrun xcresulttool export attachments --path "$bundle" --output-path "$out/attachments" \
+              --only-failures > /dev/null || true
+          else
+            echo "No result bundle at $bundle"
+          fi
+          find "$HOME/Library/Logs/DiagnosticReports" -type f -name '*.ips' -newer "$RUNNER_TEMP/test-start" \
+            -exec cp -p {} "$out/crash-reports/" \; 2>/dev/null || true
+          find "$out" -type f | sort
       - name: Keep the log
         if: always()
         uses: actions/upload-artifact@v7
