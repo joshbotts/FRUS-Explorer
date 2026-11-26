@@ -163,6 +163,11 @@ import SourceNoteKit
 ///          volume's bytes, which the indexer has read once to hash them, through a stream over them,
 ///          so the delegates see the events a parse of the file gives (`parseVolumeFull(volumeURL:)`,
 ///          whose body both now share). Nothing it parses changes
+///   2.17 — 2026-11-26 (F7, index version 76): `VolumeFullParseResult.divisionStartPages`, the page
+///          each division with an `xml:id` begins on — a division the index gives no row (the
+///          Contents, the Sources, the Persons, the Index), a section promoted to a row, and a
+///          container — which the parse settled already (#1503) and dropped for all but a document
+///          and an editorial note. Nothing else it parses changes
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -400,7 +405,8 @@ public actor FRUSDocumentParser {
             persons:       composite.personsDelegate.entries,
             terms:         composite.termsDelegate.entries,
             volumeSources: composite.sourcesDelegate.entries,
-            structureSections: composite.structureDelegate.topLevelSections
+            structureSections: composite.structureDelegate.topLevelSections,
+            divisionStartPages: composite.teiDelegate.divisionStartPages
         )
     }
 
@@ -783,6 +789,20 @@ public struct VolumeFullParseResult: Sendable {
     /// for the Browser hierarchy. Persisted to `volume_structures` at index time
     /// so browsing an indexed volume never re-parses its XML.
     public let structureSections: [VolumeSection]
+    /// The page each division with an `xml:id` begins on, other than a document and an editorial
+    /// note, which carry theirs (`FRUSDocumentAST.startPage`): in the order the divisions open
+    /// (F7, index version 76). Stored as `division_start_pages`, so a volume's Contents line for
+    /// its Preface (`#pg_III`) or its Index (`#pg_315`) can name what begins there.
+    public var divisionStartPages: [DivisionStartPage] = []
+}
+
+/// The page a division begins on, from the parse (F7, index version 76): the last `<pb>` before
+/// its first printed text, a break between divisions included, which no division holds.
+public struct DivisionStartPage: Sendable, Equatable {
+    /// The division's `xml:id`.
+    public let divisionId: String
+    /// The page it begins on.
+    public let page: PageNumber
 }
 
 /// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph, a node in
@@ -938,6 +958,12 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     // MARK: Output
 
     var documents: [FRUSDocumentAST] = []
+    /// The page each division with an `xml:id` begins on, but a document and an editorial note,
+    /// in the order the divisions open (F7, index version 76): recorded as each closes, when its
+    /// start page is settled, and sorted by ``ParseFrame/openIndex`` in ``finishParse()``.
+    private(set) var divisionStartPages: [DivisionStartPage] = []
+    /// Each entry of `divisionStartPages` with the order its division opened in.
+    private var divisionStartPagesByOpen: [(openIndex: Int, start: DivisionStartPage)] = []
     var fatalError: Error?
     var foundTargetDocument = false
     /// Set when a parse for one section reached that section's close and found it one the index
@@ -1139,6 +1165,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // leave the list, or the next `<pb>` would index past the end of the stack. The
         // public-diplomacy volumes' XHTML video players are such divs, holding only an <iframe/>.
         if !divsAwaitingText.isEmpty { divsAwaitingText.removeAll { $0 >= stack.count } }
+        // F7 (index version 76): a division's start page is settled once it closes.
+        if elementName == "div", let start = Self.divisionStartPage(of: frame) {
+            divisionStartPagesByOpen.append((frame.openIndex, start))
+        }
 
         // Flush remaining text buffer into children.
         let normalized = normalizedText(frame.textBuffer)
@@ -1485,6 +1515,17 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         return node.children.contains(where: holdsImage)
     }
 
+    /// The page `frame`'s division begins on, for a division with an `xml:id` that is neither a
+    /// document nor a legacy editorial note, whose rows carry their own start page (F7, index
+    /// version 76); `nil` for those, for one with no id, and for one that begins on no page.
+    private static func divisionStartPage(of frame: ParseFrame) -> DivisionStartPage? {
+        let type = frame.attributes["type"] ?? ""
+        guard type != "document", type != "editorialNote",
+              let id = frame.attributes["xml:id"] ?? frame.attributes["id"], !id.isEmpty,
+              let page = frame.startPage else { return nil }
+        return DivisionStartPage(divisionId: id, page: page)
+    }
+
     // MARK: - Containers (#1510)
 
     /// Gives each break a container carried (`carriedBreaks`) to the section that begins after it:
@@ -1495,6 +1536,9 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// or a later one, is already the page the document begins on (`FRUSDocumentAST.startPage`), so
     /// the page has its answer. One followed by nothing the index holds goes nowhere.
     func finishParse() {
+        // F7: the divisions' start pages in the order they open, where they were recorded as they
+        // closed, a division after everything inside it.
+        divisionStartPages = divisionStartPagesByOpen.sorted { $0.openIndex < $1.openIndex }.map(\.start)
         guard !carriedBreaks.isEmpty else { return }
         var carried: [Int: [PageNumber]] = [:]
         // Source order: a container closes after the containers inside it, so their breaks were

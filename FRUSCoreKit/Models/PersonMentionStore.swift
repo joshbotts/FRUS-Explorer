@@ -178,6 +178,9 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///   1.8 — Session 2026-10-06 (FRUS Explorer Light, S9b): `init(readingDatabaseAt:)` opens an
 ///          index read-only and immutable (`isImmutable`), for a host that reads an index another
 ///          program built. `init(databaseURL:)` opens as before
+///   1.9 — 2026-11-26 (decision 172, index version 76): `termsLinked(inDocument:volumeId:)` — the
+///          terms of its volume's list that a document links, from the new `term_mentions` table,
+///          for a collection's *Abbreviations & Terms* block. Read-only
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -1114,6 +1117,40 @@ public actor PersonMentionStore {
         let term = columnString(stmt, 1) ?? ""
         let def  = columnString(stmt, 2)
         return GlossEntry(ref: r, term: term, definition: def)
+    }
+
+    /// The terms of its volume's list that one document links, each with the volume's definition,
+    /// sorted by term (decision 172, index version 76).
+    ///
+    /// Read from `term_mentions`, which the index writes from each document's `<gloss>` links and,
+    /// for `frus1981-88v16`, the terms its documents name on `@ana`, joined to `terms` for the
+    /// definition. A link whose target the volume's list does not hold is stored and not returned.
+    /// Empty for a document that links none, and for every document of a volume indexed before
+    /// version 76 until its re-index.
+    ///
+    /// - Parameters:
+    ///   - documentId: The document's `xml:id`.
+    ///   - volumeId: Its volume.
+    /// - Returns: The linked terms, sorted by term.
+    public func termsLinked(inDocument documentId: String, volumeId: String) throws -> [GlossEntry] {
+        let sql = """
+            SELECT t.ref, t.term, t.definition
+            FROM term_mentions m
+            JOIN terms t ON t.volume_id = m.volume_id AND t.ref = m.term_ref
+            WHERE m.volume_id = ? AND m.document_id = ?
+            ORDER BY t.term, t.ref
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, documentId)
+        var results: [GlossEntry] = []
+        while step(stmt) {
+            results.append(GlossEntry(ref: columnString(stmt, 0) ?? "",
+                                      term: columnString(stmt, 1) ?? "",
+                                      definition: columnString(stmt, 2)))
+        }
+        return results
     }
 
     // MARK: - SQLite Helpers

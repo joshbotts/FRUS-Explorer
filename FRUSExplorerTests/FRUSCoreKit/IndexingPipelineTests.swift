@@ -10602,4 +10602,151 @@ struct IndexVersion76Tests {
         #expect(IndexingPipeline.extractSourceNote(from: none) == nil)
         #expect(IndexingPipeline.extractDateline(from: none) == nil)
     }
+
+    /// A terms list as `frus1961-63v06` encodes it.
+    private let termsList = """
+        <div subtype="index" type="section" xml:id="terms">
+          <head>List of Abbreviations</head>
+          <list type="terms">
+            <item><hi rend="strong"><term xml:id="t_Dept1">Dept</term>,</hi> Department of State</item>
+            <item><hi rend="strong"><term xml:id="t_UNO1">UNO</term>,</hi> United Nations Organization</item>
+            <item><hi rend="strong"><term xml:id="t_Sov1">Sov</term>,</hi> Soviet</item>
+          </list>
+        </div>
+        """
+
+    @Test("Each document's linked terms are stored once, from its links and its @ana, and read back with their definitions (decision 172)")
+    func linkedTermsAreStored() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let documents = [
+                // Dept twice, UNO once, and a link to no term of the list, which is stored and not read.
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Telegram</head>
+                  <p>The <gloss target="#t_Dept1">Dept</gloss> asks the <gloss target="#t_UNO1">UNO</gloss>;
+                     the <gloss target="#t_Dept1">Dept</gloss> waits. <gloss target="#t_Gone1">Gone</gloss>.</p>
+                </div>
+                """,
+                // No link in the text: the term is named on @ana, as frus1981-88v16 names them, beside a
+                // person pointer and one into another file, neither of which is a term of this list.
+                """
+                <div type="document" xml:id="d2" n="2" ana="#t_Sov1 #p_AB1 frus1981-88v11#t_UNO1"><head>2. Memorandum</head>
+                  <p>Sov policy.</p>
+                </div>
+                """,
+                """
+                <div type="document" xml:id="d3" n="3"><head>3. Letter</head><p>Nothing linked.</p></div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1946v06", front: termsList, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1946v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1946v06")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let d1 = try await store.termsLinked(inDocument: "d1", volumeId: "frus1946v06")
+            #expect(d1.map(\.term) == ["Dept", "UNO"])
+            #expect(d1.first?.definition == "Department of State")
+            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1946v06").map(\.term) == ["Sov"])
+            #expect(try await store.termsLinked(inDocument: "d3", volumeId: "frus1946v06").isEmpty)
+
+            // The rows themselves: one a document and term, the dangling link's among them.
+            let rows = try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
+            #expect(rows == ["d1 t_Dept1", "d1 t_Gone1", "d1 t_UNO1", "d2 t_Sov1"])
+
+            // A correction that drops d1's links leaves none of its rows behind.
+            let corrected = documents.enumerated().map { index, xml in
+                index == 0 ? "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Telegram</head><p>Plain.</p></div>" : xml
+            }
+            try volumeXML(volumeId: "frus1946v06", front: termsList, documents: corrected)
+                .write(to: dir.appendingPathComponent("volumes/frus1946v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1946v06")
+            #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
+                    == ["d2 t_Sov1"])
+        }
+    }
+
+    @Test("Each division's first page is stored, and page_ranges is as it was (F7)")
+    func divisionStartPagesAreStored() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // `frus1961-63v06`'s shape: a break before the Preface, which no division holds, a break
+            // inside it, the Contents after two breaks, and the Index after a break in <back>.
+            let front = """
+                <pb n="III" xml:id="pg_III"/>
+                <div subtype="preface" type="section" xml:id="preface"><head>Preface</head>
+                  <p>The series presents the record.</p><pb n="IV" xml:id="pg_IV"/><p>More.</p></div>
+                <pb n="[XIV]" xml:id="pg_XIV"/><pb n="XV" xml:id="pg_XV"/>
+                <div subtype="table-of-contents" type="section" xml:id="toc"><head>Contents</head>
+                  <list type="toc"><item><ref target="#pg_III">Preface</ref></item>
+                  <item><ref target="#pg_3">Index</ref></item></list></div>
+                """
+            let back = """
+                <pb n="3" xml:id="pg_3"/>
+                <div subtype="index" type="section" xml:id="index"><head>Index</head>
+                  <list type="index"><item>Adenauer, Konrad, <ref target="#pg_1">1</ref></item></list></div>
+                """
+            let documents = [
+                "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Letter</head><p>Text.</p><pb n=\"2\" xml:id=\"pg_2\"/><p>More.</p></div>",
+            ]
+            try volumeXML(volumeId: "frus1961-63v06", front: front, bodyLead: "<pb n=\"1\" xml:id=\"pg_1\"/>",
+                          documents: documents, back: back)
+                .write(to: dir.appendingPathComponent("volumes/frus1961-63v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1961-63v06")
+
+            #expect(try await pipeline.divisions(startingOn: .roman(3), inVolume: "frus1961-63v06") == ["preface"])
+            #expect(try await pipeline.divisions(startingOn: .roman(15), inVolume: "frus1961-63v06") == ["toc"])
+            #expect(try await pipeline.divisions(startingOn: .arabic(3), inVolume: "frus1961-63v06") == ["index"])
+            // The compilation begins on page 1, outermost first; the document's start is page_ranges'.
+            #expect(try await pipeline.divisions(startingOn: .arabic(1), inVolume: "frus1961-63v06") == ["comp1"])
+            #expect(try await pipeline.divisions(startingOn: .roman(4), inVolume: "frus1961-63v06").isEmpty,
+                    "a page inside a division is not where it begins")
+
+            // No reader of page_ranges moves: no row for the two pages, and the Preface's own page as before.
+            let pageRows = try rawPageRows(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1961-63v06")
+            #expect(!pageRows.contains("roman 3") && !pageRows.contains("arabic 3"), "page_ranges gained \(pageRows)")
+            #expect(pageRows.contains("roman 4"))
+        }
+    }
+
+    /// `page_ranges` rows for a volume as `"<type> <number>"`.
+    private func rawPageRows(_ dbURL: URL, volumeId: String) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw IndexingError.databaseOpenFailed(message: dbURL.path)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT page_number_type, page_number_int FROM page_ranges WHERE volume_id = ?",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw IndexingError.databaseOpenFailed(message: String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(sqlite3_column_int(stmt, 1))")
+        }
+        return rows
+    }
+
+    /// `term_mentions` rows for a volume as `"<document> <term>"`, sorted.
+    private func rawTermMentions(_ dbURL: URL, volumeId: String) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw IndexingError.databaseOpenFailed(message: dbURL.path)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, term_ref FROM term_mentions WHERE volume_id = ?",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw IndexingError.databaseOpenFailed(message: String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(String(cString: sqlite3_column_text(stmt, 1)))")
+        }
+        return rows.sorted()
+    }
 }

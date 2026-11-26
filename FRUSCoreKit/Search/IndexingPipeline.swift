@@ -3086,6 +3086,7 @@ public actor IndexingPipeline {
         // for the rest of the install (#308).
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "person_list_sources", "terms",
+                      "term_mentions", "division_start_pages",
                       "document_sources", "external_citations", "volume_sources",
                       "volume_structures", "document_subjects", "document_subject_refs",
                       "document_subject_volumes"] {
@@ -3587,6 +3588,43 @@ public actor IndexingPipeline {
             ))
         }
         return entries
+    }
+
+    /// The divisions of a volume that begin on `page`, outermost first: the `xml:id` of each
+    /// division with one that is neither a document nor an editorial note, whose start pages are
+    /// `page_ranges` rows (F7, decision 178, index version 76).
+    ///
+    /// The answer a page link needs when no document holds its page: `frus1961-63v06`'s Contents
+    /// links its Preface as `#pg_III` and its Index as `#pg_315`, the break before each division,
+    /// which no row of `page_ranges` holds, so the link opened nothing. Empty for a page no
+    /// division begins on, and for every volume indexed before version 76 until its re-index.
+    ///
+    /// - Parameters:
+    ///   - page: The page, as `PageNumber.parse(_:xmlId:)` reads a break's `@n`.
+    ///   - volumeId: The volume.
+    /// - Returns: The divisions' ids, in the order they open in the volume.
+    public func divisions(startingOn page: PageNumber, inVolume volumeId: String) throws -> [String] {
+        let key = Self.pageRangeRow(volumeId: volumeId, documentId: "", pageNumber: page)
+        let byNumber = key.pageNumberInt != nil
+        let stmt = try auxPrepare("""
+            SELECT division_id FROM division_start_pages
+             WHERE volume_id = ? AND page_number_type = ?
+               AND \(byNumber ? "page_number_int = ?" : "page_number_raw = ?")
+             ORDER BY division_order
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, key.pageNumberType, -1, SQLITE_TRANSIENT_IP)
+        if let number = key.pageNumberInt {
+            sqlite3_bind_int64(stmt, 3, Int64(number))
+        } else {
+            sqlite3_bind_text(stmt, 3, key.pageNumberRaw, -1, SQLITE_TRANSIENT_IP)
+        }
+        var ids: [String] = []
+        while try auxStep(stmt) {
+            if let id = auxColumnString(stmt, 0) { ids.append(id) }
+        }
+        return ids
     }
 
     /// Returns the document carrying the given canonical printed number in a volume, or
@@ -6672,6 +6710,8 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var revisionRows: [DocumentRevisionRow] = []
         var personMentionRows: [PersonMentionRow] = []
+        // Decision 172, index version 76: which of its volume's terms each document links.
+        var termMentionRows: [TermMentionRow] = []
         // Index version 72: the classification marking each document prints in its opener, by
         // document id, which its source row stores where the note prints none.
         var openerClassifications: [String: String] = [:]
@@ -6680,6 +6720,8 @@ public actor IndexingPipeline {
         // #1599: the ids of the volume's own persons list, which say which of a document's `@ana`
         // pointers name a person.
         let listedPersonIds = Set(fullResult.persons.map(\.ref))
+        // Decision 172: the ids of the volume's own terms list, which say which `@ana` pointers name a term.
+        let listedTermIds = Set(fullResult.terms.map(\.ref))
         var externalCitationRows: [ExternalCitationRow] = []
         // Hoisted once per volume: the host's provider may decode on first use, and this scan runs
         // over every body footnote in the volume. Nil (the artifact missing from the host's
@@ -6733,18 +6775,26 @@ public actor IndexingPipeline {
             var docCrossRefs: [CrossReferenceRow] = []
             var docPersonRefs: Set<String> = []
             var docPageRanges: [PageRangeRow] = []
+            var docTermRefs: Set<String> = []
             Self.collectDocumentRefs(
                 from: astDoc.nodes,
                 volumeId: volumeId, documentId: did,
                 crossRefs: &docCrossRefs,
                 personRefs: &docPersonRefs,
                 personListVolumes: &personListVolumes,
-                pageRanges: &docPageRanges
+                pageRanges: &docPageRanges,
+                termRefs: &docTermRefs
             )
             crossRefs.append(contentsOf: docCrossRefs)
             // #1599: the people the document names on its `@ana`, beside those its text marks.
             docPersonRefs.formUnion(Self.annotatedPersonRefs(astDoc.annotatedReferences,
                                                              persons: listedPersonIds))
+            // Decision 172: and the terms it names there, beside those its text links.
+            docTermRefs.formUnion(Self.annotatedTermRefs(astDoc.annotatedReferences, terms: listedTermIds))
+            // Sorted, so two indexes of one file hold their rows in one order.
+            for ref in docTermRefs.sorted() {
+                termMentionRows.append(TermMentionRow(volumeId: volumeId, documentId: did, termRef: ref))
+            }
             // #1503: the page the document begins on, ahead of the breaks inside it — often a
             // break between documents, which no document's nodes hold. The parser gives one to a
             // document or an editorial note only, never a promoted prose section (review round 1).
@@ -6880,6 +6930,13 @@ public actor IndexingPipeline {
         let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
         }
+        // F7 (decision 178, index version 76): the page each division begins on, in the order the
+        // divisions open, numbered as `page_ranges` numbers a page.
+        let divisionStartRows = fullResult.divisionStartPages.enumerated().map { order, start in
+            DivisionStartPageRow(volumeId: volumeId, divisionId: start.divisionId, order: order,
+                                 page: Self.pageRangeRow(volumeId: volumeId, documentId: start.divisionId,
+                                                         pageNumber: start.page))
+        }
         // A volume that parsed NO persons list, but whose refs name another volume's, borrows the
         // entries it mentions once both are stored (`resolveBorrowedPersonLists`). Two refusals:
         // - never for a volume with a list of its own — `frus1951v04p2` holds 365 entries and spells
@@ -6973,6 +7030,8 @@ public actor IndexingPipeline {
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
             documentRevisions: revisionRows,
             personMentions: personMentionRows,
+            termMentions: termMentionRows,
+            divisionStartPages: divisionStartRows,
             persons: personRows,
             personListSources: personListSources,
             terms: termRows,
@@ -7152,6 +7211,7 @@ public actor IndexingPipeline {
 
         try auxDeleteCrossReferences(forVolumeId: data.volumeId)
         try auxDeletePersonMentions(forVolumeId: data.volumeId)
+        try auxDeleteTermMentions(forVolumeId: data.volumeId)
         try auxDeletePageRanges(forVolumeId: data.volumeId)
 
         let insertedReferences = try auxInsertCrossReferences(data.crossReferences)
@@ -7207,6 +7267,8 @@ public actor IndexingPipeline {
         try auxReplacePersonListSources(volumeId: data.volumeId, sources: data.personListSources)
         try resolveBorrowedPersonLists(touching: data.volumeId)
         try auxInsertTerms(data.terms)
+        try auxInsertTermMentions(data.termMentions)
+        try auxReplaceDivisionStartPages(volumeId: data.volumeId, rows: data.divisionStartPages)
         try auxInsertDocumentSources(data.documentSources)
         // #784: same delete-then-insert shape as `volume_sources` below, and for the same reason —
         // the key includes the note ordinal, so a re-index yielding fewer citations would strand
@@ -7911,6 +7973,9 @@ public actor IndexingPipeline {
     ///
     /// `personListVolumes` receives every volume a person ref NAMES (`personRefListVolume`), which
     /// `personRefs` cannot carry because its refs are already normalised to the bare fragment.
+    ///
+    /// The walk without the terms: ``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termRefs:)``
+    /// with a set of term refs it drops, for a caller that reads the other four.
     nonisolated static func collectDocumentRefs(
         from nodes: [FRUSASTNode],
         volumeId: String,
@@ -7922,6 +7987,30 @@ public actor IndexingPipeline {
         personRefs: inout Set<String>,
         personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow]
+    ) {
+        var termRefs = Set<String>()
+        collectDocumentRefs(from: nodes, volumeId: volumeId, documentId: documentId,
+                            parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                            citingNote: citingNote, crossRefs: &crossRefs, personRefs: &personRefs,
+                            personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                            termRefs: &termRefs)
+    }
+
+    /// The walk, with the terms its `<gloss>` links name (decision 172, index version 76):
+    /// `termRefs` receives each link's target normalised to its bare id (``normalizeTermRef(_:)``),
+    /// once a document however often it is linked, as `personRefs` receives the people.
+    nonisolated static func collectDocumentRefs(
+        from nodes: [FRUSASTNode],
+        volumeId: String,
+        documentId: String,
+        parentReferenceType: String? = nil,
+        enclosingText: String? = nil,
+        citingNote: [FRUSASTNode]? = nil,
+        crossRefs: inout [CrossReferenceRow],
+        personRefs: inout Set<String>,
+        personListVolumes: inout Set<String>,
+        pageRanges: inout [PageRangeRow],
+        termRefs: inout Set<String>
     ) {
         for (index, node) in nodes.enumerated() {
             switch node {
@@ -7951,7 +8040,17 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
+
+            // ── Term links (decision 172) ──────────────────────────────────────
+            case .gloss(let ref, let children):
+                if let ref, let normalised = normalizeTermRef(ref) { termRefs.insert(normalised) }
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
 
             // ── Person-name links ──────────────────────────────────────────────
             case .persName(let ref, let children):
@@ -7962,7 +8061,8 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
 
             // ── Page breaks ────────────────────────────────────────────────────
             case .pageBreak(let pageNumber):
@@ -7983,7 +8083,8 @@ public actor IndexingPipeline {
                     parentReferenceType: refType,
                     enclosingText: noteText.isEmpty ? nil : noteText,
                     citingNote: children,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
 
             // ── Editorial notes — captures enclosing text ──────────────────────
             case .editorialNote(let children):
@@ -7995,14 +8096,16 @@ public actor IndexingPipeline {
                     parentReferenceType: "editorialNote",
                     enclosingText: editorialText.isEmpty ? nil : editorialText,
                     citingNote: nil,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
 
             // ── All other nodes — recurse into children ────────────────────────
             default:
                 collectDocumentRefs(from: node.children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termRefs: &termRefs)
             }
         }
     }
@@ -8168,6 +8271,25 @@ public actor IndexingPipeline {
         guard let hash = ref.lastIndex(of: "#") else { return ref.isEmpty ? nil : ref }
         let fragment = String(ref[ref.index(after: hash)...])
         return fragment.isEmpty ? nil : fragment
+    }
+
+    /// Normalises a `<gloss>` link's target to the bare id of the term it names, the key of the
+    /// volume's `terms` rows (decision 172, index version 76): `"#t_NSC1"` → `"t_NSC1"`, by the
+    /// rule ``normalizePersonRef(_:)`` gives a person's ref. Measured over the 553 catalogue volumes
+    /// at corpus `216cdb764`: 1,351,198 of the links that carry a target name a term of their own
+    /// volume (`#t_…`), and one names none (`frus1977-80v26`'s `_#…`). A gloss with no target, the
+    /// sender's and recipient's markup in a heading (`<gloss type="from">`), names no term.
+    ///
+    /// - Returns: The id, or `nil` for an empty target or fragment.
+    nonisolated static func normalizeTermRef(_ ref: String) -> String? {
+        normalizePersonRef(ref)
+    }
+
+    /// The terms of `terms` (the volume's own list) that a document's `@ana` pointers name: how
+    /// `frus1981-88v16` names the terms its documents use, as it names their people (#1599). 419 of
+    /// its pointers name a term (corpus `216cdb764`).
+    nonisolated static func annotatedTermRefs(_ pointers: [String], terms: Set<String>) -> Set<String> {
+        Set(pointers.compactMap(FRUSDocumentAST.annotatedId).filter(terms.contains))
     }
 
     /// The volume whose persons list a `persName` ref points into, when the ref names one:
@@ -8993,6 +9115,45 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_terms_term ON terms(term)")
+        // Decision 172, index version 76: which document links which of its volume's terms, written
+        // as `person_mentions` is, from the `<gloss>` links in each document's parse and, for
+        // `frus1981-88v16`, the terms its documents name on `@ana`. One row a document and term,
+        // however often the term is linked. Read by a collection's *Abbreviations & Terms* block
+        // (the Collections design's A2), which joins it to `terms` for each term's definition. No
+        // id column: the key is the row, so two indexes of one file hold the same rows. Filled by
+        // the version's re-index; empty until each volume's next pass.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS term_mentions (
+                volume_id   TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                term_ref    TEXT NOT NULL,
+                PRIMARY KEY (volume_id, document_id, term_ref)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_term_mentions_ref ON term_mentions(volume_id, term_ref)")
+        // F7 (decision 178), index version 76: the page each division of a volume begins on, other
+        // than a document's and an editorial note's, whose start pages are `page_ranges` rows
+        // (#1503). The parse settled it already and dropped it, so a Contents line that links a
+        // front-matter page (`frus1961-63v06`'s Preface, `#pg_III`) or the Index (`#pg_315`) named
+        // no page any table held: none of the Contents' seven front- and back-matter lines did, in
+        // a full index at version 75. A table of its own, and not `page_ranges` rows, so that no page
+        // citation, page map or document's page list reads a division as a document. Numbered as
+        // `page_ranges` numbers a page; `division_order` is the order the divisions open in.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS division_start_pages (
+                volume_id        TEXT NOT NULL,
+                division_id      TEXT NOT NULL,
+                division_order   INTEGER NOT NULL,
+                page_number_type TEXT NOT NULL,
+                page_number_int  INTEGER,
+                page_number_raw  TEXT NOT NULL,
+                PRIMARY KEY (volume_id, division_id)
+            )
+            """)
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_division_start_pages_page
+            ON division_start_pages(volume_id, page_number_type, page_number_int)
+            """)
 
         // Session 130: archival citation tables.
         // Source Explorer Phase 1 (2026-07-03): `classification` column added (sentence 2
@@ -10591,6 +10752,64 @@ public actor IndexingPipeline {
         try auxStep(stmt)
     }
 
+    /// Deletes all `term_mentions` rows for a volume before re-inserting (decision 172), so a
+    /// correction that drops a term's last link leaves no row behind.
+    private func auxDeleteTermMentions(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM term_mentions WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Replaces a volume's `division_start_pages` rows in one transaction (F7, index version 76):
+    /// delete then insert, so a division a correction removes leaves no row.
+    private func auxReplaceDivisionStartPages(volumeId: String, rows: [DivisionStartPageRow]) throws {
+        try inTransaction {
+            let delete = try auxPrepare("DELETE FROM division_start_pages WHERE volume_id = ?")
+            defer { sqlite3_finalize(delete) }
+            sqlite3_bind_text(delete, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(delete)
+            guard !rows.isEmpty else { return }
+            let stmt = try auxPrepare("""
+                INSERT OR REPLACE INTO division_start_pages
+                    (volume_id, division_id, division_order, page_number_type, page_number_int, page_number_raw)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                defer { sqlite3_reset(stmt) }
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.divisionId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 3, Int64(row.order))
+                sqlite3_bind_text(stmt, 4, row.page.pageNumberType, -1, SQLITE_TRANSIENT_IP)
+                if let n = row.page.pageNumberInt {
+                    sqlite3_bind_int64(stmt, 5, Int64(n))
+                } else {
+                    sqlite3_bind_null(stmt, 5)
+                }
+                sqlite3_bind_text(stmt, 6, row.page.pageNumberRaw, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+            }
+        }
+    }
+
+    /// Writes a volume's `term_mentions` rows in one transaction (decision 172).
+    private func auxInsertTermMentions(_ rows: [TermMentionRow]) throws {
+        guard !rows.isEmpty else { return }
+        try inTransaction {
+            let stmt = try auxPrepare(
+                "INSERT OR IGNORE INTO term_mentions (volume_id, document_id, term_ref) VALUES (?, ?, ?)")
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                defer { sqlite3_reset(stmt) }
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.termRef, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+            }
+        }
+    }
+
     /// Replaces a volume's recorded borrowed-list sources in `person_list_sources`.
     ///
     /// Delete-then-insert, so a re-index that finds the volume now carries a list of its own (and
@@ -11290,6 +11509,8 @@ public actor IndexingPipeline {
             ("persons",           "volume_id"),
             ("person_list_sources", "volume_id"),
             ("terms",             "volume_id"),
+            ("term_mentions",     "volume_id"),
+            ("division_start_pages", "volume_id"),
             ("document_sources",  "volume_id"),
             ("external_citations", "volume_id"),
             ("volume_sources",    "volume_id"),
@@ -14679,6 +14900,10 @@ private struct VolumeIndexData: Sendable {
     /// R-5 P1: the per-document hashes the store pass compares against the previous index.
     var documentRevisions: [DocumentRevisionRow] = []
     let personMentions: [PersonMentionRow]
+    /// Decision 172, index version 76: each document's linked terms, stored as `term_mentions`.
+    let termMentions: [TermMentionRow]
+    /// F7, index version 76: the page each division begins on, stored as `division_start_pages`.
+    let divisionStartPages: [DivisionStartPageRow]
     let persons: [PersonRow]
     /// The volumes whose persons lists this volume's refs point into — non-empty only when the
     /// volume parsed no list of its own (`parseAndExtract`). Stored as `person_list_sources`.
@@ -14881,6 +15106,25 @@ private struct PersonMentionRow: Sendable {
     let volumeId: String
     let documentId: String
     let personRef: String
+}
+
+/// One `division_start_pages` row: the page a division begins on (F7, index version 76).
+private struct DivisionStartPageRow: Sendable {
+    let volumeId: String
+    /// The division's `xml:id`.
+    let divisionId: String
+    /// Its place among the volume's divisions, in the order they open.
+    let order: Int
+    /// The page, numbered as `page_ranges` numbers one (``IndexingPipeline/pageRangeRow(volumeId:documentId:pageNumber:isStart:)``).
+    let page: PageRangeRow
+}
+
+/// One `term_mentions` row: a document that links a term of its volume's list (decision 172).
+private struct TermMentionRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    /// The term's id in the volume's list (`terms.ref`), as ``IndexingPipeline/normalizeTermRef(_:)`` reads it.
+    let termRef: String
 }
 
 private struct PersonRow: Sendable {
