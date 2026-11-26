@@ -4152,8 +4152,14 @@ Row CR of the plan of record from 2026-11-25 (decision 149), started from the pl
 - **C2-5's grammar.** The owner asked whether the post-1963 central files could be added to the footnote grammar. Told the change is measured first and reaches every reader of the pointers, the owner chose "In 1.1, joining v76 now" (191). It went to the L26 session with a hand-over note.
 - **#2018, filed on the owner's word:** a *Summaries* export fails on a device without Apple Intelligence even when every summary is stored. It is placed in L35 (§1a).
 
+**C2's rest, answered the same day** (decisions 199 to 202), on the owner's request for the questions still open:
+- **Three rows split** (199). The second halves take the next free numbers: L58 (the Note on the Text, the statement of sources and the file's keys), L59 (the iPad's settings column and the drawn opening) and L60 (the tagged PDF, last). Their briefs were divided bullet by bullet, and the rows' table, the table of what each row touches, the order where rows meet, §1c's table and the calendar were brought to them.
+- **Decisions 147 and 148 stand** (200). The submission falls about 2026-12-22 by the arithmetic, and the Office has said early December, with no day.
+- **The design is accepted as reviewed** (201).
+- **A person's name in the web page links like a term** (202), in L52.
+
 **For the owner**
-- **C2's rest:** the re-cut of the rows, the pace, and the design's status.
+- **Nothing more from CR.** Wave 4 starts once its own runs are made (the plan's §2).
 - **The pull request,** opened on the owner's word ("Yes. Open PR after L26 merge") once L26 had merged. In the rebase onto `bbe6686c`:
   - this log kept #2017's, L26's and this entry in that order;
   - the plan of record kept L26's decision 191 and dropped CR's copy;

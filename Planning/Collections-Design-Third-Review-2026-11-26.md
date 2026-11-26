@@ -1,6 +1,6 @@
 # Adversarial review of the Collections design's third form, as the owner's answers leave it — 2026-11-26
 
-**Status: LIVE, 2026-11-26.** The plan of record's row CR (decision 149): the review of `Collections-Customization-Design-2026-11-25.md` in its third form, as twice amended and brought to the owner's answers (decisions 153 to 174), before any of its lanes is built. Read against `v2` at `b3acd7ad`, with index version 76 on `claude/plan-of-record-pr2011-2cc493`. Nothing in the app or its tests changed. The checkpoint after it, C2, is the owner's.
+**Status: LIVE, 2026-11-26.** The plan of record's row CR (decision 149): the review of `Collections-Customization-Design-2026-11-25.md` in its third form, as twice amended and brought to the owner's answers (decisions 153 to 174), before any of its lanes is built. Read against `v2` at `b3acd7ad`, with index version 76 on `claude/plan-of-record-pr2011-2cc493`. Nothing in the app or its tests changed. The checkpoint after it, C2, was the owner's, and was made the same day (§8): decisions 191 to 202.
 
 **The verdict in one line:** the third form stands as a design, but not yet as the briefs that will build it. No finding was refuted.
 - The one S1 is in a candidate the design gave a line and no design: *Same settings as…* copies the ids that name a document's own headnote and notes.
@@ -424,6 +424,16 @@ Each with the session's recommendation. The rest of the findings are written int
 - **C2-8. Filing:** the 1.0 defect of §6's item 1, as an issue for L35 or a small row of its own. *Recommended:* file it, and let L35 take it with its files widened. **Answered:** filed as #2018, for L35 (decision 198).
 
 ---
+
+### 8a. C2's rest, answered the same day
+
+- **C2-9, the re-cut:** L43, L45 and L48 are each split in two (decision 199).
+  - **L58** takes the Note on the Text, the statement of sources and the collection file's keys.
+  - **L59** takes the iPad's settings column and the drawn opening.
+  - **L60** takes the tagged PDF, and lands last.
+- **C2-10, the pace:** decisions 147 and 148 stand (decision 200). The owner was told the submission falls about 2026-12-22, inside the week App Review ran slowly in 2024. The Office has said early December, with no day.
+- **C2-11, the design:** accepted as reviewed (decision 201). Its head reads ACCEPTED, and the plan's rows are what is built.
+- **C2-12, a person's name in the web page:** it links like a term, to its Persons Index row where that block is, and is plain text elsewhere (decision 202, in L52).
 
 ## 9. Cost
 

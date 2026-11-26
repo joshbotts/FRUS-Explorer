@@ -1,8 +1,8 @@
 # Collections: export in two taps, and fine-tune every part of a document — a design, 2026-11-25
 
-**Status: PROPOSED on 2026-11-25; third form, revised after two adversarial reviews and amended twice the same day on the owner's direction, then brought to the owner's answers on 2026-11-26. Nothing is built, and no code changed.** The owner answered §10's twelve questions on 2026-11-25. Those answers are the plan of record's decisions 153 to 174, and §10 marks each. The plan takes §9's lanes as its rows (`Plan-Of-Record-2026-11-25.md` §1c). Its row CR reviews this text before any lane is built (decision 149), and the text stays PROPOSED until the checkpoint after that review (C2). §12 lists the runs that need a device before a lane starts.
+**Status: ACCEPTED at C2 on 2026-11-26** (the plan of record's decision 201). This is the third form, revised after two adversarial reviews and amended twice on the owner's direction, then brought to the owner's answers and corrected by the third review. **Nothing is built, and no code changed.** The owner answered §10's twelve questions on 2026-11-25; the answers are the plan's decisions 153 to 174, and §10 marks each. The plan takes §9's lanes as its rows (`Plan-Of-Record-2026-11-25.md` §1c). Its row CR reviewed this text before any lane was built (decision 149), and the owner answered C2's questions the same day: decisions 191 to 202, three of the rows split among them (decision 199). **The plan of record's rows, and not this text, are what is built.** §12 lists the runs that need a device before a lane starts.
 
-**Reviewed on 2026-11-26** by the plan of record's row CR: `Collections-Design-Third-Review-2026-11-26.md`, with its reports in `collections-design-review-3/`. No finding was refuted. Where the review found this text wrong, the text is corrected in place and marked *Corrected by the third review*, with the finding's number (J1 to J48). The rest of its findings are written into the briefs of the plan's rows, and eight questions are the owner's at C2 (the review's §8).
+**Reviewed on 2026-11-26** by the plan of record's row CR: `Collections-Design-Third-Review-2026-11-26.md`, with its reports in `collections-design-review-3/`. No finding was refuted. Where the review found this text wrong, the text is corrected in place and marked *Corrected by the third review*, with the finding's number (J1 to J48). The rest of its findings are written into the briefs of the plan's rows, and eight questions were the owner's at C2 (the review's §8). The owner answered them and C2's rest the same day, and accepted this design as reviewed (decisions 191 to 202).
 
 **This is the record's third form.**
 
@@ -369,7 +369,7 @@ A block the collection generates, as it generates a Bibliography. It is the coll
 
 **It is a block and nothing else.** It is a row in the outline, placed, moved and removed as a Bibliography is. It prints where its row is, and only if it has something to say. There is no switch for it.
 
-*Corrected by the third review* (J18): the block seam cannot resolve it. A block is given the collection's documents alone, read-only, in its row's place (`CollectionGeneratedBlocks.swift:155-160`), and an empty block prints *Nothing to list* (`:184`). The Note needs every entry's resolved title, date line, depth and switches, and prints nothing when it has nothing to say. So it is a row in the outline, as said, and what it prints is a rule over the resolved entries, run outside the block seam and shared with the line in the collection's settings below (L43).
+*Corrected by the third review* (J18): the block seam cannot resolve it. A block is given the collection's documents alone, read-only, in its row's place (`CollectionGeneratedBlocks.swift:155-160`), and an empty block prints *Nothing to list* (`:184`). The Note needs every entry's resolved title, date line, depth and switches, and prints nothing when it has nothing to say. So it is a row in the outline, as said, and what it prints is a rule over the resolved entries, run outside the block seam and shared with the line in the collection's settings below (L58, L43's second half since decision 199).
 
 - **It is one of the apparatus of step 2** (§4.3), and each suggested set has it, last. A collection that exists today has none until its author adds one.
 - **Where it would have something to say and the collection has none,** the collection's settings say so in a line, with *Add*.
@@ -588,7 +588,7 @@ So the sheet stays as `Collections-Rework-Scope.md` left it, with no choice abou
 - each document on the page is named by its entry, so that a document entered twice is two places (#2004);
 - it refreshes on every setting its page draws (#1997).
 
-**Pointing is the Mac's, and later.** There the settings are a column beside the page. §8.1's item 13, which the owner took (decision 164), gives the iPad a settings column and pointing there too. The plan of record builds both in its row L45.
+**Pointing is the Mac's, and later.** There the settings are a column beside the page. §8.1's item 13, which the owner took (decision 164), gives the iPad a settings column and pointing there too. The plan of record builds the Mac's in its row L45 and the iPad's in L59 (decision 199).
 
 - ***Show Parts*** is a switch on the preview and in the View menu. On, each part of a document is outlined, with its name on the outline's own corner.
 - **A click on a part selects that document's row and brings that part's control into view in the column.** Keyboard focus stays where the click was, and VoiceOver is told what is selected. The second form moved focus to the control, which for a text field could put the next keystroke into a title.
@@ -600,7 +600,7 @@ On iPad a document's settings are a sheet over both columns (`CollectionEditorVi
 
 | | Mac | iPad | iPhone |
 |---|---|---|---|
-| **Layout** | Outline · preview · settings column, as now, with a toolbar control for the preview | Outline · preview · a settings column, by §8.1's item 13, at the widths L45 sets, with sheets where it gives way (*corrected by the third review*, J13: this said settings as sheets, as now) | Outline, with Preview behind the segmented control, as now |
+| **Layout** | Outline · preview · settings column, as now, with a toolbar control for the preview | Outline · preview · a settings column, by §8.1's item 13, at the widths L59 sets, with sheets where it gives way (*corrected by the third review*, J13: this said settings as sheets, as now) | Outline, with Preview behind the segmented control, as now |
 | **The collection** | The gear's popover, as now | The gear's sheet, as now | The *Collection settings* row, as now |
 | **A section** | Its heading's row | The heading's pill | The heading's pill |
 | **A document** | Its row | Its row or its Configure pill | Its row |
@@ -654,7 +654,7 @@ No screen holds more than 17. What it reduces:
 | Two record types and an upgrade | the second | Two devices could each delete the other's copy (§7.5) |
 | Version 3 of the collection file | the second | Nothing required it (§7.4) |
 | A record of what placed each block | the second | Nothing true could be said of a block placed before it |
-| The opening drawn at the head of a document's settings | the second | It could not share the screen with the field at the largest text sizes. A candidate now (§8.1's item 13), which the owner took (decision 164). The plan of record's row L45 shows it at AX3 and AX5 before it builds it |
+| The opening drawn at the head of a document's settings | the second | It could not share the screen with the field at the largest text sizes. A candidate now (§8.1's item 13), which the owner took (decision 164). The plan of record's row L59 shows it at AX3 and AX5 before it builds it |
 | Export Again | the second | It could not repeat an export, and saved one tap |
 | One template of settings and blocks together | this form, as first written | The owner's direction: two steps (§4.3) |
 | The gallery first, with the rest under *Customize* | this form, as first written | Each step holds its templates and its own controls |
@@ -670,7 +670,7 @@ No screen holds more than 17. What it reduces:
 | The collection's settings shown in the inspector when nothing is selected | A build-28 tester asked for them to be reachable "after refocusing on a document"; the session that took the report found them "not reachable without clearing the selection" (`Completed/188-189-Tester-Feedback-Build28-Plan.md`, 188-E). Composer v2 moved them behind the gear | Behind the gear, as now |
 | Content choices in the export sheet | Six controls, deleted by the Collections rework | None. This form proposed two choices that wrote nothing, and the owner kept the sheet as format and destination (decision 156) |
 | Collection-level switches for apparatus | Decision A11 chose placeable rows (`Completed/Collections-Authoring-Scope.md:198`) | Rows, as now, the Note on the Text among them |
-| A persistent settings column on the iPad | Composer v2 removed it on 2026-07-12 "so the reading surface stays clear" (`CollectionEditorView.swift:832-836`; `fa28f2d3`) | Back, by §8.1's item 13, with the width rule L45 owes, after Browse's (`BrowseTwoPaneMetrics.swift:27-35`). Added by the third review (J13) |
+| A persistent settings column on the iPad | Composer v2 removed it on 2026-07-12 "so the reading surface stays clear" (`CollectionEditorView.swift:832-836`; `fa28f2d3`) | Back, by §8.1's item 13, with the width rule L59 owes, after Browse's (`BrowseTwoPaneMetrics.swift:27-35`). Added by the third review (J13) |
 
 ---
 
@@ -721,7 +721,7 @@ The owner's choice (Q6; decision 162).
 - A saved template is a record type of its own (§8.1's item 2).
 - The page's choices (item 7) and the short form's (item 11) are stored properties only if they are kept on the collection. The plan of record leaves that to its rows L48 and L49.
 
-So the promotion is six fields and one record type, and more if L48 or L49 keeps a choice on the collection.
+So the promotion is seven fields or eight, with the compiler's name and each headnote's writer (decision 194), and one record type; more if L48 or L49 keeps a choice on the collection.
 
 **One CloudKit promotion,** of these four and of what the candidates add. Each has its control in the lane that adds it (§9, lane 3), so the owner's write on a Development build can set each before the deploy. CloudKit makes a field only from the first record that carries a value (`CloudKitSchemaInventory.swift:514-516`), which is why a property must not land in one lane and its control in the next. The second form cut its lanes that way.
 
@@ -746,9 +746,9 @@ The file stays what it is (the second review's §2 sets out its rules, each with
 - **A headnote travels as its text, with who wrote it, and not as a draft's id** (#1999; Q10, decision 166: always).
   - Every import makes a draft of its own.
   - A file from 1.0 that carries an id is given a copy of the draft where the id resolves.
-  - A 1.0 app that opens the new file prints, where a headnote is on, another stored summary of the document under *Headnote*, or the placeholder sentence (`CollectionContentAssembly.swift:1348-1382`). That is what a recipient on another account sees today. On its author's own 1.0 devices it replaces every headnote the author wrote. *Corrected by the third review* (J7): this said a 1.0 app shows no headnote. To make that true, the headnote's state travels under a key 1.0 does not read (L43).
+  - A 1.0 app that opens the new file prints, where a headnote is on, another stored summary of the document under *Headnote*, or the placeholder sentence (`CollectionContentAssembly.swift:1348-1382`). That is what a recipient on another account sees today. On its author's own 1.0 devices it replaces every headnote the author wrote. *Corrected by the third review* (J7): this said a 1.0 app shows no headnote. To make that true, the headnote's state travels under a key 1.0 does not read (L58).
   - **Off travels as Off.** Today the writer omits Off and the reader turns an absent key into Default (`NativeCollectionFormat.swift:517-520`, `:757-760`), so an Off entry arrives On (J6). Decision 166's "always" does not cover an entry switched off: an Off entry's draft does not travel (C2-2; decision 193).
-  - **The headnote's keys** are its text, its format (a structured draft is a JSON object) and its authorship, with what an import makes of a sender's (J8; L43). An export names the writer by the compiler's name, "Headnote by …", with Apple Intelligence named where it drafted, and each headnote carries its writer's name (C2-3; decision 194).
+  - **The headnote's keys** are its text, its format (a structured draft is a JSON object) and its authorship, with what an import makes of a sender's (J8; L58, with the names L43 stores). An export names the writer by the compiler's name, "Headnote by …", with Apple Intelligence named where it drafted, and each headnote carries its writer's name (C2-3; decision 194).
 - **A 1.0 app, given a file the new version writes,** ignores the new keys and shows 1.0's layout.
 - **The new version, given a file from 1.0 or from an outside tool,** reads it as today. Nothing says of it that its settings "came from 1.0".
 
@@ -793,8 +793,8 @@ Candidates, in the order this design would take them. Q8 asked which. **The owne
 9. **Same settings as…** Copy one document's settings to others. *Taken: L47.*
 10. **See also, by page.** The line matches a reference's target against the collection's documents, and the volumes through the 1950s refer by page. *Corrected by the third review* (J4): this said a reference to a printed page "is stored under its page", so that it matches none. The index resolves it to one document, the one the note names by number or day, else the first on the page (`IndexingPipeline.swift:10631-10697`). Since version 71 it does so for most references to another volume's page too, so 1.0's line already matches same-volume page references. What still reaches it as a page is another volume's "ff.", a range across documents, and a page naming nothing. Since decision 190 each resolved edge keeps the page and how it was resolved, so the line can mark a first-of-several pick. *Taken: L51, with A4.*
 11. **A short citation form**, once it has a rule that is unique over the manifest. *Taken: L49.*
-12. **A tagged PDF**, with a title and links, from the roles the plan gives each line. *Taken: L48.*
-13. **The opening drawn in a document's settings,** and **a settings column on iPad** with pointing there, as the reader draws its Research rail since R6a. *Both halves taken: L45, with lane 6's second half.*
+12. **A tagged PDF**, with a title and links, from the roles the plan gives each line. *Taken: L60, split from L48 (decision 199).*
+13. **The opening drawn in a document's settings,** and **a settings column on iPad** with pointing there, as the reader draws its Research rail since R6a. *Both halves taken: L59, split from L45 (decision 199).*
 
 Considered and not proposed: editing a source note's text or a footnote; a document printed without its heading or its dateline (§3.1; not offered, decision 155); fonts and colours (no theming engine, item 9 of `Collections-Authoring-Scope.md`); editing inside the preview (its item 1).
 
@@ -976,7 +976,7 @@ Each is read from the code and the bundled files at `94719de`. **No block was re
 
 None needs an index version but lane 8's A2, whose table of term mentions is index version 76 (§8.2; decision 172), built in the plan of record's row L26. No estimate of time is given; a lane's size is said by what it touches.
 
-The plan of record takes these lanes as its rows L34 to L55, in its own order and with six departures that it names (its §1c). Its rows, and not this table, are what is built.
+The plan of record takes these lanes as its rows L34 to L60, in its own order and with six departures that it names (its §1c). Its rows, and not this table, are what is built.
 
 | Lane | What | Stored data | Changes exports | Before it starts |
 |---|---|---|---|---|
@@ -996,7 +996,7 @@ The plan of record takes these lanes as its rows L34 to L55, in its own order an
 **What each lane owes, beyond the landing runs the plan of record names.**
 
 - **Shared code** (lanes 2, 3, 4, 6, 7 and 8): `swift build --target FRUSCoreKit` and `swift test`, with the unit target and the Mac build.
-  - Lane 4 divides `CollectionPreset.Recipe` in two. Decision 139's table stays as data, each case a document recipe with its suggested apparatus, and `CollectionTests.swift:3450-3565` goes on holding it. Its `everyApparatusBlockInTwoTemplates` runs over `allCases`, though, so it turns red with the first new block type, L43's Note (*corrected by the third review*, J36). That suite's tests of what a template writes and of which card is *Active* (`:3546-3550`) move to the two steps.
+  - Lane 4 divides `CollectionPreset.Recipe` in two. Decision 139's table stays as data, each case a document recipe with its suggested apparatus, and `CollectionTests.swift:3450-3565` goes on holding it. Its `everyApparatusBlockInTwoTemplates` runs over `allCases`, though, so it turns red with the first new block type, L58's Note (*corrected by the third review*, J36). That suite's tests of what a template writes and of which card is *Active* (`:3546-3550`) move to the two steps.
   - `CollectionRenderingPinTests` pins the HTML page, the Word package, and the BibTeX and RIS files by SHA-256. Lane 2 moves the first two, and the last two, since Q9 is yes (decision 165); each is re-taken with its reason.
   - `CollectionResolutionTests` pins a dateline in an opener as absent (`:450-452`) and a digest of a dump that prints the header, the dateline and the Zotero title (`:706`). Lane 2 moves both.
   - `CollectionExportContrastTests` fails on a rule of the export's layer that draws text and is not in its list. Lanes 2 and 3 add rules.
@@ -1133,7 +1133,7 @@ Each is answered in the design's text. None is tested, and §12 says which need 
 | A11Y-5, A11Y-9 Fixed type, the pill, the list's actions, the switches' names | Filed, and in lane 4 | #2006 |
 | A11Y-6 A row's second control | One control a row. Not so, by the third review (J30): step 2's row opens a screen and offers *Add* | §4.2; L44 |
 | A11Y-7 Checks for five lanes of seven | A check for each lane that has a screen, each with what holds it. Not so, by the third review (J31): lane 7 and the new blocks have none in §9's table | §9; the rows' briefs |
-| A11Y-8 The drawn opening | Not in the core. A candidate, which the owner took (decision 164); the plan's row L45 shows it at AX3 and AX5 first | §8.1 |
+| A11Y-8 The drawn opening | Not in the core. A candidate, which the owner took (decision 164); the plan's row L59 shows it at AX3 and AX5 first | §8.1 |
 
 **From the first review, still open under this form:** what a device updated later holds for a new property (its G17), which is §12's first run; and Word's contents list (its G12), which is §12's fourth.
 
