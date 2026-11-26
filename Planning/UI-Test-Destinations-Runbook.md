@@ -1,8 +1,9 @@
 # UI test destinations runbook
 
-Which simulators each UI suite needs, what it measured, and the commands. `CLAUDE.md`'s *Build &
-Test Commands* section holds the index (suite, devices, expected counts) and the five rules that
-hold for every UI run; this file holds each suite's full entry. The entries were moved here from
+Which simulators each UI suite needs, what it measured, and the commands. `.claude/rules/ui-tests.md`
+holds the index (suite, devices, expected counts) and the five rules that hold for every UI run,
+moved there from `CLAUDE.md`'s *Build & Test Commands* section on 2026-11-26; this file holds each
+suite's full entry. The entries were moved here from
 `CLAUDE.md` word for word on 2026-10-09, so that a session loads them when it needs one and not
 with every request. Add a new suite's entry here, and its row to the index.
 

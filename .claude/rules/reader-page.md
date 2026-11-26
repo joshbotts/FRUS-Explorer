@@ -1,0 +1,23 @@
+---
+paths:
+  - "FRUSCoreKit/TEI/ReaderPage.swift"
+  - "FRUSCoreKit/TEI/ReaderAnnotationScripts.swift"
+  - "FRUSCoreKit/TEI/FRUSRenderNodeHTMLSerializer.swift"
+  - "FRUSCoreKit/TEI/FRUSURLScheme.swift"
+  - "FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift"
+  - "FRUSExplorer/TEI/HTMLTemplate.swift"
+  - "FRUSExplorer/TEI/FRUSURLSchemeHandler.swift"
+  - "FRUSExplorer/Theme/FRUSTheme.swift"
+  - "FRUSExplorerTests/FRUSCoreKit/ReaderPageTests.swift"
+  - "FRUSExplorerTests/FRUSCoreKit/ReaderLinkTests.swift"
+  - "FRUSExplorerTests/FRUSCoreKit/ReaderAnnotationTests.swift"
+  - "FRUSExplorerTests/FRUSCoreKit/CollectionRenderingTests.swift"
+---
+
+# The reader's page: its pins, its contrast and its links
+
+Claude Code loads this file when a session reads or edits a file its `paths` name. `CLAUDE.md`'s
+*Coding Standards* keeps the rule and names the pins; this is the whole paragraph, moved here from
+there word for word on 2026-11-26.
+
+**The reader's page has a gate too, since #1575 and #1578.** `ReaderAnnotationScriptTests` (since S15a) pins the reader's three annotation scripts the same way, by SHA-256 and length, since a web host serves the bytes the app injects: a change to one is a change to both readers, so re-take its pin and say why. `ReaderPageTests` (`FRUSExplorerTests/FRUSCoreKit/`, run by Xcode and by `swift test`) pins the page's head by SHA-256 and length for both appearances and all four text sizes, so any byte changed in `FRUSCoreKit/TEI/ReaderPage.swift`'s stylesheet, palette or template fails eight pins, a comment inside the CSS included: re-take them from the failure message and say why in the comment above them. It also fails when a text colour is under 4.5:1 against the page, an editorial note's tint or (since #1602) the wash behind a footnote a cross-reference arrived at; when the colour of text inside a highlight is under 4.5:1 over any of the five tints; when a `color:` is anything but one of the six text variables; and when `a.pers-name` or `a.cross-ref` loses its underline on screen or keeps it on paper: since 2026-10-08 the stylesheet's one `@media print` block prints the two links plain, and the suite reads a rule inside `@media print` as paper's alone and every other rule, those inside other `@media` blocks included, as the screen's. The print rule was checked in WebKit itself, by printing a page through `WKWebView.printOperation(with:)`, the call the Mac's File ▸ Print makes, and measuring the result: with the rule the longest run of link-coloured pixels under a person's name fell from 1,263 to 41 (letter strokes), and the name kept its colour. Since 2026-11-11 it also reads the rules that draw on screen the links of a list item of links alone as boxes at least 24 px square, for WCAG 2.2's 2.5.8 (Target Size (Minimum)): `li.links-only`, which `FRUSRenderNodeHTMLSerializer.holdsLinksAlone(_:)` decides, an item with a link and no text beside its links, as a table of contents' line, a name alone in a list of participants or an index entry whose page numbers the TEI prints with no comma between them. Since 2026-11-12 the boxes take such an item's glosses, whose dotted rule is then a dotted underline, the footnote markers beside its links, and the links of the two lists below a document that names its people and terms on `@ana` (`.named-list`); and the serializer writes a link inside a link as its text inside the outer one (`withoutLinks(_:)`), since a browser splits a nested `<a>`, so a tap anywhere on a contents line that names a person follows the line; an outer link that leads nowhere, or a person's or a term's card around a working reference, gives way to the link inside it (`givesWayToInnerLink(_:)`). `LinksAloneTargetRenderTests` (the same file, Xcode's alone) measures those boxes in WebKit. The stylesheet is also the collection HTML export's (`CollectionItemHTMLRenderer.embeddedCSS`) and the Mac's printed page's (File ▸ Print prints the reader's own web view); `CollectionRenderingPinTests` pins the export's pages, so a change to the stylesheet moves its three HTML pins as well. The export's own layer draws its text in literal colours, which `CollectionExportContrastTests` (the same file, Xcode's alone) measures, each against the background it is listed with: a rule added there that draws text is added to that list. Change the page in the kit, never in `HTMLTemplate` or `FRUSTheme.cssVariables`, which forward to it. `ReaderLinkTests` holds the reader's link parse (`FRUSURLScheme.readerLink(from:)`) to a table of the hrefs the serializer writes and, in Xcode alone, the app handler's call for each to the call it made before it read links with the kit: an intended change to what a tap does edits that expectation too, and a new reader host needs a row.

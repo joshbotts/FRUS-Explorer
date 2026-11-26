@@ -48,7 +48,10 @@ You are implementing ONE PR of ${CONTEXT}. The house rules — build and test co
 each UI suite needs, coding standards, the shared-kit rules, Docs/EditableContent/, the DEVELOPMENT-PLAN entry — are in
 CLAUDE.md as it stands at ${BASE}; follow it. The copy in your context is the one this session loaded when it began, and it can
 be older than ${BASE}: once your branch exists, read the CLAUDE.md in your worktree, at least "Directory Map", the FRUSCoreKit
-entry under "SPM package targets" and "Web edition (FRUS Explorer Light)". Where the two differ, the file is right. ${A.plan ? `Background on past lanes is in ${A.plan}. ` : ''}Your design is in the lane text
+entry under "SPM package targets" and "Web edition (FRUS Explorer Light)". Where the two differ, the file is right. Since 2026-11-26 CLAUDE.md points at files
+it no longer holds, and nothing is known to load them for a workflow agent: read the one your work touches before you start. They are .claude/rules/ui-tests.md (which devices each UI suite needs, and the five
+rules for every UI run), .claude/rules/generators.md, .claude/rules/reader-page.md, .claude/rules/semantic-vectors.md, .claude/rules/word-cloud.md and .claude/rules/archive.md, and, for the
+area of FRUSCoreKit you change, its paragraph in Planning/FRUSCoreKit-Runbook.md (grep a type name). A move into the kit is recorded in that runbook, and a new UI suite's row in .claude/rules/ui-tests.md, not in CLAUDE.md. ${A.plan ? `Background on past lanes is in ${A.plan}. ` : ''}Your design is in the lane text
 below and in the issues themselves: read each whole first, gh issue view <N> --repo ${REPO} --comments.
 
 WORKSPACE — the serial merge queue's rules, non-negotiable:

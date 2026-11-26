@@ -9,7 +9,9 @@ when it began, and it can be older than the base branch. On 2026-10-07 a session
 moved from `34a51205` to `f384d2d5` still gave a workflow agent `34a51205`'s text, with no
 *Web edition* section and the Directory Map from before FRUSCoreKit. So the prompts tell an agent
 to read the sections that govern its work from the file in its worktree. Otherwise they point at
-`CLAUDE.md` rather than restating it, and carry only what it does not say: the queue's worktree,
+`CLAUDE.md` rather than restating it (and, since 2026-11-26, name the `.claude/rules/` files and
+`Planning/FRUSCoreKit-Runbook.md` that hold what left it, since nothing is known to load those for a
+workflow agent), and carry only what it does not say: the queue's worktree,
 branch and push rules, the durable lessons of build 48's review rounds, and, since FRUSCoreKit
 (October 2026), where source lives and when the package's own run is owed.
 
@@ -81,8 +83,8 @@ Per lane, it runs these steps:
 ## `land-lane.js`
 
 It merges the base into each job's committed branch. It resolves the conflicts every lane meets:
-two lanes appending to the DEVELOPMENT-PLAN, the EditableContent amendment log, CLAUDE.md's device
-paragraphs, an index version both lanes took, and a file the base moved into `FRUSCoreKit/` after
+two lanes appending to the DEVELOPMENT-PLAN, the EditableContent amendment log, the UI suites' device
+paragraphs and index rows (the runbook's and `.claude/rules/ui-tests.md`'s since 2026-11-26), an index version both lanes took, and a file the base moved into `FRUSCoreKit/` after
 the lane changed it. It also finishes or aborts a merge an interrupted run left behind. It then
 builds, runs the full unit target and, when the lane adds package input, `swift test`, has a second
 agent check the merge read-only, and pushes only when the runs are green and the check is clean. It never force-pushes. If the base has
