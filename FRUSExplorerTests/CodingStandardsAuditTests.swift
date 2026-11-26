@@ -26,6 +26,8 @@ import Foundation
 ///   1.0 — Session 31: initial coding standards audit suite
 ///   1.1 — FRUSCoreKit, part 1: `CitationParser.swift` is read at `FRUSCoreKit/Citation/`, in the
 ///          version-history allowlist and the debug-logging check
+///   1.2 — 2026-11-26: `CLAUDE.md`'s budget and the rules files' limit (#2014's hand-off note,
+///          step 5, on the owner's word)
 struct CodingStandardsAuditTests {
 
     // MARK: - File URL Helpers
@@ -174,6 +176,71 @@ struct CodingStandardsAuditTests {
             Update the "§7 struck:" line in \(recordURL.lastPathComponent), or restore the strike \
             that went missing from Visual-Marketing-Plan.md.
             """)
+    }
+
+    // MARK: - The guide's budget (#2014)
+
+    /// `CLAUDE.md` goes into every request of every session and every lane's agent, so each of its
+    /// characters is paid for many times over. It went from 226,886 characters to 54,241 on
+    /// 2026-10-09, was back at 131,937 by 2026-11-26, and went to 57,022 that day, when #2014 moved
+    /// six sections to `.claude/rules/`, loaded by path, and the `FRUSCoreKit` entry to a runbook.
+    /// This test holds what #2014 won, on the owner's word of 2026-11-26 (step 5 of the hand-off
+    /// note, `Planning/Completed/Context-Streamlining-Mac-Handoff-2026-11-26.md`):
+    /// - `CLAUDE.md` under 60,000 characters;
+    /// - no line of it over 4,000, since the entry that grew to 48,003 characters was one line;
+    /// - each file under `.claude/rules/` under the 40,000 characters Claude Code reads of it.
+    ///
+    /// A character is a Unicode scalar, as Python's `len()` counts one, the measure those figures
+    /// were taken in; the files hold none outside the Basic Multilingual Plane, so a count in UTF-16
+    /// units is the same. When it fails, move detail out rather than raise the budget: to a rules
+    /// file under a `paths:` list, or to a runbook under `Planning/`, leaving a paragraph in
+    /// `CLAUDE.md` that names it, as #2014 did.
+    @Test("CodingStandardsAudit: CLAUDE.md stays under its budget, and each rules file under what Claude Code reads")
+    func guideStaysUnderItsBudget() throws {
+        let guideBudget = 60_000
+        let lineBudget = 4_000
+        let rulesLimit = 40_000
+        let guide = try String(
+            contentsOf: Self.projectRoot.appendingPathComponent("CLAUDE.md"), encoding: .utf8)
+        let length = guide.unicodeScalars.count
+        #expect(length > 10_000, """
+            CLAUDE.md read as \(length) characters, too few to be the guide: the read went wrong, \
+            and this check would be passing blind.
+            """)
+        #expect(length < guideBudget, """
+            CLAUDE.md is \(length) characters, over its budget of \(guideBudget), and every \
+            session and every lane's agent pays for each one. Move detail out rather than raise \
+            the budget: to a file under .claude/rules/ with a `paths:` list, or to a runbook under \
+            Planning/, leaving a paragraph in CLAUDE.md that names it, as #2014 did on 2026-11-26.
+            """)
+
+        let longLines = guide.split(separator: "\n", omittingEmptySubsequences: false)
+            .enumerated()
+            .filter { $0.element.unicodeScalars.count > lineBudget }
+            .map { "line \($0.offset + 1), \($0.element.unicodeScalars.count) characters" }
+        #expect(longLines.isEmpty, """
+            CLAUDE.md has a line over \(lineBudget) characters: \(longLines). A line that long is an \
+            entry that grows by appending, as the FRUSCoreKit entry did to 48,003 characters before \
+            #2014 moved it to Planning/FRUSCoreKit-Runbook.md: split it, or move it out.
+            """)
+
+        let rules = try FileManager.default
+            .contentsOfDirectory(
+                at: Self.projectRoot.appendingPathComponent(".claude/rules"),
+                includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "md" }
+        #expect(!rules.isEmpty, """
+            Found no .md file in .claude/rules/, which held six on 2026-11-26: the folder moved or \
+            the read went wrong, and this check would be passing blind.
+            """)
+        for rule in rules {
+            let ruleLength = try String(contentsOf: rule, encoding: .utf8).unicodeScalars.count
+            #expect(ruleLength < rulesLimit, """
+                .claude/rules/\(rule.lastPathComponent) is \(ruleLength) characters. Claude Code \
+                reads only the first \(rulesLimit) of a rules file, so the rest never reaches a \
+                session: move detail to the runbook it indexes.
+                """)
+        }
     }
 
     // MARK: - OpenAPI Compliance

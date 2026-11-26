@@ -1,7 +1,7 @@
 # Context streamlining of 2026-11-26: what is left for a session on the Mac
 
-**Status: OPEN, for step 5 alone.** Steps 1 to 4 and the check in step 6 were made on the Mac on
-2026-11-26, and *Results on the Mac*, at the end, gives each; step 5 waits on the owner's word.
+**Status: COMPLETE (2026-11-26).** Every step was made on the Mac or answered by the owner that
+day, and *Results on the Mac*, at the end, gives each.
 Written by the cloud session that made the change, for one local session on the
 Mac. That session had no Xcode, no `swift`, no simulator and no access to the Mac's own files, so
 it changed documents only and ran no test. This note lists what only the Mac can do, in the order
@@ -190,7 +190,11 @@ Made by a session on the Mac at `8df01632`, #2014's merge, on the owner's word (
      caution, a device step no lane takes. The 17 test-design rules and the 51 SwiftUI, SwiftData
      and XCUITest traps reach no cloud session; whether to give them a rules file by path is the
      owner's.
-5. **The two proposals** were put to the owner on 2026-11-26.
+5. **The two proposals** were put to the owner on 2026-11-26, who took the first ("Yes, add the
+   gate"): `CodingStandardsAuditTests.guideStaysUnderItsBudget` holds `CLAUDE.md` under 60,000
+   characters and each of its lines under 4,000, and each rules file under 40,000, and a paragraph
+   at the head of `CLAUDE.md` says so. The second, separating each rule from its measurement
+   record, was left: offered both, the owner asked for the gate alone.
 6. **The pointers.** The web edition's `COORDINATION.md` does not say where a kit move is recorded,
    and its one pointer to the kit entry, the guarded modules, still holds: nothing to tell its
    sessions.

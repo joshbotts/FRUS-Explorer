@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**It is loaded into every request, so it has a budget.** `CodingStandardsAuditTests.guideStaysUnderItsBudget` fails when it reaches 60,000 characters or a line of it 4,000, and when a file under `.claude/rules/` reaches the 40,000 Claude Code reads. Put detail in a rules file loaded by path or in a runbook, and leave a paragraph here that names it.
+
 ## Project Overview
 
 FRUS Explorer is a native iOS/iPadOS/macOS app for researching the Foreign Relations of the United States (FRUS) document series published by the State Department. It is a **Swift 6** project using **SwiftUI**, **SwiftData + CloudKit**, and **SQLite3 FTS5** for full-text search.
