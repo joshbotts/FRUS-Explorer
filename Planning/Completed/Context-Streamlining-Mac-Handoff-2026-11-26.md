@@ -1,6 +1,8 @@
 # Context streamlining of 2026-11-26: what is left for a session on the Mac
 
-**Status: OPEN.** Written by the cloud session that made the change, for one local session on the
+**Status: COMPLETE (2026-11-26).** Every step was made on the Mac or answered by the owner that
+day, and *Results on the Mac*, at the end, gives each.
+Written by the cloud session that made the change, for one local session on the
 Mac. That session had no Xcode, no `swift`, no simulator and no access to the Mac's own files, so
 it changed documents only and ran no test. This note lists what only the Mac can do, in the order
 to do it. When every step is done or declined, mark this file COMPLETE in its head and move it to
@@ -143,3 +145,56 @@ step, through the paragraph `CLAUDE.md` keeps or the log's new head, so none was
   runbook's head now say a move is recorded in the runbook. The web edition's `COORDINATION.md` is
   in its own repository, which the cloud session could not reach: tell its sessions there if it
   describes where a kit move is recorded.
+
+## Results on the Mac (2026-11-26)
+
+Made by a session on the Mac at `8df01632`, #2014's merge, on the owner's word ("check pr
+2014 and run the local-only steps").
+
+1. **The runs.** 71 tests in 2 suites passed in 123 seconds on the iPhone 17 under iOS 27.0
+   (Xcode 27.2): `CodingStandardsAuditTests` and the shared kits' suite, with
+   `theKitsAreTheSharedCode`, `planOfRecordMatchesTheVisualMarketingPlan` and
+   `brokenSqliteInvocationsAreMarked` among them. No warning but the known `GeneratedSummary` and
+   `appintentsmetadataprocessor` lines.
+2. **The rules files load, in the main session and in a subagent.**
+   - The main session had begun before `.claude/rules/` existed in its worktree. Reading
+     `FRUSExplorerUITests/UIObstructionTests.swift` brought `ui-tests.md` into its context, and
+     reading `ManifestGeneratorCore/ManifestWriter.swift` brought `generators.md`, each from the
+     worktree's `.claude/rules/`. So a rule is looked up when a file is read, and `*Generator*/**`
+     matches the generators' folders.
+   - A general-purpose subagent made the same two reads and received the same two files the same
+     way. It reported that it began with the session's `CLAUDE.md`, the copy from before the move,
+     and the `MEMORY.md` index. That differs from step 4 above and from #2014's log entry, which
+     read in the documentation that auto memory reaches no subagent.
+   - `/context` was not run, since a session cannot run a slash command: `CLAUDE.md`'s token count
+     is the owner's to read. No workflow agent was measured, since a run needs the owner's opt-in.
+     `.claude/workflows/README.md` records the measurement, and `lane-dev.js`'s sentence says what
+     was measured.
+3. **The workflow prompts.** The three passages read as described. Both scripts parse before and
+   after, by JavaScriptCore's `checkModuleSyntax` with each body wrapped in an async function as the
+   runtime runs it; a control with an unterminated template literal fails. One gap, left as
+   written: `land-lane.js`'s advice for a lane begun before 2026-11-26 places a row it added to the
+   UI table and a paragraph it added to the kit entry, but not a row it added to the generator
+   table. No such lane exists: no pull request is open, and no branch ahead of `v2` touches
+   `CLAUDE.md` but #2014's own.
+4. **`MEMORY.md`**: 144 lines and 17,775 bytes, under both limits.
+   - Three pointers into what moved were corrected in memory: the UI suite table, an October log
+     entry, and a note that still described this log as a 31-session plan.
+   - Five entries repeat `CLAUDE.md`: the build-number bump, the heavy lock's incident, the kit's
+     two compilers, `build-for-testing` and the `/tmp` DerivedData sandbox. Each topic file holds a
+     measurement `CLAUDE.md` does not, and three are cautions about destructive actions, so none was
+     deleted.
+   - One rule a lane's agent must follow was only in memory: steps that must follow one another go
+     in one `heavy.sh` call. It is now the fourth habit under `CLAUDE.md`'s lock.
+   - Left in memory: the `Regex` convention, which the compiler enforces, and the `devicectl`
+     caution, a device step no lane takes. The 17 test-design rules and the 51 SwiftUI, SwiftData
+     and XCUITest traps reach no cloud session; whether to give them a rules file by path is the
+     owner's.
+5. **The two proposals** were put to the owner on 2026-11-26, who took the first ("Yes, add the
+   gate"): `CodingStandardsAuditTests.guideStaysUnderItsBudget` holds `CLAUDE.md` under 60,000
+   characters and each of its lines under 4,000, and each rules file under 40,000, and a paragraph
+   at the head of `CLAUDE.md` says so. The second, separating each rule from its measurement
+   record, was left: offered both, the owner asked for the gate alone.
+6. **The pointers.** The web edition's `COORDINATION.md` does not say where a kit move is recorded,
+   and its one pointer to the kit entry, the guarded modules, still holds: nothing to tell its
+   sessions.

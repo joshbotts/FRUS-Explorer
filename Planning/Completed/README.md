@@ -310,6 +310,16 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     left as written: the entry above for 2026-10-21, which says that file keeps its plan header and
     every entry from 2026-10-01, was true until this move; and code comments and documents that
     cite `DEVELOPMENT-PLAN.md` for an entry of October 2026 find it here, by its date.
+- **The second 2026-11-26 move (1 document)** — `Context-Streamlining-Mac-Handoff-2026-11-26.md`,
+  the steps the cloud session behind #2014 left for a session on the Mac, marked COMPLETE and moved
+  the same day, once each was made or answered. Its *Results on the Mac* gives each outcome: the two
+  suites passed; a rules file loads when a file its `paths` name is read, in the main session and in
+  a subagent; the workflow prompts parse; `MEMORY.md` was read against the four questions; and the
+  owner took the size gate (`CodingStandardsAuditTests.guideStaysUnderItsBudget`) and left the
+  separation of each rule from its record.
+  - **Pointers to this file.** The gate's doc comment names it here. `../DEVELOPMENT-PLAN.md`'s two
+    entries of 2026-11-26 name it at `Planning/` and were left as written; no other code, test or
+    tool names it.
 
 **Deliberately NOT here** (live at `Planning/` root — verified 2026-11-25, by listing the
 directory):
@@ -335,8 +345,7 @@ directory):
   `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`,
   `Generators-Runbook`, `UI-Test-Destinations-Runbook` and `FRUSCoreKit-Runbook` (what left
   `CLAUDE.md` on 2026-10-09 and 2026-11-26; the first two's indexes are `.claude/rules/generators.md`
-  and `ui-tests.md`), and `Context-Streamlining-Mac-Handoff-2026-11-26` (until a session on the Mac
-  has made its runs);
+  and `ui-tests.md`);
 - **the designs of work not yet run** — `App-Intents-Siri-Assessment-2026-10-18` (A7, #1723),
   `Keyword-Snippet-Assessment-2026-10-20` (until #1760 lands; source cites it) and
   `C-3-Reader-Test-Design` (C-3, after submission). The two person-authority memos of 2026-10-17

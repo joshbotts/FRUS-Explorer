@@ -3939,3 +3939,36 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 - **Two recommendations were not taken and wait on the owner's word**: a test that holds `CLAUDE.md` under a budget, and separating each rule in *Coding Standards* from its measurement record, which would take the file to about 40,000 characters. With neither, the file regrows as it did after 2026-10-09; the sentence in the kit entry is the only thing against it.
 - **Pointers left as written** are listed in the note's sixth section: the README's two phrases, two design documents, two runbooks, the plan of record's rows, and the comments that cite an October entry of this log.
 - **A lane open today** conflicts with this change in `CLAUDE.md` if it touched the UI table, the generator table or the `FRUSCoreKit` entry.
+
+## Session 2026-11-26 — #2014's Mac half: its two suites pass, the rules files load in the main session and in a subagent, `MEMORY.md` is read against the hand-off note, and `CLAUDE.md` has a budget
+
+On the owner's word ("check pr 2014 and run the local-only steps"), a session on the Mac made the steps of `Context-Streamlining-Mac-Handoff-2026-11-26.md` that the cloud session could not. The note's *Results on the Mac* gives each in full.
+
+**#2014's merge**
+- Merged as `8df01632` by the owner on 2026-11-26 at 00:58:00 UTC, four minutes after it opened (00:54:05 UTC), auto-merge off. It closed no issue. The merge's tree is the pull request's head (`3ead6c9f`, tree `a952b6bb`), and `v2` stood at `fda7199e` while it was open. Its branch, `claude/focused-faraday-j53vwe`, is still on `origin`.
+
+**What was found**
+- **The runs:** `CodingStandardsAuditTests` and the shared kits' suite, 71 tests in 2 suites, passed on the iPhone 17 under iOS 27.0 at `8df01632`, the three tests the note names among them.
+- **A rules file loads when a file its `paths` name is read**, in a session begun before `.claude/rules/` existed in its worktree, and in a general-purpose subagent. The subagent also reported beginning with the session's `CLAUDE.md` and the `MEMORY.md` index, where #2014's entry had read in the documentation that auto memory reaches no subagent. No workflow agent was measured.
+- **The workflow prompts** parse before and after. `land-lane.js`'s advice for a lane begun before the change does not place a row added to the generator table, and no such lane exists.
+- **`MEMORY.md`** is 144 lines and 17,775 bytes, under both of its limits. Five entries repeat `CLAUDE.md`, each with a measurement `CLAUDE.md` lacks, and stay. One rule a lane's agent must follow was in memory alone.
+- **The web edition's `COORDINATION.md`** says nothing of where a kit move is recorded.
+- **Step 5's two proposals**, put to the owner: the size gate was taken ("Yes, add the gate"), and separating each rule in *Coding Standards* from its measurement record was left, since the owner, offered both, asked for the gate alone.
+
+**What changed**
+- **`CodingStandardsAuditTests.guideStaysUnderItsBudget`** (new): `CLAUDE.md` under 60,000 characters and each of its lines under 4,000, and each file under `.claude/rules/` under the 40,000 Claude Code reads, counted in Unicode scalars as Python's `len()` counts. A failure says to move detail out, not to raise the budget.
+- **`CLAUDE.md`**: a paragraph at its head on the budget, and a fourth habit under the lock: steps that must follow one another go in one `heavy.sh` call, since waiters are not served in order and a queued job builds the tree as it stands when it takes the lock. 57,686 characters, from 57,022.
+- **`.claude/workflows/README.md`**: *What reaches an agent*, the measurement.
+- **`.claude/workflows/lane-dev.js`**: its sentence on the rules files says what was measured. It parses, by the check the note's results describe.
+- **The hand-off note**: *Results on the Mac*, marked COMPLETE and moved to `Completed/`, with an entry in that folder's `README.md` and its line under *Deliberately NOT here* removed.
+- **On the Mac, outside the repository**, the memory: three pointers into what moved; a note that still said to read the specification before each session and that Session 01 was next; the line on what reaches a subagent; and the records hub's line on #1966, whose merge (`21c77370`, 2026-11-22) the 2026-11-25 plan of record counts.
+
+**Checks**
+- **The gate as written**, with both suites, on the iPhone 17 under iOS 27.0: 72 tests in 2 suites passed in 83 seconds, the gate and the three tests the note names among them. The new code drew no warning; the incremental build printed only the `appintentsmetadataprocessor` line.
+- **The gate made to fail**, in the same `heavy.sh` call: with its three limits lowered to 50,000, 2,000 and 10,000, `CodingStandardsAuditTests` ran 67 tests and failed the gate alone, with three issues whose messages print the measured values: `CLAUDE.md` at 57,686 characters, five lines of 2,313 to 2,539, and `ui-tests.md` at 17,743, each what Python's `len()` counts. The test file was then restored byte for byte.
+- **Before the gate**, after the first edits, the same two suites: 71 tests in 2 suites passed in 90 seconds. Only the shared kits' suite opens `CLAUDE.md`, and no test reads `.claude/workflows/`, the hand-off note or this log.
+- **`lane-dev.js` parses after the edit**: JavaScriptCore's `checkModuleSyntax`, with the script's body wrapped in an async function as the runtime runs it.
+
+**For the owner**
+- **`/context`** in a fresh session, for `CLAUDE.md`'s token count; a session cannot run it.
+- **#2014's branch** on `origin`, `claude/focused-faraday-j53vwe`, to delete on the owner's word.

@@ -10,10 +10,19 @@ moved from `34a51205` to `f384d2d5` still gave a workflow agent `34a51205`'s tex
 *Web edition* section and the Directory Map from before FRUSCoreKit. So the prompts tell an agent
 to read the sections that govern its work from the file in its worktree. Otherwise they point at
 `CLAUDE.md` rather than restating it (and, since 2026-11-26, name the `.claude/rules/` files and
-`Planning/FRUSCoreKit-Runbook.md` that hold what left it, since nothing is known to load those for a
-workflow agent), and carry only what it does not say: the queue's worktree,
+`Planning/FRUSCoreKit-Runbook.md` that hold what left it; *What reaches an agent*, below, says why),
+and carry only what it does not say: the queue's worktree,
 branch and push rules, the durable lessons of build 48's review rounds, and, since FRUSCoreKit
 (October 2026), where source lives and when the package's own run is owed.
+
+**What reaches an agent (measured on the Mac on 2026-11-26).** A general-purpose subagent reported
+that it began with the session's `CLAUDE.md`, the copy from before that day's move, and the
+`MEMORY.md` index. When it read `FRUSExplorerUITests/UIObstructionTests.swift`,
+`.claude/rules/ui-tests.md` came into its context, and when it read a file under
+`ManifestGeneratorCore/`, `generators.md` did: from the worktree's `.claude/rules/`, as for the
+main session, which had begun before that folder existed in its worktree. No workflow agent was
+measured, since a run needs the owner's opt-in. Either way an agent that only runs a suite reads no
+file a rules file names, so the prompts still tell it to read the one its work touches.
 
 **Two source trees, two test runs.** The app's Swift is under `FRUSExplorer/` and `FRUSCoreKit/`,
 and Xcode's schemes never run the package's suites. A lane whose diff names package input (a

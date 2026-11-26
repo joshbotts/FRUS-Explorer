@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**It is loaded into every request, so it has a budget.** `CodingStandardsAuditTests.guideStaysUnderItsBudget` fails when it reaches 60,000 characters or a line of it 4,000, and when a file under `.claude/rules/` reaches the 40,000 Claude Code reads. Put detail in a rules file loaded by path or in a runbook, and leave a paragraph here that names it.
+
 ## Project Overview
 
 FRUS Explorer is a native iOS/iPadOS/macOS app for researching the Foreign Relations of the United States (FRUS) document series published by the State Department. It is a **Swift 6** project using **SwiftUI**, **SwiftData + CloudKit**, and **SQLite3 FTS5** for full-text search.
@@ -43,10 +45,11 @@ Why: on 2026-10-18 two sessions ran three builds from empty and a UI run at once
 
 A request by message between the two sessions had not held.
 
-Three habits go with the lock:
+Four habits go with the lock:
 - Run a long job in the background, since the wait is part of its run.
 - Reuse a worktree's DerivedData: a build from empty is the costliest job there is.
 - Keep one simulator booted, and shut it down after its run.
+- Put steps that must follow one another with nothing between them, such as a build and the runs that must use it, in one script under one `heavy.sh` call. Waiters are not served in order (L20, 2026-11-16), and a queued job builds the tree as it stands when it takes the lock, with any edit made while it waited.
 
 **Run all tests (iOS Simulator):**
 ```bash
