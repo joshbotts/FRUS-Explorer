@@ -7,27 +7,27 @@
 
 No bundled data file has changed since the tag. Index **v75**, person rollup **v15**, EmbeddingGemma 2 vectors under digest `89481b18`, 553 volumes, 41 bundled data files. Forty-two issues are open: 33 filed since the 2026-11-15 plan was written, and nine that plan had placed. §1a places all 42.
 
-**Status: LIVE — the plan of record from 2026-11-25.** The owner answered its questions the same day, one at a time, and the answers are decisions 147 to 183 (§0). §4 lists what is still the owner's. It supersedes `Completed/Plan-Of-Record-2026-11-15.md`, whose Track A ran from L15 to R3: 1.0 (1823) on TestFlight, the device pass, and 1.0 (1861) submitted and released. Its §3 left the order of the release after 1.0 to "the next plan". This is that plan.
+**Status: LIVE — the plan of record from 2026-11-25.** The owner answered its questions the same day, one at a time, and the answers are decisions 147 to 183 (§0). Later that day the owner asked for one more row, which is L56 (decision 184). §4 lists what is still the owner's. It supersedes `Completed/Plan-Of-Record-2026-11-15.md`, whose Track A ran from L15 to R3: 1.0 (1823) on TestFlight, the device pass, and 1.0 (1861) submitted and released. Its §3 left the order of the release after 1.0 to "the next plan". This is that plan.
 
 It is written from six sources:
-- the owner's instruction of 2026-11-25 (decision 145), the owner's word on the draft (146), and the answers (147 to 183);
+- the owner's instruction of 2026-11-25 (decision 145), the owner's word on the draft (146), the answers (147 to 183), and the row the owner asked for afterwards (184);
 - the 42 open issues (§1a says how each was read), with the code checked at `9325f79d` for fourteen of them (#2010, #2005, #1999, #1990, #1989, #1986, #1978, #1977, #1976, #1975, #1974, #1973, #1971 and #1970);
 - `Planning/Collections-Customization-Design-2026-11-25.md` and its two reviews, whose §9 lanes this plan takes as rows and whose §10 questions the owner answered (decisions 153 to 174);
 - `Planning/New-Volume-Release-Plan.md`, the runbook the Office's release sets off;
 - the 2026-11-15 plan's §3 and §5: the findings the owner sent to the first update (F1, F2, F7, F11 and D1), its other candidates, and its backlog;
-- the code at `9325f79d`, read again for the rows the answers added: the collection's model, the index's tables, the three Zotero sends, the entitlements, the stores a Debug build opens, and the archive's CloudKit gate.
+- the code at `9325f79d`, read again for the rows the answers added: the collection's model, the index's tables, the three Zotero sends, the entitlements, the stores a Debug build opens, and the archive's CloudKit gate; and, for L56, Chronology's screen and its rules, the index's reads of a range of dates, and the working corpus's record.
 
-**No app was built or run.** The session's container has no Xcode and no Swift toolchain. Every statement about behaviour is read from the code, from an issue, or from an earlier session's record, and says which. The rows from L34 on are read from a design that has not been reviewed, and are provisional until its review (CR) and the checkpoint after it (C2).
+**No app was built or run.** The session's container has no Xcode and no Swift toolchain. Every statement about behaviour is read from the code, from an issue, or from an earlier session's record, and says which. The Collections rows, which are Waves 4 to 6, are read from a design that has not been reviewed, and are provisional until its review (CR) and the checkpoint after it (C2).
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 14, 15. (These are the Visual Marketing Plan's §7 steps that are done, unchanged since 2026-10-21; `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` checks the list. The line names that plan's §7; this file has no §7 of its own.)
 
 **In brief:**
 - **One update, version 1.1, when both are done** (decisions 148 and 150): the Office's next volume taken in, and the whole Collections overhaul built. *E* is the day the Office of the Historian publishes. A new volume is invisible in the app until a build ships (`New-Volume-Release-Plan.md` §1), so from E until 1.1 is released a reader of 1.0 does not have it.
-- **Thirty rows in six waves, L26 to L55, and a review.** A wave's rows are developed side by side where their files do not meet, and landed one at a time. Fixes in the same code share a row: the 42 issues, five findings and the owner's picks from the design come to thirty pull requests. A row keeps the number the draft gave it, so the waves give the order and the numbers do not.
+- **Thirty-one rows in six waves, L26 to L56, and a review.** A wave's rows are developed side by side where their files do not meet, and landed one at a time. Fixes in the same code share a row: the 42 issues, five findings, the owner's picks from the design and the row the owner added (decision 184) come to thirty-one pull requests. A row keeps the number it was first given, so the waves give the order and the numbers do not: L56 lands in Wave 3.
 - **Wave 1 is what every build of 1.1 must carry:** index version 76, the re-index it sets off, and a rehearsal of the runbook on this tree. Version 76 now also stores each document's linked terms, for a block that Wave 6 adds (decision 172).
 - **Wave 2 is wrong facts,** most of them found by the web edition's full-corpus checks, and research notes that four exports send where the author switched them off.
 - **An early build goes to TestFlight after Waves 1 and 2** (decision 151). It takes the one re-index and the long device pass.
-- **Wave 3 is what the owner sent to the first update,** with the Zotero row and #1990, the cross-reference graph saved as a working corpus or an Archives Visit.
+- **Wave 3 is what the owner sent to the first update,** with the Zotero row and two rows of saves: #1990, the cross-reference graph saved as a working corpus or an Archives Visit, and L56, a range of Chronology saved as a working corpus (decision 184).
 - **Collections is reviewed first** (CR; decision 149), **then built in three waves.** Wave 4 stores nothing: one plan for three formats, export from the lists, the preview's repairs. Wave 5 adds the stored facts and trims the three surfaces. Wave 6 is the owner's picks from the design's two lists of candidates, nine from one and eight from the other. The design's lane 5 is not built (decision 156).
 - **1.1 changes the CloudKit schema:** five stored fields, or six, and one record type. The owner promotes them to Production once, before the release candidate is archived.
 - **When the Office publishes, the volume is taken in at once, with the queue paused** (decision 152). It ships with 1.1.
@@ -141,6 +141,14 @@ It is written from six sources:
 182. **L28, the rehearsal, is run.** The owner's choice: "Run it (Recommended)".
 183. **Two working rules are adopted.** The owner's choice: "Both rules (Recommended)": a row shows its defect first, and a candidate is offered, not taken (the rules, below).
 
+*A row the owner asked for the same day, after the answers:*
+
+184. **A session that lets Chronology save a range of dates as a working corpus.** The owner's words: "Can we include a session in the plan that adds an option in chronology to save a chronological scope as a working corpus?"
+    - It is row L56, in Wave 3. It lands after L42, the graph's saves, since both make the same record.
+    - *A chronological scope* is read as the range of dates the screen has loaded. No route leads from a range to a working corpus today: Search does not run on a range of dates alone (L56's brief).
+    - It stores nothing new, so it brings no CloudKit change and no index version.
+    - Four things about the save are the owner's, each with what the row proposes (§4): what a saved range holds, what the save does over 7,500 documents, how the corpus is named, and whether the legend's filter narrows it.
+
 **Rules carried from the earlier plans and `CLAUDE.md`, and the two of decision 183.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
@@ -167,7 +175,7 @@ It is written from six sources:
 
 ## 1. Track B — to version 1.1
 
-A row keeps the number the draft gave it. So the waves give the order and the numbers do not: L37 to L42 land before L34.
+A row keeps the number it was first given. So the waves give the order and the numbers do not: L37 to L42 land before L34, and L56, which the owner added after the answers (decision 184), lands with them.
 
 | | Pull request | Issues and findings |
 |---|---|---|
@@ -184,16 +192,17 @@ A row keeps the number the draft gave it. So the waves give the order and the nu
 | | **The early build** (decision 151) | |
 | R8 | The release checklist's first run, the bump to 1.1, and the early build to TestFlight | — |
 | R9 | The device pass of the early build: the one re-index to version 76, what moved into the kit since 1.0, and each row's own check | — |
-| | **Wave 3: what the owner sent to the first update, Zotero, and the graph's two saves** | |
+| | **Wave 3: what the owner sent to the first update, Zotero, and three saves: the graph's two and Chronology's** | |
 | L37 | A reader rebuilt by a window's resize keeps its rail as it was | F11 |
 | L38 | The Mac's windows: the Research window's rows read their heads from the start, a subject's sheet has its door to the subject area, and the title bar says something whole | #1946, #1931, F2 |
 | L39 | Links that open nothing: a volume's Contents links to its front matter and Index, and a page link whose page names no document | F7; the 608 page links (§5) |
 | L40 | The iPhone Duo's windows, and a check of the iPad's (decision 179) | D1 |
 | L41 | The Zotero client: a stopped send says how far it got, `Backoff` is waited before the next request, the waits are reported, and a date `Retry-After` is read (decision 138) | #1923 to #1926 |
 | L42 | The cross-reference graph saved: its documents as a working corpus, and as the seeds of an Archives Visit (decisions 146, 180 and 181) | #1990 |
+| L56 | A range of Chronology saved as a working corpus (decision 184) | — |
 | | **The Collections overhaul, reviewed first** (decisions 147 and 149) | |
 | CR | The adversarial review of the Collections design's third form, as decisions 153 to 174 leave it. Planning only, alongside Waves 1 and 2 | — |
-| C2 | The checkpoint: CR's findings answered, the rows from L34 on re-cut where the findings say so, and the pace read | — |
+| C2 | The checkpoint: CR's findings answered, the Collections rows re-cut where the findings say so, and the pace read | — |
 | | **Wave 4: Collections, with nothing new stored. The design's lanes 1 and 2 and its preview repairs** | |
 | L34 | One plan for three formats (lane 2): the web page, the PDF and Word draw the same lines in the same order | #1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003, #2007; #2005 (the sentence's half) |
 | L35 | *Export…* from the Collections list and Manage Collections, the format remembered, the sheet's fit at the largest text sizes (lane 1); with the list's row actions for VoiceOver | #2006 (the list's part); R4's finding |
@@ -237,6 +246,7 @@ A row keeps the number the draft gave it. So the waves give the order and the nu
 | L40 | — | The gates on `supportsMultipleWindows`: 25 in 10 files, by the assessment's count | None |
 | L41 | `Zotero/ZoteroAPIClient.swift` | The app's three sends: `DocumentView/DocumentView.swift`, `App/SupportingViews.swift`, `Collections/CollectionExportSheet.swift`; both manuals' strings | None |
 | L42 | `CrossReference/CrossReferenceGraphDisplay.swift`, for the rule that says what is saved | `CrossReference/CrossReferenceGraphView.swift`, `CrossReferenceGraphViewModel.swift`, `ReferenceListPanel.swift`. It presents `TripPacket/PlanPickerSheet.swift` and makes a `Models/WorkingCorpus.swift` record, and changes neither | None. No stored property is added, so no CloudKit change |
+| L56 | The rule that says what a range's save holds, beside `Chronology/ChronologyGrouping.swift`; `Search/IndexingPipeline.swift`, for a read of a range's keys and dates that the list's limit does not cut | `Chronology/ChronologyView.swift`, `ChronologyViewModel.swift`. It makes a `Models/WorkingCorpus.swift` record, and changes nothing there | None. No stored property is added, so no CloudKit change. A read is added and nothing stored, so no index version |
 | CR | — | — | `Planning/` only |
 | L34 | `Collections/CollectionContentAssembly.swift`, `CollectionExporter.swift`, `CollectionItemHTMLRenderer.swift`, `DocxCollectionExporter.swift`; `TEI/FRUSRenderNodeHTMLSerializer.swift`; `Citation/ZoteroJSONExporter.swift` (decision 165) | `Collections/PDFCollectionExporter.swift` | **Changes what every export prints.** The web page's and Word's pins, and BibTeX's and RIS's |
 | L35 | — | `Collections/CollectionListView.swift`, `MacCollectionManagerView.swift`, `CollectionExportSheet.swift` | None |
@@ -256,10 +266,12 @@ A row keeps the number the draft gave it. So the waves give the order and the nu
 | L55 | `Collections/CollectionExporter.swift` (`CollectionWordCloud`), `CollectionItemHTMLRenderer.swift`, `DocxCollectionExporter.swift`; `Analytics/WordCloud/KeynessCloud.swift` | `Analytics/WordCloud/WordCloudExport.swift`, `Collections/PDFCollectionExporter.swift` | **Changes what every collection with a word cloud prints.** The web page's and Word's pins. A public type changes, so a symbol diff |
 
 **Where two rows meet in one file, and the order that settles it:**
-- **`IndexingPipeline.swift`: what indexing stores is L26's alone.** #1978, #1854 and the terms share its row because they share its file, its version and its re-index. If its measurement finds no front- or back-matter page rows, they join it too. L54, far later, changes one read there and nothing stored.
+- **`IndexingPipeline.swift`: what indexing stores is L26's alone.** #1978, #1854 and the terms share its row because they share its file, its version and its re-index. If its measurement finds no front- or back-matter page rows, they join it too. L56 adds one read there, and L54, far later, changes one. Neither stores anything.
 - **`CollectionExportSheet.swift`:** L29 (the Zotero send reads no option, `:734-735`; the shared file's notes follow the sheet's one switch, `:621-644`), then L41 (the collection's send, `:741`), then L35 (the sheet opened from the lists).
 - **`DocumentView.swift` and `MacDocumentView.swift`:** L31 (the year's three copies become calls to the kit), then L37 (the per-open task), L38 (the title), L39 (a link's tap) and L41 (the reader's send, `DocumentView.swift:2387`). Each is a different function. Wave 3's four land in that order, each on the one before.
 - **The Zotero send is three files in three rows:** L29 gives the send its options, L41 changes the client and its three callers, and L34 gives a record its title (decision 165). L29 and L41 both edit the collection's send, `CollectionExportSheet.sendToZoteroLibrary()`: L29 what it resolves, and L41 how it calls the client. L41 is developed after L29 has merged.
+- **`ChronologyGrouping.swift`:** L33 (the month label's locale, #1971), then L56, if its rule goes in that file and not in one of its own.
+- **A working corpus is captured in five places once Wave 3 has landed:** Search's sheet, the map's lasso, the Clusters index, the graph (L42) and Chronology (L56). L56 is developed after L42 has merged and makes its record as L42 left the graph's: through L42's helper, if L42 wrote one, and without writing a second.
 - **One TEI wrapper is read in two places.** #1854 is the index's extractors never looking inside the editorial-note wrapper, and #2003 is the collection's heading read stopping at the same wrapper. L26 lands first; L34 reads the wrapper the way L26 leaves it read, and does not write a second rule.
 - **From L34 on, the Collections rows are a sequence and not a set.** Nearly every one changes `CollectionContentAssembly.swift` or `CollectionExporter.swift`. Each is developed on the one before, and two are developed side by side only where a session shows that their files are their own; L35 is the one such row in sight.
 - **`CollectionItemHTMLRenderer.swift`:** L34 rewrites how a document is drawn, then L36 changes its ids, then L52 a term's link and L55 the table.
@@ -275,15 +287,15 @@ A row keeps the number the draft gave it. So the waves give the order and the nu
 | Wed 2026-11-25 | This plan, with the owner's answers | The owner merges it |
 | Thu 2026-11-26 to Sun 2026-11-29 | Wave 1: L26; L27, which needs L26's bump; L28 once L26 has merged. Wave 2: L29 to L33. CR alongside | Sessions on the Mac, and a cloud session for CR; the owner merges each, and runs L28's heavy jobs |
 | Mon 2026-11-30 to Tue 2026-12-01 | R8, the early build; R9, its device pass | A session; the owner archives, uploads and makes the pass |
-| Tue 2026-12-01 to Fri 2026-12-04 | Wave 3: L37, L38, L39, L42, L41, L40. C2, once CR's findings are answered. The runs L34 and L43 wait for (§2) | Sessions; the owner |
+| Tue 2026-12-01 to Fri 2026-12-04 | Wave 3: L37, L38, L39, L42, L56, L41, L40. C2, once CR's findings are answered. The runs L34 and L43 wait for (§2) | Sessions; the owner |
 | From C2 | Wave 4: L34, L35, L36. Wave 5: L43, L44, L45. Wave 6: L46 to L55 | Sessions; the owner merges each |
 | E, whenever it comes | R10, with the queue paused | The owner, with a session for the runbook's generator runs |
 | When L55 and R10 have merged | R11, then R12, then R13 | A session; the owner promotes the schema, archives, uploads, passes and submits |
 
-- **The arithmetic.** Thirty rows, a review, two builds and two device passes. Sixteen rows are left when Wave 3 ends. At two merged a day they take eight days; with a day more for each of the three largest, eleven, which ends about 2026-12-15. With a day or two for R10 and three for R11 to R13, the submission falls about 2026-12-20, if no day is lost between now and then.
+- **The arithmetic.** Thirty-one rows, a review, two builds and two device passes. Wave 3 is seven rows in its four days, which two a day covers. Sixteen rows are left when Wave 3 ends. At two merged a day they take eight days; with a day more for each of the three largest, eleven, which ends about 2026-12-15. With a day or two for R10 and three for R11 to R13, the submission falls about 2026-12-20, if no day is lost between now and then.
 - **The week after it ran slowly at App Review in 2024,** by Apple's notice of that year: reviews could take longer from December 20 to 26 (MacRumors, 2024-12-02). This session did not find this year's notice.
 - **What it means for the volume.** If the Office publishes in the first week of December, the volume is out of the app for about three weeks, or more. That is decision 148's cost, and C2 is where the owner reads it against the pace.
-- **No estimate is made of a row's own size** beyond what its brief says it touches. L34, L43 and L44 are the largest of the thirty.
+- **No estimate is made of a row's own size** beyond what its brief says it touches. L34, L43 and L44 are the largest of the thirty-one.
 
 **When the Office publishes.** The Office's date is not this plan's, and 1.1 no longer waits on it alone (decision 148).
 - **R10 runs at once** (decision 152). The row in flight finishes and merges, the queue pauses, R10 runs the runbook and merges, and the rows resume.
@@ -529,6 +541,38 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **A candidate in its files:** #1764's unfiled finding, the reference-list toggle that opened nothing on two taps on the iPad (§5).
   - **By hand:** `frus1952-54v02p1` d16 at three hops, saved both ways. The corpus holds its documents and none of its pages. The visit's targets include every unit and class the graph drew, and the files its documents' own source notes name.
 
+- **L56, a range of Chronology saved as a working corpus** (decision 184). One session, one pull request: a commit for the kit's rule and the index's read, one for the screen, then a docs commit. A kit rule and app code, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change; a read is added and nothing stored, so no index version. After L42 has merged.
+  - **Why it needs a row.** Chronology hands a range to two places, a word cloud (`ChronologyView.swift:208`) and Search (`:1206`), and neither leads to a working corpus of the range.
+    - Search does not run on a range of dates alone. A search with no words runs only on a person or a subject (`SearchParameters.supportsFilterOnlySearch`, `SearchParameters.swift:426-432`), so *Search in this range* sets the filter and waits for words.
+    - With words, the list a corpus is captured from holds at most 1,000 documents on an iPhone or an iPad and 7,500 on the Mac (`SearchViewModel.swift:915`, `MacSearchViewModel.swift:503`).
+    - The owner asked for the save in Chronology, so the row does not widen what Search runs on.
+  - **What a chronological scope is:** the range of dates the screen last loaded, in whole days, both ends included (`loadedStartISO` and `loadedEndISO`, `ChronologyViewModel.swift:92-93`). It is not the pickers' values, which a reader can move without pressing Show.
+  - **What a range holds, by the screen's own rules.** Its query takes every document whose dates overlap the range (`documentsInDateRange`, `IndexingPipeline.swift:6155`). The screen then divides them in three (`ChronologyGrouping.partition` and `splitOverflow`, `ChronologyGrouping.swift:260` and `:280`):
+    - those dated inside the range, which the date sections list;
+    - those whose dates extend beyond it, a year-only document in a range of one month for one, under a chip;
+    - those that span more than a year, which the screen's own footer calls mostly editorial notes, under another chip. Both chips' sections are closed until tapped (`ChronologyView.swift:68` and `:70`).
+  - **What the save takes: all three, as the row proposes.** That is the set Search's date filter means by a range (`IndexingPipeline.swift:5950-5963`), and the one the word cloud for the range reads, up to its own limit of 5,000. So a count taken inside the corpus agrees, at capture, with a search under the same dates. The save says how many of each kind it holds. The other reading, only the documents dated inside the range, is the owner's to choose (§4).
+  - **The legend's filter does not narrow it, as the row proposes.** A tap on the chart's legend narrows the list to one volume, or to the volumes the chart folds into *Other* (`rowMatchesFilter`, `ChronologyView.swift:383`). It narrows neither hand-off, and every load clears it (`:201-204`). That it should narrow the save is the other reading (§4): this session found no other route to a corpus of one volume's documents in a range without words.
+  - **The save reads the range itself, and not the list.** The list is cut at 5,000 rows (`ChronologyGrouping.loadLimit`, `ChronologyGrouping.swift:197`), and a working corpus holds 7,500 keys, which is the record's size budget (`SemanticMapPicking.corpusCaptureLimit`, `SemanticMapPicking.swift:141`; `WorkingCorpus.swift:48`). So the row adds a read: a range's keys with their dates, in date order, with none of the list's display fields.
+    - The index has a keys-only read of a range already (`documentKeysInDateRange`, `IndexingPipeline.swift:6085`). Nothing in the app calls it; its callers are tests, though its comment says Search calls it. It is unordered, and it does not join `document_cache` as the list's query does.
+    - The session measures on a full index whether the two reads can differ, and makes the save's count the list's.
+  - **The count is the rule's, and not the screen's headline.** Under the list's cap the headline counts the documents dated inside the range (`ChronologyViewModel.swift:200`). Over it, the aggregate that replaces it counts every placed document that overlaps the range, those extending beyond it among them (`:221`; `dateBucketVolumeCounts`, `IndexingPipeline.swift:6336`). The row prints its own three counts, and leaves the headline as a candidate (below).
+  - **Over 7,500 documents.** A single year can pass the bound on a device with the whole series. The twelve volumes of the 1945 subseries hold 11,567 documents, and those of 1944, 1946, 1949 and 1943 more than 7,500 each (the bundled `manifest.json` and `semantic-vectors-index.json`). A volume's documents are not all dated in its year, so the session counts the fullest year on a full index.
+    - **The row proposes** that the save then offers the range cut at the last whole day that fits, and names the corpus for the shorter range. The read is in date order, so that corpus is every document of the range it names, and nothing is recorded as cut short. A second save from the next day on takes the rest.
+    - **The other two ways** are the owner's to choose (§4): refuse, and say how many the range holds; or keep the first 7,500 and record the truncation, as the map's lasso does.
+  - **The record,** as the Clusters index and the map make one (`ClustersBrowseView.swift:836`, `SemanticMapSpikeView.swift:2488`): the keys written out; no `sourceQuery`, since no words produced the set; a `sourceDescription` that names Chronology and the range's two days; the count of volumes indexed at capture; and the two truncation fields. The description is enough to make the set again by hand, which is what the model records a query for (`WorkingCorpus.swift:94-100`).
+  - **The name, as the row proposes: by rule,** as L42's, the Clusters index's and the lasso's: the range's two days and the capture's stamp, since the app looks a corpus up by its name and two saves of one range must not share one (`SemanticMapCapture.corpusName`, `SemanticMapCapture.swift:129`). What the save holds is said before it, and what it did after it, as L19 made Add to Collection do. Search's sheet, which asks for the name (`SaveWorkingCorpusSheet`), is the other way (§4); on an iPhone it would be a sheet over Chronology's own.
+  - **Where the action is:** with the screen's other two actions on a range, on each platform.
+    - An iPhone's bar already holds five items and Done (`ChronologyView.swift:1053`). The session reads the bar's fit at the largest text sizes before it adds a sixth, and may gather the range's three actions into one menu.
+    - It is offered whenever the loaded range holds a document of any of the three kinds. The two hand-offs are offered only where it holds one dated inside it (`:286`, `:1114`).
+  - **The rule is the kit's,** beside Chronology's own and over values: from a range's rows in date order, the keys, the three counts, and over the bound the last whole day that fits. Its tests run in the package beside `ChronologyQueryTests`, and FRUS Explorer Light can offer the same save from it.
+  - **Owed:** both manuals' sections on Chronology and on working corpora; the EditableContent blocks for the new strings, and the ranges of the blocks that cite `ChronologyView.swift`, re-pointed; a UI test of the save on an iPhone, where the screen is a sheet, and on an iPad, where it is a window; a capture in T3.
+  - **Three candidates in its files** (§5), each read from the code and not seen in the app:
+    - *Search in this range* writes its two days through a formatter set to UTC, over a local midnight (`ChronologyView.swift:1206-1215`). East of Greenwich that is the day before, at both ends. The kit's own `isoDay` records the same defect as fixed there (`ChronologyGrouping.swift:632-644`).
+    - Both hand-offs read the pickers (`:209-212`, `:1212-1215`). After a picker is moved without Show, they name a range the screen is not showing.
+    - The headline's two counts, above.
+  - **By hand:** October 1962 on a device that holds `frus1961-63v11`. The save's three counts add up to what the corpus holds. A word searched inside the corpus is found in as many documents as the same word under Search's date filter for that month.
+
 - **CR, the review of the Collections design** (decision 149). Planning only, so a cloud session can run it. It merges through the same queue, alongside Waves 1 and 2.
   - **First, the design's own text is brought to the owner's answers,** in a commit of its own, so that the review reads what will be built. What moves:
     - the mark is *As published:* wherever the design has *In the volume:* (decision 154): its §3.3, §3.4, §3.6, §4.6, §5.2 and the check in its §9. The words are true of the 22 electronic-only volumes too, which was the design's own test of them;
@@ -548,7 +592,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 
 - **C2, the checkpoint.** The owner's, when CR's findings are in. Wave 3 goes on meanwhile.
   - Each finding is answered, and the design's status changes from PROPOSED on the owner's word.
-  - The rows from L34 on are re-cut where a finding says so. L43 to L55 are this plan's reading of an unreviewed design, and their briefs say what each must settle first.
+  - The Collections rows, L34 to L36 and L43 to L55, are re-cut where a finding says so. L43 to L55 are this plan's reading of an unreviewed design, and their briefs say what each must settle first.
   - The pace is read against the calendar: the rows merged, E's date if the Office has given one, and where the submission then falls. Decisions 147 and 148 stand unless the owner changes them here.
 
 - **L34, one plan for three formats** (the design's lane 2 and §3.8). One session, one pull request, the largest of Wave 4. After C2.
@@ -701,7 +745,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The bump:** the build number the owner names, the README line and its mirror, both TestFlight notes, and `fetch-llama-dsyms.sh`.
   - **Both notes say** what the new volume is; what changed in Collections, and that an export prints differently from 1.0's; and that a library which skipped the early build re-indexes once.
   - **The release candidate** is archived and uploaded to TestFlight.
-  - **Sitting T3** (decision 88): every screen the rows changed, on the iPad simulator with the full library and in the Mac check copy. The collection's settings and both steps, a section's sheet, a document's inspector, the lists and the export sheet, a collection's three exports with each new block, Citation Lookup's result, Source Explorer's year, and the graph's two saves. And any store frame that shows one of them.
+  - **Sitting T3** (decision 88): every screen the rows changed, on the iPad simulator with the full library and in the Mac check copy. The collection's settings and both steps, a section's sheet, a document's inspector, the lists and the export sheet, a collection's three exports with each new block, Citation Lookup's result, Source Explorer's year, the graph's two saves, and Chronology's. And any store frame that shows one of them.
 
 - **R12, the device pass of the release candidate,** on an iPhone, an iPad and the Mac. The owner's.
   - **Two devices on one iCloud account, one still on 1.0 (1861).** It is the design's first run (its §12), made again on Production with the two builds readers will have. On the release candidate, set each new fact on a collection the other device holds. Rename that collection on 1.0, and read the facts on the release candidate. Update the second device, and read the facts there before the first touches the collection again.
@@ -765,6 +809,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **With its row,** where the row proposes and the owner chooses:
   - L38: what the Mac's title bar holds when its room is short (F2).
   - L41: the design of #1923's resume.
+  - L56: what a saved range holds, what the save does over 7,500 documents, how the corpus is named, and whether the legend's filter narrows it. Its brief says what the row proposes for each.
   - L43: the Note on the Text's sentences.
   - L46: the sign for an omission, and the four things its brief says the design leaves open.
   - L47: what a saved template holds.
@@ -843,6 +888,7 @@ The 35 of the review's S3 findings that no 1.0 row took. Each has its evidence a
 - **Found in R2b's walk, unfiled:** where a collection names no summary prompt, an entry's AI summary row in the inspector, and the headnote it would draft, show the first summary the store returns, while the reader's rail shows the newest (`CollectionEntryInspector` and the content resolver's fallback; L34's candidate).
 - **Found in T2, unfiled:** under iOS 27.0 the simulator's render server (`backboardd`) aborts as the Related Documents window opens from the reader, #1620's Metal stack, twice in a row, and its accessibility stays down until a reboot (27.2 and 26.5 opened it cleanly; not tried on a device); and after a search in Archives' Collections lens on the iPad the tab sidebar's toggle drew no icon until a relaunch (seen once). Its other two are rows now: #1946 (L38) and F7 (L39).
 - **Found in W2, unfiled (2026-11-21):** a pasted citation's result names its document by id alone (*d23* over *frus1955-57v14*, `CitationLookupView.swift:772`), though the index holds its head (L30's candidate); and the method appendix's CSV opens untidily in a spreadsheet, since its `#` lines hold unquoted commas, which Quick Look splits across columns, with the header at row 18 (`QueryMethodAppendix.preambleLines`). Both are in 1.0 (1861); neither misstates a result.
+- **Found while L56 was read, unfiled (2026-11-25),** each read from the code and not seen in the app: *Search in this range* writes its two days through a formatter set to UTC over a local midnight, so east of Greenwich it hands Search the day before at both ends (`ChronologyView.swift:1206-1215`; the kit's `isoDay` records the same defect as fixed there); both of Chronology's hand-offs read the pickers, so after a picker is moved without Show they name a range the screen is not showing (`:209-212`, `:1212-1215`); the headline counts the documents dated inside the range while the list is under its cap, and every placed document that overlaps the range once it is over (`ChronologyViewModel.swift:200` and `:221`). Those three are L56's candidates. One more is not in its files: a word cloud for a range of dates reads at most the first 5,000 documents in date order, and its resolver has no field that says a range was cut (`WordCloudScopeResolver.swift:36-45` and `:172-187`).
 - **Smaller app items:** `ProjectLeadsService` ranks with no year; `datesByDocumentKey(_:)` scans every `document_dates` row; the archival chip is cut on the iPhone 17; Sync Diagnostics' Clear Log draws its trash icon in the accent colour; a phrase can match across a document's heading and its form marker; a question's keyword snippets cost more since #1760 (the UTF-8 scan unbuilt); a number typed with a mark (`1945.`) searches nothing and nothing says so; a hyphenated word or an `=` word never anchors a snippet; a page link into a volume on the device whose page names no document does nothing (608 of 48,577; L39's candidate); under iOS 26.5 in Stage Manager a popped-out document's rail draws black until the window moves.
 - **The 2026-09-27 audit, unfiled:** Facets is disabled in Meaning mode on iPhone and iPad, where the Mac offers it; the reach scan and the leads count second-edition reprints; Archives Visit derivations go stale when a volume updates (R10 says what it sees).
 - **Test infrastructure:** `RichTextRestingCapTests` on an iPad host; two UI suites need the Research rail open, which a simulator can hold closed (A12); the iOS 26.5 runtime has no English lemmatiser.

@@ -12524,13 +12524,13 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 
 **Not done:** no build, test or capture; the amendment has not been reviewed; the canvas's boards still draw step 2's eight.
 
-## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
+## Session 2026-11-25 — The plan of record from 2026-11-25: version 1.1 in thirty-one rows, with the Office's next volume and the whole Collections overhaul; the 42 open issues placed; and the owner's 37 answers
 
 **What was asked.** The owner's words: "Let's develop an updated plan of record. Assess open issues and triage them into fix waves. Try to consolidate fixes that touch the same code. Include the collections overhaul in the plan. The goal should be preparing the app to accommodate a new FRUS release in early December and then shipping an update to the App Store after that release." It is the new plan's decision 145. A cloud session, from `v2` at `9325f79d` (#2009), on `claude/plan-of-record-2026-11-25`.
 
 **What changed** (documents only; no source, test, resource or manual):
 - **`Planning/Plan-Of-Record-2026-11-25.md`, the live plan.**
-  - Its rows: thirty pull requests, L26 to L55, in six waves; a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
+  - Its rows: thirty-one pull requests, L26 to L56, in six waves (thirty, to L55, when the pull request opened; L56 was added after it, below); a review of the Collections design (CR) and a checkpoint after it (C2); and R8 to R13, which are an early TestFlight build, its device pass, the Office's release taken in, the release candidate, its pass and the submission.
   - Where each of the 42 open issues goes: 39 in a row, and #1723, #1696 and #234 not in this update. Where each of the five findings the 2026-11-15 plan sent to the first update goes (F1, F2, F7, F11 and D1).
   - What each row touches, and the files two rows meet in, with the order that settles each.
   - The Collections design's lanes as rows (its §1c): seven of the eight, since the owner's answer on the export sheet leaves lane 5 unbuilt.
@@ -12585,3 +12585,22 @@ A cloud session, on two messages of the owner's of 2026-11-25. The first was a q
 - For the release: the build numbers, the date the Office publishes, the CloudKit promotion and *What's New in This Version*.
 
 **Opened as #2011** on the owner's word ("Try to open the PR"), on 2026-11-25, against `v2` at `9325f79d`, which had not moved since the plan was begun. Until that word the session could read the repository and not write to it, and the plan was a file of the session's. Documents only. Ready for review and mergeable with no conflict, with auto-merge off; no CI check runs on it. Its merge is the next record's.
+
+**A row added after it opened, on the owner's word.** The owner: "Can we include a session in the plan that adds an option in chronology to save a chronological scope as a working corpus?" It is the plan's decision 184 and row **L56**, in Wave 3 after L42, the graph's saves, since both make the same record. The plan has thirty-one rows since; its title and counts say so. #2011 was still open and unmerged, and `v2` had not moved, so the row went into the same pull request.
+- **What was read first,** at `9325f79d`: Chronology's screen and view model, the kit's rules for it, the index's reads of a range of dates, the working corpus's record, and the three places that capture one (Search's sheet, the map and the Clusters index).
+- **Why it needs a row.** Search does not run on a range of dates alone: a search with no words runs only on a person or a subject (`SearchParameters.supportsFilterOnlySearch`). So *Search in this range* sets a filter and waits for words, and no route leads from a range to a working corpus.
+- **What the row is.** A kit rule and one read in the index, and the action on the screen. It stores nothing new, so there is no CloudKit change and no index version.
+  - The save reads the range itself, since the list is cut at 5,000 rows and a corpus holds 7,500 keys.
+  - A single year can pass 7,500 on a device with the whole series: the twelve volumes of the 1945 subseries hold 11,567 documents, by the bundled manifest and vectors index.
+- **Four things are the owner's,** each with what the row proposes (the plan's §4):
+  - what a saved range holds: every document whose dates overlap it, as Search's date filter means a range, or only those dated inside it;
+  - over 7,500: the range cut at the last whole day that fits, or a refusal, or the first 7,500 with the truncation recorded;
+  - the name: by rule, as the map's and the Clusters index's, or asked for, as Search's sheet does;
+  - whether the legend's volume filter narrows the save.
+- **Found while it was read, and not filed** (the plan's §5); each is read from the code and was not seen in the app:
+  - *Search in this range* writes its two days through a formatter set to UTC over a local midnight (`ChronologyView.swift:1206-1215`), so east of Greenwich it hands Search the day before, at both ends. The kit's `isoDay` records the same defect as fixed there.
+  - Both of Chronology's hand-offs read the pickers and not the range the screen loaded.
+  - The headline counts one thing while the list is under its cap and another once it is over.
+  - A word cloud for a range of dates reads at most the first 5,000 documents, and its resolver has no field that says a range was cut.
+- **Three sentences were reworded** that named the Collections rows as "the rows from L34 on". L56 has a later number and is not one of them.
+- **Checked again:** the session's script over the plan (a brief for each of the table's 39 rows, in its order; decisions 145 to 184 each once; every path named), and the plan-of-record gate's two conditions. Documents only, as before: no unit run, `swift test` or build was owed, and none could be run here.
