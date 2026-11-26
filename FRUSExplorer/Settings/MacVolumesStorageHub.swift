@@ -1358,6 +1358,9 @@ private struct MacAllVolumesSheet: View {
 ///   1.0 — S-2b: initial implementation, from `SettingsAddVolumesPane.downloadSection`
 ///   1.1 — 2026-10-01: #1483 — the Entire Corpus card's detail carries iOS's whole text, adding that
 ///          downloads run in the background and resume across launches
+///   1.2 — 2026-11-26 (T1, plan of record row L26): the subseries list sorts by the kit's
+///          `SubseriesGroup.newestFirst(_:)`, as Browse does, where the start year alone left two
+///          subseries of one year in a `Set`'s order, which differs from launch to launch
 private struct MacDownloadVolumesSheet: View {
 
     @Environment(AppState.self) private var appState
@@ -1588,7 +1591,7 @@ private struct MacDownloadVolumesSheet: View {
     }
 
     private var allSubseries: [String] {
-        Set(allVolumes.map(\.subseries)).sorted { startYear($0) > startYear($1) }
+        SubseriesGroup.newestFirst(Set(allVolumes.map(\.subseries)))
     }
 
     private var needle: String {
@@ -1634,10 +1637,6 @@ private struct MacDownloadVolumesSheet: View {
             return String(localized: "settings.hub.browse.summary.volumes",
                           defaultValue: "\(HubCopy.volumes(selectedVolumeIds.count)) selected")
         }
-    }
-
-    private func startYear(_ subseries: String) -> Int {
-        Int(subseries.prefix(4)) ?? 0
     }
 
     private var canDownload: Bool {

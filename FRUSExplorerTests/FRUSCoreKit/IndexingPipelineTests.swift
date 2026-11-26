@@ -10230,6 +10230,41 @@ struct IndexVersion71Tests {
     }
 }
 
+// MARK: - SubseriesOrderTests (T1, L26)
+
+/// T1 (plan of record row L26): a list of subseries newest first has one order, whatever order its
+/// input comes in, which Browse and both Volumes & Storage hubs sort by
+/// (`SubseriesGroup.newestFirst(_:)`). They built their lists over a `Dictionary` and a `Set`, whose
+/// order differs from launch to launch, and sorted by the start year alone.
+@Suite("A list of subseries newest first has one order, whatever its input's (T1)")
+struct SubseriesOrderTests {
+
+    /// The catalogue's tied years among their neighbours, in the one order: the span before the
+    /// single year it begins with.
+    static let newestFirst = [
+        "1952-54", "1951-54", "1951", "1950-55", "1950", "1949",
+        "1945-50", "1945", "1941-43", "1941", "1917-72", "1917", "1914-20", "1914",
+    ]
+
+    @Test("Each tied pair lists the span before the single year, from any input order")
+    func tiesKeepOneOrder() {
+        let rotated = Array(Self.newestFirst[5...] + Self.newestFirst[..<5])
+        #expect(SubseriesGroup.newestFirst(Self.newestFirst) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(Self.newestFirst.reversed()) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(rotated) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(Set(Self.newestFirst)) == Self.newestFirst)
+    }
+
+    @Test("The rule is the start year first, then the identifier")
+    func theRule() {
+        #expect(SubseriesGroup.listsBefore("1951-54", "1951"))
+        #expect(!SubseriesGroup.listsBefore("1951", "1951-54"))
+        #expect(SubseriesGroup.listsBefore("1952-54", "1951-54"))
+        #expect(!SubseriesGroup.listsBefore("1951", "1951"))
+        #expect(SubseriesGroup.startYear(of: "1969-76") == 1969)
+    }
+}
+
 // MARK: - VolumeSourcesVersion70Tests (A18)
 
 /// A volume's list of sources at index version 70 (A18, #1645's line): a row naming a Subject-Numeric

@@ -1383,6 +1383,9 @@ private struct DownloadedVolumesListView: View {
 ///   1.0 — S-2c: initial implementation, from `DownloadsSettingsView`'s Find Volumes section
 ///   1.1 — #1918 (L18, HCD-4): internal, so `DownloadVolumesSheet` can present it from an empty library's
 ///          **Download Volumes…** in Search and Browse
+///   1.2 — 2026-11-26 (T1, plan of record row L26): the subseries list sorts by the kit's
+///          `SubseriesGroup.newestFirst(_:)`, as Browse does, where the start year alone left two
+///          subseries of one year in a `Set`'s order, which differs from launch to launch
 struct DownloadVolumesBrowseView: View {
 
     @Environment(AppState.self) private var appState
@@ -1540,7 +1543,7 @@ struct DownloadVolumesBrowseView: View {
     }
 
     private var allSubseries: [String] {
-        Set(allVolumes.map(\.subseries)).sorted { startYear($0) > startYear($1) }
+        SubseriesGroup.newestFirst(Set(allVolumes.map(\.subseries)))
     }
 
     private var needle: String {
@@ -1591,10 +1594,6 @@ struct DownloadVolumesBrowseView: View {
             return String(localized: "settings.hub.browse.summary.volumes",
                           defaultValue: "\(HubCopy.volumes(selectedVolumeIds.count)) selected")
         }
-    }
-
-    private func startYear(_ subseries: String) -> Int {
-        Int(subseries.prefix(4)) ?? 0
     }
 
     private var canDownload: Bool {

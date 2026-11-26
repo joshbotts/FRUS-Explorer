@@ -99,8 +99,8 @@ import Observation
 ///   1.15 — 2026-11-06: the editors' annotations design, lane C — the `.annotations` axis and the
 ///          `.annotationCategory` page levels
 ///   1.16 — 2026-11-26 (T1's finding, plan of record row L26): `allSubseriesGroups` keeps one order
-///          for two subseries that begin in the same year (`newestFirst(_:)`), where it sorted by the
-///          start year alone over a `Dictionary`'s order, which differs from launch to launch
+///          for two subseries that begin in the same year (`newestFirst(_:)`, by the kit's rule,
+///          `SubseriesGroup.listsBefore`), where the start year alone kept a `Dictionary`'s order
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -604,7 +604,7 @@ public final class BrowserViewModel {
     /// - Parameter groups: The groups, in any order.
     /// - Returns: The same groups, in Browse's order.
     nonisolated static func newestFirst(_ groups: [SubseriesGroup]) -> [SubseriesGroup] {
-        groups.sorted { ($0.startYear, $0.subseries) > ($1.startYear, $1.subseries) }
+        groups.sorted { SubseriesGroup.listsBefore($0.subseries, $1.subseries) }
     }
 
     /// Volumes within a subseries after applying the active tag filter and (optionally)

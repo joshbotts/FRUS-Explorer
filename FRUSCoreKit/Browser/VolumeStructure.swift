@@ -389,6 +389,9 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
 ///   1.1 — #1051 B-1: `totalDocuments` removed — it summed the manifest's dead `documentCount`
 ///          (0 in all 552 entries) and its one consumer's `> 0` gate had therefore never
 ///          rendered; subseries document counts now sum the R-2 accessor at the call site
+///   1.2 — 2026-11-26 (T1, plan of record row L26): ``listsBefore(_:_:)`` and
+///          ``newestFirst(_:)``, the one order of a list of subseries newest first, which Browse and
+///          both Volumes & Storage hubs sort by; ``startYear(of:)``
 public struct SubseriesGroup: Sendable, Identifiable {
     /// The subseries identifier, e.g. `"1969-76"`, `"1861"`.
     public let subseries: String
@@ -426,6 +429,27 @@ public struct SubseriesGroup: Sendable, Identifiable {
 
     /// Numeric start year for chronological sorting (first 4 digits of the subseries string).
     public var startYear: Int {
+        Self.startYear(of: subseries)
+    }
+
+    /// The start year of a subseries identifier: its first four digits, or 0.
+    public static func startYear(of subseries: String) -> Int {
         Int(subseries.prefix(4)) ?? 0
+    }
+
+    /// Whether `lhs` lists before `rhs` in a list of subseries newest first (T1, plan of record row
+    /// L26): the later start year first, and of two that begin in the same year, the identifier
+    /// that sorts later, which is the span before the single year it begins with (`1945-50`
+    /// before `1945`, `1951-54` before `1951`). A total order, so a list built over a `Set` or a
+    /// `Dictionary`, whose order differs from launch to launch, lists in one order. Browse's
+    /// subseries and both Volumes & Storage hubs sort by it; eight years of the catalogue begin
+    /// two subseries each (1914, 1917, 1931, 1933, 1941, 1945, 1950, 1951).
+    public static func listsBefore(_ lhs: String, _ rhs: String) -> Bool {
+        (startYear(of: lhs), lhs) > (startYear(of: rhs), rhs)
+    }
+
+    /// `subseries` newest first, by ``listsBefore(_:_:)``.
+    public static func newestFirst<S: Sequence>(_ subseries: S) -> [String] where S.Element == String {
+        subseries.sorted(by: listsBefore)
     }
 }
