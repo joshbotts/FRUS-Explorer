@@ -3972,3 +3972,42 @@ On the owner's word ("check pr 2014 and run the local-only steps"), a session on
 **For the owner**
 - **`/context`** in a fresh session, for `CLAUDE.md`'s token count; a session cannot run it.
 - **#2014's branch** on `origin`, `claude/focused-faraday-j53vwe`, to delete on the owner's word.
+
+## Session 2026-11-26 — L26, index version 76: a volume lists in its file's order, 138 editorial notes keep their own source note, each document's linked terms and each division's first page are stored, and Browse keeps one order of its subseries
+
+On the owner's word ("start the plan of record from PR2011. note that PR2017 merge is still pending"), a session on the Mac took the first row of the plan of record from 2026-11-25, L26, as L15's session took the last plan's first row. Built from `v2` at `b3acd7ad` on `claude/plan-of-record-pr2011-2cc493`: `c8b0a971` (#1978, index version 76), `480c1ac1` (#1854), `71cc5749` (the term mentions and the division start pages), `1e60d3ed` (the bundled files), `28db14d0` (T1), and a docs commit. Not opened: the queue's head is #2017, and the plan has CR read A2 before this row lands.
+
+**#2016's and #2017's merges**
+- #2016 merged as `b3acd7ad` before this session began; #2017 records it.
+- **#2017** (the three CI checks) is open at the head of the queue, its head at `237896ec`. Its merge is owed a record by the next change that touches this log, which is this row's: recorded here once it lands, before this row's pull request is pushed.
+
+**What was found, each defect first** (decision 183)
+- **#1978, in 1.0's own library.** A copy of the owner's Mac library at 75, upgraded in place, read beside L22's fresh v75 index of the same files: 361 of the 553 volumes list in another order, the issue's figure; `frus1969-76ve09p1`'s `notes` has rowid 321890 and lists last, where the file has it third.
+- **#1854, in L22's full v75 index.** `frus1941-43` d291, d293 and d423 hold no source note, dateline or source row.
+- **F7's measurement** (decision 178). No `page_ranges` row for `frus1961-63v06`'s `#pg_III` or `#pg_315`: each break falls between two divisions, which no row holds. None of the Contents' seven front- and back-matter targets names a page any table holds, so this version stores them.
+- **T1.** A two-line program run twice gave a `Dictionary`'s keys in two orders, and Browse's old rule, the start year alone, carried that order into the list wherever two subseries begin in one year (eight such years).
+- **Five generators read notes through `DocumentNoteExtractor`, not three.** The plan named the usage, provenance and external-citation indexes; the collection authority and the provenance-flow index read them too, and the Source Explorer export, which L31 regenerates.
+- **A fail-first mutation can fail to take a fix out.** `return` on its own line before `try inTransaction { … }` is `return try inTransaction { … }` in Swift, so the first control left the term mentions' insert running and their test passed. A `guard` that always returns made it fail.
+
+**What changed**
+- **#1978:** `document_cache.document_order`, written by every store pass and set by the upsert; the three volume reads order by it, then rowid; an index from before 76 opened read-only lists by rowid (`volumeOrder`). Its test indexes a volume, adds a document before its last, and holds the file's order, the old rowids and search; another holds an index without the column, opened read-only, to rowid order.
+- **#1854:** `IndexingPipeline.ownFieldNodes(of:)`; the extractors read under a wrapper that holds a source note of its own, and only there; `DocumentNoteExtractor` the same, its old test turned to the new rule with the reason written where it is.
+- **Decision 172:** `term_mentions`, read by `PersonMentionStore.termsLinked(inDocument:volumeId:)`. **F7:** `division_start_pages` (`VolumeFullParseResult.divisionStartPages`), read by `IndexingPipeline.divisions(startingOn:inVolume:)`, which L39 will use; `page_ranges` is unchanged.
+- **T1:** `BrowserViewModel.newestFirst(_:)`, the span before the single year; one EditableContent block re-pointed (`browser.indexing.pipelineUnavailable`, 985–986 → 1002–1003).
+- **The bundled files:** `cited-page-map.json` and `volume-annotations-index.json` at 76; `resolved-edge-index.json` came out byte for byte.
+- **Docs:** the v76 note and the version history in `IndexingPipeline.swift`; the Agentic Analysis Guide 1.51; the runbook's entries for the two regenerations and the five measured generators; the plan's L26 record, and what L26 changes in L28's and L31's briefs.
+
+**Checks**
+- **Two full indexes at corpus `6170e4b32`, 75 and 76:** only `document_cache` (138 rows and the new column), `document_revisions` (the same 138 hashes), `document_sources` (138 rows added, 114 with a marking) and the two new tables move. `term_mentions` 498,757 rows, `division_start_pages` 24,009.
+- **The census:** S1's iPad library under iOS 27.0, at 75, re-indexed by the branch's `AppStore` build in 867 s, 553 volumes, 321,749 documents, none failed; its index equals the fresh v76 index in the twelve tables the parse fills. S1's library was put back at 75 for L27.
+- **The owner's library, re-indexed in a clone through the kit:** `frus1969-76ve09p1` lists `notes` third.
+- **The generators that read notes, measured for R10:** each control reproduced its shipped file byte for byte; L26's rule adds one authority record and moves the usage, flow and external-citation indexes by the 138 notes' references; the provenance index does not move.
+- **Fail-first:** each new kit test and the mirror's failed with its fix taken out, and the read-only test with its guard taken out.
+- **The runs:** `swift build --target FRUSCoreKit` with no kit warning; `swift test` 5,186 tests in 601 suites over 39 runs, none failed; `build-for-testing` with the two residues alone; the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,278 tests in 1,001 suites passed, 17 skipped, the six known issues; the Mac build.
+- **Captures, read for T1:** a Vision OCR of the 131 captures and tour crops for the eight tied pairs. `ipad/browse-root` shows `1950` above `1950-55`, which this build no longer draws: added to T3 (R11). The Mac's sidebar shows T1's order already; it sorts the manifest's own order, not `allSubseriesGroups`.
+
+**For the owner**
+- **#2017's merge**, then this row's pull request on the owner's word.
+- **The Volumes & Storage hubs** sort subseries by start year alone over a `Set` (`VolumesStorageHubView.swift:1542`, `MacVolumesStorageHub.swift:1590`): the tie T1 fixed in Browse, in a list no row touches. An issue, on the owner's word.
+- **CR**, whose reading of A2 the plan puts before this row lands: proposed as a session card.
+- **After the merge:** #1978's hand-over note for FRUS Explorer Light, posted as a comment on the issue; its server refuses a version-76 export until its pin moves.

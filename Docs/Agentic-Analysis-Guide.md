@@ -414,9 +414,10 @@ the three volumes published only in part ([§1](#1-what-you-are-working-with)).
 | `dateline` | The place-and-date line, as printed prose (`"Paris, May 3, 1958"`). Not parsed — use `document_dates`. |
 | `source_note` | The editors' source note, verbatim: where the printed document came from. |
 | `body_text` | Flattened document text. **Footnotes are included** — see [§7.2](#72-footnotes-are-inside-body_text). |
-| `is_editorial_note` | 1 for editorial notes — the editors' own connective prose, not a historical document. |
+| `is_editorial_note` | 1 for editorial notes — the editors' own connective prose, not a historical document. From index version 76, 138 rows the TEI tags as editorial notes are printed documents it gives a source note of their own (memoranda, telegrams, letters and minutes, 132 of them in the volumes covering 1932–1954, such as `frus1941-43` d291, Churchill's memorandum of June 15, 1942): they carry that note in `source_note`, 131 their `dateline`, and each a `document_sources` row ([§4.4](#44-archival-provenance)), 114 with a marking. The flag stays 1 on them, since the TEI tags them so; before 76 their three fields were empty. |
 | `is_front_matter` | 1 for front matter (preface, sources section, abbreviations, persons list). |
 | `despatch_serial` | The pre-1906 despatch/instruction serial number, where one exists. |
+| `document_order` | From index version 76, the row's place in its volume, from 0: the order the volume's file prints its rows in, which every re-index writes. **Order a volume's rows by it, not by `rowid`**: a re-index keeps a row's `rowid`, since the FTS index keys on it, so a document a later index version or a corrected file added has a `rowid` after the rest of its volume, and in a library upgraded in place 361 of the 553 volumes had another `rowid` order than a fresh index of the same files. `NULL` on a volume indexed before 76. |
 | `summary_text`, `note_text` | **Yours**, not the corpus. One row per document, not one per note: `note_text` holds **every** note on the document, oldest first, joined by a blank line. See [§7.6](#76-summaries-are-not-sources). |
 | `user_tag_ids` | Your tags, as space-joined opaque UUIDs. Resolve them to names through `user_tags` — see [§4.6](#46-your-own-data). |
 | `subject_tag_ids` | **Always `NULL`.** Retired feature; the column survives for schema compatibility. |
@@ -496,12 +497,25 @@ printed on. Keep the `page_number_type = 'arabic'` predicate on anything that re
 own pages. Version 63 also stopped indexing a compilation, chapter or subchapter that holds only a
 heading and the sections under it (162 across 75 volumes), so those ids have no row here or in
 `document_cache` on a current index.
+A page break **between two divisions** that are not documents, such as the break before a
+volume's Preface or its Index, is in no row here; from index version 76 it is in
+`division_start_pages`, below.
 `section_id` is the document's own id on every row, so it groups nothing. `MIN`/`MAX` over `arabic`
 gives the pages a document is printed on, from the page it begins on; add `is_start = 0` for its
 own breaks alone. Where page numbers restart — the E-volumes that number pages per document,
 `frus1981-88v16`, the five microfiche supplements — the same number belongs to many documents, and
 a start row can carry the previous document's numbering: the app reads a start there only when it
 is page 1.
+
+**`division_start_pages`** — from index version 76, the page each division with an `xml:id` begins
+on, other than a document's and an editorial note's, whose start is a `page_ranges` row: the front
+matter (`preface`, `sources`, `terms`, `persons`), the table of contents, a chapter or compilation, and
+the back matter (`index`). `(volume_id, division_id)` → `division_order` (the order the divisions
+open in), and the page numbered as `page_ranges` numbers one: `page_number_type`, `page_number_int`,
+`page_number_raw`. So `frus1961-63v06`'s Contents links to its Preface as `#pg_III` and to its Index
+as `#pg_315`, and those pages are rows here (`roman` 3, `preface`; `arabic` 315, `index`) and in no
+`page_ranges` row. A table of its own so that no page citation reads a division as a document: keep
+reading pages of documents from `page_ranges`. On a full index at 76: 24,009 rows in 552 volumes.
 
 **`persons`** — the per-volume persons list: `(volume_id, ref)` → `name`, `description`, `role`,
 `start_year`, `end_year`. The `ref` is a TEI `xml:id` and is meaningful **only inside its volume**.
@@ -530,6 +544,14 @@ A useful sanity check when a person's counts look low.
 
 **`terms`** — per-volume glossary entries (abbreviations and their definitions).
 
+**`term_mentions`** — from index version 76, `(volume_id, document_id, term_ref)`: the terms of its
+volume's list a document links, one row per document and term however often it links it, written
+as `person_mentions` is from the document's `<gloss>` links and, for 1981–88 vol. XVI, from the
+terms its documents name on their own `@ana`. Join it to `terms` on `(volume_id, term_ref = ref)`
+for the definition. On a full index of the 553 catalogue volumes at version 76: 498,757 rows for
+113,714 documents in 312 volumes; 809 rows name a term their volume's list does not hold, and the
+join drops them. Before 76 the table is empty.
+
 **`volume_structures`** — one JSON blob per volume describing its section tree. Parse it in the
 client; don't try to query into it with SQL string functions. From index version 75 the row also
 names the file the volume was indexed from: `file_blob_sha1`, the git blob SHA-1 of the TEI file's
@@ -557,7 +579,7 @@ of the editors' source note. This answers *where the printed document came from*
 | `series_name` | Series or file designation as parsed. |
 | `decimal_class` | Central-file class key (`751.00`, `POL 27 ARAB-ISR`), canonicalized. The schedule was **renumbered in 1950** (the artifact's own `provenance` string says so): class 4 is *Claims* before and *U.S. trade* after; class 6 is *Commerce* before and bilateral *political relations* after (`611.41: U.S.-U.K. relations` in the editors' own gloss; `611.31` is U.S.–Venezuela commerce after 1950); country numbers move too. A prefix is a false friend across 1950-01-01 — bound every `decimal_class` family by `document_dates.date_iso` at that date, publish the two halves as two sets, and print the predicate beside the count. Measured on the working scope: `411.*` = 327 documents in 46 volumes after, 259 in 29 before (44% of the undated union are claims cases). Country numbers carry a **letter** for dependencies and derived states (`41D` Ireland, `11B` Philippines) and the corpus writes punctuation variants (`611.37.31`, `611.60c.31`): never let the schedule's shape decide the predicate — `GLOB '611.[0-9][0-9]31'` looks like the careful choice and silently drops Ireland (20 documents) and the Philippines (12), while `LIKE '611.%31'` admits the renumbered post-1950 class. Use the date. And `document_sources` stores the letter in upper case (`60F`) where `decimal-class-labels.json` keys it lower (`60f`); one thread's "all bare" claim was a case-sensitive lookup. |
 | `job_number_norm` | Normalized CIA Job number. |
-| `classification` | Classification/handling markings (`Secret; Nodis`): the source note's marking sentence, its second sentence when that reads as a marking, and, **from index version 73**, the first later sentence that does, where a stop inside the citation (`U.S.`, `Vol. I.`, an initial) or a remark opening with a digit (`Secret. 2 pp.`) kept the marking out of the second; and, **from index version 72**, where the note prints none, the marking the document prints in its opener above the dateline (`Secret; Priority`), which is where most volumes covering 1946–1954 and the wartime conference volumes print it. Measured over the 553 catalogue volumes at corpus `6170e4b32`: 114,130 rows carry one at 73 and 105,265 at 72; 44,746 of them are in the volumes covering 1932–1954, where version 71 stored 1,422. Version 73 adds 8,865 notes in 218 volumes, 8,619 of them in the volumes from 1955 on. An index written before 72 holds none of the opener's markings, so a count over the 1932–1954 volumes from an older index reads near zero; one written before 73 misses about one marking in eight in the volumes from 1955 on. Check the index version before reading one. |
+| `classification` | Classification/handling markings (`Secret; Nodis`): the source note's marking sentence, its second sentence when that reads as a marking, and, **from index version 73**, the first later sentence that does, where a stop inside the citation (`U.S.`, `Vol. I.`, an initial) or a remark opening with a digit (`Secret. 2 pp.`) kept the marking out of the second; and, **from index version 72**, where the note prints none, the marking the document prints in its opener above the dateline (`Secret; Priority`), which is where most volumes covering 1946–1954 and the wartime conference volumes print it. Measured over the 553 catalogue volumes at corpus `6170e4b32`: 114,130 rows carry one at 73 and 105,265 at 72; 44,746 of them are in the volumes covering 1932–1954, where version 71 stored 1,422. Version 73 adds 8,865 notes in 218 volumes, 8,619 of them in the volumes from 1955 on. An index written before 72 holds none of the opener's markings, so a count over the 1932–1954 volumes from an older index reads near zero; one written before 73 misses about one marking in eight in the volumes from 1955 on. **From index version 76** the 138 documents the TEI tags as editorial notes and gives a source note of their own have a row here ([§4.2](#42-corpus-text)), 114 of them with a marking, so 114,244 rows carry one. Check the index version before reading one. |
 | `citation_era` | **The citation *form*, not a date.** See below. |
 | `raw_text` | The source note as printed — your fallback when the parse is thin. It is also where the printed source note's misprints live: a singleton class key beside a large neighbour (`611.8331/139` beside `611.3331`, `611.2031`/`611.2631` beside `611.2531`) is a suspect, and the document header decides. |
 
@@ -2312,7 +2334,7 @@ The stack, and the question each artifact answers:
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,898 edges, 4,913 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 38,600 cross-volume edges into 20,273 documents from 513 volumes: 9,209 by a document's id (572 of them from a section's own text — an introduction, an errata list, a heading's footnote — whose id is the section's) and, since index version 71, 29,391 by a printed page of another volume under rule C (a single page, or a range within one document; "ff." and a range across documents are not here), resolved through `cited-page-map.json` exactly as a device's index resolves them. Its `volumes` array (537) is a shared vocabulary of target *and* citing volumes, not a target list, and 33 of its targets are sections printed on a cited page. 33,235 of its 35,901 citing pairs (92.6%) cite through a note |
 | `cited-page-map.json` | what a printed page of another volume names, so a page reference resolves whether or not you hold the volume (§4.3) | 16,364 pages in 380 volumes naming 18,832 documents, 3,938 of the pages naming several (with each one's printed number and day for the tie-break); an entry for every page a single-page reference cites and for both ends of each range within one document, none for a page naming nothing; regenerated with each build's corpus from a full index the generator builds, and a device resolves from it alone, so two devices store the same row |
-| `volume-annotations-index.json` | what editorial annotation each volume carries, whether or not you hold it: people tagged, abbreviations, source notes and their form, classification markings, numbered documents, references, editorial notes and more, as counts of documents, and from which era the series made each practice standard. **The categories the app reads are counted by the index's own rules, at the index version the file records**, so a volume's people count is the People browser's and its classification count the chips' | 553 volumes, 314,510 documents (index version 75): people tagged in 288 volumes, abbreviations linked in 310, source notes in 478, classification markings in 310, documents numbered in print in 229 |
+| `volume-annotations-index.json` | what editorial annotation each volume carries, whether or not you hold it: people tagged, abbreviations, source notes and their form, classification markings, numbered documents, references, editorial notes and more, as counts of documents, and from which era the series made each practice standard. **The categories the app reads are counted by the index's own rules, at the index version the file records**, so a volume's people count is the People browser's and its classification count the chips' | 553 volumes, 314,510 documents (index version 76): people tagged in 288 volumes, abbreviations linked in 310, source notes in 478, classification markings in 310, documents numbered in print in 229 |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
@@ -3387,6 +3409,20 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.51 — 2026-11-26: index version 76 (plan of record row L26). §4.2's `document_cache` gains
+  `document_order`, a document's place in its volume, which every re-index writes, and says to order
+  a volume by it, since a re-index keeps a row's `rowid` and a library upgraded in place listed 361
+  of the 553 volumes in another order than a fresh index (#1978); its `is_editorial_note` row says
+  that 138 rows the TEI tags as editorial notes are printed documents that now carry their own
+  source note, 131 their dateline, and a source row each (#1854), and §4.4's `classification` row
+  that 114 of those rows carry a marking (114,244 rows in all). §4.3 gains `term_mentions`, each
+  document's linked terms (498,757 rows for 113,714 documents in 312 volumes), and
+  `division_start_pages`, the page each division begins on (24,009 rows in 552 volumes), which no
+  `page_ranges` row holds where the break falls between two divisions. Measured on two full
+  indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 75 and at 76: every other table
+  holds the same rows. §14.11's row for `volume-annotations-index.json` gives the file's version,
+  76: its source-note and classification counts move in the 47 volumes of the 138, and no volume
+  crosses a layer's threshold.
 - 1.50 — 2026-11-18: Import from JSON (#1915, plan of record decision 140). §2 says the research
   database copy goes one way, and that research moves between devices and FRUS Explorer Light as
   the JSON file Export as JSON writes and Import from JSON… reads, which adds, replaces only with a

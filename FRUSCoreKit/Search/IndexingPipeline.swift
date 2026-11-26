@@ -572,9 +572,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `allDocumentKeys()` are public, unchanged, since the word cloud's count, which moved into the kit
 ///         (`WordCloudCount`), reads a scope's text with the first, for a host that counts a scope, the
 ///         corpus included, as the app does; nothing the indexer stores or reads changes
-///  4.67 — 2026-11-26 (#1978, plan of record row L26): `currentDateIndexVersion` → 76 — a document's
-///         place in its volume, `document_cache.document_order`, written by every store pass; a volume
-///         lists by it, then rowid (see the v76 note)
+///  4.67 — 2026-11-26 (plan of record row L26): `currentDateIndexVersion` → 76 — a document's place in
+///         its volume, `document_cache.document_order`, written by every store pass, by which a volume
+///         lists, then rowid (#1978); an editorial note's own source note, dateline and marking, read
+///         under its wrapper where it prints a source note of its own (`ownFieldNodes(of:)`, #1854); each
+///         document's linked terms, `term_mentions` (decision 172); and the page each division begins
+///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
+///         See the v76 note
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1719,7 +1723,40 @@ public actor IndexingPipeline {
     ///     in the owner's Mac library, upgraded in place, 361 of the 553 volumes listed in another
     ///     order than a fresh index of the same files at corpus `6170e4b32`. `documents(forVolume:)`,
     ///     `document(forDocumentNumber:inVolume:)` and `documentRevisions(forVolumeId:)` read it, then
-    ///     rowid. Without the bump an upgraded library keeps every such volume out of its file's order.
+    ///     rowid; an index from before 76 opened read-only lists by rowid, as before. On a full index
+    ///     of the 553 catalogue volumes at 76, each volume's `document_order` runs 0 to n−1 in that
+    ///     fresh index's rowid order. Without the bump an upgraded library keeps every such volume out
+    ///     of its file's order.
+    ///   - **An editorial note's own source note, dateline and marking** (#1854): the TEI tags
+    ///     8,468 documents in the 553 catalogue volumes `editorial-note`, and the parser wraps each in
+    ///     one `.editorialNote` node, under which the extractors never looked. 138 of them are printed
+    ///     documents with a `<note type="source">` of their own (memoranda, telegrams, letters and
+    ///     minutes, 132 in the volumes covering 1932–1954). The extractors now read under the wrapper
+    ///     where it holds a source note of its own (``ownFieldNodes(of:)``), and the generators'
+    ///     mirror, `DocumentNoteExtractor`, does the same. Measured on two full indexes of the 553
+    ///     catalogue volumes at corpus `6170e4b32`, at 75 and at 76: `source_note` is stored for the
+    ///     138 (in 47 volumes), `dateline` for 131 of them, and each has a `document_sources` row
+    ///     (52 by lot, 48 by decimal file, 29 a named series), 114 with a marking; their content hashes
+    ///     move with them, which the bump rebaselines rather than stamps. The **Editorial Note** badge
+    ///     stays. Without the bump an installed index keeps the 138 with no note, dateline or row.
+    ///   - **Each document's linked terms** (decision 172): `term_mentions`, one row per document and
+    ///     term, from each `<gloss>` link's target (``normalizeTermRef(_:)``) and, for
+    ///     `frus1981-88v16`, the terms a document names on `@ana` (``annotatedTermRefs(_:terms:)``), as
+    ///     `person_mentions` holds the people; read by `PersonMentionStore.termsLinked(inDocument:volumeId:)`
+    ///     for a collection's *Abbreviations & Terms* block. On the full index at 76: 498,757 rows for
+    ///     113,714 documents in 312 volumes, 809 of them naming a term the volume's list lacks
+    ///     (`frus1981-88v16`: 419 rows for its 88 documents).
+    ///   - **The page each division begins on** (F7, decision 178): `division_start_pages`, the start
+    ///     page the parse settles for every division with an `xml:id` (`VolumeFullParseResult.divisionStartPages`)
+    ///     and dropped for all but a document and an editorial note, in a table of its own so that no
+    ///     page citation, page map or document's page list reads a division as a document
+    ///     (``divisions(startingOn:inVolume:)``). A full index at 75 held no row for any of the seven
+    ///     front- and back-matter lines of `frus1961-63v06`'s Contents (`#pg_III` … `#pg_315`); at 76
+    ///     each names its division (the Preface, the Introduction, the list of the administration's
+    ///     volumes, the Sources, the Abbreviations, the Persons, the Index): 24,009 rows in 552
+    ///     volumes. `page_ranges` is unchanged, row for row.
+    ///   Every other table holds the same rows at 75 and 76, read table by table with the id columns
+    ///   set aside.
     public static let currentDateIndexVersion: Int = 76
 
     /// UserDefaults key under which the installed date-index version is persisted.
