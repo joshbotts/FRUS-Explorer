@@ -351,17 +351,22 @@ struct InAppBrowserCoordinatorTests {
         </body></html>
         """
 
-    /// How long one wait may take: a bound on a hang, not WebKit's pace. On CI this suite is the first in the run to
-    /// start WebKit, so the opening page waits for WebKit's web content, GPU and networking processes to launch. On
-    /// CI's three-core runner (2026-11-26) that took about 18 s of the 20 s the bound then was, and on the next run the
-    /// page was not in after 60 s, 52 of which the host logged nothing at all.
+    /// How long the opening page may take: WebKit's cold start, which this test pays on CI, where it is the first in the
+    /// run to start WebKit. On each of the workflow's first three runs to reach it (2026-11-26, a three-core runner), the
+    /// web content process stopped answering once it had launched, and WebKit went on to load the page 11 s, 54 s and
+    /// 165 s later. In the last two the host's main thread did not run the wait meanwhile: it recorded its timeout about
+    /// 40 s and 50 s past its deadline (20 s, then 120 s), 1 to 3 s after the load began. No later web view in those
+    /// runs stopped answering, and on the Mac the page is in after about 1 s.
+    private static let openingLimit: Duration = .seconds(600)
+
+    /// How long any later wait may take, with WebKit started: a bound on a hang, not WebKit's pace.
     private static let waitLimit: Duration = .seconds(120)
 
-    private static func waitFor(_ what: String, _ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now + waitLimit
+    private static func waitFor(_ what: String, within limit: Duration, _ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + limit
         while !condition() {
             guard ContinuousClock.now < deadline else {
-                Issue.record("Timed out after \(waitLimit) waiting for \(what)")
+                Issue.record("Timed out after \(limit) waiting for \(what)")
                 throw Timeout()
             }
             try await Task.sleep(for: .milliseconds(50))
@@ -378,8 +383,13 @@ struct InAppBrowserCoordinatorTests {
         let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 400, height: 600))
         webView.navigationDelegate = coordinator
 
+        let opening = ContinuousClock.now
         webView.loadHTMLString(Self.page, baseURL: Self.site)
-        try await Self.waitFor("the opening page") { !webView.isLoading && webView.url == Self.site }
+        try await Self.waitFor("the opening page", within: Self.openingLimit) {
+            !webView.isLoading && webView.url == Self.site
+        }
+        // The cold start's length, so a log shows whether it grows.
+        print("[InAppBrowserCoordinatorTests] the opening page was in after \(ContinuousClock.now - opening)")
         let openingDecisions = log.decisions.map { $0.decision }
         #expect(openingDecisions.allSatisfy { $0 == .allow }, "the opening load was stopped: \(log.decisions)")
 
@@ -387,7 +397,9 @@ struct InAppBrowserCoordinatorTests {
         func follow(_ id: String, answers: Int = 1) async throws -> InAppBrowserScope.Decision {
             let before = log.decisions.count
             _ = try await webView.evaluateJavaScript("document.getElementById('\(id)').click(); true")
-            try await Self.waitFor("WebKit's question about #\(id)") { log.decisions.count >= before + answers }
+            try await Self.waitFor("WebKit's question about #\(id)", within: Self.waitLimit) {
+                log.decisions.count >= before + answers
+            }
             return log.decisions[before].decision
         }
 
