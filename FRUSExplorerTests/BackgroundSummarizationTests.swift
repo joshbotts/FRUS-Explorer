@@ -258,15 +258,36 @@ struct BackgroundSummarizationTests {
             activeProjectId: nil
         )
 
-        // Allow the async task to complete
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
-
-        let state = await progress.state
+        // Wait for the run to end, not for a fixed time. It publishes `.running` and then `.completed`, each by a hop
+        // to the main actor. A fixed 0.1 s wait failed on CI's first full run (2026-11-26, on a three-core runner): the
+        // run had logged that it was stopping, and the state was still `.running`.
+        let state = try await Self.endState(of: progress, within: .seconds(10))
         if case .completed(let tally) = state {
             #expect(tally.succeeded == 0)
             #expect(tally.attemptable == 0)
         } else {
             Issue.record("Expected .completed, got \(state)")
+        }
+    }
+
+    /// The first state `progress` reaches that ends a run (`.completed`, `.cancelled` or `.failed`), or the state it
+    /// is in when `timeout` runs out. The timeout bounds a hang and does not set the pace: the wait ends as soon as
+    /// the run does.
+    private static func endState(
+        of progress: BackgroundSummarizationProgress,
+        within timeout: Duration
+    ) async throws -> BackgroundSummarizationState {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while true {
+            let state = await progress.state
+            switch state {
+            case .completed, .cancelled, .failed:
+                return state
+            case .idle, .running:
+                if clock.now >= deadline { return state }
+                try await Task.sleep(for: .milliseconds(10))
+            }
         }
     }
 }
