@@ -2080,9 +2080,6 @@ struct UnprintedMaterialRowTests {
         case "inherited": second = variant(inherited: true)
         // The marker follows `lotFileNorm` while the title follows `lotFile`.
         case "sameLot": second = variant(lotFileNorm: "62D430X")
-        // The chip follows the anchor while a class row's title is its class.
-        case "provenance": second = variant(anchor: "centralFileClass", lotFile: nil,
-                                            lotFileNorm: nil, decimalClass: "Lot 62 D 430")
         default: second = variant()
         }
         let record = try #require(CollectionAuthorityStore.shared?.collections.first,
@@ -2091,7 +2088,21 @@ struct UnprintedMaterialRowTests {
         // marker cannot differ from its partner's by accident.
         let note: ParsedSourceNote? = component == "sameLot"
             ? .lotFile(recordGroup: "RG-59", lotNumber: "62 D 430", fileIdentifier: nil) : nil
-        let pointers = SourceExplorerView.UnprintedPointer.list([first, second], sourceNote: note) {
+        // The chip follows the anchor and the class, while a class row's title is its class: a decimal
+        // class row beside a row of another anchor printed as that class. Until decision 191 the
+        // class row here was `Lot 62 D 430`, labelled like the lot; a class that opens with a letter
+        // is a Subject-Numeric file since then, whose chip is the volumes' as a lot's is, so that pair
+        // no longer differed in its chip.
+        let pair = component == "provenance"
+            ? [ExternalCitation(anchor: "centralFileClass", repository: "Department of State",
+                                collection: nil, lotFile: nil, lotFileNorm: nil, fileId: nil,
+                                inherited: false, rawText: "763.72", noteOrdinal: 0,
+                                decimalClass: "763.72", noteLabel: "1", citationIndex: 0),
+               ExternalCitation(anchor: "presidentialLibrary", repository: nil, collection: nil,
+                                lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
+                                rawText: "763.72", noteOrdinal: 0, noteLabel: "1", citationIndex: 1)]
+            : [first, second]
+        let pointers = SourceExplorerView.UnprintedPointer.list(pair, sourceNote: note) {
             component == "record" && $0.citationIndex == 1 ? record : nil
         }
         let printed = pointers.map(Self.printed)
