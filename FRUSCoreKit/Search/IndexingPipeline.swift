@@ -578,7 +578,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         under its wrapper where it prints a source note of its own (`ownFieldNodes(of:)`, #1854); each
 ///         document's linked terms, `term_mentions` (decision 172), with the parts of the document
 ///         that link each, `parts` (decision 188); a `terms` row for each spelling of a term-list item
-///         (decision 189); and the page each division begins
+///         (decision 189); on an edge resolved from a page, the page and how, `cited_page_id` and
+///         `page_resolution` (decision 190); and the page each division begins
 ///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
 ///         See the v76 note
 public actor IndexingPipeline {
@@ -1644,7 +1645,8 @@ public actor IndexingPipeline {
     ///     d372) from 6 rows citing it to 162.
     ///   - **The printed form is classified at parse time** (``PageReferenceForm``,
     ///     `collectDocumentRefs`), from the reference's siblings, and carried to the store pass with
-    ///     the hint; neither is stored.
+    ///     the hint; neither is stored. (From 76 the outcome is: the page cited and how the document
+    ///     was chosen, decision 190.)
     ///   - **A page written with its own volume's prefix** (`frus1950v06#pg_N` inside
     ///     `frus1950v06`) is resolved by the same-volume pass, which required a `NULL`
     ///     `target_volume_id`: 46 rows at version 70, all 46 resolving.
@@ -1759,6 +1761,17 @@ public actor IndexingPipeline {
     ///     `term_mentions` rows that named no row all name one. `volume-annotations-index.json`
     ///     counts each volume's terms, so it moves in those 31 volumes (and 14 documents gain
     ///     `abbreviations`, in 6); the page map and the edge index do not.
+    ///   - **How a page reference was resolved** (decision 190, CR's EDI-2): the two page passes
+    ///     store, beside the document, the page cited (`cross_references.cited_page_id`) and how the
+    ///     document was chosen (`page_resolution`, ``PageSpanResolver/PageResolution``: `one`,
+    ///     `range`, `number`, `day`, `first`), from ``PageSpanResolver/citedDocumentResolution(among:facts:citing:)``
+    ///     and its rule-C twin, which each `citedDocument` now forwards to; a row left on its page
+    ///     has neither. So a collection's *Documents cited, not included* can tell the editors'
+    ///     citations from the index's choices. On a full index built as the app builds it: of the
+    ///     same volume's page references, 57,531 resolve (43,947 one, 11 number, 5,262 day, 8,311
+    ///     first) and 170 stay; of another volume's, 29,391 resolve (21,076 one, 1,954 range ends,
+    ///     3 number, 2,177 day, 4,181 first) and 19,213 stay. Every row is the one the app's own
+    ///     census index of 2026-11-26, built without the columns, holds, in every column they share.
     ///   - **Where each term is linked** (decision 188, CR's reading of the block): `parts`, the parts
     ///     of the document that link the term OR'd together (``TermMentionParts``: text 1, heading 2,
     ///     footnote 4, source note 8, `@ana` 16), which the walk carries down
@@ -8936,6 +8949,13 @@ public actor IndexingPipeline {
         // marks unresolvable, so the graph/analytics exclude them and the reading view degrades
         // them. NOT NULL + DEFAULT 0 is legal in ADD COLUMN because a default is supplied.
         try? exec("ALTER TABLE cross_references ADD COLUMN is_broken INTEGER NOT NULL DEFAULT 0")
+        // Decision 190, index version 76: on an edge a page pass resolved to one document, the page
+        // it cited (`pg_N`, in `target_volume_id` where that is set, else the source volume) and how
+        // the document was chosen (`PageSpanResolver.PageResolution`: `one`, `range`, `number`,
+        // `day`, `first`). Both NULL on every other row, a page the passes left among them. Nothing
+        // that reads the table before 76 selects them.
+        try? exec("ALTER TABLE cross_references ADD COLUMN cited_page_id TEXT")
+        try? exec("ALTER TABLE cross_references ADD COLUMN page_resolution TEXT")
         try exec("""
             CREATE TABLE IF NOT EXISTS page_ranges (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11100,13 +11120,13 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(findStmt) }
         sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
 
-        var toResolve: [(rowid: Int64, pageNum: Int)] = []
+        var toResolve: [(rowid: Int64, pageId: String, pageNum: Int)] = []
         while sqlite3_step(findStmt) == SQLITE_ROW {
             let rowid = sqlite3_column_int64(findStmt, 0)
             guard let pageId = auxColumnString(findStmt, 1) else { continue }
             // Strip the "pg_" prefix to extract the arabic page number.
             guard let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
-            toResolve.append((rowid: rowid, pageNum: pageNum))
+            toResolve.append((rowid: rowid, pageId: pageId, pageNum: pageNum))
         }
         guard !toResolve.isEmpty else { return }
 
@@ -11142,7 +11162,11 @@ public actor IndexingPipeline {
                                               precision: auxColumnString(factsStmt, 3))
         }
 
-        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        // Decision 190: the page it cited and how the document was chosen go with the document.
+        let updateSQL = """
+            UPDATE cross_references SET target_document_id = ?, cited_page_id = ?, page_resolution = ?
+            WHERE rowid = ?
+            """
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
@@ -11150,7 +11174,7 @@ public actor IndexingPipeline {
         // One lookup per distinct page: a volume's references cite the same pages again and again.
         // Which of the page's documents a reference means is its own (#1509).
         var claims: [Int: PageSpanResolver.PageClaimants?] = [:]
-        for (rowid, pageNum) in toResolve {
+        for (rowid, pageId, pageNum) in toResolve {
             let claimants: PageSpanResolver.PageClaimants?
             if let known = claims[pageNum] {
                 claimants = known
@@ -11159,12 +11183,14 @@ public actor IndexingPipeline {
                 claims[pageNum] = claimants
             }
             guard let claimants else { continue }
-            let docId = PageSpanResolver.citedDocument(among: claimants, facts: facts,
-                                                       citing: citing[rowid])
+            let (docId, resolution) = PageSpanResolver.citedDocumentResolution(
+                among: claimants, facts: facts, citing: citing[rowid])
 
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_int64(updateStmt, 2, rowid)
+            sqlite3_bind_text(updateStmt, 2, pageId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(updateStmt, 3, resolution.rawValue, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 4, rowid)
             sqlite3_step(updateStmt)
             resolvedCount += 1
         }
@@ -11213,30 +11239,36 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(findStmt) }
         sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
 
-        var toResolve: [(rowid: Int64, targetVolumeId: String, pageNum: Int)] = []
+        var toResolve: [(rowid: Int64, targetVolumeId: String, pageId: String, pageNum: Int)] = []
         while sqlite3_step(findStmt) == SQLITE_ROW {
             let rowid = sqlite3_column_int64(findStmt, 0)
             guard let targetVolumeId = auxColumnString(findStmt, 1),
                   let pageId = auxColumnString(findStmt, 2),
                   let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
-            toResolve.append((rowid: rowid, targetVolumeId: targetVolumeId, pageNum: pageNum))
+            toResolve.append((rowid: rowid, targetVolumeId: targetVolumeId, pageId: pageId, pageNum: pageNum))
         }
         guard !toResolve.isEmpty else { return }
 
-        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        // Decision 190: the page it cited and how the document was chosen go with the document.
+        let updateSQL = """
+            UPDATE cross_references SET target_document_id = ?, cited_page_id = ?, page_resolution = ?
+            WHERE rowid = ?
+            """
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
         var resolvedCount = 0
-        for (rowid, targetVolumeId, pageNum) in toResolve {
+        for (rowid, targetVolumeId, pageId, pageNum) in toResolve {
             // A row with no form was collected by a walk that classified none; it stays a page.
             guard let form = forms[rowid],
-                  let docId = PageSpanResolver.citedDocument(inVolume: targetVolumeId, page: pageNum,
-                                                             form: form, citing: citing[rowid], map: map)
+                  let (docId, resolution) = PageSpanResolver.citedDocumentResolution(
+                      inVolume: targetVolumeId, page: pageNum, form: form, citing: citing[rowid], map: map)
             else { continue }
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_int64(updateStmt, 2, rowid)
+            sqlite3_bind_text(updateStmt, 2, pageId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(updateStmt, 3, resolution.rawValue, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 4, rowid)
             try auxStep(updateStmt)
             resolvedCount += 1
         }

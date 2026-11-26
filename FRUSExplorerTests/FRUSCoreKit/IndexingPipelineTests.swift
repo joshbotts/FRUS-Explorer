@@ -10116,7 +10116,12 @@ struct IndexVersion71Tests {
     struct Stored: Equatable, CustomStringConvertible {
         let target: String
         let isBroken: Bool
+        /// The page a page pass resolved the row from, and how (decision 190, index version 76).
+        var citedPage: String? = nil
+        var resolution: String? = nil
         var description: String { "\(target)\(isBroken ? " (broken)" : "")" }
+        /// The target with the page and the resolution, `-` for none.
+        var resolved: String { "\(target) \(citedPage ?? "-") \(resolution ?? "-")" }
     }
 
     /// The fixture indexed through the pipeline's own store pass, with `map` and `broken` as its
@@ -10147,7 +10152,8 @@ struct IndexVersion71Tests {
         defer { sqlite3_close_v2(db) }
         var stmt: OpaquePointer?
         sqlite3_prepare_v2(db, """
-            SELECT target_volume_id, target_document_id, is_broken FROM cross_references
+            SELECT target_volume_id, target_document_id, is_broken, cited_page_id, page_resolution
+            FROM cross_references
             WHERE source_volume_id = '\(Self.volumeId)' AND source_document_id = 'd1'
             ORDER BY rowid
             """, -1, &stmt, nil)
@@ -10156,7 +10162,9 @@ struct IndexVersion71Tests {
         while sqlite3_step(stmt) == SQLITE_ROW {
             let volume = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "-"
             rows.append(Stored(target: "\(volume)/\(String(cString: sqlite3_column_text(stmt, 1)))",
-                               isBroken: sqlite3_column_int(stmt, 2) != 0))
+                               isBroken: sqlite3_column_int(stmt, 2) != 0,
+                               citedPage: sqlite3_column_text(stmt, 3).map { String(cString: $0) },
+                               resolution: sqlite3_column_text(stmt, 4).map { String(cString: $0) }))
         }
         return rows
     }
@@ -10170,6 +10178,25 @@ struct IndexVersion71Tests {
         let rows = try await index(map: try map())
         #expect(rows.map(\.target) == Self.stored, "stored \(rows)")
         #expect(rows.allSatisfy { !$0.isBroken })
+    }
+
+    @Test("Each edge a page pass resolves keeps the page it cited and how it was resolved; a page left on the volume keeps neither (decision 190)")
+    func resolvedEdgesKeepTheirPage() async throws {
+        let rows = try await index(map: try map())
+        #expect(rows.map(\.resolved) == [
+            "volB/d1 pg_5 one",       // p. 5 names one document
+            "volB/d2 pg_7 range",     // pp. 7–8: both ends name Document 2
+            "volB/d2 pg_8 range",
+            "volB/pg_12 - -",         // a range across documents, "ff.", a page naming nothing
+            "volB/pg_13 - -",
+            "volB/pg_5 - -",
+            "volB/pg_99 - -",
+            "volB/d3 pg_10 first",    // two begin on p. 10, and no note says which
+            "-/d1 pg_2 one",          // the volume's own page: the same-volume pass
+            "volA/d1 pg_2 one",
+            "volC/pg_4 - -",          // a volume the map does not hold
+            "volB/d4 pg_10 day",      // the note names July 2
+        ], "stored \(rows.map(\.resolved))")
     }
 
     @Test("With no map, every page of another volume stays on the volume, and the volume's own pages resolve")
@@ -10663,6 +10690,61 @@ struct IndexVersion76Tests {
             try await pipeline.indexVolume("frus1946v06")
             #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
                     == ["d2 t_Sov1 16"])
+        }
+    }
+
+    @Test("A page of the volume that two documents begin on keeps the page, and how its note settled which: by day, by number, or the first (decision 190)")
+    func sameVolumePageKeepsItsResolution() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // Documents 2 (July 1) and 3 (July 2) both begin on p. 7. Document 1 cites p. 7 in its
+            // text, where no note says which; in a note naming July 2; and in a note naming document
+            // 3; it cites its own p. 5, which names it alone, and p. 99, which names nothing.
+            let day = { (iso: String) in
+                "frus:doc-dateTime-min=\"\(iso)T00:00:00-05:00\" frus:doc-dateTime-max=\"\(iso)T23:59:59-05:00\""
+            }
+            let documents = [
+                """
+                <div type="document" xml:id="d1" n="1" \(day("1945-06-30"))><pb n="5" xml:id="pg_5"/><head>1. Report</head>
+                  <p>See <ref target="#pg_7">p. 7</ref>, <ref target="#pg_5">p. 5</ref> and <ref target="#pg_99">p. 99</ref>.<note n="1" xml:id="d1fn1">For the letter of July 2, see <ref target="#pg_7">p. 7</ref>.</note><note n="2" xml:id="d1fn2">Printed as document 3, <ref target="#pg_7">p. 7</ref>.</note></p>
+                </div>
+                """,
+                """
+                <div type="document" xml:id="d2" n="2" \(day("1945-07-01"))><pb n="7" xml:id="pg_7"/><head>2. Telegram</head><p>Sent.</p></div>
+                """,
+                """
+                <div type="document" xml:id="d3" n="3" \(day("1945-07-02"))><head>3. Letter</head><p>Received.</p></div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1945v99", documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1945v99.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1945v99")
+
+            var db: OpaquePointer?
+            guard sqlite3_open_v2(dir.appendingPathComponent("test.sqlite").path, &db, SQLITE_OPEN_READONLY, nil)
+                    == SQLITE_OK, let db else {
+                Issue.record("the test index did not open")
+                return
+            }
+            defer { sqlite3_close_v2(db) }
+            var stmt: OpaquePointer?
+            sqlite3_prepare_v2(db, """
+                SELECT target_document_id, cited_page_id, page_resolution FROM cross_references
+                WHERE source_volume_id = 'frus1945v99' AND source_document_id = 'd1' ORDER BY rowid
+                """, -1, &stmt, nil)
+            defer { sqlite3_finalize(stmt) }
+            var rows: [String] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let text = { (column: Int32) in sqlite3_column_text(stmt, column).map { String(cString: $0) } ?? "-" }
+                rows.append("\(text(0)) \(text(1)) \(text(2))")
+            }
+            #expect(rows == [
+                "d2 pg_7 first",      // in the text: the first of the two
+                "d1 pg_5 one",
+                "pg_99 - -",          // a page naming nothing keeps its page, and neither value
+                "d3 pg_7 day",
+                "d3 pg_7 number",
+            ])
         }
     }
 

@@ -84,6 +84,11 @@ import Foundation
 ///          C over a ``CitedPageMap``, which the indexer's store pass and `ResolvedEdgeIndexGenerator`
 ///          both call; ``citedDocument(among:facts:citing:)`` has an overload over document ids,
 ///          which the claimants overload forwards to.
+///   2.4 — 2026-11-26 (decision 190, index version 76): ``PageResolution``, how a page reference
+///          came to name its document, and the `…Resolution` functions that return it with the
+///          document, which the indexer's two page passes store beside the page cited. Each
+///          `citedDocument` forwards to its `…Resolution` twin, so every caller's document is the
+///          one it was.
 public enum PageSpanResolver {
 
     // MARK: - DocumentPages
@@ -316,7 +321,37 @@ public enum PageSpanResolver {
     public static func citedDocument(among claimants: PageClaimants,
                                      facts: [String: CitedDocumentFacts],
                                      citing: PageCitationHint?) -> String {
-        citedDocument(among: claimants.documents.map(\.documentId), facts: facts, citing: citing)
+        citedDocumentResolution(among: claimants, facts: facts, citing: citing).documentId
+    }
+
+    /// How a page reference came to name the one document stored for it (decision 190, index
+    /// version 76): `cross_references.page_resolution`, beside the page it cited. Only the first
+    /// says the editors' page did not settle the document: the index chose it.
+    public enum PageResolution: String, Sendable, Equatable {
+        /// The page names one document.
+        case one
+        /// A range whose two end pages each name the same one document (a page of another volume,
+        /// rule C).
+        case range
+        /// The page names several, and the reference's note names one's printed number.
+        case number
+        /// The page names several, and the reference's note names one's day.
+        case day
+        /// The page names several and the note names none of them, or there is no note: the first
+        /// in source order, the one at the top of the page.
+        case first
+    }
+
+    /// ``citedDocument(among:facts:citing:)``, and how it chose (decision 190).
+    ///
+    /// - Parameters: As ``citedDocument(among:facts:citing:)``.
+    /// - Returns: The document, and ``PageResolution/one``, ``PageResolution/number``,
+    ///   ``PageResolution/day`` or ``PageResolution/first``.
+    public static func citedDocumentResolution(among claimants: PageClaimants,
+                                               facts: [String: CitedDocumentFacts],
+                                               citing: PageCitationHint?)
+        -> (documentId: String, resolution: PageResolution) {
+        citedDocumentResolution(among: claimants.documents.map(\.documentId), facts: facts, citing: citing)
     }
 
     /// ``citedDocument(among:facts:citing:)`` over the documents' ids alone, which is all the rule
@@ -330,19 +365,33 @@ public enum PageSpanResolver {
     public static func citedDocument(among ids: [String],
                                      facts: [String: CitedDocumentFacts],
                                      citing: PageCitationHint?) -> String {
-        guard ids.count > 1, let citing else { return ids[0] }
+        citedDocumentResolution(among: ids, facts: facts, citing: citing).documentId
+    }
+
+    /// ``citedDocument(among:facts:citing:)`` over the documents' ids, and how it chose (decision
+    /// 190): the rule itself, which every `citedDocument` reaches.
+    ///
+    /// - Parameters: As ``citedDocument(among:facts:citing:)``.
+    /// - Returns: The document, and ``PageResolution/one``, ``PageResolution/number``,
+    ///   ``PageResolution/day`` or ``PageResolution/first``.
+    public static func citedDocumentResolution(among ids: [String],
+                                               facts: [String: CitedDocumentFacts],
+                                               citing: PageCitationHint?)
+        -> (documentId: String, resolution: PageResolution) {
+        guard ids.count > 1 else { return (ids[0], .one) }
+        guard let citing else { return (ids[0], .first) }
         let numbered = ids.filter { id in
             guard let number = facts[id]?.printedNumber?.lowercased() else { return false }
             return citing.documentNumbers.contains { $0.lowercased() == number }
         }
-        if numbered.count == 1 { return numbered[0] }
+        if numbered.count == 1 { return (numbered[0], .number) }
         if let dated = ids.first(where: { id in
             guard let day = facts[id]?.day else { return false }
             return citing.days.contains { $0.names(day) }
         }) {
-            return dated
+            return (dated, .day)
         }
-        return ids[0]
+        return (ids[0], .first)
     }
 
     // MARK: - A page of another volume (A18b, rule C)
@@ -379,19 +428,34 @@ public enum PageSpanResolver {
     ///   - map: The bundled map (``CitedPageMap``).
     public static func citedDocument(inVolume volumeId: String, page: Int, form: PageReferenceForm,
                                      citing: PageCitationHint?, map: CitedPageMap) -> String? {
+        citedDocumentResolution(inVolume: volumeId, page: page, form: form, citing: citing, map: map)?
+            .documentId
+    }
+
+    /// ``citedDocument(inVolume:page:form:citing:map:)``, and how it chose (decision 190): rule C
+    /// itself, which the store pass calls to keep the choice and the generator reaches through
+    /// ``citedDocument(inVolume:page:form:citing:map:)``.
+    ///
+    /// - Parameters: As ``citedDocument(inVolume:page:form:citing:map:)``.
+    /// - Returns: The document and how it was chosen, ``PageResolution/range`` for a range, or
+    ///   `nil` where the reference stays a reference to the volume.
+    public static func citedDocumentResolution(inVolume volumeId: String, page: Int,
+                                               form: PageReferenceForm, citing: PageCitationHint?,
+                                               map: CitedPageMap)
+        -> (documentId: String, resolution: PageResolution)? {
         switch form {
         case .andFollowing:
             return nil
         case .single:
             guard let entry = map.entry(volumeId: volumeId, page: page) else { return nil }
-            return citedDocument(among: entry.documentIds,
-                                 facts: map.facts(volumeId: volumeId, documentIds: entry.documentIds),
-                                 citing: citing)
+            return citedDocumentResolution(among: entry.documentIds,
+                                           facts: map.facts(volumeId: volumeId, documentIds: entry.documentIds),
+                                           citing: citing)
         case .rangeStart(let other), .rangeEnd(let other):
             guard let here = map.entry(volumeId: volumeId, page: page),
                   let there = map.entry(volumeId: volumeId, page: other),
                   here.documentIds.count == 1, there.documentIds == here.documentIds else { return nil }
-            return here.documentIds[0]
+            return (here.documentIds[0], .range)
         }
     }
 

@@ -476,6 +476,8 @@ first-appearance table, or read `date_iso_max` beside `date_iso`.
 | `is_broken` | 1 when corpus-wide validation found the target unresolvable. **Filter these out of every count.** |
 | `reference_type` | `footnote` or `editorialNote`. **Do not trust this to separate body text from footnotes** — see [§7.3](#73-reference_type-defaults-body-references-to-footnote). |
 | `context` | Truncated surrounding text, useful for reading an edge rather than counting it. |
+| `cited_page_id` | From index version 76: on a row the index resolved from a printed page to one document, the page the reference cited, `pg_N`, in `target_volume_id`'s volume where that is set, else the citing volume. `NULL` on every other row, a reference left on its page anchor among them. |
+| `page_resolution` | From index version 76: how that row's document was chosen. `one`: the page names one document. `range`: a range in another volume whose two end pages name the same one. `number`, `day`: the page names several, and the reference's note names this one's printed number or its day. `first`: the page names several and the note names none of them, or the reference sits in no note, so the index took the first, the one at the top of the page. **Only `first` is the index's choice rather than the editors'**: leave it out, or say so, wherever a count means what the editors cited. `NULL` where `cited_page_id` is. |
 
 **`page_ranges`** — one row per page break inside a document, and, from index version 61, one
 more per document with `is_start = 1`: the page it begins on, which is the last page break before
@@ -1070,7 +1072,11 @@ Add `AND target_document_id NOT GLOB 'pg_*'` to count documents alone: before in
 every one of the query's top 25 rows over a full library was a page anchor of another volume
 (`frus1941v01` / `pg_367`, the Atlantic Charter's page, led with 155), since such a reference was
 never resolved; from 71 the rows a single page or a range within one document cites name the
-document, and the anchors left are "ff." pages and ranges across documents (§4.3).
+document, and the anchors left are "ff." pages and ranges across documents (§4.3). From index
+version 76 add `AND (page_resolution IS NULL OR page_resolution <> 'first')` to count only what
+the editors cited: a page that names several documents, in a reference whose note names none of
+them, was given to the first on the page by the index, not by the editors (§4.3's
+`page_resolution`).
 
 ### 6.7 A person's footprint
 
@@ -3427,7 +3433,10 @@ terms are here because they appear in the outputs.
   that 114 of those rows carry a marking (114,244 rows in all). §4.3 gains `term_mentions`, each
   document's linked terms with the parts of the document that link each (498,757 rows for 113,714
   documents in 312 volumes, a quarter of them linked only in notes; decision 188), `terms` a row for
-  each spelling of an entry that lists two or more (66,203 rows → 66,426; decision 189), and
+  each spelling of an entry that lists two or more (66,203 rows → 66,426; decision 189), §4.3's
+  `cross_references` `cited_page_id` and `page_resolution`, the page an edge resolved from a page
+  cited and how the document was chosen, `first` marking the index's own choice (decision 190;
+  §6.6 shows how to leave those out), and
   `division_start_pages`, the page each division begins on (24,009 rows in 552 volumes), which no
   `page_ranges` row holds where the break falls between two divisions. Measured on two full
   indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 75 and at 76: every other table
