@@ -57,6 +57,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///   1.6 — index version 69: the grain caveat says a designator with no number is grouped
 ///          under its category alone (`archival.export.caveat.grain.v2`)
 ///   1.7 — 2026-11-12 (FRUS Explorer Light, S24c): moved into FRUSCoreKit, public
+///   1.8 — 2026-11-26 (L26, decision 191): the Flows export's Scope caveat names the Subject-Numeric file
+///          beside the decimal number
 public enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -297,7 +299,7 @@ public enum ArchivalAnalyticsExport {
                     Int64(facts.referencesFound), Int64(facts.referencesJoined)),
                 String(format: String(
                     localized: "archival.export.caveat.flows.unprinted.scope %lld %lld",
-                    defaultValue: "Scope: State Department lot files, presidential-library collections, and central-file numbers. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document\u{2019}s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row."),
+                    defaultValue: "Scope: State Department lot files, presidential-library collections, and central-file numbers, decimal and, from February 1963, Subject-Numeric. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document\u{2019}s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row."),
                     Int64(data.volumesWithEdges), Int64(data.volumesScanned)),
                 String(format: String(
                     localized: "archival.export.caveat.flows.unprinted.ibid %@",

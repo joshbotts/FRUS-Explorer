@@ -171,6 +171,24 @@ struct SourceExplorerProvenanceTests {
             for: citation(anchor: "presidentialLibrary")) == .frusText)
     }
 
+    /// Decision 191 (index version 76): a subject-numeric class shares the class anchor and is the
+    /// volumes', since no bundled schedule composed it, and the Central Foreign Policy File is named
+    /// by the footnote as a lot is. The schedule's chip stays with the decimal classes.
+    @Test("A subject-numeric class and the Central Foreign Policy File are FRUS's; a decimal class the schedule's")
+    func postwarCentralFilesAreFRUSText() {
+        func citation(anchor: String, decimalClass: String?) -> ExternalCitation {
+            ExternalCitation(anchor: anchor, repository: "Department of State", collection: nil,
+                             lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
+                             rawText: "raw", noteOrdinal: 1, decimalClass: decimalClass)
+        }
+        #expect(SourceExplorerProvenance.unprintedPointerSource(
+            for: citation(anchor: "centralFileClass", decimalClass: "POL 27 VIET S")) == .frusText)
+        #expect(SourceExplorerProvenance.unprintedPointerSource(
+            for: citation(anchor: "centralFileClass", decimalClass: "763.72")) == .stateDeptSchedule)
+        #expect(SourceExplorerProvenance.unprintedPointerSource(
+            for: citation(anchor: "centralForeignPolicyFile", decimalClass: nil)) == .frusText)
+    }
+
     /// `anchor` is a `String`, so an unrecognised value is reachable in a way an enum would forbid.
     @Test("An unrecognised anchor falls to the volumes, not to the schedule")
     func anUnknownAnchorDefaultsToFRUSText() {
@@ -193,9 +211,16 @@ struct SourceExplorerProvenanceTests {
         let coverage = try #require(root["coverage"] as? [String: Any])
         let lot = (coverage["lotReferences"] as? Int) ?? 0
         let library = (coverage["libraryReferences"] as? Int) ?? 0
-        let decimal = (coverage["decimalReferences"] as? Int) ?? 0
+        let classes = (coverage["decimalReferences"] as? Int) ?? 0
+        // Decision 191, since the artifact built for index version 76: `decimalReferences` counts
+        // the subject-numeric classes with the decimal ones, and those and the Central Foreign
+        // Policy File reach the volumes' arm.
+        let subjectNumeric = (coverage["subjectNumericReferences"] as? Int) ?? 0
         #expect(lot + library > 0, "no lot or library references — the .frusText arm is unreachable")
-        #expect(decimal > 0, "no decimal references — the .stateDeptSchedule arm is unreachable")
+        #expect(classes - subjectNumeric > 0, "no decimal references — the .stateDeptSchedule arm is unreachable")
+        #expect(subjectNumeric > 0, "no subject-numeric references — a class row never reaches the .frusText arm")
+        #expect((coverage["foreignPolicyFileReferences"] as? Int ?? 0) > 0,
+                "no Central Foreign Policy File references — its anchor is unreachable")
     }
 
     #if !SWIFT_PACKAGE // every scan of the twins' source is the app's (its CLAUDE.md)

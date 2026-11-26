@@ -599,6 +599,9 @@ public struct ArchiveCitation: Sendable {
 ///          `NARALookupAnalyzer`, which moved into FRUSCoreKit, a module apart from this one
 ///   1.21 — 2026-11-23 (FRUS Explorer Light, S30a): `withoutClosingStop(_:)` public, unchanged, for
 ///          `TripPacketBuilder.centralFileDesignation(_:)`, which moved into FRUSCoreKit
+///   1.22 — 2026-11-26 (decision 191, index version 76): `cfpfFilmNumber(in:)`, the film-number
+///          reader the CFPF case always used, public and static, for the footnote grammar's
+///          Central Foreign Policy File anchor; unchanged
 public struct SourceNoteParser {
 
     public init() {}
@@ -2217,12 +2220,23 @@ public struct SourceNoteParser {
     ///
     /// Examples: `P840114–1808`, `D740218–0840`, `N760031–0012`
     private func extractCFPFIdentifier(from text: String) -> String? {
-        let pattern = #"\b([PDN]\d{6}[–\-]\d{4})\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
+        Self.cfpfFilmNumber(in: text)
+    }
+
+    /// The first CFPF film number in `text` — a P-, D- or N-Reel number, `P840114–1808`,
+    /// `D740218–0840`, `N760031–0012` — or `nil`. The rule a source note's `.cfpfFile` case has
+    /// always read, public so that the footnote grammar's Central Foreign Policy File anchor reads
+    /// a film number by the same rule (decision 191).
+    public static func cfpfFilmNumber(in text: String) -> String? {
+        guard let regex = cfpfFilmNumberRegex,
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let r = Range(match.range(at: 1), in: text) else { return nil }
         return String(text[r])
     }
+
+    /// The film-number pattern ``cfpfFilmNumber(in:)`` reads.
+    private static let cfpfFilmNumberRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\b([PDN]\d{6}[–\-]\d{4})\b"#)
 
     /// Determines the record group for a lot file based on its letter designator.
     ///

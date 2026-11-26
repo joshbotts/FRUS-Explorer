@@ -104,6 +104,9 @@ import AppKit
 ///           step replaces it (`resolvingAgain()`), a cancelled load writes nothing and asks NARA nothing, the
 ///           key check and the lookup's evidence come ahead of the sequence, and Refresh re-runs the keyed
 ///           task (`refreshGeneration`). Mirrors SourceExplorerView 1.19.
+///   1.19 — 2026-11-26 (L26, decision 191): the toolbar's Add to Archives Visit menu counts and offers the
+///           rows the packet takes (`packetPointers`), and is disabled where it would offer none. Mirrors
+///           SourceExplorerView 1.21.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -223,6 +226,8 @@ struct MacSourceExplorerView: View {
     /// `SourceExplorerResolution.UnprintedPointer`, built once for both twins, so the two surfaces
     /// cannot resolve a pointer differently).
     private var unprintedPointers: [SourceExplorerView.UnprintedPointer] { resolution?.unprintedPointers ?? [] }
+    /// The rows the packet takes, which the Add to Archives Visit menu counts (decision 191).
+    private var packetPointers: [SourceExplorerView.UnprintedPointer] { resolution?.packetPointers ?? [] }
     /// The Add-to-Archive-Visit picker (Phase 3) — presented from the toolbar's three-way menu.
     @State private var planPickerRequest: PlanPickerRequest?
 
@@ -326,7 +331,7 @@ struct MacSourceExplorerView: View {
                                   systemImage: "archivebox")
                         }
                     }
-                    if !unprintedPointers.isEmpty {
+                    if !packetPointers.isEmpty {
                         Button {
                             presentPlanPicker(volumeId: volumeId, documentId: docId,
                                               includeSource: false, includeExternalRefs: true)
@@ -334,11 +339,11 @@ struct MacSourceExplorerView: View {
                             Label(String(format: String(
                                 localized: "source.explorer.addVisit.refs %lld",
                                 defaultValue: "Add unprinted references (%lld)"),
-                                Int64(unprintedPointers.count)),
+                                Int64(packetPointers.count)),
                                   systemImage: "arrow.up.right")
                         }
                     }
-                    if hasSourceNote && !unprintedPointers.isEmpty {
+                    if hasSourceNote && !packetPointers.isEmpty {
                         Button {
                             presentPlanPicker(volumeId: volumeId, documentId: docId,
                                               includeSource: true, includeExternalRefs: true)
@@ -357,7 +362,7 @@ struct MacSourceExplorerView: View {
             .help(String(localized: "source.explorer.addVisit.help",
                          defaultValue: "Seed an Archives Visit from this document’s archival claims"))
             .disabled(documentVolumeId == nil || documentId == nil
-                      || (!hasSourceNote && unprintedPointers.isEmpty))
+                      || (!hasSourceNote && packetPointers.isEmpty))
         }
     }
 
@@ -459,7 +464,7 @@ struct MacSourceExplorerView: View {
                                     .labelStyle(.titleAndIcon)
                             }
                             // P-1: the unit named here is FRUS's own words when the footnote
-                            // pointed at a lot or a library, but a central-file class reached this
+                            // pointed at a lot or a library, but a decimal file class reached this
                             // list only because the State Department's schedule composed it. The
                             // branch is per row — see `SourceExplorerProvenance`.
                             ProvenanceChip(source: SourceExplorerProvenance.unprintedPointerSource(

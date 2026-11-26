@@ -570,22 +570,95 @@ struct ExternalCitationTests {
             """)
     }
 
-    /// Subject-numeric stays out of the table exactly as it stays out of the artifact — one scope
-    /// decision applied in both places, or the two surfaces disagree about the same footnote.
-    @Test("A subject-numeric designator is not indexed as a class")
-    func subjectNumericIsNotIndexed() async throws {
+    /// A subject-numeric file is in the table exactly where it is in the artifact — one rule applied
+    /// in both places, or the two surfaces disagree about the same footnote. Until index version 76
+    /// that rule kept every one out, and this test said so (#784 measured them 87.2% out of
+    /// vocabulary read bare); decision 191 admits a designator the clause places in the Central
+    /// Files, under a lead the source notes read, so the fixture's first note is now a row and the
+    /// test asserts it, beside a second note whose lead (`NCO`) the source notes do not read.
+    @Test("A subject-numeric file the footnote places in the Central Files is indexed as a class")
+    func subjectNumericInTheCentralFilesIsIndexed() async throws {
         try await withTempDir { dir in
             let pipeline = try await index(volumeXML(
                 sourceNote: "Source: Department of State, Central Files, 611.61/5-1052.",
-                footnotes: ["See Department of State, Central Files, POL 27 VIET S/8-1256."]), in: dir)
+                footnotes: ["See Department of State, Central Files, POL 27 VIET S/8-1256.",
+                            "Department of State, Central Files, NCO 10 UN."]), in: dir)
             let classes = try await pipeline
                 .externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
                 .filter { $0.anchor == "centralFileClass" }
-            #expect(classes.isEmpty, """
-                Subject-numeric designators are out of scope by owner decision and #784 measured \
-                them 87.2% out of vocabulary. Indexing one would put a citation in the table that \
-                the bundled artifact refused.
+            #expect(classes.map(\.decimalClass) == ["POL 27 VIET S"], """
+                Decision 191 admits the first note's file and refuses the second's lead, which no \
+                source note is read by: \(classes.map(\.rawText))
                 """)
+            let row = try #require(classes.first)
+            #expect(row.repository == "Department of State")
+            #expect(row.collection == nil)
+            #expect(!row.inherited)
+            #expect(row.noteLabel == "1")
+            #expect(!row.isInPacketChannel, "the packet leaves out the central files")
+        }
+    }
+
+    /// The other half of the rule: no repository named and none inherited, or the White House's
+    /// own Central Files, which a presidential library holds.
+    @Test("A subject-numeric file the footnote places nowhere, or in the White House, is not indexed")
+    func subjectNumericElsewhereIsNotIndexed() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: Department of State, S/S Files: Lot 66 D 95. Secret.",
+                footnotes: ["Ibid., POL 27 VIET S.",
+                            "The memorandum is in the Johnson Library, White House Central Files, PR 8–1."]),
+                in: dir)
+            let classes = try await pipeline
+                .externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
+                .filter { $0.anchor == "centralFileClass" }
+            #expect(classes.isEmpty, "\(classes.map { "\($0.decimalClass ?? "-") ← \($0.rawText)" })")
+        }
+    }
+
+    /// Decision 191's `Ibid.`: one that names a file of its own is that file in its referent's
+    /// Central Files — first in the document, the source note's — and is stored as inherited, the
+    /// disclosure the bare `Ibid.` rows carry. After a lot it is nothing.
+    @Test("An Ibid. naming a subject-numeric file inherits its referent's Central Files")
+    func ibidNamingAFileInheritsTheCentralFiles() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: National Archives, RG 59, Central Files 1964–66, POL 27 VIET S. Secret.",
+                footnotes: ["Ibid., POL 15 VIET S.",
+                            "A copy is in Department of State, S/S Files: Lot 66 D 95.",
+                            "Ibid., POL 7 VIET S."]), in: dir)
+            let rows = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
+            let classes = rows.filter { $0.anchor == "centralFileClass" }
+            #expect(classes.count == 1, "\(classes.map { "\($0.decimalClass ?? "-") ← \($0.rawText)" })")
+            let row = try #require(classes.first)
+            #expect(row.decimalClass?.hasPrefix("POL 15") == true)
+            #expect(row.inherited)
+            #expect(row.noteLabel == "1")
+            #expect(rows.contains { $0.anchor == "lotFile" && $0.lotFileNorm == "66D95" })
+        }
+    }
+
+    /// The third anchor (decision 191): the Department's file from 1973, cited by film number. It
+    /// is joined to no collection — `collection` stays empty so no authority record claims it by
+    /// name — and it labels itself by the file's name, its film number beside it.
+    @Test("A Central Foreign Policy File citation is a row of its own, joined to no collection")
+    func centralForeignPolicyFileIsARow() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await index(volumeXML(
+                sourceNote: "Source: National Archives, RG 59, Central Foreign Policy File, D750001–0001. Secret.",
+                footnotes: ["National Archives, RG 59, Central Foreign Policy File, D780382–0612.",
+                            "Ibid., D780383–0190.",
+                            "Ibid."]), in: dir)
+            let rows = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d1")
+            #expect(rows.map(\.anchor) == Array(repeating: "centralForeignPolicyFile", count: 3))
+            #expect(rows.map(\.fileId) == ["D780382–0612", "D780383–0190", "D780383–0190"])
+            #expect(rows.map(\.inherited) == [false, true, true])
+            #expect(rows.allSatisfy {
+                $0.repository == "Department of State" && $0.collection == nil
+                    && $0.lotFileNorm == nil && $0.decimalClass == nil
+            })
+            #expect(rows.allSatisfy { $0.displayLabel == ExternalCitation.centralForeignPolicyFileName })
+            #expect(rows.allSatisfy { !$0.isInPacketChannel })
         }
     }
 
@@ -613,14 +686,17 @@ struct ExternalCitationTests {
             #expect(citations[1].collection == "National Security File")
             #expect(citations[1].noteOrdinal == 1)
             #expect(citations.allSatisfy { !$0.inherited })
+            #expect(citations.allSatisfy { $0.isInPacketChannel }, "a lot and a library are the packet's")
         }
     }
 
-    /// The Phase 4 sparsity measure, driven over a real fixture index: three documents,
+    /// The Phase 4 sparsity measure, driven over a real fixture index: five documents,
     /// where one carries a lot footnote (counts), one carries ONLY a decimal-class
     /// footnote (must NOT count — the class anchor is outside the packet's channel, and
-    /// counting it would overstate the sparsity the captions caption), and one carries no
-    /// footnotes at all.
+    /// counting it would overstate the sparsity the captions caption), one carries no
+    /// footnotes at all, and, from index version 76 (decision 191), one cites only a
+    /// subject-numeric file and one only the Central Foreign Policy File, the two kinds of
+    /// row the channel leaves out beside the decimal class.
     @Test("externalCitationSparsity counts lot/library documents over all indexed documents")
     func sparsityCountsChannelDocumentsOnly() async throws {
         try await withTempDir { dir in
@@ -641,11 +717,25 @@ struct ExternalCitationTests {
                 <head>A letter</head>
                 <p>Body with no footnotes.</p>
               </div>
+              <div type="document" xml:id="d4" n="4">
+                <note type="source">Source: Department of State, Central Files, 611.41/3–553.</note>
+                <head>A memorandum</head>
+                <p>Body.<note n="1" xml:id="d4fn1">Department of State, Central Files, POL 27 VIET S.</note></p>
+              </div>
+              <div type="document" xml:id="d5" n="5">
+                <note type="source">Source: Department of State, Central Files, 611.41/3–553.</note>
+                <head>A telegram</head>
+                <p>Body.<note n="1" xml:id="d5fn1">National Archives, RG 59, Central Foreign Policy File, D780382–0612.</note></p>
+              </div>
             </body></text></TEI>
             """
             let pipeline = try await index(xml, in: dir)
+            let d4 = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d4")
+            let d5 = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d5")
+            #expect(d4.map(\.anchor) == ["centralFileClass"] && d5.map(\.anchor) == ["centralForeignPolicyFile"],
+                    "fixture guard: d4 and d5 must each hold one row the channel leaves out")
             let measured = try await pipeline.externalCitationSparsity()
-            #expect(measured.indexedDocuments == 3)
+            #expect(measured.indexedDocuments == 5)
             #expect(measured.documentsWithReferences == 1, """
                 Only d1's lot citation is in the packet's channel — d2's class citation is \
                 the anchor the channel excludes, and counting it would report a sparsity the \
@@ -932,10 +1022,19 @@ struct RealTEIFootnoteParityTests {
             var expected: [String: [String]] = [:]
             var scanner = FootnoteCitationScanner()
             var walker = FootnoteIbidGapWalker(admissionVerdict: verdict)
+            // Decision 191: each document's source note seeds an `Ibid.` that names a file of its
+            // own, as the runner and the pipeline seed it.
+            var sourceNotes: [String: String] = [:]
+            for note in DocumentNoteExtractor.extract(fromXML: xml) where !note.documentId.isEmpty {
+                sourceNotes[note.documentId] = note.note
+            }
+            let parser = SourceNoteParser()
             for document in DocumentFootnoteExtractor.extract(fromXML: xml)
             where !document.documentId.isEmpty {
-                scanner.beginDocument()
-                walker.beginDocument()
+                let sourceNote = sourceNotes[document.documentId]
+                let parsed = sourceNote.map { parser.parse($0) }
+                scanner.beginDocument(sourceNote: parsed)
+                walker.beginDocument(sourceNote: parsed, note: sourceNote)
                 var keys: [String] = []
                 for (ordinal, note) in document.footnotes.enumerated() {
                     for citation in scanner.scan(note: note) {
@@ -946,9 +1045,12 @@ struct RealTEIFootnoteParityTests {
                         keys.append("\(ordinal)|class:\(candidate.classKey)|false")
                     }
                     for observation in walker.scan(note: note).observations {
-                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
-                        else { continue }
-                        keys.append("\(ordinal)|class:\(key)|true")
+                        switch observation.outcome {
+                        case let .inheritsAdmittedClass(key, _, _), let .inheritsRepository(key, _):
+                            keys.append("\(ordinal)|class:\(key)|true")
+                        default:
+                            continue
+                        }
                     }
                 }
                 if !keys.isEmpty { expected[document.documentId] = keys }
@@ -1005,6 +1107,8 @@ struct RealTEIFootnoteParityTests {
             return "lot:\(SourceNoteParser.lotFileNorm(lot))|\(citation.inherited)"
         case .presidentialLibrary(let library, let collection, _):
             return "lib:\(library)|\(collection)|\(citation.inherited)"
+        case .cfpfFile(let film):
+            return "cfpf:\(film ?? "")|\(citation.inherited)"
         default:
             return "other"
         }
@@ -1030,6 +1134,9 @@ struct RealTEIFootnoteParityTests {
             result[documentId] = rows.map { row in
                 if let norm = row.lotFileNorm, !norm.isEmpty {
                     return "\(row.noteOrdinal)|lot:\(norm)|\(row.inherited)"
+                }
+                if row.anchor == "centralForeignPolicyFile" {
+                    return "\(row.noteOrdinal)|cfpf:\(row.fileId ?? "")|\(row.inherited)"
                 }
                 return "\(row.noteOrdinal)|lib:\(row.repository ?? "")|\(row.collection ?? "")|\(row.inherited)"
             }
@@ -1251,14 +1358,38 @@ struct DecimalChannelArtifactTests {
         // The TARGET side only. Source keys are the citing document's own class and are not
         // composes-gated — measured on this artifact, `797.00` rides along as a source although
         // country 97 is in no shipped vocabulary — so asserting over them would fail on data the
-        // generator never claimed to admit.
+        // generator never claimed to admit. And the DECIMAL targets only: from the artifact built
+        // for index version 76 the axis holds subject-numeric targets too (decision 191), which no
+        // decimal schedule composes; `subjectNumericTargetsOpenWithALeadTheSourceNotesRead` holds
+        // them to their own vocabulary.
         let orphaned = index.classTargetKeys.filter {
-            !DecimalScheduleComposition.composes($0, classes: classes, countries: countries)
+            !CollectionKeying.isSubjectNumericClass($0)
+                && !DecimalScheduleComposition.composes($0, classes: classes, countries: countries)
         }
         #expect(orphaned.isEmpty, """
             \(orphaned.count) stored class targets no longer compose under the shipped schedule — \
             the vocabulary lost codes this index was built on. First few: \
             \(orphaned.prefix(5).joined(separator: ", "))
+            """)
+    }
+
+    /// The subject-numeric half of the target axis (decision 191, the artifact built for index
+    /// version 76): there are such targets, and each opens with a lead the source-note grammar reads
+    /// a designation by (`CollectionKeying.subjectNumericLead(ofCandidate:)`), the vocabulary the
+    /// harvest admitted them through, as the decimal targets are held to their schedule above.
+    @MainActor
+    @Test("Every subject-numeric target opens with a lead the source notes read")
+    func subjectNumericTargetsOpenWithALeadTheSourceNotesRead() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let subjectNumeric = index.classTargetKeys.filter(CollectionKeying.isSubjectNumericClass)
+        #expect(subjectNumeric.count > 100, """
+            The class axis holds \(subjectNumeric.count) subject-numeric targets. Decision 191 \
+            admits the files of 1963–73; an artifact built without it holds none.
+            """)
+        let unread = subjectNumeric.filter { CollectionKeying.subjectNumericLead(ofCandidate: $0) == nil }
+        #expect(unread.isEmpty, """
+            \(unread.count) subject-numeric targets open with a lead no source note is read by. First \
+            few: \(unread.prefix(5).joined(separator: ", "))
             """)
     }
 
@@ -1642,6 +1773,29 @@ struct UnprintedMaterialRowTests {
         }
     }
 
+    /// What both twins' "Add unprinted references (N)" counts and offers (decision 191): the rows
+    /// the packet takes. Counting the whole list offered the option for a document whose rows were
+    /// all central files, and adding it put nothing in the packet. The kit's names, so the package runs it too.
+    @Test("The Add to Archives Visit menu counts the rows the packet takes")
+    func packetPointersAreTheChannelsRows() {
+        func pointer(_ anchor: String, _ ordinal: Int) -> SourceExplorerResolution.UnprintedPointer {
+            let isLot = anchor == "lotFile"
+            return SourceExplorerResolution.UnprintedPointer(citation: ExternalCitation(
+                anchor: anchor, repository: "Department of State", collection: nil,
+                lotFile: isLot ? "66 D 95" : nil, lotFileNorm: isLot ? "66D95" : nil, fileId: nil,
+                inherited: false, rawText: "clause \(ordinal)", noteOrdinal: ordinal,
+                decimalClass: anchor == "centralFileClass" ? "POL 27 VIET S" : nil),
+                record: nil, sourceNote: nil)
+        }
+        var resolution = SourceExplorerResolution(rawSourceNote: "Source: Department of State, Central Files, POL 27 VIET S.")
+        resolution.unprintedPointers = [pointer("centralFileClass", 0), pointer("lotFile", 1),
+                                        pointer("centralForeignPolicyFile", 2),
+                                        pointer("presidentialLibrary", 3)]
+        #expect(resolution.packetPointers.map(\.citation.anchor) == ["lotFile", "presidentialLibrary"])
+        resolution.unprintedPointers = [pointer("centralFileClass", 0), pointer("centralForeignPolicyFile", 1)]
+        #expect(resolution.packetPointers.isEmpty, "the menu would offer references that add nothing")
+    }
+
     #if !SWIFT_PACKAGE // SourceExplorerView.UnprintedPointer and its twins' source are the app's
     /// The id SwiftUI actually keys the rows on is the pointer's, not the citation's.
     @Test("Every d41 pointer — the id the Source Explorer rows are keyed on — is unique")
@@ -1926,9 +2080,6 @@ struct UnprintedMaterialRowTests {
         case "inherited": second = variant(inherited: true)
         // The marker follows `lotFileNorm` while the title follows `lotFile`.
         case "sameLot": second = variant(lotFileNorm: "62D430X")
-        // The chip follows the anchor while a class row's title is its class.
-        case "provenance": second = variant(anchor: "centralFileClass", lotFile: nil,
-                                            lotFileNorm: nil, decimalClass: "Lot 62 D 430")
         default: second = variant()
         }
         let record = try #require(CollectionAuthorityStore.shared?.collections.first,
@@ -1937,7 +2088,21 @@ struct UnprintedMaterialRowTests {
         // marker cannot differ from its partner's by accident.
         let note: ParsedSourceNote? = component == "sameLot"
             ? .lotFile(recordGroup: "RG-59", lotNumber: "62 D 430", fileIdentifier: nil) : nil
-        let pointers = SourceExplorerView.UnprintedPointer.list([first, second], sourceNote: note) {
+        // The chip follows the anchor and the class, while a class row's title is its class: a decimal
+        // class row beside a row of another anchor printed as that class. Until decision 191 the
+        // class row here was `Lot 62 D 430`, labelled like the lot; a class that opens with a letter
+        // is a Subject-Numeric file since then, whose chip is the volumes' as a lot's is, so that pair
+        // no longer differed in its chip.
+        let pair = component == "provenance"
+            ? [ExternalCitation(anchor: "centralFileClass", repository: "Department of State",
+                                collection: nil, lotFile: nil, lotFileNorm: nil, fileId: nil,
+                                inherited: false, rawText: "763.72", noteOrdinal: 0,
+                                decimalClass: "763.72", noteLabel: "1", citationIndex: 0),
+               ExternalCitation(anchor: "presidentialLibrary", repository: nil, collection: nil,
+                                lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
+                                rawText: "763.72", noteOrdinal: 0, noteLabel: "1", citationIndex: 1)]
+            : [first, second]
+        let pointers = SourceExplorerView.UnprintedPointer.list(pair, sourceNote: note) {
             component == "record" && $0.citationIndex == 1 ? record : nil
         }
         let printed = pointers.map(Self.printed)

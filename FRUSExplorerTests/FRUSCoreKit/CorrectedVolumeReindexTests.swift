@@ -182,4 +182,99 @@ struct CorrectedVolumeReindexTests {
                     "re-indexing one volume scrubbed another's source rows")
         }
     }
+
+    // MARK: - A document a correction adds (#1978)
+
+    /// A volume whose documents each print one word of their own, so a search finds each alone.
+    private func orderedVolumeXML(_ documents: [(id: String, word: String)]) -> String {
+        let divs = documents.enumerated().map { index, document in
+            """
+              <div type="document" xml:id="\(document.id)" n="\(index + 1)">
+                <head>Memorandum \(document.id)</head>
+                <p>The \(document.word) was discussed.</p>
+              </div>
+            """
+        }.joined(separator: "\n")
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xml:id="frus1951v01">
+          <teiHeader><fileDesc><titleStmt><title>frus1951v01</title></titleStmt></fileDesc></teiHeader>
+          <text><body>
+            <div type="compilation" xml:id="ch1">
+        \(divs)
+            </div>
+          </body></text>
+        </TEI>
+        """
+    }
+
+    /// Each document's rowid in `document_cache`, read raw.
+    private func rawRowids(_ dbURL: URL, volumeID: String) -> [String: Int64] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db,
+                              SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+              let db else { return [:] }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, rowid FROM document_cache WHERE volume_id = ?",
+                                 -1, &stmt, nil) == SQLITE_OK else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        sqlite3_bind_text(stmt, 1, volumeID, -1, transient)
+        var rowids: [String: Int64] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let id = sqlite3_column_text(stmt, 0) else { continue }
+            rowids[String(cString: id)] = sqlite3_column_int64(stmt, 1)
+        }
+        return rowids
+    }
+
+    /// A correction that adds a document lists it where its file prints it, not last (#1978).
+    ///
+    /// The store pass's upsert keeps a row's rowid, which the FTS5 tables key on, so a document
+    /// the second pass adds gets a rowid after every other row of the volume. Until index version
+    /// 76 `documents(forVolume:)` listed by rowid, and the added document came last. The test also
+    /// holds what the fix must not move: the rowids of the documents already held, and search.
+    @Test("A document a correction adds lists in its file's place, and the rowids already held stand")
+    func addedDocumentListsInItsFilesOrder() async throws {
+        try await withTempDir { dir in
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let store = try FTS5Store(databaseURL: dbURL)
+            let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                                volumesDirectory: volDir, concurrencyLimit: 2)
+            let file = volDir.appendingPathComponent("frus1951v01.xml")
+
+            try orderedVolumeXML([("d1", "armistice"), ("d2", "blockade"), ("d3", "communique")])
+                .write(to: file, atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1951v01")
+            let before = rawRowids(dbURL, volumeID: "frus1951v01")
+            #expect(before.count == 3, "the fixture indexed \(before.count) documents")
+
+            // The correction: d2a is printed between d2 and the last document.
+            try orderedVolumeXML([("d1", "armistice"), ("d2", "blockade"), ("d2a", "demarche"),
+                                  ("d3", "communique")])
+                .write(to: file, atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1951v01")
+
+            let listed = try await pipeline.documents(forVolume: "frus1951v01").map(\.documentId)
+            #expect(listed == ["d1", "d2", "d2a", "d3"], "the volume listed \(listed)")
+
+            // The added row's rowid is the volume's largest — what made it list last.
+            let after = rawRowids(dbURL, volumeID: "frus1951v01")
+            for id in ["d1", "d2", "d3"] {
+                #expect(after[id] == before[id], "\(id)'s rowid moved from \(before[id] ?? -1) to \(after[id] ?? -1)")
+            }
+            #expect((after["d2a"] ?? 0) > (after.values.filter { $0 != after["d2a"] }.max() ?? .max),
+                    "the fixture no longer gives the added document the last rowid")
+
+            // The FTS5 tables still answer for the documents already held and for the new one.
+            for (id, word) in [("d3", "communique"), ("d2a", "demarche")] {
+                let hits = try await store.search(query: FTS5Query(keywords: [word]), limit: 10, offset: 0)
+                #expect(hits.contains { $0.documentId == id && $0.volumeId == "frus1951v01" },
+                        "a search for \(word) did not find \(id)")
+            }
+        }
+    }
 }

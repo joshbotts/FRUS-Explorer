@@ -10116,7 +10116,12 @@ struct IndexVersion71Tests {
     struct Stored: Equatable, CustomStringConvertible {
         let target: String
         let isBroken: Bool
+        /// The page a page pass resolved the row from, and how (decision 190, index version 76).
+        var citedPage: String? = nil
+        var resolution: String? = nil
         var description: String { "\(target)\(isBroken ? " (broken)" : "")" }
+        /// The target with the page and the resolution, `-` for none.
+        var resolved: String { "\(target) \(citedPage ?? "-") \(resolution ?? "-")" }
     }
 
     /// The fixture indexed through the pipeline's own store pass, with `map` and `broken` as its
@@ -10147,7 +10152,8 @@ struct IndexVersion71Tests {
         defer { sqlite3_close_v2(db) }
         var stmt: OpaquePointer?
         sqlite3_prepare_v2(db, """
-            SELECT target_volume_id, target_document_id, is_broken FROM cross_references
+            SELECT target_volume_id, target_document_id, is_broken, cited_page_id, page_resolution
+            FROM cross_references
             WHERE source_volume_id = '\(Self.volumeId)' AND source_document_id = 'd1'
             ORDER BY rowid
             """, -1, &stmt, nil)
@@ -10156,7 +10162,9 @@ struct IndexVersion71Tests {
         while sqlite3_step(stmt) == SQLITE_ROW {
             let volume = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "-"
             rows.append(Stored(target: "\(volume)/\(String(cString: sqlite3_column_text(stmt, 1)))",
-                               isBroken: sqlite3_column_int(stmt, 2) != 0))
+                               isBroken: sqlite3_column_int(stmt, 2) != 0,
+                               citedPage: sqlite3_column_text(stmt, 3).map { String(cString: $0) },
+                               resolution: sqlite3_column_text(stmt, 4).map { String(cString: $0) }))
         }
         return rows
     }
@@ -10170,6 +10178,25 @@ struct IndexVersion71Tests {
         let rows = try await index(map: try map())
         #expect(rows.map(\.target) == Self.stored, "stored \(rows)")
         #expect(rows.allSatisfy { !$0.isBroken })
+    }
+
+    @Test("Each edge a page pass resolves keeps the page it cited and how it was resolved; a page left on the volume keeps neither (decision 190)")
+    func resolvedEdgesKeepTheirPage() async throws {
+        let rows = try await index(map: try map())
+        #expect(rows.map(\.resolved) == [
+            "volB/d1 pg_5 one",       // p. 5 names one document
+            "volB/d2 pg_7 range",     // pp. 7–8: both ends name Document 2
+            "volB/d2 pg_8 range",
+            "volB/pg_12 - -",         // a range across documents, "ff.", a page naming nothing
+            "volB/pg_13 - -",
+            "volB/pg_5 - -",
+            "volB/pg_99 - -",
+            "volB/d3 pg_10 first",    // two begin on p. 10, and no note says which
+            "-/d1 pg_2 one",          // the volume's own page: the same-volume pass
+            "volA/d1 pg_2 one",
+            "volC/pg_4 - -",          // a volume the map does not hold
+            "volB/d4 pg_10 day",      // the note names July 2
+        ], "stored \(rows.map(\.resolved))")
     }
 
     @Test("With no map, every page of another volume stays on the volume, and the volume's own pages resolve")
@@ -10200,6 +10227,41 @@ struct IndexVersion71Tests {
     @Test("The index version is at least 71")
     func indexVersionCoversTheBump() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 71)
+    }
+}
+
+// MARK: - SubseriesOrderTests (T1, L26)
+
+/// T1 (plan of record row L26): a list of subseries newest first has one order, whatever order its
+/// input comes in, which Browse and both Volumes & Storage hubs sort by
+/// (`SubseriesGroup.newestFirst(_:)`). They built their lists over a `Dictionary` and a `Set`, whose
+/// order differs from launch to launch, and sorted by the start year alone.
+@Suite("A list of subseries newest first has one order, whatever its input's (T1)")
+struct SubseriesOrderTests {
+
+    /// The catalogue's tied years among their neighbours, in the one order: the span before the
+    /// single year it begins with.
+    static let newestFirst = [
+        "1952-54", "1951-54", "1951", "1950-55", "1950", "1949",
+        "1945-50", "1945", "1941-43", "1941", "1917-72", "1917", "1914-20", "1914",
+    ]
+
+    @Test("Each tied pair lists the span before the single year, from any input order")
+    func tiesKeepOneOrder() {
+        let rotated = Array(Self.newestFirst[5...] + Self.newestFirst[..<5])
+        #expect(SubseriesGroup.newestFirst(Self.newestFirst) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(Self.newestFirst.reversed()) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(rotated) == Self.newestFirst)
+        #expect(SubseriesGroup.newestFirst(Set(Self.newestFirst)) == Self.newestFirst)
+    }
+
+    @Test("The rule is the start year first, then the identifier")
+    func theRule() {
+        #expect(SubseriesGroup.listsBefore("1951-54", "1951"))
+        #expect(!SubseriesGroup.listsBefore("1951", "1951-54"))
+        #expect(SubseriesGroup.listsBefore("1952-54", "1951-54"))
+        #expect(!SubseriesGroup.listsBefore("1951", "1951"))
+        #expect(SubseriesGroup.startYear(of: "1969-76") == 1969)
     }
 }
 
@@ -10499,5 +10561,425 @@ struct ArchivalNeighbourOrderTests {
 
         // Ids that differ only in their zeros, or not at all in their numbers, still have one order.
         #expect(try sorted(["d7", "d007", "D7"]) == ["D7", "d007", "d7"])
+    }
+}
+
+// MARK: - Index version 76 (plan of record row L26)
+
+/// What index version 76 stores more: an editorial note's own source note, dateline and marking
+/// (#1854), a document's linked terms (decision 172) and the page each division begins on (F7,
+/// decision 178).
+@Suite("IndexingPipeline — index version 76")
+struct IndexVersion76Tests {
+
+    /// A volume holding `documents`, each a whole `<div>`, in one compilation.
+    private func volumeXML(volumeId: String, front: String = "", bodyLead: String = "",
+                           documents: [String], back: String = "") -> String {
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0"
+             xml:id="\(volumeId)">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt></fileDesc></teiHeader>
+          <text>
+            <front>\(front)</front>
+            <body>\(bodyLead)
+              <div type="compilation" xml:id="comp1"><head>Compilation</head>
+              \(documents.joined(separator: "\n"))
+              </div>
+            </body>
+            <back>\(back)</back>
+          </text>
+        </TEI>
+        """
+    }
+
+    /// `frus1941-43` d291 as the TEI encodes it: a memorandum tagged as an editorial note, with an
+    /// inline source note, a marking in its opener and a dateline (#1854).
+    private let taggedMemorandum = """
+        <div frus:doc-dateTime-max="1942-06-15T23:59:59-05:00"
+             frus:doc-dateTime-min="1942-06-15T00:00:00-05:00" n="291"
+             subtype="editorial-note" type="document" xml:id="d291">
+          <note rend="inline" type="source">Department of Defense Files</note>
+          <head><hi rend="italic">Memorandum by Prime Minister Churchill</hi></head>
+          <opener>
+            <seg rendition="#left"><hi rend="smallcaps">secret</hi></seg>
+            <dateline rendition="#right">[<placeName><hi rend="smallcaps">London</hi></placeName>,]
+              <date calendar="gregorian" when="1942-06-15">June 15, 1942</date>.</dateline>
+          </opener>
+          <p>Operations in 1942 or 1943 must be considered together.</p>
+        </div>
+        """
+
+    /// A real editorial note: no source note of its own. The opener is the fixture's, to show
+    /// that nothing under a wrapper is read for a note that prints no source of its own.
+    private let realEditorialNote = """
+        <div n="292" subtype="editorial-note" type="document" xml:id="d292">
+          <head>Editorial Note</head>
+          <opener><seg rendition="#left"><hi rend="smallcaps">secret</hi></seg>
+            <dateline>Washington, June 20, 1942.</dateline></opener>
+          <p>The President and the Prime Minister met at Hyde Park.</p>
+        </div>
+        """
+
+    @Test("An editorial note that prints a source note of its own stores it, its dateline and its marking (#1854)")
+    func taggedDocumentStoresItsOwnFields() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try volumeXML(volumeId: "frus1941-43", documents: [taggedMemorandum, realEditorialNote])
+                .write(to: dir.appendingPathComponent("volumes/frus1941-43.xml"),
+                       atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1941-43")
+
+            let rows = Dictionary(uniqueKeysWithValues: try await pipeline.documents(forVolume: "frus1941-43")
+                .map { ($0.documentId, $0) })
+            let memorandum = try #require(rows["d291"])
+            #expect(memorandum.sourceNote == "Department of Defense Files")
+            #expect(memorandum.dateline == "[London,] June 15, 1942.")
+            #expect(memorandum.isEditorialNote, "the TEI tags it an editorial note, and the badge stays")
+            #expect(try await pipeline.storedClassification(volumeId: "frus1941-43", documentId: "d291") == "Secret")
+
+            // The real editorial note reads as it did: no note, no dateline, no source row.
+            let note = try #require(rows["d292"])
+            #expect(note.sourceNote == nil)
+            #expect(note.dateline == nil, "a wrapper with no source note of its own gave its dateline")
+            #expect(note.isEditorialNote)
+            #expect(try await pipeline.storedClassification(volumeId: "frus1941-43", documentId: "d292") == nil)
+        }
+    }
+
+    @Test("The public extractors read under the wrapper only where it holds a source note of its own (#1854)")
+    func extractorsReadUnderTheWrapperByItsOwnNote() {
+        let own: [FRUSASTNode] = [.editorialNote([
+            .footnote(id: nil, type: .source, printedNumber: nil, children: [.text("Hopkins Papers")]),
+            .head(children: [.text("Prime Minister Churchill to President Roosevelt")]),
+            .opener(children: [.dateline(children: [.text("London, June 16, 1942.")])]),
+        ])]
+        #expect(IndexingPipeline.extractSourceNote(from: own) == "Hopkins Papers")
+        #expect(IndexingPipeline.extractDateline(from: own) == "London, June 16, 1942.")
+
+        let none: [FRUSASTNode] = [.editorialNote([
+            .head(children: [.text("Editorial Note")]),
+            .opener(children: [.dateline(children: [.text("London, June 16, 1942.")])]),
+        ])]
+        #expect(IndexingPipeline.extractSourceNote(from: none) == nil)
+        #expect(IndexingPipeline.extractDateline(from: none) == nil)
+    }
+
+    /// A terms list as `frus1961-63v06` encodes it.
+    private let termsList = """
+        <div subtype="index" type="section" xml:id="terms">
+          <head>List of Abbreviations</head>
+          <list type="terms">
+            <item><hi rend="strong"><term xml:id="t_Dept1">Dept</term>,</hi> Department of State</item>
+            <item><hi rend="strong"><term xml:id="t_UNO1">UNO</term>,</hi> United Nations Organization</item>
+            <item><hi rend="strong"><term xml:id="t_Sov1">Sov</term>,</hi> Soviet</item>
+          </list>
+        </div>
+        """
+
+    @Test("Each document's linked terms are stored once, from its links and its @ana, and read back with their definitions (decision 172)")
+    func linkedTermsAreStored() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let documents = [
+                // Dept twice, UNO once, and a link to no term of the list, which is stored and not read.
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Telegram</head>
+                  <p>The <gloss target="#t_Dept1">Dept</gloss> asks the <gloss target="#t_UNO1">UNO</gloss>;
+                     the <gloss target="#t_Dept1">Dept</gloss> waits. <gloss target="#t_Gone1">Gone</gloss>.</p>
+                </div>
+                """,
+                // No link in the text: the term is named on @ana, as frus1981-88v16 names them, beside a
+                // person pointer and one into another file, neither of which is a term of this list.
+                """
+                <div type="document" xml:id="d2" n="2" ana="#t_Sov1 #p_AB1 frus1981-88v11#t_UNO1"><head>2. Memorandum</head>
+                  <p>Sov policy.</p>
+                </div>
+                """,
+                """
+                <div type="document" xml:id="d3" n="3"><head>3. Letter</head><p>Nothing linked.</p></div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1946v06", front: termsList, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1946v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1946v06")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let d1 = try await store.termsLinked(inDocument: "d1", volumeId: "frus1946v06")
+            #expect(d1.map(\.entry.term) == ["Dept", "UNO"])
+            #expect(d1.first?.entry.definition == "Department of State")
+            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1946v06").map(\.entry.term) == ["Sov"])
+            #expect(try await store.termsLinked(inDocument: "d3", volumeId: "frus1946v06").isEmpty)
+
+            // The rows themselves: one a document and term, the dangling link's among them, each
+            // with its parts (decision 188): d1's in its text, d2's on its @ana alone.
+            let rows = try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
+            #expect(rows == ["d1 t_Dept1 1", "d1 t_Gone1 1", "d1 t_UNO1 1", "d2 t_Sov1 16"])
+
+            // A correction that drops d1's links leaves none of its rows behind.
+            let corrected = documents.enumerated().map { index, xml in
+                index == 0 ? "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Telegram</head><p>Plain.</p></div>" : xml
+            }
+            try volumeXML(volumeId: "frus1946v06", front: termsList, documents: corrected)
+                .write(to: dir.appendingPathComponent("volumes/frus1946v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1946v06")
+            #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1946v06")
+                    == ["d2 t_Sov1 16"])
+        }
+    }
+
+    @Test("A page of the volume that two documents begin on keeps the page, and how its note settled which: by day, by number, or the first (decision 190)")
+    func sameVolumePageKeepsItsResolution() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // Documents 2 (July 1) and 3 (July 2) both begin on p. 7. Document 1 cites p. 7 in its
+            // text, where no note says which; in a note naming July 2; and in a note naming document
+            // 3; it cites its own p. 5, which names it alone, and p. 99, which names nothing.
+            let day = { (iso: String) in
+                "frus:doc-dateTime-min=\"\(iso)T00:00:00-05:00\" frus:doc-dateTime-max=\"\(iso)T23:59:59-05:00\""
+            }
+            let documents = [
+                """
+                <div type="document" xml:id="d1" n="1" \(day("1945-06-30"))><pb n="5" xml:id="pg_5"/><head>1. Report</head>
+                  <p>See <ref target="#pg_7">p. 7</ref>, <ref target="#pg_5">p. 5</ref> and <ref target="#pg_99">p. 99</ref>.<note n="1" xml:id="d1fn1">For the letter of July 2, see <ref target="#pg_7">p. 7</ref>.</note><note n="2" xml:id="d1fn2">Printed as document 3, <ref target="#pg_7">p. 7</ref>.</note></p>
+                </div>
+                """,
+                """
+                <div type="document" xml:id="d2" n="2" \(day("1945-07-01"))><pb n="7" xml:id="pg_7"/><head>2. Telegram</head><p>Sent.</p></div>
+                """,
+                """
+                <div type="document" xml:id="d3" n="3" \(day("1945-07-02"))><head>3. Letter</head><p>Received.</p></div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1945v99", documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1945v99.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1945v99")
+
+            var db: OpaquePointer?
+            guard sqlite3_open_v2(dir.appendingPathComponent("test.sqlite").path, &db, SQLITE_OPEN_READONLY, nil)
+                    == SQLITE_OK, let db else {
+                Issue.record("the test index did not open")
+                return
+            }
+            defer { sqlite3_close_v2(db) }
+            var stmt: OpaquePointer?
+            sqlite3_prepare_v2(db, """
+                SELECT target_document_id, cited_page_id, page_resolution FROM cross_references
+                WHERE source_volume_id = 'frus1945v99' AND source_document_id = 'd1' ORDER BY rowid
+                """, -1, &stmt, nil)
+            defer { sqlite3_finalize(stmt) }
+            var rows: [String] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let text = { (column: Int32) in sqlite3_column_text(stmt, column).map { String(cString: $0) } ?? "-" }
+                rows.append("\(text(0)) \(text(1)) \(text(2))")
+            }
+            #expect(rows == [
+                "d2 pg_7 first",      // in the text: the first of the two
+                "d1 pg_5 one",
+                "pg_99 - -",          // a page naming nothing keeps its page, and neither value
+                "d3 pg_7 day",
+                "d3 pg_7 number",
+            ])
+        }
+    }
+
+    @Test("A term-list item that lists two spellings or more gives each its own terms row, with the definition printed after the last (decision 189)")
+    func eachSpellingOfAnItemHasItsOwnRow() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // The corpus's shapes: two spellings joined by "or" (frus1917-72PubDipv08); a second in
+            // parentheses, whose ")" follows the last term (frus1947v05); a comma the list printed
+            // inside each term, and a spelling that begins with a dash (frus1947v04); a spelling
+            // printed in parentheses inside its term (frus1948v06); and one spelling, as before.
+            let terms = """
+                <div subtype="index" type="section" xml:id="terms">
+                  <head>Abbreviations and Terms</head>
+                  <list type="terms">
+                    <item><hi rend="strong"><term xml:id="t_HAD_1">HAD</term> or <term xml:id="t_HD_1">HD</term>,</hi> Henry A. Dunlap</item>
+                    <item> <hi rend="strong"> <term xml:id="t_BMM1">BMM</term> (or <term xml:id="t_BMMG1" >BMMG</term>,</hi>) British Military Mission (in Greece)</item>
+                    <item> <hi rend="strong"> <term xml:id="t_G11">G–1,</term> <term xml:id="t_G21">–2,</term> <term xml:id="t_G31">–3</term>,</hi> sections of a military staff</item>
+                    <item> <hi rend="strong"> <term xml:id="t_Masjoemi1"><hi rend="italic">Masjoemi</hi></term> <term xml:id="t_Masjumi1">(<hi rend="italic">Masjumi</hi>)</term>,</hi> Moslem League</item>
+                    <item><hi rend="strong"><term xml:id="t_Dept1">Dept</term>,</hi> Department of State</item>
+                  </list>
+                </div>
+                """
+            let documents = [
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Memorandum From <gloss target="#t_HAD_1">HAD</gloss></head>
+                  <p>Sent to <gloss target="#t_HD_1">HD</gloss> and the <gloss target="#t_Dept1">Dept</gloss>.</p>
+                </div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1917-72PubDipv08", front: terms, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1917-72PubDipv08.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1917-72PubDipv08")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let rows = try await store.allTerms(forVolumeId: "frus1917-72PubDipv08")
+                .sorted { $0.ref < $1.ref }
+                .map { "\($0.ref) \($0.term) = \($0.definition ?? "nil")" }
+            #expect(rows == [
+                "t_BMM1 BMM = British Military Mission (in Greece)",
+                "t_BMMG1 BMMG = British Military Mission (in Greece)",
+                "t_Dept1 Dept = Department of State",
+                "t_G11 G–1 = sections of a military staff",
+                "t_G21 –2 = sections of a military staff",
+                "t_G31 –3 = sections of a military staff",
+                "t_HAD_1 HAD = Henry A. Dunlap",
+                "t_HD_1 HD = Henry A. Dunlap",
+                "t_Masjoemi1 Masjoemi = Moslem League",
+                "t_Masjumi1 Masjumi = Moslem League",
+            ])
+            // A link to either spelling finds its entry: the join that dropped t_HAD_1 keeps it.
+            let linked = try await store.termsLinked(inDocument: "d1", volumeId: "frus1917-72PubDipv08")
+            #expect(linked.map { "\($0.entry.term) \($0.parts.rawValue)" } == ["Dept 1", "HAD 2", "HD 1"])
+        }
+    }
+
+    @Test("Each linked term records the parts of its document that link it: text, heading, footnote, source note, @ana (decision 188)")
+    func linkedTermsRecordTheirParts() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let terms = """
+                <div subtype="index" type="section" xml:id="terms">
+                  <head>Abbreviations and Terms</head>
+                  <list type="terms">
+                    <item><hi rend="strong"><term xml:id="t_CINCPAC1">CINCPAC</term>,</hi> Commander in Chief, Pacific</item>
+                    <item><hi rend="strong"><term xml:id="t_DOD1">DOD</term>,</hi> Department of Defense</item>
+                    <item><hi rend="strong"><term xml:id="t_JCS1">JCS</term>,</hi> Joint Chiefs of Staff</item>
+                    <item><hi rend="strong"><term xml:id="t_Limdis1">Limdis</term>,</hi> limited distribution</item>
+                    <item><hi rend="strong"><term xml:id="t_NIE1">NIE</term>,</hi> National Intelligence Estimate</item>
+                    <item><hi rend="strong"><term xml:id="t_NSC1">NSC</term>,</hi> National Security Council</item>
+                  </list>
+                </div>
+                """
+            let documents = [
+                // From 1955 the source note is a footnote on the heading: JCS is the heading's alone,
+                // Limdis the source note's, NIE both the source note's and the text's, NSC the text's,
+                // and CINCPAC a footnote's alone (frus1969-76v06 d4's shape, which CR's reading names).
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Memorandum From the <gloss target="#t_JCS1">JCS</gloss> to the Secretary of Defense<note n="1" type="source" xml:id="d1fn1">Source: National Archives. Secret; <gloss target="#t_Limdis1">Limdis</gloss>. The <gloss target="#t_NIE1">NIE</gloss> is attached.</note></head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> met on the <gloss target="#t_NIE1">NIE</gloss>.<note n="2" xml:id="d1fn2">The <gloss target="#t_CINCPAC1">CINCPAC</gloss> cable is not printed.</note></p>
+                </div>
+                """,
+                // Named on @ana alone, and on @ana and in the text.
+                """
+                <div type="document" xml:id="d2" n="2" ana="#t_DOD1 #t_NSC1"><head>2. Paper</head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> paper.</p>
+                </div>
+                """,
+                // An editorial note's own text is the document's text; its note is a footnote.
+                """
+                <div type="document" subtype="editorial-note" xml:id="d3" n="3"><head>3. Editorial Note</head>
+                  <p>The <gloss target="#t_NSC1">NSC</gloss> discussed it.<note n="1" xml:id="d3fn1">See the <gloss target="#t_JCS1">JCS</gloss> paper.</note></p>
+                </div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1969-76v06", front: terms, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1969-76v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1969-76v06")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let d1 = try await store.termsLinked(inDocument: "d1", volumeId: "frus1969-76v06")
+            #expect(d1.map(\.entry.term) == ["CINCPAC", "JCS", "Limdis", "NIE", "NSC"])
+            #expect(d1.map(\.parts) == [.footnote, .heading, .sourceNote, [.sourceNote, .text], .text])
+            #expect(try await store.termsLinked(inDocument: "d2", volumeId: "frus1969-76v06").map(\.parts)
+                    == [.annotation, [.annotation, .text]])
+            #expect(try await store.termsLinked(inDocument: "d3", volumeId: "frus1969-76v06").map(\.parts)
+                    == [.footnote, .text])
+
+            // The column holds the flags as SQL reads them: text 1, heading 2, footnote 4, source
+            // note 8, @ana 16.
+            #expect(try rawTermMentions(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1969-76v06") == [
+                "d1 t_CINCPAC1 4", "d1 t_JCS1 2", "d1 t_Limdis1 8", "d1 t_NIE1 9", "d1 t_NSC1 1",
+                "d2 t_DOD1 16", "d2 t_NSC1 17",
+                "d3 t_JCS1 4", "d3 t_NSC1 1",
+            ])
+        }
+    }
+
+    @Test("Each division's first page is stored, and page_ranges is as it was (F7)")
+    func divisionStartPagesAreStored() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // `frus1961-63v06`'s shape: a break before the Preface, which no division holds, a break
+            // inside it, the Contents after two breaks, and the Index after a break in <back>.
+            let front = """
+                <pb n="III" xml:id="pg_III"/>
+                <div subtype="preface" type="section" xml:id="preface"><head>Preface</head>
+                  <p>The series presents the record.</p><pb n="IV" xml:id="pg_IV"/><p>More.</p></div>
+                <pb n="[XIV]" xml:id="pg_XIV"/><pb n="XV" xml:id="pg_XV"/>
+                <div subtype="table-of-contents" type="section" xml:id="toc"><head>Contents</head>
+                  <list type="toc"><item><ref target="#pg_III">Preface</ref></item>
+                  <item><ref target="#pg_3">Index</ref></item></list></div>
+                """
+            let back = """
+                <pb n="3" xml:id="pg_3"/>
+                <div subtype="index" type="section" xml:id="index"><head>Index</head>
+                  <list type="index"><item>Adenauer, Konrad, <ref target="#pg_1">1</ref></item></list></div>
+                """
+            let documents = [
+                "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Letter</head><p>Text.</p><pb n=\"2\" xml:id=\"pg_2\"/><p>More.</p></div>",
+            ]
+            try volumeXML(volumeId: "frus1961-63v06", front: front, bodyLead: "<pb n=\"1\" xml:id=\"pg_1\"/>",
+                          documents: documents, back: back)
+                .write(to: dir.appendingPathComponent("volumes/frus1961-63v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1961-63v06")
+
+            #expect(try await pipeline.divisions(startingOn: .roman(3), inVolume: "frus1961-63v06") == ["preface"])
+            #expect(try await pipeline.divisions(startingOn: .roman(15), inVolume: "frus1961-63v06") == ["toc"])
+            #expect(try await pipeline.divisions(startingOn: .arabic(3), inVolume: "frus1961-63v06") == ["index"])
+            // The compilation begins on page 1, outermost first; the document's start is page_ranges'.
+            #expect(try await pipeline.divisions(startingOn: .arabic(1), inVolume: "frus1961-63v06") == ["comp1"])
+            #expect(try await pipeline.divisions(startingOn: .roman(4), inVolume: "frus1961-63v06").isEmpty,
+                    "a page inside a division is not where it begins")
+
+            // No reader of page_ranges moves: no row for the two pages, and the Preface's own page as before.
+            let pageRows = try rawPageRows(dir.appendingPathComponent("test.sqlite"), volumeId: "frus1961-63v06")
+            #expect(!pageRows.contains("roman 3") && !pageRows.contains("arabic 3"), "page_ranges gained \(pageRows)")
+            #expect(pageRows.contains("roman 4"))
+        }
+    }
+
+    /// `page_ranges` rows for a volume as `"<type> <number>"`.
+    private func rawPageRows(_ dbURL: URL, volumeId: String) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw IndexingError.databaseOpenFailed(message: dbURL.path)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT page_number_type, page_number_int FROM page_ranges WHERE volume_id = ?",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw IndexingError.databaseOpenFailed(message: String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(sqlite3_column_int(stmt, 1))")
+        }
+        return rows
+    }
+
+    /// `term_mentions` rows for a volume as `"<document> <term> <parts>"`, sorted.
+    private func rawTermMentions(_ dbURL: URL, volumeId: String) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw IndexingError.databaseOpenFailed(message: dbURL.path)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, term_ref, parts FROM term_mentions WHERE volume_id = ?",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw IndexingError.databaseOpenFailed(message: String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append("\(String(cString: sqlite3_column_text(stmt, 0))) \(String(cString: sqlite3_column_text(stmt, 1))) \(sqlite3_column_int64(stmt, 2))")
+        }
+        return rows.sorted()
     }
 }

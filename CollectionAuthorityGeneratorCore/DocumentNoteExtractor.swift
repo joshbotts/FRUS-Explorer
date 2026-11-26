@@ -39,9 +39,14 @@ import FoundationXML
 ///   (`<gloss>MSP</gloss>/3–1952` still stores `"MSP /3–1952"`, because a slash is in
 ///   neither set), collapsed by the shared whitespace normalization. Until #1421 it put
 ///   a space at every element boundary, which is what the app did then;
-/// - **editorial notes yield nothing**: the app wraps `<div type="editorialNote">`
-///   and `subtype="editorial-note"` documents in a single `.editorialNote` AST node,
-///   so their notes are never top-level and `extractSourceNote` stores none.
+/// - **an editorial note yields the note it prints of its own** (#1854, index version 76):
+///   the app wraps `<div type="editorialNote">` and `subtype="editorial-note"` documents
+///   in a single `.editorialNote` AST node, and `extractSourceNote` runs the chain over
+///   the wrapper's children (`IndexingPipeline.ownFieldNodes(of:)`), which are this
+///   div's own children, so "top-level" and "`<head>`-nested" mean here what they mean
+///   for any document. One that prints no note of its own yields nothing, as before.
+///   Until 76 the app read no note under the wrapper, and this extractor skipped such a
+///   document's notes to match.
 ///
 /// All returned text passes through the same `[Source: …]` wrapper normalization the
 /// pipeline applies, so `SourceNoteParser` receives the stored shape.
@@ -53,6 +58,9 @@ import FoundationXML
 ///         where Linux keeps it, and `parse()`'s unused result discarded with `_ =`, which Linux's
 ///         Foundation warns of, so the web edition compiles this core for check 8's comparator;
 ///         nothing changes on Apple platforms
+///   1.3 — 2026-11-26 (#1854, index version 76): a document the TEI tags as an editorial note yields
+///         the source note it prints of its own, as the app now stores it; until then such a
+///         document's notes were skipped
 public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// One extracted document source note.
@@ -97,14 +105,11 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
 
     private var elementDepth = 0
 
-    /// Depth of the open `<div type="document">` / `editorialNote`, or -1.
+    /// Depth of the open `<div type="document">` / `editorialNote`, or -1. A document the app
+    /// wraps in one `.editorialNote` node is read like any other (#1854): the chain the app runs
+    /// over the wrapper's children is the chain this runs over the div's.
     private var documentDepth = -1
     private var documentId = ""
-
-    /// Whether the open document is one the app wraps in a single `.editorialNote`
-    /// AST node (`type="editorialNote"` or `subtype="editorial-note"`) — its notes
-    /// are never top-level on the app side, so it yields no source note.
-    private var documentIsEditorialWrapped = false
 
     /// Depth of the document's direct-child `<head>`, or -1.
     private var headDepth = -1
@@ -148,16 +153,13 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
                 documentId = attributeDict["xml:id"] ?? ""
                 captures = []
                 headDepth = -1
-                documentIsEditorialWrapped = type == "editorialnote"
-                    || attributeDict["subtype"]?.lowercased() == "editorial-note"
             }
         case "head":
             if documentDepth >= 0, elementDepth == documentDepth + 1 {
                 headDepth = elementDepth
             }
         case "note":
-            guard documentDepth >= 0, !documentIsEditorialWrapped,
-                  openNoteIndex == nil else { break }
+            guard documentDepth >= 0, openNoteIndex == nil else { break }
             // Direct child of the head only — the app's `extractSourceNote` scans
             // direct `.footnote` children of the head AST node, never deeper.
             let headNested = headDepth >= 0 && elementDepth == headDepth + 1

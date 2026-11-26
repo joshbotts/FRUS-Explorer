@@ -186,6 +186,20 @@ struct BrowserViewTests {
         #expect(years == years.sorted(by: >))
     }
 
+    /// T1's finding (plan of record row L26): the start year alone leaves two subseries that begin
+    /// in the same year in the order they were handed over, which `allSubseriesGroups` takes from a
+    /// `Dictionary` and so from launch to launch. Both orders of the tie must give one answer.
+    @Test("Two subseries that begin in the same year keep one order, the span first")
+    func tiedStartYearsKeepOneOrder() {
+        let single = SubseriesGroup(subseries: "1945", volumes: [makeEntry(volumeId: "frus1945v01", subseries: "1945")])
+        let span = SubseriesGroup(subseries: "1945-50",
+                                  volumes: [makeEntry(volumeId: "frus1945-50Intel", subseries: "1945-50")])
+        let later = SubseriesGroup(subseries: "1946", volumes: [makeEntry(volumeId: "frus1946v01", subseries: "1946")])
+        let expected = ["1946", "1945-50", "1945"]
+        #expect(BrowserViewModel.newestFirst([single, span, later]).map(\.subseries) == expected)
+        #expect(BrowserViewModel.newestFirst([span, later, single]).map(\.subseries) == expected)
+    }
+
     // MARK: - Filtered Volumes
 
     @Test("filteredVolumes with no active filter returns all volumes in subseries")

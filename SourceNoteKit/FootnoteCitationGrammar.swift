@@ -19,6 +19,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — 2026-11-26 (decision 191, index version 76): ``Anchor/centralForeignPolicyFile``
 public struct FootnoteArchivalCitation: Sendable, Equatable {
 
     /// Which self-identifying phrase opened the citation.
@@ -27,6 +28,12 @@ public struct FootnoteArchivalCitation: Sendable, Equatable {
         case lotFile
         /// `… Johnson Library, National Security File, Country File, Vietnam …`
         case presidentialLibrary
+        /// `… National Archives, RG 59, Central Foreign Policy File, D780382–0612 …` — the
+        /// Department's file from 1973, cited with a P-, D- or N-Reel film number, `[no film
+        /// number]` or none (decision 191). Its `parsed` is `.cfpfFile`, which no authority record
+        /// answers: a caller that joins citations to the collection authority leaves it out,
+        /// because a lot whose aliases name the file would otherwise claim it.
+        case centralForeignPolicyFile
     }
 
     /// The anchor that matched.
@@ -103,8 +110,23 @@ public struct FootnoteArchivalCitation: Sendable, Equatable {
 /// implemented — the pass is document-ordered anyway, so it is nearly free — but it is worth
 /// roughly a tenth of the direct harvest, not the bulk of it.
 ///
+/// ## The Central Foreign Policy File, and one exception to refusal 4 (decision 191)
+/// From index version 76 a third anchor reads the Department's file from 1973: the phrase
+/// `Central Foreign Policy File(s)`, with the film number the clause gives (``SourceNoteParser/
+/// cfpfFilmNumber(in:)``), `[no film number]`, or none. Measured over the catalogue's body
+/// footnotes before the rule: 7,887 clauses, 20 of 20 read a real citation. An `Ibid.` that names
+/// a film number of its own (`Ibid., D780382–0612`) is the same file, a different telegram: it is
+/// read when the citation within reach is the file (142), and, when nothing in the document has
+/// been cited yet, when the document's own source note is the file (150; the owner's choice of
+/// 2026-11-26). That is the one place a source note seeds anything here, and only for an `Ibid.`
+/// that names its own film number: a bare `Ibid.` first in a document still inherits nothing,
+/// for refusal 4's reason. The subject-numeric files of 1963–73 are read too, as classes, by
+/// ``FootnoteIbidGapWalker/shippedAdmissionVerdict(composes:)``.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — 2026-11-26 (decision 191, index version 76): the Central Foreign Policy File anchor,
+///          an `Ibid.` that names a film number, and ``beginDocument(sourceNote:)``
 public struct FootnoteCitationScanner: Sendable {
 
     /// How many body footnotes back an `Ibid.` may reach for the unit it inherits.
@@ -126,6 +148,13 @@ public struct FootnoteCitationScanner: Sendable {
     /// much the guard removed rather than leaving it invisible.
     public private(set) var absenceBlockedCount = 0
 
+    /// Whether the document's own source note cites the Central Foreign Policy File, which an
+    /// `Ibid.` naming a film number first in the document refers to (decision 191).
+    private var sourceNoteIsCFPF = false
+
+    /// Whether anything in this document has been cited yet: the source note seeds only the first.
+    private var citedInDocument = false
+
     /// Creates a scanner positioned before any document.
     public init() {}
 
@@ -135,6 +164,20 @@ public struct FootnoteCitationScanner: Sendable {
     public mutating func beginDocument() {
         lastArchival = nil
         ordinal = -1
+        sourceNoteIsCFPF = false
+        citedInDocument = false
+    }
+
+    /// Resets the state at a document boundary, knowing the document's own source note.
+    ///
+    /// The note seeds one thing (decision 191): an `Ibid.` that names a Central Foreign Policy
+    /// File film number, when it is the first citation in the document and the note itself cites
+    /// that file. Nothing else here reads it, and a bare `Ibid.` still inherits nothing from it.
+    ///
+    /// - Parameter sourceNote: The document's parsed source note, or `nil` for none.
+    public mutating func beginDocument(sourceNote: ParsedSourceNote?) {
+        beginDocument()
+        if case .cfpfFile? = sourceNote { sourceNoteIsCFPF = true }
     }
 
     /// Scans one **body** footnote and returns the archival units it points at, in reading order.
@@ -161,6 +204,7 @@ public struct FootnoteCitationScanner: Sendable {
             if !direct.isEmpty {
                 found.append(contentsOf: direct)
                 if let last = direct.last { lastArchival = (last, ordinal) }
+                citedInDocument = true
                 continue
             }
             if Self.namesAPublication(clause) {
@@ -170,6 +214,7 @@ public struct FootnoteCitationScanner: Sendable {
             if let inherited = inheritedCitation(inClause: clause) {
                 found.append(inherited)
                 lastArchival = (inherited, ordinal)
+                citedInDocument = true
             }
         }
 
@@ -184,6 +229,25 @@ public struct FootnoteCitationScanner: Sendable {
     /// Resolves an `Ibid.` clause against the state, or returns `nil` when nothing may be
     /// inherited.
     private func inheritedCitation(inClause clause: String) -> FootnoteArchivalCitation? {
+        // Decision 191: `Ibid., D780382–0612` names a telegram of its own in the Central Foreign
+        // Policy File — the file of the citation within reach, or, first in the document, of the
+        // document's own source note. Anything but the film number (and a box or a date) after the
+        // `Ibid.` names a unit of its own, as for a lot or a library.
+        if Self.isIbidClause(clause), let film = SourceNoteParser.cfpfFilmNumber(in: clause),
+           Self.ibidStandsAlone(clause, removing: film) {
+            let withinReach = lastArchival.map { ordinal - $0.ordinal <= Self.ibidReach } ?? false
+            if withinReach, case .cfpfFile? = lastArchival?.citation.parsed {
+                return FootnoteArchivalCitation(anchor: .centralForeignPolicyFile,
+                                                parsed: .cfpfFile(fileIdentifier: film),
+                                                citation: clause, inherited: true)
+            }
+            if lastArchival == nil, !citedInDocument, sourceNoteIsCFPF {
+                return FootnoteArchivalCitation(anchor: .centralForeignPolicyFile,
+                                                parsed: .cfpfFile(fileIdentifier: film),
+                                                citation: clause, inherited: true)
+            }
+            return nil
+        }
         guard Self.isIbidClause(clause),
               Self.ibidStandsAlone(clause),
               let (previous, previousOrdinal) = lastArchival,
@@ -199,6 +263,9 @@ public struct FootnoteCitationScanner: Sendable {
         case .presidentialLibrary(let library, let collection, let existing):
             parsed = .presidentialLibrary(library: library, collection: collection,
                                           fileIdentifier: identifier ?? existing)
+        case .cfpfFile(let existing):
+            // A bare `Ibid.` after the Central Foreign Policy File: the same telegram (decision 191).
+            parsed = .cfpfFile(fileIdentifier: existing)
         default:
             return nil
         }
@@ -206,16 +273,32 @@ public struct FootnoteCitationScanner: Sendable {
                                         citation: clause, inherited: true)
     }
 
-    // MARK: - The two anchors
+    // MARK: - The anchors
 
-    /// Every archival citation anchored in one clause, lots before libraries.
+    /// Every archival citation anchored in one clause: lots, then libraries, then the Central
+    /// Foreign Policy File (decision 191).
     static func citations(inClause clause: String) -> [FootnoteArchivalCitation] {
         lotCitations(inClause: clause) + libraryCitations(inClause: clause)
+            + centralForeignPolicyFileCitations(inClause: clause)
     }
 
-    /// Whether a clause carries either anchor — used only to count what a guard removed.
+    /// Whether a clause carries any anchor — used only to count what a guard removed.
     static func hasAnyAnchor(_ clause: String) -> Bool {
         !lotCitations(inClause: clause).isEmpty || !libraryCitations(inClause: clause).isEmpty
+            || !centralForeignPolicyFileCitations(inClause: clause).isEmpty
+    }
+
+    /// The Central Foreign Policy File citation in one clause (decision 191): the phrase is the
+    /// anchor, and the clause's film number, when it gives one, the file identifier. One a clause:
+    /// the corpus cites one telegram at a time.
+    static func centralForeignPolicyFileCitations(inClause clause: String) -> [FootnoteArchivalCitation] {
+        guard let regex = Self.centralForeignPolicyFileRegex,
+              regex.firstMatch(in: clause, range: NSRange(clause.startIndex..., in: clause)) != nil
+        else { return [] }
+        return [FootnoteArchivalCitation(
+            anchor: .centralForeignPolicyFile,
+            parsed: .cfpfFile(fileIdentifier: SourceNoteParser.cfpfFilmNumber(in: clause)),
+            citation: clause, inherited: false)]
     }
 
     /// Whether a whole note would yield at least one archival citation on its own — no `Ibid.`
@@ -425,11 +508,19 @@ public struct FootnoteCitationScanner: Sendable {
     /// So: everything after the `Ibid.` must be a **finer location inside the same unit** — a box,
     /// a folder, a date — and nothing else. Anything alphanumeric that survives the strip is the
     /// clause naming something of its own, and inheritance is refused.
-    static func ibidStandsAlone(_ clause: String) -> Bool {
+    ///
+    /// - Parameters:
+    ///   - clause: The `Ibid.` clause.
+    ///   - removing: Text to set aside before deciding, as a box or a date is: the film number an
+    ///     `Ibid.` names in the Central Foreign Policy File (decision 191). `nil` for the rule as it was.
+    static func ibidStandsAlone(_ clause: String, removing: String? = nil) -> Bool {
         guard let ibid = clause.range(of: #"\bibid\b\.?"#,
                                       options: [.regularExpression, .caseInsensitive,
                                                 .backwards]) else { return false }
         var rest = String(clause[ibid.upperBound...])
+        if let removing, !removing.isEmpty {
+            rest = rest.replacingOccurrences(of: removing, with: " ")
+        }
         for regex in [Self.boxRegex, Self.dateTailRegex] {
             guard let regex else { continue }
             rest = regex.stringByReplacingMatches(
@@ -475,6 +566,27 @@ public struct FootnoteCitationScanner: Sendable {
     static let boxRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"\b(?:Box|Folder)e?s?\s+[A-Za-z]?[–—\-]?\d+[A-Za-z]?(?:\s*[–—\-]\s*\d+)?"#,
         options: .caseInsensitive)
+
+    /// The Central Foreign Policy File's own name, the anchor of decision 191.
+    static let centralForeignPolicyFileRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bCentral\s+Foreign\s+Policy\s+Files?\b"#, options: .caseInsensitive)
+
+    /// The Department's Central Files by name (`Central Files 1964–66`, `Central File`), which a
+    /// subject-numeric class needs in its clause (decision 191) — not `central foreign policy`,
+    /// which `CollectionKeying.centralFilesAnchorSegment` also answers to.
+    static let centralFilesPhraseRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bCentral\s+Files?\b"#, options: .caseInsensitive)
+
+    /// The White House Central Files, a presidential library's collection whose subject codes
+    /// (`FG 806`, `PR 7`) can share a category with the Department's: never the Department's file.
+    static let whiteHouseCentralFilesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\bWhite\s+House\s+Central\s+Files?\b"#, options: .caseInsensitive)
+
+    /// Whether `regex` matches anywhere in `text`.
+    static func matches(_ regex: NSRegularExpression?, _ text: String) -> Bool {
+        guard let regex else { return false }
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+    }
 
     /// The date shapes that appear as the tail of an `Ibid.` — `10/27/65`, `February 14, 1965`,
     /// `Feb. 14`, a bare year. Stripped before ``ibidStandsAlone(_:)`` decides, because a date is
@@ -683,6 +795,10 @@ extension FootnoteCitationScanner {
 /// Version history:
 ///   1.0 — Session 2026-08-27: #1014 W-1 (measurement instrument)
 ///   1.1 — Session 2026-08-27: #1014 W-1b — promoted to the harvest's inheritance engine
+///   1.2 — 2026-11-26 (decision 191, index version 76): the shipped chain admits the
+///          subject-numeric files of 1963–73 (``subjectNumericVerdict(_:)``), and an `Ibid.` that
+///          names one under its referent's repository is harvested
+///          (``Outcome/inheritsRepository(key:distance:)``, ``beginDocument(sourceNote:note:)``)
 public struct FootnoteIbidGapWalker: Sendable {
 
     /// What a bare `Ibid.` clause turned out to refer to.
@@ -701,6 +817,12 @@ public struct FootnoteIbidGapWalker: Sendable {
         case blockedByPublication(key: String, admitted: Bool)
         /// Nothing citable precedes it within this document.
         case noPriorCitation
+        /// Not a bare `Ibid.`: one that names a subject-numeric file of its own (`Ibid., POL 15
+        /// VIET S`), under the repository its referent named — an admitted central-file class
+        /// `distance` notes back, or, `distance` `nil`, the document's own Central Files source
+        /// note, when nothing in the document precedes it (decision 191, the owner's choice).
+        /// Measured: 605 within reach, 1,174 from the source note. Harvested, inherited.
+        case inheritsRepository(key: String, distance: Int?)
     }
 
     /// One bare `Ibid.` clause, classified.
@@ -752,6 +874,10 @@ public struct FootnoteIbidGapWalker: Sendable {
     private var shadowClass: (candidate: FootnoteClassCandidate, ordinal: Int,
                               clearedByPublication: Bool)?
     private var ordinal = -1
+    /// Whether the document's own source note cites the Department's Central Files (decision 191).
+    private var sourceNoteIsCentralFiles = false
+    /// Whether anything in this document has been cited or armed yet.
+    private var citedInDocument = false
 
     /// Creates a walker with the caller's admission rule.
     public init(admissionVerdict: @escaping @Sendable (FootnoteClassCandidate) -> String?) {
@@ -770,7 +896,7 @@ public struct FootnoteIbidGapWalker: Sendable {
     ) -> @Sendable (FootnoteClassCandidate) -> String? {
         { candidate in
             if let refusal = candidate.refusal { return refusal }
-            if candidate.isSubjectNumeric { return "subjectNumeric" }
+            if candidate.isSubjectNumeric { return subjectNumericVerdict(candidate) }
             if !candidate.evidence.carriesSerial { return "noSerial" }
             if !composes(candidate.classKey) { return "notComposing" }
             if SourceNoteParser.decimalClassKey(candidate.classKey) == nil {
@@ -778,6 +904,46 @@ public struct FootnoteIbidGapWalker: Sendable {
             }
             return nil
         }
+    }
+
+    /// The subject-numeric half of the shipped chain (decision 191, index version 76): `nil` when
+    /// a Subject-Numeric designator of 1963–73 is admitted, else why not.
+    ///
+    /// Read bare, these designators were 87.2% out of vocabulary (#784), so the rule is
+    /// anchor-first: the clause names the Department's Central Files (`Central Files 1964–66, POL
+    /// 27 VIET S`), or its repository is inherited (``Outcome/inheritsRepository(key:distance:)``);
+    /// not the White House Central Files, a library's collection whose codes can share a category;
+    /// not the Central Foreign Policy File alone, which `centralFilesAnchorSegment` also answers to;
+    /// a lead the source-note grammar reads a designation by (`CollectionKeying
+    /// .subjectNumericLead(ofCandidate:)`: a category of the two handbooks, ``ParsedSourceNote/
+    /// subjectNumericCategories``, or one of the seven organization leads); and a key the shared
+    /// vocabulary holds. Measured before the rule over the catalogue's body footnotes: 4,409 clauses
+    /// with the phrase and a handbook category, 40 of 40 read a real citation, and 155 more with
+    /// another lead, most of them an organization's (`UN 6 CHICOM`, `NATO 3`, `AID 9 PAK`), which
+    /// the source-note grammar reads as it reads a category. Before version 76 every
+    /// subject-numeric candidate was refused here, as `subjectNumeric`.
+    ///
+    /// - Parameter candidate: A subject-numeric class candidate.
+    /// - Returns: `nil`, or `subjectNumeric` (no repository named), `subjectNumericWhiteHouse`,
+    ///   `subjectNumericForeignPolicyFile`, `subjectNumericOutOfVocabulary`, `notInVocabulary`.
+    public static func subjectNumericVerdict(_ candidate: FootnoteClassCandidate) -> String? {
+        let clause = candidate.clause
+        guard candidate.evidence.namesRepository else { return "subjectNumeric" }
+        if FootnoteCitationScanner.matches(FootnoteCitationScanner.whiteHouseCentralFilesRegex, clause) {
+            return "subjectNumericWhiteHouse"
+        }
+        if FootnoteCitationScanner.matches(FootnoteCitationScanner.centralForeignPolicyFileRegex, clause),
+           !FootnoteCitationScanner.matches(FootnoteCitationScanner.centralFilesPhraseRegex, clause) {
+            return "subjectNumericForeignPolicyFile"
+        }
+        // The lead the source-note grammar reads a designation by, so a file it reads in a source
+        // note is read in a footnote too: a handbook category, or one of the seven organization
+        // leads (`UN 6 CHICOM`, `NATO 3 FR`).
+        guard CollectionKeying.subjectNumericLead(ofCandidate: candidate.classKey) != nil else {
+            return "subjectNumericOutOfVocabulary"
+        }
+        if SourceNoteParser.decimalClassKey(candidate.classKey) == nil { return "notInVocabulary" }
+        return nil
     }
 
     /// Whether the injected rule admits `candidate`.
@@ -791,6 +957,25 @@ public struct FootnoteIbidGapWalker: Sendable {
         lastCited = nil
         shadowClass = nil
         ordinal = -1
+        sourceNoteIsCentralFiles = false
+        citedInDocument = false
+    }
+
+    /// Resets the state at a document boundary, knowing the document's own source note.
+    ///
+    /// The note seeds one thing (decision 191): an `Ibid.` naming a subject-numeric file of its own,
+    /// first in the document, when the note cites the Department's Central Files
+    /// (`CollectionKeying.centralFilesForm(parsed:note:)`, either form). A bare `Ibid.` still
+    /// inherits nothing from it.
+    ///
+    /// - Parameters:
+    ///   - sourceNote: The document's parsed source note, or `nil`.
+    ///   - note: Its text, which the form is read from too.
+    public mutating func beginDocument(sourceNote: ParsedSourceNote?, note: String?) {
+        beginDocument()
+        if let sourceNote, let note {
+            sourceNoteIsCentralFiles = CollectionKeying.centralFilesForm(parsed: sourceNote, note: note) != nil
+        }
     }
 
     /// Walks one **body** footnote in document order.
@@ -824,6 +1009,7 @@ public struct FootnoteIbidGapWalker: Sendable {
                 }
                 lastCited = .archival(ordinal: ordinal)
                 citedInThisNote = true
+                citedInDocument = true
                 continue
             }
 
@@ -831,6 +1017,17 @@ public struct FootnoteIbidGapWalker: Sendable {
                 if isAdmitted(candidate) { result.directAdmitted += 1 }
                 let bareIbid = FootnoteCitationScanner.isIbidClause(clause)
                     && FootnoteCitationScanner.ibidStandsAlone(clause)
+                // Decision 191: `Ibid., POL 15 VIET S` names a file of its own under the
+                // repository its referent named, which makes it a citation of the Central Files.
+                if !bareIbid, FootnoteCitationScanner.isIbidClause(clause), !isAdmitted(candidate),
+                   let named = repositoryInherited(candidate), let context = centralFilesContext() {
+                    result.observations.append(Observation(
+                        outcome: .inheritsRepository(key: named.classKey, distance: context.distance),
+                        ibidClause: clause, armingClause: context.armingClause))
+                    arm(named, chained: false)
+                    citedInThisNote = true
+                    continue
+                }
                 if !bareIbid {
                     if FootnoteCitationScanner.isIbidClause(clause), isAdmitted(candidate) {
                         result.explicitIbidAdmitted += 1
@@ -898,6 +1095,36 @@ public struct FootnoteIbidGapWalker: Sendable {
     private mutating func arm(_ candidate: FootnoteClassCandidate, chained: Bool) {
         lastCited = .classCandidate(candidate, ordinal: ordinal, chained: chained)
         shadowClass = (candidate, ordinal, false)
+        citedInDocument = true
+    }
+
+    /// `candidate` read with the repository its `Ibid.` inherits, when that reading is admitted: a
+    /// subject-numeric designator whose clause names no repository of its own (decision 191).
+    private func repositoryInherited(_ candidate: FootnoteClassCandidate) -> FootnoteClassCandidate? {
+        guard candidate.isSubjectNumeric, candidate.refusal == nil,
+              !candidate.evidence.namesRepository else { return nil }
+        let named = FootnoteClassCandidate(
+            classKey: candidate.classKey, clause: candidate.clause,
+            evidence: FootnoteClassCandidate.Evidence(
+                namesRepository: true, namesFileNumber: candidate.evidence.namesFileNumber,
+                carriesSerial: candidate.evidence.carriesSerial),
+            isSubjectNumeric: true, refusal: nil)
+        return isAdmitted(named) ? named : nil
+    }
+
+    /// Where an `Ibid.` naming a file of its own finds the Central Files (decision 191): an
+    /// admitted central-file class within ``FootnoteCitationScanner/ibidReach`` notes, or, when
+    /// nothing in the document precedes it, the document's own Central Files source note. `nil`
+    /// otherwise — after a lot, a library or the Central Foreign Policy File among them.
+    private func centralFilesContext() -> (distance: Int?, armingClause: String)? {
+        if case .classCandidate(let previous, let armedOrdinal, _) = lastCited, isAdmitted(previous),
+           ordinal - armedOrdinal <= FootnoteCitationScanner.ibidReach {
+            return (ordinal - armedOrdinal, previous.clause)
+        }
+        if lastCited == nil, !citedInDocument, sourceNoteIsCentralFiles {
+            return (nil, "")
+        }
+        return nil
     }
 
     /// Classifies one bare `Ibid.` against the state.

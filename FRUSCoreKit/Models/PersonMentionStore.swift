@@ -178,6 +178,10 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///   1.8 — Session 2026-10-06 (FRUS Explorer Light, S9b): `init(readingDatabaseAt:)` opens an
 ///          index read-only and immutable (`isImmutable`), for a host that reads an index another
 ///          program built. `init(databaseURL:)` opens as before
+///   1.9 — 2026-11-26 (decisions 172 and 188, index version 76): `termsLinked(inDocument:volumeId:)`
+///          — the terms of its volume's list that a document links, from the new `term_mentions`
+///          table, each with the parts of the document that link it (`LinkedTerm`,
+///          `TermMentionParts`), for a collection's *Abbreviations & Terms* block. Read-only
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -1116,6 +1120,46 @@ public actor PersonMentionStore {
         return GlossEntry(ref: r, term: term, definition: def)
     }
 
+    /// The terms of its volume's list that one document links, each with the volume's definition
+    /// and the parts of the document that link it, sorted by term (decisions 172 and 188, index
+    /// version 76).
+    ///
+    /// Read from `term_mentions`, which the index writes from each document's `<gloss>` links and,
+    /// for `frus1981-88v16`, the terms its documents name on `@ana`, joined to `terms` for the
+    /// definition. A link whose target the volume's list does not hold is stored and not returned.
+    /// Empty for a document that links none, and for every document of a volume indexed before
+    /// version 76 until its re-index.
+    ///
+    /// A block that lists the terms a page prints keeps a term whose ``LinkedTerm/parts`` meet the
+    /// parts the page prints: a quarter of the document–term pairs are linked only in notes.
+    ///
+    /// - Parameters:
+    ///   - documentId: The document's `xml:id`.
+    ///   - volumeId: Its volume.
+    /// - Returns: The linked terms, sorted by term.
+    public func termsLinked(inDocument documentId: String, volumeId: String) throws -> [LinkedTerm] {
+        let sql = """
+            SELECT t.ref, t.term, t.definition, m.parts
+            FROM term_mentions m
+            JOIN terms t ON t.volume_id = m.volume_id AND t.ref = m.term_ref
+            WHERE m.volume_id = ? AND m.document_id = ?
+            ORDER BY t.term, t.ref
+            """
+        let stmt = try prepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, volumeId)
+        bind(stmt, 2, documentId)
+        var results: [LinkedTerm] = []
+        while step(stmt) {
+            let entry = GlossEntry(ref: columnString(stmt, 0) ?? "",
+                                   term: columnString(stmt, 1) ?? "",
+                                   definition: columnString(stmt, 2))
+            let parts = TermMentionParts(rawValue: Int(sqlite3_column_int64(stmt, 3)))
+            results.append(LinkedTerm(entry: entry, parts: parts))
+        }
+        return results
+    }
+
     // MARK: - SQLite Helpers
 
     /// SQLite's result code for `sql` run on this store's connection, so a test can show that the
@@ -1162,4 +1206,50 @@ public actor PersonMentionStore {
 public enum PersonMentionError: Error, Sendable {
     case databaseOpenFailed(message: String)
     case sqliteError(code: Int32, message: String)
+}
+
+// MARK: - Linked terms
+
+/// The parts of a document that link a term, OR'd over the document: `term_mentions.parts`
+/// (decision 188, index version 76).
+///
+/// A `<gloss>` link takes the part of the nearest element that has one: the document's text, its
+/// heading, a footnote, or its source note, which holds everything inside it, a note within it
+/// included. A note on the heading is the note's part, not the heading's, since from 1955 the
+/// source note is a footnote on the heading. An editorial note's own text is the document's text.
+/// A term `frus1981-88v16` names on a document's `@ana` is ``annotation``, beside any part that
+/// links it. The raw values are the column's, so a reader of the index can test one in SQL
+/// (`parts & 8` for the source note).
+public struct TermMentionParts: OptionSet, Sendable, Hashable {
+    /// The column's value.
+    public let rawValue: Int
+
+    /// Makes a set from the column's value.
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    /// The document's text: everything outside its heading and its notes.
+    public static let text = TermMentionParts(rawValue: 1)
+    /// The document's heading, outside a note on it.
+    public static let heading = TermMentionParts(rawValue: 2)
+    /// A note other than the source note, outside it.
+    public static let footnote = TermMentionParts(rawValue: 4)
+    /// The source note, and everything inside it.
+    public static let sourceNote = TermMentionParts(rawValue: 8)
+    /// Named on the document's `@ana`, which prints nothing (`frus1981-88v16`).
+    public static let annotation = TermMentionParts(rawValue: 16)
+}
+
+/// A term one document links: its volume's entry for it, and the parts of the document that link
+/// it (decision 188), as ``PersonMentionStore/termsLinked(inDocument:volumeId:)`` reads them.
+public struct LinkedTerm: Sendable {
+    /// The term and its volume's definition.
+    public let entry: GlossEntry
+    /// The parts of the document that link it.
+    public let parts: TermMentionParts
+
+    /// Makes a linked term from its entry and its parts.
+    public init(entry: GlossEntry, parts: TermMentionParts) {
+        self.entry = entry
+        self.parts = parts
+    }
 }

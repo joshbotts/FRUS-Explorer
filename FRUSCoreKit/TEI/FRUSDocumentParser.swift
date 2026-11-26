@@ -163,6 +163,13 @@ import SourceNoteKit
 ///          volume's bytes, which the indexer has read once to hash them, through a stream over them,
 ///          so the delegates see the events a parse of the file gives (`parseVolumeFull(volumeURL:)`,
 ///          whose body both now share). Nothing it parses changes
+///   2.17 — 2026-11-26 (F7, index version 76): `VolumeFullParseResult.divisionStartPages`, the page
+///          each division with an `xml:id` begins on — a division the index gives no row (the
+///          Contents, the Sources, the Persons, the Index), a section promoted to a row, and a
+///          container — which the parse settled already (#1503) and dropped for all but a document
+///          and an editorial note. And a term-list item that lists two spellings or more gives each
+///          its own `GlossEntry` under its own id, with the definition printed after the last
+///          (decision 189), where it gave one, under its last id with its first word
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -400,7 +407,8 @@ public actor FRUSDocumentParser {
             persons:       composite.personsDelegate.entries,
             terms:         composite.termsDelegate.entries,
             volumeSources: composite.sourcesDelegate.entries,
-            structureSections: composite.structureDelegate.topLevelSections
+            structureSections: composite.structureDelegate.topLevelSections,
+            divisionStartPages: composite.teiDelegate.divisionStartPages
         )
     }
 
@@ -783,6 +791,20 @@ public struct VolumeFullParseResult: Sendable {
     /// for the Browser hierarchy. Persisted to `volume_structures` at index time
     /// so browsing an indexed volume never re-parses its XML.
     public let structureSections: [VolumeSection]
+    /// The page each division with an `xml:id` begins on, other than a document and an editorial
+    /// note, which carry theirs (`FRUSDocumentAST.startPage`): in the order the divisions open
+    /// (F7, index version 76). Stored as `division_start_pages`, so a volume's Contents line for
+    /// its Preface (`#pg_III`) or its Index (`#pg_315`) can name what begins there.
+    public var divisionStartPages: [DivisionStartPage] = []
+}
+
+/// The page a division begins on, from the parse (F7, index version 76): the last `<pb>` before
+/// its first printed text, a break between divisions included, which no division holds.
+public struct DivisionStartPage: Sendable, Equatable {
+    /// The division's `xml:id`.
+    public let divisionId: String
+    /// The page it begins on.
+    public let page: PageNumber
 }
 
 /// Whether a `VolumeSourceEntry` is a narrative "Note on Sources" paragraph, a node in
@@ -938,6 +960,12 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     // MARK: Output
 
     var documents: [FRUSDocumentAST] = []
+    /// The page each division with an `xml:id` begins on, but a document and an editorial note,
+    /// in the order the divisions open (F7, index version 76): recorded as each closes, when its
+    /// start page is settled, and sorted by ``ParseFrame/openIndex`` in ``finishParse()``.
+    private(set) var divisionStartPages: [DivisionStartPage] = []
+    /// Each entry of `divisionStartPages` with the order its division opened in.
+    private var divisionStartPagesByOpen: [(openIndex: Int, start: DivisionStartPage)] = []
     var fatalError: Error?
     var foundTargetDocument = false
     /// Set when a parse for one section reached that section's close and found it one the index
@@ -1139,6 +1167,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // leave the list, or the next `<pb>` would index past the end of the stack. The
         // public-diplomacy volumes' XHTML video players are such divs, holding only an <iframe/>.
         if !divsAwaitingText.isEmpty { divsAwaitingText.removeAll { $0 >= stack.count } }
+        // F7 (index version 76): a division's start page is settled once it closes.
+        if elementName == "div", let start = Self.divisionStartPage(of: frame) {
+            divisionStartPagesByOpen.append((frame.openIndex, start))
+        }
 
         // Flush remaining text buffer into children.
         let normalized = normalizedText(frame.textBuffer)
@@ -1485,6 +1517,17 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         return node.children.contains(where: holdsImage)
     }
 
+    /// The page `frame`'s division begins on, for a division with an `xml:id` that is neither a
+    /// document nor a legacy editorial note, whose rows carry their own start page (F7, index
+    /// version 76); `nil` for those, for one with no id, and for one that begins on no page.
+    private static func divisionStartPage(of frame: ParseFrame) -> DivisionStartPage? {
+        let type = frame.attributes["type"] ?? ""
+        guard type != "document", type != "editorialNote",
+              let id = frame.attributes["xml:id"] ?? frame.attributes["id"], !id.isEmpty,
+              let page = frame.startPage else { return nil }
+        return DivisionStartPage(divisionId: id, page: page)
+    }
+
     // MARK: - Containers (#1510)
 
     /// Gives each break a container carried (`carriedBreaks`) to the section that begins after it:
@@ -1495,6 +1538,9 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// or a later one, is already the page the document begins on (`FRUSDocumentAST.startPage`), so
     /// the page has its answer. One followed by nothing the index holds goes nowhere.
     func finishParse() {
+        // F7: the divisions' start pages in the order they open, where they were recorded as they
+        // closed, a division after everything inside it.
+        divisionStartPages = divisionStartPagesByOpen.sorted { $0.openIndex < $1.openIndex }.map(\.start)
         guard !carriedBreaks.isEmpty else { return }
         var carried: [Int: [PageNumber]] = [:]
         // Source order: a container closes after the containers inside it, so their breaks were
@@ -2678,6 +2724,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
 ///
 /// Handles the `<div type="terms">` structure:
 ///   `<list><item xml:id="t1"><term>Abbr.</term>: definition text</item></list>`
+///
+/// An item that lists two spellings or more, each a `<term xml:id>` (decision 189, index version
+/// 76), gives each its own entry under its own id, each with the definition printed after the last:
+/// `HAD or HD, Henry A. Dunlap` is `HAD` and `HD`, both *Henry A. Dunlap*. Until then the item gave
+/// one entry, under its last id with its first word, and a link to any other spelling found none.
 private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [GlossEntry] = []
@@ -2689,6 +2740,14 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
     private var textBuffer = ""
     private var elementDepth = 0
     private var termsSectionDepth = -1
+    /// Each `<term xml:id>` of the current item with its own text, in order (decision 189).
+    private var itemTerms: [(id: String, text: String)] = []
+    /// The text of the `<term>` being read, while one is open.
+    private var termText: String?
+    /// The `xml:id` of the `<term>` being read, when it has one.
+    private var termId: String?
+    /// The item's text since its last `</term>`: the definition, where it lists two spellings.
+    private var tailBuffer = ""
 
     func parser(_ parser: XMLParser,
                 didStartElement elementName: String,
@@ -2724,6 +2783,10 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             currentId = attributeDict["xml:id"] ?? attributeDict["id"]
             currentTerm = nil
             textBuffer = ""
+            itemTerms = []
+            tailBuffer = ""
+            termText = nil
+            termId = nil
         }
         // FRUS TEI: <item><term xml:id="t_A1">A</term>, airgram</item>
         // Capture the xml:id from <term> inside an item — this is the canonical id.
@@ -2731,12 +2794,16 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             if let id = attributeDict["xml:id"] ?? attributeDict["id"] {
                 currentId = id
             }
+            termText = ""
+            termId = attributeDict["xml:id"] ?? attributeDict["id"]
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inItem else { return }
         textBuffer += string
+        tailBuffer += string
+        if termText != nil { termText? += string }
     }
 
     func parser(_ parser: XMLParser,
@@ -2751,7 +2818,22 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             currentTerm = textBuffer.normalizedWhitespace
             textBuffer = ""
         }
-        if elementName == "item" {
+        if elementName == "term" && inItem {
+            if let id = termId, let text = termText { itemTerms.append((id, text)) }
+            termText = nil
+            termId = nil
+            tailBuffer = ""
+        }
+        if elementName == "item" && itemTerms.count > 1 {
+            // Decision 189: one entry per spelling, each with the definition after the last.
+            let definition = Self.definition(after: tailBuffer)
+            for (id, text) in itemTerms {
+                let word = Self.spelling(text)
+                if !word.isEmpty {
+                    entries.append(GlossEntry(ref: id, term: word, definition: definition))
+                }
+            }
+        } else if elementName == "item" {
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             let id = currentId ?? (currentTerm ?? raw)
             if !id.isEmpty {
@@ -2785,15 +2867,50 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
                     entries.append(GlossEntry(ref: id, term: term, definition: def))
                 }
             }
+        }
+        if elementName == "item" {
             inItem = false
             currentId = nil
             currentTerm = nil
             textBuffer = ""
+            itemTerms = []
+            tailBuffer = ""
+            termText = nil
+            termId = nil
         }
         if elementDepth <= termsSectionDepth {
             inTermsSection = false
             termsSectionDepth = -1
         }
+    }
+
+    /// One spelling's word, where an item lists two or more (decision 189): its text with the space
+    /// folded, a comma, semicolon or colon the list printed inside the term taken off its end
+    /// (`G–1,`), and parentheses around the whole of it taken off (`(Masjumi)`). A dash is kept,
+    /// since a spelling can begin with one (`–2`, after `G–1,`).
+    static func spelling(_ text: String) -> String {
+        var word = text.normalizedWhitespace
+        while let last = word.last, last == "," || last == ";" || last == ":" || last.isWhitespace {
+            word.removeLast()
+        }
+        if word.count > 2, word.hasPrefix("("), word.hasSuffix(")") {
+            word = String(word.dropFirst().dropLast()).trimmingCharacters(in: .whitespaces)
+        }
+        return word
+    }
+
+    /// The definition of an item that lists two spellings or more (decision 189): its text after
+    /// the last, with the space folded, the punctuation that joins it to the spellings taken off its
+    /// start (a closing parenthesis among it, as in `BMM (or BMMG,) British Military Mission`), and
+    /// off its end the separators the one-spelling rule trims. `nil` when nothing is left.
+    static func definition(after tail: String) -> String? {
+        let lead = CharacterSet(charactersIn: ",;:—–-)").union(.whitespacesAndNewlines)
+        let trail = CharacterSet(charactersIn: ",;:—–-").union(.whitespacesAndNewlines)
+        let folded = tail.normalizedWhitespace
+        guard let start = folded.firstIndex(where: { !$0.unicodeScalars.allSatisfy(lead.contains) }),
+              let end = folded.lastIndex(where: { !$0.unicodeScalars.allSatisfy(trail.contains) }),
+              start <= end else { return nil }
+        return String(folded[start...end])
     }
 }
 

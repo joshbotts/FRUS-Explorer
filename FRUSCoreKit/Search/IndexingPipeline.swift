@@ -572,6 +572,19 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `allDocumentKeys()` are public, unchanged, since the word cloud's count, which moved into the kit
 ///         (`WordCloudCount`), reads a scope's text with the first, for a host that counts a scope, the
 ///         corpus included, as the app does; nothing the indexer stores or reads changes
+///  4.67 — 2026-11-26 (plan of record row L26): `currentDateIndexVersion` → 76 — a document's place in
+///         its volume, `document_cache.document_order`, written by every store pass, by which a volume
+///         lists, then rowid (#1978); an editorial note's own source note, dateline and marking, read
+///         under its wrapper where it prints a source note of its own (`ownFieldNodes(of:)`, #1854); each
+///         document's linked terms, `term_mentions` (decision 172), with the parts of the document
+///         that link each, `parts` (decision 188); a `terms` row for each spelling of a term-list item
+///         (decision 189); on an edge resolved from a page, the page and how, `cited_page_id` and
+///         `page_resolution` (decision 190); the footnote grammar's post-1963 central files, a
+///         Subject-Numeric file's class row and the Central Foreign Policy File's, with each document's walk
+///         seeded from its source note and the packet's channel one list, `ExternalCitation.anchorsOutsideThePacket`
+///         (decision 191); and the page each division begins
+///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
+///         See the v76 note
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1635,7 +1648,8 @@ public actor IndexingPipeline {
     ///     d372) from 6 rows citing it to 162.
     ///   - **The printed form is classified at parse time** (``PageReferenceForm``,
     ///     `collectDocumentRefs`), from the reference's siblings, and carried to the store pass with
-    ///     the hint; neither is stored.
+    ///     the hint; neither is stored. (From 76 the outcome is: the page cited and how the document
+    ///     was chosen, decision 190.)
     ///   - **A page written with its own volume's prefix** (`frus1950v06#pg_N` inside
     ///     `frus1950v06`) is resolved by the same-volume pass, which required a `NULL`
     ///     `target_volume_id`: 46 rows at version 70, all 46 resolving.
@@ -1707,7 +1721,96 @@ public actor IndexingPipeline {
     ///   revision hashes, their dates, pages, people, terms and sources, and each volume's outline).
     ///   Without the bump only the volumes indexed after the update would have a record, and an export
     ///   could not name the rest.
-    public static let currentDateIndexVersion: Int = 75
+    /// - v75→76 — version 1.1's index (plan of record of 2026-11-25, row L26). What a re-index stores
+    ///   more:
+    ///   - **A document's place in its volume** (#1978): `document_cache.document_order`, the row's
+    ///     position in the parse's list, which every store pass writes and the upsert sets. A row keeps
+    ///     its rowid across passes, since the FTS5 tables key on it, so rowid order was the order rows
+    ///     were first written, and a document a later version or a corrected file added listed last:
+    ///     in the owner's Mac library, upgraded in place, 361 of the 553 volumes listed in another
+    ///     order than a fresh index of the same files at corpus `6170e4b32`. `documents(forVolume:)`,
+    ///     `document(forDocumentNumber:inVolume:)` and `documentRevisions(forVolumeId:)` read it, then
+    ///     rowid; an index from before 76 opened read-only lists by rowid, as before. On a full index
+    ///     of the 553 catalogue volumes at 76, each volume's `document_order` runs 0 to n−1 in that
+    ///     fresh index's rowid order. Without the bump an upgraded library keeps every such volume out
+    ///     of its file's order.
+    ///   - **An editorial note's own source note, dateline and marking** (#1854): the TEI tags
+    ///     8,468 documents in the 553 catalogue volumes `editorial-note`, and the parser wraps each in
+    ///     one `.editorialNote` node, under which the extractors never looked. 138 of them are printed
+    ///     documents with a `<note type="source">` of their own (memoranda, telegrams, letters and
+    ///     minutes, 132 in the volumes covering 1932–1954). The extractors now read under the wrapper
+    ///     where it holds a source note of its own (``ownFieldNodes(of:)``), and the generators'
+    ///     mirror, `DocumentNoteExtractor`, does the same. Measured on two full indexes of the 553
+    ///     catalogue volumes at corpus `6170e4b32`, at 75 and at 76: `source_note` is stored for the
+    ///     138 (in 47 volumes), `dateline` for 131 of them, and each has a `document_sources` row
+    ///     (52 by lot, 48 by decimal file, 29 a named series), 114 with a marking; their content hashes
+    ///     move with them, which the bump rebaselines rather than stamps. The **Editorial Note** badge
+    ///     stays. Without the bump an installed index keeps the 138 with no note, dateline or row.
+    ///   - **Each document's linked terms** (decision 172): `term_mentions`, one row per document and
+    ///     term, from each `<gloss>` link's target (``normalizeTermRef(_:)``) and, for
+    ///     `frus1981-88v16`, the terms a document names on `@ana` (``annotatedTermRefs(_:terms:)``), as
+    ///     `person_mentions` holds the people; read by `PersonMentionStore.termsLinked(inDocument:volumeId:)`
+    ///     for a collection's *Abbreviations & Terms* block. On the full index at 76: 498,757 rows for
+    ///     113,714 documents in 312 volumes (`frus1981-88v16`: 419 rows for its 88 documents), every
+    ///     one naming a term its volume's list holds once decision 189 gives each spelling its row
+    ///     (809 named none before it).
+    ///   - **Each spelling of a term-list item its own `terms` row** (decision 189, CR's DATA-2): an
+    ///     item that lists two spellings or more, `HAD or HD, Henry A. Dunlap`, gave one row, under
+    ///     its last id with its first word, so a link to another spelling found no definition and the
+    ///     reader asked for a re-index that could not supply one. The parse now gives each spelling a
+    ///     row under its own id, its word as printed, with the definition printed after the last
+    ///     (`TermsParserDelegate`). On the full index: 66,203 rows → 66,426, 223 added and the 200
+    ///     items' last spellings re-worded, in 31 volumes, every other row as it was; the 809
+    ///     `term_mentions` rows that named no row all name one. `volume-annotations-index.json`
+    ///     counts each volume's terms, so it moves in those 31 volumes (and 14 documents gain
+    ///     `abbreviations`, in 6); the page map and the edge index do not.
+    ///   - **How a page reference was resolved** (decision 190, CR's EDI-2): the two page passes
+    ///     store, beside the document, the page cited (`cross_references.cited_page_id`) and how the
+    ///     document was chosen (`page_resolution`, ``PageSpanResolver/PageResolution``: `one`,
+    ///     `range`, `number`, `day`, `first`), from ``PageSpanResolver/citedDocumentResolution(among:facts:citing:)``
+    ///     and its rule-C twin, which each `citedDocument` now forwards to; a row left on its page
+    ///     has neither. So a collection's *Documents cited, not included* can tell the editors'
+    ///     citations from the index's choices. On a full index built as the app builds it: of the
+    ///     same volume's page references, 57,531 resolve (43,947 one, 11 number, 5,262 day, 8,311
+    ///     first) and 170 stay; of another volume's, 29,391 resolve (21,076 one, 1,954 range ends,
+    ///     3 number, 2,177 day, 4,181 first) and 19,213 stay. Every row is the one the app's own
+    ///     census index of 2026-11-26, built without the columns, holds, in every column they share.
+    ///   - **Where each term is linked** (decision 188, CR's reading of the block): `parts`, the parts
+    ///     of the document that link the term OR'd together (``TermMentionParts``: text 1, heading 2,
+    ///     footnote 4, source note 8, `@ana` 16), which the walk carries down
+    ///     (``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termParts:part:)``),
+    ///     so the block can list only the terms a page prints. On the full index: 124,616 rows
+    ///     (25.0%) are linked only in notes, 72,777 in the source note alone; 326,903 in the text
+    ///     alone. Read pair by pair against CR's own walk of the TEI, all 497,026 pairs it finds
+    ///     carry the same flags; the 1,731 rows it does not find are in the 669 divisions the index
+    ///     stores as documents and it does not (prefaces, term lists, prose sections). The rows
+    ///     are the ones the table held without the column, and no bundled file reads it.
+    ///   - **The page each division begins on** (F7, decision 178): `division_start_pages`, the start
+    ///     page the parse settles for every division with an `xml:id` (`VolumeFullParseResult.divisionStartPages`)
+    ///     and dropped for all but a document and an editorial note, in a table of its own so that no
+    ///     page citation, page map or document's page list reads a division as a document
+    ///     (``divisions(startingOn:inVolume:)``). A full index at 75 held no row for any of the seven
+    ///     front- and back-matter lines of `frus1961-63v06`'s Contents (`#pg_III` … `#pg_315`); at 76
+    ///     each names its division (the Preface, the Introduction, the list of the administration's
+    ///     volumes, the Sources, the Abbreviations, the Persons, the Index): 24,009 rows in 552
+    ///     volumes. `page_ranges` is unchanged, row for row.
+    ///   - **The post-1963 central files in the footnote grammar** (decision 191, CR's C2-5; the owner's
+    ///     "Every reader now" and both `Ibid.` readings). The class channel refused every Subject-Numeric
+    ///     designator; it now admits one whose clause names the Central Files, not the White House's
+    ///     nor the Central Foreign Policy File alone, under a lead the source notes read
+    ///     (`FootnoteIbidGapWalker.subjectNumericVerdict`), and an `Ibid.` that names a file of its own
+    ///     takes its referent's Central Files within three notes or, first in the document, the
+    ///     source note's (`inheritsRepository`). The Central Foreign Policy File, which had no anchor, is
+    ///     `centralForeignPolicyFile`: `repository` the Department, no collection, its film number in
+    ///     `file_id`, by `Ibid.` too. Each document's walk is seeded from its parsed source note, as
+    ///     `ExternalCitationIndexRunner` seeds it. On a full index built as the app builds it:
+    ///     `external_citations` 50,173 rows → 65,549, 7,075 subject-numeric (3,052 by `Ibid.`, 1,631
+    ///     keys, 93 volumes) and 8,313 of the file (426 by `Ibid.`, 62 volumes), each the count
+    ///     `external-citation-index.json` regenerated with it gives; every other row as it was but 12 bare
+    ///     `Ibid.`s whose last citation is now the file, which had taken a library or a lot before it.
+    ///   Every other table holds the same rows at 75 and 76, read table by table with the id columns
+    ///   set aside.
+    public static let currentDateIndexVersion: Int = 76
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3073,6 +3176,7 @@ public actor IndexingPipeline {
         // for the rest of the install (#308).
         for table in ["cross_references", "page_ranges", "document_dates",
                       "document_cache", "person_mentions", "persons", "person_list_sources", "terms",
+                      "term_mentions", "division_start_pages",
                       "document_sources", "external_citations", "volume_sources",
                       "volume_structures", "document_subjects", "document_subject_refs",
                       "document_subject_volumes"] {
@@ -3509,18 +3613,53 @@ public actor IndexingPipeline {
 
     // MARK: - Browser Query (used by BrowserViewModel)
 
-    /// Returns all documents for a volume in insertion order (source document order).
+    /// Whether this index's `document_cache` has `document_order` (#1978, index version 76), read
+    /// once: one a read-write open of a build at 76 or later wrote or migrated does; one from
+    /// before 76 opened read-only does not (`init(readingIndexAt:fts5Store:resources:volumesDirectory:)`,
+    /// which runs no migration), and its volumes list in rowid order, as they always did.
+    private var documentOrderColumn: Bool?
+
+    /// The `ORDER BY` a volume's `document_cache` rows are read in: `document_order, rowid`, or
+    /// `rowid` on an index with no `document_order` (``documentOrderColumn``).
+    private var volumeOrder: String {
+        if documentOrderColumn == nil {
+            var stmt: OpaquePointer?
+            defer { sqlite3_finalize(stmt) }
+            var found = false
+            if sqlite3_prepare_v2(auxDb, "PRAGMA table_info(document_cache)", -1, &stmt, nil) == SQLITE_OK {
+                while sqlite3_step(stmt) == SQLITE_ROW {
+                    if let name = sqlite3_column_text(stmt, 1), String(cString: name) == "document_order" {
+                        found = true
+                        break
+                    }
+                }
+            }
+            documentOrderColumn = found
+        }
+        return documentOrderColumn == true ? "document_order, rowid" : "rowid"
+    }
+
+    /// Returns all documents for a volume in its file's order.
     ///
     /// Reads `document_cache` which is populated by `indexVolume`. Returns an empty
     /// array if the volume has not been indexed.
     ///
+    /// **The order is `document_order`, then rowid (#1978, index version 76).** It was rowid alone,
+    /// documented as insertion order. But the store pass's upsert keeps a row's rowid, which the
+    /// FTS5 tables key on, so rowid order is the order the rows were first written: a document a
+    /// later index version began to hold, or a corrected file added, listed last. In the owner's
+    /// Mac library, upgraded in place, 361 of the 553 volumes listed in another order than a fresh
+    /// index of the same files, `frus1969-76ve09p1`'s Notes on U.S. Covert Actions last where the
+    /// file has them third. Every pass writes `document_order`, so the volumes list in their files'
+    /// order from the version's re-index on; before it the column is `NULL` and rowid decides.
+    ///
     /// - Parameter volumeId: The volume to query.
-    /// - Returns: `DocumentBrowserEntry` values ordered by their rowid.
+    /// - Returns: `DocumentBrowserEntry` values in the volume's order.
     public func documents(forVolume volumeId: String) throws -> [DocumentBrowserEntry] {
         let sql = """
             SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
             FROM document_cache WHERE volume_id = ?
-            ORDER BY rowid
+            ORDER BY \(volumeOrder)
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -3541,6 +3680,43 @@ public actor IndexingPipeline {
         return entries
     }
 
+    /// The divisions of a volume that begin on `page`, outermost first: the `xml:id` of each
+    /// division with one that is neither a document nor an editorial note, whose start pages are
+    /// `page_ranges` rows (F7, decision 178, index version 76).
+    ///
+    /// The answer a page link needs when no document holds its page: `frus1961-63v06`'s Contents
+    /// links its Preface as `#pg_III` and its Index as `#pg_315`, the break before each division,
+    /// which no row of `page_ranges` holds, so the link opened nothing. Empty for a page no
+    /// division begins on, and for every volume indexed before version 76 until its re-index.
+    ///
+    /// - Parameters:
+    ///   - page: The page, as `PageNumber.parse(_:xmlId:)` reads a break's `@n`.
+    ///   - volumeId: The volume.
+    /// - Returns: The divisions' ids, in the order they open in the volume.
+    public func divisions(startingOn page: PageNumber, inVolume volumeId: String) throws -> [String] {
+        let key = Self.pageRangeRow(volumeId: volumeId, documentId: "", pageNumber: page)
+        let byNumber = key.pageNumberInt != nil
+        let stmt = try auxPrepare("""
+            SELECT division_id FROM division_start_pages
+             WHERE volume_id = ? AND page_number_type = ?
+               AND \(byNumber ? "page_number_int = ?" : "page_number_raw = ?")
+             ORDER BY division_order
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, key.pageNumberType, -1, SQLITE_TRANSIENT_IP)
+        if let number = key.pageNumberInt {
+            sqlite3_bind_int64(stmt, 3, Int64(number))
+        } else {
+            sqlite3_bind_text(stmt, 3, key.pageNumberRaw, -1, SQLITE_TRANSIENT_IP)
+        }
+        var ids: [String] = []
+        while try auxStep(stmt) {
+            if let id = auxColumnString(stmt, 0) { ids.append(id) }
+        }
+        return ids
+    }
+
     /// Returns the document carrying the given canonical printed number in a volume, or
     /// `nil` when the volume is not indexed or has no such document.
     ///
@@ -3549,6 +3725,10 @@ public actor IndexingPipeline {
     /// number is NOT a substitute: BM25 ranks every document whose body merely mentions
     /// the digits (dates, telegram numbers, page references) and the result cap starves
     /// out the actual document row in any realistically-sized volume.
+    ///
+    /// - Parameters:
+    /// Where two documents carry the same number, the first in the volume's order answers
+    /// (`document_order`, then rowid, as ``documents(forVolume:)`` lists them; #1978).
     ///
     /// - Parameters:
     ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
@@ -3561,7 +3741,7 @@ public actor IndexingPipeline {
         let sql = """
             SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
             FROM document_cache WHERE volume_id = ? AND document_number = ?
-            ORDER BY rowid
+            ORDER BY \(volumeOrder)
             LIMIT 1
             """
         let stmt = try auxPrepare(sql)
@@ -6620,6 +6800,8 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var revisionRows: [DocumentRevisionRow] = []
         var personMentionRows: [PersonMentionRow] = []
+        // Decision 172, index version 76: which of its volume's terms each document links.
+        var termMentionRows: [TermMentionRow] = []
         // Index version 72: the classification marking each document prints in its opener, by
         // document id, which its source row stores where the note prints none.
         var openerClassifications: [String: String] = [:]
@@ -6628,6 +6810,8 @@ public actor IndexingPipeline {
         // #1599: the ids of the volume's own persons list, which say which of a document's `@ana`
         // pointers name a person.
         let listedPersonIds = Set(fullResult.persons.map(\.ref))
+        // Decision 172: the ids of the volume's own terms list, which say which `@ana` pointers name a term.
+        let listedTermIds = Set(fullResult.terms.map(\.ref))
         var externalCitationRows: [ExternalCitationRow] = []
         // Hoisted once per volume: the host's provider may decode on first use, and this scan runs
         // over every body footnote in the volume. Nil (the artifact missing from the host's
@@ -6646,12 +6830,17 @@ public actor IndexingPipeline {
         // reference in `external-citation-index.json` are the same walk over the same clauses.
         // The schedule guard degrades exactly as the direct pass above does: a missing labels
         // artifact refuses rather than admits.
-        var ibidWalker = FootnoteIbidGapWalker(
-            admissionVerdict: FootnoteIbidGapWalker.shippedAdmissionVerdict { [classSchedule] in
-                classSchedule?.composes($0) ?? false
-            })
+        let admissionVerdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { [classSchedule] in
+            classSchedule?.composes($0) ?? false
+        }
+        var ibidWalker = FootnoteIbidGapWalker(admissionVerdict: admissionVerdict)
+        // Decision 191: the document's own source note seeds an `Ibid.` that names a file of its
+        // own, first in the document. Parsed only where it could be a Central Files or Central
+        // Foreign Policy File note; every other note seeds nothing.
+        let seedParser = SourceNoteParser()
 
-        for astDoc in astDocs {
+        // #1978: `position` is the row's place in its volume, the order a fresh index writes them in.
+        for (position, astDoc) in astDocs.enumerated() {
             let did = astDoc.documentId
             let header     = Self.extractHeader(from: astDoc.nodes)
             let dateline   = Self.extractDateline(from: astDoc.nodes)
@@ -6680,18 +6869,30 @@ public actor IndexingPipeline {
             var docCrossRefs: [CrossReferenceRow] = []
             var docPersonRefs: Set<String> = []
             var docPageRanges: [PageRangeRow] = []
+            var docTermParts: [String: TermMentionParts] = [:]
             Self.collectDocumentRefs(
                 from: astDoc.nodes,
                 volumeId: volumeId, documentId: did,
                 crossRefs: &docCrossRefs,
                 personRefs: &docPersonRefs,
                 personListVolumes: &personListVolumes,
-                pageRanges: &docPageRanges
+                pageRanges: &docPageRanges,
+                termParts: &docTermParts
             )
             crossRefs.append(contentsOf: docCrossRefs)
             // #1599: the people the document names on its `@ana`, beside those its text marks.
             docPersonRefs.formUnion(Self.annotatedPersonRefs(astDoc.annotatedReferences,
                                                              persons: listedPersonIds))
+            // Decision 172: and the terms it names there, beside those its text links, as a part
+            // of their own that prints nothing (decision 188).
+            for ref in Self.annotatedTermRefs(astDoc.annotatedReferences, terms: listedTermIds) {
+                docTermParts[ref, default: []].insert(.annotation)
+            }
+            // Sorted, so two indexes of one file hold their rows in one order.
+            for (ref, parts) in docTermParts.sorted(by: { $0.key < $1.key }) {
+                termMentionRows.append(TermMentionRow(volumeId: volumeId, documentId: did,
+                                                      termRef: ref, parts: parts))
+            }
             // #1503: the page the document begins on, ahead of the breaks inside it — often a
             // break between documents, which no document's nodes hold. The parser gives one to a
             // document or an editorial note only, never a promoted prose section (review round 1).
@@ -6708,8 +6909,13 @@ public actor IndexingPipeline {
             pageRangeRows.append(contentsOf: docPageRanges)
 
             if !astDoc.isFrontMatter {
-                footnoteScanner.beginDocument()
-                ibidWalker.beginDocument()
+                // Decision 191: the document's own source note seeds an `Ibid.` that names a file
+                // of its own first in the document. Every note is parsed for it, as
+                // `ExternalCitationIndexRunner` parses every one, so the table and the artifact
+                // seed the same documents; a word test ahead of the parse would be a second rule.
+                let seed = sourceNote.map { note in (parsed: seedParser.parse(note), note: note) }
+                footnoteScanner.beginDocument(sourceNote: seed?.parsed)
+                ibidWalker.beginDocument(sourceNote: seed?.parsed, note: seed?.note)
                 for (ordinal, footnote) in Self.collectBodyFootnotes(from: astDoc.nodes)
                     .enumerated() {
                     // `ordinal` is a reading POSITION among the notes this walk keeps; `label` is
@@ -6727,16 +6933,14 @@ public actor IndexingPipeline {
                     }
                     // #834: central-file classes, continuing the same `citation_index` sequence so
                     // the primary key still separates every citation in the note. The rule is the
-                    // one `ExternalCitationIndexRunner` ships — serial-carrying, composing under
-                    // the schedule, in the shared vocabulary, subject-numeric out — because a table
-                    // admitting what the artifact refused would make the graph and Archival
-                    // Analytics disagree about the same footnote.
+                    // one `ExternalCitationIndexRunner` ships — the shared verdict chain itself:
+                    // serial-carrying and composing under the schedule for a decimal class, and,
+                    // from version 76, the Central Files named and a lead the source notes read for a
+                    // subject-numeric one (decision 191) — because a table admitting what the
+                    // artifact refused would make the graph and Archival Analytics disagree about
+                    // the same footnote.
                     for candidate in FootnoteCitationScanner.classCandidates(inNote: note)
-                    where candidate.refusal == nil
-                        && !candidate.isSubjectNumeric
-                        && candidate.evidence.carriesSerial
-                        && SourceNoteParser.decimalClassKey(candidate.classKey) != nil
-                        && (classSchedule?.composes(candidate.classKey) ?? false) {
+                    where admissionVerdict(candidate) == nil {
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
                             noteLabel: noteLabel,
@@ -6753,9 +6957,15 @@ public actor IndexingPipeline {
                     // rows carry, and the same `citation_index` sequence. The walker sees EVERY
                     // note (its cross-footnote state is the point), and only the admitted-class
                     // observations become rows.
+                    // Decision 191: and an `Ibid.` naming a subject-numeric file of its own under
+                    // its referent's repository, inherited in the same sense.
                     for observation in ibidWalker.scan(note: note).observations {
-                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
-                        else { continue }
+                        let key: String
+                        switch observation.outcome {
+                        case let .inheritsAdmittedClass(admitted, _, _): key = admitted
+                        case let .inheritsRepository(named, _): key = named
+                        default: continue
+                        }
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
                             noteLabel: noteLabel,
@@ -6808,7 +7018,8 @@ public actor IndexingPipeline {
                 userTagIds: nil, summaryText: nil, noteText: nil,
                 isEditorialNote: isEditorialNote,
                 isFrontMatter: astDoc.isFrontMatter,
-                despatchSerial: despatchSerial
+                despatchSerial: despatchSerial,
+                documentOrder: position
             ))
         }
 
@@ -6825,6 +7036,13 @@ public actor IndexingPipeline {
         }
         let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
+        }
+        // F7 (decision 178, index version 76): the page each division begins on, in the order the
+        // divisions open, numbered as `page_ranges` numbers a page.
+        let divisionStartRows = fullResult.divisionStartPages.enumerated().map { order, start in
+            DivisionStartPageRow(volumeId: volumeId, divisionId: start.divisionId, order: order,
+                                 page: Self.pageRangeRow(volumeId: volumeId, documentId: start.divisionId,
+                                                         pageNumber: start.page))
         }
         // A volume that parsed NO persons list, but whose refs name another volume's, borrows the
         // entries it mentions once both are stored (`resolveBorrowedPersonLists`). Two refusals:
@@ -6919,6 +7137,8 @@ public actor IndexingPipeline {
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
             documentRevisions: revisionRows,
             personMentions: personMentionRows,
+            termMentions: termMentionRows,
+            divisionStartPages: divisionStartRows,
             persons: personRows,
             personListSources: personListSources,
             terms: termRows,
@@ -6980,6 +7200,12 @@ public actor IndexingPipeline {
             repository = library
             collection = name
             fileId = identifier
+        case .cfpfFile(let film):
+            // Decision 191: the Department's file from 1973, under the repository a lot's is, its
+            // film number where the footnote gives one. No collection name: the authority holds no
+            // record for the file, and lot 12D215, whose aliases name it, would claim it by name.
+            repository = "Department of State"
+            fileId = film
         default:
             break
         }
@@ -7098,6 +7324,7 @@ public actor IndexingPipeline {
 
         try auxDeleteCrossReferences(forVolumeId: data.volumeId)
         try auxDeletePersonMentions(forVolumeId: data.volumeId)
+        try auxDeleteTermMentions(forVolumeId: data.volumeId)
         try auxDeletePageRanges(forVolumeId: data.volumeId)
 
         let insertedReferences = try auxInsertCrossReferences(data.crossReferences)
@@ -7153,6 +7380,8 @@ public actor IndexingPipeline {
         try auxReplacePersonListSources(volumeId: data.volumeId, sources: data.personListSources)
         try resolveBorrowedPersonLists(touching: data.volumeId)
         try auxInsertTerms(data.terms)
+        try auxInsertTermMentions(data.termMentions)
+        try auxReplaceDivisionStartPages(volumeId: data.volumeId, rows: data.divisionStartPages)
         try auxInsertDocumentSources(data.documentSources)
         // #784: same delete-then-insert shape as `volume_sources` below, and for the same reason —
         // the key includes the note ordinal, so a re-index yielding fewer citations would strand
@@ -7337,6 +7566,34 @@ public actor IndexingPipeline {
         return ASTToRenderNodeConverter.renderingVersion(for: converter.convert(document))
     }
 
+    /// The nodes a document's own source note, dateline and opener's marking are read from: its
+    /// nodes, or, for a document the TEI tags as an editorial note and that prints a source note of
+    /// its own, the nodes inside the `.editorialNote` wrapper (#1854, index version 76).
+    ///
+    /// The parser wraps a `subtype="editorial-note"` document, and a legacy `type="editorialNote"`
+    /// division, in one `.editorialNote` node, and the three extractors read only a document's top
+    /// level, so until 76 the index stored no source note, dateline or source row for any of them.
+    /// For a real editorial note that is right: it prints none. But 138 of the 8,468 documents so
+    /// tagged in the 553 catalogue volumes carry a `<note type="source">` of their own, 119 of them
+    /// under an opener with a dateline: memoranda, telegrams, letters and minutes, 132 of them in
+    /// the volumes covering 1932–1954 (`frus1941-43` d291, *Memorandum by Prime Minister
+    /// Churchill*, prints *Department of Defense Files*, *SECRET* and *[London,] June 15, 1942*).
+    ///
+    /// The wrapper's own source note decides, so a real editorial note keeps reading as it did:
+    /// one that prints no note of its own gives none of the three, as before, whatever its text
+    /// quotes. The **Editorial Note** badge stays, since the TEI tags the document so. Public
+    /// callers read through it unchanged, so a host hashing a parsed document as the index stamps
+    /// it (``contentHash(header:dateline:sourceNote:bodyText:)``) reads the same strings.
+    ///
+    /// - Parameter nodes: A document's nodes, as the parse gives them.
+    /// - Returns: The wrapper's children where the document is one wrapped editorial note holding a
+    ///   source note of its own; otherwise `nodes`.
+    nonisolated static func ownFieldNodes(of nodes: [FRUSASTNode]) -> [FRUSASTNode] {
+        guard nodes.count == 1, case .editorialNote(let children) = nodes[0],
+              locateSourceNote(in: children) != nil else { return nodes }
+        return children
+    }
+
     /// The document's printed dateline — the first `<dateline>`, at the top level or inside an
     /// `<opener>` — or nil when it prints none.
     ///
@@ -7344,14 +7601,22 @@ public actor IndexingPipeline {
     /// `<placeName>Washington</placeName>, <date>October 1, 1962</date>.`, and the space join this
     /// replaced stored it as "Washington , October 1, 1962 ." for 96.7% of the corpus's datelines.
     /// Footnotes stay in, as they always have; only the separator changed.
+    ///
+    /// Read from ``ownFieldNodes(of:)``, so an editorial note that prints a source note of its own
+    /// gives its dateline too (#1854, index version 76).
     public nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
+        datelineAtOwnLevel(ownFieldNodes(of: nodes))
+    }
+
+    /// The first `<dateline>` among `nodes`, or inside an `<opener>` among them.
+    private nonisolated static func datelineAtOwnLevel(_ nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             switch node {
             case .dateline:
                 let t = node.printedText(excludingFootnotes: false).normalizedWhitespace
                 return t.isEmpty ? nil : t
             case .opener(let c):
-                if let dl = extractDateline(from: c) { return dl }
+                if let dl = datelineAtOwnLevel(c) { return dl }
             default: break
             }
         }
@@ -7370,10 +7635,13 @@ public actor IndexingPipeline {
     /// (`SourceNoteParser.classificationMarking(fromOpenerLines:)`) gives it; measured over the 553
     /// manifest volumes at corpus `6170e4b32`, no opener holds two.
     ///
+    /// Read from ``ownFieldNodes(of:)``, so an editorial note that prints a source note of its own
+    /// gives its opener's marking too (#1854, index version 76): 107 of the 138 print one.
+    ///
     /// - Parameter nodes: The document's nodes, as the parse gives them.
     /// - Returns: The marking ("Secret; Priority"), or `nil` when the opener prints none.
     nonisolated static func extractOpenerClassification(from nodes: [FRUSASTNode]) -> String? {
-        for node in nodes {
+        for node in ownFieldNodes(of: nodes) {
             guard case .opener(let openerChildren) = node else { continue }
             for child in openerChildren {
                 guard case .unknown(let name, _, let segChildren) = child, name == "seg" else { continue }
@@ -7542,7 +7810,17 @@ public actor IndexingPipeline {
     /// `[Source: …]` bracket wrapper collapses to `Source: …` — one stored shape across
     /// both encodings, and the `Source:` prefix is preserved so `SourceNoteParser`'s
     /// narrative branch (→ `citation_era='structured'` rows) fires.
+    ///
+    /// The chain runs over ``ownFieldNodes(of:)``: for a document the TEI tags as an editorial
+    /// note, over the nodes inside its wrapper, where the note is (#1854, index version 76). The
+    /// generators' mirror, `DocumentNoteExtractor`, reads such a document the same way.
     public nonisolated static func extractSourceNote(from nodes: [FRUSASTNode]) -> String? {
+        locateSourceNote(in: ownFieldNodes(of: nodes))
+    }
+
+    /// The locator chain itself, over the nodes it is given: ``extractSourceNote(from:)``'s
+    /// patterns 1 to 4 and the deferred fallback.
+    private nonisolated static func locateSourceNote(in nodes: [FRUSASTNode]) -> String? {
         // Patterns 1 + 2: <head>-nested notes (1955+ encodings). A whole-note candidate
         // without a `Source:` prefix is deferred (see the pattern-2 gate in the doc
         // comment): when a top-level note also exists, the top-level text is the real
@@ -7808,6 +8086,9 @@ public actor IndexingPipeline {
     ///
     /// `personListVolumes` receives every volume a person ref NAMES (`personRefListVolume`), which
     /// `personRefs` cannot carry because its refs are already normalised to the bare fragment.
+    ///
+    /// The walk without the terms: ``collectDocumentRefs(from:volumeId:documentId:parentReferenceType:enclosingText:citingNote:crossRefs:personRefs:personListVolumes:pageRanges:termParts:part:)``
+    /// with the terms it collects dropped, for a caller that reads the other four.
     nonisolated static func collectDocumentRefs(
         from nodes: [FRUSASTNode],
         volumeId: String,
@@ -7819,6 +8100,38 @@ public actor IndexingPipeline {
         personRefs: inout Set<String>,
         personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow]
+    ) {
+        var termParts: [String: TermMentionParts] = [:]
+        collectDocumentRefs(from: nodes, volumeId: volumeId, documentId: documentId,
+                            parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                            citingNote: citingNote, crossRefs: &crossRefs, personRefs: &personRefs,
+                            personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                            termParts: &termParts)
+    }
+
+    /// The walk, with the terms its `<gloss>` links name (decisions 172 and 188, index version 76):
+    /// `termParts` receives each link's target normalised to its bare id (``normalizeTermRef(_:)``),
+    /// once a document however often it is linked, as `personRefs` receives the people, with the
+    /// parts of the document that link it OR'd together (``TermMentionParts``).
+    ///
+    /// `part` is the part `nodes` sit in, which the walk carries down to each link: a heading in
+    /// the document's text is `.heading`; a source note, and everything inside it, `.sourceNote`;
+    /// any other note `.footnote`. A note on the heading is therefore the note's part, which is how
+    /// the source note is printed from 1955, and an editorial note's own text is the part it sits
+    /// in, the document's text.
+    nonisolated static func collectDocumentRefs(
+        from nodes: [FRUSASTNode],
+        volumeId: String,
+        documentId: String,
+        parentReferenceType: String? = nil,
+        enclosingText: String? = nil,
+        citingNote: [FRUSASTNode]? = nil,
+        crossRefs: inout [CrossReferenceRow],
+        personRefs: inout Set<String>,
+        personListVolumes: inout Set<String>,
+        pageRanges: inout [PageRangeRow],
+        termParts: inout [String: TermMentionParts],
+        part: TermMentionParts = .text
     ) {
         for (index, node) in nodes.enumerated() {
             switch node {
@@ -7848,7 +8161,19 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part)
+
+            // ── Term links (decision 172) ──────────────────────────────────────
+            case .gloss(let ref, let children):
+                if let ref, let normalised = normalizeTermRef(ref) {
+                    termParts[normalised, default: []].insert(part)
+                }
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part)
 
             // ── Person-name links ──────────────────────────────────────────────
             case .persName(let ref, let children):
@@ -7859,7 +8184,8 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part)
 
             // ── Page breaks ────────────────────────────────────────────────────
             case .pageBreak(let pageNumber):
@@ -7876,11 +8202,16 @@ public actor IndexingPipeline {
                 let noteText = truncateContext(
                     FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
+                // Decision 188: a source note, and everything inside it, is the source note's part;
+                // any other note is a footnote's.
+                let notePart: TermMentionParts =
+                    type == .source || part == .sourceNote ? .sourceNote : .footnote
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: refType,
                     enclosingText: noteText.isEmpty ? nil : noteText,
                     citingNote: children,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: notePart)
 
             // ── Editorial notes — captures enclosing text ──────────────────────
             case .editorialNote(let children):
@@ -7892,14 +8223,26 @@ public actor IndexingPipeline {
                     parentReferenceType: "editorialNote",
                     enclosingText: editorialText.isEmpty ? nil : editorialText,
                     citingNote: nil,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part)
+
+            // ── The heading (decision 188) ─────────────────────────────────────
+            // Its words are the heading's part where it sits in the document's text. A note on it
+            // takes the note's part, above: from 1955 the source note is a footnote on the heading.
+            case .head(let children):
+                collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
+                    parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part == .text ? .heading : part)
 
             // ── All other nodes — recurse into children ────────────────────────
             default:
                 collectDocumentRefs(from: node.children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
                     citingNote: citingNote,
-                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges,
+                    termParts: &termParts, part: part)
             }
         }
     }
@@ -8065,6 +8408,25 @@ public actor IndexingPipeline {
         guard let hash = ref.lastIndex(of: "#") else { return ref.isEmpty ? nil : ref }
         let fragment = String(ref[ref.index(after: hash)...])
         return fragment.isEmpty ? nil : fragment
+    }
+
+    /// Normalises a `<gloss>` link's target to the bare id of the term it names, the key of the
+    /// volume's `terms` rows (decision 172, index version 76): `"#t_NSC1"` → `"t_NSC1"`, by the
+    /// rule ``normalizePersonRef(_:)`` gives a person's ref. Measured over the 553 catalogue volumes
+    /// at corpus `216cdb764`: 1,351,198 of the links that carry a target name a term of their own
+    /// volume (`#t_…`), and one names none (`frus1977-80v26`'s `_#…`). A gloss with no target, the
+    /// sender's and recipient's markup in a heading (`<gloss type="from">`), names no term.
+    ///
+    /// - Returns: The id, or `nil` for an empty target or fragment.
+    nonisolated static func normalizeTermRef(_ ref: String) -> String? {
+        normalizePersonRef(ref)
+    }
+
+    /// The terms of `terms` (the volume's own list) that a document's `@ana` pointers name: how
+    /// `frus1981-88v16` names the terms its documents use, as it names their people (#1599). 419 of
+    /// its pointers name a term (corpus `216cdb764`).
+    nonisolated static func annotatedTermRefs(_ pointers: [String], terms: Set<String>) -> Set<String> {
+        Set(pointers.compactMap(FRUSDocumentAST.annotatedId).filter(terms.contains))
     }
 
     /// The volume whose persons list a `persName` ref points into, when the ref names one:
@@ -8623,6 +8985,13 @@ public actor IndexingPipeline {
         // marks unresolvable, so the graph/analytics exclude them and the reading view degrades
         // them. NOT NULL + DEFAULT 0 is legal in ADD COLUMN because a default is supplied.
         try? exec("ALTER TABLE cross_references ADD COLUMN is_broken INTEGER NOT NULL DEFAULT 0")
+        // Decision 190, index version 76: on an edge a page pass resolved to one document, the page
+        // it cited (`pg_N`, in `target_volume_id` where that is set, else the source volume) and how
+        // the document was chosen (`PageSpanResolver.PageResolution`: `one`, `range`, `number`,
+        // `day`, `first`). Both NULL on every other row, a page the passes left among them. Nothing
+        // that reads the table before 76 selects them.
+        try? exec("ALTER TABLE cross_references ADD COLUMN cited_page_id TEXT")
+        try? exec("ALTER TABLE cross_references ADD COLUMN page_resolution TEXT")
         try exec("""
             CREATE TABLE IF NOT EXISTS page_ranges (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -8675,6 +9044,7 @@ public actor IndexingPipeline {
                 is_editorial_note INTEGER NOT NULL DEFAULT 0,
                 is_front_matter   INTEGER NOT NULL DEFAULT 0,
                 despatch_serial   TEXT,
+                document_order    INTEGER,
                 PRIMARY KEY (volume_id, document_id)
             )
             """)
@@ -8716,6 +9086,12 @@ public actor IndexingPipeline {
         // shape here: `document_cache` rows carry USER content (summary_text, note_text) that a
         // drop would destroy, which is why this table never took that pattern.
         try? exec("ALTER TABLE document_cache ADD COLUMN despatch_serial TEXT")
+        // #1978, index version 76: a document's place in its volume, which every store pass writes.
+        // A row keeps its rowid across passes (the upsert below, since the FTS5 tables key on it),
+        // so rowid order is the order the rows were FIRST written, and a document a later version
+        // or a corrected file added listed last. `NULL` until the volume's next pass, which the
+        // version's re-index runs; `documents(forVolume:)` then falls back to rowid order.
+        try? exec("ALTER TABLE document_cache ADD COLUMN document_order INTEGER")
         // R-5 §8.2 Q-9: which parse version wrote a revision row, so a volume removed and
         // re-downloaded across a parse change is REBASELINED rather than stamped as changed.
         // `CREATE TABLE IF NOT EXISTS` is a no-op on an existing table, so without this the column
@@ -8883,6 +9259,49 @@ public actor IndexingPipeline {
             )
             """)
         try exec("CREATE INDEX IF NOT EXISTS idx_terms_term ON terms(term)")
+        // Decision 172, index version 76: which document links which of its volume's terms, written
+        // as `person_mentions` is, from the `<gloss>` links in each document's parse and, for
+        // `frus1981-88v16`, the terms its documents name on `@ana`. One row a document and term,
+        // however often the term is linked, with the parts of the document that link it OR'd
+        // together (`parts`, decision 188: text 1, heading 2, footnote 4, source note 8, `@ana` 16;
+        // `TermMentionParts`). Read by a collection's *Abbreviations & Terms* block (the
+        // Collections design's A2), which joins it to `terms` for each term's definition and keeps
+        // a term where a part that links it prints. No id column: the key is the row, so two
+        // indexes of one file hold the same rows. Filled by the version's re-index; empty until
+        // each volume's next pass.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS term_mentions (
+                volume_id   TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                term_ref    TEXT NOT NULL,
+                parts       INTEGER NOT NULL,
+                PRIMARY KEY (volume_id, document_id, term_ref)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_term_mentions_ref ON term_mentions(volume_id, term_ref)")
+        // F7 (decision 178), index version 76: the page each division of a volume begins on, other
+        // than a document's and an editorial note's, whose start pages are `page_ranges` rows
+        // (#1503). The parse settled it already and dropped it, so a Contents line that links a
+        // front-matter page (`frus1961-63v06`'s Preface, `#pg_III`) or the Index (`#pg_315`) named
+        // no page any table held: none of the Contents' seven front- and back-matter lines did, in
+        // a full index at version 75. A table of its own, and not `page_ranges` rows, so that no page
+        // citation, page map or document's page list reads a division as a document. Numbered as
+        // `page_ranges` numbers a page; `division_order` is the order the divisions open in.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS division_start_pages (
+                volume_id        TEXT NOT NULL,
+                division_id      TEXT NOT NULL,
+                division_order   INTEGER NOT NULL,
+                page_number_type TEXT NOT NULL,
+                page_number_int  INTEGER,
+                page_number_raw  TEXT NOT NULL,
+                PRIMARY KEY (volume_id, division_id)
+            )
+            """)
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_division_start_pages_page
+            ON division_start_pages(volume_id, page_number_type, page_number_int)
+            """)
 
         // Session 130: archival citation tables.
         // Source Explorer Phase 1 (2026-07-03): `classification` column added (sentence 2
@@ -9370,12 +9789,16 @@ public actor IndexingPipeline {
     /// The `DO UPDATE SET` list names the corpus columns, so only the
     /// `frus_documents` sync trigger (`AFTER UPDATE OF header, dateline,
     /// source_note, body_text`) fires — `user_content` is untouched.
+    ///
+    /// Because the row keeps its rowid, rowid order is the order rows were first written, not
+    /// the volume's: `document_order` is the place this pass gives the row, and the listing reads
+    /// it (#1978, index version 76).
     private static let documentCacheUpsertSQL = """
         INSERT INTO document_cache
         (volume_id, document_id, document_number, header, dateline, source_note, body_text,
          subject_tag_ids, user_tag_ids, summary_text, note_text, is_editorial_note,
-         is_front_matter, despatch_serial)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         is_front_matter, despatch_serial, document_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(volume_id, document_id) DO UPDATE SET
           document_number   = excluded.document_number,
           header            = excluded.header,
@@ -9385,7 +9808,8 @@ public actor IndexingPipeline {
           subject_tag_ids   = excluded.subject_tag_ids,
           is_editorial_note = excluded.is_editorial_note,
           is_front_matter   = excluded.is_front_matter,
-          despatch_serial   = excluded.despatch_serial
+          despatch_serial   = excluded.despatch_serial,
+          document_order    = excluded.document_order
         """
 
     private func auxInsertDocumentCache(_ rows: [DocumentCacheRow]) throws {
@@ -9426,6 +9850,11 @@ public actor IndexingPipeline {
                 sqlite3_bind_int(stmt, 12, row.isEditorialNote ? 1 : 0)
                 sqlite3_bind_int(stmt, 13, row.isFrontMatter  ? 1 : 0)
                 auxBindOptional(stmt, 14, row.despatchSerial)
+                if let order = row.documentOrder {
+                    sqlite3_bind_int64(stmt, 15, Int64(order))
+                } else {
+                    sqlite3_bind_null(stmt, 15)
+                }
                 try auxStep(stmt)
             }
         }
@@ -9853,10 +10282,22 @@ public actor IndexingPipeline {
 
     /// Every revision row for a volume, in document order (R-5 P1). The read API P2's surfaces and
     /// the tests use; a caller that wants "what changed" filters on `changedAt != nil`.
+    ///
+    /// Document order is the volume's, as ``documents(forVolume:)`` lists it (#1978): a revision row
+    /// keeps its rowid across passes as a cache row does, so rowid order put a document a later
+    /// pass added last. A row whose document has left the index (`'vanished'`) has no place, and
+    /// follows the rest in rowid order.
     public func documentRevisions(forVolumeId volumeId: String) throws -> [DocumentRevision] {
+        let order = volumeOrder == "rowid" ? "r.rowid"
+            : "c.document_order IS NULL, c.document_order, r.rowid"
         let stmt = try auxPrepare("""
-            SELECT document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
-              FROM document_revisions WHERE volume_id = ? ORDER BY rowid
+            SELECT r.document_id, r.content_hash, r.body_hash, r.changed_at, r.change_kind,
+                   r.reviewed_at
+              FROM document_revisions r
+              LEFT JOIN document_cache c
+                ON c.volume_id = r.volume_id AND c.document_id = r.document_id
+             WHERE r.volume_id = ?
+             ORDER BY \(order)
             """)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
@@ -10269,17 +10710,20 @@ public actor IndexingPipeline {
     /// small minority of documents, ≲6%) is an artifact claim about the WHOLE series; this is
     /// the same measurement over the index this device actually holds, so a sparsity caption
     /// can state a measured local fact instead of asserting the corpus. The filter matches
-    /// the packet's own channel rule exactly — the class anchor is excluded, as
-    /// `TripPacketBuilder`'s refs loop excludes it — so the number describes the channel the
-    /// captions caption.
+    /// the packet's own channel rule exactly — the anchors `ExternalCitation.anchorsOutsideThePacket`
+    /// names are excluded, as `TripPacketBuilder`'s refs loop excludes them — so the number
+    /// describes the channel the captions caption. The list is constants, so the statement is
+    /// built from it rather than bound.
     ///
     /// - Returns: `(documentsWithReferences, indexedDocuments)` — both numbers, always, per
     ///   the house coverage grammar. `(0, 0)` on an empty index.
     public func externalCitationSparsity() throws -> (documentsWithReferences: Int,
                                                       indexedDocuments: Int) {
+        let excluded = ExternalCitation.anchorsOutsideThePacket
+            .map { "'\($0)'" }.joined(separator: ", ")
         let refsSQL = """
             SELECT COUNT(DISTINCT volume_id || '/' || document_id)
-            FROM external_citations WHERE anchor != 'centralFileClass'
+            FROM external_citations WHERE anchor NOT IN (\(excluded))
             """
         let stmt = try auxPrepare(refsSQL)
         defer { sqlite3_finalize(stmt) }
@@ -10457,6 +10901,69 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
+    }
+
+    /// Deletes all `term_mentions` rows for a volume before re-inserting (decision 172), so a
+    /// correction that drops a term's last link leaves no row behind.
+    private func auxDeleteTermMentions(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM term_mentions WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Replaces a volume's `division_start_pages` rows in one transaction (F7, index version 76):
+    /// delete then insert, so a division a correction removes leaves no row.
+    private func auxReplaceDivisionStartPages(volumeId: String, rows: [DivisionStartPageRow]) throws {
+        try inTransaction {
+            let delete = try auxPrepare("DELETE FROM division_start_pages WHERE volume_id = ?")
+            defer { sqlite3_finalize(delete) }
+            sqlite3_bind_text(delete, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(delete)
+            guard !rows.isEmpty else { return }
+            let stmt = try auxPrepare("""
+                INSERT OR REPLACE INTO division_start_pages
+                    (volume_id, division_id, division_order, page_number_type, page_number_int, page_number_raw)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                defer { sqlite3_reset(stmt) }
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.divisionId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 3, Int64(row.order))
+                sqlite3_bind_text(stmt, 4, row.page.pageNumberType, -1, SQLITE_TRANSIENT_IP)
+                if let n = row.page.pageNumberInt {
+                    sqlite3_bind_int64(stmt, 5, Int64(n))
+                } else {
+                    sqlite3_bind_null(stmt, 5)
+                }
+                sqlite3_bind_text(stmt, 6, row.page.pageNumberRaw, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(stmt)
+            }
+        }
+    }
+
+    /// Writes a volume's `term_mentions` rows in one transaction (decisions 172 and 188). A second
+    /// row for one document and term, which only a volume that repeats a document's id gives, ORs
+    /// its parts into the first rather than being dropped.
+    private func auxInsertTermMentions(_ rows: [TermMentionRow]) throws {
+        guard !rows.isEmpty else { return }
+        try inTransaction {
+            let stmt = try auxPrepare("""
+                INSERT INTO term_mentions (volume_id, document_id, term_ref, parts) VALUES (?, ?, ?, ?)
+                ON CONFLICT (volume_id, document_id, term_ref) DO UPDATE SET parts = parts | excluded.parts
+                """)
+            defer { sqlite3_finalize(stmt) }
+            for row in rows {
+                defer { sqlite3_reset(stmt) }
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.termRef, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_int64(stmt, 4, Int64(row.parts.rawValue))
+                try auxStep(stmt)
+            }
+        }
     }
 
     /// Replaces a volume's recorded borrowed-list sources in `person_list_sources`.
@@ -10652,13 +11159,13 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(findStmt) }
         sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
 
-        var toResolve: [(rowid: Int64, pageNum: Int)] = []
+        var toResolve: [(rowid: Int64, pageId: String, pageNum: Int)] = []
         while sqlite3_step(findStmt) == SQLITE_ROW {
             let rowid = sqlite3_column_int64(findStmt, 0)
             guard let pageId = auxColumnString(findStmt, 1) else { continue }
             // Strip the "pg_" prefix to extract the arabic page number.
             guard let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
-            toResolve.append((rowid: rowid, pageNum: pageNum))
+            toResolve.append((rowid: rowid, pageId: pageId, pageNum: pageNum))
         }
         guard !toResolve.isEmpty else { return }
 
@@ -10694,7 +11201,11 @@ public actor IndexingPipeline {
                                               precision: auxColumnString(factsStmt, 3))
         }
 
-        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        // Decision 190: the page it cited and how the document was chosen go with the document.
+        let updateSQL = """
+            UPDATE cross_references SET target_document_id = ?, cited_page_id = ?, page_resolution = ?
+            WHERE rowid = ?
+            """
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
@@ -10702,7 +11213,7 @@ public actor IndexingPipeline {
         // One lookup per distinct page: a volume's references cite the same pages again and again.
         // Which of the page's documents a reference means is its own (#1509).
         var claims: [Int: PageSpanResolver.PageClaimants?] = [:]
-        for (rowid, pageNum) in toResolve {
+        for (rowid, pageId, pageNum) in toResolve {
             let claimants: PageSpanResolver.PageClaimants?
             if let known = claims[pageNum] {
                 claimants = known
@@ -10711,12 +11222,14 @@ public actor IndexingPipeline {
                 claims[pageNum] = claimants
             }
             guard let claimants else { continue }
-            let docId = PageSpanResolver.citedDocument(among: claimants, facts: facts,
-                                                       citing: citing[rowid])
+            let (docId, resolution) = PageSpanResolver.citedDocumentResolution(
+                among: claimants, facts: facts, citing: citing[rowid])
 
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_int64(updateStmt, 2, rowid)
+            sqlite3_bind_text(updateStmt, 2, pageId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(updateStmt, 3, resolution.rawValue, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 4, rowid)
             sqlite3_step(updateStmt)
             resolvedCount += 1
         }
@@ -10765,30 +11278,36 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(findStmt) }
         sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
 
-        var toResolve: [(rowid: Int64, targetVolumeId: String, pageNum: Int)] = []
+        var toResolve: [(rowid: Int64, targetVolumeId: String, pageId: String, pageNum: Int)] = []
         while sqlite3_step(findStmt) == SQLITE_ROW {
             let rowid = sqlite3_column_int64(findStmt, 0)
             guard let targetVolumeId = auxColumnString(findStmt, 1),
                   let pageId = auxColumnString(findStmt, 2),
                   let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
-            toResolve.append((rowid: rowid, targetVolumeId: targetVolumeId, pageNum: pageNum))
+            toResolve.append((rowid: rowid, targetVolumeId: targetVolumeId, pageId: pageId, pageNum: pageNum))
         }
         guard !toResolve.isEmpty else { return }
 
-        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        // Decision 190: the page it cited and how the document was chosen go with the document.
+        let updateSQL = """
+            UPDATE cross_references SET target_document_id = ?, cited_page_id = ?, page_resolution = ?
+            WHERE rowid = ?
+            """
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
         var resolvedCount = 0
-        for (rowid, targetVolumeId, pageNum) in toResolve {
+        for (rowid, targetVolumeId, pageId, pageNum) in toResolve {
             // A row with no form was collected by a walk that classified none; it stays a page.
             guard let form = forms[rowid],
-                  let docId = PageSpanResolver.citedDocument(inVolume: targetVolumeId, page: pageNum,
-                                                             form: form, citing: citing[rowid], map: map)
+                  let (docId, resolution) = PageSpanResolver.citedDocumentResolution(
+                      inVolume: targetVolumeId, page: pageNum, form: form, citing: citing[rowid], map: map)
             else { continue }
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_int64(updateStmt, 2, rowid)
+            sqlite3_bind_text(updateStmt, 2, pageId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(updateStmt, 3, resolution.rawValue, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 4, rowid)
             try auxStep(updateStmt)
             resolvedCount += 1
         }
@@ -11158,6 +11677,8 @@ public actor IndexingPipeline {
             ("persons",           "volume_id"),
             ("person_list_sources", "volume_id"),
             ("terms",             "volume_id"),
+            ("term_mentions",     "volume_id"),
+            ("division_start_pages", "volume_id"),
             ("document_sources",  "volume_id"),
             ("external_citations", "volume_id"),
             ("volume_sources",    "volume_id"),
@@ -14547,6 +15068,11 @@ private struct VolumeIndexData: Sendable {
     /// R-5 P1: the per-document hashes the store pass compares against the previous index.
     var documentRevisions: [DocumentRevisionRow] = []
     let personMentions: [PersonMentionRow]
+    /// Decision 172, index version 76: each document's linked terms, with the parts that link each
+    /// (decision 188), stored as `term_mentions`.
+    let termMentions: [TermMentionRow]
+    /// F7, index version 76: the page each division begins on, stored as `division_start_pages`.
+    let divisionStartPages: [DivisionStartPageRow]
     let persons: [PersonRow]
     /// The volumes whose persons lists this volume's refs point into — non-empty only when the
     /// volume parsed no list of its own (`parseAndExtract`). Stored as `person_list_sources`.
@@ -14606,7 +15132,9 @@ public struct IndexedVolumeFile: Sendable, Equatable, Hashable {
 /// moment that is added to a "documents from this collection" total the two claims are one wrong
 /// number — which is precisely what #783 removed.
 public struct ExternalCitation: Sendable, Equatable, Identifiable {
-    /// `"lotFile"`, `"presidentialLibrary"`, or `"centralFileClass"` (#834).
+    /// `"lotFile"`, `"presidentialLibrary"`, `"centralFileClass"` (#834) — a decimal class, or from
+    /// index version 76 a subject-numeric file of 1963–73, which ``decimalClass``'s form tells
+    /// apart — or, from version 76, `"centralForeignPolicyFile"` (decision 191).
     public let anchor: String
     /// The repository, when the citation names one.
     public let repository: String?
@@ -14627,7 +15155,9 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// A reading POSITION among the notes the harvest keeps, which is not the number the volume
     /// printed — see `noteLabel`.
     public let noteOrdinal: Int
-    /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`.
+    /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`, or from
+    /// index version 76 a subject-numeric designator, `POL 27 VIET S` (decision 191).
+    /// `CollectionKeying.isSubjectNumericClass` tells the two filing systems apart.
     public let decimalClass: String?
     /// The label the VOLUME printed for the citing note — the trimmed `@n`, `nil` when the volume
     /// printed none (#1322).
@@ -14681,9 +15211,30 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
         // thing about it.
         if let decimalClass, !decimalClass.isEmpty { return decimalClass }
         if let lotFile, !lotFile.isEmpty { return "Lot \(lotFile)" }
+        // Decision 191: the file's own name, which the row keeps out of `collection` so that no
+        // authority join can claim it; its film number is `fileId`, drawn beside it.
+        if anchor == FootnoteArchivalCitation.Anchor.centralForeignPolicyFile.rawValue {
+            return Self.centralForeignPolicyFileName
+        }
         let parts = [repository, collection].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? rawText : parts.joined(separator: ", ")
     }
+
+    /// The Central Foreign Policy File's name, as its citations print it: the label of a
+    /// `centralForeignPolicyFile` row (decision 191). A proper name, like a row's repository.
+    public static let centralForeignPolicyFileName = "Central Foreign Policy File"
+
+    /// The anchors the Archives Visit packet's pointed-at channel leaves out: the central-file class,
+    /// deferred by #784's own scope, and from index version 76 the Central Foreign Policy File
+    /// (decision 191), whose rows name no collection and would all key to one "Department of State"
+    /// target. `TripPacketBuilder`, the plan editor's per-seed counts and
+    /// `IndexingPipeline.externalCitationSparsity()` read the channel through this one list, so the
+    /// packet, its counts and its sparsity caption describe the same citations.
+    public static let anchorsOutsideThePacket = ["centralFileClass", "centralForeignPolicyFile"]
+
+    /// Whether the Archives Visit packet's pointed-at channel takes this citation: a lot or a
+    /// library one (``anchorsOutsideThePacket``).
+    public var isInPacketChannel: Bool { !Self.anchorsOutsideThePacket.contains(anchor) }
 
     /// Creates a citation.
     ///
@@ -14749,6 +15300,27 @@ private struct PersonMentionRow: Sendable {
     let volumeId: String
     let documentId: String
     let personRef: String
+}
+
+/// One `division_start_pages` row: the page a division begins on (F7, index version 76).
+private struct DivisionStartPageRow: Sendable {
+    let volumeId: String
+    /// The division's `xml:id`.
+    let divisionId: String
+    /// Its place among the volume's divisions, in the order they open.
+    let order: Int
+    /// The page, numbered as `page_ranges` numbers one (``IndexingPipeline/pageRangeRow(volumeId:documentId:pageNumber:isStart:)``).
+    let page: PageRangeRow
+}
+
+/// One `term_mentions` row: a document that links a term of its volume's list (decision 172).
+private struct TermMentionRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    /// The term's id in the volume's list (`terms.ref`), as ``IndexingPipeline/normalizeTermRef(_:)`` reads it.
+    let termRef: String
+    /// The parts of the document that link it, OR'd together (decision 188).
+    let parts: TermMentionParts
 }
 
 private struct PersonRow: Sendable {
@@ -15173,6 +15745,12 @@ struct DocumentCacheRow: Sendable {
     /// numbered it — `74`, `25½`, `4 (Greek Series)`. `nil` for every document that prints none,
     /// which is the overwhelming majority: the serial is a pre-decimal-file convention.
     let despatchSerial: String?
+    /// The document's place in its volume, from 0: its position in the parse's list of the
+    /// volume's rows, the order a fresh index writes them in (#1978, index version 76). Written by
+    /// every store pass, which a row's rowid is not, so a volume lists in its file's order however
+    /// long the library has kept it. `nil` for a row read back by ``IndexingPipeline/fetchCache``,
+    /// which does not read it.
+    var documentOrder: Int? = nil
 }
 
 // MARK: - IndexingError

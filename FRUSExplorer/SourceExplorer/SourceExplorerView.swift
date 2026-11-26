@@ -139,6 +139,9 @@ import SwiftUI
 ///           state, moved into FRUSCoreKit unchanged (`SourceExplorerPanels.swift`); each keeps its name
 ///           here, forwarding there from `SourceExplorerView+Panels.swift`, so the Mac twin, the lookup
 ///           sheet and the suites read them as before
+///   1.21 — 2026-11-26 (L26, decision 191): the Add to Archives Visit menu counts and offers the rows the
+///           packet takes (`packetPointers`), and is absent where it would offer none. Mirrors
+///           MacSourceExplorerView 1.19.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -232,6 +235,8 @@ struct SourceExplorerView: View {
     /// This document's footnote pointers at material FRUS did not print, in reading order,
     /// each paired with the authority record it resolves to when it resolves to one.
     private var unprintedPointers: [UnprintedPointer] { resolution?.unprintedPointers ?? [] }
+    /// The rows the packet takes, which the Add to Archives Visit menu counts (decision 191).
+    private var packetPointers: [UnprintedPointer] { resolution?.packetPointers ?? [] }
 
     /// Done's close, and the related-document row's: the presenting sheet's dismissal, or — at the
     /// root of the iPad Source Explorer window — the window's close, which brings a main window
@@ -424,7 +429,7 @@ struct SourceExplorerView: View {
                 Spacer()
                 // The same menu as the Source Note header — here for the document with
                 // pointers but NO source note, which otherwise has no add door at all.
-                if !hasSourceNote { addToVisitMenu }
+                if !hasSourceNote && !packetPointers.isEmpty { addToVisitMenu }
             }
         } footer: {
             Text(UnprintedPointer.sectionFooter)
@@ -474,7 +479,7 @@ struct SourceExplorerView: View {
                         .labelStyle(.titleAndIcon)
                 }
                 // P-1: the unit named here is FRUS's own words when the footnote pointed at a
-                // lot or a library, but a central-file class reached this list only because the
+                // lot or a library, but a decimal file class reached this list only because the
                 // State Department's schedule composed it. The two are one row apart on screen, so
                 // the branch is per row — see `SourceExplorerProvenance`.
                 ProvenanceChip(source: SourceExplorerProvenance.unprintedPointerSource(
@@ -541,7 +546,7 @@ struct SourceExplorerView: View {
                               systemImage: "archivebox")
                     }
                 }
-                if !unprintedPointers.isEmpty {
+                if !packetPointers.isEmpty {
                     Button {
                         presentPlanPicker(volumeId: volumeId, documentId: docId,
                                           includeSource: false, includeExternalRefs: true)
@@ -549,11 +554,11 @@ struct SourceExplorerView: View {
                         Label(String(format: String(
                             localized: "source.explorer.addVisit.refs %lld",
                             defaultValue: "Add unprinted references (%lld)"),
-                            Int64(unprintedPointers.count)),
+                            Int64(packetPointers.count)),
                               systemImage: "arrow.up.right")
                     }
                 }
-                if hasSourceNote && !unprintedPointers.isEmpty {
+                if hasSourceNote && !packetPointers.isEmpty {
                     Button {
                         presentPlanPicker(volumeId: volumeId, documentId: docId,
                                           includeSource: true, includeExternalRefs: true)

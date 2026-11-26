@@ -1202,6 +1202,42 @@ struct ArchivalCollectionsDataTests {
         #expect(!documentIds.subtracting(pointerIds).isEmpty)
     }
 
+    /// Decision 191 (the artifact built for index version 76): the class lens's pointer weight ranks a
+    /// subject-numeric file at its category and number, the grain the documents and volumes weights
+    /// rank it at (owner decision D-3). Ranked raw, `POL 27 VIET S` stood beside `POL 27`, a second
+    /// grain in one chart, with neither the group's gloss nor its leaves.
+    @Test("The class lens's pointer weight ranks subject-numeric files at the documents weight's grain")
+    func classPointersFoldSubjectNumericKeys() throws {
+        let data = try #require(Self.shipped)
+        var pointerKeys: Set<String> = []
+        var documentKeys: Set<String> = []
+        for band in ArchivalEraBand.all {
+            pointerKeys.formUnion(data.ranking(band: band, lens: .centralFileClasses,
+                                               weight: .unprintedPointers, hidingUmbrella: false,
+                                               limit: .max).rows.map(\.id))
+            documentKeys.formUnion(data.ranking(band: band, lens: .centralFileClasses,
+                                                weight: .documents, hidingUmbrella: false,
+                                                limit: .max).rows.map(\.id))
+        }
+        let subjectNumeric = pointerKeys.filter { CollectionKeying.isSubjectNumericClass($0) }
+        #expect(subjectNumeric.count > 50, """
+            The class lens ranks \(subjectNumeric.count) subject-numeric files by pointers; an \
+            artifact built without decision 191 gives it none.
+            """)
+        let leaves = subjectNumeric.filter { CollectionKeying.subjectNumericGroup($0) != $0 }
+        #expect(leaves.isEmpty, "ranked at leaf grain: \(leaves.sorted().prefix(5))")
+        // One vocabulary with the documents weight, as the fold makes it: measured 2026-11-26, 269 of
+        // the 405 rows are ranked by documents too. The other 136 are files the editors cited that
+        // FRUS printed no document from (`AGR 12`, `AE 11-1`), as the collections lens has
+        // collections that are only pointed at; raw leaves would match almost none.
+        let matched = subjectNumeric.intersection(documentKeys)
+        #expect(matched.count * 2 > subjectNumeric.count, """
+            Only \(matched.count) of \(subjectNumeric.count) subject-numeric pointer rows name a file \
+            the documents weight ranks, so the two weights are not keyed alike: \
+            \(subjectNumeric.subtracting(documentKeys).sorted().prefix(5))
+            """)
+    }
+
     #if !SWIFT_PACKAGE // the popover's text is `FeatureInfoButton`'s, a SwiftUI view's
     /// The two figures About These Figures states in words, held to the bundled indexes (#1588).
     ///

@@ -98,6 +98,9 @@ import Observation
 ///          `indexingVolumeId` names
 ///   1.15 — 2026-11-06: the editors' annotations design, lane C — the `.annotations` axis and the
 ///          `.annotationCategory` page levels
+///   1.16 — 2026-11-26 (T1's finding, plan of record row L26): `allSubseriesGroups` keeps one order
+///          for two subseries that begin in the same year (`newestFirst(_:)`, by the kit's rule,
+///          `SubseriesGroup.listsBefore`), where the start year alone kept a `Dictionary`'s order
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -572,22 +575,36 @@ public final class BrowserViewModel {
         manifestStore.browsableEntries
     }
 
-    /// All subseries groups, sorted chronologically by start year (most recent first).
+    /// All subseries groups, sorted chronologically by start year (most recent first), in one
+    /// order from launch to launch (``newestFirst(_:)``).
     ///
     /// When `filterDownloadedOnly` is `true`, subseries where no volume has been
     /// downloaded are omitted entirely.
     public var allSubseriesGroups: [SubseriesGroup] {
         var dict: [String: [VolumeManifestEntry]] = [:]
         for v in allVolumes { dict[v.subseries, default: []].append(v) }
-        var groups = dict
-            .map { SubseriesGroup(subseries: $0.key, volumes: $0.value) }
-            .sorted { $0.startYear > $1.startYear }
+        var groups = Self.newestFirst(dict.map { SubseriesGroup(subseries: $0.key, volumes: $0.value) })
         if filterDownloadedOnly {
             groups = groups.filter { group in
                 group.volumes.contains { isDownloaded($0.volumeId) }
             }
         }
         return groups
+    }
+
+    /// `groups` most recent first: by start year, and, where two begin in the same year, the one
+    /// whose identifier sorts later first, which is the span before the single year it begins with
+    /// (`1945-50` before `1945`, `1914-20` before `1914`).
+    ///
+    /// The start year alone left a tie in the order `allSubseriesGroups` built its groups in, a
+    /// `Dictionary`'s, which differs from launch to launch, so two such subseries swapped places
+    /// between launches (T1's finding, plan of record row L26). Eight start years are shared in the
+    /// catalogue (1914, 1917, 1931, 1933, 1941, 1945, 1950 and 1951), and a release can add a ninth.
+    ///
+    /// - Parameter groups: The groups, in any order.
+    /// - Returns: The same groups, in Browse's order.
+    nonisolated static func newestFirst(_ groups: [SubseriesGroup]) -> [SubseriesGroup] {
+        groups.sorted { SubseriesGroup.listsBefore($0.subseries, $1.subseries) }
     }
 
     /// Volumes within a subseries after applying the active tag filter and (optionally)

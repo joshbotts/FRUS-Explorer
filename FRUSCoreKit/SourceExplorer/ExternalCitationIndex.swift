@@ -47,6 +47,8 @@ import Foundation
 ///   1.2 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `referenceCount(forCollectionId:)` and
 ///          `volumeCounts(forCollectionId:)` public, for a host that draws the collection record's Pointed at;
 ///          nothing they answer changes
+///   1.3 — 2026-11-26 (L26, decision 191): documentation only — the class axis holds subject-numeric
+///          targets since the artifact built for index version 76
 public struct ExternalCitationIndex: Decodable, Sendable {
 
     /// One archival unit's references, broken down by the volume whose footnotes made them.
@@ -108,7 +110,9 @@ public struct ExternalCitationIndex: Decodable, Sendable {
 
         /// References naming a **central-file class**. Admitted by the shipped rule: the clause
         /// carries a class followed by its document serial and the key composes under the
-        /// 1910-1949 schedule. Subject-numeric designators are out of scope by decision.
+        /// 1910-1949 schedule. Since the artifact built for index version 76, the subject-numeric
+        /// files of 1963–73 too (decision 191), which the artifact's `subjectNumericReferences`
+        /// counts and this type does not read.
         let decimalReferences: Int
         /// Of those, the ones whose class came from a bare `Ibid.` inheriting an earlier
         /// footnote's class (#1014 W-1b). Any surface quoting the channel's size owes this
@@ -177,16 +181,18 @@ public struct ExternalCitationIndex: Decodable, Sendable {
     /// classes exist there only as id-less display children, so a bare `(681.8229/8-2950, not
     /// printed)` resolves to nothing. These keys share `collection-usage-index.json`'s vocabulary
     /// and are **not namespaced**, so they are the keys `ArchivalCollectionsData` already ranks and
-    /// `decimal-class-labels.json` already glosses.
+    /// `decimal-class-labels.json` already glosses — or, for a subject-numeric key, which the
+    /// artifact holds since decision 191, `subject-numeric-labels.json`.
     let classTargetKeys: [String]
     /// Class keys reached as a citing document's **own** class, sorted.
     ///
-    /// **This vocabulary holds BOTH filing systems, and the target one does not.** Subject-numeric
-    /// designators (`POL 1 CHICOM USSR`, `DEF 18`) are out of scope as harvest TARGETS by owner
-    /// decision — the footnote grammar refuses them — but a citing document filed under one is
-    /// simply a fact about that document, and dropping it would discard real pairs whose target is
-    /// a decimal file. So a pair may read `POL 1 CHICOM USSR -> 763.72`, meaning a
-    /// subject-numeric-filed document cited a decimal one. Branch on
+    /// **This vocabulary holds BOTH filing systems, and since the artifact built for index version
+    /// 76 the target one does too (decision 191).** Until then subject-numeric designators (`POL 1 CHICOM USSR`, `DEF 18`) were out of
+    /// scope as harvest TARGETS by owner decision, the footnote grammar refusing them, while a
+    /// citing document filed under one was simply a fact about that document, and dropping it would
+    /// have discarded real pairs whose target is a decimal file. So a pair may read `POL 1 CHICOM
+    /// USSR -> 763.72`, meaning a subject-numeric-filed document cited a decimal one, and since
+    /// decision 191 also `POL 27 VIET S -> POL 27 VIET S`. Branch on
     /// `CollectionKeying.isSubjectNumericClass` before grouping or labelling.
     let classSourceKeys: [String]
     /// Per-target-class references by volume.

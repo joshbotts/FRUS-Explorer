@@ -29,6 +29,10 @@ import SourceNoteKit
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — 2026-11-26 (decision 191, index version 76): the class axis admits the subject-numeric
+///          files of 1963–73 by the shared chain, an `Ibid.` naming one under its referent's
+///          repository is inherited, and the Central Foreign Policy File is counted and joined to
+///          nothing; both scanners are seeded from each document's own source note
 public enum ExternalCitationIndexRunner {
 
     /// The artifact schema version.
@@ -151,6 +155,10 @@ public enum ExternalCitationIndexRunner {
         \(c.libraryReferences) library, \(c.referencesInherited) inherited via Ibid.
           decimal:    \(c.decimalReferences) class references, \
         \(c.decimalReferencesInherited) inherited via Ibid. (#1014)
+          post-1963:  \(c.subjectNumericReferences) subject-numeric of them \
+        (\(c.subjectNumericReferencesInherited) by Ibid.), \(c.decimalSubjectNumericRefused) refused; \
+        \(c.foreignPolicyFileReferences) Central Foreign Policy File \
+        (\(c.foreignPolicyFileReferencesInherited) by Ibid.), joined to nothing (decision 191)
           refused:    \(c.absenceClaimsRefused) absence claims
           joined:     \(c.referencesJoined) to the authority \
         (\(percent(c.referencesJoined, of: c.referencesFound))), \
@@ -233,6 +241,13 @@ public enum ExternalCitationIndexRunner {
         var decimalSubjectNumericRefused = 0
         var decimalNotComposingRefused = 0
         var decimalNotInSharedVocabularyRefused = 0
+        // Decision 191 (index version 76): the subject-numeric files of 1963–73, admitted into the
+        // class axis, and the Central Foreign Policy File, counted and joined to nothing.
+        var subjectNumericReferences = 0
+        var subjectNumericReferencesInherited = 0
+        var subjectNumericRefusedByReason: [String: Int] = [:]
+        var foreignPolicyFileReferences = 0
+        var foreignPolicyFileReferencesInherited = 0
         // The #1014 parity tripwire: the walker re-derives the direct channel as it walks, and
         // the two counts must agree EXACTLY — measured 28,703 + 18 = 28,721 over the whole
         // corpus before the rule shipped. A drift means the inheritance is riding a different
@@ -258,8 +273,12 @@ public enum ExternalCitationIndexRunner {
             // The citing document's own CLASS, for the #834 axis. The identical call
             // `ProvenanceFlowIndexRunner` makes, so "own class" means here what it means there.
             var sourceClass: [String: String] = [:]
+            // Decision 191: each document's parsed source note, which seeds an `Ibid.` that names
+            // a file of its own first in the document — as `IndexingPipeline` seeds it.
+            var sourceNoteOf: [String: (parsed: ParsedSourceNote, note: String)] = [:]
             for note in DocumentNoteExtractor.extract(fromXML: data) where !note.documentId.isEmpty {
                 let parsed = parser.parse(note.note)
+                sourceNoteOf[note.documentId] = (parsed, note.note)
                 if let record = authority.record(forParsed: parsed, note: note.note) {
                     sourceUnit[note.documentId] = record.id
                 }
@@ -291,8 +310,9 @@ public enum ExternalCitationIndexRunner {
                 }
 
                 let before = scanner.absenceBlockedCount
-                scanner.beginDocument()
-                ibidWalker.beginDocument()
+                let seed = sourceNoteOf[document.documentId]
+                scanner.beginDocument(sourceNote: seed?.parsed)
+                ibidWalker.beginDocument(sourceNote: seed?.parsed, note: seed?.note)
                 for note in document.footnotes {
                     // #1014 W-1b: the bare-`Ibid.` inheritance. The walker walks EVERY note in
                     // document order (its state is the point), and the harvest takes only the
@@ -301,8 +321,18 @@ public enum ExternalCitationIndexRunner {
                     walkerDirectDerived += walk.directAdmitted
                         + walk.directAdmittedInArchivalClauses
                     for observation in walk.observations {
-                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
-                        else { continue }
+                        // Decision 191: an `Ibid.` naming a subject-numeric file of its own under
+                        // its referent's repository is inherited in the same sense.
+                        let key: String
+                        switch observation.outcome {
+                        case let .inheritsAdmittedClass(admitted, _, _): key = admitted
+                        case let .inheritsRepository(named, _): key = named
+                        default: continue
+                        }
+                        if CollectionKeying.isSubjectNumericClass(key) {
+                            subjectNumericReferences += 1
+                            subjectNumericReferencesInherited += 1
+                        }
                         decimalReferences += 1
                         decimalReferencesInherited += 1
                         volumesWithReferences.insert(volumeId)
@@ -335,14 +365,21 @@ public enum ExternalCitationIndexRunner {
                         // the class must carry its document serial AND compose under the 1910-1949
                         // schedule; subject-numeric stays out; the harvest's own refusals apply.
                         guard candidate.refusal == nil else { continue }
-                        guard !candidate.isSubjectNumeric else {
-                            decimalSubjectNumericRefused += 1
-                            continue
-                        }
-                        guard candidate.evidence.carriesSerial else { continue }
-                        guard schedule.composes(candidate.classKey) else {
-                            decimalNotComposingRefused += 1
-                            continue
+                        if candidate.isSubjectNumeric {
+                            // Decision 191: the subject-numeric half of the shared chain, its
+                            // refusals priced by reason. The walker reads the same function.
+                            if let reason = FootnoteIbidGapWalker.subjectNumericVerdict(candidate) {
+                                decimalSubjectNumericRefused += 1
+                                subjectNumericRefusedByReason[reason, default: 0] += 1
+                                continue
+                            }
+                            subjectNumericReferences += 1
+                        } else {
+                            guard candidate.evidence.carriesSerial else { continue }
+                            guard schedule.composes(candidate.classKey) else {
+                                decimalNotComposingRefused += 1
+                                continue
+                            }
                         }
                         // The key must round-trip through the SHARED class vocabulary. This is not
                         // a claim that the refused keys are fake — measured, they are bare dotless
@@ -374,11 +411,21 @@ public enum ExternalCitationIndexRunner {
                     }
 
                     for citation in scanner.scan(note: note) {
+                        // Decision 191: the Central Foreign Policy File is counted and joined to
+                        // nothing — the authority holds no record for it, and a lot whose aliases
+                        // name it would claim it by name — so the unit axis is as it was.
+                        if citation.anchor == .centralForeignPolicyFile {
+                            foreignPolicyFileReferences += 1
+                            if citation.inherited { foreignPolicyFileReferencesInherited += 1 }
+                            volumesWithReferences.insert(volumeId)
+                            continue
+                        }
                         referencesFound += 1
                         if citation.inherited { referencesInherited += 1 }
                         switch citation.anchor {
                         case .lotFile: lotReferences += 1
                         case .presidentialLibrary: libraryReferences += 1
+                        case .centralForeignPolicyFile: break  // counted above
                         }
                         let record = authority.record(forParsed: citation.parsed,
                                                       note: citation.citation)
@@ -511,7 +558,15 @@ public enum ExternalCitationIndexRunner {
                 // drift again without a test noticing.
                 decimalVocabulary: .init(classes: schedule.classCount,
                                          countries: schedule.countryCount,
-                                         digest: schedule.vocabularyDigest)))
+                                         digest: schedule.vocabularyDigest),
+                subjectNumericReferences: subjectNumericReferences,
+                subjectNumericReferencesInherited: subjectNumericReferencesInherited,
+                foreignPolicyFileReferences: foreignPolicyFileReferences,
+                foreignPolicyFileReferencesInherited: foreignPolicyFileReferencesInherited))
+        // Decision 191: what the subject-numeric half of the chain refused, by reason, so the
+        // rule's reach is read off the run rather than assumed.
+        print("subject-numeric refusals by reason: " + subjectNumericRefusedByReason
+            .sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: ", "))
         return BuildResult(index: index, samples: samples)
     }
 

@@ -255,11 +255,15 @@ import Testing
         #expect(notes[0].note == "700.5 MSP /3–1952")
     }
 
-    @Test func editorialWrappedDocumentsYieldNoNotes() {
+    @Test func editorialWrappedDocumentsYieldTheirOwnNotes() {
         // The app wraps `subtype="editorial-note"` documents (and
-        // `type="editorialNote"` divs) in a single .editorialNote AST node, so their
-        // notes are never top-level and extractSourceNote stores none — the
-        // extractor mirrors that (real case: frus1952-54v01p1 d108).
+        // `type="editorialNote"` divs) in a single .editorialNote AST node. Until index
+        // version 76 extractSourceNote read no note under it, and this test held the
+        // extractor to yielding nothing (real case: frus1952-54v01p1 d108). Since 76 the
+        // app runs the chain over the wrapper's children where they hold a source note of
+        // their own (#1854: 138 such documents in the 553 catalogue volumes, 119 of them
+        // memoranda, telegrams and letters with a dateline), so the extractor yields the
+        // same note; one with no note of its own still yields nothing.
         let xml = """
         <TEI><text><body>
         <div type="document" subtype="editorial-note" xml:id="d11">
@@ -272,9 +276,16 @@ import Testing
           <head>12. Editorial Note</head>
           <p>Body.</p>
         </div>
+        <div type="document" subtype="editorial-note" xml:id="d13">
+          <head>13. Editorial Note<note n="1"><p>See Document 12.</p></note></head>
+          <p>Body.</p>
+        </div>
         </body></text></TEI>
         """
-        #expect(DocumentNoteExtractor.extract(fromXML: Data(xml.utf8)).isEmpty)
+        let notes = DocumentNoteExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(notes.map(\.documentId) == ["d11", "d12"])
+        #expect(notes.map(\.note) == ["Eisenhower Library, Randall Commission records",
+                                      "Truman Library, PSF"])
     }
 
     @Test func documentsWithoutSourceNotesYieldNothing() {
