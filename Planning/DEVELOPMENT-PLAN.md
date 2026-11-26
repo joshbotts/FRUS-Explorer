@@ -4146,7 +4146,13 @@ Row CR of the plan of record from 2026-11-25 (decision 149), started from the pl
 - 4,868,675 subagent tokens over nine agents, as the harness reported them.
 - The account's weekly limit for all models went from 17% to 24% over the session.
 
+**C2's eight questions, answered the same day** (decisions 191 to 198), one at a time:
+- **Six as recommended.** L35 owns the sheet's sentence (192). A headnote switched off stays off (193). A saved template holds step 1's seven settings (195). A3 is titled *Archival files cited* (196). A citation names history.state.gov's number (197). The records' date line takes the new reading, and the *Summaries* export's defect is filed (198).
+- **C2-3, the compiler's name** (194). Each headnote carries its writer's name, so the promotion is seven fields or eight.
+- **C2-5's grammar.** The owner asked whether the post-1963 central files could be added to the footnote grammar. Told the change is measured first and reaches every reader of the pointers, the owner chose "In 1.1, joining v76 now" (191). It went to the L26 session with a hand-over note.
+- **#2018, filed on the owner's word:** a *Summaries* export fails on a device without Apple Intelligence even when every summary is stored. It is placed in L35 (§1a).
+
 **For the owner**
-- **C2's eight questions,** in the review's §8, each with a recommendation.
+- **C2's rest:** the re-cut of the rows, the pace, and the design's status.
 - **The pull request,** on the owner's word, after #2017 and L26 in the queue. By `git merge-tree` with L26's branch at `20eabba9`, the plan of record merges cleanly. Only this log meets it, where both branches append an entry. The rebase on L26's merge keeps both, L26's first.
 - **The design's status** stays PROPOSED until C2.

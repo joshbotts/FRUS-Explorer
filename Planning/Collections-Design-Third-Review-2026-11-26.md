@@ -412,14 +412,16 @@ The session's reading: 1 is a row's work and could join L35, if the owner widens
 
 Each with the session's recommendation. The rest of the findings are written into the rows' briefs.
 
-- **C2-1. Who says, at export, what the export will print** (J9)? *Recommended:* L35 takes the sheet's sentence, written from what the export prints. That covers the headnote count, what this device lacks for the template and, if L50 proposes it, what a block cannot fill. L35 holds it at AX3 and AX5, and L44's cards may say a template's needs as well. *Or* L44's cards, as L44's brief has it.
-- **C2-2. Does decision 166's "always" cover a headnote switched off** (J6)? *Recommended:* no. Off travels as Off, and an Off entry's draft does not travel.
-- **C2-3. The words that say who wrote a headnote,** for any reader (J8). *Recommended:* the compiler, Apple Intelligence, or Apple Intelligence edited by the compiler; never "you"; the file carries which of the three and the draft's format. *Or* the compiler's name, typed once in the collection's settings.
-- **C2-4. What a saved template holds** (J15). *Recommended:* step 1's seven settings, as each of the six holds, so that decision 157 holds for it. *Or* both steps, applied as two choices.
-- **C2-5. A3's title,** since it lists lots, libraries and decimal files only (J21). *Recommended:* a title of the kind "Archival files cited", with a line on the page saying which kinds are listed for which years. The words are the owner's.
-- **C2-6. Which number a citation names** where the volume's own printed number differs from history.state.gov's (J23; 6,091 headings before 1952). *Recommended:* the citation keeps history.state.gov's number, as 1.0 does, and the *As published:* line keeps the volume's.
-- **C2-7. Does Q9's yes also take the records' "Document date:" line to the new reading** (J44)? *Recommended:* yes, said in L34 among what a send or a file carries.
-- **C2-8. Filing:** the 1.0 defect of §6's item 1, as an issue for L35 or a small row of its own. *Recommended:* file it, and let L35 take it with its files widened.
+**Answered on 2026-11-26,** in the CR session, one at a time. The answers are the plan of record's decisions 191 to 198. The owner took the recommendation on six. For C2-3 the owner chose the compiler's name. For C2-5 the owner asked that the grammar read the post-1963 central files, in index version 76, over the recommendation of a row after 1.1. Each answer is under its question.
+
+- **C2-1. Who says, at export, what the export will print** (J9)? *Recommended:* L35 takes the sheet's sentence, written from what the export prints. That covers the headnote count, what this device lacks for the template and, if L50 proposes it, what a block cannot fill. L35 holds it at AX3 and AX5, and L44's cards may say a template's needs as well. *Or* L44's cards, as L44's brief has it. **Answered:** L35 (decision 192).
+- **C2-2. Does decision 166's "always" cover a headnote switched off** (J6)? *Recommended:* no. Off travels as Off, and an Off entry's draft does not travel. **Answered:** no (decision 193).
+- **C2-3. The words that say who wrote a headnote,** for any reader (J8). *Recommended:* the compiler, Apple Intelligence, or Apple Intelligence edited by the compiler; never "you"; the file carries which of the three and the draft's format. *Or* the compiler's name, typed once in the collection's settings. **Answered:** the compiler's name (decision 194). Each headnote then carries its writer's name, and the promotion is seven fields or eight.
+- **C2-4. What a saved template holds** (J15). *Recommended:* step 1's seven settings, as each of the six holds, so that decision 157 holds for it. *Or* both steps, applied as two choices. **Answered:** step 1's seven settings (decision 195).
+- **C2-5. A3's title,** since it lists lots, libraries and decimal files only (J21). *Recommended:* a title of the kind "Archival files cited", with a line on the page saying which kinds are listed for which years. The words are the owner's. **Answered:** the owner first asked whether the grammar could read the post-1963 central files, and had it do so in index version 76 (decision 191), with the title *Archival files cited* (decision 196).
+- **C2-6. Which number a citation names** where the volume's own printed number differs from history.state.gov's (J23; 6,091 headings before 1952). *Recommended:* the citation keeps history.state.gov's number, as 1.0 does, and the *As published:* line keeps the volume's. **Answered:** so (decision 197).
+- **C2-7. Does Q9's yes also take the records' "Document date:" line to the new reading** (J44)? *Recommended:* yes, said in L34 among what a send or a file carries. **Answered:** yes (decision 198).
+- **C2-8. Filing:** the 1.0 defect of §6's item 1, as an issue for L35 or a small row of its own. *Recommended:* file it, and let L35 take it with its files widened. **Answered:** filed as #2018, for L35 (decision 198).
 
 ---
 

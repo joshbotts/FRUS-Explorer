@@ -311,7 +311,7 @@ SECRET              Moscow, February 22, 1946—9 p.m. [Received February 22—3
 511. Answer to Dept's 284, Feb 3 [13] involves questions so intricate …
 ```
 
-- **No number stands at a document's head.** The second form put the collection's own there. From the volumes for 1952–1954 on, the volume's number already opens the heading ("1. Letter From…"), and the indexes and the volumes' notes cite by it, so a second number beside it misdirects (#2002; the second review's H14). *Corrected by the third review* (J23): the volume's own number is not a matter of era. Before 1952, 13,669 headings in 39 volumes open with one ("No. 98." in `frus1874` d100), 6,091 of them a number that is not history.state.gov's; and 16 of the 28 volumes for 1952–1954 print none. The one reading reads a leading number by its form, in every volume.
+- **No number stands at a document's head.** The second form put the collection's own there. From the volumes for 1952–1954 on, the volume's number already opens the heading ("1. Letter From…"), and the indexes and the volumes' notes cite by it, so a second number beside it misdirects (#2002; the second review's H14). *Corrected by the third review* (J23): the volume's own number is not a matter of era. Before 1952, 13,669 headings in 39 volumes open with one ("No. 98." in `frus1874` d100), 6,091 of them a number that is not history.state.gov's; and 16 of the 28 volumes for 1952–1954 print none. The one reading reads a leading number by its form, in every volume. A citation names history.state.gov's number, and *As published:* keeps the volume's own (C2-6; decision 197).
 - **Which line leads is one setting of the collection's,** *Opening*, with two values. A title leads under either.
 - **The words *As published:* are no part of the document's text.** Each exporter adds them outside the walk that counts highlight offsets, as *Source:* is added today. The second review tested that claim and it held.
 
@@ -340,7 +340,7 @@ SECRET              Moscow, February 22, 1946—9 p.m. [Received February 22—3
 
 Where the volume is on the device it reads the model. Where it is not, it reads the index, which holds less: no dateline that sits only in a closer, and a note inside a dateline run into its text (`IndexingPipeline.swift:7347-7358`). The outline reads the index always, as it does today.
 
-**The citation records.** A BibTeX, RIS or Zotero item is built from the volume's heading and never from the author's title; that stays. Its title takes the new reading, and so loses "[1]" and the doubled number (Q9; decision 165).
+**The citation records.** A BibTeX, RIS or Zotero item is built from the volume's heading and never from the author's title; that stays. Its title takes the new reading, and so loses "[1]" and the doubled number (Q9; decision 165). So does its "Document date:" line (C2-7; decision 198).
 
 ### 3.5 The notes stay two switches, and the source note prints once
 
@@ -508,7 +508,7 @@ Three things it said are still wanted, and need another place:
 - **How many headnotes will print:** *Headnotes for 4 of 6 documents*. No placeholder line is printed in an exported file.
 - **What a block cannot fill** (§8.2's A1, taken by decision 171).
 
-The plan of record gives the first to step 1's cards in L44, and the second to the sheet's sentence (its §1c), while L44's brief takes both. *Corrected by the third review* (J9): this read §1c as giving both to L44. The third is said at the tick, on the outline's row and on the page in its row L50, and whether the sheet's sentence says it too is that row's to propose (the plan's §1c). The third review puts where they go to the owner (C2-1), recommending that L35 take the sheet's sentence, written from what the export prints. So does *None* in step 2 where the Note on the Text would have something to say. This section had the sheet say *No Note on the Text: one title of yours goes unexplained.* For the collection, §3.6's line in its settings says so.
+The plan of record gives the first to step 1's cards in L44, and the second to the sheet's sentence (its §1c), while L44's brief takes both. *Corrected by the third review* (J9): this read §1c as giving both to L44. The third is said at the tick, on the outline's row and on the page in its row L50, and whether the sheet's sentence says it too is that row's to propose (the plan's §1c). The third review puts where they go to the owner (C2-1), recommending that L35 take the sheet's sentence, written from what the export prints. The owner chose that (decision 192). So does *None* in step 2 where the Note on the Text would have something to say. This section had the sheet say *No Note on the Text: one title of yours goes unexplained.* For the collection, §3.6's line in its settings says so.
 
 ### 4.5 A smart collection
 
@@ -747,8 +747,8 @@ The file stays what it is (the second review's §2 sets out its rules, each with
   - Every import makes a draft of its own.
   - A file from 1.0 that carries an id is given a copy of the draft where the id resolves.
   - A 1.0 app that opens the new file prints, where a headnote is on, another stored summary of the document under *Headnote*, or the placeholder sentence (`CollectionContentAssembly.swift:1348-1382`). That is what a recipient on another account sees today. On its author's own 1.0 devices it replaces every headnote the author wrote. *Corrected by the third review* (J7): this said a 1.0 app shows no headnote. To make that true, the headnote's state travels under a key 1.0 does not read (L43).
-  - **Off travels as Off.** Today the writer omits Off and the reader turns an absent key into Default (`NativeCollectionFormat.swift:517-520`, `:757-760`), so an Off entry arrives On (J6). Whether decision 166's "always" covers an entry switched off is the owner's (C2-2).
-  - **The headnote's keys** are its text, its format (a structured draft is a JSON object) and its authorship, with what an import makes of a sender's (J8; L43). The words for who wrote it are the owner's (C2-3).
+  - **Off travels as Off.** Today the writer omits Off and the reader turns an absent key into Default (`NativeCollectionFormat.swift:517-520`, `:757-760`), so an Off entry arrives On (J6). Decision 166's "always" does not cover an entry switched off: an Off entry's draft does not travel (C2-2; decision 193).
+  - **The headnote's keys** are its text, its format (a structured draft is a JSON object) and its authorship, with what an import makes of a sender's (J8; L43). An export names the writer by the compiler's name, "Headnote by …", with Apple Intelligence named where it drafted, and each headnote carries its writer's name (C2-3; decision 194).
 - **A 1.0 app, given a file the new version writes,** ignores the new keys and shows 1.0's layout.
 - **The new version, given a file from 1.0 or from an outside tool,** reads it as today. Nothing says of it that its settings "came from 1.0".
 
@@ -783,7 +783,7 @@ A saved template (§8.1's item 2, decision 164) is a new record type for another
 Candidates, in the order this design would take them. Q8 asked which. **The owner took nine** (decision 164): 1, 2, 6, 7, 9, 10, 11, 12 and 13. Not taken: 3, 4, 5 and 8. Each item says which of the plan of record's rows builds it.
 
 1. **Selected passages as a document's text.** A fourth choice for text depth: the passages the author highlighted, in the document's order, with a sign where text is left out. It is what a course reader does most: abridge. The passages must then travel in the collection file as text, as a quoted passage does, since highlights do not travel (`NativeCollectionFormat.swift:55-58`). The sign for an omission is not brackets (§3.1). *Taken: the plan's row L46.*
-2. **Save as Template.** An edited set of settings kept under a name for other collections. It is authored content, so it is a record type of its own, promoted with the rest at R11 (*corrected by the third review*, J42: this said "with a deploy of its own"), and a collection file can carry the settings but not the template. *Taken: L47.*
+2. **Save as Template.** An edited set of settings kept under a name for other collections. It is authored content, so it is a record type of its own, promoted with the rest at R11 (*corrected by the third review*, J42: this said "with a deploy of its own"), and a collection file can carry the settings but not the template. *Taken: L47. It holds step 1's seven settings (C2-4; decision 195).*
 3. **The collection's own numbers,** at each document's head and in its indexes together, or not at all: the Persons and Thematic indexes would cite *Documents 3, 7 and 12* of the collection. In a form and a word that no volume prints. *Not taken.*
 4. **Where notes go.** Before the text, as an introduction to a document, or after it, as now. *Not taken.*
 5. **A date alone in contents rows.** *22 February 1946*, from the date the index stores, in the form the Chronology prints. It is a choice of form for every row, where a date line is one document's. *Not taken.*
@@ -877,7 +877,7 @@ Each is read from the code and the bundled files at `94719de`. **No block was re
 - **Not proposed:** finding a volume's terms by matching words in a document's stored text. The editors' links are the authority.
 - **What it would also allow.** With the block in a collection, the web page's link on a term could lead to the term's row. That changes how a document's text is written, and belongs with lane 2's plan if it is wanted. **The owner wants it** (decision 174): a term in the web page links to its row where the collection has the block, and is plain text where it has not. The plan of record puts it in its row L52.
 
-**A3. Unprinted material cited.** *Taken (decision 171); the plan's row L53.*
+**A3. Unprinted material cited.** *Taken (decision 171); the plan's row L53. Titled* Archival files cited *(decision 196).*
 
 - **What it prints.** The archival files that the documents' footnotes point to and the volumes do not print, grouped by file, each with the document, the note's printed number and the editors' words. In the telegrams:
   - Document 475's note 44: *Not printed; in this telegram the Department informed the Chargé: "We should welcome receiving from you an interpretive analysis …" (861.00/2–1246).* That is the Department's telegram 284, which the Long Telegram answers.
@@ -888,7 +888,7 @@ Each is read from the code and the bundled files at `94719de`. **No block was re
   - **It is a block of its own, and never a part of Sources & Archives.** The index keeps where a document came from and what an editor mentioned in separate tables, so that the two are never added (`IndexingPipeline.swift:8969-8972`).
   - **It lists what the footnote grammar reads, and says so.** Document 474's note 43, *Despatch 2442, February 12, from Moscow, not printed*, names no file and would not be listed.
   - **A row prints a note's number only where the volume printed one.** The number is not unique in a document and is absent for some (`IndexingPipeline.swift:14632-14642`); Source Explorer's rows follow the same rule.
-- **Central files are in, of the decimal file.** The packet leaves pointers to a central file out, since they would flood it (`TripPacketBuilder.swift:281-284`). *Corrected by the third review* (J21): the grammar reads the decimal file, which ends in 1963, and lots and libraries. It does not read subject-numeric files or the Central Foreign Policy File. From 1964, 11,659 of the 21,020 footnotes that name a file name only kinds it does not read, so the block lists almost no central file from those years. And before 1955 central files are not the only pointers: 2,556 footnotes name a lot or a library. So the block says on the page which kinds are listed for which years, and its title is the owner's (C2-5).
+- **Central files are in, of the decimal file.** The packet leaves pointers to a central file out, since they would flood it (`TripPacketBuilder.swift:281-284`). *Corrected by the third review* (J21): the grammar reads the decimal file, which ends in 1963, and lots and libraries. It does not read subject-numeric files or the Central Foreign Policy File. From 1964, 11,659 of the 21,020 footnotes that name a file name only kinds it does not read, so the block lists almost no central file from those years. And before 1955 central files are not the only pointers: 2,556 footnotes name a lot or a library. So the block says on the page which kinds are listed for which years. At C2 the owner also had the grammar read the subject-numeric files and the Central Foreign Policy File, in index version 76 (decision 191), and titled the block *Archival files cited* (decision 196).
 
 **A4. Documents cited, not included.** *Taken (decision 171); the plan's row L51, with §8.1's item 10.*
 
@@ -1119,7 +1119,7 @@ Each is answered in the design's text. None is tested, and §12 says which need 
 | INT-10, ENG-10 Words | A table; *Footnotes* is not renamed and is in the plan | §4.6, §5.2, §3.8 |
 | ENG-4 Where an added entry goes | Every kind; filed | §4.3, #1995 |
 | ENG-5, FMT-6 What the lanes left out | Named; not the outline's rows, by the third review (J38) | §9, §7.4; L34 |
-| ENG-6, FMT-8, EDI-10 One reading, two sources; the records; a dateline's calls | The reading returns each apart and says what the index lacks; the records' title is Q9, yes (decision 165); their date line is not, by the third review (J44; C2-7) | §3.4 |
+| ENG-6, FMT-8, EDI-10 One reading, two sources; the records; a dateline's calls | The reading returns each apart and says what the index lacks; the records' title is Q9, yes (decision 165); their date line too, at C2 (J44; decision 198) | §3.4 |
 | ENG-7, EDI-7 The shared sentences | Left alone; a sentence of the collection's own | §3.7 |
 | ENG-8 The preview's repairs | A lane for every platform | §5.3, §9 |
 | DATA-7, DATA-8, DATA-9 The upgrade's table; other writers; the copy test | No upgrade and no value of keys but the labels' map; the copy test walks properties | §7.3, §7.5 |
