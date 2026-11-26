@@ -29,7 +29,7 @@ It is written from six sources:
 - **An early build goes to TestFlight after Waves 1 and 2** (decision 151). It takes the one re-index and the long device pass.
 - **Wave 3 is what the owner sent to the first update,** with the Zotero row and two rows of saves: #1990, the cross-reference graph saved as a working corpus or an Archives Visit, and L56, a range of Chronology saved as a working corpus (decision 184).
 - **Collections is reviewed first** (CR; decision 149), **then built in three waves.** Wave 4 stores nothing: one plan for three formats, export from the lists, the preview's repairs. Wave 5 adds the stored facts and trims the three surfaces. Wave 6 is the owner's picks from the design's two lists of candidates, nine from one and eight from the other. The design's lane 5 is not built (decision 156).
-- **1.1 changes the CloudKit schema:** five stored fields, or six, and one record type. The owner promotes them to Production once, before the release candidate is archived.
+- **1.1 changes the CloudKit schema:** six stored fields and one record type. The owner promotes them to Production once, before the release candidate is archived.
 - **When the Office publishes, the volume is taken in at once, with the queue paused** (decision 152). It ships with 1.1.
 - **39 of the 42 issues are in a row, each of them whole** but #1923's resume, which waits for its design. Three are not in this update: #1723 is a feature that waits on a device check, #1696 waits on the Office's subject export, and #234 is deferred (decision 92). #2012 and #2013, filed since (decisions 186 and 187), are in L56 and L57.
 - **The calendar is arithmetic and not a promise.** At two rows merged a day with no day lost, the submission falls about 2026-12-20. If the Office publishes in the first week of December, the new volume is out of the app for about three weeks, or more.
@@ -186,7 +186,7 @@ It is written from six sources:
 - **A row with code needs a Mac with Xcode.** A cloud session such as this plan's cannot make the runs landing owes. It can take what is documents only: this plan, CR, and the half of L28 that edits the runbook.
 - **Every heavy job goes through `Scripts/heavy.sh`**, one at a time on the Mac. No more than three builds at once across every workflow.
 - **One index bump a build.** 1.1 carries version 76 and no other, and L26 is the only row that changes what indexing stores: a document's place in its volume (#1978), the editorial notes (#1854), the table of term mentions (decision 172) and, if its measurement says so, the front- and back-matter pages (decision 178). Every library re-indexes once, at its first launch of 1.1; a TestFlight device does so at the early build. Anything else that would change what indexing stores joins L26 before it lands, or waits for the build after 1.1.
-- **One CloudKit promotion, before the release candidate.** 1.1 adds stored fields and a record type (decisions 162 and 164): a collection's citation style, opening and words; a document's date line; See also for the collection; a saved template, which is the record type; and a section's headnote default, if it needs a field of its own (§1c). So five fields, or six. More, if L48 or L49 keeps a choice on the collection.
+- **One CloudKit promotion, before the release candidate.** 1.1 adds stored fields and a record type (decisions 162 and 164): a collection's citation style, opening and words; a document's date line; See also for the collection; a saved template, which is the record type; and a section's headnote default, which CR settled as a field of its own (§1c). So six fields. More, if L46 gives an imported passage a field, or L48 or L49 keeps a choice on the collection.
   - Each lands with its control in the same row, since CloudKit makes a field only from the first record that carries a value.
   - The R-7 gate (`CloudKitSchemaInventoryTests`) catches each as it lands, and its checklist is followed.
   - The owner exercises each on a Development build and then deploys the schema to Production, once, before the release candidate is archived (R11). `check_cloudkit_schema.py` gates every archive (#1531).
@@ -280,7 +280,7 @@ A row keeps the number it was first given. So the waves give the order and the n
 | L34 | `Collections/CollectionContentAssembly.swift`, `CollectionExporter.swift`, `CollectionItemHTMLRenderer.swift`, `DocxCollectionExporter.swift`; `TEI/FRUSRenderNodeHTMLSerializer.swift`; `Citation/ZoteroJSONExporter.swift` (decision 165) | `Collections/PDFCollectionExporter.swift` | **Changes what every export prints.** The web page's and Word's pins, and BibTeX's and RIS's |
 | L35 | — | `Collections/CollectionListView.swift`, `MacCollectionManagerView.swift`, `CollectionExportSheet.swift` | None |
 | L36 | `Collections/CollectionItemHTMLRenderer.swift` (the ids) | `Collections/CollectionPreviewView.swift` | The web page's ids, for a document entered twice |
-| L43 | `Collections/CollectionContentAssembly.swift`, `CollectionExporter.swift`, `CollectionGeneratedBlocks.swift`, `CollectionGeneratedBlockType.swift`, `NativeCollectionFormat.swift`; `Citation/CitationFormatter.swift`; `Export/ResearchDataEnvelope.swift`, `ResearchImportPlan.swift` | `Models/Collection.swift`, `CloudKitSchemaInventory.swift`; `Collections/CollectionCompositionRows.swift`, `CollectionEntryInspector.swift`, `CollectionEditorView.swift`, `MacCollectionManagerView.swift`, `CollectionContentResolver.swift`, `NativeCollectionFormat+App.swift` | **CloudKit: five new fields, or six.** The collection file's new keys. The research export's version 8. A new block type |
+| L43 | `Collections/CollectionContentAssembly.swift`, `CollectionExporter.swift`, `CollectionGeneratedBlocks.swift`, `CollectionGeneratedBlockType.swift`, `NativeCollectionFormat.swift`; `Citation/CitationFormatter.swift`; `Export/ResearchDataEnvelope.swift`, `ResearchImportPlan.swift` | `Models/Collection.swift`, `CloudKitSchemaInventory.swift`; `Collections/CollectionCompositionRows.swift`, `CollectionEntryInspector.swift`, `CollectionEditorView.swift`, `MacCollectionManagerView.swift`, `CollectionContentResolver.swift`, `NativeCollectionFormat+App.swift` | **CloudKit: six new fields.** The collection file's new keys. The research export's version 8. A new block type |
 | L44 | `Collections/CollectionExporter.swift` (`CollectionPreset.Recipe`, divided) | `Collections/CollectionEditorView.swift`, `CollectionCompositionRows.swift`, `CollectionEntryRows.swift`, `CollectionEntryInspector.swift`, `MacCollectionManagerView.swift`, `CollectionExporter+App.swift`, `CollectionOutline+App.swift` | None |
 | L45 | `Collections/CollectionItemHTMLRenderer.swift`, if a part needs a mark on the page | `Collections/CollectionPreviewView.swift`, `CollectionEditorView.swift`, `MacCollectionManagerView.swift`, `CollectionEntryInspector.swift` | None |
 | L46 | `Collections/CollectionExporter.swift` (`CollectionBodyDepth`), `CollectionContentAssembly.swift`, `NativeCollectionFormat.swift`, and the exporters through the plan | `Collections/CollectionEntryRows.swift`, `CollectionCompositionRows.swift`, `CollectionEntryInspector.swift` | A new value of a stored string, so no CloudKit change. The collection file carries the passages as text |
@@ -437,12 +437,13 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **A template says what it needs** (the second review's H11, answered in §4.4): the summaries need Apple Intelligence and a prompt, and two templates print a headnote only where one is stored. With no step in the export sheet, this plan reads it as step 1's to say, on its cards, in L44.
 - **How many headnotes will print:** *Headnotes for 4 of 6 documents*. The sheet 1.0 has already opens with a sentence of what will print, and that sentence can say it.
 - **What a block cannot fill** (A1). L50 says it at the tick, on the outline's row and on the page. Whether the sheet's sentence says it too is L50's to propose.
+- **CR's answer** (the third review, `Collections-Design-Third-Review-2026-11-26.md`, J9 to J11). None of the three has a home yet. This section gives the headnote count to the sheet's sentence and L44's brief gives it to L44. 1.0's sentence reads the collection's defaults, and at AX5 on an iPhone SE it does not leave Export in view. A *Summaries* export already fails on a device without Apple Intelligence, even with every summary stored. CR recommends that L35 take the sheet's sentence, written from what the export prints, with L44's cards free to say a template's needs, and puts it to the owner (C2-1).
 
 **The promotion.** Lane 3's four properties are a collection's citation style, opening and words, and a document's date line. Decision 164 adds See also for the collection, which is a property `Collection` has not got, and a saved template, which is a record type. A section's headnote default is the sixth property, or none:
-- The design says it is "a field and a deploy of its own" (its §4.1).
+- The design said it was "a field and a deploy of its own" (its §4.1, before CR brought it to the answers). It is promoted with the rest, once, at R11.
 - This plan's reading of the model: a section is a `CollectionEntry`, and every entry already stores `includeHeadnote` (`Collection.swift:577`). The cascade ignores it on a heading today ("Headings do not carry a headnote section default", `CollectionContentAssembly.swift:1085`), as a rule and not for want of a field.
 - **But a heading made before the Composer redesign holds an explicit `false` there,** by that property's own comment: it was a `Bool` that defaulted to off, and "Existing entries migrate to their stored value". Read as a section's default, that `false` would switch headnotes off under a collection that has them on.
-- CR settles which. Either way the field lands with its control, in L43.
+- **CR settled it: a new optional property, read on headings only** (the third review's J24). The explicit `false` is on headings made under the builds of 2026-07-01 to 07-11, and on their copies (Duplicate, Import from JSON). No screen ever showed it, and no pass can tell it from a value set on purpose. The field lands with its control, in L43, and the promotion is six fields.
 
 **What a reader still on 1.0 (1861) sees of a collection made in 1.1,** as the design's §7.2 and the code read:
 - It reads none of the new properties. It prints 1.0's layout: the citation leading, History at State, the app's words and no date line. Nothing the volume prints is left out by a new setting, so nothing 1.0 prints is false.
@@ -453,7 +454,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 **Six departures from the design's §9,** each because two changes meet in one file or one release step. The first three were in the draft; all six are the owner's to refuse:
 - **#2005's sentence goes with lane 2.** The sentence is at `CollectionExporter.swift:1317-1319`, in the file lane 2 rewrites, and it is false today. The statement of sources as §3.7 redesigns it stays lane 3's.
 - **#1999's import half goes with L29.** Duplicate copies each headnote's draft (`Collection.swift:866`) and the import does not. Making the import copy it, where the id resolves, stops the loss of the original's headnote and changes no file. The file carrying a headnote as its text is L43's (decision 166).
-- **Lane 6's four repairs come before lane 4.** The design puts lane 6 after lane 4. The repairs touch `CollectionPreviewView.swift` and the web page's ids, which lane 4 does not; lane 4 then adds its new settings to the refresh list L36 completes.
+- **Lane 6's four repairs come before lane 4.** The design puts lane 6 after lane 4. The repairs touch `CollectionPreviewView.swift` and the web page's ids, which lane 4 does not. L43, whose new settings they are, adds each to the refresh list L36 completes, and L36 adds a test that walks the two models' stored properties against it. (CR's J20: this said lane 4, which stores nothing.)
 - **Lane 7's candidate 6 goes with lane 3.** Its fields are the same cascade's two empty cells. In one row they take one version of the research export, one set of `Fields` cases and one pass through the CloudKit checklist.
 - **A1 is a row of its own, after lane 4.** The design builds its line with lane 4's ticks. L50 adds it to ticks that L44 has made, so that L44 is not larger still.
 - **Lane 7's candidate 13 goes with lane 6's second half.** *Show Parts* on the Mac, a settings column on the iPad and the opening drawn in a document's settings are three changes to where a document's settings sit beside its page.
@@ -512,6 +513,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **#1999, the import's half.** An import whose headnote id resolves on this account copies the draft under a new id, as Duplicate does. **First, the run in 1.0** the design's §12 names: export a collection with a written headnote, import the file on the same device, edit the copy's headnote and read the original's.
   - **#1996.** Duplicate copies *Stamp active project* and *Append the query log* (`Collection.swift:794-814`), and the snapshot copies what its comment says it copies.
   - **#1995.** An entry added to a collection lands before its back-matter blocks.
+  - **From the third review** (J39). The snapshot carries the smart collection's own blocks in their places, as the design's §4.5 says. The code copies none today (`SmartCollectionSnapshot.swift:92-120`), so "copies what its comment says it copies" asks for nothing.
 
 - **L30, Citation Lookup** (#1977). One session, one pull request. Kit code and the app's lookup form.
   - Cite writes the printed number as printed; the parser captures digits alone (`CitationParser.swift:458-470`) into `ParsedCitation.documentNumber: Int?` (`CitationModels.swift:44`). Of 314,646 numbered documents, 722 have a number that is not whole: 83 with a letter, which are answered with the document of the same digits; 628 with a prefix, all in `frus1958-60v05mSupp`; 11 single letters.
@@ -656,9 +658,23 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
     - A8, A10, A11 and A12, which change what collections already print, with no switch (decision 171);
     - step 2 with three more ticks, 17 controls where the design counted 14.
   - **What it leaves:** each finding answered in the design's text, sent to a row's brief here, or put to the owner. C2 follows.
+  - **Done on 2026-11-26** (the third review, `Collections-Design-Third-Review-2026-11-26.md`; its reports in `collections-design-review-3/`). Nine agents, as the owner chose. 58 findings and the session's own A2, merged to 48: 1 at S1, 22 at S2 and 25 at S3. None was refuted.
+    - **Three changed index version 76,** and the owner took each into L26 the same day: decisions 188 to 190.
+    - **The design** is corrected in place where it was wrong, each correction marked.
+    - **The rows' briefs** below carry the rest, each as a bullet *From the third review*.
+    - **Eight questions are C2's** (the review's §8).
 
 - **C2, the checkpoint.** The owner's, when CR's findings are in. Wave 3 goes on meanwhile.
   - Each finding is answered, and the design's status changes from PROPOSED on the owner's word.
+  - **CR's eight questions** (the third review's §8, each with a recommendation):
+    - who says, at export, what the export will print (C2-1; recommended: L35, in the sheet's sentence);
+    - whether decision 166's "always" covers a headnote switched off (C2-2; recommended: no);
+    - the words that say who wrote a headnote (C2-3);
+    - what a saved template holds (C2-4; recommended: step 1's seven settings);
+    - A3's title (C2-5);
+    - which number a citation names where the volume's own differs (C2-6; recommended: history.state.gov's, with the volume's after *As published:*);
+    - whether Q9's yes takes the records' date line to the new reading (C2-7; recommended: yes);
+    - and the filing of one 1.0 defect (C2-8: a *Summaries* export fails without Apple Intelligence even with every summary stored).
   - The Collections rows, L34 to L36 and L43 to L55, are re-cut where a finding says so. L43 to L55 are this plan's reading of an unreviewed design, and their briefs say what each must settle first.
   - The pace is read against the calendar: the rows merged, E's date if the Office has given one, and where the submission then falls. Decisions 147 and 148 stand unless the owner changes them here.
 
@@ -672,16 +688,30 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **What it owes** is the design's §9: `CollectionRenderingPinTests`' pins for the web page and Word re-taken with their reason, and BibTeX's and RIS's, by decision 165; `CollectionResolutionTests`' two pins; `CollectionExportParityTests` taken to the blocks' order, a source note longer than a line, a research note longer than a page, a contents list longer than a page and a row's number; `CollectionExportContrastTests`' list; the 26 ranged blocks of `Docs/EditableContent/08-Reading-Research-Collections.md` that cite `CollectionExporter.swift`; both manuals' chapter 12; and a kit test that says, for each of the three openings, which line is the document's heading, and that *As published:* is inside the volume's heading.
   - **A candidate in its files:** R2b's unfiled finding, an entry's AI summary row showing the first summary the store returns where the rail shows the newest (the content resolver's fallback).
   - **By hand:** the owner's 52-document collection, as a PDF, a Word file and a web page.
+  - **From the third review:**
+    - **No placeholder in an exported file** (J10). Where a requested headnote has nothing stored, all three formats print nothing. Today each prints "No stored summary for this document — generate one in the document view to fill this headnote." (`CollectionItemHTMLRenderer.swift:463-466`; `DocxCollectionExporter.swift:2068-2073`; `PDFCollectionExporter.swift:923-929`).
+    - **Headings that tell documents apart** (J16). Where the volume's heading leads, the heading or its region carries the citation's number, in the web page and in Word, and Word keeps the citation line with its heading. The kit test reads the Word package as well as the HTML. 56.4% of documents share their heading with another of their volume, and 77.1% before 1952. Where the text does not print, the dateline prints under the heading's words.
+    - **One heading rule for every level** (J32): a document under a section, a titled document's volume heading, an attachment's heading (23,768 documents have one), and what happens past six levels. The rule is checked in order in HTML and in Word.
+    - **The volume's own number, read by its form in every volume** (J23). Before 1952, 13,669 headings in 39 volumes carry one, 6,091 of them not history.state.gov's. In 1952–1954, 16 of the 28 volumes print none. Which number a citation names is C2-6.
+    - **A titled row in *Citation* style** has *As published:* and the volume's heading as its second line, with the citation after it (J46).
+    - **The outline's line is this row's** (J38): the title, with the volume's heading under it (the design's §3.4), in `CollectionEntryRows.swift` and `MacCollectionManagerView.swift`. So L35 is developed after L34, or leaves the Mac's file alone.
+    - **The records' "Document date:" line** (J44) reads the top level alone, which finds no dateline for 291,438 of 314,616 documents. Whether it takes the new reading is C2-7. Whichever it is, it is said among what a send or a file carries.
+    - **Each plan line drawn as its own run, carrying its role** (J19), so that L48 can tag what the PDF draws.
 
 - **L35, export from the lists** (lane 1). One session, one pull request, app code only. After C2; it can be developed beside L34.
   - *Export…* in the Collections list and in Manage Collections; the format remembered on the device; the sheet at the default size, AX3 and AX5, with its sentence, its format and *Export* in view when it opens.
   - **The sheet is otherwise 1.0's** (decision 156): format and destination. This row is the owner's quick export.
   - **With it, in the same file:** the list's Rename, Duplicate and the rest as VoiceOver actions (#2006's first), and a row that opens anywhere along its width on the iPad (R4's finding, `CollectionRow`).
   - **Held by** a fit suite on the iPhone 17 and the iPhone SE, and a suite that reads the action's name.
+  - **From the third review:**
+    - **The sheet's sentence** (J9; C2-1). If C2 gives it to this row, it is written from what the export will print: the headnote count, and what this device lacks for the template. It holds at AX3 and AX5 with the format and Export in view. 1.0's does not: at AX5 on an iPhone SE its sentence and the grid's first row overflow, and its Export sits inside the form (`CollectionExportSheet.swift:345`, `:353`, `:373-394`).
+    - **What this device lacks** (J11). Before Export, the sheet says what the export needs that this device lacks. A *Summaries* export today fails with "The export could not be rendered." on a device without Apple Intelligence, even with every summary stored, since the guard runs first (`CollectionContentResolver.swift:776-778`). That file is outside this row's, and where the fix goes is C2-8.
+    - **The remembered format** cannot be the Zotero send, which runs from its row (`CollectionExportSheet.swift:133-138`).
 
 - **L36, the preview's four repairs** (lane 6, first half; #1997, #2004). One session, one pull request, after L34.
   - It keeps the author's place when the page reloads; choosing a row brings its document into view, and renders it if it is past the first 20; each document on the page is named by its entry, so that one entered twice is two places (#2004, `CollectionItemHTMLRenderer.swift:784-787`); it refreshes on the title override and the Headnotes default (#1997, `CollectionPreviewView.swift:211-266`).
   - **First, the run in 1.0:** with the preview on, switch Headnotes alone and wait five seconds.
+  - **From the third review** (J20). A test walks `Collection`'s and `CollectionEntry`'s stored properties against the preview's list, so that the settings L43 to L49 add cannot be left out of it.
 
 - **L43, the new facts** (the design's lane 3 and §7, with lane 7's candidate 6). One session, one pull request, the largest of Wave 5: a commit for each fact with its control, then the Note, the statement, the file and the research export. After L34.
   - **Each fact lands with a plain control in the surfaces 1.0 has,** which L44 then trims. CloudKit makes a field only from the first record that carries a value (`CloudKitSchemaInventory.swift:514-516`), so no property lands without its control.
@@ -689,7 +719,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **A collection's opening:** which line leads a document. Absent reads as *the citation leads*, so a collection that exists prints as it does. A new collection starts with the volume's heading leading, 1.0's other settings and no apparatus (decision 159).
   - **A collection's words:** the ten labels of the design's §5.2, each a field that cannot be emptied. They are one text property holding a plain map from a label's name to its text, so that a build which does not know a name carries it through. A test holds that (its §7.3).
   - **A document's date line,** given only under a title (decision 163).
-  - **See also for the collection, and a section's headnote default** (decision 164). The first is a new property. The second is a new property or the one every entry has, and CR settles which (§1c).
+  - **See also for the collection, and a section's headnote default** (decision 164). The first is a new property. The second is a new property too, as CR settled it (§1c).
   - **The Note on the Text,** a block (its §3.6): a new value of a field every block's row has. Its sentences are written from the volumes in the collection, and their wording is the owner's.
   - **The statement of sources** (its §3.7): a sentence of the collection's own for the author's lines, and the app's model named as a source where a headnote was generated. That is the rest of #2005.
   - **The collection file** (its §7.4): new optional keys, each written only where it is set, and no change of version. A headnote travels as its text, always, with who wrote it (decision 166), and every import makes a draft of its own. That is the rest of #1999.
@@ -698,6 +728,21 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **Before it starts:** L34; the two-device run and the file run (§2); the desk check of Chicago and Turabian (decision 161).
   - **What it owes** is the design's §9 and §7.4: the Guide's §15, both manuals' chapter 12, the sheet's hint, the ranged blocks of `Docs/EditableContent/08-Reading-Research-Collections.md` that cite `Collection.swift`, the format's own tests, `CollectionExportContrastTests`' list, and a VoiceOver suite on the iPhone 17 and the iPad Pro 13-inch in which each new control speaks its name and value.
   - **By hand:** `frus1946v06` d475 under each opening and each style, and as *The Long Telegram* with a date line.
+  - **From the third review:**
+    - **A section's headnote default is a new optional property** of `CollectionEntry`, read on headings only (J24). So the promotion is six fields.
+    - **The Note on the Text is a rule over the resolved entries** (J18), run outside the block seam. The seam gives a block the membership alone, and prints *Nothing to list* for an empty one (`CollectionGeneratedBlocks.swift:155-160`, `:184`). The same rule answers the design's §3.6 line in the collection's settings.
+    - **The headnote in the file** (J6 to J8):
+      - Off travels as Off, for documents and sections. Today the writer omits Off and the reader takes absent as Default (`NativeCollectionFormat.swift:517-520`, `:757-760`).
+      - The keys are the headnote's text, its format (a structured draft is a JSON object) and its authorship, and the brief says what an import makes of a sender's authorship.
+      - What 1.0 prints for the new file is stated as it is: an AI summary or the placeholder under *Headnote*. Or the headnote's state travels under a key 1.0 does not read.
+      - Whether "always" covers an entry switched off, and the words for who wrote it, are C2-2 and C2-3.
+      - The Guide's §15.1a limit, "Headnotes cannot be supplied", is brought to the rule.
+    - **The research export's version 8 carries a collection's headnote drafts with its entries,** whatever the AI-summaries switch (J45).
+    - **A date line prints only under a title that prints** (J41): what clearing a title does to it, and where a stored date line with no title is shown.
+    - **The preview's list** (J20). Each new setting joins `CollectionPreviewView.swift`'s refresh list, or #1997 recurs for each.
+    - **`everyApparatusBlockInTwoTemplates` turns red with the Note** (J36), since it runs over `allCases`. It is rewritten over decision 139's five blocks, with the vocabulary pin, and the reason is written where each test is.
+    - **The schema walk for Duplicate and the snapshot** names what a snapshot must not copy, `savedSearchId` first (J39).
+    - **Before it starts:** the two-device run also drags a document and sorts by date on the 1.0 device, then reads every date line (J25).
 
 - **L44, the three surfaces, trimmed** (the design's lane 4, §4.2, §4.3 and §5.2; decision 153). One session, one pull request. After L43.
   - **The collection's settings open on ten controls:** a row for each step, the title page's five fields, *Citation style*, *Wording* and the linked saved search.
@@ -708,10 +753,20 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **A section's sheet** holds the section's six pickers and nothing of the collection's. **A picker's first choice says what it follows:** *Follow the section: On*. **At the collection, a row says how many set their own,** and the count opens the list of them, with *Clear*.
   - **Also:** *Create Static Snapshot* in a smart collection's editor; the Mac's New Collection form as a name and the two steps; and one name for each setting wherever it shows.
   - **#2006's other three:** the per-note switches' names, the section pill's height, and the template cards' fixed type.
-  - **What the export sheet will not say** (§1c): a template's needs, and how many headnotes will print, are said here, if CR agrees.
+  - **What the export sheet will not say** (§1c): a template's needs, and how many headnotes will print, are said here if C2 so decides (C2-1). CR recommends the sheet's sentence, in L35, for the count.
   - **1.0 marks its own card.** It compares its own eight fields, two of which are now step 2's, so a collection set here can show another card *Active* there. Nothing prints by that mark (the design's §4.3).
   - **What it owes** is the design's §9: `CollectionTests.swift:3450-3565` goes on holding decision 139's table, and its tests of what a template writes move to the two steps; the six UI suites of `CollectionEditorTitleTests.swift` are brought to their surfaces; a fit suite and a hit-area suite for the cards and the pill at AX3 and AX5; the VoiceOver suite; a walk of the Mac's gear popover with a step opened in place; both manuals' chapter 12, the captures that show the editor, and the tour's step 16.
   - **Candidates in its files:** IPA-3's whole-collection Sort and MAC-11's Done (§5).
+  - **From the third review:**
+    - **The one tap on step 2's row** (J14): whether it adds or replaces. It is labelled by what it does, every change it makes is listed, and its Undo is where the change shows on each platform.
+    - **What is in view after a choice** (J17). Each step's line of change and its Undo sit where the choice was made, for step 2's shortcuts as for step 1's cards. The fit suite checks what is in view at AX3 and AX5 after a card and after *None*.
+    - **A collection that equals no template** (J26). A new collection ties at two differences between *Full text as printed* and *Summaries*. The brief says what step 1's row and the Mac's New Collection menu show for it, and which settings differ.
+    - **Step 2's row is two controls** (J30). The brief gives its anatomy for touch, VoiceOver and the keyboard.
+    - **What it owes besides** (J37):
+      - the 24 template blocks of `08-Reading-Research-Collections.md`, renamed and reworded in the owner's words, and its 28 ranged blocks;
+      - the three `CollectionEditorTitleTests` tests that reach the collection's fields through a section's sheet, moved to step 2's switches, with the suite's row in the rules file.
+    - **A section's sheet holds seven pickers**, with its headnote default.
+    - **The prompt's error** names the screen that holds the prompt, not a "Composition section" (J11).
 
 - **L45, pointing** (the design's lane 6, second half, and lane 7's candidate 13). One session. After L44. It may be two pull requests, the Mac's and the iPad's, if C2 or the session finds it too large for one.
   - ***Show Parts* on the Mac** (its §5.3): a switch on the preview and in the View menu. On, each part of a document is outlined and named. A click on a part selects its document's row and brings that part's control into view in the column. Keyboard focus stays where the click was, VoiceOver is told what is selected, and every part is reachable from the column by keyboard alone.
@@ -720,6 +775,14 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The iPhone is unchanged:** its outline and its preview are never on screen together.
   - **The parts are the plan's** (L34). The row reads a line's role from the plan and writes no second list.
   - **Held by** a walk on the Mac, since nothing automated holds the Mac, and a suite on the iPad.
+  - **From the third review:**
+    - **The iPad's column** (J13). Composer v2 removed this column on 2026-07-12 "so the reading surface stays clear" (`CollectionEditorView.swift:832-836`). The brief says:
+      - the widths at which the column shows and gives way, after Browse's rule (`BrowseTwoPaneMetrics.swift:27-35`), and what the outline and the preview keep;
+      - whether it is an `.inspector` or a column the editor draws;
+      - what it does at AX3 and AX5, where a 280-pt column takes about three landscape screens for the eight pickers;
+      - the iPad suite's devices.
+    - **A part on the page is marked, never made a control** (J33): its name is in text, and its click is caught by the page. So its links and footnote calls stay reachable.
+    - **A click that lands on a link inside a part** (J34). The preview allows in-page jumps, so a term's link (decision 174) would move the page. Say which wins.
 
 - **L46, selected passages as a document's text** (candidate 1). One session. After L44.
   - **A fourth choice of text depth:** the passages the author highlighted, in the document's order, under the volume's heading, which prints at every depth.
@@ -728,6 +791,11 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The sign for an omission is the owner's.** Brackets are the editors' additions (the design's §3.1). By this repository's own record, a row of asterisks is the editors' mark of an omission before 1925, and an ellipsis theirs from 1925 to 1991 (`FRUS-History-Feature-Assessment-2026-11-09.md`). The design's reason for the mark applies here: words are read aloud, and collide with nothing the volumes print.
   - **Four more that the design does not say,** which the row proposes and the owner chooses: whether the volume's dateline prints where the author highlighted none of it; what a document with no highlight prints at this depth; whether a highlight the reader marks as stale is printed; and whether the depth is offered for a section and a collection, or for a document alone.
   - **The Note on the Text names** the documents that print as selected passages.
+  - **From the third review:**
+    - **Where an imported passage is kept** (J12). A document entry's `text` is nil by rule, and an import gives the recipient's own highlights. A stored home joins the promotion and version 8. Say which prints when an entry has both, and run the excerpt check over passages that came from a file.
+    - **Which highlights make the passages** (J29): all, or the document's selection. Say what *Highlights in body* and the per-highlight switch mean at this depth.
+    - **One cut, in the kit** (J29): a render model of the passages and the notes they call, which the three exporters draw. Which footnotes print is a fifth question.
+    - **The omission sign's word** is checked against the volumes' own. They print "[omission]" 309 times with variants, in brackets, which the design rules out, and an ellipsis in 2,223 documents from 1969 on (EDI's count, not recounted).
 
 - **L47, *Save as Template*, and *Same settings as…*** (candidates 2 and 9). One session, a commit for each. After L44.
   - ***Save as Template*:** an edited set of settings kept under a name, for other collections. It is authored content, so it is a record type of its own (the design's §8.1): a new model in `frusModelTypes`, which the CloudKit gate catches and R11 deploys.
@@ -737,6 +805,12 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
     - A record type that syncs can be made twice, on two devices. The design's §7.6 says what the cleanup must not do to authored content, as #1791 ruled for notes.
   - ***Same settings as…*:** one document's settings copied to others. It writes the fields 1.0 has, and stores nothing new.
   - **Held by** the VoiceOver suite, for both actions' names.
+  - **From the third review:**
+    - ***Same settings as…* copies the cascade's pickers alone** (J1, the review's one S1): text depth, the summary prompt, the six switches and the headnote switch.
+      - It never copies the title, the date line, the note and highlight selections, or the headnote's draft, which name the source's own records.
+      - The kit takes chosen notes and a headnote by id with no check of their document (`CollectionContentAssembly.swift:1004-1011`, `:1364-1366`). So a target would print the source's, and an edit or a delete through a target would delete the source's headnote (`CollectionEntryInspector.swift:1158-1173`; `GeneratedSummary.swift:238-243`).
+      - The brief says the direction, what a following value does to a target's own, and where the action is. It is tested on a source with chosen notes and an edited headnote.
+    - **Where saved templates live** (J15): where they are listed, applied, renamed and deleted on each platform, and how step 1's comparison and *Suggested for…* treat one. What a saved template holds is C2-4, told first that "both steps" changes step 2 from step 1.
 
 - **L48, the page, and a tagged PDF** (candidates 7 and 12). One session, a commit for each. After L44.
   - **The page:** Letter or A4; each document on a new page, or run on; page numbers in Word. The PDF's page is fixed at 612 by 792 points today (`PDFCollectionExporter.swift:177-178`).
@@ -745,12 +819,18 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **A tagged PDF:** a title, links, and tags from the roles the plan gives each line (L34). Today the PDF has no tags, title or links (the design's §3.8).
   - **First, a small proof,** since no one has made a tagged PDF in this app: two pages with a heading, a paragraph and a link, tagged, and read with VoiceOver on a Mac and an iPad. The row goes on if a heading is announced as one.
   - **Held by** a test over the PDF's structure where one can be written, and by that walk.
+  - **From the third review:**
+    - **The API's floor** (J19). The structure-tree API and `CGPDFTagTypeArtifact` are `API_AVAILABLE(macos(27.0), ios(27.0))` (`CGPDFContext.h:397`, `:480`), and the app targets 26.0 (`project.yml:78`). So the row builds on `CGPDFContextBeginTag` (`:461`), or gates by OS.
+    - **The drawing** (J19). The PDF draws a document's body as one string in frames, with one `CTFrameDraw` each (`PDFCollectionExporter.swift:796-847`, `:1494`). Tagging a heading inside means drawing it as its own run, which L34 is asked to do. The proof is the exporter's own document crossing a page break, with a link from a contents row.
+    - **What it marks beyond the plan's lines** (J19): tables as tables (8,820 documents hold one, drawn as cells joined by " | "), figures with text, page numbers as artifacts, and the document's language.
+    - **The defaults by format** (J28). Before a choice is set, each one reads what each format prints today: a page per document in the PDF, a break after each document's text in the printed web page, none in Word. One control shows that.
 
 - **L49, a short citation form** (candidate 11). One session. After L43.
   - *FRUS*, 1946, vol. VI, doc. 475. Year, volume and document name more than one volume for 133 of the manifest's 553 (the design's §6).
   - **So the rule comes first, and is the owner's to accept:** a form that names one volume for each of the 553, held by a test that walks the manifest.
   - **Where it prints is the owner's too.** The design names the form and no place for it. The places a full citation repeats are the *See also* line, a contents row in *Citation* style, and the rows of the two new lists (L51, L53).
   - If the choice is kept on the collection it is a stored property, and joins the promotion and version 8.
+  - **From the third review.** The manifest holds two first editions beside their second editions (`frus1951-54Iran`, `frus1969-76ve15p2`), so a unique short form names the edition.
 
 - **L50, a line of coverage** (A1). One session. After L44.
   - **What it says:** what the collection's volumes give a block. The blocks fill from what a volume's editors marked, and that differs by era. 265 of the 553 volumes tag no person, so a Persons Index over them is the one row *Nothing to list* (the design's §8.2).
@@ -760,6 +840,9 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The wording is the owner's.** The People browser's caption is the precedent (`AnnotationsAxisViews.swift:472-482`).
   - **First, the run in 1.0:** the eight telegrams of `frus1946v06` with a Persons Index and a Sources & Archives block, read in the preview (§2).
   - **What it owes:** a new requirement of the blocks' data source, which both fixture sources answer; `CollectionResolutionTests`' pin where a fixture's block is empty; and the line spoken with its tick's name and value.
+  - **From the third review:**
+    - **What A2 and A4 fill from** (J40). A2's count takes terms linked in any part or on `@ana`, where the block lists only what prints, so the block says where it left terms out. A4's line reads `xrefDocuments`, where the block also fills from page references (`xrefPages`, `xrefVolumes`).
+    - **The read's protocol** (J35). A new read on the blocks' data source has eight conformers, the Archives Visit packet's source and four of its test stubs among them. Say which protocol it joins.
 
 - **L51, *Documents cited, not included*, and *See also* by page** (A4 and candidate 10). One session, a commit for each. After L50.
   - **The join both need.** A reference to a printed page is stored under its page (`CrossReferenceStore.swift:757-759`), so it matches no document of the collection. The app already maps a cited page to the documents on it (`Citation/CitedPageMap.swift`, and the device's page index).
@@ -767,6 +850,11 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The block:** the documents the collection's documents cite and the collection does not hold, most cited first, each with the documents that cite it. A list, and not a picture.
   - **A page that holds several documents** is the row's to settle and to say on the page: every document on it, or none.
   - **A new block type owes** (the design's §9): a case in every `switch` over the types, with its title, its symbol, its usual place and its resolver; a line in what an export drew on; a tick in step 2; its title among the collection's words; and both manuals' list of the blocks.
+  - **From the third review** (J4). The join is the index's already.
+    - A page reference is stored as the document on the page (`IndexingPipeline.swift:10631-10697`), so 1.0's See also line already matches same-volume page references.
+    - "The line prints more than it did" holds only for the other volumes' rows left on their page: "ff.", ranges across documents, and pages naming nothing (19,186 at version 71).
+    - Since decision 190 each resolved edge keeps `cited_page_id` and `page_resolution`, so the block marks a `first` pick, or lists every document on its page.
+    - "The join both need" above is to be read with this.
 
 - **L52, *Abbreviations & Terms*** (A2; decisions 172 and 174). One session. After L51.
   - **What it prints:** each abbreviation the collection's documents use, with the volume's own definition and the documents that use it. It reads version 76's table, as the Persons Index reads the people's.
@@ -774,6 +862,12 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **First, the run in 1.0:** one of the telegrams exported in full as a web page, opened in a browser on a Mac that has the app and on one that does not, and *Dept* clicked (§2).
   - **Reach:** 312 volumes link a term in at least one document. L50's line says so for the rest.
   - **What it owes:** what a new block type owes (L51), and the web page's pin, re-taken with its reason.
+  - **From the third review:**
+    - **Rows and links keyed by volume and the editors' id** (J5), with the block's instance in an anchor, since a block can be placed twice. The volume is named beside a definition where the collection spans volumes. One abbreviation means two things in one volume (`frus1946v11`'s *BA*) and across volumes (1,063 abbreviations). A row has no id today (`CollectionExporter.swift:1196-1218`).
+    - **What prints, not what is linked** (decision 188). The blocks' data source passes, for each document, the parts its resolved settings print, and a term is listed where a part that links it prints (`collections-design-review-3/a2-what-the-index-owes.md`).
+    - **An `@ana`-only term** (J40): what it counts as is said. No export prints `@ana`, so under the rule `frus1981-88v16`'s block is empty.
+    - **One row per spelling** (decision 189).
+    - **The other links beside a term's** (J34): what the web page writes for a person's name and a cross-reference where a term's link now works, and what the preview does with an in-page jump.
 
 - **L53, *Unprinted material cited*** (A3). One session. After L52.
   - **What it prints:** the archival files that the documents' footnotes point to and the volumes do not print, grouped by file, each with the document, the note's printed number and the editors' words. The index stores each pointer (`external_citations`), and one read answers for a list of documents.
@@ -782,6 +876,9 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **Since index version 76 the grammar reads the post-1963 central files** (decision 191, built in L26): a Subject-Numeric file is a `centralFileClass` row whose `decimal_class` is its designator (`CollectionKeying.isSubjectNumericClass` tells it from a decimal number), and the Central Foreign Policy File a `centralForeignPolicyFile` row with no collection, its film number in `file_id`, labelled by `ExternalCitation.displayLabel`. Grouped by file, the Foreign Policy File's rows are one group (8,313 rows in 62 volumes on a full index), each row a telegram's film number, which the block's session may want to divide. A designation with no number (`Central Files, POL US–USSR`) is still not read in a footnote, and the page says what the grammar reads.
   - **First, the run in 1.0:** Source Explorer's *Unprinted Material* rows for `frus1946v06` d474 and d475, against their notes 39 and 44 (§2).
   - **What it owes:** what a new block type owes (L51).
+  - **From the third review:**
+    - **What it lists, by years** (J21). The grammar reads lots, libraries and decimal files, which end in 1963. It does not read subject-numeric files or the Central Foreign Policy File. From 1964, 11,659 of the 21,020 footnotes that name a file name only kinds it does not read. So "Central files are in" goes, the page says which kinds are listed for which years, and the title is C2-5.
+    - **Its read** (J35) is the very query that the Archives Visit packet's refinement keeps out of the blocks' protocol (`TripPacketBuilder.swift:712-716`). The collections' source conforms to that refinement rather than lift the query.
 
 - **L54, three of 1.0's blocks changed** (A8, A10 and A11). One session, a commit for each. After L53 and L49.
   - **Sources & Archives, by file class** (A8). Today a central file is a group of one: eight telegrams make eight groups. The block groups by class, with the class in words for the files of 1910 to 1973 (`DecimalClassLabelTable.swift`, `SubjectNumericLabelTable.swift`). The index stores each note's class, and the block's read does not select it (`IndexingPipeline.swift:6490-6492`). A scan's link, where there is one, says that it is a file's and not a document's.
@@ -789,6 +886,10 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **Chronology, by administration** (A11): a heading where the presidency changes, from the dates the app holds.
   - **None has a switch** (decision 171). Every collection that has one of these blocks prints differently from this row on. `CollectionResolutionTests`' pin (`:157-160`) moves once, for all three.
   - **Both manuals** say what each block prints, and are brought to it.
+  - **From the third review:**
+    - **A8 groups by class and by schedule** (J47). The Department renumbered its classes on 1 January 1950, and 127 keys are cited on both sides of that day. A scan's link carries the caveat Source Explorer gives its route, a roll's or a range's, on the document's row.
+    - **A11's rule at a change** (J48). The app gives each day of change to both presidents: 26 documents are dated 12 April 1945, 17 are dated 9 August 1974, and 3,229 ranges straddle a change. Say where each goes, and say on the page that the heading falls by date. Its heading needs an exporter, which this row's files do not name.
+    - **The reads' protocol** (J35), as in L50.
 
 - **L55, the word cloud's terms as a table** (A12). One session. After L54.
   - **What it adds:** under the image, a table of the terms and their counts, with a header for each column, in the web page and in Word. Today the image's alternative text is one sentence, the same for every collection.
@@ -796,6 +897,10 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **A second list, the distinctive terms,** by the measure the Word Cloud calls *Distinctive*, with the caveats that measure carries on screen.
   - **No switch** (decision 171): every collection whose word cloud is on prints the table.
   - **Held by** a kit test over the HTML and the Word package, and the two pins re-taken with their reason.
+  - **From the third review** (J22):
+    - **Which terms.** The table lists the terms the image places, at most 140, which are the cloud's own accessible list (`KeynessCloud.swift:40-41`). Every term counted once or more would be about 2,300 rows for the eight telegrams.
+    - **What was counted.** The count covers every document's whole text with its notes, whatever the export prints, under the device's word forms and hidden words (`WordCloudExport.swift:158-172`). The table says so, or counts what the export prints.
+    - **The PDF.** Whether it prints the table, and how, since its cloud comes from another path (`PDFCollectionExporter.swift:208-212`) and its tables are lines. The parity suite holds the three formats to that.
 
 - **R10, the Office's release taken in** (decision 152). At E. `New-Volume-Release-Plan.md` §10 is the runbook, and L28 has run most of it once.
   - **The queue pauses.** The row in flight finishes and merges, R10 runs and merges, and the rows resume. If L26 has not merged, it lands first.
@@ -816,7 +921,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **Sitting T3** (decision 88): every screen the rows changed, on the iPad simulator with the full library and in the Mac check copy. The collection's settings and both steps, a section's sheet, a document's inspector, the lists and the export sheet, a collection's three exports with each new block, Citation Lookup's result, Source Explorer's year, the graph's two saves, and Chronology's. Browse's Subseries list on the iPad (`ipad/browse-root`), where L26's T1 puts `1950-55` above `1950`. And any store frame that shows one of them.
 
 - **R12, the device pass of the release candidate,** on an iPhone, an iPad and the Mac. The owner's.
-  - **Two devices on one iCloud account, one still on 1.0 (1861).** It is the design's first run (its §12), made again on Production with the two builds readers will have. On the release candidate, set each new fact on a collection the other device holds. Rename that collection on 1.0, and read the facts on the release candidate. Update the second device, and read the facts there before the first touches the collection again.
+  - **Two devices on one iCloud account, one still on 1.0 (1861).** It is the design's first run (its §12), made again on Production with the two builds readers will have. On the release candidate, set each new fact on a collection the other device holds. Rename that collection on 1.0, then drag a document and sort by date there, and read every fact on the release candidate, each entry's date line among them (CR's J25: 1.0 re-sends every entry record on a reorder). Update the second device, and read the facts there before the first touches the collection again.
   - **A collection file both ways:** one the release candidate writes, opened in 1.0 (1861); and one that 1.0 wrote, with a headnote, opened in the release candidate.
   - **The new volume on each device:** in Browse under its subseries; its download and its index, with no re-index of the library; a document read; a keyword search and a search by meaning that reach it; its place on the map; its Sources and an Archival Neighbors row; a corrected volume's shard fetched again (D-c4) and its documents in file order.
   - **Each Collections row's own check,** as its brief says *by hand*, and the owner's 52-document collection in the three formats.
@@ -834,6 +939,8 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - For L34: `frus1961-63v11` d1 exported under *Full text as printed*, and the source notes counted (#1991); a collection with one section heading exported as a web page, and its contents rows' numbers read (#1993); `frus1946v06` d475 exported to Word, and the number after "[13]" read (#2001).
   - For L36: Headnotes switched alone, with the preview on (#1997).
   - For L50 and L54: a collection of documents 470, 473 to 477, 480 and 486 of `frus1946v06`, with a Persons Index and a Sources & Archives block, both read in the preview.
+  - For L43, from CR: the two-device run with a drag and Sort by Date on the 1.0 device, every date line read after (J25); and a hand-made collection file with `"includeHeadnote": true` and no id, imported into 1861 and exported as a PDF (J7).
+  - For L35, from CR: on a Mac with Apple Intelligence off, a PDF of a collection at *Summary only* whose summaries are all stored (J11).
   - For L53: Source Explorer's *Unprinted Material* rows for d474 and d475 of that volume, against their notes 39 and 44.
   - For L52: one of those documents exported in full as a web page, opened in a browser on a Mac that has the app and on one that does not, and *Dept* clicked.
 - **The Word and Pages run** for L34: two `.docx` files a session makes, opened in each.
@@ -900,6 +1007,12 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 ## 5. Backlog, parked, deferred and closed
 
 The 2026-11-15 plan's §5, with what this plan's rows take left out: the subseries' order (T1, in L26); #1835 (L27); a Collections row's hit shape (R4, in L35); the Research window's ids, filed as #1946 (L38); and the Contents links, F7 (L39). Where a line below names a row, the item is a candidate of that row's and nothing more.
+
+### Found by the third review of the Collections design, 2026-11-26, unfiled
+
+None was seen in a running app. The review's §6 lists seven. These two are outside every row's brief, and each needs the owner's word to file:
+- **A *Summaries* export fails on a device without Apple Intelligence, even with every summary stored.** The guard runs before the stored summaries are read (`CollectionContentResolver.swift:776-778`). C2-8 asks where it goes; L35 takes it if its files are widened.
+- **In an exported web page, every person's name is a link no browser can follow,** and an untagged name is a link to `#` (`FRUSRenderNodeHTMLSerializer.swift:894-897`). L52 settles it with decision 174's term links, if the owner wants it in this update.
 
 ### Found by the review of 2026-11-15, unfiled
 
@@ -1007,7 +1120,7 @@ The 35 of the review's S3 findings that no 1.0 row took. Each has its evidence a
   - In `Completed/`, the 2026-10-21 plan's status line and its review's dated note named it at `../`, and now name it in their own folder. `Completed/README.md` has the move's entry.
   - Dated records are left as written: `DEVELOPMENT-PLAN.md`'s entries, the archived plans' bodies, and the reviewers' and skeptics' reports under `collections-design-review/` and `collections-design-review-2/`.
 - **Kept live:**
-  - `Collections-Customization-Design-2026-11-25.md` and its two reviews, until its lanes are built. The owner's answers to its twelve questions are decisions 153 to 174 of this plan. CR's first step brings the design's own text to them, and it stays PROPOSED until C2.
+  - `Collections-Customization-Design-2026-11-25.md` and its three reviews, the third being CR's (`Collections-Design-Third-Review-2026-11-26.md`, with `collections-design-review-3/`), until its lanes are built. The owner's answers to its twelve questions are decisions 153 to 174 of this plan. CR's first step brings the design's own text to them, and it stays PROPOSED until C2.
   - `UI-UX-Adversarial-Review-2026-11-15.md`, until its backlog is filed or declined.
   - `R6-Device-Pass-2026-11-18.md` and `iPhone-Duo-Assessment-2026-11-19.md`, until F1, F2, F7, F11 and D1 have landed.
   - `New-Volume-Release-Plan.md`, which L28 refreshes and R10 runs.

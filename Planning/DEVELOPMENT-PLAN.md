@@ -4085,3 +4085,68 @@ On the owner's word ("start the plan of record from PR2011. note that PR2017 mer
 - **CR** has read A2, as the plan asks before this row lands, and its requests of the index are decisions 188, 189 and 190, in this row, with 191 from its C2 questions, which CR numbers 192 to 198 for the rest. CR's own pull request records it in the design's A2 and L52's brief.
 - **Decision 191's three texts** (the graph's *Navigating the graph*, Flows' *What Flows reads* and its export's Scope caveat) are in their EditableContent blocks for your reading. The class lens's self-citation caveat still says "about three in five", which was 69.8% before this row and is 67.6% after it: not changed here.
 - **After the merge:** #1978's hand-over note for FRUS Explorer Light, posted as a comment on the issue; its server refuses a version-76 export until its pin moves.
+
+## Session 2026-11-26 — CR: the Collections design brought to the owner's answers and reviewed a third time, with three changes to index version 76 taken the same day
+
+Row CR of the plan of record from 2026-11-25 (decision 149), started from the plan's session on the Mac, and planning only: no build, no app run. The last merge before this entry is #2016's, as `b3acd7ad`, on 2026-11-26 at 12:48:45 UTC. #2017 is open at the head of the queue, and L26 is built after it and not pushed.
+
+**What was done, in order**
+- **The design's text brought to decisions 153 to 174** (`b3542992`), so that the review read what will be built:
+  - *As published:* where it had *In the volume:*;
+  - lane 5, §4.4 and §5.1's two rows withdrawn;
+  - §4.3's table with decision 158's openings and decision 167's names;
+  - §8.1 and §8.2 marked with what was taken, A5 not offered;
+  - §10's questions marked answered;
+  - step 2 counted at 17 controls.
+- **A2 read first,** since it gates L26 (`0fa40e16`). Measured over the TEI at corpus `216cdb764`, 124,491 of 497,026 document–term pairs (25.0%; 28.6% from 1955) are linked only in notes. So `term_mentions` needed the part of the document each term is linked in. Put to the owner ("Should L26 add a parts column to term_mentions before it lands?"), the owner answered "Add it to v76". The answer went to the L26 session with a hand-over note in the shared notes folder, and L26 built it as decision 188.
+- **The review,** after its cost was put to the owner, who chose "Nine agents (Recommended)":
+  - six reviewers by discipline, then three skeptics, on the second review's method;
+  - the canvas's boards read from the artifact, with the briefs naming what in them the owner's answers superseded;
+  - the whole public TEI read on disk.
+- **Two more findings changed index version 76** and were put to the owner before the skeptics ran, since L26 was about to land:
+  - DATA-2: a list entry with two spellings was one row, and 809 links found no term. The owner chose "Add it to v76 (Recommended)", and it is decision 189.
+  - EDI-2: the index resolves a page reference to one document and kept neither the page nor the choice. "Add it to v76 (Recommended)", and it is decision 190.
+  - The session re-read each one's code and recounted it with a script of its own before asking. The skeptics then confirmed all three.
+
+**What it found** (`Planning/Collections-Design-Third-Review-2026-11-26.md`)
+- **The count.** 58 findings and the session's A2, merged to 48: 1 at S1, 22 at S2, 25 at S3. None was refuted, seven were re-rated down, and 29 merged errors in the design or the plan were listed.
+- **The S1, J1:** *Same settings as…*, built as L47's brief reads, copies the ids that name a document's own headnote and notes. A target then prints the source's, and an edit or a delete through it deletes the source's headnote. INT, ENG and DATA found it independently.
+- **The headnote in the collection file** is not yet defined. Off does not travel, a 1.0 app prints a stand-in where the design said it prints nothing, and "with who wrote it" has no key.
+- **No row owns the export sheet's sentence.** A *Summaries* export fails on a device without Apple Intelligence even with every summary stored, a 1.0 defect.
+- **Selected passages have no home once imported.** The iPad's settings column brings back what Composer v2 removed, with no width rule.
+- **Where the volume's heading leads,** headings do not tell documents apart for most volumes before 1952.
+- **A tagged PDF needs an API that is newer than the app's 26.0 floor,** or the older `CGPDFContextBeginTag`.
+- **Four claims about the volumes were false:** "central files are in", "the only pointers there are" before 1955, the 1952–1954 rule for the volume's own number, and "the volumes before 1952 print no numbers".
+
+**What changed**
+- **`Planning/Collections-Design-Third-Review-2026-11-26.md`** (new).
+- **`Planning/collections-design-review-3/`** (new): the two briefs, the six reviewers' and three skeptics' reports, A2's measurement with its script, and every agent's scripts.
+- **The design:**
+  - corrected in 26 places, each marked *Corrected by the third review* with its finding;
+  - a section's headnote default settled as a new property;
+  - the counts redone (Wording 13, 54 controls, seven pickers in a section's sheet);
+  - §5.7 gains the iPad column Composer v2 removed;
+  - A2, A3, A4 and §8.1's item 10 rewritten from what the index stores;
+  - decisions 188 and 189 cited.
+- **The plan of record:**
+  - a *From the third review* bullet in the briefs of L29, L34 to L36 and L43 to L55;
+  - §1c's answer on the three things §4.4 said, and the promotion at six fields;
+  - the third departure corrected (L43, not lane 4, feeds the preview's list);
+  - CR's record and C2's eight questions;
+  - the runs owed for L43 and L35, and R12's two-device run with a drag on the 1.0 device;
+  - two defects for §5.
+- **Outside the repository:** three hand-over notes for L26 in the shared notes folder.
+
+**Checks**
+- No test reads these files but `planOfRecordMatchesTheVisualMarketingPlan`, which reads the plan's status line and its §7 list. Neither was changed here.
+- Every corrected line of the design was re-read after the edit. The tables' cells were counted where a column was added.
+- Nothing was built or run.
+
+**Cost**
+- 4,868,675 subagent tokens over nine agents, as the harness reported them.
+- The account's weekly limit for all models went from 17% to 24% over the session.
+
+**For the owner**
+- **C2's eight questions,** in the review's §8, each with a recommendation.
+- **The pull request,** on the owner's word, after #2017 and L26 in the queue. By `git merge-tree` with L26's branch at `20eabba9`, the plan of record merges cleanly. Only this log meets it, where both branches append an entry. The rebase on L26's merge keeps both, L26's first.
+- **The design's status** stays PROPOSED until C2.
