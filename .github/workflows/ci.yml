@@ -1,4 +1,5 @@
-# CI for FRUS Explorer: three checks on every pull request to v2 and every push to it.
+# CI for FRUS Explorer: A and B on every pull request to v2, and all three checks on every push to
+# it, which is after each merge, and by hand.
 #
 # Written on 2026-11-26 on the owner's word ("Yes, all three"). CLAUDE.md's *Build & Test
 # Commands* says what it covers and what stays on the Mac: the UI suites, which need devices and
@@ -11,8 +12,16 @@
 #   B · build and package tests  swift test, the package's suites, which Xcode never runs; the
 #                                iOS app and both test targets compiled (build-for-testing); the
 #                                Mac app compiled; and no compiler warning but the two known ones.
-#   C · unit tests               FRUSExplorerTests on the iPhone 17 under iOS 27.0, and when it
-#                                fails, what the result bundle records of each failure.
+#   C · unit tests               FRUSExplorerTests on the iPhone 17 under iOS 27.0, but not on a
+#                                pull request; when it fails, what the result bundle records of
+#                                each failure.
+#
+# C runs after the merge, on the owner's word of 2026-11-26 ("Yes move C"). On the runner it takes
+# 60 to 77 minutes, about five times the Mac's 12 or 13 for the same work (B takes 37 to 50,
+# against 6 or 7). Nothing waits for either: a session's own runs on the Mac stay the check before
+# a merge. A pull request's new push cancels its run in progress. A push to v2 lets the run in
+# progress finish, and of the pushes that arrive meanwhile only the newest runs next, so on v2
+# every run of C ends.
 #
 # B and C run on GitHub's `xcode-27` image, a preview (actions/runner-images#14404), with Xcode
 # 27.2 selected, as on the Mac. A simulator build is signed ad hoc with no team, which embeds the
@@ -29,7 +38,7 @@ on:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -147,6 +156,7 @@ jobs:
 
   unit-tests:
     name: C · unit tests
+    if: github.event_name != 'pull_request'
     runs-on: xcode-27
     timeout-minutes: 240
     env:
