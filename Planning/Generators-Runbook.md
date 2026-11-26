@@ -1,9 +1,9 @@
 # Generators runbook
 
 Every generator and corpus tool, with its inputs, its environment variables, the figures it last
-measured, when it refuses to write and what must be regenerated after it. `CLAUDE.md`'s *Build &
-Test Commands* section holds the index (tool, artifact, inputs) and the rules that span entries;
-this file holds each tool's full entry. The entries were moved here from `CLAUDE.md` word for word
+measured, when it refuses to write and what must be regenerated after it. `.claude/rules/generators.md`
+holds the index (tool, artifact, inputs) and the rules that span entries, moved there from
+`CLAUDE.md`'s *Build & Test Commands* section on 2026-11-26; this file holds each tool's full entry. The entries were moved here from `CLAUDE.md` word for word
 on 2026-10-09, so that a session loads them when it needs one and not with every request. Each
 entry is one line of the block below (a few run on for several): `grep -n '<ToolName>'` finds it.
 Add a new tool's entry here, and its row to the index.

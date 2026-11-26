@@ -290,14 +290,35 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     note, which named this plan at `../`, now name it here. Dated records were left as written:
     `DEVELOPMENT-PLAN.md`'s entries, the archived plans' bodies, and the reviewers' and skeptics'
     reports under `../collections-design-review/` and `../collections-design-review-2/`.
+- **The 2026-11-26 move (the session log's October, and the plan's header)** — moved on the owner's
+  word, in the change that took `CLAUDE.md`'s area-specific sections into `.claude/rules/` and its
+  `FRUSCoreKit` entry into `../FRUSCoreKit-Runbook.md`, so that a session carries less with every
+  request. Nothing was edited in the move: the script asserted that the header, October and what
+  stayed reassemble the old file byte for byte.
+  - **`DEVELOPMENT-PLAN-2026-10.md`**, the session log's 175 entries of October 2026, split from
+    `../DEVELOPMENT-PLAN.md` as `DEVELOPMENT-PLAN-to-2026-09.md` was. That file keeps every entry
+    from 2026-11-01. A code comment that cites an entry by its date finds it in the file that holds
+    that date.
+  - **`DEVELOPMENT-PLAN-Plan-Header-2026-06.md`**, the plan `../DEVELOPMENT-PLAN.md` opened with:
+    version 1.7 of 2026-06-15, with the session sequence 01 to 152, the dependency graph, the task
+    file index, the notes for all sessions and the cross-session dependency additions. Its sessions
+    are delivered. A dated note at its head names the three notes that would mislead a session:
+    the instruction to read the specification before every session, the `lastModified` remedy that
+    `ModelModificationStamper` replaced, and the dependency additions to confirm.
+  - **Pointers.** `../DEVELOPMENT-PLAN.md`'s new head names all three archived files, and
+    `CLAUDE.md`'s *Planning & Specification* says where a month's entries are. Dated records were
+    left as written: the entry above for 2026-10-21, which says that file keeps its plan header and
+    every entry from 2026-10-01, was true until this move; and code comments and documents that
+    cite `DEVELOPMENT-PLAN.md` for an entry of October 2026 find it here, by its date.
 
 **Deliberately NOT here** (live at `Planning/` root — verified 2026-11-25, by listing the
 directory):
 - **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-11-25`; every
   superseded one is in this directory, `Plan-Of-Record-2026-11-15` since 2026-11-25), the review
   the plan before it was written from (`UI-UX-Adversarial-Review-2026-11-15`, until its backlog is
-  filed or declined), the log (`DEVELOPMENT-PLAN`, its entries from 2026-10-01; the earlier ones
-  are `DEVELOPMENT-PLAN-to-2026-09` here) and the spec;
+  filed or declined), the log (`DEVELOPMENT-PLAN`, its entries from 2026-11-01 since the move of
+  2026-11-26; the earlier ones are `DEVELOPMENT-PLAN-2026-10` and `DEVELOPMENT-PLAN-to-2026-09`
+  here, with the plan header it opened with, `DEVELOPMENT-PLAN-Plan-Header-2026-06`) and the spec;
 - **the Collections design, and the first update's findings** —
   `Collections-Customization-Design-2026-11-25` and its two reviews
   (`Collections-Design-Adversarial-Review-2026-11-25`, `Collections-Design-Second-Review-2026-11-25`),
@@ -312,7 +333,10 @@ directory):
 - **live plans and runbooks** — `Visual-Marketing-Plan`, `Store-Listing-Draft`,
   `Launch-Marketing-Kit-2026-10-13` and `marketing-drafts/` (until submission), `Capture-Runbook`,
   `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`,
-  `Generators-Runbook` and `UI-Test-Destinations-Runbook` (the two `CLAUDE.md` indexes);
+  `Generators-Runbook`, `UI-Test-Destinations-Runbook` and `FRUSCoreKit-Runbook` (what left
+  `CLAUDE.md` on 2026-10-09 and 2026-11-26; the first two's indexes are `.claude/rules/generators.md`
+  and `ui-tests.md`), and `Context-Streamlining-Mac-Handoff-2026-11-26` (until a session on the Mac
+  has made its runs);
 - **the designs of work not yet run** — `App-Intents-Siri-Assessment-2026-10-18` (A7, #1723),
   `Keyword-Snippet-Assessment-2026-10-20` (until #1760 lands; source cites it) and
   `C-3-Reader-Test-Design` (C-3, after submission). The two person-authority memos of 2026-10-17
