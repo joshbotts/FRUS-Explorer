@@ -1037,7 +1037,7 @@ This document has no archival source note. Roll suggestions cover only documents
 
 #### Pre-1906 check — while it runs
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1212–1213 | key: source.explorer.countrySeries.state.loading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1266–1267 | key: source.explorer.countrySeries.state.loading | shared: iOS+macOS (single edit point) -->
 
 Checking the digitized pre-1906 records for this document…
 
@@ -1047,7 +1047,7 @@ Checking the digitized pre-1906 records for this document…
 
 #### Pre-1906 check — a document from 1906 on, where it does not apply
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1218–1219 | key: source.explorer.countrySeries.state.notApplicable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1272–1273 | key: source.explorer.countrySeries.state.notApplicable | shared: iOS+macOS (single edit point) -->
 
 This document carries no archival source note. Roll suggestions cover documents from before 1906, when the Department filed its correspondence by country, so none is offered for a later document.
 
@@ -1057,7 +1057,7 @@ This document carries no archival source note. Roll suggestions cover documents 
 
 #### Pre-1906 check not run — the search index is still starting
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1163–1164 | key: source.explorer.countrySeries.state.notChecked.indexStarting | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1217–1218 | key: source.explorer.countrySeries.state.notChecked.indexStarting | shared: iOS+macOS (single edit point) -->
 
 Not checked yet — the search index is still starting. This section fills in when it is ready.
 
@@ -1067,7 +1067,7 @@ Not checked yet — the search index is still starting. This section fills in wh
 
 #### Pre-1906 check not run — no document to look up
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1166–1167 | key: source.explorer.countrySeries.state.notChecked.noDocumentIdentity | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1220–1221 | key: source.explorer.countrySeries.state.notChecked.noDocumentIdentity | shared: iOS+macOS (single edit point) -->
 
 Not checked — Source Explorer was opened without a document to look up, so there is no dateline or FRUS chapter to read.
 
@@ -1077,7 +1077,7 @@ Not checked — Source Explorer was opened without a document to look up, so the
 
 #### Pre-1906 check not run — the search index could not be read
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1169–1170 | key: source.explorer.countrySeries.state.notChecked.indexReadFailed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1223–1224 | key: source.explorer.countrySeries.state.notChecked.indexReadFailed | shared: iOS+macOS (single edit point) -->
 
 Not checked — the search index could not be read. Close Source Explorer and open it again.
 
@@ -1087,7 +1087,7 @@ Not checked — the search index could not be read. Close Source Explorer and op
 
 #### Pre-1906 check not run — the document is not indexed
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1172–1173 | key: source.explorer.countrySeries.state.notChecked.documentNotIndexed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1226–1227 | key: source.explorer.countrySeries.state.notChecked.documentNotIndexed | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document is not in the search index on this device, so its dateline and FRUS chapter could not be read.
 
@@ -1097,7 +1097,7 @@ Not checked — this document is not in the search index on this device, so its 
 
 #### Pre-1906 check not run — no dateline
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1175–1176 | key: source.explorer.countrySeries.state.notChecked.noDateline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1229–1230 | key: source.explorer.countrySeries.state.notChecked.noDateline | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document prints no dateline, and the dateline is what places a pre-1906 document in a series.
 
@@ -1107,7 +1107,7 @@ Not checked — this document prints no dateline, and the dateline is what place
 
 #### Pre-1906 check not run — no year
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1178–1179 | key: source.explorer.countrySeries.state.notChecked.noYear | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1232–1233 | key: source.explorer.countrySeries.state.notChecked.noYear | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document’s dateline gives no year, so no roll’s dates can be compared.
 
@@ -1117,7 +1117,7 @@ Not checked — this document’s dateline gives no year, so no roll’s dates c
 
 #### Pre-1906 check not run — the roll list did not load
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1181–1182 | key: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1235–1236 | key: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing | shared: iOS+macOS (single edit point) -->
 
 Not checked — the app’s list of digitized rolls could not be loaded.
 
@@ -1127,7 +1127,7 @@ Not checked — the app’s list of digitized rolls could not be loaded.
 
 #### Pre-1906 check not run — no chapter structure
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1184–1185 | key: source.explorer.countrySeries.state.notChecked.noVolumeStructure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1238–1239 | key: source.explorer.countrySeries.state.notChecked.noVolumeStructure | shared: iOS+macOS (single edit point) -->
 
 Not checked — this volume’s chapters are not in the search index on this device, and the chapter is what names the country.
 
@@ -1137,7 +1137,7 @@ Not checked — this volume’s chapters are not in the search index on this dev
 
 #### Pre-1906 check not run — the document is not in its volume's chapters
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1187–1188 | key: source.explorer.countrySeries.state.notChecked.documentNotInStructure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1241–1242 | key: source.explorer.countrySeries.state.notChecked.documentNotInStructure | shared: iOS+macOS (single edit point) -->
 
 Not checked — this document was not found among its volume’s chapters, so no chapter names its country.
 
@@ -1573,7 +1573,7 @@ This document predates the 1906 Numerical File. Based on its dateline and FRUS c
 
 #### A country series — the serial, on a despatch
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1105–1106 | key: source.explorer.countrySeries.serial %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1159–1160 | key: source.explorer.countrySeries.serial %@ | shared: iOS+macOS (single edit point) -->
 
 Despatch No. %@
 
@@ -1585,7 +1585,7 @@ Despatch No. %@
 
 #### A country series — the serial's caption, on a despatch
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1120–1121 | key: source.explorer.countrySeries.serial.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1174–1175 | key: source.explorer.countrySeries.serial.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1595,7 +1595,7 @@ FRUS prints this number above the document — the post’s own serial for it. T
 
 #### A country series — the serial, on an instruction
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1102–1103 | key: source.explorer.countrySeries.serial.instruction %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1156–1157 | key: source.explorer.countrySeries.serial.instruction %@ | shared: iOS+macOS (single edit point) -->
 
 Instruction No. %@
 
@@ -1605,7 +1605,7 @@ Instruction No. %@
 
 #### A country series — the serial's caption, on an instruction
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1117–1118 | key: source.explorer.countrySeries.serial.instruction.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1171–1172 | key: source.explorer.countrySeries.serial.instruction.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — the Department’s own number for its instruction to the post. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1615,7 +1615,7 @@ FRUS prints this number above the document — the Department’s own number for
 
 #### A country series — the serial, on a note or letter
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1108–1109 | key: source.explorer.countrySeries.serial.neutral %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1162–1163 | key: source.explorer.countrySeries.serial.neutral %@ | shared: iOS+macOS (single edit point) -->
 
 No. %@
 
@@ -1625,7 +1625,7 @@ No. %@
 
 #### A country series — the serial's caption, on a note or letter
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1123–1124 | key: source.explorer.countrySeries.serial.neutral.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1177–1178 | key: source.explorer.countrySeries.serial.neutral.caption | shared: iOS+macOS (single edit point) -->
 
 FRUS prints this number above the document — its sender’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
 
@@ -1635,7 +1635,7 @@ FRUS prints this number above the document — its sender’s own serial for it.
 
 #### A country series — why an instruction is Likely
 
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1392–1393 | key: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | lines: 1446–1447 | key: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ | shared: iOS+macOS (single edit point) -->
 
 From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction.
 
@@ -2412,84 +2412,84 @@ An enclosure was often filmed in its own series rather than with the document th
 <!-- END SOURCE: centralFiles.part.enclosureNote.v2 -->
 
 #### Department of State outbound to a special agent — an…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 246–247 | key: centralFiles.rationale.specialAgentInstruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 251–252 | key: centralFiles.rationale.specialAgentInstruction -->
 
 Department of State outbound to a special agent — an instruction in the Special Missions volumes. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.specialAgentInstruction -->
 
 #### From a special agent of the Department — filed with the…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 251–252 | key: centralFiles.rationale.specialAgentDespatch -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 256–257 | key: centralFiles.rationale.specialAgentDespatch -->
 
 From a special agent of the Department — filed with the agent’s mission in Despatches from Special Agents. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.specialAgentDespatch -->
 
 #### Dateline is another executive department — a letter…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 264–265 | key: centralFiles.rationale.letterReceived -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 269–270 | key: centralFiles.rationale.letterReceived -->
 
 Dateline is another executive department — a letter received by the Department of State, filed chronologically. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.letterReceived -->
 
 #### Dateline is a foreign consulate in the United States — a…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 275–276 | key: centralFiles.rationale.noteFromConsul -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 280–281 | key: centralFiles.rationale.noteFromConsul -->
 
 Dateline is a foreign consulate in the United States — a note from the foreign consul to the Department. The series is a single chronological run, matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.noteFromConsul -->
 
 #### Department of State outbound, printed in FRUS’s…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 335–336 | key: centralFiles.rationale.legationNoteTo -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 340–341 | key: centralFiles.rationale.legationNoteTo -->
 
 Department of State outbound, printed in FRUS’s correspondence with the foreign legation in Washington — a note to the legation.
 
 <!-- END SOURCE: centralFiles.rationale.legationNoteTo -->
 
 #### Department of State outbound; if the addressee is the U.S.…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 340–341 | key: centralFiles.rationale.instruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 345–346 | key: centralFiles.rationale.instruction -->
 
 Department of State outbound; if the addressee is the U.S. minister abroad, it is an instruction.
 
 <!-- END SOURCE: centralFiles.rationale.instruction -->
 
 #### Department of State outbound; if the addressee is the…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 344–345 | key: centralFiles.rationale.noteTo -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 349–350 | key: centralFiles.rationale.noteTo -->
 
 Department of State outbound; if the addressee is the foreign minister in Washington, it is a note to the legation.
 
 <!-- END SOURCE: centralFiles.rationale.noteTo -->
 
 #### Department of State outbound to a consul; if the addressee…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 350–351 | key: centralFiles.rationale.consularInstruction -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 355–356 | key: centralFiles.rationale.consularInstruction -->
 
 Department of State outbound to a consul; if the addressee is a U.S. consul abroad, it is a consular instruction. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.consularInstruction -->
 
 #### Department of State outbound to a consul; if the addressee…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 354–355 | key: centralFiles.rationale.noteToConsul -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 359–360 | key: centralFiles.rationale.noteToConsul -->
 
 Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.noteToConsul -->
 
 #### Department of State outbound to a domestic official — filed…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 364–365 | key: centralFiles.rationale.domesticLetter -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 369–370 | key: centralFiles.rationale.domesticLetter -->
 
 Department of State outbound to a domestic official — filed chronologically in Domestic Letters. Matched by the document’s date.
 
 <!-- END SOURCE: centralFiles.rationale.domesticLetter -->
 
 #### Printed in FRUS’s correspondence with the foreign legation…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 391–392 | key: centralFiles.rationale.legationNoteFrom -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 396–397 | key: centralFiles.rationale.legationNoteFrom -->
 
 Printed in FRUS’s correspondence with the foreign legation in Washington, and not from the Department — a note from the legation.
 
 <!-- END SOURCE: centralFiles.rationale.legationNoteFrom -->
 
 #### Datelined abroad — likely a despatch from the U.S. mission…
-<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 404–405 | key: centralFiles.rationale.despatchAbroad -->
+<!-- SOURCE: FRUSCoreKit/SourceExplorer/CentralFilesClassifier.swift | CentralFilesClassifier.classify | lines: 409–410 | key: centralFiles.rationale.despatchAbroad -->
 
 Datelined abroad — likely a despatch from the U.S. mission (or an enclosure filed with it).
 

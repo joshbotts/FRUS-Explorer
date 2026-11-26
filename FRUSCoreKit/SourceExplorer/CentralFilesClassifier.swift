@@ -225,6 +225,11 @@ public struct CentralFilesClassification: Sendable, Equatable {
 ///         read `ChiefsOfMissionRoster.bundled`, which is the app's (`POCOMIndexStore.swift`), and the
 ///         parsed documents through `DocumentASTSource`, which the app's `DocumentASTCache` answers;
 ///         `SourceExplorerResolution.resolved` calls it for both Source Explorer views and for a host.
+///   1.7 — 2026-11-26 (#1975, plan of record row L31): one dateline rule. `datelineDateISO(from:)` reads a
+///         day-first date as the sent date, ends the year before an ASCII letter (no Zulu time is a
+///         year), takes the editors' bracketed year and holds the year to 1600–2029 (the owner's
+///         choices of the range and the letter); `documentYear(fromDateline:)` is the one copy the app's
+///         three call
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -636,18 +641,64 @@ enum CentralFilesClassifier {
 
     // MARK: - Dateline date
 
+    /// `Month D, YYYY`: a month's name, the day, and a year that no ASCII letter follows.
     private static let monthDayYear = try? NSRegularExpression(
-        pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\s*,?\s*(\d{4})"#)
+        pattern: #"([A-Za-z]+)\.?\s+(\d{1,2})\s*,?\s*(\d{4})(?![A-Za-z])"#)
 
-    /// Parses the document date from a dateline (`…, February 3, 1900.`) to ISO. Uses the
-    /// first `Month D, YYYY` — the sent date — ignoring a trailing `(Received …)` clause.
+    /// `D Month YYYY`, the day-first form (`15 December, 1918`, `27 December 1946`). The day follows no
+    /// digit, so a serial's last two digits are never read as one.
+    private static let dayMonthYear = try? NSRegularExpression(
+        pattern: #"(?<!\d)(\d{1,2})\s+([A-Za-z]+)\.?\s*,?\s*(\d{4})(?![A-Za-z])"#)
+
+    /// The editors' correction printed straight after the year: `1940 [1941]`, `1944[1945]`.
+    private static let bracketedYear = try? NSRegularExpression(pattern: #"\s*\[(\d{4})\]"#)
+
+    /// The years a dateline's date may name: FRUS prints colonial charters from 1628 and nothing later
+    /// than the loose scan reads, so a misprint (`April 5, 1291`, `January 28, 7928`) names none.
+    static let datelineYears = 1600...2029
+
+    /// Parses the document date from a dateline (`…, February 3, 1900.`) to ISO: the sent date, which
+    /// is the first date the dateline prints, month first or day first. A `[Received …]` clause after it
+    /// is passed over, and so is a time group printed where the year should be (`October 22, 1515Z.`).
+    ///
+    /// Four rules, each measured over the 301,070 datelines the index stores for the 553 catalogue
+    /// volumes (#1975):
+    /// - **The year ends before an ASCII letter.** Three datelines print a Zulu time with no year, and
+    ///   read 1515, 1412 and 1725. A word boundary would also refuse `November 30, 18811.` (a digit
+    ///   glued to the year) and `September 4, 1963è8 p.m.` (a garbled dash), which read right.
+    /// - **A day-first date is a date.** The month-first pattern alone passed over `Paris, 15 December,
+    ///   1918.` and took the received date after it, `January 7, 1919`; 4,058 datelines gain their day
+    ///   (2 of them before 1906) and 3 change year.
+    /// - **The editors' bracketed year is the year**, in 32 datelines: `January 11, 1940 [1941]` is 1941.
+    ///   In 21 the TEI's own date agrees with the editors; in 11 it follows the original's slip.
+    /// - **The year is within ``datelineYears``**, so the three misprints name no date.
+    ///
+    /// Of each form, the first match is read, and only when its word is a month, as the month-first
+    /// pattern always was; of the two, the earlier is the sent date.
     static func datelineDateISO(from dateline: String) -> String? {
         let ns = dateline as NSString
-        guard let m = monthDayYear?.firstMatch(in: dateline, range: NSRange(location: 0, length: ns.length)),
-              let month = HistoricalMonth.number(ns.substring(with: m.range(at: 1))),
-              let day = Int(ns.substring(with: m.range(at: 2))),
-              let year = Int(ns.substring(with: m.range(at: 3))) else { return nil }
-        return String(format: "%04d-%02d-%02d", year, month, min(max(day, 1), 31))
+        let whole = NSRange(location: 0, length: ns.length)
+        var date: (start: Int, end: Int, year: Int, month: Int, day: Int)?
+        if let m = monthDayYear?.firstMatch(in: dateline, range: whole),
+           let month = HistoricalMonth.number(ns.substring(with: m.range(at: 1))),
+           let day = Int(ns.substring(with: m.range(at: 2))),
+           let year = Int(ns.substring(with: m.range(at: 3))) {
+            date = (m.range.location, NSMaxRange(m.range), year, month, day)
+        }
+        if let m = dayMonthYear?.firstMatch(in: dateline, range: whole), m.range.location < (date?.start ?? .max),
+           let month = HistoricalMonth.number(ns.substring(with: m.range(at: 2))),
+           let day = Int(ns.substring(with: m.range(at: 1))),
+           let year = Int(ns.substring(with: m.range(at: 3))) {
+            date = (m.range.location, NSMaxRange(m.range), year, month, day)
+        }
+        guard var sent = date else { return nil }
+        if let b = bracketedYear?.firstMatch(in: dateline, options: .anchored,
+                                             range: NSRange(location: sent.end, length: ns.length - sent.end)),
+           let editors = Int(ns.substring(with: b.range(at: 1))), datelineYears.contains(editors) {
+            sent.year = editors
+        }
+        guard datelineYears.contains(sent.year) else { return nil }
+        return String(format: "%04d-%02d-%02d", sent.year, sent.month, min(max(sent.day, 1), 31))
     }
 
     // MARK: - Section path
@@ -680,13 +731,16 @@ enum CentralFilesClassifier {
 
 extension CentralFilesClassifier {
 
-    /// The year of a dateline: the strict `Month D, YYYY` parse first, then a loose 18xx–2029 scan.
+    /// The year of a dateline: the strict parse (`datelineDateISO(from:)`) first, then a loose
+    /// 18xx–2029 scan.
     ///
-    /// The body of `DocumentView.extractYear(from:)`, moved here because that one is a static on a
-    /// SwiftUI view and therefore main-actor isolated, while Source Explorer derives a year from an
-    /// index-hydrated dateline inside `evaluate`, which is not. The strict parse wins so a stray
-    /// 4-digit token (a telegram number) cannot hijack the year; the loose scan catches bare-year
-    /// datelines. `CentralFilesClassifierTests.documentYearParity` pins the two copies together.
+    /// The one rule Source Explorer reads a document's year by (#1975): `DocumentView.extractYear(from:)`
+    /// and `MacDocumentView.extractYear(from:)` forward to it, the Research rail calls it, and
+    /// `SourceExplorerDocumentContext.hydrate` reads it, where each kept a copy of its own and the
+    /// rail's read the loose scan alone. It lives here rather than on a view because a SwiftUI view's
+    /// static is main-actor isolated, while `evaluate`, which reads it, is not. The strict parse wins so
+    /// a stray 4-digit token (a telegram number) cannot hijack the year; the loose scan catches
+    /// bare-year datelines.
     static func documentYear(fromDateline dateline: String?) -> Int? {
         guard let dl = dateline else { return nil }
         if let iso = datelineDateISO(from: dl), let year = Int(iso.prefix(4)) {

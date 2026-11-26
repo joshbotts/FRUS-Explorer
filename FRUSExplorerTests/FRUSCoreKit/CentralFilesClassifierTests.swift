@@ -1272,6 +1272,91 @@ struct AddresseeRuleTests {
     }
 }
 
+// MARK: - The dateline's year (#1975)
+
+/// The one rule Source Explorer reads a document's date and year from its dateline by
+/// (`CentralFilesClassifier.datelineDateISO(from:)` and `documentYear(fromDateline:)`), over the datelines it
+/// misread. Each is a dateline of the 553 catalogue volumes as the index stores it, read at index version 76.
+///
+/// Version history:
+///   1.0 — 2026-11-26 (#1975, plan of record row L31): initial implementation
+@Suite("The dateline's year (#1975)")
+struct DatelineYearRuleTests {
+
+    @Test("A Zulu time printed after the day is no year; one printed after the year leaves it alone")
+    func zuluTimeIsNoYear() {
+        // frus1969-76v09 d46, frus1969-76v10 d138, frus1969-76ve11p2 d143: the only three of the corpus's
+        // datelines that print the time group with no year.
+        for dateline in ["Saigon, October 22, 1515Z.", "Washington, August 19, 1412Z.", "Santiago, October 3, 1725Z."] {
+            #expect(CentralFilesClassifier.datelineDateISO(from: dateline) == nil, "\(dateline)")
+            #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == nil, "\(dateline)")
+        }
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Washington, July 4, 1961, 1312Z.") == "1961-07-04")
+    }
+
+    @Test("A day-first date is the sent date, before a received date printed after it")
+    func dayFirstIsTheSentDate() {
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Paris, 15 December, 1918. [Received January 7, 1919.]")
+                == "1918-12-15")
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Bucharest, 19 December, 1918. [Received February 17, 1919.]") == 1918)
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Seoul, 27 December 1946. [Received January 10, 1947.]") == 1946)
+        // A pre-1906 day-first dateline gives the classifier its day, where it gave none.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Madrid, 24 December, 1872.") == "1872-12-24")
+        // A received date after a month-first one is still passed over.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Paris, June 1, 1920. [Received June 3, 1920.]")
+                == "1920-06-01")
+    }
+
+    @Test("The editors' bracketed year is the year, whether or not the TEI's own date follows it")
+    func editorsBracketedYear() {
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Moscow, January 11, 1940 [1941]—4 p.m. [Received 9:56 p.m.]") == 1941)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "[Washington,] January 3, 1944[1945].") == 1945)
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Peiping, 16 January 1945 [1946].") == "1946-01-16")
+        // frus1925v02 d17, which the TEI dates 1924-10-22: the original's slip, which the editors correct.
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Habana, October 22, 1924 [1925]. [Received October 27.]") == 1925)
+    }
+
+    @Test("The strict parse holds its year to 1600–2029: a misprint reads no year, a colonial charter keeps its own")
+    func strictParseRange() {
+        for dateline in ["Washington, April 5, 1291—5 p.m.", "Madrid, January 28, 7928—2 p.m. [Received 3:55 p.m.]",
+                         "Washington, June 10, 1054—7:18 p.m."] {
+            #expect(CentralFilesClassifier.datelineDateISO(from: dateline) == nil, "\(dateline)")
+            #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == nil, "\(dateline)")
+        }
+        // frus1872p2v5 d5 and frus1873p2v3 d31: an 1800 floor would have taken their dates away (the owner's
+        // choice of 1600, 2026-11-26).
+        #expect(CentralFilesClassifier.datelineDateISO(
+            from: "Extract from the charter of Massachusetts Bay, granted by Charles I of England, March 4, 1628.")
+                == "1628-03-04")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Annapolis, Md., In Council, August 23, 1793.")
+                == "1793-08-23")
+    }
+
+    @Test("A year ends before an ASCII letter only: a glued digit or a garbled dash after it still reads")
+    func yearEndsBeforeALetterOnly() {
+        // frus1881 d107 and frus1961-63v04 d58, which a word boundary after the year would have refused.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Department of State, Washington, November 30, 18811.")
+                == "1881-11-30")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Saigon, September 4, 1963è8 p.m.") == "1963-09-04")
+    }
+
+    @Test("The datelines the rule read right read as before")
+    func unchangedReadings() {
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Ref. telegram No. 1805. Tokyo, March 14, 1905.") == 1905)
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Department of State , Washington , November 10, 1863.")
+                == "1863-11-10")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Executive Mansion , Washington, D. C. , 1861 .") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "An antique note dated 1799.") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Moscow, undated.") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: nil) == nil)
+    }
+}
+
 // MARK: - Source Explorer's shared evaluation (2026-09-13)
 
 /// The gate, the outcome states, the serial label and the year both Source Explorer views now take from
@@ -1478,6 +1563,8 @@ struct SourceExplorerEvaluationTests {
 
     // MARK: The year
 
+    /// The platform's `extractYear` forwards to the kit's rule since #1975, so the two cannot drift; this
+    /// holds the forwarding, over the cases the copies read wrong as well as those they read right.
     #if !SWIFT_PACKAGE // DocumentView and MacDocumentView, whose extractYear it reads, are the app's
     @Test("documentYear(fromDateline:) agrees with the platform's extractYear")
     @MainActor
@@ -1497,13 +1584,17 @@ struct SourceExplorerEvaluationTests {
             "Washington, January 1, 1906.", "Washington, January 1, 2029.", "Meeting held in room 2030.",
             "An antique note dated 1799.", "Department of State, Washington.",
             "Ref. telegram No. 1805. Tokyo, March 14, 1905.", "Executive Mansion , Washington, D. C. , 1861 .", nil,
+            "Saigon, October 22, 1515Z.", "Paris, 15 December, 1918. [Received January 7, 1919.]",
+            "Moscow, January 11, 1940 [1941]—4 p.m.", "Washington, April 5, 1291—5 p.m.",
         ]
         var checked = 0
         for dateline in datelines {
             #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == platform(dateline), "\(String(describing: dateline))")
             checked += 1
         }
-        #expect(checked == 12)
+        #expect(checked == 16)
+        #expect(platform("Saigon, October 22, 1515Z.") == nil && platform("Moscow, January 11, 1940 [1941]—4 p.m.") == 1941,
+                "fixture guard: the platform reads the fixed rule, not a copy")
         #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861,
                 "fixture guard: the loose scan must be exercised")
     }

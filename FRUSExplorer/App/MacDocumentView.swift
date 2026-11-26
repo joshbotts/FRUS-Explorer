@@ -82,6 +82,8 @@ import WebKit
 ///   2.6 — 2026-10-22: #1766 — a page link goes where `PageLink` sends it, as the iOS twin's does:
 ///          into a volume not on this Mac, the document the bundled page map names (offering the
 ///          download), or the volume's page in the Corpus Browser naming the page, where it did nothing
+///   2.7 — L31 (#1975): `extractYear(from:)` forwards to `CentralFilesClassifier.documentYear(fromDateline:)`,
+///          the one copy of the dateline's year rule, where it kept its own
 @MainActor
 struct MacDocumentView: View {
 
@@ -714,26 +716,11 @@ struct MacDocumentView: View {
 
     // MARK: - Document Year Extraction
 
-    /// Extracts a 4-digit year from a dateline string.
-    /// Duplicated from DocumentView (which is `#if os(iOS)`), kept here so MacDocumentView has no
-    /// cross-file dependency. It first tries the strict "Month D, YYYY" parse
-    /// (`CentralFilesClassifier.datelineDateISO`) so a stray 4-digit token in a footnote-bearing
-    /// dateline blob can't hijack the year via first-match, then falls back to a loose 18xx–20xx
-    /// (through 2029) scan. Widening to 18xx lets pre-1906 FRUS datelines reach pre-1906
-    /// country-series resolution (issue #215); keep identical to `DocumentView.extractYear` and
-    /// the inline extractor in `SupportingViews`.
+    /// The year a dateline gives, or `nil` when it gives none: `CentralFilesClassifier.documentYear(fromDateline:)`,
+    /// the one rule the app reads a document's year by (#1975), as `DocumentView.extractYear(from:)`
+    /// (which is `#if os(iOS)`) forwards. Each kept a copy of its own until the rule moved there.
     static func extractYear(from dateline: String?) -> Int? {
-        guard let dl = dateline else { return nil }
-        if let iso = CentralFilesClassifier.datelineDateISO(from: dl),
-           let year = Int(iso.prefix(4)) {
-            return year
-        }
-        let pattern = #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: dl, range: NSRange(dl.startIndex..., in: dl)),
-              let range = Range(match.range(at: 1), in: dl)
-        else { return nil }
-        return Int(dl[range])
+        CentralFilesClassifier.documentYear(fromDateline: dateline)
     }
 
     /// The "Document" menu's command surface for this document (UI audit gap 6),
