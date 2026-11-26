@@ -542,7 +542,11 @@ the cluster — `authority_id` and `viaf_id`. This is **clustering, not ground t
 **`person_cluster_candidate`** — pairs the clusterer declined to merge. Never applied automatically.
 A useful sanity check when a person's counts look low.
 
-**`terms`** — per-volume glossary entries (abbreviations and their definitions).
+**`terms`** — per-volume glossary entries (abbreviations and their definitions). From index version 76
+one row per spelling: an entry the list prints with two spellings or more, as `HAD or HD, Henry A.
+Dunlap`, has a row for each under its own `ref`, each with the definition printed after the last.
+Before 76 it had one, under its last `ref` with its first spelling and the others in its definition,
+so a link to another spelling found no row. 66,426 rows on a full index of the 553 catalogue volumes.
 
 **`term_mentions`** — from index version 76, `(volume_id, document_id, term_ref, parts)`: the terms
 of its volume's list a document links, one row per document and term however often it links it,
@@ -554,8 +558,8 @@ inside it, 16 its `@ana`, which prints nothing. A note on the heading counts as 
 with `&`: `parts & 8` is a term the source note links, and `parts & 19 = 0` one linked only in
 notes. Join it to `terms` on `(volume_id, term_ref = ref)` for the definition. On a full index of
 the 553 catalogue volumes at version 76: 498,757 rows for 113,714 documents in 312 volumes, a
-quarter of them (124,616) linked only in notes; 809 rows name a term their volume's list does not
-hold, and the join drops them. Before 76 the table is empty.
+quarter of them (124,616) linked only in notes; every row names a term its volume's `terms` holds, so
+the join drops none. Before 76 the table is empty.
 
 **`volume_structures`** — one JSON blob per volume describing its section tree. Parse it in the
 client; don't try to query into it with SQL string functions. From index version 75 the row also
@@ -3422,13 +3426,15 @@ terms are here because they appear in the outputs.
   source note, 131 their dateline, and a source row each (#1854), and §4.4's `classification` row
   that 114 of those rows carry a marking (114,244 rows in all). §4.3 gains `term_mentions`, each
   document's linked terms with the parts of the document that link each (498,757 rows for 113,714
-  documents in 312 volumes, a quarter of them linked only in notes; decision 188), and
+  documents in 312 volumes, a quarter of them linked only in notes; decision 188), `terms` a row for
+  each spelling of an entry that lists two or more (66,203 rows → 66,426; decision 189), and
   `division_start_pages`, the page each division begins on (24,009 rows in 552 volumes), which no
   `page_ranges` row holds where the break falls between two divisions. Measured on two full
   indexes of the 553 catalogue volumes at corpus `6170e4b32`, at 75 and at 76: every other table
   holds the same rows. §14.11's row for `volume-annotations-index.json` gives the file's version,
-  76: its source-note and classification counts move in the 47 volumes of the 138, and no volume
-  crosses a layer's threshold.
+  76: its source-note and classification counts move in the 47 volumes of the 138, its terms counts
+  in the 31 volumes decision 189 gives more rows, and its abbreviations by 14 documents in 6; no
+  volume crosses a layer's threshold.
 - 1.50 — 2026-11-18: Import from JSON (#1915, plan of record decision 140). §2 says the research
   database copy goes one way, and that research moves between devices and FRUS Explorer Light as
   the JSON file Export as JSON writes and Import from JSON… reads, which adds, replaces only with a

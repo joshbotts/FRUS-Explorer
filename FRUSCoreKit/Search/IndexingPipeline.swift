@@ -577,7 +577,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         lists, then rowid (#1978); an editorial note's own source note, dateline and marking, read
 ///         under its wrapper where it prints a source note of its own (`ownFieldNodes(of:)`, #1854); each
 ///         document's linked terms, `term_mentions` (decision 172), with the parts of the document
-///         that link each, `parts` (decision 188); and the page each division begins
+///         that link each, `parts` (decision 188); a `terms` row for each spelling of a term-list item
+///         (decision 189); and the page each division begins
 ///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
 ///         See the v76 note
 public actor IndexingPipeline {
@@ -1745,8 +1746,19 @@ public actor IndexingPipeline {
     ///     `frus1981-88v16`, the terms a document names on `@ana` (``annotatedTermRefs(_:terms:)``), as
     ///     `person_mentions` holds the people; read by `PersonMentionStore.termsLinked(inDocument:volumeId:)`
     ///     for a collection's *Abbreviations & Terms* block. On the full index at 76: 498,757 rows for
-    ///     113,714 documents in 312 volumes, 809 of them naming a term the volume's list lacks
-    ///     (`frus1981-88v16`: 419 rows for its 88 documents).
+    ///     113,714 documents in 312 volumes (`frus1981-88v16`: 419 rows for its 88 documents), every
+    ///     one naming a term its volume's list holds once decision 189 gives each spelling its row
+    ///     (809 named none before it).
+    ///   - **Each spelling of a term-list item its own `terms` row** (decision 189, CR's DATA-2): an
+    ///     item that lists two spellings or more, `HAD or HD, Henry A. Dunlap`, gave one row, under
+    ///     its last id with its first word, so a link to another spelling found no definition and the
+    ///     reader asked for a re-index that could not supply one. The parse now gives each spelling a
+    ///     row under its own id, its word as printed, with the definition printed after the last
+    ///     (`TermsParserDelegate`). On the full index: 66,203 rows → 66,426, 223 added and the 200
+    ///     items' last spellings re-worded, in 31 volumes, every other row as it was; the 809
+    ///     `term_mentions` rows that named no row all name one. `volume-annotations-index.json`
+    ///     counts each volume's terms, so it moves in those 31 volumes (and 14 documents gain
+    ///     `abbreviations`, in 6); the page map and the edge index do not.
     ///   - **Where each term is linked** (decision 188, CR's reading of the block): `parts`, the parts
     ///     of the document that link the term OR'd together (``TermMentionParts``: text 1, heading 2,
     ///     footnote 4, source note 8, `@ana` 16), which the walk carries down

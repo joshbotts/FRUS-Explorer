@@ -167,7 +167,9 @@ import SourceNoteKit
 ///          each division with an `xml:id` begins on — a division the index gives no row (the
 ///          Contents, the Sources, the Persons, the Index), a section promoted to a row, and a
 ///          container — which the parse settled already (#1503) and dropped for all but a document
-///          and an editorial note. Nothing else it parses changes
+///          and an editorial note. And a term-list item that lists two spellings or more gives each
+///          its own `GlossEntry` under its own id, with the definition printed after the last
+///          (decision 189), where it gave one, under its last id with its first word
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -2722,6 +2724,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
 ///
 /// Handles the `<div type="terms">` structure:
 ///   `<list><item xml:id="t1"><term>Abbr.</term>: definition text</item></list>`
+///
+/// An item that lists two spellings or more, each a `<term xml:id>` (decision 189, index version
+/// 76), gives each its own entry under its own id, each with the definition printed after the last:
+/// `HAD or HD, Henry A. Dunlap` is `HAD` and `HD`, both *Henry A. Dunlap*. Until then the item gave
+/// one entry, under its last id with its first word, and a link to any other spelling found none.
 private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [GlossEntry] = []
@@ -2733,6 +2740,14 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
     private var textBuffer = ""
     private var elementDepth = 0
     private var termsSectionDepth = -1
+    /// Each `<term xml:id>` of the current item with its own text, in order (decision 189).
+    private var itemTerms: [(id: String, text: String)] = []
+    /// The text of the `<term>` being read, while one is open.
+    private var termText: String?
+    /// The `xml:id` of the `<term>` being read, when it has one.
+    private var termId: String?
+    /// The item's text since its last `</term>`: the definition, where it lists two spellings.
+    private var tailBuffer = ""
 
     func parser(_ parser: XMLParser,
                 didStartElement elementName: String,
@@ -2768,6 +2783,10 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             currentId = attributeDict["xml:id"] ?? attributeDict["id"]
             currentTerm = nil
             textBuffer = ""
+            itemTerms = []
+            tailBuffer = ""
+            termText = nil
+            termId = nil
         }
         // FRUS TEI: <item><term xml:id="t_A1">A</term>, airgram</item>
         // Capture the xml:id from <term> inside an item — this is the canonical id.
@@ -2775,12 +2794,16 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             if let id = attributeDict["xml:id"] ?? attributeDict["id"] {
                 currentId = id
             }
+            termText = ""
+            termId = attributeDict["xml:id"] ?? attributeDict["id"]
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard inItem else { return }
         textBuffer += string
+        tailBuffer += string
+        if termText != nil { termText? += string }
     }
 
     func parser(_ parser: XMLParser,
@@ -2795,7 +2818,22 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
             currentTerm = textBuffer.normalizedWhitespace
             textBuffer = ""
         }
-        if elementName == "item" {
+        if elementName == "term" && inItem {
+            if let id = termId, let text = termText { itemTerms.append((id, text)) }
+            termText = nil
+            termId = nil
+            tailBuffer = ""
+        }
+        if elementName == "item" && itemTerms.count > 1 {
+            // Decision 189: one entry per spelling, each with the definition after the last.
+            let definition = Self.definition(after: tailBuffer)
+            for (id, text) in itemTerms {
+                let word = Self.spelling(text)
+                if !word.isEmpty {
+                    entries.append(GlossEntry(ref: id, term: word, definition: definition))
+                }
+            }
+        } else if elementName == "item" {
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
             let id = currentId ?? (currentTerm ?? raw)
             if !id.isEmpty {
@@ -2829,15 +2867,50 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
                     entries.append(GlossEntry(ref: id, term: term, definition: def))
                 }
             }
+        }
+        if elementName == "item" {
             inItem = false
             currentId = nil
             currentTerm = nil
             textBuffer = ""
+            itemTerms = []
+            tailBuffer = ""
+            termText = nil
+            termId = nil
         }
         if elementDepth <= termsSectionDepth {
             inTermsSection = false
             termsSectionDepth = -1
         }
+    }
+
+    /// One spelling's word, where an item lists two or more (decision 189): its text with the space
+    /// folded, a comma, semicolon or colon the list printed inside the term taken off its end
+    /// (`G–1,`), and parentheses around the whole of it taken off (`(Masjumi)`). A dash is kept,
+    /// since a spelling can begin with one (`–2`, after `G–1,`).
+    static func spelling(_ text: String) -> String {
+        var word = text.normalizedWhitespace
+        while let last = word.last, last == "," || last == ";" || last == ":" || last.isWhitespace {
+            word.removeLast()
+        }
+        if word.count > 2, word.hasPrefix("("), word.hasSuffix(")") {
+            word = String(word.dropFirst().dropLast()).trimmingCharacters(in: .whitespaces)
+        }
+        return word
+    }
+
+    /// The definition of an item that lists two spellings or more (decision 189): its text after
+    /// the last, with the space folded, the punctuation that joins it to the spellings taken off its
+    /// start (a closing parenthesis among it, as in `BMM (or BMMG,) British Military Mission`), and
+    /// off its end the separators the one-spelling rule trims. `nil` when nothing is left.
+    static func definition(after tail: String) -> String? {
+        let lead = CharacterSet(charactersIn: ",;:—–-)").union(.whitespacesAndNewlines)
+        let trail = CharacterSet(charactersIn: ",;:—–-").union(.whitespacesAndNewlines)
+        let folded = tail.normalizedWhitespace
+        guard let start = folded.firstIndex(where: { !$0.unicodeScalars.allSatisfy(lead.contains) }),
+              let end = folded.lastIndex(where: { !$0.unicodeScalars.allSatisfy(trail.contains) }),
+              start <= end else { return nil }
+        return String(folded[start...end])
     }
 }
 

@@ -10666,6 +10666,59 @@ struct IndexVersion76Tests {
         }
     }
 
+    @Test("A term-list item that lists two spellings or more gives each its own terms row, with the definition printed after the last (decision 189)")
+    func eachSpellingOfAnItemHasItsOwnRow() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // The corpus's shapes: two spellings joined by "or" (frus1917-72PubDipv08); a second in
+            // parentheses, whose ")" follows the last term (frus1947v05); a comma the list printed
+            // inside each term, and a spelling that begins with a dash (frus1947v04); a spelling
+            // printed in parentheses inside its term (frus1948v06); and one spelling, as before.
+            let terms = """
+                <div subtype="index" type="section" xml:id="terms">
+                  <head>Abbreviations and Terms</head>
+                  <list type="terms">
+                    <item><hi rend="strong"><term xml:id="t_HAD_1">HAD</term> or <term xml:id="t_HD_1">HD</term>,</hi> Henry A. Dunlap</item>
+                    <item> <hi rend="strong"> <term xml:id="t_BMM1">BMM</term> (or <term xml:id="t_BMMG1" >BMMG</term>,</hi>) British Military Mission (in Greece)</item>
+                    <item> <hi rend="strong"> <term xml:id="t_G11">G–1,</term> <term xml:id="t_G21">–2,</term> <term xml:id="t_G31">–3</term>,</hi> sections of a military staff</item>
+                    <item> <hi rend="strong"> <term xml:id="t_Masjoemi1"><hi rend="italic">Masjoemi</hi></term> <term xml:id="t_Masjumi1">(<hi rend="italic">Masjumi</hi>)</term>,</hi> Moslem League</item>
+                    <item><hi rend="strong"><term xml:id="t_Dept1">Dept</term>,</hi> Department of State</item>
+                  </list>
+                </div>
+                """
+            let documents = [
+                """
+                <div type="document" xml:id="d1" n="1"><head>1. Memorandum From <gloss target="#t_HAD_1">HAD</gloss></head>
+                  <p>Sent to <gloss target="#t_HD_1">HD</gloss> and the <gloss target="#t_Dept1">Dept</gloss>.</p>
+                </div>
+                """,
+            ]
+            try volumeXML(volumeId: "frus1917-72PubDipv08", front: terms, documents: documents)
+                .write(to: dir.appendingPathComponent("volumes/frus1917-72PubDipv08.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1917-72PubDipv08")
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let rows = try await store.allTerms(forVolumeId: "frus1917-72PubDipv08")
+                .sorted { $0.ref < $1.ref }
+                .map { "\($0.ref) \($0.term) = \($0.definition ?? "nil")" }
+            #expect(rows == [
+                "t_BMM1 BMM = British Military Mission (in Greece)",
+                "t_BMMG1 BMMG = British Military Mission (in Greece)",
+                "t_Dept1 Dept = Department of State",
+                "t_G11 G–1 = sections of a military staff",
+                "t_G21 –2 = sections of a military staff",
+                "t_G31 –3 = sections of a military staff",
+                "t_HAD_1 HAD = Henry A. Dunlap",
+                "t_HD_1 HD = Henry A. Dunlap",
+                "t_Masjoemi1 Masjoemi = Moslem League",
+                "t_Masjumi1 Masjumi = Moslem League",
+            ])
+            // A link to either spelling finds its entry: the join that dropped t_HAD_1 keeps it.
+            let linked = try await store.termsLinked(inDocument: "d1", volumeId: "frus1917-72PubDipv08")
+            #expect(linked.map { "\($0.entry.term) \($0.parts.rawValue)" } == ["Dept 1", "HAD 2", "HD 1"])
+        }
+    }
+
     @Test("Each linked term records the parts of its document that link it: text, heading, footnote, source note, @ana (decision 188)")
     func linkedTermsRecordTheirParts() async throws {
         try await withTempDir { dir in
