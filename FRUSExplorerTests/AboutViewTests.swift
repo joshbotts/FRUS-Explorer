@@ -351,11 +351,17 @@ struct InAppBrowserCoordinatorTests {
         </body></html>
         """
 
+    /// How long one wait may take: a bound on a hang, not WebKit's pace. On CI this suite is the first in the run to
+    /// start WebKit, so the opening page waits for WebKit's web content, GPU and networking processes to launch. On
+    /// CI's three-core runner (2026-11-26) that took about 18 s of the 20 s the bound then was, and on the next run the
+    /// page was not in after 60 s, 52 of which the host logged nothing at all.
+    private static let waitLimit: Duration = .seconds(120)
+
     private static func waitFor(_ what: String, _ condition: () -> Bool) async throws {
-        let deadline = ContinuousClock.now + .seconds(20)
+        let deadline = ContinuousClock.now + waitLimit
         while !condition() {
             guard ContinuousClock.now < deadline else {
-                Issue.record("Timed out waiting for \(what)")
+                Issue.record("Timed out after \(waitLimit) waiting for \(what)")
                 throw Timeout()
             }
             try await Task.sleep(for: .milliseconds(50))

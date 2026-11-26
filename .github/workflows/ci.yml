@@ -156,7 +156,9 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/logs"
           xcodebuild -version
-      # The target named, so no UI suite runs; a stalled test ends at its allowance, not the job's.
+      # The target named, so no UI suite runs; a stalled test ends at its allowance, not the job's. The
+      # allowance is 20 minutes: on this workflow's third run (2026-11-26) a DocumentRevisionsTests test
+      # took 407 s of the 600 it then had, where the run before took 265 s.
       # One test is skipped here and runs on the Mac alone: RichTextRestingCapTests' colour-picker test.
       # On this workflow's first full run (2026-11-26) the formatting bar's Text Color presented no
       # colour picker in the 15 s the test allows, and UIKit logged no warning. The suite's version
@@ -169,7 +171,8 @@ jobs:
             -destination "$SIMULATOR" -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -only-testing FRUSExplorerTests \
             -skip-testing 'FRUSExplorerTests/RichTextRestingCapTests/theColorPickerKeepsTheBlockOpen()' \
-            -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600 \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 1200 \
+            -maximum-test-execution-time-allowance 1200 \
             $AD_HOC > "$log" 2>&1 || status=$?
           summary=$(grep -E '^(✔|✘) Test run with|Executed [0-9,]+ tests?, with' "$log" | tail -3 || true)
           echo "$summary"
