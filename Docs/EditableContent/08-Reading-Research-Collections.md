@@ -3223,7 +3223,7 @@ Show this document’s notes, highlights, tags, and provenance in the inspector 
 <!-- END SOURCE: collection.entry.inspect.help -->
 
 #### Error message — This collection was made with a newer version of FRUS…
-<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 329–330 | key: collection.import.error.version -->
+<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 331–332 | key: collection.import.error.version -->
 
 This collection was made with a newer version of FRUS Explorer (format \(version)). Update the app to open it.
 

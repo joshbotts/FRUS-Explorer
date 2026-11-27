@@ -227,7 +227,9 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key).
         /// Summary ids are meaningful across the author's own CloudKit-synced devices;
         /// on another user's device the id simply won't resolve and the resolver falls
-        /// back to any stored summary (or the placeholder).
+        /// back to any stored summary (or the placeholder). Where it names a headnote draft on
+        /// the importing account, the app's import gives the new entry a copy of that draft, so
+        /// the file's collection and its original share none (#1999).
         public var headnoteSummaryId: UUID?
         /// Excerpt anchor: UTF-16 start offset in the source document's flat
         /// text (excerpt entries only; v2 optional key). Anchors travel so precision
