@@ -14,7 +14,10 @@ Run order (each script checkpoints and resumes; `ASSESS_DIR` defaults to
 1. `pool_docs.py` — streams the raw store (`STORE`, default `~/frus-semantic-raw`) into
    the shared document matrices under `$ASSESS_DIR/pool/`: float-768 pooled vectors,
    int8-256/512 + scales, packed 256-bit signs, `doc_keys.jsonl`, `pool_stats.json`,
-   `dup_int8_rows.jsonl`. ~28 s on the M1 Max Studio, plus vector sanity checks
+   `dup_int8_rows.jsonl`, and last `pool_source.json` (#2023): the store's path, its
+   `run-manifest.json`'s model, weights and contract, and the float matrix's SHA-256, which
+   `tools/semantic-map/build_layout.py` requires and carries into the map's layout. ~28 s on
+   the M1 Max Studio (12.5 s at a 7.0 GB peak on the M5 Air, 2026-11-26), plus vector sanity checks
    (norms, NaN, tiling, id hygiene, duplicates).
 2. `nn_ladder.py` — 3,600 era-stratified queries (seed 18610810): float-768 truth,
    quantization-ladder recall at corpus scale, hamming-200 funnel, same-volume /

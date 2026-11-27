@@ -6,7 +6,17 @@ unit-norm chunk vectors, L2-renormalized. Weight = (c1 - c0) from the chunk's me
 row. truncate() / int8_quantize() / pack_bits() are transcribed VERBATIM from
 tools/semantic-harvest/spike_gates.py.
 
-Reads /Users/jbotts/frus-semantic-raw (read-only). Writes to OUT (assess/pool/).
+Reads STORE (read-only; default ~/frus-semantic-raw, the 300m's store). Writes to OUT
+(ASSESS_DIR/pool/).
+
+Last of all it writes pool_source.json (#2023): the store's path, the fields of its
+run-manifest.json that say which vectors it holds and which harvest wrote them, and the SHA-256
+of doc_f32_768.npy.
+tools/semantic-map/build_layout.py carries the first two into layout-meta.json, and
+SemanticVectorsGenerator refuses a layout whose store is not the STORE it packs: both stores
+hold 314,616 documents of 768 dimensions, so nothing else told a map laid out over the 300m's
+vectors from one laid out over EmbeddingGemma 2's. The file is removed when a run starts, so a
+pool that did not finish names no store.
 """
 
 import gzip
@@ -27,6 +37,20 @@ NORM_SAMPLE_TARGET = 50000
 
 DOC_ID_RE = re.compile(r"^d[0-9]+$")
 ORD_ID_RE = re.compile(r"^ord[0-9]+$")
+
+# The run-manifest fields pool_source.json records (#2023): the first six say which vectors the
+# store holds and are the ones SemanticVectorsGenerator compares; the last two say which harvest
+# wrote it, for the record. Their names are run-manifest.json's own.
+STORE_IDENTITY = ("model", "model_file_sha256", "dim", "chunk_chars", "overlap_chars", "prefix",
+                  "generated", "script_sha256")
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 # ------------------------------------------------- verbatim from spike_gates.py
@@ -50,9 +74,15 @@ def pack_bits(matrix):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    # A pool this run leaves unfinished must name no store, so the last run's record goes first.
+    source_path = os.path.join(OUT, "pool_source.json")
+    if os.path.exists(source_path):
+        os.remove(source_path)
     t0 = time.time()
     manifest = json.load(open(os.path.join(STORE, "run-manifest.json")))
     assert manifest["dim"] == DIM
+    # Read before the pooling, so a store whose manifest lacks one stops here and not at the end.
+    store_identity = {key: manifest[key] for key in STORE_IDENTITY}
 
     heads = {}
     vols = sorted(f[:-len(".head.json")] for f in os.listdir(os.path.join(STORE, "vectors"))
@@ -305,6 +335,24 @@ def main():
     stats["elapsed_secs"] = round(time.time() - t0, 1)
     json.dump(stats, open(os.path.join(OUT, "pool_stats.json"), "w"),
               indent=2, sort_keys=True)
+
+    # #2023: which store this pool came from, bound to the matrix it describes. Written last. The
+    # path is for the record and is never compared; a home folder reads as `~`, since a layout's
+    # metadata, which copies it, is committed.
+    store_path = os.path.abspath(STORE)
+    home = os.path.expanduser("~")
+    if store_path.startswith(home + os.sep):
+        store_path = "~" + store_path[len(home):]
+    source = {
+        "store": store_path,
+        "run_manifest": store_identity,
+        "doc_f32_768_sha256": sha256_file(os.path.join(OUT, "doc_f32_768.npy")),
+    }
+    with open(source_path, "w") as handle:
+        json.dump(source, handle, indent=2, sort_keys=True)
+    print("pool_source.json: %s, %s (%s...)" % (
+        source["store"], store_identity["model"], store_identity["model_file_sha256"][:12]),
+        flush=True)
     print("DONE", flush=True)
     print(json.dumps({k: v for k, v in stats.items()
                       if k not in ("tiling_examples", "nonstandard_id_examples")},

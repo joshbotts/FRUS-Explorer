@@ -48,6 +48,21 @@ struct NumericalFileIndexTests {
         #expect(NumericalFileIndex.caseNumber(fromFileNumber: "") == nil)
     }
 
+    /// The kit's own cases (`FRUSExplorerTests/CentralFilesIndexTests.swift`), answered as the kit answers
+    /// them: since #722 a citation in the decimal file's form carries no case number, and the generator's
+    /// reading lacked that guard, so the Source Explorer export read `723.2515/110` as case 723 (#1974).
+    @Test("A decimal-era citation carries no case number, as the kit's reading has held since #722 (#1974)")
+    func decimalFormHasNoCaseNumber() {
+        for decimal in ["File No. 723.2515/110.", "723.2515/110", "511. 4A1/914", "812. 415A/7", "811B.5034",
+                        "835.415A/97", "211.63 Or5/2"] {
+            #expect(NumericalFileIndex.caseNumber(fromFileNumber: decimal) == nil, "\(decimal)")
+        }
+        #expect(NumericalFileIndex.caseNumber(fromFileNumber: "14319/77") == 14319)
+        #expect(NumericalFileIndex.caseNumber(fromFileNumber: "697/43.") == 697)
+        #expect(NumericalFileIndex.caseNumber(fromFileNumber: "101/2-2162. Secret.") == 101)
+        #expect(sampleIndex().roll(forFileNumber: "697.1/43") == nil, "case 697's roll is not a decimal citation's")
+    }
+
     @Test("Range boundaries are inclusive")
     func inclusiveBoundaries() {
         let index = sampleIndex()

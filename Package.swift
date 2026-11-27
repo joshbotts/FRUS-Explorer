@@ -1038,7 +1038,9 @@ let package = Package(
         /// (ProvenanceCategory), and the dictionary of offline resolution results (bundled lot
         /// index with the #321 guard, 1906–1910 Numerical File rolls, volume-sources index,
         /// collection-authority 4-step lookup) plus the recorded — never executed — live
-        /// catalog route. Entirely offline & deterministic.
+        /// catalog route. Entirely offline & deterministic. Each document's year is the one Source
+        /// Explorer reads (#1976), from FRUSCoreKit's parse of the volume, which only
+        /// `DocumentYearExtractor.swift` imports: the kit declares names the generators' cores do too.
         .target(
             name: "SourceExplorerExportGeneratorCore",
             dependencies: [
@@ -1048,6 +1050,7 @@ let package = Package(
                 .target(name: "CollectionAuthorityGeneratorCore"),
                 .target(name: "VolumeSourcesIndexGeneratorCore"),
                 .target(name: "CentralFilesIndexGeneratorCore"),
+                .target(name: "FRUSCoreKit"),
             ],
             path: "SourceExplorerExportGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]

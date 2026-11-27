@@ -174,6 +174,57 @@ struct SourceExplorerHydrationTests {
         #expect(context.despatchSerial == nil)
     }
 
+    /// The owner's decision 175: "views fall back to the index's date". frus1909 d429 prints no dateline and
+    /// read no year, so the Numerical File's window never opened for it; the export, reading the attribute,
+    /// listed its rolls (#1976).
+    @Test("A dateline that gives no year takes the index's date; one that gives a year keeps its own (#1976)")
+    func hydrateFallsBackToTheIndexDate() {
+        func facts(_ dateline: String?, _ dateISO: String?) -> IndexingPipeline.SourceExplorerFacts {
+            IndexingPipeline.SourceExplorerFacts(header: "Memorandum", dateline: dateline, despatchSerial: nil,
+                                                 dateISO: dateISO, dateISOMax: dateISO)
+        }
+        func year(route routeYear: Int? = nil, _ indexed: IndexingPipeline.SourceExplorerFacts?) -> Int? {
+            SourceExplorerDocumentContext.hydrate(routeHeader: "d429", routeDateline: nil, routeYear: routeYear,
+                                                  documentId: "d429", indexed: indexed).year
+        }
+        #expect(year(facts(nil, "1909-06-01")) == 1909, "no dateline")
+        #expect(year(facts("Moscow, undated.", "1909-06-02")) == 1909, "a dateline with no year")
+        #expect(year(facts("Saigon, October 22, 1515Z.", "1972-10-22")) == 1972, "a time group, no year")
+        #expect(year(facts("Washington, May 1, 1914.", "1910-05-01")) == 1914, "the dateline's year wins")
+        #expect(year(route: 1905, facts("Moscow, undated.", "1909-06-02")) == 1905, "the route's year still wins")
+        #expect(year(facts("Moscow, undated.", nil)) == nil, "no index date, no year")
+        #expect(year(nil) == nil, "no index row")
+    }
+
+    @Test("The roll dates: the dateline's day; else the index's days, unless a printed year contradicts them (#1976)")
+    func rollDatesReading() {
+        func facts(_ from: String?, _ through: String? = nil) -> IndexingPipeline.SourceExplorerFacts {
+            IndexingPipeline.SourceExplorerFacts(header: "Mr. Motley to Mr. Seward.", dateline: nil, despatchSerial: nil,
+                                                 dateISO: from, dateISOMax: through ?? from)
+        }
+        #expect(CountrySeriesRollDates.reading(dateline: "Vienna, November 14, 1864.", indexed: facts("1864-11-15"))
+                == .dateline("1864-11-14"), "a dated dateline keeps its own day")
+        #expect(CountrySeriesRollDates.reading(dateline: "Vienna, November 14.", indexed: facts("1864-11-14"))
+                == .indexed(from: "1864-11-14", through: "1864-11-14"))
+        #expect(CountrySeriesRollDates.reading(dateline: "undated", indexed: facts("1864-12-01", "1865-02-28"))
+                == .indexed(from: "1864-12-01", through: "1865-02-28"))
+        #expect(CountrySeriesRollDates.reading(dateline: "Washington, 1864.", indexed: facts("1864-11-14"))
+                == .indexed(from: "1864-11-14", through: "1864-11-14"), "a printed year the index's days fall in")
+        #expect(CountrySeriesRollDates.reading(dateline: "Washington, 1864.", indexed: facts("1866-11-14")) == .undated,
+                "a printed year the index contradicts keeps the undated lookup")
+        #expect(CountrySeriesRollDates.reading(dateline: "undated", indexed: nil) == .undated)
+        #expect(CountrySeriesRollDates.reading(dateline: "undated", indexed: facts(nil)) == .undated)
+        #expect(CountrySeriesRollDates.reading(dateline: nil, indexed: facts("1864-11-14")) == .undated, "no dateline")
+        #expect(CountrySeriesRollDates.reading(dateline: "undated", indexed: facts("1864-11-14", "1864-01-01"))
+                == .indexed(from: "1864-11-14", through: "1864-11-14"), "a last day before the first reads as the first")
+        let hydrated = SourceExplorerDocumentContext.hydrate(
+            routeHeader: "d120", routeDateline: nil, routeYear: nil, documentId: "d120",
+            indexed: IndexingPipeline.SourceExplorerFacts(header: "Mr. Motley to Mr. Seward.", dateline: "Vienna, November 14.",
+                                                          despatchSerial: nil, dateISO: "1864-11-14", dateISOMax: "1864-11-14"))
+        #expect(hydrated.rollDates == .indexed(from: "1864-11-14", through: "1864-11-14"))
+        #expect(hydrated.year == 1864)
+    }
+
     @Test("R4: the serial comes from the index even when the route's dateline wins")
     func hydrateR4() {
         let context = SourceExplorerDocumentContext.hydrate(

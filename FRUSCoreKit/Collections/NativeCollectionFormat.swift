@@ -227,7 +227,9 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key).
         /// Summary ids are meaningful across the author's own CloudKit-synced devices;
         /// on another user's device the id simply won't resolve and the resolver falls
-        /// back to any stored summary (or the placeholder).
+        /// back to any stored summary (or the placeholder). Where it names a headnote draft on
+        /// the importing account, the app's import gives the new entry a copy of that draft, so
+        /// the file's collection and its original share none (#1999).
         public var headnoteSummaryId: UUID?
         /// Excerpt anchor: UTF-16 start offset in the source document's flat
         /// text (excerpt entries only; v2 optional key). Anchors travel so precision
@@ -266,7 +268,9 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// entry (see the 2.4 version note).
         public var generatedBlockType: String?
         /// Inline research-note texts for this document (opt-in — populated only when the
-        /// exporter's "include my research notes" toggle is on). `nil`/absent otherwise.
+        /// exporter's "include my research notes" toggle is on, and only for a document whose
+        /// notes print: its own setting, else its section's, else the collection's, #2000).
+        /// `nil`/absent otherwise.
         /// These are the *resolved* note texts the entry's `selectedNoteIds` filter chose
         /// (empty = all of the document's notes, D5); the device-local `selectedNoteIds`
         /// ids themselves are **never** serialized — like `selectedHighlightIds` they
@@ -402,6 +406,10 @@ public enum NativeCollectionError: Error, LocalizedError {
 ///          (`NativeCollectionFormat+App.swift`): `makeFile(from:)` over a `Collection`, which heals a legacy prose
 ///          blob first, `apply(_:into:)`, which inserts the values, `importCollection(from:into:)`,
 ///          `writeTemporaryFile(_:)` and `indexImportedNotes`, with `UTType.fruscollection`. No schema or format change
+///   1.12 — L29 (#2000): `makeFile` writes a document's notes only where they print — its own setting, else its
+///          section's, else the collection's, the rule the web page, the PDF and Word print them by — where the
+///          export sheet's switch alone had decided, so a note turned off for a document or a section went to the
+///          recipient. No schema or format change
 public enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -464,11 +472,13 @@ public enum NativeCollectionSerializer {
     /// - Parameters:
     ///   - collection: The collection's values, `entries` every one of its entries; they are emitted
     ///     in `sortOrder`.
-    ///   - includeNotes: When `true`, each document entry carries the inline note texts from
-    ///     `resolveNoteTexts`; when `false` (the D9a default), notes are omitted entirely.
+    ///   - includeNotes: When `true`, each document entry whose notes print — its own setting, else its
+    ///     section's, else the collection's, as the web page, the PDF and Word read them (#2000) — carries
+    ///     the inline note texts from `resolveNoteTexts`; when `false` (the D9a default), notes are omitted
+    ///     entirely.
     ///   - resolveNoteTexts: Supplies the research-note bodies for a document entry (the caller
     ///     resolves `selectedNoteIds`/`researchNoteId` against its store). Only invoked when
-    ///     `includeNotes` is `true`, once for each document entry, in order.
+    ///     `includeNotes` is `true`, once for each document entry whose notes print, in order.
     public static func makeFile(
         from collection: CollectionExport,
         includeNotes: Bool,
@@ -492,15 +502,23 @@ public enum NativeCollectionSerializer {
         // The outline's linearization over values: entries in `sortOrder`, each heading at its
         // resolved depth (`CollectionOutline.resolvedDepths`).
         let sorted = collection.entries.sorted { $0.sortOrder < $1.sortOrder }
-        let depths = CollectionOutline.resolvedDepths(sorted.map {
+        let refs = sorted.map {
             CollectionOutline.StructuralRef(isHeading: $0.entryKind == .heading, level: $0.level ?? 1,
                                             bodyDepthOverride: $0.bodyDepthOverride)
-        })
-        let entries: [FRUSCollectionFile.Entry] = zip(sorted, depths)
-            .compactMap { entry, depth in
+        }
+        let depths = CollectionOutline.resolvedDepths(refs)
+        // #2000: a document's notes travel where they print, by the cascade the assembly resolves them by — the
+        // document's setting, else its nearest ancestor heading's, else the collection's.
+        let sectionNotes = CollectionOutline.sectionOverrideValues(
+            refs, headingValues: sorted.map { $0.entryKind == .heading ? $0.includeNotesOverride : nil })
+        let collectionNotes = collection.includeNotes ?? true
+        let entries: [FRUSCollectionFile.Entry] = sorted.indices
+            .compactMap { index in
+                let entry = sorted[index], depth = depths[index]
                 switch entry.entryKind {
                 case .document:
-                    let notes = includeNotes
+                    let notesPrint = entry.includeNotesOverride ?? sectionNotes[index] ?? collectionNotes
+                    let notes = includeNotes && notesPrint
                         ? resolveNoteTexts(entry).filter { !$0.isEmpty }
                         : []
                     return FRUSCollectionFile.Entry(

@@ -585,7 +585,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         (decision 191); and the page each division begins
 ///         on, `division_start_pages`, read by `divisions(startingOn:inVolume:)` (F7, decision 178).
 ///         See the v76 note
-///  4.68 — 2026-11-26 (plan of record row L30): `document(forDocumentNumber:inVolume:)` matches the
+///  4.68 — 2026-11-26 (#1976, plan of record row L31): `sourceExplorerFacts(volumeId:documentId:)` reads the
+///         document's own first and last day from `document_dates` beside its header, dateline and serial,
+///         for Source Explorer's year where the dateline gives none; `extractDateRange(from:dateTimeMin:dateTimeMax:)`
+///         is read by `SourceExplorerDocumentContext.year(of:)` for the Source Explorer export; nothing the
+///         indexer stores changes
+///  4.69 — 2026-11-26 (plan of record row L30): `document(forDocumentNumber:inVolume:)` matches the
 ///         number as written, then ignoring case, for Citation Lookup's printed numbers (#1977:
 ///         `1190B` finds `1190b`); nothing the indexer stores changes
 public actor IndexingPipeline {
@@ -4214,19 +4219,41 @@ public actor IndexingPipeline {
         /// locates a document *within* a series. Everything that renders it has to say so. `nil` for
         /// the overwhelming majority of the corpus, and on an index built before v45.
         public let despatchSerial: String?
+        /// The document's own first day as `document_dates` stores it (`yyyy-MM-dd`), or `nil` when the
+        /// index dates it not at all (#1976): what Source Explorer's year falls back to where the dateline
+        /// gives none, and what the pre-1906 section looks rolls up by where the dateline prints no date.
+        public let dateISO: String?
+        /// The document's last day as `document_dates` stores it, or `nil`: the same as ``dateISO`` for a
+        /// document of one day, later for one the editors date across a range or only approximately.
+        public let dateISOMax: String?
+
+        /// The facts as read; the dates default to none, as for an index row with no `document_dates` row.
+        init(header: String, dateline: String?, despatchSerial: String?,
+             dateISO: String? = nil, dateISOMax: String? = nil) {
+            self.header = header
+            self.dateline = dateline
+            self.despatchSerial = despatchSerial
+            self.dateISO = dateISO
+            self.dateISOMax = dateISOMax
+        }
     }
 
-    /// The header, dateline and serial stored for one document, or `nil` when it is not indexed.
+    /// The header, dateline, serial and date stored for one document, or `nil` when it is not indexed.
     ///
-    /// One PRIMARY KEY seek on `document_cache`. Stepped through `auxStep`, so an I/O or corruption
-    /// fault throws rather than reading as "not indexed" — Source Explorer tells those two apart on
-    /// screen. A dateline that is empty or only whitespace is returned as `nil`.
+    /// One PRIMARY KEY seek on `document_cache`, joined to the document's `document_dates` row by its
+    /// key (#1976). Stepped through `auxStep`, so an I/O or corruption fault throws rather than reading
+    /// as "not indexed" — Source Explorer tells those two apart on screen. A dateline that is empty or
+    /// only whitespace is returned as `nil`.
     ///
     /// Replaces `despatchSerial(volumeId:documentId:)`, whose only callers were the two Source
     /// Explorer views and which read the serial alone through a raw `sqlite3_step`.
     public func sourceExplorerFacts(volumeId: String, documentId: String) throws -> SourceExplorerFacts? {
-        let stmt = try auxPrepare(
-            "SELECT header, dateline, despatch_serial FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        let stmt = try auxPrepare("""
+            SELECT dc.header, dc.dateline, dc.despatch_serial, dd.date_iso, dd.date_iso_max
+            FROM document_cache dc
+            LEFT JOIN document_dates dd ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            WHERE dc.volume_id = ? AND dc.document_id = ?
+            """)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
@@ -4236,7 +4263,9 @@ public actor IndexingPipeline {
         return SourceExplorerFacts(
             header: auxColumnString(stmt, 0) ?? "",
             dateline: blank ? nil : dateline,
-            despatchSerial: auxColumnString(stmt, 2))
+            despatchSerial: auxColumnString(stmt, 2),
+            dateISO: auxColumnString(stmt, 3),
+            dateISOMax: auxColumnString(stmt, 4))
     }
 
     /// Returns the Browser structure persisted for a volume at index time, or `nil`

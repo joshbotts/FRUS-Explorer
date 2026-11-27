@@ -130,6 +130,8 @@ import SwiftData
 ///          `.annotations` axis and a layer's `.annotationCategory` page
 ///   2.21 — 2026-11-06: lane D — consumes `AppState.pendingBrowseAnnotationLayer`
 ///          (`consumePendingAnnotationLayer`), on change and in the appear-time drain
+///   2.22 — L37 (F11): the two-pane gate's note says that crossing it builds the reader anew,
+///          and where the reader keeps its rail through that
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -214,7 +216,8 @@ struct BrowserView: View {
                 // before this was written (see `F-2-two-pane-design.md` §6). A plain `if/else` in
                 // a ViewBuilder, never `AnyView` — `levelView`'s doc comment explains that
                 // erasing structural identity here restarts `DocumentView`'s document load on
-                // every navigation.
+                // every navigation. Crossing the gate itself builds the reader anew, which keeps
+                // its rail as it was (L37, F11: `ReaderRebuildLedger`, in `DocumentView.swift`).
                 if isTwoPane {
                     twoPaneLayout(vm: vm)
                 } else {

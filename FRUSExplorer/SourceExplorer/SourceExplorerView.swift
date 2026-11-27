@@ -142,6 +142,8 @@ import SwiftUI
 ///   1.21 — 2026-11-26 (L26, decision 191): the Add to Archives Visit menu counts and offers the rows the
 ///           packet takes (`packetPointers`), and is absent where it would offer none. Mirrors
 ///           MacSourceExplorerView 1.19.
+///   1.22 — 2026-11-26 (#1976, L31): the pre-1906 section says when its rolls match the index's date, the
+///           dateline printing none (`documentRollsAreIndexDated`). Mirrors MacSourceExplorerView 1.20.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -1141,6 +1143,12 @@ struct SourceExplorerView: View {
                         defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if resolution?.documentRollsAreIndexDated == true {
+                // #1976: the rolls were matched to the date the index stores, the dateline printing none.
+                Text(CountrySeriesRollDates.indexedNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
                 if case .resolved(_, let serialLabel) = countrySeriesOutcome,
                    let serial = documentContext?.despatchSerial {
                     // #965. Placed INSIDE the roll section deliberately: the serial is not an

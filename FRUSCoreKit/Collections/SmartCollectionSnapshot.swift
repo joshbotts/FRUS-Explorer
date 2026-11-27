@@ -43,7 +43,8 @@ public struct SmartCollectionDocumentRef: Sendable {
 /// so its contents aren't inspectable or editable in the manager, and it can't be shared as a
 /// native `.fruscollection` file (which serializes static entries). A **snapshot** captures the
 /// search's current results as ordinary `.document` entries in a new, `savedSearchId`-free
-/// collection the researcher can reorder, annotate, section, and export like any other.
+/// collection the researcher can reorder, annotate, section, and export like any other, with
+/// every setting of the smart collection and its own apparatus blocks (the design's §4.5).
 ///
 /// The snapshot is **non-destructive**: the original smart collection is untouched and stays
 /// dynamic. The search runs here, at most `resultLimit` results (`documentRefs`), and the snapshot
@@ -56,6 +57,10 @@ public struct SmartCollectionDocumentRef: Sendable {
 ///          (`documentRefs`, at most `resultLimit` results, the content resolver's `smartRefs(for:)` and both
 ///          Snapshot actions' search) and the snapshot over values (`snapshot(of:results:)`); `create(from:
 ///          results:into:)`, which inserts SwiftData models, stays in the app
+///   1.2 — L29 (#1996, the third review's J39): `snapshot(of:results:id:entryIds:)` carries every setting of the
+///          smart collection but its link, its name and its dates, where it carried the composition alone, and
+///          the smart collection's apparatus blocks, its front matter before the results and the rest after, where
+///          it carried none; `entryIds` numbers every entry by its place, the blocks' included
 public enum SmartCollectionSnapshot {
 
     /// A resolved document reference from a saved-search result.
@@ -89,49 +94,59 @@ public enum SmartCollectionSnapshot {
     /// The static collection a snapshot of `smart` makes from its resolved results, as values for a host
     /// to insert.
     ///
-    /// The snapshot copies the source's display name (suffixed), note, project membership, and
-    /// composition settings, but carries **no** `savedSearchId`, so it is a normal editable
-    /// collection with one ordered `.document` entry per result. The composition copied is the default
-    /// body depth, the footnote style and the footnote pair (a nil pair stays nil, keeping the legacy
-    /// derivation), the contents' style, highlights, notes, the word cloud and the summary prompt; the
-    /// headnote default, the front matter and the settings are left at their defaults, and the source's
-    /// own entries are not copied.
+    /// The snapshot carries every setting of the smart collection — its note, project membership, front
+    /// matter, the title page's switches, its composition (a nil footnote pair stays nil, keeping the legacy
+    /// derivation), its headnote default and its summary prompt — under the source's display name
+    /// (suffixed) and with **no** `savedSearchId`, so it is a normal editable collection that exports as the
+    /// smart collection did. Every field of the values but those four and the dates travels, so a setting
+    /// added to the values later travels too (#1996).
+    ///
+    /// Its entries are the smart collection's front-matter blocks, one `.document` entry per result, then its
+    /// other apparatus blocks, each group in its order: where a smart collection prints them
+    /// (`CollectionContentAssembly.resolveSmartItems`), as the design's §4.5 asks (the third review's J39). A
+    /// block type this build does not know goes after the results, as the resolver places it nowhere. A block
+    /// keeps every field but its id and its place. The smart collection's other entries, which it held before
+    /// its link and which nothing it produces prints, are not carried.
     ///
     /// - Parameters:
-    ///   - smart: The smart collection's values.
+    ///   - smart: The smart collection's values, with its entries.
     ///   - results: Its resolved results, in order.
     ///   - id: The snapshot's id; a new one by default.
-    ///   - entryIds: The id of each result's entry; a new one each by default.
-    /// - Returns: The snapshot's values, its entries at `sortOrder` 0, 1, 2, … in result order.
+    ///   - entryIds: The id of each of the snapshot's entries, by its place; a new one each by default.
+    /// - Returns: The snapshot's values, its entries at `sortOrder` 0, 1, 2, … and its dates `nil`, for the
+    ///   host to stamp.
     public static func snapshot(
         of smart: CollectionExport,
         results: [DocumentRef],
         id: UUID = UUID(),
         entryIds: (Int) -> UUID = { _ in UUID() }
     ) -> CollectionExport {
-        CollectionExport(
-            id: id,
-            name: snapshotName(smart.name),
-            note: smart.note,
-            projectIds: smart.projectIds,
-            entries: results.enumerated().map { index, ref in
-                CollectionEntryExport(id: entryIds(index), documentId: ref.documentId, volumeId: ref.volumeId,
-                                      sortOrder: index, selectedNoteIds: [],
-                                      kind: CollectionEntryKind.document.rawValue)
-            },
-            // Preserve composition so the snapshot exports identically to the smart collection.
-            defaultBodyDepth: smart.defaultBodyDepth,
-            footnoteStyle: smart.footnoteStyle,
-            // Phase 5 footnote pair — copied verbatim (a nil pair stays nil, preserving
-            // the legacy-derivation semantics on the snapshot).
-            includeFootnotes: smart.includeFootnotes,
-            includeSourceNote: smart.includeSourceNote,
-            tocStyle: smart.tocStyle,
-            applyHighlights: smart.applyHighlights,
-            includeNotes: smart.includeNotes,
-            includeWordCloud: smart.includeWordCloud,
-            summaryPromptId: smart.summaryPromptId
-        )
+        let blocks = smart.entries
+            .filter { $0.entryKind == .generated }
+            .sorted { ($0.sortOrder, $0.id.uuidString) < ($1.sortOrder, $1.id.uuidString) }
+        func leads(_ block: CollectionEntryExport) -> Bool {
+            CollectionGeneratedBlockType(rawValue: block.generatedBlockType ?? "")?.defaultPosition == .frontMatter
+        }
+        let documents = results.map { ref in
+            CollectionEntryExport(id: UUID(), documentId: ref.documentId, volumeId: ref.volumeId, sortOrder: 0,
+                                  selectedNoteIds: [], kind: CollectionEntryKind.document.rawValue)
+        }
+        var snapshot = smart
+        snapshot.id = id
+        snapshot.name = snapshotName(smart.name)
+        snapshot.savedSearchId = nil
+        snapshot.createdAt = nil
+        snapshot.lastModified = nil
+        snapshot.entries = (blocks.filter(leads) + documents + blocks.filter { !leads($0) })
+            .enumerated().map { place, entry in
+                var entry = entry
+                entry.id = entryIds(place)
+                entry.sortOrder = place
+                entry.createdAt = nil
+                entry.lastModified = nil
+                return entry
+            }
+        return snapshot
     }
 
     /// The display name for a snapshot of a collection named `base`.

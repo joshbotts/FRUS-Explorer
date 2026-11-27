@@ -95,6 +95,8 @@ private final class NotificationlessMTKView: MTKView {
 ///         package, the two lasso tests with the kit's positions and no Metal gate, since they read no
 ///         renderer; what drives the app's loader, its model, its renderer, its view or its Info.plist
 ///         is Xcode's
+///   1.8 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#1986) — a dated scale's ticks are
+///         the same through `tickYears(for:)` as through `tickYears(min:max:)`
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -1014,6 +1016,7 @@ struct SemanticMapSurfaceTests {
             #expect(ticks.allSatisfy { $0 >= lo && $0 <= hi }, "\(lo)-\(hi): \(ticks)")
             #expect(ticks == ticks.sorted())
             let scale = SemanticMapSlice.Scale(minYear: lo, maxYear: hi, undatedCount: 0)
+            #expect(SemanticMapSlice.tickYears(for: scale) == ticks, "\(lo)-\(hi): a dated scale's ticks")
             for year in ticks {
                 let y = SemanticMapSlice.y(forYear: year, scale: scale)
                 #expect(y >= -0.82 - 1e-5 && y <= 1.0 + 1e-5,
