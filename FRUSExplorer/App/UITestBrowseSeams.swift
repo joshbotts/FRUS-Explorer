@@ -97,6 +97,8 @@ import notify
 ///          queue of volumes at launch (``downloadsToQueue``)
 ///   1.6 — #1920 (L20, HCD-3): a download the test starts by signal (``downloadsOnSignal``)
 ///   1.7 — R6a (F4): the signals that add and delete a note from outside All Notes
+///   1.8 — #2013 (L57): the search seam's hand-off can carry two days (``searchOnSignalDates``), as Chronology's
+///          Search in this range hands them
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -403,28 +405,54 @@ enum UITestBrowseSeams {
     /// Launch key for the search seam: the words Search is handed when the test sends ``Signal/search``.
     static let searchOnSignalKey = "FRUS_UI_TEST_SEARCH_ON_SIGNAL"
 
+    /// Launch key for the two days the search seam's hand-off also carries, as `yyyy-MM-dd/yyyy-MM-dd`: a date range
+    /// as Chronology's Search in this range hands one (#2013, L57). Unset, the hand-off carries none.
+    static let searchOnSignalDatesKey = "FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES"
+
     /// The armed words, or `nil` when the seam is not armed.
     static var searchesOnSignal: String? {
         ProcessInfo.processInfo.environment[searchOnSignalKey].flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    /// The armed date range, or `nil` when the hand-off carries none.
+    static var searchOnSignalDates: DateRange? {
+        ProcessInfo.processInfo.environment[searchOnSignalDatesKey].flatMap(handOffDateRange(from:))
+    }
+
+    /// The date range a `yyyy-MM-dd/yyyy-MM-dd` value names, or `nil` when it does not name two days.
+    ///
+    /// The two days go into the range as they are written, as a hand-off passes them; Search reads them
+    /// (`SearchViewModel.applyParameters(_:)`), and that reading is what `FilterDateRangeHandOffTests` watches.
+    ///
+    /// - Parameter value: The launch key's value.
+    /// - Returns: The range, or `nil`.
+    static func handOffDateRange(from value: String) -> DateRange? {
+        let days = value.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        guard days.count == 2, days.allSatisfy({ !$0.isEmpty }) else { return nil }
+        return DateRange(earliest: days[0], latest: days[1])
+    }
+
     /// Hands Search a keyword search for `words` when the test sends ``Signal/search``, as a hand-off does
-    /// (`AppState.openSearch(_:from:)`, consumed by the Search tab).
+    /// (`AppState.openSearch(_:from:)`, consumed by the Search tab), on the armed days when there are some
+    /// (``searchOnSignalDates``).
     ///
     /// `SearchResultVoiceOverTests` listens to VoiceOver while that search finishes. With VoiceOver on, a tap or
     /// typing the test synthesized left VoiceOver on in the simulator after the service's `disable()` (measured
     /// 2026-11-15, iPhone 17, iOS 27.0), and every test after it met VoiceOver's cursor; a search this signal runs
-    /// needs no input at all.
+    /// needs no input at all. `FilterDateRangeHandOffTests` arms the days too, and reads Filters' two date pickers
+    /// after the hand-off.
     ///
     /// - Parameters:
     ///   - words: The words to search for.
     ///   - appState: The app's state, whose pending search the Search tab runs.
     @MainActor
     static func searchOnSignal(_ words: String, in appState: AppState) {
-        print("[UITestBrowseSeams] Handing Search \"\(words)\" when the test asks for it")
+        let dates = searchOnSignalDates
+        let between = dates.map { " between \($0.earliest ?? "") and \($0.latest ?? "")" } ?? ""
+        print("[UITestBrowseSeams] Handing Search \"\(words)\"\(between) when the test asks for it")
         onSignal(.search) {
-            appState.openSearch(SearchParameters(keywords: words), from: nil)
-            print("[UITestBrowseSeams] Handed Search \"\(words)\"")
+            appState.openSearch(SearchParameters(keywords: words, dateRange: dates), from: nil)
+            print("[UITestBrowseSeams] Handed Search \"\(words)\"\(between)")
         }
     }
 
