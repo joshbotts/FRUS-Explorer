@@ -206,7 +206,7 @@ struct SpotlightDonor: IndexedDocumentDonor {
     ///
     /// - Parameter environment: `ProcessInfo.processInfo.environment`.
     static func reachesSpotlight(_ environment: [String: String]) -> Bool {
-        true
+        !FigureImageStore.isUnitTestHost(environment)
     }
 
     /// Submits CSSearchableItem records for all of a volume's documents, outside a unit test's host.
