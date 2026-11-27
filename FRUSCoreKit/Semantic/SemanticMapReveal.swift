@@ -35,6 +35,8 @@ import SemanticVectorsKit
 /// Version history:
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S28a — out of `SemanticMapModel` and `SemanticMapSpikeView`,
 ///          which call it
+///   1.1 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — `reveal` takes the
+///          positions the host draws, so a reveal on a slice lands where the slice draws the document
 public enum SemanticMapReveal {
 
     /// The three ways a reveal can end.
@@ -82,21 +84,39 @@ public enum SemanticMapReveal {
     /// (``SemanticMapPicking/regionName(ofRow:map:clusters:)``): a reveal and a tap on the same document
     /// must produce the same card, or the two paths disagree about which region a document is in.
     ///
+    /// **The place is where the host draws the row, which is not always the map's plane** (#2010). A
+    /// slice (``SemanticMapSlice/layout(along:map:index:corpus:yearForVolume:)``) lays every row out
+    /// again, so a reveal that took the plane's placement while a slice was drawn put the ring on the
+    /// plane's coordinates, where the slice draws another document, and sent the camera there. A host
+    /// passes the positions it draws, as the hit test takes them; with none, the place is the plane's.
+    ///
     /// - Parameters:
     ///   - volumeID: The document's volume.
     ///   - documentID: The document's id within it.
     ///   - index: The vector index that keys the rows.
     ///   - map: The mapped placements.
     ///   - clusters: The artifact's regions.
+    ///   - positions: The grid positions the host draws, one per row, as
+    ///     ``SemanticMapPicking/hit(at:positions:camera:size:radius:scopeMask:)`` takes them: a slice's
+    ///     layout while one is drawn. `nil` for the map's own plane.
     ///   - isReadable: Whether the host can open a volume's documents.
-    /// - Returns: The selection and the camera, or `nil` when the map has no point for the document.
+    /// - Returns: The selection and the camera, or `nil` when the map has no point for the document or
+    ///   the positions given hold none for its row.
     public static func reveal(volumeID: String, documentID: String, index: SemanticVectorIndex,
                               map: SemanticMapVectors, clusters: [SemanticMapArtifacts.Cluster],
+                              positions: [SIMD2<Int16>]? = nil,
                               isReadable: (String) -> Bool)
         -> (selection: SemanticMapPicking.Selection, camera: SemanticMapCamera)? {
         guard let row = index.row(documentID: documentID, volumeID: volumeID),
               let placement = map.placement(at: row) else { return nil }
-        let position = SIMD2(Float(placement.x), Float(placement.y))
+        let drawn: SIMD2<Int16>
+        if let positions {
+            guard positions.indices.contains(row) else { return nil }
+            drawn = positions[row]
+        } else {
+            drawn = SIMD2(placement.x, placement.y)
+        }
+        let position = SIMD2(Float(drawn.x), Float(drawn.y))
         let selection = SemanticMapPicking.Selection(
             row: row,
             volumeID: volumeID,

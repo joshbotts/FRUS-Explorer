@@ -74,6 +74,9 @@ import simd
 ///          centroid (`SemanticAxis.centroid(forVolume:index:corpus:)`), the poles' refusals
 ///          (`SemanticMapPoles`) and the slice's layout (`SemanticMapSlice`); its state, its camera
 ///          moves and its renderer stay here
+///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — a reveal lands where the
+///          map draws the document (`positions`), on a slice too, and the regions list's row is the
+///          model's (`selectRegionFromList`), which opens a region's card on a slice
 @MainActor
 @Observable
 final class SemanticMapModel {
@@ -387,6 +390,40 @@ final class SemanticMapModel {
     /// Dismisses the region card.
     func clearRegion() { selectedRegion = nil }
 
+    /// Selects a region from the regions list, VoiceOver's way into the map.
+    ///
+    /// **On the map's plane** the row resolves a region as a tap at its centre would, on its drawn
+    /// name or else the document nearest. It frames the map first, deliberately: `select(at:)`
+    /// hit-tests within a radius converted into grid units through the current camera scale, so a
+    /// zoomed-in camera can put a region's centre outside the view entirely and the row would read as
+    /// a dead button. Framing makes the projection well defined for every region before the hit test.
+    ///
+    /// **On a slice a region's centre has no place** (#2010): it is a coordinate of the map's plane,
+    /// and the slice draws other documents there. Projected onto the slice, it hit-tested whatever
+    /// document sat there and selected that. So the row opens the region's card, as a tap on its name
+    /// does on the plane, and the camera stays where the reader left it.
+    ///
+    /// - Parameters:
+    ///   - region: The list's region.
+    ///   - size: The view's size in points.
+    ///   - isReadable: Whether a volume's XML is on disk, as ``select(at:size:isReadable:)`` takes it.
+    func selectRegionFromList(_ region: SemanticMapArtifacts.Cluster, size: CGSize,
+                              isReadable: (String) -> Bool) {
+        guard slice == nil else {
+            // Identity from `clusters`, not the list's `labelledClusters` entry, for the reason
+            // `select(at:)` gives: the card's era rows must sum to its own headline.
+            guard let whole = clusters.first(where: { $0.id == region.id }) else { return }
+            selectedRegion = whole
+            selection = nil
+            return
+        }
+        guard size != .zero else { return }
+        frameAll()
+        let centre = SIMD2<Float>(Float(region.centreX), Float(region.centreY))
+        let point = SemanticMapLabelLayout.project(centre, camera: camera, size: size)
+        select(at: point, size: size, isReadable: isReadable)
+    }
+
     /// Reveals one document on the map: selects it and brings the camera to it.
     ///
     /// The map draws every document in the published series, so this works for a volume the device
@@ -415,10 +452,12 @@ final class SemanticMapModel {
         }
         pendingRevealKey = nil
         // Where it lands is the kit's (`SemanticMapReveal.reveal`): region identity by ROW and from
-        // `clusters`, exactly as `select(at:)` derives it, and the camera at the reveal's half-extent.
+        // `clusters`, exactly as `select(at:)` derives it, the camera at the reveal's half-extent, and
+        // the place the one the map DRAWS: `positions`, a slice's while one is drawn (#2010), and on
+        // the plane the artifact's own, which are the same.
         guard let revealed = SemanticMapReveal.reveal(
             volumeID: parts.volumeID, documentID: parts.documentID, index: index, map: map,
-            clusters: clusters, isReadable: isReadable) else { return .notFound }
+            clusters: clusters, positions: positions, isReadable: isReadable) else { return .notFound }
         // Only now, having found the document: a reveal that fails must not clear a region card the
         // reader opened. The two cards are alternatives, so a SUCCESSFUL reveal replaces one with
         // the other, exactly as `select(at:)` does.
@@ -956,6 +995,9 @@ final class SemanticMapModel {
 ///         plurality provenance (`SemanticMapVolumes`), the scope's summary
 ///         (`SemanticMapColouring.scopeSummary(documents:volumes:ofVolumes:)`), a continuation's settling
 ///         (`SemanticMapReveal`), and a capture's name and source description (`SemanticMapCapture`)
+///   1.4 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — the regions list's row
+///         is the model's (`SemanticMapModel.selectRegionFromList(_:size:isReadable:)`), which opens a
+///         region's card on a slice rather than hit-testing it
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -2785,7 +2827,7 @@ struct SemanticMapSpikeView: View {
                 .accessibilityAddTraits(.isHeader)
             ForEach(clusters, id: \.id) { cluster in
                 Button {
-                    selectRegion(cluster)
+                    model.selectRegionFromList(cluster, size: surfaceSize, isReadable: isReadable)
                 } label: {
                     Text(verbatim: cluster.terms.prefix(3).joined(separator: " "))
                 }
@@ -2830,20 +2872,6 @@ struct SemanticMapSpikeView: View {
         return count + ", " + String(format: String(
             localized: "semanticMap.a11y.region.era %@",
             defaultValue: "mostly %1$@"), era.label)
-    }
-
-    /// Selects a region from the accessibility list.
-    ///
-    /// Frames the map first, deliberately. `select(at:)` hit-tests within a radius that is
-    /// converted into grid units through the current camera scale, so a zoomed-in camera can put a
-    /// region's centre outside the view entirely and the row would read as a dead button. Framing
-    /// makes the projection well defined for every region before the hit test runs.
-    private func selectRegion(_ cluster: SemanticMapArtifacts.Cluster) {
-        guard surfaceSize != .zero else { return }
-        model.frameAll()
-        let centre = SIMD2<Float>(Float(cluster.centreX), Float(cluster.centreY))
-        let point = SemanticMapLabelLayout.project(centre, camera: model.camera, size: surfaceSize)
-        model.select(at: point, size: surfaceSize, isReadable: isReadable)
     }
 
     /// - Parameters:

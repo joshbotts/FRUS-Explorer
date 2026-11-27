@@ -54,6 +54,9 @@ private let revealTestsHaveMetal = MTLCreateSystemDefaultDevice() != nil
 ///   1.1 — 2026-11-24: FRUS Explorer Light's S28a — moved into the kit's suites: the reveal's rule is the
 ///          kit's (`SemanticMapReveal`), which the package tests over the bundled map; the model's deferral,
 ///          its renderer and the view's source are the app's
+///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — on a slice: the kit's
+///          reveal over a slice's positions, the model's reveal and the regions list's row, each run first
+///          on the unchanged code, where they failed; the list's row on the plane, as before
 @Suite("Revealing a document on the map")
 struct SemanticMapRevealTests {
 
@@ -114,6 +117,49 @@ struct SemanticMapRevealTests {
                                         artifactDigest: mapIndex.layoutIdentity, clusters: mapIndex.clusters) == nil)
         #expect(SemanticMapReveal.regionHalfExtent > SemanticMapReveal.documentHalfExtent,
                 "a region's focus leaves more of the map in view than a document's")
+    }
+
+    @Test("On a slice, a document reveals where the slice draws it, in the region its row is in")
+    func kitRevealsWhereASliceDrawsIt() throws {
+        let loaded = try SemanticMapFixture.load()
+        let clusters = loaded.mapIndex.clusters
+        let catalogue = Dictionary(try testManifestEntries().map { ($0.volumeId, $0) },
+                                   uniquingKeysWith: { first, _ in first })
+        let positions = try SemanticMapFixture.slice(
+            loaded, yearForVolume: { SemanticMapVolumes.coverageYear(of: catalogue[$0]) }).positions
+        // A clustered row the slice moves, so its places on the plane and on the slice differ.
+        let row = try #require((0..<min(loaded.index.documentCount, 5_000)).first { row in
+            guard let placement = loaded.map.placement(at: row) else { return false }
+            return placement.cluster != SemanticMapArtifacts.unclustered
+                && positions[row] != SIMD2(placement.x, placement.y)
+        }, "no clustered row in the first 5,000 that the slice moves")
+        let document = try #require(loaded.index.document(at: row))
+        let revealed = try #require(SemanticMapReveal.reveal(
+            volumeID: document.volumeID, documentID: document.documentID, index: loaded.index,
+            map: loaded.map, clusters: clusters, positions: positions, isReadable: { _ in true }))
+        let drawn = SIMD2(Float(positions[row].x), Float(positions[row].y))
+        #expect(revealed.selection.row == row)
+        #expect(revealed.selection.position == drawn, """
+            The reveal rang the map plane's place for the row while the host drew a slice. On a slice \
+            that place holds another document, and the camera went there with it (#2010).
+            """)
+        #expect(revealed.camera == SemanticMapCamera(centre: drawn,
+                                                     halfExtent: SemanticMapReveal.documentHalfExtent))
+        let region = try #require(
+            SemanticMapPicking.regionName(ofRow: row, map: loaded.map, clusters: clusters))
+        #expect(revealed.selection.regionName == region,
+                "a slice lays the rows out again; a row's region is still the one the artifact names")
+        // Positions that hold no place for the row are no answer, not the plane's place.
+        #expect(SemanticMapReveal.reveal(
+            volumeID: document.volumeID, documentID: document.documentID, index: loaded.index,
+            map: loaded.map, clusters: clusters, positions: Array(positions.prefix(row)),
+            isReadable: { _ in true }) == nil)
+        // And with none, the map's own plane, as before.
+        let placement = try #require(loaded.map.placement(at: row))
+        #expect(SemanticMapReveal.reveal(
+            volumeID: document.volumeID, documentID: document.documentID, index: loaded.index,
+            map: loaded.map, clusters: clusters, isReadable: { _ in true })?.selection.position
+                == SIMD2(Float(placement.x), Float(placement.y)))
     }
 
     // MARK: - The request carries the document, and its identity
@@ -479,6 +525,120 @@ struct SemanticMapRevealTests {
             """)
         #expect(model.camera.halfExtent == SemanticMapReveal.documentHalfExtent,
                 "the reveal did not actually zoom in")
+    }
+
+    // MARK: - On a slice (#2010)
+
+    /// A volume's coverage year from the bundled manifest, the year a slice lays a volume's rows at.
+    private static func coverageYears() throws -> (String) -> Int? {
+        let catalogue = Dictionary(try testManifestEntries().map { ($0.volumeId, $0) },
+                                   uniquingKeysWith: { first, _ in first })
+        return { SemanticMapVolumes.coverageYear(of: catalogue[$0]) }
+    }
+
+    /// A prepared model with a slice drawn between the series' first and last volumes, as two poles
+    /// draw one, and the plane's positions the slice re-laid.
+    @MainActor
+    private func slicedModel() async throws
+        -> (model: SemanticMapModel, index: SemanticVectorIndex, plane: [SIMD2<Int16>]) {
+        let (model, index) = try await loadedModel()
+        let plane = model.positions
+        let years = try Self.coverageYears()
+        let negative = try #require(index.volumes.first?.volumeID)
+        let positive = try #require(index.volumes.last?.volumeID)
+        model.setPole(volumeID: negative, isPositive: false, yearForVolume: years)
+        model.setPole(volumeID: positive, isPositive: true, yearForVolume: years)
+        try #require(model.slice != nil, "no slice was drawn: \(model.axisNotice ?? "no notice")")
+        try #require(model.positions != plane, "the slice left every row where the plane had it")
+        return (model, index, plane)
+    }
+
+    /// **The defect a slice's reader met** (#2010): *Nearest in language* on the selection card
+    /// reveals a neighbour, and on a slice the ring went to the neighbour's place on the map's plane.
+    @MainActor
+    @Test("On a slice, a reveal rings the document where the slice draws it, and the camera goes there",
+          .enabled(if: revealTestsHaveMetal))
+    func revealOnASliceLandsOnTheSlice() async throws {
+        let (model, index, plane) = try await slicedModel()
+        let row = try #require((0..<min(index.documentCount, 5_000)).first { model.positions[$0] != plane[$0] })
+        let document = try #require(index.document(at: row))
+        #expect(model.reveal(documentKey: "\(document.volumeID)/\(document.documentID)",
+                             isReadable: { _ in true }) == .revealed)
+        let selection = try #require(model.selection)
+        let drawn = SIMD2(Float(model.positions[row].x), Float(model.positions[row].y))
+        #expect(selection.row == row)
+        #expect(selection.position == drawn, """
+            On a slice the reveal rang the document's place on the map's plane. The slice puts \
+            another document there, so the ring named one document and circled another.
+            """)
+        #expect(model.camera.centre == drawn, "the camera went to the plane's coordinates, off the document")
+        #expect(model.camera.halfExtent == SemanticMapReveal.documentHalfExtent)
+        #expect(model.camera == model.renderer?.camera)
+        #expect(model.slice != nil, "a reveal took the reader off their slice")
+    }
+
+    /// The regions list is VoiceOver's way into the map, and on a slice a region's centre has no
+    /// place: it is a coordinate of the map's plane, which the slice gives to other documents.
+    @MainActor
+    @Test("On a slice, the regions list opens a region's card and selects no document",
+          .enabled(if: revealTestsHaveMetal))
+    func regionsListOnASliceOpensTheRegion() async throws {
+        let (model, index, _) = try await slicedModel()
+        let size = CGSize(width: 600, height: 600)
+        // Under a scope the list counts a region's documents in scope, and its card counts the whole
+        // corpus, as a tap on its name gives it (`select(at:)`'s note says why): a region whose two
+        // counts differ tells the two records apart.
+        model.setScope(volumeIDs: Set(index.volumes.prefix(200).map(\.volumeID)))
+        let region = try #require(model.labelledClusters.first { listed in
+            model.clusters.first { $0.id == listed.id }?.documentCount != listed.documentCount
+        }, "no listed region's count differs from its whole-corpus count under the scope")
+        let whole = try #require(model.clusters.first { $0.id == region.id })
+        model.zoom(by: 4)
+        let camera = model.camera
+        model.selectRegionFromList(region, size: size, isReadable: { _ in true })
+        #expect(model.selection == nil, """
+            The list's row selected a document of the slice: the region's centre on the map's plane, \
+            projected onto the slice, hit-tests whatever document sits there.
+            """)
+        #expect(model.selectedRegion?.id == region.id, "the row did not open its region's card")
+        #expect(model.selectedRegion?.documentCount == whole.documentCount,
+                "the card is the region's whole-corpus record, as a tap on its name gives")
+        #expect(model.camera == camera, "a region has no place on a slice, so the camera stays")
+    }
+
+    /// The plane's half of the list's rule is the view's old one, moved: a test that a slice's rule
+    /// did not change what a row does on the map's own plane.
+    @MainActor
+    @Test("On the map's plane, the regions list resolves a region as a tap at its framed centre does",
+          .enabled(if: revealTestsHaveMetal))
+    func regionsListOnThePlaneIsAsBefore() async throws {
+        let (model, _) = try await loadedModel()
+        let size = CGSize(width: 600, height: 600)
+        let regions = Array(model.labelledClusters.prefix(8))
+        try #require(regions.count == 8)
+        var resolved = 0
+        for region in regions {
+            // A tap at the region's centre on the framed map, from a camera zoomed in first, as the
+            // reader's would be.
+            model.zoom(by: 4)
+            model.frameAll()
+            let framed = model.camera
+            let point = SemanticMapLabelLayout.project(
+                SIMD2(Float(region.centreX), Float(region.centreY)), camera: model.camera, size: size)
+            model.select(at: point, size: size, isReadable: { _ in true })
+            let tapped = (selection: model.selection, region: model.selectedRegion?.id)
+            model.clearSelection()
+            model.clearRegion()
+            model.zoom(by: 4)
+            model.selectRegionFromList(region, size: size, isReadable: { _ in true })
+            #expect(model.selection == tapped.selection && model.selectedRegion?.id == tapped.region,
+                    "region \(region.id)")
+            #expect(model.camera == framed, "region \(region.id): the row did not frame the map first")
+            if tapped.selection != nil || tapped.region != nil { resolved += 1 }
+            model.clearSelection()
+            model.clearRegion()
+        }
+        #expect(resolved > 0, "no row of the list resolved a region on the plane")
     }
 
     // MARK: - A reveal that finds nothing says so
