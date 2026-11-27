@@ -4546,3 +4546,56 @@ The plan of record's session started this one for row L29, on `claude/l29-collec
   - `swift test` ran 5,257 tests in 610 suites over 39 runs, and none failed (5,253 at L33's landing, and this row's 4). Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
   - The `FRUSExplorerMac` build succeeded.
   - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+## Session 2026-11-27 — L32, the semantic map's slice: a revealed document is ringed where the slice draws it, the regions list opens a region's card there, a slice with no dated volume lays out rather than trapping, and the ring and a region focus follow the layout
+
+Row L32 of the plan of record from 2026-11-25 (#2010, #1986), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `a7d8e017` (L28's merge) on `claude/l32-semantic-map-slice-647427`:
+- `60cdb2ea` (#2010) and `494711bf` (#1986);
+- `4710e5f6` and `12ebb489`, the owner's two twins of #2010;
+- `081ca9f6`, the records;
+- then, at the head of the queue, `v2` at `2db58c5a` taken in, and the landing's records.
+
+The owner answered, in the session, the two questions the reading raised: decisions 211 and 212.
+
+**#2029's merge**
+- L29 merged as `2db58c5a`, a squash onto `24616a57`, at 08:34:40 UTC on 2026-11-27, from its head `7d7b0ddd`. Its tree, `92d43924`, is the head's. It closed #1995, #1996 and #2000. This entry records it.
+- L33's #2028 (`24616a57`, onto `5fba4c9a`, at 07:20:39 UTC, from `17aa6225`, tree `34462b9e`, closing #1971, #1973 and #1989) is recorded in L29's entry above, L61's #2027 in L33's, L28's #2026 in L61's, and L31's #2025 in L28's.
+
+**What was found, each defect first** (decision 183)
+- **#1986, in the package, on the unchanged kit at `a7d8e017`:** a slice with no dated volume ended `swift test` on signal 5, "Swift runtime failure: arithmetic overflow" in `SemanticMapSlice.layout` at `SemanticMapSlice.swift:117:45`. The host suite's other 11 tests passed.
+- **#2010 and the twins, on the iPhone 17 under iOS 27.0:** four model tests failed, 11 expectations in all, and the reveal suite's other 22 passed.
+  - The reveal rang the plane's (23247, −4588), where the slice draws the document at (−16091, −15150), and the camera went there.
+  - The regions list's row selected `frus1933v05` d324 and moved the camera.
+  - After *…to here* the ring sat at the plane's (−23752, −5501), where the slice draws the document at (20038, 30000).
+  - A region focus left the slice, its scale, its poles and its positions in place.
+- **Two twins of #2010 in the reading, both in 1.0 (1861), both taken by the owner:** the ring after a re-layout (decision 211), and a region focus arriving at the Mac's one map window while it shows a slice (decision 212).
+- **One of the issue's claims, as read:** its second path, "a continuation that carries an axis and a document", has no sender in the app. Handoff carries the axis and no document, and *On the Map* the document and no axis. The defect is reached on the Mac instead, where *On the Map* arrives at the one Semantic Analytics window while it shows a slice.
+- **One finding for §5, unfiled:** on a slice, the regions list's spoken summary says *Position shows similarity, not time*.
+
+**What changed**
+- **#2010:** `SemanticMapReveal.reveal` takes the positions the host draws (`positions:`, `nil` for the plane) and returns `nil` when they hold no place for the row; the model passes what it draws. The regions list's row is the model's (`selectRegionFromList(_:size:isReadable:)`): on the plane the view's old steps, on a slice the region's card with no hit test.
+- **#1986:** the span from the dated volumes alone; `Scale.hasDatedYears` and `SemanticMapSlice.tickYears(for:)`, which the overlay reads.
+- **The twins:** `placeSelectionInLayout()` in both branches of `setSlice`; `focusRegion(id:digest:reapplyLens:)` clears a slice before a focus lands, and the view's two call sites pass the lens.
+- **Docs:** both manuals' §15.6, and the Mac's Browse ▸ Clusters; 21 EditableContent ranges re-pointed (15 on `SemanticMapSpikeView.swift`, 6 on `SemanticMapSlice.swift`); the FRUSCoreKit runbook; the plan's L32 record, decisions 211 and 212, and §5.
+
+**Checks, on the branch at `12ebb489`**
+- `swift build --target FRUSCoreKit`; the package's map suites, 143 tests in 14 suites and 16 in 4, none failed.
+- The kit's symbol diff against the unchanged code's object: the two signatures replaced, `Scale.hasDatedYears` and `tickYears(for:)` added, nothing else.
+- Six mutations, each failing the expectation written for it, four in the package and two in the app.
+- 29 app suites on the iPhone 17 under iOS 27.0: 381 tests, 376 passed, 5 skipped by their gates, the `GeneratedSummary` residue alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**The landing checks, on the merged tree** (`e02c84d3`, tree `dd97e763`, with `v2` at `2db58c5a`), through `heavy.sh`, from 08:43 to 09:41 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+- The unit target there, the app removed first and the TEI mirror set: 8,336 tests in 1,010 suites, of which 8,318 passed, 17 skipped and 1 was an expected failure (8,328 at L29's landing, and this row's 8), from 08:45 to 08:59 UTC.
+  - The script named the scheme and no test target, so the run went on into FRUSExplorerUITests, which a landing does not owe, and held the lock 38 minutes more until the orchestrator saw it. It was stopped at 09:37 UTC.
+  - The stop left the result bundle unreadable, so the counts are the console's, reconciled with the run's own total: two result lines were split by the app's log output.
+- `swift build --target FRUSCoreKit` with no warning.
+- `swift test` ran 5,260 tests in 610 suites over 39 runs, and none failed (5,257 at L29's landing, and this row's 3). Its build printed no warning.
+- The `FRUSExplorerMac` build succeeded.
+- Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**Still owed at the push**
+- The by-hand check, on the iPhone 17 simulator by the orchestrator's word: the plan's check names no platform, and the Mac's screen was locked. It runs on the app the landing built, under the lock, behind three other rows' jobs at 09:41 UTC, and is recorded in the PR's body when made.
+- The same check on the Mac in the check copy, as a note on the PR, once the screen unlocks.
+- After the merge, the two hand-over notes for FRUS Explorer Light (#2010, #1986).
