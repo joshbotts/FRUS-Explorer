@@ -4710,7 +4710,7 @@ Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by 
 **#2032's merge**
 - L41 merged as `4fa33ba3`, a squash onto `ebacf85a`, at 12:51:53 UTC on 2026-11-27, from its head `7b59ed14`. Its tree, `925c9301`, is the head's. It closed #1924, #1925 and #1926. This entry records it.
 - L37's #2031 (`ebacf85a`) is recorded in L41's entry above, and L28's #2026 (`a7d8e017`), where this row began, in L61's.
-- This branch took `v2` in at `4fa33ba3` (MERGE-SHA). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 210, is 213, after L33's and L32's, and the plan's status line now names 210 to 212 as well.
+- This branch took `v2` in at `4fa33ba3` (`f77e1f48`). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 210, is 213, after L33's and L32's, and the plan's status line now names 210 to 212 as well.
 
 **Shown first** (decision 183), at `a7d8e017`, on the iPhone 17 simulator under iOS 27.0, in New York's zone with no zone changed. None of Search's files has changed since `1.0-release`, so this is 1.0's code.
 - **The first symptom, in the app.** A UI test handed Search 1 to 31 October 1962 through `AppState.openSearch(_:from:)`, the route Chronology's *Search in this range* takes. Filters' pickers read *Sep 30, 1962* and *Oct 30, 1962*, over the chip *1962-10-01 to 1962-10-31*. In a hosted test the filter held 30 September at 20:00 EDT and 30 October at 19:00 EST, the two midnights in GMT.
@@ -4741,3 +4741,9 @@ Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by 
 - **The manuals** say only that a hand-off carries its range (the iOS manual's *Limit by date*, the Mac's *Date Range*), not what the pickers show, so neither changes. No string changed, so no EditableContent block is added; nine ranges moved and are re-pointed (`Amendment-Log.md`).
 - **#2033, filed on the owner's word** ("File it (Recommended)", decision 213): on the Mac's Search and in the word cloud, a day whose midnight a change of clocks skips is read as no date. No row takes it yet.
 - **R9's check by hand** stands as the brief wrote it.
+
+**The landing checks,** on the merged tree (`f77e1f48`, tree `11ab5ab3`, with `v2` at `4fa33ba3`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning.
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,370 tests in 1,012 suites passed in 778 s, with the six known issues and 17 skipped.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning.
+- `swift test` was not owed: the diff names no package input.
