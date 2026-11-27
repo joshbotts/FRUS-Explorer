@@ -2718,7 +2718,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1070–1071 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1074–1075 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2727,7 +2727,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1078–1078 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1082–1082 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2736,7 +2736,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1033–1034 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1037–1038 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2745,7 +2745,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1039–1039 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1043–1043 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2754,7 +2754,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1044–1044 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1048–1048 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2763,7 +2763,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1055–1056 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1059–1060 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2772,7 +2772,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1057–1058 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1061–1062 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2781,7 +2781,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1064–1064 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1068–1068 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -3085,7 +3085,7 @@ Rename Collection
 <!-- END SOURCE: collection.rename.title -->
 
 #### Delete “\(…)”?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 919–920 | key: collection.delete.confirm.title.named -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 923–924 | key: collection.delete.confirm.title.named -->
 
 *The title of the dialog that asks before one collection is deleted (#1823), naming it. It asks wherever a collection is deleted: a row's swipe, its menu or Edit's Delete in the Collections list on iPhone and iPad, and Manage Collections and Collection ▸ Delete Collection… on the Mac. Its message follows the title blocks below.*
 
@@ -3094,7 +3094,7 @@ Delete “\(name)”?
 <!-- END SOURCE: collection.delete.confirm.title.named -->
 
 #### Delete %@ collection?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 924–924 | key: collection.delete.confirm.title.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 928–928 | key: collection.delete.confirm.title.one -->
 
 *The count form of the title for one collection. The dialog names a single collection instead (the block above), so this form is the grammar's and is not drawn today.*
 
@@ -3103,7 +3103,7 @@ Delete %@ collection?
 <!-- END SOURCE: collection.delete.confirm.title.one -->
 
 #### Delete %@ collections?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 925–925 | key: collection.delete.confirm.title.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 929–929 | key: collection.delete.confirm.title.many -->
 
 *The title when Edit's Delete in the Collections list on iPhone and iPad deletes several collections at once; `%@` is the count, grouped for the reader's locale.*
 
@@ -3112,7 +3112,7 @@ Delete %@ collections?
 <!-- END SOURCE: collection.delete.confirm.title.many -->
 
 #### Delete Collection?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 915–915 | key: collection.delete.confirm.title.none -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 919–919 | key: collection.delete.confirm.title.none -->
 
 *What the title reads for the moment the dialog takes to close after its Delete, once there is nothing left for it to name.*
 
@@ -3121,7 +3121,7 @@ Delete Collection?
 <!-- END SOURCE: collection.delete.confirm.title.none -->
 
 #### Its section headings, note blocks and headnotes go with it…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 934–935 | key: collection.delete.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 938–939 | key: collection.delete.confirm.message.one -->
 
 *The dialog's message when one collection would go. A collection's headings, note blocks and headnotes are the reader's own writing, and the delete reaches every device, which is why the dialog asks at all.*
 
@@ -3130,7 +3130,7 @@ Its section headings, note blocks and headnotes go with it, on your other device
 <!-- END SOURCE: collection.delete.confirm.message.one -->
 
 #### Their section headings, note blocks and headnotes go with them…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 936–937 | key: collection.delete.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 940–941 | key: collection.delete.confirm.message.many -->
 
 *The dialog's message when several collections would go.*
 
