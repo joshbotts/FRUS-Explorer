@@ -190,6 +190,8 @@ public struct ChronologyOverflowCounts: Equatable, Sendable {
 ///   1.1 — 2026-11-22 (FRUS Explorer Light, #1912): `group` and `makeChart(fromCounts:viewBucket:maxSeries:locale:)`
 ///          take the locale their section and bucket labels are written in, as the counts' calls do; the
 ///          default is the reader's own, which the labels were written in before, so the app's are unchanged
+///   1.2 — 2026-11-26 (#1971): the hover magnifier's two calls take the locale a year's months are named in,
+///          and the month label gives it to its calendar, which named them "M01" to "M12" in its root locale
 public enum ChronologyGrouping {
 
     /// Hard cap on rows materialised per load. The date pickers bound the working set;
@@ -377,10 +379,20 @@ public enum ChronologyGrouping {
     /// Re-buckets a date group's own rows one granularity finer than the group, for the macOS
     /// hover magnifier: year → months, month → days, day → per-volume. Bars are returned in
     /// ascending key order; empty sub-buckets are omitted.
-    public nonisolated static func magnifierBreakdown(for group: ChronologyDateGroup) -> [ChronologyMagnifierBar] {
+    ///
+    /// - Parameters:
+    ///   - group: The date group under the pointer.
+    ///   - locale: The locale a year's months are named in: "Oct" in the United States, "Okt" in
+    ///     Germany. The reader's own by default, as the app's are; a host pins its readers' (#1971).
+    ///     A month's bars are its days' numbers and a day's its volumes' ids, in every locale.
+    /// - Returns: The bars, in ascending key order, or largest first for a day's volumes.
+    public nonisolated static func magnifierBreakdown(
+        for group: ChronologyDateGroup,
+        locale: Locale = .autoupdatingCurrent
+    ) -> [ChronologyMagnifierBar] {
         switch group.granularity {
         case .year:
-            return histogram(group.rows, prefix: 7) { key in monthLabel(fromMonthKey: key) }
+            return histogram(group.rows, prefix: 7) { key in monthLabel(fromMonthKey: key, locale: locale) }
         case .month:
             return histogram(group.rows, prefix: 10) { key in dayLabel(fromDayKey: key) }
         case .day:
@@ -408,11 +420,15 @@ public enum ChronologyGrouping {
             .map { ChronologyMagnifierBar(label: label($0.key), count: $0.value, seriesKey: nil) }
     }
 
-    /// Short month name from a `"yyyy-MM"` key (e.g. `"1962-10"` → `"Oct"`).
-    nonisolated private static func monthLabel(fromMonthKey key: String) -> String {
+    /// Short month name from a `"yyyy-MM"` key in `locale` (e.g. `"1962-10"` → `"Oct"` in the United
+    /// States, `"Okt"` in Germany). The calendar is given the locale: one made with `init(identifier:)`
+    /// holds the root locale alone, whose names are "M01" to "M12" whatever the process's (#1971).
+    nonisolated private static func monthLabel(fromMonthKey key: String, locale: Locale) -> String {
         let parts = key.split(separator: "-")
         guard parts.count >= 2, let month = Int(parts[1]), (1...12).contains(month) else { return key }
-        return Calendar(identifier: .gregorian).shortStandaloneMonthSymbols[month - 1]
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = locale
+        return calendar.shortStandaloneMonthSymbols[month - 1]
     }
 
     /// Day-of-month from a `"yyyy-MM-dd"` key (e.g. `"1962-10-22"` → `"22"`).
@@ -423,10 +439,10 @@ public enum ChronologyGrouping {
     }
 
     /// Short label for a date bucket key — day-of-month for a `yyyy-MM-dd` key, short month
-    /// name for a `yyyy-MM` key, else the key verbatim.
-    nonisolated private static func dateBucketLabel(forKey key: String) -> String {
+    /// name in `locale` for a `yyyy-MM` key, else the key verbatim.
+    nonisolated private static func dateBucketLabel(forKey key: String, locale: Locale) -> String {
         if key.count >= 10 { return dayLabel(fromDayKey: key) }
-        if key.count >= 7  { return monthLabel(fromMonthKey: key) }
+        if key.count >= 7  { return monthLabel(fromMonthKey: key, locale: locale) }
         return key
     }
 
@@ -434,11 +450,20 @@ public enum ChronologyGrouping {
     /// bucket (the first `parentPrefix` characters of the finer key) to build the hover
     /// magnifier's bars. With `volumeBreakdown` the bars are per volume (largest first, carrying
     /// the volume's series key); otherwise they are per finer date bucket (chronological, no
-    /// series key) — matching `magnifierBreakdown(for:)`'s row-based output.
+    /// series key) — matching `magnifierBreakdown(for:locale:)`'s row-based output.
+    ///
+    /// - Parameters:
+    ///   - counts: The finer aggregates, a document a tuple's `count` times.
+    ///   - parentPrefix: The length of a chart bucket's key, which groups the finer keys under it.
+    ///   - volumeBreakdown: Whether the bars are per volume rather than per finer date bucket.
+    ///   - locale: The locale a month bar is named in, as `magnifierBreakdown(for:locale:)`'s: the
+    ///     reader's own by default, as the app's are; a host pins its readers' (#1971).
+    /// - Returns: Each chart bucket's bars, keyed by its key.
     public nonisolated static func magnifierBarsByBucket(
         counts: [(bucketKey: String, volumeId: String, count: Int)],
         parentPrefix: Int,
-        volumeBreakdown: Bool
+        volumeBreakdown: Bool,
+        locale: Locale = .autoupdatingCurrent
     ) -> [String: [ChronologyMagnifierBar]] {
         var grouped: [String: [String: Int]] = [:]
         for c in counts {
@@ -455,7 +480,8 @@ public enum ChronologyGrouping {
             } else {
                 result[parent] = inner
                     .sorted { $0.key < $1.key }
-                    .map { ChronologyMagnifierBar(label: dateBucketLabel(forKey: $0.key), count: $0.value, seriesKey: nil) }
+                    .map { ChronologyMagnifierBar(label: dateBucketLabel(forKey: $0.key, locale: locale),
+                                                  count: $0.value, seriesKey: nil) }
             }
         }
         return result

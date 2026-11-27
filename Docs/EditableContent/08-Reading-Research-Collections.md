@@ -2064,7 +2064,7 @@ Document distribution over the selected dates, stacked by volume. Counts are lis
 
 *#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyGrouping.swift` (FRUSCoreKit, since FRUS Explorer Light’s S24b; `ChronologyViewModel.swift` before), so the two are worded together.*
 
-<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 374–374 | key: chronology.spanning.header -->
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 376–376 | key: chronology.spanning.header -->
 
 Spans more than a year
 
