@@ -995,9 +995,10 @@ final class SemanticMapModel {
 ///         plurality provenance (`SemanticMapVolumes`), the scope's summary
 ///         (`SemanticMapColouring.scopeSummary(documents:volumes:ofVolumes:)`), a continuation's settling
 ///         (`SemanticMapReveal`), and a capture's name and source description (`SemanticMapCapture`)
-///   1.4 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — the regions list's row
-///         is the model's (`SemanticMapModel.selectRegionFromList(_:size:isReadable:)`), which opens a
-///         region's card on a slice rather than hit-testing it
+///   1.4 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010, #1986) — the regions list's
+///         row is the model's (`SemanticMapModel.selectRegionFromList(_:size:isReadable:)`), which opens a
+///         region's card on a slice rather than hit-testing it; the slice's ticks are the kit's for its
+///         scale (`tickYears(for:)`), none without a dated volume
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -1680,8 +1681,8 @@ struct SemanticMapSpikeView: View {
             GeometryReader { proxy in
                 let extent = Float(SemanticAxis.sliceExtent)
                 // Nice decade ticks between the observed years — at most five, so the edge stays
-                // a scale rather than a list.
-                let years = Self.tickYears(min: scale.minYear, max: scale.maxYear)
+                // a scale rather than a list — and none when no volume is dated (#1986).
+                let years = Self.tickYears(for: scale)
                 ForEach(years, id: \.self) { year in
                     let y = SemanticMapModel.sliceY(forYear: year, scale: scale) * extent
                     let at = SemanticMapLabelLayout.project(
@@ -1726,13 +1727,12 @@ struct SemanticMapSpikeView: View {
         }
     }
 
-    /// At most five round tick years spanning the observed range.
-    /// - Parameters:
-    ///   - min: Earliest dated year.
-    ///   - max: Latest.
-    /// - Returns: Rounded tick years within the range, ascending.
-    nonisolated static func tickYears(min: Int, max: Int) -> [Int] {
-        SemanticMapSlice.tickYears(min: min, max: max)
+    /// The tick years for a slice's scale: the kit's (`SemanticMapSlice.tickYears(for:)`), at most
+    /// five round years spanning the observed range, and none when no volume is dated.
+    /// - Parameter scale: The slice's recorded scale.
+    /// - Returns: Rounded tick years within the dated range, ascending, or none.
+    nonisolated static func tickYears(for scale: SemanticMapModel.SliceScale) -> [Int] {
+        SemanticMapSlice.tickYears(for: scale)
     }
 
     @ViewBuilder
