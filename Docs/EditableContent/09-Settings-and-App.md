@@ -1669,7 +1669,7 @@ Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete 
 <!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
 #### Open Document
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1189–1190 | key: research.action.openDocument.v2 -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1202–1203 | key: research.action.openDocument.v2 -->
 
 Open Document
 
