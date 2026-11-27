@@ -230,6 +230,10 @@ public struct CentralFilesClassification: Sendable, Equatable {
 ///         year), takes the editors' bracketed year and holds the year to 1600–2029 (the owner's
 ///         choices of the range and the letter); `documentYear(fromDateline:)` is the one copy the app's
 ///         three call
+///   1.8 — 2026-11-26 (#1976, plan of record row L31): the gate takes a hydrated year of 1906 or later, which
+///         may now be the index's date, as not applicable before it asks for a dateline; `documentHomes`
+///         looks a document's rolls up by its `CountrySeriesRollDates`, the index's days where the dateline
+///         prints no date (the owner's choice, 2026-11-26), and `rolls(for:index:span:)` matches a span
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -1299,6 +1303,56 @@ public struct CountrySeriesRoute: Sendable, Equatable {
     }
 }
 
+/// The days the pre-1906 section looks a document's own rolls up by, and where they came from (#1976).
+///
+/// A roll holds the correspondence of a span of dates, so a document is matched to its rolls by date. Of
+/// the pre-1906 documents of the 553 catalogue volumes, 462 print a dateline with no year (`undated`,
+/// `Vienna, November 14.`) and 266 a year alone (`Washington, 1861.`), and the index stores a date for
+/// each. Before L31 the section said it could not check the first, and matched the second against every
+/// roll of the country's series. The owner's choice of 2026-11-26 was to look both up by the index's date.
+/// The enclosures keep their own datelines' dates.
+///
+/// Version history:
+///   1.0 — 2026-11-26 (#1976, plan of record row L31): initial implementation
+public enum CountrySeriesRollDates: Sendable, Equatable {
+    /// The dateline's own date, `yyyy-MM-dd`.
+    case dateline(String)
+    /// The first and last day the index stores for the document (`document_dates`), where the dateline
+    /// prints no date: one day for most, several where the editors date it across a range or approximately.
+    case indexed(from: String, through: String)
+    /// No day: no dateline, no index date, or a dateline that prints a year the index's days do not fall
+    /// in, which is matched against every roll of its series, as before.
+    case undated
+
+    /// The days for a document's dateline and its index row: the dateline's date where it prints one;
+    /// else the index's, unless the dateline prints a year they do not fall in; else none.
+    static func reading(dateline: String?, indexed: IndexingPipeline.SourceExplorerFacts?) -> CountrySeriesRollDates {
+        guard let dateline else { return .undated }
+        if let day = CentralFilesClassifier.datelineDateISO(from: dateline) { return .dateline(day) }
+        guard let from = indexed?.dateISO, let first = Int(from.prefix(4)) else { return .undated }
+        let through = max(indexed?.dateISOMax ?? from, from)
+        if let printed = CentralFilesClassifier.documentYear(fromDateline: dateline) {
+            guard let last = Int(through.prefix(4)), (first...last).contains(printed) else { return .undated }
+        }
+        return .indexed(from: from, through: through)
+    }
+
+    /// The first and last day a lookup matches rolls against, or `nil` for an undated lookup.
+    var span: (from: String, through: String)? {
+        switch self {
+        case .dateline(let day): return (day, day)
+        case .indexed(let from, let through): return (from, through)
+        case .undated: return nil
+        }
+    }
+
+    /// What the pre-1906 section says when it lists rolls for the index's date rather than the dateline's.
+    public static var indexedNote: String {
+        String(localized: "centralFiles.rolls.indexedNote",
+               defaultValue: "This document’s dateline prints no date, so its rolls below are those that cover the date the Office of the Historian’s edition gives it.")
+    }
+}
+
 /// What reading the document's row from the index produced.
 enum SourceExplorerFactsLookup: Sendable, Equatable {
     /// Nothing was read: no pipeline, or no ids to read by.
@@ -1353,15 +1407,17 @@ extension CentralFilesClassifier {
 
     /// The outcome when the check cannot or need not run, or `nil` to proceed.
     ///
-    /// In order: a host year of 1906 or later is not applicable; no ids; no pipeline; no dateline
-    /// (split by what the index read gave: it threw, there is no row, or the row has none); no year;
-    /// a hydrated year of 1906 or later; no central-files index; no volume structure (or reading it
-    /// threw); the document is not in it. `sectionPath == .unread` passes the last two, so `evaluate` can refuse cheaply
-    /// before it reads the structure and then ask again.
+    /// In order: a host year of 1906 or later is not applicable; no ids; no pipeline; a hydrated year
+    /// of 1906 or later is not applicable, since the index's own date places a document with no
+    /// dateline as surely as a dateline would (#1976); no dateline (split by what the index read gave:
+    /// it threw, there is no row, or the row has none); no year; no central-files index; no volume
+    /// structure (or reading it threw); the document is not in it. `sectionPath == .unread` passes the
+    /// last two, so `evaluate` can refuse cheaply before it reads the structure and then ask again.
     static func gate(_ input: CountrySeriesGateInput) -> CountrySeriesOutcome? {
         if let year = input.routeYear, year >= 1906 { return .notApplicable }
         guard input.volumeId != nil, input.documentId != nil else { return .notChecked(.noDocumentIdentity) }
         guard input.pipelineAvailable else { return .notChecked(.indexStarting) }
+        if let year = input.context.year, year >= 1906 { return .notApplicable }
         if input.context.dateline == nil {
             switch input.facts {
             case .failed: return .notChecked(.indexReadFailed)
@@ -1369,8 +1425,7 @@ extension CentralFilesClassifier {
             case .found: return .notChecked(.noDateline)
             }
         }
-        guard let year = input.context.year else { return .notChecked(.noYear) }
-        guard year < 1906 else { return .notApplicable }
+        guard input.context.year != nil else { return .notChecked(.noYear) }
         guard input.centralFilesIndexAvailable else { return .notChecked(.centralFilesIndexMissing) }
         switch input.sectionPath {
         case .unread:
@@ -1384,32 +1439,43 @@ extension CentralFilesClassifier {
         }
     }
 
-    /// The rolls a classification resolves to: by date alone for a chronological run (and only with a
-    /// date — an undated query would list the whole series), otherwise by its first geo key and date.
+    /// The rolls a classification resolves to for one day: ``rolls(for:index:span:)`` over that day alone.
     static func rolls(for classification: CentralFilesClassification, index: CentralFilesIndex,
                       dateISO: String?) -> [CountryRoll] {
+        rolls(for: classification, index: index, span: dateISO.map { (from: $0, through: $0) })
+    }
+
+    /// The rolls a classification resolves to for the days from `span.from` through `span.through`: by
+    /// date alone for a chronological run (and only with dates — an undated query would list the whole
+    /// series), otherwise by its first geo key and the days; a roll is matched when it covers any of them.
+    static func rolls(for classification: CentralFilesClassification, index: CentralFilesIndex,
+                      span: (from: String, through: String)?) -> [CountryRoll] {
         guard let series = index.series(category: classification.category) else { return [] }
         if classification.category.isChronologicalRun {
-            guard let dateISO else { return [] }
-            return series.rolls(containingDate: dateISO)
+            guard let span else { return [] }
+            return series.rolls(from: span.from, through: span.through)
         }
         guard let geoKey = classification.geoKeys.first else { return [] }
-        return series.rolls(geoKey: geoKey, dateISO: dateISO)
+        return series.rolls(geoKey: geoKey, from: span?.from, through: span?.through)
     }
 
     /// The document's own homes: each title in the section path from the root, until one yields rolls.
     ///
     /// Per title it classifies, looks up the rolls, then applies the addressee rule — AFTER the roll
     /// lookup, so the rule sees which reels exist. The country is usually a parent chapter (`France.`
-    /// under `Supplement.`), which is why every title is tried.
+    /// under `Supplement.`), which is why every title is tried. The rolls are looked up by `rollDates`
+    /// (the hydrated document's, which falls back to the index's date where the dateline prints none,
+    /// #1976), or by the dateline's own date where the caller passes none. The addressee rule reads the
+    /// dateline's date alone, whatever the rolls are matched by.
     static func documentHomes(header: String, dateline: String, sectionPath: [String],
-                              index: CentralFilesIndex, roster: ChiefsOfMissionRoster) -> [CentralFilesResolution] {
-        let dateISO = datelineDateISO(from: dateline)
+                              index: CentralFilesIndex, roster: ChiefsOfMissionRoster,
+                              rollDates: CountrySeriesRollDates? = nil) -> [CentralFilesResolution] {
+        let span = (rollDates ?? .reading(dateline: dateline, indexed: nil)).span
         for title in sectionPath {
             let classifications = classify(header: header, dateline: dateline, chapterCountry: title)
             var homes: [CentralFilesResolution] = []
             for classification in classifications {
-                let found = rolls(for: classification, index: index, dateISO: dateISO)
+                let found = rolls(for: classification, index: index, span: span)
                 if !found.isEmpty {
                     homes.append(CentralFilesResolution(classification: classification, rolls: found))
                 }
@@ -1572,7 +1638,7 @@ extension CentralFilesClassifier {
         if let refused = gate(input) { return (context, refused) }
 
         let homes = documentHomes(header: context.header, dateline: dateline, sectionPath: path,
-                                  index: index, roster: roster())
+                                  index: index, roster: roster(), rollDates: context.rollDates)
         let openers = await enclosureOpeners(volumeId: volumeId, documentId: documentId,
                                              astCache: astCache, volumeURL: volumeURL)
         let all = homes + enclosureRolls(openers: openers, index: index)

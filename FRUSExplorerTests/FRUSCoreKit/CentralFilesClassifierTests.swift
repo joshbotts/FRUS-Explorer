@@ -1600,6 +1600,140 @@ struct SourceExplorerEvaluationTests {
     }
     #endif
 
+    // MARK: The index's date (#1976)
+
+    /// A volume whose datelines print no year, or a year alone, beside the date the index stores for each,
+    /// indexed through the real pipeline: four of Motley's despatches from Vienna under `Austria.`, and two
+    /// documents of 1909, one with no dateline and one dated `undated`.
+    private static func indexedUndatedVolume() async throws -> (dir: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexDate-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        func despatch(_ id: String, _ dateline: String, min: String, max: String? = nil) -> String {
+            let maxAttribute = max.map { " frus:doc-dateTime-max=\"\($0)\"" } ?? ""
+            return """
+              <div type="document" xml:id="\(id)" frus:doc-dateTime-min="\(min)"\(maxAttribute)>
+                <head>Mr. Motley to Mr. Seward.</head>
+                <opener><dateline>\(dateline)</dateline></opener>
+                <p>Sir: I have the honor to report.</p>
+              </div>
+            """
+        }
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+        <div type="chapter" xml:id="ch1">
+          <head>Austria.</head>
+        \(despatch("d119", "Legation of the United States, Vienna, November 14, 1864.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d120", "Legation of the United States, Vienna, November 14.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d121", "Legation of the United States, Vienna, undated.", min: "1864-12-01T00:00:00-05:00",
+                   max: "1865-02-28T00:00:00-05:00"))
+        \(despatch("d122", "Legation of the United States, Vienna, 1864.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d123", "Legation of the United States, Vienna, 1864.", min: "1866-11-14T00:00:00-05:00"))
+        </div>
+        <div type="chapter" xml:id="ch2">
+          <head>Miscellaneous.</head>
+          <div type="document" xml:id="d429" frus:doc-dateTime-min="1909-06-01T00:00:00-05:00">
+            <head>Memorandum</head>
+            <p>This document prints no dateline.</p>
+          </div>
+          <div type="document" xml:id="d430" frus:doc-dateTime-min="1909-06-02T00:00:00-05:00">
+            <head>Memorandum</head>
+            <opener><dateline>Washington, undated.</dateline></opener>
+            <p>This one prints a dateline with no date.</p>
+          </div>
+          <div type="document" xml:id="d91" frus:doc-dateTime-min="1910-05-01T00:00:00-05:00">
+            <head>A despatch</head>
+            <opener><dateline>Washington, <date when="1914-05-01">May 1, 1914</date>.</dateline></opener>
+          </div>
+          <div type="document" xml:id="d46" frus:doc-dateTime-min="1972-10-22T00:00:00-05:00">
+            <head>A telegram</head>
+            <opener><dateline>Saigon, October 22, 1515Z.</dateline></opener>
+          </div>
+          <div type="document" xml:id="d17" frus:doc-dateTime-min="1924-10-22T00:00:00-05:00">
+            <head>A despatch</head>
+            <opener><dateline>Habana, October 22, 1924 [1925].<note n="1">Received October 27.</note></dateline></opener>
+          </div>
+        </div>
+        </body></text></TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, pipeline)
+    }
+
+    @Test("A document whose dateline gives no year takes the index's: a 1909 one is outside the pre-1906 section")
+    func indexDateGivesTheYear() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        for documentId in ["d429", "d430"] {
+            let result = await CentralFilesClassifier.evaluate(
+                route: Self.route(documentId), pipeline: fixture.pipeline, index: index,
+                roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+            #expect(result.context.year == 1909, "\(documentId): \(result.context)")
+            #expect(result.outcome == .notApplicable, "\(documentId): \(result.outcome)")
+        }
+    }
+
+    /// The owner's choice of 2026-11-26 (row L31): "Look rolls up by the index date", where a dateline that
+    /// prints no year left 462 pre-1906 documents unchecked and 266 that print a year alone listed every roll.
+    @Test("Where a pre-1906 dateline prints no date, the rolls are those covering the index's date")
+    func preNineteenOhSixLooksRollsUpByTheIndexDate() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        func rolls(_ documentId: String) async -> (outcome: CountrySeriesOutcome, rolls: [String]) {
+            let outcome = await CentralFilesClassifier.evaluate(
+                route: Self.route(documentId), pipeline: fixture.pipeline, index: index,
+                roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil).outcome
+            return (outcome, outcome.homes.filter { $0.classification.category == .despatches }
+                .flatMap { $0.rolls.map(\.naId) })
+        }
+        // Austria's despatches of January 1864 to December 1865, one roll of the series' 51. A dated lookup also
+        // lists the series' two rolls whose titles' dates are inverted (`Apr. 2, 1888-Mar. 31, 1869`), which the
+        // index's guard matches on any date rather than hide.
+        let roll1864 = "189207217"
+        let dated = await rolls("d119").rolls
+        // A printed year the index's date contradicts keeps the undated lookup it had: every roll of the series.
+        let undated = await rolls("d123").rolls
+        #expect(dated.contains(roll1864) && dated.count < 5, "fixture guard, the day printed in full: \(dated)")
+        #expect(undated.count > 40 && undated.contains(roll1864), "\(undated.count) rolls")
+        let day = await rolls("d120"), interval = await rolls("d121"), printedYear = await rolls("d122")
+        #expect(day.rolls == dated, "a day is looked up as a dateline printing it is: \(day.outcome)")
+        #expect(printedYear.rolls == dated, "a printed year the index's date agrees with: \(printedYear.outcome)")
+        // December 1864 to February 1865: the 1864–65 roll, and not April 1865's (`189220198`).
+        #expect(interval.rolls.contains(roll1864) && !interval.rolls.contains("189220198")
+                && interval.rolls.count < undated.count, "an interval: \(interval.outcome)")
+    }
+
+    /// The Source Explorer export reads a parse's year (`SourceExplorerDocumentContext.year(of:)`) and the views
+    /// hydrate one from the index: the two are one rule over the dateline and the date the index stores by
+    /// the same functions, so they give every document of a volume the same year (#1976).
+    @Test("The year of a volume's parse is the year Source Explorer hydrates from an index of the same file")
+    func yearOfAParseIsTheHydratedYear() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let bytes = try Data(contentsOf: fixture.dir.appendingPathComponent("volumes/vol1.xml"))
+        let parsed = try await FRUSDocumentParser().parseVolumeFull(volumeData: bytes, named: "vol1.xml")
+        var compared: [String: Int?] = [:]
+        for document in parsed.documents {
+            let facts = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: document.documentId)
+            let hydrated = SourceExplorerDocumentContext.hydrate(
+                routeHeader: document.documentId, routeDateline: nil, routeYear: nil,
+                documentId: document.documentId, indexed: facts).year
+            #expect(SourceExplorerDocumentContext.year(of: document) == hydrated, "\(document.documentId)")
+            compared[document.documentId] = hydrated
+        }
+        #expect(compared == ["d119": 1864, "d120": 1864, "d121": 1864, "d122": 1864, "d123": 1864, "d429": 1909, "d430": 1909,
+                             "d91": 1914, "d46": 1972, "d17": 1925], "fixture guard: each way the two once differed")
+    }
+
     // MARK: The serial label
 
     /// An undecided Department letter lists both reels at Possible and may be a note, so its serial must not be

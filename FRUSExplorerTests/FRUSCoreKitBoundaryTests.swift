@@ -989,10 +989,12 @@ struct SharedKitsBoundaryTests {
         core("SourceProvenanceIndexGeneratorCore", suites: "SourceProvenanceIndexGeneratorTests",
              dependencies: ["SourceNoteKit", "GeneratorKit"],
              guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "SourceProvenanceIndexRunner"),
+        // FRUSCoreKit since #1976 (L31): the export reads each document's year from the kit's parse, by the
+        // rule the views read it by.
         core("SourceExplorerExportGeneratorCore", suites: "SourceExplorerExportGeneratorTests",
              dependencies: ["SourceNoteKit", "GeneratorKit", "SourceProvenanceIndexGeneratorCore",
                             "CollectionAuthorityGeneratorCore", "VolumeSourcesIndexGeneratorCore",
-                            "CentralFilesIndexGeneratorCore"],
+                            "CentralFilesIndexGeneratorCore", "FRUSCoreKit"],
              guarded: ["FoundationXML": ("canImport(FoundationXML)", false)], declares: "SourceExplorerExportRunner"),
     ]
 

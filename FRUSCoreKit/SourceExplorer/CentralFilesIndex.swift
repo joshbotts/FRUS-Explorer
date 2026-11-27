@@ -40,6 +40,9 @@ import Foundation
 ///   1.5 — 2026-11-14 (FRUS Explorer Light, S22d's follow-up): `isUntrustworthyNAID(_:)` public, the guard the
 ///          collection record puts on its NARA Catalog link, for a host that draws the record; nothing it
 ///          answers changes
+///   1.6 — 2026-11-26 (#1976, plan of record row L31): a country series' rolls are matched to a span of days
+///          (`rolls(geoKey:from:through:)`, `rolls(from:through:)`, `CountryRoll.matchesDates(from:through:)`),
+///          for a document dated by the index across several; the one-day forms forward to them unchanged
 public struct CentralFilesIndex: Codable, Sendable, Equatable {
 
     /// Index schema version. Phase 1 emits `1`.
@@ -319,14 +322,27 @@ struct CountrySeriesIndex: Codable, Sendable, Equatable {
     /// Returns rolls serving `geoKey` that contain `dateISO` (or all for the country when
     /// `dateISO` is nil), ascending by start date.
     func rolls(geoKey: String, dateISO: String?) -> [CountryRoll] {
-        rolls.filter { $0.matches(geoKey: geoKey, dateISO: dateISO) }
+        rolls(geoKey: geoKey, from: dateISO, through: dateISO)
+    }
+
+    /// Returns rolls serving `geoKey` that cover any day from `from` through `through` (all for the
+    /// country when the two are nil), ascending by start date: the days a document is dated across
+    /// (#1976), one day for most.
+    func rolls(geoKey: String, from: String?, through: String?) -> [CountryRoll] {
+        rolls.filter { $0.matches(geoKey: geoKey, from: from, through: through) }
     }
 
     /// Rolls containing `dateISO`, matched by DATE ALONE — the chronological-run path
     /// (W-8). A date is required: listing a whole series unfiltered is noise, not a
     /// resolution.
     func rolls(containingDate dateISO: String) -> [CountryRoll] {
-        rolls.filter { $0.matchesDate(dateISO) }
+        rolls(from: dateISO, through: dateISO)
+    }
+
+    /// Rolls covering any day from `from` through `through`, matched by date alone, as
+    /// ``rolls(containingDate:)`` matches one day.
+    func rolls(from: String, through: String) -> [CountryRoll] {
+        rolls.filter { $0.matchesDates(from: from, through: through) }
     }
 }
 
@@ -354,8 +370,28 @@ public struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
     /// date-filtered query. The country series are all pre-1906, so a bound outside 1780–1911 is
     /// untrustworthy. The generator applies the same guard at build time (`CountrySeriesIndexBuilder`).
     func matches(geoKey: String, dateISO: String?) -> Bool {
+        matches(geoKey: geoKey, from: dateISO, through: dateISO)
+    }
+
+    /// Whether `geoKey` is served and the roll covers any day from `from` through `through`, under
+    /// ``matches(geoKey:dateISO:)``'s guards; nil days match any, as a nil date does. One day is the
+    /// span from it through it, so the single-day form forwards here (#1976).
+    func matches(geoKey: String, from: String?, through: String?) -> Bool {
         guard geoKeys.contains(geoKey) else { return false }
-        guard let dateISO else { return true }
+        guard let from, let through else { return true }
+        return matchesDates(from: from, through: through)
+    }
+
+    /// Date-only membership for a CHRONOLOGICAL-RUN series (W-8): those volumes carry no
+    /// geography, so `matches(geoKey:dateISO:)` would refuse every one. Applies the same
+    /// plausibility and inverted-range guards as the geo-keyed path — one rulebook.
+    func matchesDate(_ dateISO: String) -> Bool {
+        matchesDates(from: dateISO, through: dateISO)
+    }
+
+    /// Whether the roll covers any day from `from` through `through`: the one date test both paths
+    /// make, a day being the span from it through it (#1976).
+    func matchesDates(from: String, through: String) -> Bool {
         let start = CountryRoll.plausibleDate(startISO)
         let end = CountryRoll.plausibleDate(endISO)
         guard start != nil || end != nil else { return false }
@@ -365,21 +401,8 @@ public struct CountryRoll: Codable, Sendable, Equatable, Identifiable {
         // vanishes from every date query. We can't tell which bound is wrong, so fall back to a
         // geography-only match rather than hide the roll.
         if let start, let end, start > end { return true }
-        if let start, dateISO < start { return false }
-        if let end, dateISO > end { return false }
-        return true
-    }
-
-    /// Date-only membership for a CHRONOLOGICAL-RUN series (W-8): those volumes carry no
-    /// geography, so `matches(geoKey:dateISO:)` would refuse every one. Applies the same
-    /// plausibility and inverted-range guards as the geo-keyed path — one rulebook.
-    func matchesDate(_ dateISO: String) -> Bool {
-        let start = CountryRoll.plausibleDate(startISO)
-        let end = CountryRoll.plausibleDate(endISO)
-        guard start != nil || end != nil else { return false }
-        if let start, let end, start > end { return true }
-        if let start, dateISO < start { return false }
-        if let end, dateISO > end { return false }
+        if let start, through < start { return false }
+        if let end, from > end { return false }
         return true
     }
 
