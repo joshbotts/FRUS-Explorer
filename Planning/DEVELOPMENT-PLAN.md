@@ -4809,7 +4809,13 @@ The plan of record's session started this one for row L30, on `claude/l30-citati
   - "FRUS, 1898, Document 1190c" found d1190 as "Best guess — this volume prints no document 1190c", with its note and the digital-number label after it.
   - A link to `…/frus1898/d1190b` filled the Document no. field with 1190b and found d1190b.
 
-[LANDING]
+**The landing checks,** on the merged tree (`e2ba6376`, tree `17db5347`, with `v2` at `7ccecacb`), in one `Scripts/heavy.sh` job:
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,381 tests in 1,012 suites passed in 816 s, with the six known issues and 17 skipped. L57's landing ran 8,370, and this row adds 11. Its build printed the two known residues and no other warning.
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,284 tests in 610 suites over 39 runs, and none failed. L41's landing ran 5,273, L57 changed no package input, and the package compiles this row's 11 too. Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- **The symbol diff, re-taken** against `v2` at `7ccecacb`, from a `git archive` built the same way: 253,406 names there and 253,465 here, 80 removed and 139 added, the same names as against `a17023f9`.
+- `Scripts/check_repo_hygiene.py`, on the merged tree: six checks passed.
 
 **For the owner**
 - **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
