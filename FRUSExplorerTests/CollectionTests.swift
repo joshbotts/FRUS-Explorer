@@ -2522,7 +2522,7 @@ struct CollectionTests {
         // the engine matched against an arbitrary manifest prefix — even a lone
         // exact-strategy hit is a guess, not a resolution.
         let resolver = CollectionCitationLineResolver(
-            parse: { line in CitationInput(rawText: line, documentNumber: 129) },
+            parse: { line in CitationInput(rawText: line, documentNumber: "129") },
             match: { _ in
                 [Self.makeMatch(documentId: "d129", volumeId: "frus1861",
                                 strategy: .superimposedDocumentNumber)]

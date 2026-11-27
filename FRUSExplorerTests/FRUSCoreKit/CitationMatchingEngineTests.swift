@@ -179,7 +179,7 @@ struct CitationMatchingEngineTests {
             downloadedVolumeIds: []  // not downloaded
         )
 
-        let input = CitationInput(subseries: "1969-76", volumeNumber: "I", documentNumber: 10)
+        let input = CitationInput(subseries: "1969-76", volumeNumber: "I", documentNumber: "10")
         let results = try await engine.match(input: input)
 
         #expect(!results.isEmpty)
@@ -291,7 +291,7 @@ struct CitationMatchingEngineTests {
             downloadedVolumeIds: []
         )
 
-        let input = CitationInput(subseries: "1999-00", volumeNumber: "XXII", documentNumber: 5)
+        let input = CitationInput(subseries: "1999-00", volumeNumber: "XXII", documentNumber: "5")
         let results = try await engine.match(input: input)
         // Either empty or a best-guess with no real document
         let hasRealDocuments = results.contains { !$0.documentId.isEmpty && !$0.requiresDownload }
@@ -443,20 +443,20 @@ struct CitationMatchingEngineTests {
         let engine = manifestEngine([conferences, fortiethCongress])
 
         // No volume's subseries is 1941-42, but the one found prints "1941–1942" in its title.
-        let titleYear = try await engine.match(input: CitationInput(subseries: "1941-42", documentNumber: 1,
+        let titleYear = try await engine.match(input: CitationInput(subseries: "1941-42", documentNumber: "1",
                                                                     titleFragment: "Conferences Washington"))
         #expect(titleYear.first?.volumeId == "frus1941-43")
         #expect(titleYear.first?.confidenceLabel == ConfidenceLabels.manifestOnly)
 
         // No volume's subseries is 1869, the year frus1868p1 was printed and is cited by.
         let printYear = try await engine.match(input: CitationInput(subseries: "1869", partNumber: 1,
-                                                                    documentNumber: 1))
+                                                                    documentNumber: "1"))
         #expect(printYear.first?.volumeId == "frus1868p1")
         #expect(printYear.first?.confidenceLabel == ConfidenceLabels.manifestOnly)
 
         // The control: a year neither carries is still a best guess.
         let neither = try await engine.match(input: CitationInput(subseries: "1870", partNumber: 1,
-                                                                  documentNumber: 1))
+                                                                  documentNumber: "1"))
         #expect(neither.first?.volumeId == "frus1868p1")
         #expect(neither.first?.confidenceLabel != ConfidenceLabels.manifestOnly)
     }
@@ -495,7 +495,7 @@ struct CitationMatchingEngineTests {
         let engine = manifestEngine(fiftyTwoFixture())
         // No 1952–54 volume is Volume XX, so every candidate is a volume the citation does not name.
         let unmet = try await engine.match(input: CitationInput(subseries: "1952-54", volumeNumber: "XX",
-                                                                documentNumber: 5))
+                                                                documentNumber: "5"))
         #expect(!unmet.isEmpty)
         for result in unmet {
             #expect(result.requiresDownload, "\(result.volumeId)")
@@ -506,7 +506,7 @@ struct CitationMatchingEngineTests {
 
         // A volume that meets every cited field keeps the plain label and no note.
         let met = try await engine.match(input: CitationInput(subseries: "1952-54", volumeNumber: "II",
-                                                              partNumber: 2, documentNumber: 41))
+                                                              partNumber: 2, documentNumber: "41"))
         #expect(met.map(\.volumeId) == ["frus1952-54v02p2"])
         #expect(met.first?.confidenceLabel == ConfidenceLabels.manifestOnly)
         #expect(met.first?.correctionNote == nil)
@@ -541,11 +541,16 @@ struct CitationMatchingEngineTests {
             ("Chicago", ChicagoCitationFormatter()),
             ("Turabian", TurabianCitationFormatter()),
         ]
-        // Each volume is cited twice: by document 1, and by a printed number that is not whole, the
-        // four kinds #1977 names in turn — a letter, an appendix's letter, a microfiche supplement's
-        // prefix and a capital letter. Until #1977 the parser took only a number's digits out of the
-        // title fragment, so "Document 1190b" left a "b" in it and "Document C" the whole of itself:
-        // words no title has, in the words that choose a volume.
+        // Each volume is cited by document 1, and by each of the four kinds of printed number that is
+        // not whole #1977 names: a letter, an appendix's letter, a microfiche supplement's prefix and
+        // a capital letter. Until #1977 the parser took only a number's digits out of the title
+        // fragment, so "Document 1190b" left a "b" in it and "Document C" the whole of itself: words
+        // no title has, in the words that choose a volume. Measured on `v2` at `a17023f9`, each volume
+        // cited by one of the four in turn, 71 of the 551 volumes not excused below missed their own
+        // volume in history.state.gov and Chicago form, and 69 in Turabian form, marked or plain, where
+        // none did by document 1. A citation by such a number must read every field as the citation by
+        // document 1 does, and its number as printed: this engine, which has no index, decides from
+        // those fields and the fragment alone, so it then resolves it as it resolves the first.
         let printedForms = ["1190b", "C", "GT–6", "550A"]
         var variants = 0
         for format in formats {
@@ -554,39 +559,49 @@ struct CitationMatchingEngineTests {
                 var misses: [String] = []
                 var bestGuesses: [String] = []
                 var marksLeft: [String] = []
-                for (offset, entry) in entries.enumerated() {
+                var misread: [String] = []
+                for entry in entries {
                     let volume = FRUSVolumeMetadata(entry)
-                    for number in ["1", printedForms[offset % printedForms.count]] {
+                    func citation(_ number: String) -> String {
                         let marked = format.formatter.format(
                             document: FRUSDocumentMetadata(documentId: "d1", documentNumber: number,
                                                            header: "Header", dateline: "Dateline"),
                             volume: volume)
-                        let citation = plain ? CitationPlainText.plain(marked) : marked
-                        // The plain form is the plain form (#1505 review round 1): every format
-                        // opens with the title, so with its marks removed the citation begins with
-                        // the title itself and holds no `_` or `*`. Otherwise this half would
-                        // silently re-run the marked half — and the prefix-stripping the fragment
-                        // lost the name to could not fire on a text beginning with a mark.
-                        if plain, !citation.hasPrefix(volume.title) || citation.contains(where: { "_*".contains($0) }) {
-                            marksLeft.append("\(entry.volumeId): \(citation.prefix(40))")
+                        return plain ? CitationPlainText.plain(marked) : marked
+                    }
+                    let first = citation("1")
+                    // The plain form is the plain form (#1505 review round 1): every format opens with
+                    // the title, so with its marks removed the citation begins with the title itself
+                    // and holds no `_` or `*`. Otherwise this half would silently re-run the marked
+                    // half — and the prefix-stripping the fragment lost the name to could not fire on
+                    // a text beginning with a mark.
+                    if plain, !first.hasPrefix(volume.title) || first.contains(where: { "_*".contains($0) }) {
+                        marksLeft.append("\(entry.volumeId): \(first.prefix(40))")
+                    }
+                    let parsed = parser.parse(first)
+                    let results = try await engine.match(input: parsed)
+                    if let answer = results.first, answer.volumeId == entry.volumeId {
+                        if answer.confidenceLabel != ConfidenceLabels.manifestOnly {
+                            bestGuesses.append("\(entry.volumeId): \(answer.confidenceLabel)")
                         }
-                        let results = try await engine.match(input: parser.parse(citation))
-                        guard let first = results.first, first.volumeId == entry.volumeId else {
-                            misses.append("\(entry.volumeId) → Document \(number): \(results.prefix(3).map(\.volumeId))")
-                            continue
-                        }
-                        if first.confidenceLabel != ConfidenceLabels.manifestOnly {
-                            bestGuesses.append("\(entry.volumeId), Document \(number): \(first.confidenceLabel)")
+                    } else {
+                        misses.append("\(entry.volumeId) → \(results.prefix(3).map(\.volumeId))")
+                    }
+                    for number in printedForms {
+                        let other = parser.parse(citation(number))
+                        if other.documentNumber != number || other.subseries != parsed.subseries
+                            || other.volumeNumber != parsed.volumeNumber || other.partNumber != parsed.partNumber
+                            || other.titleFragment != parsed.titleFragment {
+                            misread.append("\(entry.volumeId), Document \(number): \(other.documentNumber ?? "no number"), fragment \(other.titleFragment ?? "none")")
                         }
                     }
                 }
                 variants += 1
-                print("[CitationRoundTrip] \(name): \(entries.count * 2 - misses.count) of \(entries.count * 2) resolve first to their own volume")
+                print("[CitationRoundTrip] \(name): \(entries.count - misses.count) of \(entries.count) resolve first to their own volume; \(entries.count * printedForms.count - misread.count) of \(entries.count * printedForms.count) printed numbers read as document 1 is")
                 #expect(bestGuesses.isEmpty, "\(name): \(bestGuesses)")
-                // The two excused volumes miss under both numbers, and no other volume misses.
-                #expect(misses.map { String($0.prefix { $0 != " " }) } == excused.flatMap { [$0, $0] },
-                        "\(name): \(misses)")
+                #expect(misses.map { String($0.prefix { $0 != " " }) } == excused, "\(name): \(misses)")
                 #expect(marksLeft.isEmpty, "\(name): \(marksLeft.count) not plain: \(marksLeft.prefix(3))")
+                #expect(misread.isEmpty, "\(name): \(misread.count) misread: \(misread.prefix(3))")
             }
         }
         #expect(variants == 6)
@@ -991,7 +1006,7 @@ struct CitationLookupIndexedTests {
     func unmetVolumeIsNotExact() async throws {
         try await withEngine(sixtyOneVolumes) { engine in
             let matches = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XX",
-                                                                      documentNumber: 84))
+                                                                      documentNumber: "84"))
             #expect(!matches.isEmpty)
             #expect(matches.first?.documentId == "d84")
             for match in matches {
@@ -1003,7 +1018,7 @@ struct CitationLookupIndexedTests {
 
             // The control: the cited volume, so an exact match.
             let met = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
-                                                                  documentNumber: 84))
+                                                                  documentNumber: "84"))
             #expect(met.map(\.volumeId) == ["frus1961-63v05"])
             #expect(met.first?.matchStrategy == .exactDocumentNumber)
             #expect(met.first?.confidenceLabel == ConfidenceLabels.exactMatch)
@@ -1014,7 +1029,7 @@ struct CitationLookupIndexedTests {
     func unmetPartIsNotExact() async throws {
         try await withEngine(sixtyOneVolumes) { engine in
             let matches = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
-                                                                      partNumber: 2, documentNumber: 84))
+                                                                      partNumber: 2, documentNumber: "84"))
             #expect(matches.first?.volumeId == "frus1961-63v05")
             #expect(matches.first?.documentId == "d84")
             #expect(isBestGuess(matches.first?.matchStrategy ?? .exactDocumentNumber))
@@ -1026,7 +1041,7 @@ struct CitationLookupIndexedTests {
     func unmetSubseriesIsNotExact() async throws {
         try await withEngine(sixtyOneVolumes) { engine in
             let matches = try await engine.match(input: CitationInput(subseries: "1999-00", volumeNumber: "V",
-                                                                      documentNumber: 84))
+                                                                      documentNumber: "84"))
             #expect(matches.first?.volumeId == "frus1961-63v05")
             #expect(matches.first?.documentId == "d84")
             #expect(isBestGuess(matches.first?.matchStrategy ?? .exactDocumentNumber))
@@ -1052,10 +1067,10 @@ struct CitationLookupIndexedTests {
             // app never reached it. With the fallback and the count gone, nothing answers: the
             // volumes are indexed and hold no such document, in the cited volume or out of it.
             let uncited = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XX",
-                                                                      documentNumber: 500))
+                                                                      documentNumber: "500"))
             #expect(uncited.isEmpty, "\(uncited.map { "\($0.volumeId)/\($0.documentId) \($0.confidenceLabel)" })")
             let cited = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
-                                                                    documentNumber: 500))
+                                                                    documentNumber: "500"))
             #expect(cited.isEmpty, "\(cited.map { "\($0.volumeId)/\($0.documentId) \($0.confidenceLabel)" })")
         }
     }
@@ -1489,7 +1504,7 @@ struct CitationLookupIndexedTests {
         // document number does, and still gets the row until the volume is indexed.
         try await withDownloads(onDiskOnly: microficheSupplement) { downloads in
             let byPage = CitationInput(subseries: "1961-63", pageNumber: 1)
-            let byNumber = CitationInput(subseries: "1961-63", documentNumber: 2)
+            let byNumber = CitationInput(subseries: "1961-63", documentNumber: "2")
             let page = try await downloads.engine.match(input: byPage)
             #expect(page.isEmpty, "\(page.map(\.confidenceLabel))")
             expectNotYetIndexed(try await downloads.engine.match(input: byNumber),
@@ -1743,7 +1758,7 @@ struct CitationLookupIndexedTests {
         try await withEngine(sixtyOneVolumes) { engine in
             // Volume XIV's d84 is printed on pages 199–200; page 50 is where d8 begins.
             let matches = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
-                                                                      documentNumber: 84, pageNumber: 50))
+                                                                      documentNumber: "84", pageNumber: 50))
             let first = try #require(matches.first)
             #expect(first.documentId == "d84")
             #expect(isBestGuess(first.matchStrategy), "\(first.matchStrategy)")
@@ -1761,7 +1776,7 @@ struct CitationLookupIndexedTests {
             // above was below the first break, so the upper bound went untested). d7 ends on page
             // 50; page 51 is d8's, which follows.
             let pastTheEnd = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
-                                                                         documentNumber: 7, pageNumber: 51))
+                                                                         documentNumber: "7", pageNumber: 51))
             #expect(pastTheEnd.first?.documentId == "d7")
             #expect(isBestGuess(pastTheEnd.first?.matchStrategy ?? .exactDocumentNumber),
                     "\(pastTheEnd.first?.matchStrategy as Any)")
@@ -1771,14 +1786,14 @@ struct CitationLookupIndexedTests {
 
             // A page the document is printed on keeps the exact match, alone.
             let agreeing = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
-                                                                       documentNumber: 84, pageNumber: 200))
+                                                                       documentNumber: "84", pageNumber: 200))
             #expect(agreeing.map(\.documentId) == ["d84"])
             #expect(agreeing.first?.matchStrategy == .exactDocumentNumber)
 
             // So does the page a document begins on part-way down, whose page break is the
             // previous document's: d8's first break is 51, and it starts on page 50 below d7.
             let startPage = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
-                                                                        documentNumber: 8, pageNumber: 50))
+                                                                        documentNumber: "8", pageNumber: 50))
             #expect(startPage.map(\.documentId) == ["d8"])
             #expect(startPage.first?.matchStrategy == .exactDocumentNumber)
         }
@@ -1806,7 +1821,7 @@ struct CitationLookupIndexedTests {
         try await withEngine(noBreakVolume) { engine in
             func lookUp(_ document: Int, _ page: Int) async throws -> [CitationMatch] {
                 try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
-                                                            documentNumber: document, pageNumber: page))
+                                                            documentNumber: String(document), pageNumber: page))
             }
             // The review's case: `vol. V, doc. 17, p. 500` was an exact match, because d17 has no
             // page break and so no page range, and no range meant no check.
@@ -2416,7 +2431,7 @@ struct CitationLookupIndexedTests {
         try await withEngine(perDocumentVolume) { engine in
             func lookUp(page: Int, document: Int? = nil) async throws -> [CitationMatch] {
                 try await engine.match(input: CitationInput(subseries: "1969-76", volumeNumber: "E-2",
-                                                            documentNumber: document, pageNumber: page))
+                                                            documentNumber: document.map(String.init), pageNumber: page))
             }
             // Page 1, which every document begins on, and page 2, which every document is printed on.
             for page in [1, 2] {
@@ -2471,7 +2486,7 @@ struct CitationLookupIndexedTests {
             try await index.pipeline.indexVolume(volume.volumeId)
             func lookUp(document: Int?, page: Int) async throws -> [CitationMatch] {
                 try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "VI",
-                                                            documentNumber: document, pageNumber: page))
+                                                            documentNumber: document.map(String.init), pageNumber: page))
             }
             // Its page is checked: page 13 is d3's. Before #1503 the check read the order documents
             // entered the index, in which d2 comes last, found no break after it, and checked nothing.
@@ -2503,7 +2518,7 @@ struct CitationLookupIndexedTests {
                     "\(byPage.first?.confidenceLabel ?? "nil")")
             // The control: its document number with that page is not a best guess, d2 being printed
             // on 31–32.
-            let named = try await engine.match(input: CitationInput(subseries: "1861", documentNumber: 2,
+            let named = try await engine.match(input: CitationInput(subseries: "1861", documentNumber: "2",
                                                                     pageNumber: 31))
             #expect(named.first?.documentId == "d2")
             #expect(named.first?.matchStrategy == .superimposedDocumentNumber)
@@ -2626,7 +2641,7 @@ struct CitationLookupIndexedTests {
         try await withEngine(mixedPerDocumentVolume) { engine in
             func lookUp(page: Int, document: Int? = nil) async throws -> [CitationMatch] {
                 try await engine.match(input: CitationInput(subseries: "1969-76", volumeNumber: "E-4",
-                                                            documentNumber: document, pageNumber: page))
+                                                            documentNumber: document.map(String.init), pageNumber: page))
             }
             let note = "This volume numbers its pages afresh in every document"
             // Page 1: every document with a page 1, wherever its break sits. Before this round the
@@ -2976,7 +2991,7 @@ struct CitationLookupIndexedTests {
         try await withEngine(worldWarSupplement) { engine in
             // The page check: d3 is printed on pages 2–4, not 50. Before round 3 the word
             // "Supplement" in the title turned the check off, and this was a plain match.
-            let wrongPage = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 3, pageNumber: 50))
+            let wrongPage = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: "3", pageNumber: 50))
             #expect(wrongPage.first?.documentId == "d3")
             #expect(isBestGuess(wrongPage.first?.matchStrategy ?? .superimposedDocumentNumber),
                     "\(wrongPage.first?.matchStrategy as Any)")
@@ -2984,7 +2999,7 @@ struct CitationLookupIndexedTests {
                     "\(wrongPage.first?.confidenceLabel ?? "nil")")
 
             // d1's first break is page 1: no page comes before it, so the label reads 1–2, not 0–2.
-            let firstDocument = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 1, pageNumber: 50))
+            let firstDocument = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: "1", pageNumber: 50))
             #expect(firstDocument.first?.confidenceLabel == ConfidenceLabels.bestGuess(
                 ConfidenceLabels.pageOutside(page: 50, first: 1, last: 2)),
                     "\(firstDocument.first?.confidenceLabel ?? "nil")")
@@ -3001,7 +3016,7 @@ struct CitationLookupIndexedTests {
             // d3 both begin on page 2 — #1503; before it, d1, whose own break page 2 is, followed.
             // d2, already listed by its number, is not listed again — #1503 review round 1 — so
             // Batch counts the two documents there are, not three rows.)
-            let agreeing = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 2, pageNumber: 2))
+            let agreeing = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: "2", pageNumber: 2))
             #expect(agreeing.first?.documentId == "d2")
             #expect(agreeing.first?.matchStrategy == .superimposedDocumentNumber,
                     "\(agreeing.first?.matchStrategy as Any)")
@@ -3027,7 +3042,7 @@ struct CitationLookupIndexedTests {
             // d2's one facsimile page is page 1 of the document, not a page of a book: page 3 says
             // nothing about it. Before round 3 this was "page 3 is outside the pages this document
             // may be printed on (0–1)".
-            let matches = try await engine.match(input: CitationInput(subseries: "1961-63", documentNumber: 2, pageNumber: 3))
+            let matches = try await engine.match(input: CitationInput(subseries: "1961-63", documentNumber: "2", pageNumber: 3))
             #expect(matches.map(\.documentId) == ["d2"])
             #expect(matches.first?.matchStrategy == .exactDocumentNumber, "\(matches.first?.matchStrategy as Any)")
 
@@ -3045,7 +3060,7 @@ struct CitationLookupIndexedTests {
             // prints "1961–1962", so it carries the cited year and Volume V does not — and V comes
             // first. Stopping at V's hit, whose strategy was exact before it was qualified, would
             // hide XIV's own document 84.
-            let matches = try await engine.match(input: CitationInput(subseries: "1961-62", documentNumber: 84))
+            let matches = try await engine.match(input: CitationInput(subseries: "1961-62", documentNumber: "84"))
             #expect(matches.map(\.volumeId) == ["frus1961-63v05", "frus1961-63v14"])
             #expect(isBestGuess(matches.first?.matchStrategy ?? .exactDocumentNumber))
             #expect(matches.last?.matchStrategy == .exactDocumentNumber)
@@ -3292,6 +3307,20 @@ struct CitationLookupIndexedTests {
             #expect(guess.first?.isBestGuess == true, "\(described(guess))")
             #expect(guess.first?.confidenceLabel.contains("1190c") == true, "\(described(guess))")
             #expect(guess.first?.correctionNote != nil, "\(described(guess))")
+            // The label names the number; the note says why, and keeps how the document was found.
+            #expect(guess.first?.confidenceLabel
+                    == ConfidenceLabels.bestGuess(ConfidenceLabels.numberNotPrinted("1190c")))
+            #expect(guess.first?.correctionNote
+                    == [ConfidenceLabels.numberNotPrintedNote, ConfidenceLabels.superimposedDocumentNumber]
+                        .joined(separator: "\n"))
+
+            // After 1955, where the digits' document would be an exact match.
+            let later = try await engine.match(input: parser.parse(
+                "FRUS, 1955–1957, vol. III, Microfiche Supplement, China, doc. 550b"))
+            #expect(later.map(\.documentId) == ["d550"], "\(described(later))")
+            #expect(later.first?.confidenceLabel
+                    == ConfidenceLabels.bestGuess(ConfidenceLabels.numberNotPrinted("550b")), "\(described(later))")
+            #expect(later.first?.correctionNote == ConfidenceLabels.numberNotPrintedNote)
 
             // Batch counts it as one.
             let collector = BatchRowCollector()
@@ -3317,6 +3346,69 @@ struct CitationLookupIndexedTests {
                 let none = try await engine.match(input: fields.input(mode: .structured, pasteText: "", parser: parser))
                 #expect(none.isEmpty, "Document \(document) → \(described(none))")
             }
+        }
+    }
+
+    /// "Only when the token finds nothing", as #1977 puts it: before 1955 the lookup reads every
+    /// candidate volume past a hit, so a fallback decided volume by volume would answer a number
+    /// one volume prints with another volume's document of its digits, ranked above it.
+    @Test("A number with a letter one volume prints is not answered from another by its digits: 1951's document 663a is Volume III, Part 1's alone, though Volume I prints a 663; a letter neither prints falls back in each (#1977)")
+    func aPrintedLetterIsNotAnsweredFromAnotherVolume() async throws {
+        let volumes: [(entry: VolumeManifestEntry, docs: [Doc])] = [
+            (entry("frus1951v01", "1951",
+                   "Foreign Relations of the United States, 1951, National Security Affairs; Foreign Economic Policy, Volume I"),
+             [Doc(id: "d662", number: "662", pages: [1499]), Doc(id: "d663", number: "663", pages: [1500])]),
+            (entry("frus1951v03p1", "1951",
+                   "Foreign Relations of the United States, 1951, European Security and the German Question, Volume III, Part 1"),
+             [Doc(id: "d663", number: "663", pages: [1200]), Doc(id: "d663a", number: "663a", pages: [1201])]),
+        ]
+        try await withEngine(volumes) { engine in
+            let parser = CitationParser()
+            var fields = CitationLookupFields()
+            fields.subseries = "1951"
+            fields.document = "663a"
+            let printed = try await engine.match(input: fields.input(mode: .structured, pasteText: "", parser: parser))
+            #expect(printed.map { "\($0.volumeId)/\($0.documentId)" } == ["frus1951v03p1/d663a"], "\(described(printed))")
+            #expect(printed.first?.isBestGuess == false)
+
+            fields.document = "663c"
+            let fallback = try await engine.match(input: fields.input(mode: .structured, pasteText: "", parser: parser))
+            #expect(fallback.map { "\($0.volumeId)/\($0.documentId)" } == ["frus1951v01/d663", "frus1951v03p1/d663"],
+                    "\(described(fallback))")
+            // Read before `#expect`, whose expansion of a rethrows call over a key path does not compile.
+            let allBestGuesses = fallback.allSatisfy { $0.isBestGuess }
+            #expect(allBestGuesses, "\(described(fallback))")
+        }
+    }
+
+    /// The fallback's label says a volume prints no document with the number, which only an index
+    /// that can say what the volume holds can say (#1522). A volume whose re-index was cut short
+    /// keeps its last pass's rows and cannot say it: a number with a letter is answered there as
+    /// not yet indexed, never with the document of its digits, and a number it holds is found.
+    @Test("A volume whose index cannot yet say what it holds is not told it prints no document 1190c: the lookup reads not yet indexed there, and 1190b is still found (#1977, #1522)")
+    func noFallbackWhereTheIndexCannotAnswer() async throws {
+        let catalogue = try testManifestEntries()
+        let volume = try #require(try printedNumberVolumes(in: catalogue).first { $0.entry.volumeId == "frus1898" })
+        try await withDownloads(indexed: [volume], onDiskOnly: []) { downloads in
+            let parser = CitationParser()
+            let unprinted = "FRUS, 1898, Document 1190c"
+            // The control: an index that answers for the volume falls back.
+            let answered = try await downloads.engine.match(input: parser.parse(unprinted))
+            #expect(answered.map(\.documentId) == ["d1190"], "\(described(answered))")
+            #expect(answered.first?.isBestGuess == true, "\(described(answered))")
+
+            // A re-index cut short: the volume no longer parses, so `indexVolume` throws after
+            // marking it started and before storing anything, and the last pass's rows stand.
+            try Data("<TEI><text>".utf8).write(
+                to: downloads.volumesDirectory.appendingPathComponent("frus1898.xml"))
+            await #expect(throws: (any Error).self) {
+                try await downloads.pipeline.indexVolume("frus1898")
+            }
+            #expect(try await downloads.search.hasFinishedIndexing("frus1898") == false)
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(unprinted)),
+                                "frus1898", "cut short, \(unprinted)")
+            let held = try await downloads.engine.match(input: parser.parse("FRUS, 1898, Document 1190b"))
+            #expect(held.map(\.documentId) == ["d1190b"], "\(described(held))")
         }
     }
 }
