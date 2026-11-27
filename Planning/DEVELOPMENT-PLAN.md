@@ -4865,7 +4865,7 @@ The orchestrator session ("Development session orchestration") started this one 
 
 ## Session 2026-11-27 — L42, the cross-reference graph saved: every document it holds as drawn, as a working corpus after a question that says what the save holds, or as the seeds of an Archives Visit through the picker every add flow presents, with a line that says what a visit of them lists; a footnote's central-file class is a target only where a document's own source note names it (#1990)
 
-Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `claude/l42-graph-saves-a7b657` from `v2` at `24616a57`, L33's merge: a commit for each save, then a docs commit. No stored property, so no CloudKit change; no index version.
+Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `claude/l42-graph-saves-a7b657` from `v2` at `24616a57`, L33's merge: a commit for each save, then a docs commit (`f7cf1b7d`, `1aaf06df` and `316c8807`); at the head of the queue, `v2` at `1778feac` taken in (`8cd4233d`) and the landing's records. No stored property, so no CloudKit change; no index version.
 
 **#2036's merge**
 - L39 merged as `1778feac`, a squash onto `8d38c5ab`, at 16:21:45 UTC on 2026-11-27, from its head `4d796de9`. Its tree, `05d5a677`, is the head's. It closed nothing: F7 has no issue. This entry records it.
@@ -4946,7 +4946,12 @@ Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `
 - 17 scoped app suites there: 218 tests passed. They include the 16 new tests, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans, the toolbar, Mac sheet and unconstructed-view audits, and the working-corpus suites.
 - The `FRUSExplorerMac` build: the residues alone.
 - `Scripts/check_repo_hygiene.py`: six checks passed.
-- At the head of the queue: LANDING-CHECKS
+- **At the head of the queue,** on the merge `8cd4233d` (tree `74b470a9`, with `v2` at `1778feac` taken in; three conflicts, each where both sides had appended), in one `Scripts/heavy.sh` call from 16:42 to 17:03 UTC:
+  - The unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,401 tests in 1,014 suites, 8,383 passed, none failed, 17 skipped as at L37, and the one test with the six known issues, in 781 s. L39's landing ran 8,385 in 1,013 suites, and this row adds 16 in one. `RichTextRestingCapTests` passed in the run, so the script's rerun of it was not needed. The build printed the two known residues and no other warning.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,304 tests in 612 suites over 39 runs, none failed, with the same two older warnings (the unused `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`). L39's landing ran 5,288 in 611.
+  - The `FRUSExplorerMac` build: the residues alone.
+  - `Scripts/check_repo_hygiene.py` on the merge: six checks passed. Every ranged EditableContent block still holds its key there (1,364), by a port of `EditableContentKeyTests`' rule run before the unit target, which ran the test itself.
 
 **Offered, not taken**
 - Two layout findings from the walk, in the plan's §5 under *Found by L42*:
