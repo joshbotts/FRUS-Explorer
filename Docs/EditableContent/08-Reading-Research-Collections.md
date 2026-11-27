@@ -911,6 +911,55 @@ Web page
 
 <!-- END SOURCE: export.grid.html.caption.v2 -->
 
+#### The words before the volume's heading under a title of the author's (L34)
+<!-- L34 (2026-11-27), decision 154: the owner's words, fixed. They stand before the volume's heading wherever a
+     title of the author's leads a document, in every export, and open a titled contents row's second line. An
+     author cannot change or empty them. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.asPublishedLabel | lines: 237–237 | key: collection.document.asPublished | shared: iOS+macOS (single edit point) -->
+
+As published:
+
+<!-- END SOURCE: collection.document.asPublished -->
+
+#### The label over a document's headnote in an export
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.headnoteLabel | lines: 476–476 | key: collection.headnote.label | same text also in: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift -->
+<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+
+Headnote
+
+<!-- END SOURCE: collection.headnote.label -->
+
+#### The label over a summary printed in a document's place
+<!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.summaryLabel | lines: 481–481 | key: collection.summary.label | shared: iOS+macOS (single edit point) -->
+
+Summary
+
+<!-- END SOURCE: collection.summary.label -->
+
+#### The label before a document's source note in an export
+<!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.sourceLabel | lines: 486–486 | key: collection.source.label | shared: iOS+macOS (single edit point) -->
+
+Source:
+
+<!-- END SOURCE: collection.source.label -->
+
+#### The label before the documents a document names in the collection
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.seeAlsoLabel | lines: 491–491 | key: collection.related.label | shared: iOS+macOS (single edit point) -->
+
+See also:
+
+<!-- END SOURCE: collection.related.label -->
+
+#### The label over a research note in an export
+<!-- L34: a key of its own from L34; the three exporters each printed the words as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.researchNoteLabel | lines: 496–496 | key: collection.researchNote.label | shared: iOS+macOS (single edit point) -->
+
+Research Note
+
+<!-- END SOURCE: collection.researchNote.label -->
+
 ### Collections — the six templates (L25, decision 139)
 
 *Under **Start from a template — optional** in Collection settings (12.7 of the iOS manual, 12.6 of the Mac's). On iPad and the Mac each template is a card, its name over a line saying what it includes; on iPhone, and in a narrow iPad window, it is a chip in a row that scrolls, a one-word name over a short tag. A template's name is also what VoiceOver says for its card or chip, and on iPhone the Collection settings row's caption while the template is in force. Each name says how the documents are presented, then what comes with them (the owner's decision 139). All 24 strings are in FRUSCoreKit, one edit point for iOS, macOS and FRUS Explorer Light, which compiles the kit too.*
@@ -3017,56 +3066,56 @@ Search the index, browse volumes, paste citations or history.state.gov links, or
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 398–399 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 400–401 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 469–470 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 471–472 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 554–555 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 556–557 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 738–739 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 740–741 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 790–791 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 792–793 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 803–804 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 805–806 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 919–920 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 921–922 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1019–1020 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1024–1025 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -3089,7 +3138,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1632–1633 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1644–1645 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -3109,15 +3158,16 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1054–1055 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1059–1060 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 466–467 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
-<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+<!-- L34 (2026-11-27, J10): the live preview's line alone. An export prints nothing for a requested headnote with
+     nothing stored, where until L34 all three formats printed these words, meant for the author, to the reader. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteMissingHTML | lines: 494–495 | key: collection.headnote.missing -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.
 
@@ -3280,7 +3330,7 @@ Export this collection as a PDF, HTML page, or Word document — includes docume
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2061–2062 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2063–2064 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

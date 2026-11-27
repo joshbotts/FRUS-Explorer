@@ -1944,18 +1944,18 @@ struct CollectionTests {
         #expect(docxContains("Target=\"https://catalog.archives.gov/id/302021\" TargetMode=\"External\""))
         #expect(docxContains("xmlns:r="))
         #expect(docxContains("<w:ind w:left=\"360\"/>"))             // indent-1 row
-        // The ToC field's `\o` level range is content-driven (Phase 4 review fix): this
-        // fixture's deepest authored heading is level 2, so the field must stay the exact
-        // pre-Phase-4 `\o "1-2"` — because `\o` bounds the `\u` outline-level sweep, a
-        // wider range would pull every in-document TEI heading and "Summary" label
-        // (built-in Heading3, outlineLvl 2) into Word's regenerated ToC.
-        #expect(docxContains("TOC \\o \"1-2\""))
-        #expect(!docxContains("TOC \\o \"1-3\""))
-        // Only an authored level-3 section widens the field to `\o "1-3"`.
+        // L34: the contents list is the plan's rows, each linked to a bookmark at its entry, where it was a
+        // `TOC` field over the heading styles (whose `\o` range this test held). No field over the styles is
+        // left for a TEI heading or a "Summary" label to enter, and no page field (the Word and Pages run).
+        #expect(!docxContains("TOC \\o"))
+        #expect(docxContains("<w:hyperlink w:anchor=\"frus_row_1\" w:history=\"1\">"))
+        #expect(docxContains("<w:bookmarkStart w:id=\"1\" w:name=\"frus_row_1\"/>"))
+        #expect(!docxContains("PAGEREF"))
+        // An authored level-3 section is a row at its level, at its outline level.
         let deepItems = items + [.heading("Contract Deep Sub", level: 3)]
         let deepDocx = try Data(contentsOf: try await DocxCollectionExporter().export(
             metadata: metadata, items: deepItems))
-        #expect(deepDocx.range(of: Data("TOC \\o \"1-3\"".utf8)) != nil)
+        #expect(deepDocx.range(of: Data("<w:ind w:left=\"720\"/></w:pPr>".utf8)) != nil)
 
         // PDF — content streams aren't byte-searchable, so extract the page text with
         // PDFKit and assert every item kind's content actually made it onto a page
@@ -2051,11 +2051,12 @@ struct CollectionTests {
         #expect(renderer.itemHTML(.heading("Part I", level: 1)) ==
                 "<h2 class=\"section-heading\">Part I</h2>\n\n")
 
-        // All-level-1 ToC: the exact pre-Phase-4 flat list — no nested markup.
+        // All-level-1 ToC: a flat list — no nested markup. Since L34 (#1993) the list writes its own
+        // numbers, the documents' alone, and keeps its list role without the browser's markers.
         #expect(renderer.tableOfContentsHTML(for: items) ==
-                "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
+                "<nav>\n  <h2>Contents</h2>\n  <ol role=\"list\">\n"
                 + "    <li class=\"toc-section\">Part I</li>\n"
-                + "    <li><a href=\"#doc-v1-d1\">Plain Citation</a></li>\n"
+                + "    <li class=\"toc-document\"><a href=\"#doc-v1-d1\"><span class=\"toc-number\">1.</span> Plain Citation</a></li>\n"
                 + "  </ol>\n</nav>\n\n")
 
         // Full page: no frame markup and no frame/preview stylesheet layers — the shared
@@ -2133,10 +2134,11 @@ struct CollectionTests {
         let toc = renderer.tableOfContentsHTML(for: items)
 
         // Two nested lists open (level 2 and level 3) and both close again.
-        #expect(toc.components(separatedBy: "<li class=\"toc-sub\"><ol>").count - 1 == 2)
+        #expect(toc.components(separatedBy: "<li class=\"toc-sub\"><ol role=\"list\">").count - 1 == 2)
         #expect(toc.components(separatedBy: "</ol></li>").count - 1 == 2)
-        // The document after the level-2 heading nests inside the sub-list (deeper indent).
-        #expect(toc.contains("      <li><a href=\"#doc-v1-d2\">Doc Two</a></li>"))
+        // The document after the level-2 heading nests inside the sub-list (deeper indent), its number
+        // the second document's (#1993).
+        #expect(toc.contains("      <li class=\"toc-document\"><a href=\"#doc-v1-d2\"><span class=\"toc-number\">2.</span> Doc Two</a></li>"))
         // Part II returns to base level after both closes.
         if let lastClose = toc.range(of: "</ol></li>", options: .backwards),
            let partII = toc.range(of: "    <li class=\"toc-section\">Part II</li>") {
@@ -3319,6 +3321,42 @@ struct CollectionTests {
         #expect(offDoc.headnoteText == nil)
     }
 
+    /// R2b's finding, taken by L34: the store returns a document's summaries oldest first, and the
+    /// resolver took the first, where the document's rail shows the newest (`GeneratedSummary.ranksAbove`).
+    @Test("Resolver: with no summary chosen, a headnote and a document at summary depth print the newest stored summary, as the rail shows it (L34)")
+    @MainActor
+    func resolverTakesTheNewestSummary() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+        let promptId = UUID()
+        let coll = Collection(name: "Newest")
+        context.insert(coll)
+        let entry = CollectionEntry(collectionId: coll.id, documentId: "d1", volumeId: "nwvol", sortOrder: 0)
+        entry.includeHeadnote = true
+        context.insert(entry)
+        // Inserted oldest first, each saved before the next, as summaries are made one at a time.
+        let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        for (day, text) in ["The oldest summary.", "A later summary.", "The newest summary."].enumerated() {
+            let summary = GeneratedSummary(documentId: "d1", volumeId: "nwvol", promptId: promptId, responseText: text)
+            summary.createdAt = start.addingTimeInterval(Double(day) * 86_400)
+            context.insert(summary)
+            try context.save()
+        }
+        let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+
+        // No prompt named: the headnote falls back to the newest of all.
+        let headnote = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(headnote[0])).headnoteText == "The newest summary.")
+
+        // Under the collection's prompt, at summary depth: the preview prints the newest stored under it.
+        coll.summaryPromptId = promptId
+        coll.defaultBodyDepth = CollectionBodyDepth.summaryOnly.rawValue
+        entry.includeHeadnote = false
+        let body = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+        #expect(try #require(docPayload(body[0])).summaryText == "The newest summary.")
+    }
+
     @Test("Headnote provenance: the attribution label honors authorship, and the resolver threads it to the export document")
     @MainActor
     func headnoteProvenance() async throws {
@@ -3631,8 +3669,10 @@ struct CollectionTests {
         let html = try String(contentsOf: htmlURL, encoding: .utf8)
         #expect(html.contains("class=\"headnote\""))
         #expect(html.contains("<em>A concise scholarly abstract.</em>"))
-        #expect(html.contains("class=\"headnote-missing\""))
-        #expect(html.contains("No stored summary for this document"))
+        // L34 (J10): a requested headnote with nothing stored prints nothing in an export; only the
+        // live preview shows its author the placeholder.
+        #expect(!html.contains("class=\"headnote-missing\""))
+        #expect(!html.contains("No stored summary for this document"))
         let htmlOffURL = try await HTMLCollectionExporter().export(metadata: metadata, items: plainItems)
         let htmlOff = try String(contentsOf: htmlOffURL, encoding: .utf8)
         #expect(!htmlOff.contains("headnote"))
@@ -3643,7 +3683,7 @@ struct CollectionTests {
         func docxContains(_ s: String) -> Bool { docx.range(of: Data(s.utf8)) != nil }
         #expect(docxContains("Headnote"))
         #expect(docxContains("A concise scholarly abstract."))
-        #expect(docxContains("No stored summary for this document"))
+        #expect(!docxContains("No stored summary for this document"))
         let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
             metadata: metadata, items: plainItems))
         #expect(docxOff.range(of: Data("Headnote".utf8)) == nil)
@@ -3656,7 +3696,7 @@ struct CollectionTests {
             .compactMap { pdfDoc.page(at: $0)?.string }.joined(separator: "\n")
         #expect(pdfText.contains("Headnote"))
         #expect(pdfText.contains("A concise scholarly abstract."))
-        #expect(pdfText.contains("No stored summary for this document"))
+        #expect(!pdfText.contains("No stored summary for this document"))
         let pdfOff = try Data(contentsOf: try await PDFCollectionExporter().export(
             metadata: metadata, items: plainItems))
         let pdfOffDoc = try #require(PDFDocument(data: pdfOff))
@@ -3798,13 +3838,13 @@ struct CollectionTests {
             metadata: metadata, items: items, options: onOptions))
         func onContains(_ s: String) -> Bool { docxOn.range(of: Data(s.utf8)) != nil }
         #expect(onContains("The footnote text."))
-        #expect(onContains("<w:footnoteReference w:id="))
+        #expect(onContains("<w:footnoteReference w:customMarkFollows=\"1\" w:id="))
         #expect(onContains("RG 59, Central Files."))
         let docxOff = try Data(contentsOf: try await DocxCollectionExporter().export(
             metadata: metadata, items: items, options: offOptions))
         func offContains(_ s: String) -> Bool { docxOff.range(of: Data(s.utf8)) != nil }
         #expect(!offContains("The footnote text."))
-        #expect(!offContains("<w:footnoteReference w:id="))
+        #expect(!offContains("<w:footnoteReference "))
         #expect(offContains("Gated body."))
         // Markers survive as plain superscript label runs — HTML likewise keeps its
         // .fn-marker buttons when footnote bodies are dropped.
@@ -5264,18 +5304,24 @@ struct CollectionTests {
 
     // MARK: - M3 title override (D4)
 
-    @Test("M3 exportHeading/tocLabel: a non-empty titleOverride wins for the heading and for BOTH ToC styles; unset falls back to citation-else-title exactly as before")
+    @Test("M3 exportHeading and the contents rows: a non-empty titleOverride leads the heading and BOTH styles' rows, never alone (L34); unset falls back to citation-else-title")
     func m3ExportHeadingAndToC() {
-        // With an override: the heading and both ToC styles all read the override,
-        // regardless of citation/header/dateline.
+        func row(_ doc: CollectionExportDocument, _ style: CollectionToCStyle) -> CollectionContentsRow {
+            CollectionContentsRow.rows(for: [.document(doc)], style: style)[0]
+        }
+        // With an override: the heading and both styles' rows lead with it, and since L34 (#1998, J46)
+        // the volume's heading stands under it after As published:, with the citation in Citation style.
         let overridden = CollectionExportDocument(
             documentId: "d1", volumeId: "v1", sortOrder: 0,
             title: "Vol I — d1", titleOverride: "Kennan's Long Telegram",
             bodyText: "", citation: "Telegram 511, Feb 22, 1946",
             header: "861.00/2-2246: Telegram", dateline: "Moscow, February 22, 1946")
         #expect(overridden.exportHeading == "Kennan's Long Telegram")
-        #expect(overridden.tocLabel(style: .citation) == "Kennan's Long Telegram")
-        #expect(overridden.tocLabel(style: .headerAndDateline) == "Kennan's Long Telegram")
+        #expect(row(overridden, .citation).text == "Kennan's Long Telegram")
+        #expect(row(overridden, .citation).lines == ["As published: 861.00/2-2246: Telegram", "Telegram 511, Feb 22, 1946"])
+        #expect(row(overridden, .headerAndDateline).text == "Kennan's Long Telegram")
+        #expect(row(overridden, .headerAndDateline).lines
+                == ["As published: 861.00/2-2246: Telegram — Moscow, February 22, 1946"])
 
         // Empty override string is treated as unset (write-on-clear → nil, but a stray "" degrades safely).
         let empty = CollectionExportDocument(
@@ -5283,22 +5329,22 @@ struct CollectionTests {
             title: "Vol I — d1", titleOverride: "", bodyText: "",
             citation: "Telegram 511")
         #expect(empty.exportHeading == "Telegram 511")
-        #expect(empty.tocLabel(style: .citation) == "Telegram 511")
+        #expect(row(empty, .citation).text == "Telegram 511" && row(empty, .citation).lines.isEmpty)
 
-        // No override: byte-for-byte the pre-M3 derivation (citation, else title).
+        // No override: the pre-M3 derivation (citation, else title), the heading's words and its dateline.
         let plain = CollectionExportDocument(
             documentId: "d1", volumeId: "v1", sortOrder: 0,
             title: "Vol I — d1", bodyText: "", citation: "Telegram 511",
             header: "The Header", dateline: "Moscow")
         #expect(plain.exportHeading == "Telegram 511")
-        #expect(plain.tocLabel(style: .citation) == "Telegram 511")
-        #expect(plain.tocLabel(style: .headerAndDateline) == "The Header — Moscow")
+        #expect(row(plain, .citation).text == "Telegram 511")
+        #expect(row(plain, .headerAndDateline).text == "The Header — Moscow")
         // No citation, no override: title is the ultimate fallback.
         let bare = CollectionExportDocument(
             documentId: "d1", volumeId: "v1", sortOrder: 0,
             title: "Vol I — d1", bodyText: "")
         #expect(bare.exportHeading == "Vol I — d1")
-        #expect(bare.tocLabel(style: .citation) == "Vol I — d1")
+        #expect(row(bare, .citation).text == "Vol I — d1")
     }
 
     @Test("M3 renderers: an entry's titleOverride shows in the HTML document heading AND its ToC entry; the DOCX heading carries it too; an unset override renders byte-identically to today")
@@ -5310,11 +5356,13 @@ struct CollectionTests {
         let items: [CollectionExportItem] = [.document(overridden)]
         let metadata = CollectionExportMetadata(name: "M3", note: nil)
 
-        // HTML: both the ToC entry and the <h2> document heading carry the override,
-        // and the boring citation never appears as a heading.
+        // HTML: both the ToC entry and the <h2> document heading carry the override, and the boring
+        // citation never appears as a heading. Since L34 (J46, the design's §3.8) it prints under the
+        // title as a line, the one opening the plan gives a titled document in every format.
         let html = CollectionItemHTMLRenderer().pageHTML(metadata: metadata, items: items)
-        #expect(html.contains("Kennan Long Telegram"))
-        #expect(!html.contains("Boring Citation 511"))
+        #expect(html.contains("<h2 class=\"doc-lead\">Kennan Long Telegram</h2>"))
+        #expect(html.contains("<p class=\"doc-citation\">Boring Citation 511</p>"))
+        #expect(!html.contains("class=\"doc-lead\">Boring Citation 511"))
 
         // DOCX: the stored-mode ZIP keeps document.xml uncompressed, so the heading text
         // appears verbatim in the archive bytes.
@@ -5343,8 +5391,8 @@ struct CollectionTests {
         var previewRenderer = CollectionItemHTMLRenderer()
         previewRenderer.citationOnlyVolumeIds = ["v1"]
         let cardHTML = previewRenderer.pageHTML(metadata: metadata, items: items)
-        #expect(cardHTML.contains("Kennan Long Telegram"))
-        #expect(!cardHTML.contains("Boring Citation 511"))
+        #expect(cardHTML.contains("<h2 class=\"doc-lead\">Kennan Long Telegram</h2>"))
+        #expect(!cardHTML.contains("class=\"doc-lead\">Boring Citation 511"))
         let plainCardHTML = previewRenderer.pageHTML(metadata: metadata, items: [.document(plain)])
         #expect(plainCardHTML.contains("Boring Citation 511"))
     }
@@ -5858,6 +5906,118 @@ struct CollectionExportParityTests {
     private static func pdfFullText(_ url: URL) throws -> String {
         let pdf = try #require(PDFDocument(url: url))
         return (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+    }
+
+    // ── 4. One plan for three formats (L34): the same parts, in the same order, under the same numbers. ──
+
+    /// The three exports of `items`, each as the text a reader meets: the page's text, the Word body's, and the
+    /// PDF's pages joined.
+    private static func texts(_ items: [CollectionExportItem], options: CollectionExportOptions,
+                              name: String) async throws -> (html: String, word: String, pdf: String) {
+        let metadata = CollectionExportMetadata(name: "\(name) \(UUID().uuidString)", note: nil)
+        let htmlURL = try await HTMLCollectionExporter().export(metadata: metadata, items: items, options: options)
+        let docxURL = try await DocxCollectionExporter().export(metadata: metadata, items: items, options: options)
+        let pdfURL = try await PDFCollectionExporter().export(metadata: metadata, items: items, options: options)
+        defer { [htmlURL, docxURL, pdfURL].forEach { try? FileManager.default.removeItem(at: $0) } }
+        let page = try String(contentsOf: htmlURL, encoding: .utf8)
+        let body = page.components(separatedBy: "<body>").last ?? page
+        let html = body.replacing(/<[^>]+>/, with: " ").replacing(/\s+/, with: " ")
+        let package = String(decoding: try Data(contentsOf: docxURL), as: UTF8.self)
+        let wordBody = package.components(separatedBy: "<w:body>").last?.components(separatedBy: "</w:body>").first ?? ""
+        let word = wordBody.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/).map { String($0.output.1) }.joined()
+        return (html, word, try pdfFullText(pdfURL))
+    }
+
+    /// Whether each of `probes` is in `text`, in order.
+    private static func inOrder(_ probes: [String], in text: String) -> Bool {
+        var from = text.startIndex
+        for probe in probes {
+            guard let found = text.range(of: probe, range: from..<text.endIndex) else { return false }
+            from = found.upperBound
+        }
+        return true
+    }
+
+    @Test("The three formats print a document's parts in the plan's order, the source note after the text (L34)")
+    func partsInThePlansOrder() async throws {
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "frus1952-54v03", sortOrder: 0, title: "Memorandum",
+            bodyText: "The body of the memorandum.",
+            noteTexts: ["A research note of the reader's."],
+            citation: "Foreign Relations of the United States, Volume III, Document 931.",
+            historyStateGovURL: "https://history.state.gov/historicaldocuments/frus1952-54v03/d931",
+            sourceNoteText: "ODA files, lot 62 D 225",
+            includeHeadnote: true, headnoteText: "The headnote's abstract.",
+            relatedDocumentCitations: ["Foreign Relations of the United States, Volume III, Document 932."])
+        var options = Self.options
+        options.includeWordCloud = false
+        let texts = try await Self.texts([.document(doc)], options: options, name: "Order")
+        let order = ["Document 931", "The headnote's abstract.", "The body of the memorandum.",
+                     "ODA files, lot 62 D 225", "Document 932", "A research note of the reader's."]
+        for (format, text) in [("HTML", texts.html), ("Word", texts.word), ("PDF", texts.pdf)] {
+            #expect(Self.inOrder(order, in: text), "\(format) prints the parts out of the plan's order")
+        }
+    }
+
+    @Test("A source note longer than a line and a research note longer than a page print whole in the PDF (L34)")
+    func longNotesPrintWhole() async throws {
+        let source = (1...30).map { "Box \($0) of the lot file," }.joined(separator: " ") + " END-OF-SOURCE."
+        let research = (1...400).map { "Line \($0) of a long note." }.joined(separator: " ") + " END-OF-NOTE."
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "frus1952-54v03", sortOrder: 0, title: "Memorandum",
+            bodyText: "A short body.", noteTexts: [research],
+            citation: "Foreign Relations of the United States, Volume III, Document 931.", sourceNoteText: source)
+        var options = Self.options
+        options.includeWordCloud = false
+        let pdf = try await Self.texts([.document(doc)], options: options, name: "Long").pdf
+        // PDFKit joins a wrapped line's words with a line break; the probes are each on one line.
+        #expect(pdf.contains("END-OF-SOURCE."), "the source note is cut at its first line")
+        #expect(pdf.contains("Line 400 of a long note.") && pdf.contains("END-OF-NOTE."), "the research note is cut at a page")
+        #expect(Self.inOrder(["A short body.", "Box 1 of the lot file", "Line 1 of a long note."], in: pdf),
+                "the source note does not follow the text, or the note does not flow under it")
+    }
+
+    @Test("A contents list longer than a page prints every row in the PDF, each document under the same number in all three (#1984, #1993)")
+    func longContentsAndRowNumbers() async throws {
+        var items: [CollectionExportItem] = [.heading("Part One", level: 1)]
+        for n in 1...60 {
+            items.append(.document(CollectionExportDocument(
+                documentId: "d\(n)", volumeId: "frus1946v06", sortOrder: n, title: "Telegram \(n)", bodyText: "Body \(n).",
+                citation: "Foreign Relations of the United States, 1946, Volume VI, Document \(n + 400).")))
+            if n == 30 { items.append(.heading("Part Two", level: 1)) }
+        }
+        items.append(.generated(CollectionGeneratedBlock(type: .bibliography, title: "Bibliography", rows: [])))
+        var options = Self.options
+        options.includeWordCloud = false
+        options.includeSourceNote = false
+        let texts = try await Self.texts(items, options: options, name: "Contents")
+        // The PDF's contents run on past the first page: the last document's row is printed before its text.
+        let lastRow = try #require(texts.pdf.range(of: "60. Foreign Relations of the United States, 1946"),
+                                   "the PDF's contents list stops before its last row")
+        let firstBody = try #require(texts.pdf.range(of: "Body 1."))
+        #expect(lastRow.lowerBound < firstBody.lowerBound)
+        // The documents alone are numbered, and the 31st, after a second section, is 31 in each format.
+        #expect(texts.pdf.contains("31. Foreign Relations of the United States, 1946, Volume VI, Document 431."))
+        #expect(texts.word.contains("31. Foreign Relations of the United States, 1946, Volume VI, Document 431."))
+        #expect(texts.html.contains("31. Foreign Relations of the United States, 1946, Volume VI, Document 431."),
+                "the web page's row for the 31st document is not numbered 31")
+        #expect(!texts.html.contains("61. ") && !texts.html.contains("62. "), "the web page numbers a section or a block")
+    }
+
+    @Test("A summary prints under its label in all three formats, the plan's line (L34: 1.0's PDF printed none)")
+    func summaryLabelInEveryFormat() async throws {
+        let doc = CollectionExportDocument(
+            documentId: "d1", volumeId: "frus1946v06", sortOrder: 0, bodyDepth: .summaryOnly, title: "Telegram 1",
+            bodyText: "", citation: "Foreign Relations of the United States, 1946, Volume VI, Document 401.",
+            summaryText: "Kennan reports the Soviet view.")
+        var options = Self.options
+        options.includeWordCloud = false
+        let texts = try await Self.texts([.document(doc)], options: options, name: "Labels")
+        for (format, text) in [("PDF", texts.pdf), ("Word file", texts.word), ("web page", texts.html)] {
+            let label = try #require(text.range(of: "Summary"), "the \(format) prints no Summary label")
+            let summary = try #require(text.range(of: "Kennan reports the Soviet view."), "the \(format) prints no summary")
+            #expect(label.upperBound <= summary.lowerBound, "the \(format)'s label is not above its summary")
+        }
     }
 }
 
@@ -8794,12 +8954,12 @@ struct TableCaptionExportTests {
                 "the caption must come before the table and the table's rows after it")
 
         // Footnote 7 is a Word footnote, referenced from the caption, between 6 and 8.
-        let reference = try #require(caption.firstMatch(of: /<w:footnoteReference w:id="([0-9]+)"\/>/),
+        let reference = try #require(caption.firstMatch(of: /<w:footnoteReference w:customMarkFollows="1" w:id="([0-9]+)"\/>/),
                                      "the caption carries no footnote reference: \(caption)")
         let footnotes = try part(package, from: "<w:footnotes ", through: "</w:footnotes>")
         let note = try part(footnotes, from: "<w:footnote w:id=\"\(reference.output.1)\">", through: "</w:footnote>")
         #expect(note.contains("Brzezinski added the columns labeled"), "the caption's reference names the wrong note: \(note)")
-        let ids = body.matches(of: /<w:footnoteReference w:id="([0-9]+)"\/>/).compactMap { Int($0.output.1) }
+        let ids = body.matches(of: /<w:footnoteReference w:customMarkFollows="1" w:id="([0-9]+)"\/>/).compactMap { Int($0.output.1) }
         #expect(ids == ids.sorted() && ids.count == 4, "the document's four references must run in order: \(ids)")
     }
 
@@ -9910,7 +10070,8 @@ struct FootnoteBlockDocxTests {
         let text: String
         /// Its paragraph style, or `nil` when it names none.
         let style: String?
-        /// Whether it carries the footnote's own number (`<w:footnoteRef/>`).
+        /// Whether it carries the footnote's own number: the volume's, as a custom mark's run since L34 (#2001),
+        /// where it was Word's count (`<w:footnoteRef/>`).
         let carriesNumber: Bool
         /// Whether it is a paragraph of a table cell.
         let inTable: Bool
@@ -9960,13 +10121,16 @@ struct FootnoteBlockDocxTests {
             case "<w:tbl>": depth += 1
             case "</w:tbl>": depth -= 1
             default:
-                let body = match.output.1.map(String.init) ?? ""
+                let whole = match.output.1.map(String.init) ?? ""
+                // The note's number, a run of its own in the reference style (L34), is no part of its text.
+                let mark = /<w:r><w:rPr><w:rStyle w:val="FootnoteReference"\/><\/w:rPr><w:t xml:space="preserve">[^<]*<\/w:t><\/w:r>/
+                let body = whole.replacing(mark, with: "")
                 let text = body.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/)
                     .map { String($0.output.1) }.joined()
                 paragraphs.append(Printed(
                     text: text.trimmingCharacters(in: .whitespaces),
                     style: body.firstMatch(of: /<w:pStyle w:val="([^"]+)"\/>/).map { String($0.output.1) },
-                    carriesNumber: body.contains("<w:footnoteRef/>"),
+                    carriesNumber: whole.contains(mark),
                     inTable: depth > 0,
                     indent: body.firstMatch(of: /<w:ind w:left="([0-9]+)"\/>/).map { String($0.output.1) }))
             }
@@ -10148,9 +10312,10 @@ struct FootnoteBlockDocxTests {
         </div>
         """)
         let note = try footnote(containing: "A plain note", in: part)
+        // L34 (#2001): the note opens on the volume's number, where it opened on Word's count.
         #expect(note == "<w:footnote w:id=\"1\">\n"
                 + "        <w:p><w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
-                + "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
+                + "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:t xml:space=\"preserve\">1</w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\">A plain note, with </w:t></w:r>"
                 + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">italics</w:t></w:r>"
@@ -10185,28 +10350,31 @@ struct FootnoteBlockDocxTests {
         </div>
         """)
         let pPr = "<w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
-        let number = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
-            + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
+        // Each note opens on the volume's number (L34, #2001), then a space.
+        func number(_ label: String) -> String {
+            "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:t xml:space=\"preserve\">\(label)</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
+        }
         let bareNote = try footnote(containing: "Bare words", in: part)
         let paragraphNote = try footnote(containing: "Words open on", in: part)
         let italicNote = try footnote(containing: "3149", in: part)
         let refNote = try footnote(containing: "Document 71", in: part)
         #expect(italicNote == "<w:footnote w:id=\"3\">\n"
-                + "        <w:p>\(pPr)\(number)"
+                + "        <w:p>\(pPr)\(number("3"))"
                 + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">Ibid</w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\">., pp. 3149, 3226.</w:t></w:r></w:p>\n"
                 + "      </w:footnote>")
         #expect(refNote == "<w:footnote w:id=\"4\">\n"
-                + "        <w:p>\(pPr)\(number)"
+                + "        <w:p>\(pPr)\(number("4"))"
                 + "<w:r><w:t xml:space=\"preserve\">Document 71</w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\">.</w:t></w:r></w:p>\n"
                 + "      </w:footnote>")
         #expect(bareNote == "<w:footnote w:id=\"1\">\n"
-                + "        <w:p>\(pPr)\(number)"
+                + "        <w:p>\(pPr)\(number("1"))"
                 + "<w:r><w:t xml:space=\"preserve\">Bare words open on a space.</w:t></w:r></w:p>\n"
                 + "      </w:footnote>")
         #expect(paragraphNote == "<w:footnote w:id=\"2\">\n"
-                + "        <w:p>\(pPr)\(number)"
+                + "        <w:p>\(pPr)\(number("2"))"
                 + "<w:r><w:t xml:space=\"preserve\">Words open on a space.</w:t></w:r></w:p>\n"
                 + "        <w:p>\(pPr)<w:r><w:t xml:space=\"preserve\">A second paragraph, with </w:t></w:r>"
                 + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">italics</w:t></w:r>"
@@ -10552,14 +10720,15 @@ struct UntitledSectionHeadingTests {
         #expect(page.contains("<h2 class=\"section-heading\">Named</h2>"), "the named heading is missing")
     }
 
-    @Test("Word's cached contents hold no empty line for an untitled heading")
+    @Test("Word's contents hold no empty row for an untitled heading")
     func wordContentsHaveNoEmptyLine() async throws {
         let items = try await resolve([.heading(""), .document("d1"), .heading("Named"), .document("d2")],
                                       purpose: .export)
-        let lines = DocxCollectionExporter.tocCachedEntries(for: items)
-        #expect(lines.count == 3, "\(lines)")
-        #expect(!lines.contains(""), "the Word contents carry an empty line: \(lines)")
-        #expect(lines.contains("Named"))
+        // Since L34 Word's contents are the plan's rows, as the other two formats' are.
+        let rows = CollectionContentsRow.rows(for: items, style: .citation)
+        #expect(rows.count == 3, "\(rows.map(\.text))")
+        #expect(!rows.contains { $0.text.isEmpty }, "the Word contents carry an empty row: \(rows.map(\.text))")
+        #expect(rows.contains { $0.text == "Named" })
     }
 
     @Test("The preview shows an untitled heading as Untitled section, in the body and the Contents, at its own level")
@@ -10670,7 +10839,7 @@ struct NestedFootnoteDocxTests {
 
     /// The ids `xml` references with `<w:footnoteReference>`.
     private func referencedIds(_ xml: String) -> [String] {
-        xml.matches(of: /<w:footnoteReference w:id="(-?[0-9]+)"\/>/).map { String($0.output.1) }
+        xml.matches(of: /<w:footnoteReference(?: w:customMarkFollows="1")? w:id="(-?[0-9]+)"\/>/).map { String($0.output.1) }
     }
 
     /// The `<w:footnote>` element of `footnotes` that holds `needle`.

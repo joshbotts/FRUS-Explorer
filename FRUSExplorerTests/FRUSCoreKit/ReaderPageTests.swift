@@ -682,6 +682,10 @@ struct ReaderPageTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-10-09: #1602 — initial implementation
+///   1.1 — L34: the contents rows' line in small type (`nav .toc-line`) and the notes' heading at every level
+///          (`.fn-section-heading`), which names the reader's `--color-secondary`: a colour the layer names by
+///          a variable of the reader's is read as the light palette the export is drawn in gives it, an
+///          `rgba(…)` laid over its ground before it is measured, as `ReaderPageTests` measures the reader's
 @Suite("The collection HTML export's own colours meet 4.5:1 (#1602)")
 struct CollectionExportContrastTests {
 
@@ -701,6 +705,8 @@ struct CollectionExportContrastTests {
         // The caption closes a summary block and a filled headnote.
         ".ai-attribution": [".summary-block", ".headnote"],
         "ul.generated-rows a": ["body"], ".generated-secondary": ["body"],
+        // L34: a row's line under a title of the author's, and the notes' heading at any level.
+        "nav .toc-line": ["nav"], ".fn-section-heading": ["body"],
         ".citation-card-citation": [".citation-card"], ".citation-card-note": [".citation-card"],
         ".summary-placeholder-note": [".summary-placeholder"],
     ]
@@ -713,7 +719,8 @@ struct CollectionExportContrastTests {
         var seen: Set<String> = []
         for rule in rules {
             guard let value = rule.declarations["color"], value != "inherit" else { continue }
-            let colour = try #require(ReaderPageTests.CSSColour.hex(value), "\(rule.selectors): \(value) is not a hex colour")
+            let colour = try #require(Self.colour(value),
+                                      "\(rule.selectors): \(value) is not a hex colour or a colour of the reader's")
             for selector in rule.selectors {
                 seen.insert(selector)
                 let grounds = try #require(Self.grounds[selector],
@@ -722,16 +729,31 @@ struct CollectionExportContrastTests {
                     let background = try #require(
                         ReaderPageTests.CSSColour.hex(ReaderPageTests.declarations(of: ground, in: css)["background"] ?? ""),
                         "\(ground) sets no background")
-                    let ratio = colour.contrast(with: background)
+                    let ratio = colour.over(background).contrast(with: background)
                     #expect(ratio >= 4.5, "\(selector) (\(value)) is \(String(format: "%.2f", ratio)):1 on \(ground)")
                     measured += 1
                 }
             }
         }
         // Counted: a parser that read no rule, or a layer left out of `ownLayersCSS`, would pass
-        // by measuring nothing. 29 rules draw text; one is drawn on two grounds.
+        // by measuring nothing. 31 rules draw text; one is drawn on two grounds.
         #expect(seen == Set(Self.grounds.keys), "listed and not found: \(Set(Self.grounds.keys).subtracting(seen).sorted())")
-        #expect(measured == 30)
+        #expect(measured == 32)
+    }
+
+    /// A colour of the layer's: a hex colour, or one of the reader's variables (`var(--color-secondary)`) as
+    /// the light palette the export is drawn in gives it, which is `rgba(…)` and is laid over its ground.
+    static func colour(_ value: String) -> ReaderPageTests.CSSColour? {
+        let value = resolved(value)
+        return ReaderPageTests.CSSColour.hex(value) ?? ReaderPageTests.CSSColour(value)
+    }
+
+    /// A colour the layer names by one of the reader's variables (`var(--color-secondary)`), as the light
+    /// palette the export is drawn in gives it; any other value as it is.
+    static func resolved(_ value: String) -> String {
+        guard value.hasPrefix("var(--"), value.hasSuffix(")") else { return value }
+        let name = String(value.dropFirst("var(--".count).dropLast())
+        return ReaderPageTests.variables(.light)[name] ?? value
     }
 
     @Test("The five colours #1602 replaced were under 4.5:1 where they were drawn")
