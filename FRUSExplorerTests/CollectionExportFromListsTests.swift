@@ -216,6 +216,20 @@ struct CollectionExportSentenceTests {
         #expect(!noNotes.printsNotes)
     }
 
+    /// A document entered twice with no summary stored is one summary to write, as the export writes and counts it.
+    @Test("A summary not stored counts once, however often its document is entered")
+    func summaryToWriteCountsOnce() async throws {
+        let context = ModelContext(try ModelContainer.makeTestContainer())
+        let (collection, entries) = try CollectionSummaryExportTests.summariesCollection(
+            in: context, documents: ["d1", "d1", "d2"], stored: ["d2"])
+        let tally = try await CollectionContentResolver(appState: AppState(), modelContext: context)
+            .exportTally(collection: collection, entries: entries, allNotes: [])
+        #expect(tally.documents == 3)
+        #expect(tally.summariesToWrite == 1)
+        #expect(CollectionExportSentence.deviceLacks(tally, format: .pdf, availability: .notEnabled)?
+            .hasPrefix("1 document has no stored summary.") == true)
+    }
+
     /// The sentence's forms, from the tally, in each kind of format.
     @Test("The sentence says how the documents print, and what prints with them")
     func sentenceForms() {

@@ -1001,7 +1001,8 @@ struct CollectionExportTally: Equatable, Sendable {
     var headnotesAsked = 0
     /// Of those, the documents with a stored summary for the headnote to print.
     var headnotesPrinted = 0
-    /// The documents printed as a summary with none stored, which the export has Apple Intelligence write.
+    /// The documents printed as a summary with none stored, which the export has Apple Intelligence write: each
+    /// document once, however often the collection holds it, as the export writes and counts them (#2018).
     var summariesToWrite = 0
     /// Whether any document prints the researcher's notes.
     var printsNotes = false
@@ -1016,13 +1017,14 @@ struct CollectionExportTally: Equatable, Sendable {
     /// they print (`CollectionExportDocument.includesNotes(options:)`, the renderers' rule).
     init(documents resolved: [CollectionExportDocument], options: CollectionExportOptions) {
         documents = resolved.count
+        var toWrite = Set<String>()
         for document in resolved {
             switch document.bodyDepth {
             case .full:
                 inFull += 1
             case .summaryOnly:
                 asSummaries += 1
-                if document.summaryText == nil { summariesToWrite += 1 }
+                if document.summaryText == nil { toWrite.insert("\(document.volumeId)/\(document.documentId)") }
             case .index:
                 asCitations += 1
             }
@@ -1035,6 +1037,7 @@ struct CollectionExportTally: Equatable, Sendable {
             }
             if !document.highlights.isEmpty { printsHighlights = true }
         }
+        summariesToWrite = toWrite.count
     }
 }
 
