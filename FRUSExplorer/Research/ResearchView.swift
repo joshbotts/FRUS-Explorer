@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import os
 
 // MARK: - ResearchSidebarItem
 
@@ -159,8 +160,8 @@ struct ResearchDocumentEntry: Identifiable {
 /// `@Query` for all `ResearchNote` and `UserTag` records. Document headers are loaded
 /// asynchronously from `document_cache` via `CrossReferenceStore.documentTitleFacts(for:)`
 /// and cached in `documentHeaders` state. The header load (`ResearchRowHeads`) runs whenever the
-/// selected category's documents change, and again when the cross-reference store arrives or is
-/// reopened (#1946).
+/// selected category's documents change, again when the cross-reference store arrives or is
+/// reopened, and again after a read that came back with nothing (#1946).
 ///
 /// Version history:
 ///   1.0 — Session 130: initial implementation
@@ -187,7 +188,8 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.10 — L21 (UI review MAC-5, #1921): each document row prints the document's number above its
 ///          head (`ResearchDocumentRowText`)
 ///   1.11 — L38 (#1946): the rows' heads load again when the cross-reference store arrives or is
-///          reopened (`ResearchRowHeads`), where a load made before the store kept each row's id
+///          reopened, and are read again when a read comes back with nothing (`ResearchRowHeads`),
+///          where a load made before the store, or one whose read found nothing, kept each row's id
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -1680,25 +1682,60 @@ enum ResearchDocumentRowText {
 ///   replaces may have read nothing for a volume that was being indexed (#275).
 ///
 /// Each of those is a new store, so a load keyed on the store's identity is made again with it.
-/// `ResearchRowHeadsTests` starts the loader with no store, and with a store that has no row for
-/// the document; before L38 each kept the row's id.
+///
+/// **And a read made while the store is there can come back with nothing.** In the check copy, with
+/// its volumes copied in again just before launch and the Research window opened 15 s after it,
+/// `v2`'s code kept every row's id in both such launches, and this loader keyed on the store alone
+/// did in one of three, with no new store to read again from: leaving the row and coming back
+/// loaded the heads at once, from the same store. `CrossReferenceStore.documentTitleFacts(for:)`
+/// keeps what its statement steps through, and a step that finds the database locked past the
+/// store's five seconds ends the loop with nothing and no error. So a read that comes back with
+/// nothing is made again, after each of ``retryDelays``, until one brings back a row.
+///
+/// `ResearchRowHeadsTests` starts the loader with no store, with a store that has no row for the
+/// document, and with a store whose first read finds nothing; before L38 each kept the row's id.
 ///
 /// Version history:
-///   1.0 — L38 (#1946): out of `ResearchView`; loads again when the store arrives or is reopened
+///   1.0 — L38 (#1946): out of `ResearchView`; loads again when the store arrives or is reopened,
+///          and reads again when a read comes back with nothing
 struct ResearchRowHeads: ViewModifier {
 
     /// The rows' documents, as `"volumeId/documentId"` keys.
     let documentKeys: [String]
     /// The store the heads are read from; `nil` until boot sets it.
     let store: CrossReferenceStore?
+    /// The waits before each further read, when a read comes back with nothing.
+    let retryDelays: [Duration]
     /// The heads read so far, keyed like ``documentKeys``. A load adds to them and replaces what it
     /// read again; it never removes one.
     @Binding var headers: [String: CrossReferenceStore.DocumentTitleFacts]
 
+    /// The waits the app reads again after: 1 s, doubling to 32 s, so about a minute in all. A list
+    /// none of whose documents is indexed costs six reads of one statement each, and a newer load,
+    /// or the window closing, cancels the rest.
+    nonisolated static let defaultRetryDelays: [Duration] = [.seconds(1), .seconds(2), .seconds(4),
+                                                            .seconds(8), .seconds(16), .seconds(32)]
+
+    /// Says when a read is made again, so a sighting like #1946's names its moment in the log.
+    nonisolated private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "ResearchRowHeads")
+
     func body(content: Content) -> some View {
         content.task(id: Load(documentKeys: documentKeys, store: store.map(ObjectIdentifier.init))) {
-            if let facts = await Self.facts(for: documentKeys, from: store) {
-                headers.merge(facts) { _, new in new }
+            var waits = retryDelays[...]
+            while true {
+                if let facts = await Self.facts(for: documentKeys, from: store), !facts.isEmpty {
+                    headers.merge(facts) { _, new in new }
+                    return
+                }
+                // With no store or no row to ask for there is nothing to wait for: a store's
+                // arrival is a new load.
+                guard store != nil, !documentKeys.isEmpty, let wait = waits.popFirst() else { return }
+                Self.log.notice("""
+                    A read of \(documentKeys.count, privacy: .public) heads came back with nothing; \
+                    reading again in \(wait.components.seconds, privacy: .public) s
+                    """)
+                // Cancelled when a newer load replaces this one or the rows leave the screen.
+                do { try await Task.sleep(for: wait) } catch { return }
             }
         }
     }
@@ -1740,8 +1777,12 @@ extension View {
     ///   - documentKeys: The rows' documents, as `"volumeId/documentId"` keys.
     ///   - store: The store to read them from; `nil` until boot sets it.
     ///   - headers: Where the heads go.
+    ///   - retryDelays: The waits before each further read when a read comes back with nothing;
+    ///     the app's are ``ResearchRowHeads/defaultRetryDelays``.
     func researchRowHeads(for documentKeys: [String], from store: CrossReferenceStore?,
-                          into headers: Binding<[String: CrossReferenceStore.DocumentTitleFacts]>) -> some View {
-        modifier(ResearchRowHeads(documentKeys: documentKeys, store: store, headers: headers))
+                          into headers: Binding<[String: CrossReferenceStore.DocumentTitleFacts]>,
+                          retryDelays: [Duration] = ResearchRowHeads.defaultRetryDelays) -> some View {
+        modifier(ResearchRowHeads(documentKeys: documentKeys, store: store, retryDelays: retryDelays,
+                                  headers: headers))
     }
 }

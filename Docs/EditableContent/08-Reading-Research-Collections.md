@@ -143,7 +143,7 @@ This document is no longer in the volume.
 ### Research — Changed by an update (R-5 P2)
 
 #### Sidebar row
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 784–785 | key: research.sidebar.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 786–787 | key: research.sidebar.updated -->
 
 Changed by an update
 
@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1200–1200 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1202–1202 | key: research.action.reviewChanges -->
 
 Review Changes…
 
@@ -2648,21 +2648,21 @@ Your research activity will appear here as you open documents, run searches, and
 <!-- END SOURCE: sessionLog.empty.detail.trail -->
 
 #### Research notes, tags, highlights, and collections you add…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 908–909 | key: research.empty.noDocs.allNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 910–911 | key: research.empty.noDocs.allNotes -->
 
 Research notes, tags, highlights, and collections you add from the document view will appear here.
 
 <!-- END SOURCE: research.empty.noDocs.allNotes -->
 
 #### Notes you write on a document will appear here. A document…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 911–912 | key: research.empty.noDocs.hasNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 913–914 | key: research.empty.noDocs.hasNotes -->
 
 Notes you write on a document will appear here. A document you have only tagged, highlighted, or collected appears under All Research Documents instead.
 
 <!-- END SOURCE: research.empty.noDocs.hasNotes -->
 
 #### No document you have annotated has changed since it was…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 923–924 | key: research.empty.noDocs.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 925–926 | key: research.empty.noDocs.updated -->
 
 No document you have annotated has changed since it was indexed on this device.
 

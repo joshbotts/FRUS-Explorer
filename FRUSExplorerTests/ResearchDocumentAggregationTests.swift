@@ -622,7 +622,9 @@ struct ResearchDocumentRowTextTests {
 /// and kept it until the sidebar's selection changed. The heads come from `AppState`'s
 /// cross-reference store, which boot sets after a window that opens first may already be up, and
 /// which `AppState.refreshReadOnlyStores()` replaces after every indexing batch; the load was made
-/// once for each set of documents, and one that found no store kept nothing.
+/// once for each set of documents, and one that found no store kept nothing. In the check copy a
+/// read made with the store there also came back with nothing, and a second read from the same
+/// store found the heads.
 ///
 /// These host the rows' loader, `View.researchRowHeads(for:from:into:)`, in a real hosting
 /// controller in a window of the test host's scene, since what failed is when SwiftUI runs a task,
@@ -642,6 +644,8 @@ struct ResearchRowHeadsTests {
         var documentKeys = ["frus1946v06/d474"]
         /// The store the loader is given; `nil`, as before boot sets it.
         var store: CrossReferenceStore?
+        /// The waits before each further read; the app's unless a test shortens them.
+        var retryDelays = ResearchRowHeads.defaultRetryDelays
         /// The heads the loader wrote.
         var headers: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
     }
@@ -651,7 +655,8 @@ struct ResearchRowHeadsTests {
         @Bindable var probe: Probe
 
         var body: some View {
-            Color.white.researchRowHeads(for: probe.documentKeys, from: probe.store, into: $probe.headers)
+            Color.white.researchRowHeads(for: probe.documentKeys, from: probe.store, into: $probe.headers,
+                                         retryDelays: probe.retryDelays)
         }
     }
 
@@ -668,21 +673,27 @@ struct ResearchRowHeadsTests {
                 .appendingPathComponent("ResearchRowHeads-\(UUID().uuidString)", isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             url = folder.appendingPathComponent("frus.db")
+            try execute("""
+                CREATE TABLE document_cache (volume_id TEXT NOT NULL, document_id TEXT NOT NULL,
+                    header TEXT, document_number TEXT, is_editorial_note INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (volume_id, document_id));
+                """)
+            for (key, head) in rows { try add(key, head: head) }
+        }
+
+        /// Adds a document's row, as an index pass writes one, through a connection of its own.
+        func add(_ key: String, head: String) throws {
+            let parts = key.split(separator: "/").map(String.init)
+            let number = parts[1].dropFirst()
+            let quoted = head.replacingOccurrences(of: "'", with: "''")
+            try execute("INSERT INTO document_cache VALUES ('\(parts[0])', '\(parts[1])', '\(quoted)', '\(number)', 0);")
+        }
+
+        private func execute(_ sql: String) throws {
             var db: OpaquePointer?
             guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
                   let db else { throw CrossReferenceError.databaseOpenFailed(message: "fixture") }
             defer { sqlite3_close_v2(db) }
-            var sql = """
-                CREATE TABLE document_cache (volume_id TEXT NOT NULL, document_id TEXT NOT NULL,
-                    header TEXT, document_number TEXT, is_editorial_note INTEGER NOT NULL DEFAULT 0,
-                    PRIMARY KEY (volume_id, document_id));
-                """
-            for (key, head) in rows {
-                let parts = key.split(separator: "/").map(String.init)
-                let number = parts[1].dropFirst()
-                let quoted = head.replacingOccurrences(of: "'", with: "''")
-                sql += "INSERT INTO document_cache VALUES ('\(parts[0])', '\(parts[1])', '\(quoted)', '\(number)', 0);"
-            }
             guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
                 throw CrossReferenceError.queryFailed(message: String(cString: sqlite3_errmsg(db)))
             }
@@ -768,6 +779,26 @@ struct ResearchRowHeadsTests {
             probe.store = try after.store()
             let loaded = try await settles { probe.headers["frus1946v06/d474"]?.header == Self.head }
             #expect(loaded, "the store was reopened and the row kept its id: no load was made with it")
+        }
+    }
+
+    /// The check copy's launch: a read made while the store is there comes back with nothing, and a
+    /// second read from the same store finds the row. Here the row is written after the first read,
+    /// so only a second read can find it; the waits are shortened to keep the test quick.
+    @Test("A read that came back with nothing is made again, from the same store")
+    func headLoadsWhenAReadIsMadeAgain() async throws {
+        let database = try Database(rows: [:])
+        defer { database.remove() }
+        let probe = Probe()
+        probe.store = try database.store()
+        probe.retryDelays = Array(repeating: .milliseconds(500), count: 6)
+        try await withHost(Rows(probe: probe)) {
+            // The first read has run, at once, and found nothing; the next is 500 ms after it.
+            try await Task.sleep(for: .milliseconds(300))
+            #expect(probe.headers.isEmpty)
+            try database.add("frus1946v06/d474", head: Self.head)
+            let loaded = try await settles { probe.headers["frus1946v06/d474"]?.header == Self.head }
+            #expect(loaded, "the read found nothing and none was made again: the row kept its id")
         }
     }
 }
