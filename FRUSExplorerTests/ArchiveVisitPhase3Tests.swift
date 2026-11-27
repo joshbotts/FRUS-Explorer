@@ -1670,6 +1670,7 @@ struct ArchiveVisitWindowHandoffTests {
 ///
 /// Version history:
 ///   1.0 — decision 62 (A15): initial implementation
+///   1.1 — 2026-11-26 (#1989): a duplicate shows the row its original shows
 @Suite("Archive Visit keys on the stored class, with a join (decision 62)")
 @MainActor
 struct ArchiveVisitStoredClassKeyTests {
@@ -1912,6 +1913,44 @@ struct ArchiveVisitStoredClassKeyTests {
                                                    mintIfMissing: true, in: context))
         #expect(listed.userNote == "Hue")
         #expect(file.targets?.count == rows)
+    }
+
+    /// #1989: Duplicate copies every stored target so that the copy reads as the original does. A target two notes'
+    /// rows answer for shows the earlier created of them, so a copy whose rows were all dated at the copy showed
+    /// whichever row the copy made first, in the order the plan's targets came, which a to-many relationship does
+    /// not fix. Each copied row now keeps its source's creation date; its modification date is the copy's.
+    @Test("A duplicate shows the row its original shows on a target several rows answer for, each row keeping its creation date (#1989)")
+    func aDuplicateShowsItsOriginalsRow() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let dayOne = ArchiveVisitTier(label: "Day one", order: 0)
+        let dayTwo = ArchiveVisitTier(label: "Day two", order: 1)
+        let notes = plan(seeding: [Self.d137, Self.d148], in: context)
+        notes.tiers = [dayOne, dayTwo]
+        row(Self.oldKey(Self.d137), of: notes, created: 100, tier: dayTwo, note: "second", in: context)
+        row(Self.oldKey(Self.d148), of: notes, created: 0, tier: dayOne, note: "first",
+            included: false, in: context)
+        try context.save()
+
+        let copy = notes.duplicate(in: context)
+        try context.save()
+        let created: [String: Date] = Dictionary(uniqueKeysWithValues: (notes.targets ?? []).compactMap { row in
+            row.createdAt.map { (row.targetKey, $0) }
+        })
+        let copied = copy.targets ?? []
+        #expect(copied.count == 2 && created.count == 2)
+        for row in copied {
+            #expect(row.createdAt == created[row.targetKey], "\(row.targetKey.prefix(60))")
+        }
+
+        let stub = DerivationStub(sources: [Self.d137, Self.d148])
+        let original = await ArchiveVisitDerivation.derive(plan: notes, indexedVolumeIds: [], dataSource: stub)
+        let duplicated = await ArchiveVisitDerivation.derive(plan: copy, indexedVolumeIds: [], dataSource: stub)
+        #expect(duplicated.overlay.notes[Self.chicom] == "first")
+        #expect(duplicated.overlay.tierAssignments[Self.chicom] == dayOne.id)
+        #expect(duplicated.overlay.excludedKeys.contains(Self.chicom))
+        #expect(duplicated.overlay.storedKey(for: Self.chicom) == original.overlay.storedKey(for: Self.chicom))
+        #expect(duplicated.overlay.superseded == original.overlay.superseded)
     }
 
     /// The text rule's conjuncts, one fixture each, read by `resolve` alone.

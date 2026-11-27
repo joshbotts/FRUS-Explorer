@@ -4404,3 +4404,70 @@ The orchestration session started this one for row L61, on `claude/l61-generator
 - **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session ("I merge on green (Recommended)"). Its Auto-fix is on and GitHub's auto-merge is off.
 - **The release runbook's** §2 manifest row, step 2, §4.5 and step 11 keep their checks and now name the fixes as landed (L28's brief), and §10a says both landed. The plan's L61 brief, L28's, has this row's record under it.
 - **Offered, not taken** (decision 183): the two scripts still default to the 300m's store and pool, which the brief did not ask to change and which the corpus gates' documents cite. A run at the defaults now ends in a refusal: `build_layout.py` refuses the default pool as it stands, which names no store, and a layout of the 300m's, made once `pool_docs.py` has run again at its defaults, is refused by the pack before anything is written.
+
+## Session 2026-11-26 — L33, three small kit fixes: a duplicated Archives Visit shows the row its original shows, the Mac's Chronology magnifier names its months, and the series export's caveat takes its host's locale; #1972 left out, on the owner's word, since FRUS Explorer Light's phase 4 changed what it asked for
+
+The orchestrator session ("Development session orchestration") started this one for row L33 of the plan of record from 2026-11-25, on `claude/l33-four-kit-fixes-29dffb` from `v2` at `a17023f9`, L27's merge. The row: four small kit fixes FRUS Explorer Light found, #1989, #1971, #1973 and #1972, a commit each. Commits: `46f62d2b` (#1989), `a77b7e94` (#1971), `a9cb13be` (#1973) and a docs commit.
+
+**#2027's merge**
+- L61 merged as `5fba4c9a`, a squash onto `a7d8e017`, at 05:38:54 UTC on 2026-11-27, from its head `ac51df68`. Its tree, `6b56e90e`, is the head's. It closed #2022 and #2023. This entry records it.
+- L28's #2026 (`a7d8e017`, onto `e3260a95`, at 04:27:33 UTC, from `007981d0`, tree `a32f5e9d`, closing no issue) is recorded in L61's entry above, and L31's #2025 in L28's.
+- This branch took `v2` in at `5fba4c9a`. The three conflicts were all records: the session log, the plan of record's decisions and the Amendment-Log. Each was resolved with `v2`'s side first and this row's after it. L31's decisions 203 to 206 and L28's 207 to 209 put this row's at 210.
+
+**Each defect first** (decision 183). The new tests went in first and ran against `v2`'s code, before any fix, through `Scripts/heavy.sh`:
+- **In the package** (`swift test --filter`, FRUSCoreKitTests): 25 tests in 4 suites, the two new ones failing with 16 issues.
+  - #1989: the kit's `duplicate(of:id:now:)` dated all eight copies' target rows at the copy. Under six of the eight copy ids, which a script had predicted by the kit's own hash, the copy showed the later row's note.
+  - #1971: both magnifier calls named February and October `M02` and `M10`, where the reader's own calendar names them `Feb` and `Oct`.
+- **In the app's unit target** on the iPhone 17 under iOS 27.0: 26 tests, 23 passed and the 3 new ones failed.
+  - The app's test, on decision 62's fixture of two notes' rows answering one class target: `duplicate(in:)` dated the copied rows at the copy (04:11 UTC on 2026-11-27, against their sources' 21 September). On this run the copy also showed the other note's row ("second", Day two, included) where the original shows "first", Day one, excluded. The issue says that part shows only by chance.
+  - The two kit tests failed as in the package.
+- **#1971 was not seen in 1.0 (1861).** `tools/mac-check-copy/setup.sh --ref 1.0-release` and `build.sh --no-launch` ran in a scratch of their own (`~/Library/Caches/FRUS-Explorer/l33/mac`), so the shared copy and its home were untouched: built in 263 s, 27 volumes seeded and indexed.
+  - Chronology over 12/31/1955–12/31/1992 drew the year chart over 1960–63, capped, so the magnifier would read the aggregate path.
+  - No pointer raised the magnifier: computer use's moves, with full-screen control or without, nor real mouse-moved events posted at the bar with CoreGraphics (posting allowed). The README's limits say so: synthetic hover misses SwiftUI's hover.
+  - The code at the tag is the code the tests ran (`monthLabel` and the view's `Text(verbatim: bar.label)`). The shared preferences were exported first and put back after (163 keys, none differing); the walk changed one window frame.
+- **#1973 shows nowhere on an Apple screen.** A probe on this Mac (macOS 27.2.1, Swift 6.4.2) printed `.formatted(.list(type: .and))` as the process's locale joins it: "A, B, and C" in en_US, "A, B und C" under `-AppleLocale de_DE`, "A, B and C" in en_GB. The same probe printed `M02` and `M10` from `Calendar(identifier: .gregorian)` under all three, whose locale is the root locale.
+
+**#1972: left out** (decision 210). Reading FRUS Explorer Light's `main` (`0e1990d6`, the README streamlined after phase 4's sign-off) before writing the type:
+- its server counts with a tagger of its own (`FRUSWordCloudTagger`), so it counts a live scope's cloud (S29e), ranks Distinctive (S29f) and reads Collocates (S29f);
+- the refusals it still words itself, citing #1972, are others: Distinctive's and Collocates' count in printed forms with no printed-form reference (`WordCloudDistinctive.keynessDetail(_:)`, `Collocates.detail(for:)` and `printedFormsNote(for:)`), and a lens its tagger cannot serve (`WordCloudLive.lensUnavailable(_:health:)`), the three name lenses, phase 5's.
+- The orchestrator was told in one line. The owner answered L33's question "Leave it out (Recommended)", over re-scoping it to today's refusals or building it as decided. A comment for #1972, shown to the owner first, says so.
+
+**#1989** (`46f62d2b`)
+- `ArchiveVisitPlanWrites.duplicate(of:id:now:)`: each copied stored target keeps its source's `createdAt`, or `now` where it has none, which shows the same row, as a missing date sorts last; `lastModified` stays `now`; the plan and its seeds are created `now`. The doc says a tie still falls to the re-derived ids, and the type's note on dates says a duplicate's targets are the one exception.
+- `ArchiveVisitPlan.duplicate(in:)` sets `state.createdAt = copied.createdAt` after the initialiser. `ModelModificationStamper` writes `lastModified` alone, and never on an inserted model, so the copy keeps the date.
+- Tests: `ArchiveVisitPlanWritesTests.duplicateKeepsEachTargetsCreationDate` over eight copy ids, with a guard that one sorts the later row first, and a row with no date; the existing duplicate test brought to the rule; `ArchiveVisitStoredClassKeyTests.aDuplicateShowsItsOriginalsRow` over SwiftData through the derivation.
+
+**#1971** (`a77b7e94`)
+- `monthLabel(fromMonthKey:locale:)` gives the Gregorian calendar the locale; `magnifierBreakdown(for:locale:)` and `magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:locale:)` take `locale: Locale = .autoupdatingCurrent`, through `dateBucketLabel(forKey:locale:)`. The app's forwarders and the package's test support keep their signatures; the view model's two doc comments name the kit's calls as they read now.
+- Tests: `ChronologyMagnifierLabelTests`, three: with no locale, the reader's own month names by both calls; "Feb" and "Oct" in en_US and "Feb" and "Okt" in de_DE by both; a month's bars by day and a day's by volume in every locale.
+
+**#1973** (`a9cb13be`)
+- `SeriesAnalyticsExport.provenance(…, locale: Locale = .autoupdatingCurrent)` joins the hidden categories with `.list(type: .and).locale(locale)`. The app passes none, so its caveat is the one it was.
+- Test: `SeriesAnalyticsExportTests.hiddenCategoriesAreListedInTheLocalePassed`: three categories in en_US and de_DE, two by the locale's word, the default the formatter's own join, none hidden no caveat.
+
+**EditableContent.** Thirteen ranged blocks in `08-Reading-Research-Collections.md` re-pointed by script, each checked to start on its key's line before and after: `chronology.spanning.header` 374 → 376 with #1971, and the twelve on `SeriesAnalyticsExport.swift` with #1973. A bullet each in `Amendment-Log.md`. No text changed.
+
+**Checks**
+- **While developing,** through `Scripts/heavy.sh`, after the three fixes:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test --filter 'ArchiveVisit|DuplicateRecordOrderTests|Chronology|SeriesAnalyticsExportTests|AnalyticsProvenanceOverrideTests|SourceProvenanceDataTests'`: 126 tests in 16 suites passed.
+  - `build-for-testing` on the iPhone 17 under iOS 27.0: the known residues alone, `GeneratedSummary`'s redundant `Sendable` and the AppIntents note.
+  - The app's 18 affected suites there: 250 tests passed, none failed or skipped. `CodingStandardsAuditTests`, `EditableContentKeyTests`, `FRUSCoreKitBoundaryTests` and `SharedKitsBoundaryTests` were among them.
+  - `Scripts/check_repo_hygiene.py`: all six checks pass.
+  - The version-history lines were dated afterwards, in place, and the thirteen ranges checked again by script against their keys.
+- **The landing checks, on the merged tree** (`ec2293fe`, tree `78acbd78`, with `v2` at `5fba4c9a`), in one `heavy.sh` call:
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,253 tests in 609 suites over 39 runs, none failed (`v2`'s 5,248 and this row's 5). Its build printed one older warning, an unused binding at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - A clean `build-for-testing` on the iPhone 17 under iOS 27.0.
+  - The unit target there, the app removed first and the TEI mirror set: 8,315 tests, of which 8,296 passed, 17 skipped and 1 was an expected failure, in 772 s. The six new tests passed. One failed: `RichTextRestingCapTests.theColorPickerKeepsTheBlockOpen()`, whose Text Color presented no colour picker in 15 s, the test CI's job C skips by name for that failure and the one L27's landing met. Its suite alone, rerun on the same simulator from the same build, failed it again (20 of 21 passed). So `v2` at `5fba4c9a` was built from a `git archive` in a folder of its own, and the suite ran base, branch, base on that simulator: the base failed it the same way, then the branch and the base each passed 21 of 21. Each of the three failures came on the first run after the simulator booted, and both passes on later runs in the same boot.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**The symbol diff**
+- Unsigned Debug `FRUSExplorerMac`, `v2` at `a17023f9` (a `git archive`) beside `a9cb13be`, each built from empty on a real path and never launched: "** BUILD SUCCEEDED **" both (52 s and 50 s), with the same five warning lines, the known residues.
+- `nm -j` of each `FRUS Explorer.debug.dylib`, demangled, with private discriminators and closure numbers dropped: 257,479 names on `v2` and 257,483 here, 17 removed and 21 added (raw, 267,719 and 267,723, 21 and 25).
+  - **Renamed by the new parameter, 17:** `ChronologyGrouping.magnifierBreakdown(for:)` and `magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:)`, each with five closures and thunks; the private `monthLabel(fromMonthKey:)` and `dateBucketLabel(forKey:)`; `SeriesAnalyticsExport.provenance(…)` with its closure and `extra`'s default-argument generator. Each is among the added under its new signature.
+  - **New, 4:** the generators of the three `locale` defaults, which the app's calls use since they pass none, and `Calendar.locale`'s setter, which the month label now calls.
+  - **#1989 changes no name:** `duplicate(of:id:now:)` and `duplicate(in:)` keep their signatures.
+
+**Owed after the merge:** the hand-over notes for FRUS Explorer Light on #1989, #1971 and #1973, and #1972's comment, each shown to the owner first; and the memory hub's record of the row.
