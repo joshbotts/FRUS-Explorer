@@ -21,8 +21,9 @@ import Foundation
 /// document's own `volumeId`/`documentId` supply the citation key
 /// (`{volumeId}_{documentId}`). Records are rendered by
 /// `BibtexExporter.export(zoteroItem:volumeId:documentId:)`.
-/// `options.includeNotes == false` strips research-note text (`annote`) from every
-/// record; tags (`keywords`) are always kept.
+/// A document's research-note text (`annote`) goes out where its notes print — its own setting,
+/// else its section's, else the collection's (`CollectionExportDocument.citationRecord(options:)`,
+/// #2000); tags (`keywords`) are always kept.
 ///
 /// A `.bib` file is a flat reference list, so only `.document` items apply — section
 /// headings and prose blocks have no BibTeX representation and are dropped.
@@ -41,6 +42,9 @@ import Foundation
 ///          writes `Untitled Collection.bib` rather than a hidden `.bib`
 ///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, over the kit's
 ///          `BibtexExporter`; `bibTeX(for:options:)` gives the text `export` writes
+///   1.3 — L29 (#2000): a record's `annote` follows the document's research-notes setting, as the page,
+///          the PDF and Word print the notes; it followed the collection's switch alone, so a note turned
+///          off for a document or a section went into the file
 public final class BibTeXCollectionExporter: CollectionExporter {
 
     /// Creates an exporter.
@@ -52,16 +56,17 @@ public final class BibTeXCollectionExporter: CollectionExporter {
     ///
     /// - Parameters:
     ///   - items: The ordered, pre-resolved items; only `.document` items apply.
-    ///   - options: The export's options; `includeNotes == false` strips `annote`.
+    ///   - options: The export's options; a document's `annote` goes out where its notes print
+    ///     (`CollectionExportDocument.includesNotes(options:)`).
     /// - Returns: The BibTeX text.
     public func bibTeX(for items: [CollectionExportItem], options: CollectionExportOptions) -> String {
         let documents = items.documents.sorted { $0.sortOrder < $1.sortOrder }
         let exporter = BibtexExporter()
 
         let records: [String] = documents.compactMap { doc in
-            guard var item = doc.zoteroItem else { return nil }
-            if !options.includeNotes { item.notes = nil }
-            return exporter.export(zoteroItem: item, volumeId: doc.volumeId, documentId: doc.documentId)
+            doc.citationRecord(options: options).map {
+                exporter.export(zoteroItem: $0, volumeId: doc.volumeId, documentId: doc.documentId)
+            }
         }
 
         return records.joined(separator: "\n\n") + (records.isEmpty ? "" : "\n")

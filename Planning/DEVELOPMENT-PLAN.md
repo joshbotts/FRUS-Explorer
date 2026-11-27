@@ -4471,3 +4471,78 @@ The orchestrator session ("Development session orchestration") started this one 
   - **#1989 changes no name:** `duplicate(of:id:now:)` and `duplicate(in:)` keep their signatures.
 
 **Owed after the merge:** the hand-over notes for FRUS Explorer Light on #1989, #1971 and #1973, and #1972's comment, each shown to the owner first; and the memory hub's record of the row.
+
+## Session 2026-11-27 — L29, what leaves a collection and what a copy keeps: a document's research-notes setting holds in BibTeX, RIS, the Zotero send and a shared file; a collection file opened on its author's account makes its own headnote drafts; Duplicate and the snapshot carry every setting, the snapshot the smart collection's blocks; an added entry lands before the back matter
+
+The plan of record's session started this one for row L29, on `claude/l29-collection-notes-and-copies-4e4dd7` from `v2` at `a17023f9`, L27's merge, in Wave 2 with L30, L32, L33 and L57 on the owner's "start Wave 2". The row: #2000, #1999's import half, #1996, #1995, and the third review's J39. Commits: `d927be62` (#2000), `ab4a5100` (#1999's import half), `b340bd6e` (#1996 and J39), `c9a9b0ae` (#1995), and a docs commit.
+
+**#2028's merge**
+- L33 merged as `24616a57`, a squash onto `5fba4c9a`, at 07:20:39 UTC on 2026-11-27, from its head `17aa6225`. Its tree, `34462b9e`, is the head's. It closed #1971, #1973 and #1989. This entry records it.
+- L61's #2027 (`5fba4c9a`, onto `a7d8e017`, at 05:38:54 UTC, from `ac51df68`, tree `6b56e90e`, closing #2022 and #2023) is recorded in L33's entry above, L28's #2026 in L61's, and L31's #2025 in L28's.
+- This branch took `v2` in at `24616a57` (`71bcbcdf`). The two conflicts were both records, the session log and the Amendment-Log, each resolved with `v2`'s side first and this row's after it. This row takes no decision, so L33's 210 is still the last. On the merged tree a script read all 837 ranged EditableContent blocks: each starts on its key.
+
+**Each defect, first** (decision 183)
+- **#1999 in 1.0 (1861).** Asked who should make the design's §12 run, the owner chose "This session (Recommended)". So this session made it with Computer Use, in the Mac check copy built at `1.0-release` (`08e8bac8`), which has its own bundle id (`…maccheck`) and a local store, with `frus1961-63v01` seeded.
+  - A collection, *L29 Original*, of d1, its headnote turned on and written: *ORIGINAL headnote written by the author.*
+  - Exported as a `.fruscollection`. The file named the headnote by its draft's id alone: `"headnoteSummaryId" : "7E8E3DA1-E4FB-4B47-B150-788670E8BF52"`, and no text.
+  - Imported through *Import Collection…*: a second *L29 Original*, whose preview printed the original's headnote.
+  - The copy's headnote edited to *COPY headnote, edited after import.* The original's settings then read *No headnote yet*, and its preview *No stored summary for this document — generate one in the document view to fill this headnote.*
+  - The copy's store: the original's entry still named `7E8E3DA1…`, which it no longer held; the one draft left was the copy's, `C914BA17…`.
+  - The copy was quit and its preferences put back with `prefs-restore.swift` (163 keys, none differing).
+- **The others as failing tests,** written first and run on the tree with no fix, through `Scripts/heavy.sh`:
+  - **The kit** (`swift test`, `CollectionNotesSettingTests` and `CollectionValuesTests`): 9 tests in 2 suites, the three new ones failing with 9 issues. BibTeX and RIS carried the notes-off document's note with the collection's notes on, and dropped the notes-on document's with them off, while the page printed exactly the expected two. A shared file with notes included carried `d1` to `d5`, where `d2` and `d3` are off. A snapshot carried neither the settings nor the blocks.
+  - **The app** (the iPhone 17 under iOS 27.0, `80CF0F18`): 18 tests, 8 passed and 10 failed, each new test at its defect.
+    - The import named the original's draft (`F7D61CA9…` both).
+    - Duplicate dropped *Stamp active project*.
+    - Create Static Snapshot inserted no setting and no block.
+    - A document, a heading, a note block and a passage added to a collection ending in a Bibliography and a Persons Index were listed after both (`d1, d2, bibliography, personsIndex, d3, …`).
+    - A document added to a collection of a Chronology and a Bibliography went after the Bibliography.
+    - Two devices' appends sat at or after the blocks: `d3` at 4, `d4` to `d6` at 4 to 6, the blocks at 2 and 3.
+    - The send, read from the sheet, posted every item as resolved.
+
+**#2000** (`d927be62`)
+- **One rule.** `CollectionExportDocument.includesNotes(options:)` is the rule the web page, the PDF and Word print a document's notes by: its own setting or its section's, which the assembly hands on, else the collection's. The three renderers now call it.
+- `citationRecord(options:)` is the document's Zotero item by that rule, its tags kept either way. BibTeX writes through it, and RIS through `ZoteroCollectionExporter.records(for:options:)`.
+- **The Zotero send** posts those records, under the options the RIS file is written with (`ExportFormat.zoteroJSON.exportOptions(for:)`). It had posted every item as resolved and read no setting.
+- **A shared file** writes a document's notes only where they print and the sheet's switch is on. The section's setting is read through `CollectionOutline.sectionOverrideValues`, the cascade the assembly resolves by. The file's format does not change.
+- **The pins** (`CollectionRenderingPinTests`): `everything.bib` and `everything.ris` re-taken (1,061 → 1,529 bytes and 810 → 1,163), since the fixture's notes-off document, `d10`, gained a Zotero item with a note: its record now prints, without the note. With `d10` taken out, a throwaway test (never committed) rendered both to their 2026-10-25 pins, so no byte of the records already pinned moved. The page and the package read no Zotero item, so their pins hold.
+
+**#1999, the import's half** (`ab4a5100`)
+- `GeneratedSummary.duplicateHeadnoteDraft(id:to:in:)` is Duplicate's copy of a draft, by its id; Duplicate's own call forwards to it. `NativeCollectionSerializer.apply` calls it for each entry it inserts, so all three import paths make their own drafts: Import Collection… on either platform, and a file opened from Files, Mail, AirDrop or Finder.
+- A document's own summary stays shared, and an id this store does not hold, a colleague's, is kept as the file wrote it.
+- The file carrying a headnote as its text is L58's (decision 199).
+
+**#1996 and J39** (`b340bd6e`)
+- Duplicate copies *Stamp active project* and *Append the query log*.
+- **The snapshot** (`SmartCollectionSnapshot.snapshot(of:results:id:entryIds:)`) carries every field of the smart collection's values but its id, name, link and dates, where it had carried the composition alone. So a setting added to the values later travels too.
+- **Its entries** are the smart collection's front-matter blocks, the results, then its other blocks, each group in its order, as `resolveSmartItems` prints them. A block type this build does not know goes after the results. The entries from before the link stay behind.
+- The app writes the values into the models through `writeImport`, Import from JSON's one mapping, every field. It reads the smart collection's live entries, since `documentEntries` goes on listing one deleted from the context until a save (#1359): a block deleted a moment before is not carried, which its test holds.
+- **A claim of the brief does not hold, as CR's J39 had said:** "the snapshot copies what its comment says it copies" asked for nothing, since the comment described the code. The snapshot now does what the design's §4.5 says.
+- **Duplicate's test** compares the two collections as the research export records them, every field. A setting the export carries and Duplicate drops fails it. The walk over the schema, with what a snapshot must not copy, is L43's.
+
+**#1995** (`c9a9b0ae`)
+- **The rule.** `CollectionEntryOrdering.nextSortOrder(in:outline:count:)` puts an append after everything but the collection's back matter: the run of apparatus blocks it ends with (`backMatter(of:)`), or, in a collection of blocks alone, those after the front-matter blocks that open it.
+- **Room.** Where the back matter's first position is not past the positions the append takes, the run moves up to `backMatterRoom` (1,000, the bulk add's limit) past them. An append that finds room moves nothing.
+- **Two devices** that append before either syncs each write the blocks past their own entries, so whichever write a sync keeps, the blocks stay last while neither adds more than 1,000 at once.
+- An editor's own append goes into its outline at the same place (`insertAppended(_:into:)`), so the outline, the preview and an export agree at once.
+- **Every append path** goes through it: Add to Collection from the reader and from Search, the bulk add, the editors' Add Documents and Add Highlighted Passages, a passage from the reader or an entry's settings, and Add Section Heading and Add Note Block.
+
+**Docs**
+- Both manuals' chapter 12: where a new row goes; that BibTeX, RIS, the Zotero send and a shared file carry a document's notes where they print; that a file opened on its author's account gets headnotes of its own; that Duplicate and the snapshot keep every setting, the snapshot the blocks. The *AI Generated* notice is kept.
+- 23 EditableContent blocks re-pointed, each checked by script against its key, with a bullet in the amendment log. No shipped string changes.
+- The plan's L29 record.
+
+**Checks**
+- **The scoped run** of the fixes, through `Scripts/heavy.sh` in one script:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test` over the collection suites: 32 tests in 6 suites, the one failure the BibTeX and RIS pins, re-taken.
+  - The app's collection, export, import and source-scan suites on the iPhone 17 under iOS 27.0 (54 suites named, `RichTextRestingCapTests` left to the full run as known flaky): 623 tests, 621 passed. The two failures were the pins and the send test's own string, which looked for `records(for:` on one line; it now looks for the call. `EditableContentKeyTests`, `CodingStandardsAuditTests` and both boundary suites passed.
+  - The warnings were the two known residues.
+- **After the snapshot was made to read the smart collection's live entries** (folded into `b340bd6e`), its six suites ran again on `7f3c1b92`, clean, through `Scripts/heavy.sh`: 36 tests on the iPhone 17 under iOS 27.0, all passed, `EditableContentKeyTests` among them.
+- **The landing checks, on the merged tree** (`9ab170a3`, tree `de365719`, with `v2` at `24616a57`), in one `heavy.sh` call, from 07:33 to 07:54 UTC, once L37's job had released the lock:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+  - The unit target there, the app removed first and the TEI mirror set: 8,328 tests in 1,010 suites, of which 8,310 passed, 17 skipped and 1 was an expected failure, and none failed, in 753 s (8,315 at L33's landing, and this row's 13). Each of the 13 new tests passed, and so did `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary suites, `CloudKitSchemaInventoryTests` and `CollectionRenderingPinTests`. `RichTextRestingCapTests` passed 21 of 21 on the first run after the boot, so the colour-picker test L33's landing met needed no rerun.
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,257 tests in 610 suites over 39 runs, and none failed (5,253 at L33's landing, and this row's 4). Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.

@@ -57,6 +57,8 @@ import SwiftData
 ///          stored property changed
 ///   1.7 — #1915 (L24): `reconcileSummaryText(container:pipeline:)`, the launch replay's summary
 ///          pass, which Import from JSON runs too; no stored property changed
+///   1.8 — L29 (#1999): `duplicateHeadnoteDraft(id:to:in:)`, Duplicate's copy of a draft by its id, which a
+///          collection file's import makes too; no stored property changed
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -266,13 +268,26 @@ extension GeneratedSummary {
     /// without touching the original's drafts (#300). If `sourceEntry.headnoteSummaryId` points at a
     /// *real* document summary (not a draft), it is left shared: that summary belongs to the document,
     /// so the entry-field copy's identical id is correct.
-    /// **`sourceContentHash` is deliberately absent below.** A headnote draft is the reader's own
-    /// text, collection-private, and excluded from the review counts — it does not describe a
-    /// version of the document in the sense the field means, so a copy must not invent one.
     static func duplicateHeadnoteDraft(from sourceEntry: CollectionEntry,
                                        to copyEntry: CollectionEntry,
                                        in context: ModelContext) {
-        guard let sid = sourceEntry.headnoteSummaryId else { return }
+        duplicateHeadnoteDraft(id: sourceEntry.headnoteSummaryId, to: copyEntry, in: context)
+    }
+
+    /// Gives `copyEntry` a headnote draft of its own where `id` names a draft this store holds: a new draft
+    /// with the same text, format and authorship, which `copyEntry.headnoteSummaryId` then names. Any other
+    /// id is left as it is: a real document summary belongs to the document, and an id this store does not
+    /// hold, a colleague's, resolves to nothing here, as before.
+    ///
+    /// Duplicate calls it with the source entry's id, and a collection file's import with the id the file
+    /// names (#1999): a file opened on its author's own account named the original's draft, which the copy's
+    /// Edit and Regenerate then deleted, as deleting the copy did.
+    ///
+    /// **`sourceContentHash` is deliberately absent below.** A headnote draft is the reader's own
+    /// text, collection-private, and excluded from the review counts — it does not describe a
+    /// version of the document in the sense the field means, so a copy must not invent one.
+    static func duplicateHeadnoteDraft(id: UUID?, to copyEntry: CollectionEntry, in context: ModelContext) {
+        guard let sid = id else { return }
         let drafts = (try? context.fetch(FetchDescriptor<GeneratedSummary>(
             predicate: #Predicate { $0.id == sid && $0.isHeadnoteDraft }))) ?? []
         guard let draft = drafts.first else { return }
