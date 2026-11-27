@@ -4304,7 +4304,7 @@ The owner answered, in the session, the four questions the measurement raised: d
   - `build-for-testing`, with the two residues alone;
   - 18 scoped app suites on the iPhone 17 under iOS 27.0, 250 tests passed;
   - the Mac build.
-- **At the head of the queue, after `v2` was taken in:** [RUNS].
+- **At the head of the queue, after `v2` was taken in,** on `b7a75db2` (tree `f6ec50f0`, with `v2` at `a17023f9` taken in as `4186ed4e`): `build-for-testing`, with the two residues alone (`v2`'s merge brought no shared code, and L27's three app files compiled clean); the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,309 tests in 1,003 suites passed, 17 skipped as at L26, the six known issues; `swift build --target FRUSCoreKit`; `swift test`, 5,234 tests in 606 suites over 39 runs, none failed; the Mac build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
 
 **For the owner**
 - **This row's pull request**, opened once L31 reached the head of the queue.
