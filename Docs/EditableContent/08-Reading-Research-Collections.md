@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1196–1196 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1197–1197 | key: research.action.reviewChanges -->
 
 Review Changes…
 

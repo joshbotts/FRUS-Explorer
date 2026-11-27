@@ -315,7 +315,8 @@ struct ResearchView: View {
             DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
                                       title: DocumentDisplayTitle.text(documentHeaders[entry.id], documentId: entry.documentId))
         }
-            .task(id: selectedItemDocumentIds) { await loadHeaders() }
+            .researchRowHeads(for: selectedItemDocumentIds, from: appState.crossReferenceStore,
+                              into: $documentHeaders)
             // Reload note-sourced headers when any note changes.
             .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
             // #1275: keep the notes list's snapshot in step with the live note query without
@@ -1260,13 +1261,11 @@ struct ResearchView: View {
         return documents(for: item).map(\.id)
     }
 
+    /// Loads the heads of the selection's documents, as ``ResearchRowHeads`` does: for the note
+    /// observers below `body`, which load again without the documents changing.
     private func loadHeaders() async {
-        guard let store = appState.crossReferenceStore,
-              let item = selectedItem else { return }
-        let pairs = documents(for: item)
-            .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        guard !pairs.isEmpty else { return }
-        if let headers = try? await store.documentTitleFacts(for: pairs) {
+        if let headers = await ResearchRowHeads.facts(for: selectedItemDocumentIds,
+                                                      from: appState.crossReferenceStore) {
             documentHeaders.merge(headers) { _, new in new }
         }
     }
@@ -1660,5 +1659,59 @@ enum ResearchDocumentRowText {
         let title = DocumentDisplayTitle.text(facts, documentId: documentId)
         let number = CitableDocumentNumber.resolve(printed: facts?.documentNumber, documentId: documentId)
         return (label, DocumentHeaderDisplay.numberedRow(header: title, number: number).title)
+    }
+}
+
+// MARK: - ResearchRowHeads
+
+/// Loads the Research rows' heads from the cross-reference store: ``View/researchRowHeads(for:from:into:)``.
+///
+/// `ResearchView`'s own loader until L38 (#1946), which moved it here so a test can host it.
+struct ResearchRowHeads: ViewModifier {
+
+    /// The rows' documents, as `"volumeId/documentId"` keys.
+    let documentKeys: [String]
+    /// The store the heads are read from; `nil` until boot sets it.
+    let store: CrossReferenceStore?
+    /// The heads read so far, keyed like ``documentKeys``. A load adds to them and replaces what it
+    /// read again; it never removes one.
+    @Binding var headers: [String: CrossReferenceStore.DocumentTitleFacts]
+
+    func body(content: Content) -> some View {
+        content.task(id: documentKeys) {
+            if let facts = await Self.facts(for: documentKeys, from: store) {
+                headers.merge(facts) { _, new in new }
+            }
+        }
+    }
+
+    /// What the index holds for each of `documentKeys`, or `nil` when there is no store to read,
+    /// no key to read, or the read fails.
+    ///
+    /// - Parameters:
+    ///   - documentKeys: `"volumeId/documentId"` keys. One without a `/` is passed over.
+    ///   - store: The store to read; `nil` reads nothing.
+    /// - Returns: The facts by key, without the keys the index has no row for.
+    static func facts(for documentKeys: [String],
+                      from store: CrossReferenceStore?) async -> [String: CrossReferenceStore.DocumentTitleFacts]? {
+        guard let store, !documentKeys.isEmpty else { return nil }
+        let pairs = documentKeys.compactMap { key -> (volumeId: String, documentId: String)? in
+            let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
+            return parts.count == 2 ? (volumeId: parts[0], documentId: parts[1]) : nil
+        }
+        return try? await store.documentTitleFacts(for: pairs)
+    }
+}
+
+extension View {
+    /// Loads the heads of the Research rows' documents into `headers` (``ResearchRowHeads``).
+    ///
+    /// - Parameters:
+    ///   - documentKeys: The rows' documents, as `"volumeId/documentId"` keys.
+    ///   - store: The store to read them from; `nil` until boot sets it.
+    ///   - headers: Where the heads go.
+    func researchRowHeads(for documentKeys: [String], from store: CrossReferenceStore?,
+                          into headers: Binding<[String: CrossReferenceStore.DocumentTitleFacts]>) -> some View {
+        modifier(ResearchRowHeads(documentKeys: documentKeys, store: store, headers: headers))
     }
 }
