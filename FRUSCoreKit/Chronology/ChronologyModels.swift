@@ -45,6 +45,8 @@ public enum DateBucket: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — 2026-11-27 (L56): `spanDays(dateISO:dateISOMax:)`, the rule `spanDays` reads, for two dates without a row
+///          (Chronology's save of a range); unchanged
 public struct ChronologyRow: Sendable, Identifiable {
     public let volumeId: String
     public let documentId: String
@@ -100,10 +102,19 @@ public struct ChronologyRow: Sendable, Identifiable {
     /// missing a max). Used to separate documents whose date interval is too wide to be
     /// placed on a specific day — chiefly editorial notes, which FRUS stamps with the
     /// whole span of dates they discuss (often the entire volume, sometimes decades).
-    public var spanDays: Int {
+    public var spanDays: Int { Self.spanDays(dateISO: dateISO, dateISOMax: dateISOMax) }
+
+    /// ``spanDays`` for any document's two dates, as Chronology's save reads them without a row
+    /// (`ChronologyRangeEntry`, L56), so both are measured by one rule.
+    ///
+    /// - Parameters:
+    ///   - dateISO: The first day of the document's dates.
+    ///   - dateISOMax: The last day, or `nil` for a single day.
+    /// - Returns: The days between them, 0 when either does not read as a day.
+    public static func spanDays(dateISO: String, dateISOMax: String?) -> Int {
         guard let maxISO = dateISOMax,
-              let start = Self.day(from: dateISO),
-              let end = Self.day(from: maxISO)
+              let start = day(from: dateISO),
+              let end = day(from: maxISO)
         else { return 0 }
         return max(0, Calendar(identifier: .gregorian).dateComponents([.day], from: start, to: end).day ?? 0)
     }
