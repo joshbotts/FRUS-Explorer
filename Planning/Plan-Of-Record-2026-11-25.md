@@ -498,6 +498,29 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The reading R6a left unproven:** `TabShellBannerReserve.reserve()` takes the first view controller up the responder chain, and a reserve written to a controller above the tab's host would add its inset to every tab. The owner's frame showed a 188-pt banner over about 322 pt of room.
   - **If it reproduces,** fix it. **If it does not,** the build keeps a log line of the banner's height against the reserve, so that R9's pass on the owner's iPad records what a simulator did not show.
   - **#1835** is the same reserve with the keyboard up, on the iPad mini simulator under iOS 27.0. Its suite's row stays on 26.5 until this row moves it.
+  - **Record (2026-11-26, `claude/l27-tab-shell-banner-42ab07`).**
+    - **F1 was not reproduced** (decision 183). The device was S1, the iPad Pro 13-inch (M5) under iOS 27.0, in Windowed Apps (the owner's frame shows the corner grip too) and in landscape. A temporary probe, never committed, logged every banner height and every reserve with its host's controller chain. It also logged every controller holding a bottom inset, the keyboard's notices and the reader's frame. There were two runs:
+      - `v2` at `bbe6686c`, through its whole 75 → 76 re-index: 553 volumes and 321,749 documents in 992 s.
+      - 1823 itself (`build-54`), through PD3's own 74 → 75 start. 1823 still drew the reader's rail as the `.inspector` that R6a's F8 later replaced, and the owner's reader band went when that rail opened.
+    - **What both runs tried:**
+      - The menu bar shown. A tap on the app's name in the status bar draws the owner's *File Edit View Document Find Window Help*.
+      - Browse's pushes toward the owner's own screen, with documents opened and Back. `v2`'s run reached that screen exactly: 1977–80, volume XXIV, Argentina's 66 documents.
+      - The reader. `v2`'s run had its rail column open; 1823's had its `.inspector` rail open, then closed, the Read state of the owner's synced setting.
+    - **What one run added:**
+      - `v2`'s: the software keyboard, the sidebar, a rotation, the Guide sheet and the re-index's end.
+      - 1823's: the Dock raised over the window.
+    - **What both runs measured:**
+      - Every reserve went to the tab's `TabHostingController` under `UIKitTabBarController`.
+      - No other controller held a bottom inset.
+      - The reserve followed each height change within 6–10 ms.
+      - Every settled frame's banner rested on the window's floor, at 1,011.5 pt, and the reader ended at the banner's top.
+      - The one band photographed was 40 pt for a single frame, inside the 17-ms flip a volume's start gives the banner.
+    - **So the build keeps a log line** (`c7f7d4cb`):
+      - A second after a change settles, the reserving view measures the room from the tab content's bottom edge to the window's safe-area floor. It measures the geometry because room set aside by a controller above the host never shows in the host's own inset.
+      - `TabShellBannerRoom` judges the room against the banner. It is not judged where a tab bar sits at the bottom or with no banner up.
+      - Category `TabShellBanner`: a notice for each tab's first measurement, and an error with every value when the room stops matching. R9's brief says how to read it.
+    - **#1835:** on the iPad mini (A17 Pro) under iOS 27.0, the keyboard row's three suites gave 9 tests, 8 passed. #1835's own Browse-root test passed, as in the issue's sixteen runs of 2026-11-01. The one failure is the year-range popover's test: its own keyboard goes down late after its Done, which is not the tab shell's banner. With the same branch it passed under 26.5, so it follows the 27.0 runtime. Through the run's keyboard cycles the new line logged no mismatch.
+    - **The row moved** to `OS=27.0` (`.claude/rules/ui-tests.md` and the runbook's entry), with the year-range test read on 26.5 as well until its late keyboard is placed. That keyboard is a finding of its own, not filed.
 
 - **L28, the rehearsal** (decision 182). On the owner's Mac, at `v2` once L26 has merged. Nothing is committed but the runbook.
   - **What runs:** `New-Volume-Release-Plan.md` §10's Phase A and Phase C against the corpus as it is, through `Scripts/heavy.sh`; and, if the raw store is at hand, step 11's pack from the last harvest, with no new harvest.
@@ -564,6 +587,8 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 
 - **R9, the device pass of the early build,** on an iPhone, an iPad and the Mac. The owner's.
   - **The one re-index, 75 → 76,** at each device's first launch. On the iPad, Browse two-pane and the reader open while it runs: F1's band, or L27's log line.
+    - **L27's log line** is the app's category `TabShellBanner`. Each tab writes *Tab shell room, first measured* once. If a band stays for a second, the iPad writes *Tab shell room does not match the banner*, with every value it measured: the banner, the reserve, the room below the content, the band, the controller written to and its parent, and every controller holding a bottom inset.
+    - **If the band shows:** take a screenshot, then pull the iPad's log off the Mac within the hour. The app's own lines last about nine hours on a device. Either collect it: `sudo /usr/bin/log collect --device-name "<the iPad's name>" --last 1h`, which takes the whole device's log, so use the shortest window that covers the sighting. Or start Console with the iPad selected and `TabShellBanner` in its search before the first launch.
   - **What moved into the kit since 1.0,** each opened once and read against 1.0 (1861) on another device: Related Documents' semantic axis and *Beyond your library*; Project Home's reach; search by meaning and a held list; the semantic map, its lenses and a slice; the Word Cloud's count, *Distinctive*, Collocates and the shared-word chips; an Archives Visit's derivation, its writes, Duplicate and its packet.
   - **Each row's own check,** as its brief says *by hand*.
   - **The owner device sitting the 2026-11-15 plan carried,** where the device is in hand: the Topics lens on an iOS 27 device; one Audio Graph heard aloud; the Mac's Sync Log after a sync; the Mac Search window with a selection under VoiceOver, in dark appearance and with Full Keyboard Access; Text Color's picker on an iPad under iOS 27; and the by-eye checks carried from builds 48 and 49 (`Completed/Plan-Of-Record-2026-10-14.md` §4).

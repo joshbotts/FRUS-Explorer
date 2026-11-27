@@ -443,7 +443,26 @@ passing on iPhone 17 and iPad Pro 13-inch — a suite ending with an analytics w
 launch restoring it, and four bare tab guards that reported the wrong cause. They are green on all
 three devices now; run them on the mini, because that is the one that catches this class.
 
-**Run them on `OS=26.5`. #1620 no longer holds them there; `KeyboardDismissBarReachTests` does.**
+**Since L27 (2026-11-26), run them on `OS=27.0`, and the year-range test on `OS=26.5` as well.**
+This row moved because #1835's test holds under 27.0:
+- **The run.** One build of L27's branch (`c7f7d4cb`, the tab shell's room check and nothing else
+  in these screens), on the iPad mini (A17 Pro) under 27.0 (`22BCEC47`, Full Screen Apps), booted
+  for the run: 9 tests, 8 passed, 0 skipped.
+- **#1835's test passed.** That is
+  `KeyboardDismissBarReachTests.testDismissBarRendersOnTheBrowseRootSearchField`: the banner up
+  before focus and gone with the keyboard, as in all sixteen runs of 2026-11-01 that the issue
+  records.
+- **The one failure is `testDismissBarRendersInTheYearRangePopover`,** at its last assertion,
+  "Tapping the popover's Done left the keyboard up". It failed the same way in every suite run of
+  2026-11-01, where the app's log showed the popover's own keyboard going down about 8 s after Done,
+  against the test's 5-s wait.
+- **The control.** The same branch, that test alone on the iPad mini under **26.5** (`0093684B`):
+  passed, 1 of 1. So it follows the 27.0 runtime, and it is not the tab shell's banner.
+- **What the run's log showed.** The app logs its banner's room (category `TabShellBanner`, L27), and
+  it logged no mismatch through the run's keyboard cycles: 11 first measurements, every band 0.0 pt.
+- **Until the popover's keyboard is placed,** read that one test on 26.5 too.
+
+**Until L27: run them on `OS=26.5`. #1620 no longer holds them there; `KeyboardDismissBarReachTests` does.**
 Measured on 2026-11-01 on this Mac, now Xcode 27.2 (27B52) and macOS 27.2 with the same iOS 27.0
 runtime (24A434), one build of `v2` at `c5e0608a`, the iPad mini (A17 Pro) under 27.0 (`22BCEC47`)
 booted for each run: the three suites with `AnalyticsCompareFromTableTests` ran **10 tests, 9
@@ -467,13 +486,20 @@ and not the app or the Mac, and this row is read on 26.5 until a later 27 runtim
 it. One 26.5 iPad was used; no device was.
 
 ```bash
-xcodebuild test \
+Scripts/heavy.sh xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro),OS=26.5" \
+  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro),OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/AnalyticsKeyboardTests \
   -only-testing FRUSExplorerUITests/KeyboardDismissBarReachTests \
   -only-testing FRUSExplorerUITests/ToolbarOverflowAccessibilityTests
+
+Scripts/heavy.sh xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro),OS=26.5" \
+  -only-testing FRUSExplorerUITests/KeyboardDismissBarReachTests/testDismissBarRendersInTheYearRangePopover
 ```
 
 **`SearchActionsBarFitTests` (#1307) is iPhone-only and wants two widths.** It measures the Search
@@ -1078,9 +1104,17 @@ list reading leaves out images and anything wider than its list: while a list ha
 tab bar, iOS keeps an image named `AdditionalDimmingOverlay` inside it (measured on 26.5), which
 reaches below the screen and once ended a scenario halfway down the Settings list. With the tabs as
 a sidebar the reading also includes the sidebar's own list, whose last row is far above the banner.
-The same rule lives in the unit target as `TabShellBannerReserveTests` (4 tests, any iPhone or iPad
-simulator), which hosts the modifier in a window and reads the host's inset, the banner's frame and
-a `List`'s bottom inset inside a `NavigationStack`.
+The same rule lives in the unit target as `TabShellBannerReserveTests` (7 tests since L27, any iPhone
+or iPad simulator), which hosts the modifier in a window and reads the host's inset, the banner's
+frame and a `List`'s bottom inset inside a `NavigationStack`. L27 (F1) added the room the reserve
+measures once a change settles (`TabShellBannerRoom`): a settled room equal to the banner; a
+controller above the host that sets aside 30 pt after it has settled, read as a 30-pt band and then
+as balanced again; and the judgment over F1's own numbers. The controller-above test failed under
+each of three mutations, one at a time: the room read from the host's own inset, no measurement on
+layout, and the band ignored. The judgment test also failed under the last of the three.
+The app writes what it measures to the log, category `TabShellBanner`: stream it during a run of this
+suite (`xcrun simctl spawn <udid> log stream --level debug --predicate 'category == "TabShellBanner"'`)
+to see each tab's first measurement and any room that does not match.
 
 ```bash
 xcodebuild test \

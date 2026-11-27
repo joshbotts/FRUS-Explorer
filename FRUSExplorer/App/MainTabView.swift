@@ -753,8 +753,8 @@ struct TabShellBannerModifier<Banner: View>: ViewModifier {
 /// matching the banner, and as a notice when it matches again. It writes no state and moves nothing.
 ///
 /// F1 is why: during the re-index at 1823's first launch the owner's iPad drew a 188-pt banner at the top of about
-/// 322 pt of room. No simulator has shown it (R6a, and L27 on 1823 and on `v2`, through whole re-indexes), so this is
-/// what R9's pass on the owner's iPad reads. The room is measured, not taken from the host's own inset, because the
+/// 322 pt of room. No simulator has shown it (R6a; L27 through `v2`'s whole 75 → 76 re-index and through 1823's own
+/// 74 → 75 start), so this is what R9's pass on the owner's iPad reads. The room is measured, not taken from the host's own inset, because the
 /// reading R6a left unproven, room set aside by a controller above the tab's host, never shows in the host's inset.
 ///
 /// Version history:

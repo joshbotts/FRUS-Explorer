@@ -4085,3 +4085,71 @@ On the owner's word ("start the plan of record from PR2011. note that PR2017 mer
 - **CR** has read A2, as the plan asks before this row lands, and its requests of the index are decisions 188, 189 and 190, in this row, with 191 from its C2 questions, which CR numbers 192 to 198 for the rest. CR's own pull request records it in the design's A2 and L52's brief.
 - **Decision 191's three texts** (the graph's *Navigating the graph*, Flows' *What Flows reads* and its export's Scope caveat) are in their EditableContent blocks for your reading. The class lens's self-citation caveat still says "about three in five", which was 69.8% before this row and is 67.6% after it: not changed here.
 - **After the merge:** #1978's hand-over note for FRUS Explorer Light, posted as a comment on the issue; its server refuses a version-76 export until its pin moves.
+
+## Session 2026-11-26 — L27, the tab shell's banner: F1 not reproduced through a whole 75 → 76 re-index on the iPad simulator, nor through 1823's own 74 → 75 start, so the build measures the room against the banner once a change settles and logs it for R9; #1835's test passes under iOS 27.0, and the keyboard row's one failure there is the year-range popover's own keyboard
+
+The plan of record's session started this one for row L27, on `claude/l27-tab-shell-banner-42ab07` from `v2` at `bbe6686c`, L26's merge. The row: F1, the blank band under the tab shell's banner on the owner's iPad during 1823's first-launch re-index (R6's PD3), which R6a could not reproduce; and #1835, the same reserve with the keyboard up, on the iPad mini under iOS 27.0. Commits: `c7f7d4cb` (the measurement, its log line and three tests) and a docs commit.
+
+**#2019's merge**
+- L26 merged as `bbe6686c`, a squash onto `d8b70f5f`, at 21:53:08 UTC on 2026-11-26, from its head `7110aaae`. Its tree, `7277ac1b`, is the head's. It closed #1978 and #1854. This entry records it.
+- CR's #2020 was still open when this entry was written. Whichever of the two lands second takes the other in, with the two entries in the order they merged.
+
+**F1, first: not reproduced** (decision 183)
+- **The setup.** The device was S1, the iPad Pro 13-inch (M5) under iOS 27.0, in Windowed Apps and in landscape, with its library at 75 as L26 left it. The owner's frame shows Windowed Apps' corner grip too.
+  - A temporary probe, never committed, logged every banner height and frame and every reserve with its host's controller chain. It also logged every controller in the window holding an additional bottom inset, the keyboard's notices and the reader web view's frame. The diff is kept at `~/Library/Caches/FRUS-Explorer/l27/probe-final.diff`.
+  - Both builds were `AppStore`-configuration simulator builds, as L26's census was.
+- **`v2` at `bbe6686c`, through its whole 75 → 76 re-index:** 553 volumes and 321,749 documents in 992 s, none failed. What was tried, R6a's two untried conditions first:
+  - iPadOS's menu bar shown. A tap on the app's name in the status bar draws *FRUS Explorer File Edit View Document Find Window Help*, the owner's frame. Swipes from the top edge did not.
+  - Browse's pushes to the owner's own screen: Subseries, 1977–80, volume XXIV, its compilation, then Argentina's 66 documents. Documents opened and Back, in quick succession.
+  - The reader with its rail, and tab round trips.
+  - The software keyboard up and down on the Browse root's search field, with typing.
+  - Sidebar ↔ tab bar, and a portrait round trip.
+  - The Guide sheet opened and closed, and the re-index's end.
+- **1823 itself, through PD3's own start.** `build-54` was exported with the same probe, and S1's stored version set to 74, so 1823 made the 74 → 75 re-index (stopped at 186 of 553).
+  - 1823's reader still drew its rail as an `.inspector`. R6a's F8 replaced it before R6a's own probe ran, and the owner's reader band went when that rail opened. So the rail was opened, then closed (the Read state, the owner's synced setting); a document was opened with it closed and read to its end; then Back.
+  - The same path, to volume XXIII's Cuba section this time, with the menu bar shown; then the Dock raised over the window.
+- **Measured, in both runs:**
+  - Every reserve went to the tab's `TabHostingController` under `UIKitTabBarController`; the visible tab made 1,224 writes in the first run.
+  - At every write, no other controller held a bottom inset.
+  - The reserve followed each height change within 6–10 ms.
+  - Every settled frame's banner rested on the window's floor, 1,011.5 pt (1,032 less the home indicator's 20). The reader ended at the banner's top with the rail open or closed.
+  - The Dock overlays the window and leaves its inset at 20 pt.
+  - One screenshot caught a 40-pt band for a single frame. As each volume starts, the banner flips 179.5 → 139.5 → 179.5 pt within 17 ms, while its metadata row clears and returns.
+  - A document's end shows its page's own bottom padding, about 55 pt, as designed.
+- S1 holds its v75 library again (L26's pre-census clone). L26's 1861 `AppStore` simulator build is installed on it again, so it is as L26 handed it over, and it is shut down.
+
+**What the build keeps instead: the room against the banner, logged** (`c7f7d4cb`)
+- **The measurement.** A second after a change settles, `TabShellBannerReserve.ReservingView` measures the room from the tab content's bottom edge, which it shares, down to the window's safe-area floor. It measures the geometry, not the host's inset, because room set aside by a controller above the tab's host never shows in the host's own inset. That is the reading R6a left unproven.
+- **The judgment.** `TabShellBannerRoom` (`Models/SupportingTypes.swift`) requires the reserve to be the banner's height and, while a banner is up, no band.
+  - It is not judged where a tab bar sits at the bottom (an iPhone), or with no banner up: the keyboard raises the content's edge to itself, and #1070 takes the banner away.
+  - A banner left up over the keyboard, #1835's shape, is judged.
+- **The log,** category `TabShellBanner`:
+  - each tab's first measurement as a notice;
+  - an error when the room stops matching, with every value and every controller holding a bottom inset;
+  - a notice when it matches again.
+  - It writes no state and moves nothing.
+- R9's brief now says how to read it on the owner's iPad.
+
+**#1835**
+- **The keyboard row's three suites** on the iPad mini (A17 Pro) under iOS 27.0 (`22BCEC47`, Full Screen Apps): 9 tests, 8 passed, 0 skipped.
+  - #1835's own test, the Browse-root field with the banner up and then the keyboard, passed, as in the issue's sixteen runs of 2026-11-01.
+  - The one failure is `testDismissBarRendersInTheYearRangePopover`, at its last assertion, "Tapping the popover's Done left the keyboard up", as in every suite run of 2026-11-01. That is the year-range popover's own keyboard, which the issue's comment measured going down about 8 s after Done. It is not the tab shell's banner.
+  - **The control:** the same branch, that one test on the iPad mini under iOS 26.5 (`0093684B`), passed. So the failure follows the 27.0 runtime.
+- The new check logged no mismatch through the run's keyboard cycles: 11 first measurements, every band 0.0 pt.
+- **The row moved** to `OS=27.0` in `.claude/rules/ui-tests.md` and the runbook's entry, which has the run and the control. The year-range test is read on 26.5 as well until its late keyboard is placed: a finding of its own, not filed.
+
+**Checks**
+- **`TabShellBannerReserveTests`:** 7 passed on the iPhone 17 under iOS 27.0, the four that were there and three new ones. Each of three mutations, one at a time, failed the test written for it: the room read from the host's own inset, no measurement on layout, the band ignored. The unmutated baseline passed.
+- **`build-for-testing`:** the two known residues and no other warning.
+- **`TabShellBannerClearanceTests`,** which drives the reserve on screen, with the app's `TabShellBanner` log streamed:
+  - **iPhone 17 under iOS 27.0:** 6 tests, 5 passed, 1 skipped (the sidebar scenario, which is iPad-only), as its row expects.
+  - **iPad Pro 11-inch (M5) under iOS 27.0, in landscape:** 5 of 6 passed. The sixth, the sidebar scenario, never reached a step: it was the first test after the simulator booted, and the runner restarted while the app first launched, which the runbook's notes on a just-booted iPad describe. Run again alone on the same iPad, it passed in 146 s, and the band stayed 0.0 pt through the tabs' change to a sidebar and back. So 6 of 6, as its row expects.
+  - **The log, through both runs:** every tab's first measurement balanced (on the iPhone, the room not measured, a tab bar at the bottom), and no mismatch.
+- **The unit target** on the iPhone 17 under iOS 27.0, the app removed first and the TEI mirror set: 8,295 tests in 1,002 suites passed in 714 s, with the six known issues and 17 skipped. That is L26's 8,292 and this row's three.
+- **The Mac build** (`FRUSExplorerMac`, where `SupportingTypes.swift` compiles too): it succeeded, with the two known residues and no other warning.
+
+**For the owner**
+- **The pull request**, on your word.
+- **#1835:** its own test passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. Closing it as not reproduced is yours; the pull request does not close it.
+- **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is a finding of its own, not filed. Where it goes is yours.
+- **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
