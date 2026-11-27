@@ -57,7 +57,8 @@ private let revealTestsHaveMetal = MTLCreateSystemDefaultDevice() != nil
 ///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — on a slice: the kit's
 ///          reveal over a slice's positions, the model's reveal and the regions list's row, each run first
 ///          on the unchanged code, where they failed; the list's row on the plane, as before; and, by the
-///          owner's answer of 2026-11-27, a selection that follows a re-layout, which failed there too
+///          owner's answers of 2026-11-27, a selection that follows a re-layout and a region focus that
+///          returns a slice to the plane, which failed there too
 @Suite("Revealing a document on the map")
 struct SemanticMapRevealTests {
 
@@ -674,6 +675,29 @@ struct SemanticMapRevealTests {
         #expect(back.row == row)
         #expect(back.position == SIMD2(Float(plane[row].x), Float(plane[row].y)),
                 "Back to the map left the ring at the slice's place")
+    }
+
+    /// **The other twin** (the owner's answer of 2026-11-27): Browse's *See on the semantic map*
+    /// reaches the Mac's one map window as it is, a slice included.
+    @MainActor
+    @Test("A region focus that arrives on a slice returns the map to its plane, then focuses",
+          .enabled(if: revealTestsHaveMetal))
+    func regionFocusOnASliceReturnsToThePlane() async throws {
+        let (model, _, plane) = try await slicedModel()
+        let layoutIdentity = try #require(BundledSemanticMap.index?.layoutIdentity)
+        let region = try #require(model.clusters.first)
+        // A focus that does not land, minted under another layout, leaves the reader's slice alone.
+        #expect(model.focusRegion(id: region.id, digest: "another layout") == .notFound)
+        #expect(model.slice != nil, "a refused focus took the reader off their slice")
+        #expect(model.focusRegion(id: region.id, digest: layoutIdentity) == .revealed)
+        #expect(model.slice == nil, "a region focus framed the region's plane centre on a slice")
+        #expect(model.sliceScale == nil)
+        #expect(model.poles.negative == nil && model.poles.positive == nil)
+        #expect(model.positions == plane, "the points stayed where the slice laid them")
+        #expect(model.selectedRegion?.id == region.id)
+        #expect(model.camera == SemanticMapCamera(centre: SIMD2(Float(region.centreX), Float(region.centreY)),
+                                                  halfExtent: SemanticMapReveal.regionHalfExtent))
+        #expect(model.camera == model.renderer?.camera)
     }
 
     // MARK: - A reveal that finds nothing says so

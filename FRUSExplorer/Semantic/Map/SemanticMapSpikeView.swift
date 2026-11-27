@@ -77,7 +77,9 @@ import simd
 ///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — a reveal lands where the
 ///          map draws the document (`positions`), on a slice too, and the regions list's row is the
 ///          model's (`selectRegionFromList`), which opens a region's card on a slice; and, by the owner's
-///          answer of 2026-11-27, a selection's ring follows every re-layout (`placeSelectionInLayout`)
+///          answers of 2026-11-27, a selection's ring follows every re-layout (`placeSelectionInLayout`)
+///          and a region focus that arrives on a slice returns the map to its plane first
+///          (`focusRegion(id:digest:reapplyLens:)`)
 @MainActor
 @Observable
 final class SemanticMapModel {
@@ -492,12 +494,19 @@ final class SemanticMapModel {
     /// whose digest does not match the loaded artifact is refused (`.notFound` — the map opens
     /// unfocused) rather than landing on whatever re-minted cluster now wears the number.
     ///
+    /// **A region's place is the map's plane.** On a slice its centre is a coordinate the slice gives
+    /// to other documents, so a focus that arrives there (Browse's See on the semantic map, into the
+    /// Mac's one map window while it shows a slice) returns the map to its plane first, as Back to the
+    /// map does, and then frames the region (the owner's answer of 2026-11-27).
+    ///
     /// - Parameters:
     ///   - id: The artifact's cluster id.
     ///   - digest: The provenance digest the id was minted against.
+    ///   - reapplyLens: The view's lens, re-applied after a return to the plane, as
+    ///     ``clearSlice(yearForVolume:reapplyLens:)`` takes it.
     /// - Returns: What happened — `.notReady` means ask again, exactly as `reveal` documents.
     @discardableResult
-    func focusRegion(id: Int, digest: String) -> RevealOutcome {
+    func focusRegion(id: Int, digest: String, reapplyLens: (() -> Void)? = nil) -> RevealOutcome {
         guard index != nil, BundledSemanticMap.index != nil else {
             #if DEBUG
             print("[SemanticMapModel] focusRegion(\(id)) deferred: not ready")
@@ -517,6 +526,9 @@ final class SemanticMapModel {
         #if DEBUG
         print("[SemanticMapModel] focusRegion(\(id)) applied")
         #endif
+        // Back to the plane first, and only for a focus that lands: a refused one leaves the slice.
+        // The plane's layout reads no year, so none is passed.
+        if slice != nil { clearSlice(yearForVolume: { _ in nil }, reapplyLens: reapplyLens) }
         // A successful focus replaces a document card with the region card, exactly as
         // `select(at:)` swaps the two — and a FAILED one must not clear anything.
         selection = nil
@@ -1018,7 +1030,8 @@ final class SemanticMapModel {
 ///   1.4 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010, #1986) — the regions list's
 ///         row is the model's (`SemanticMapModel.selectRegionFromList(_:size:isReadable:)`), which opens a
 ///         region's card on a slice rather than hit-testing it; the slice's ticks are the kit's for its
-///         scale (`tickYears(for:)`), none without a dated volume
+///         scale (`tickYears(for:)`), none without a dated volume; its two region focuses pass the lens,
+///         which a return to the plane re-applies
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -1401,7 +1414,7 @@ struct SemanticMapSpikeView: View {
         if let pending = model.pendingFocusRegion {
             // The region-focus twin (#1051 B-7): driven from the model's memory for the
             // same measured reason as the key below.
-            model.focusRegion(id: pending.id, digest: pending.digest)
+            model.focusRegion(id: pending.id, digest: pending.digest, reapplyLens: applyLens)
         }
         guard let key = model.pendingRevealKey else { return }
         revealFailedKey = model.reveal(documentKey: key, isReadable: isReadable) == .notFound ? key : nil
@@ -1461,7 +1474,8 @@ struct SemanticMapSpikeView: View {
             // anyway. A digest-mismatched or unknown id opens the map unfocused, with no
             // banner: the request outlived its artifact, and there is nothing to point at.
             outcome = model.focusRegion(id: clusterID,
-                                        digest: continued.focusClusterDigest ?? "")
+                                        digest: continued.focusClusterDigest ?? "",
+                                        reapplyLens: applyLens)
         }
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even

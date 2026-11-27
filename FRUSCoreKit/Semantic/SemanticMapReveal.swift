@@ -22,9 +22,10 @@ import SemanticVectorsKit
 /// How the map reveals one document or focuses one region, and when a request that names either is
 /// settled.
 ///
-/// The rules `SemanticMapModel.reveal(documentKey:isReadable:)` and `focusRegion(id:digest:)` land by, out
-/// of the model, so that a host answering a link that names a document or a region lands where the app
-/// does: the reader's rail's On the Map, and Browse's See on the semantic map.
+/// The rules `SemanticMapModel.reveal(documentKey:isReadable:)` and
+/// `focusRegion(id:digest:reapplyLens:)` land by, out of the model, so that a host answering a link that
+/// names a document or a region lands where the app does: the reader's rail's On the Map, and Browse's
+/// See on the semantic map.
 ///
 /// **The map draws every document in the published series, so a reveal works for a volume the device
 /// does not hold** — the point is *there*, and showing where a document sits in the corpus's language
