@@ -42,6 +42,10 @@ import Charts
 ///          its own
 ///   1.6 — #1422: the spanning section's header is `ChronologyViewModel.spanningSectionHeader`,
 ///          "Spans more than a year", in the words of the chip that opens it
+///   1.7 — #2012 (L56): Search in this range and Word Cloud for this range hand on the two days the
+///          screen loaded (`ChronologyViewModel.loadedRange`), and neither is offered while a load runs.
+///          Search in this range wrote a local midnight in UTC, a day early at both ends east of UTC,
+///          and both read the pickers. A UI test's range opens the screen (`UITestBrowseSeams.chronologyRange`)
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -169,6 +173,15 @@ struct ChronologyView: View {
         vm.pipeline = appState.indexingPipeline
         seriesCount = defaultSeriesCount
         vm.seriesCount = defaultSeriesCount
+        #if DEBUG
+        // A UI test's range (#2012, L56), which the date pickers cannot be driven to. Ahead of the
+        // parameters, which the iPad's window always passes, with no dates from Analysis Tools.
+        if !didSeedDefaults, params?.rangeStart == nil, params?.rangeEnd == nil,
+           let seeded = UITestBrowseSeams.chronologyRange {
+            apply(seeded)
+            return
+        }
+        #endif
         // Explicit parameters (the iOS sheet) take priority; otherwise pick up a pending
         // macOS-window handoff set just before `openWindow` (which won't fire `.onChange`
         // because the value is already in place when this fresh window appears).
@@ -205,11 +218,12 @@ struct ChronologyView: View {
 
     /// Opens a word cloud over the documents in the currently displayed date range —
     /// the inverse of the word cloud's "View in Chronology" handoff.
+    ///
+    /// The range is the one the screen loaded (`ChronologyViewModel.loadedRange`, #2012), not the
+    /// pickers', which a reader can move without pressing Show.
     private func openWordCloudForRange() {
-        let scope = WordCloudScope.dateRange(
-            startISO: WordCloudScope.isoDay(from: min(vm.rangeStart, vm.rangeEnd)),
-            endISO: WordCloudScope.isoDay(from: max(vm.rangeStart, vm.rangeEnd))
-        )
+        guard let range = vm.loadedRange, let startISO = range.earliest, let endISO = range.latest else { return }
+        let scope = WordCloudScope.dateRange(startISO: startISO, endISO: endISO)
         // In the iPad window `sceneID` is nil, which `openWordCloud` addresses to no window at
         // all; the close action names the main window it is about to bring forward (#1368).
         let target = closeWindow.handOffTarget(from: sceneID)
@@ -299,6 +313,8 @@ struct ChronologyView: View {
                         .font(.caption)
                     }
                     .buttonStyle(.borderless)
+                    // While a load runs the screen shows no range (#2012).
+                    .disabled(vm.isLoading)
                 }
             }
         }
@@ -1111,7 +1127,7 @@ struct ChronologyView: View {
                     Image(systemName: WordCloudGlyph.symbol)
                 }
             }
-            .disabled(!vm.hasLoaded || vm.totalShown == 0)
+            .disabled(!vm.hasLoaded || vm.isLoading || vm.totalShown == 0)
             .help(String(localized: "chronology.wordcloud.help",
                          defaultValue: "Build a word cloud from the documents in the displayed date range"))
         }
@@ -1203,16 +1219,14 @@ struct ChronologyView: View {
     }
 
     /// Hand off to Search with the current range pre-applied as a date filter.
+    ///
+    /// The range is the two days the screen loaded (`ChronologyViewModel.loadedRange`, #2012), as
+    /// strings, so no formatter here can be in another zone than the load's. This wrote a local
+    /// midnight through a formatter in UTC, which east of UTC is the day before: 1 to 31 October
+    /// 1962 reached Search as 30 September to 30 October. And it read the pickers, which a reader
+    /// can move without pressing Show. `ChronologyRangeHandOffTests` runs the app in Tokyo's zone.
     private func searchInRange() {
-        let cal = Calendar(identifier: .gregorian)
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-        fmt.timeZone = TimeZone(identifier: "UTC")
-        let range = DateRange(
-            earliest: fmt.string(from: cal.startOfDay(for: min(vm.rangeStart, vm.rangeEnd))),
-            latest: fmt.string(from: cal.startOfDay(for: max(vm.rangeStart, vm.rangeEnd)))
-        )
+        guard let range = vm.loadedRange else { return }
         // The window the close brings forward (#1368): in the iPad window `sceneID` is nil, and
         // the search used to go to the first-wins `.anyWindow` while the close left the Home Screen.
         let target = closeWindow.handOffTarget(from: sceneID)

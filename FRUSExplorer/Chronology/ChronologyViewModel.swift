@@ -51,6 +51,7 @@ import Observation
 ///          read, each with a `locale` the app leaves at the reader's own; the calls are unchanged
 ///   1.11 — 2026-11-26 (#1971): the magnifier's two forwarders name the kit's calls as they now read, each
 ///          with a `locale` the app leaves at the reader's own, which names a year's months; the calls are unchanged
+///   1.12 — 2026-11-27 (#2012, L56): `loadedRange`, the two days the screen loaded, which both hand-offs pass on
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -93,6 +94,15 @@ final class ChronologyViewModel {
     /// load. Set on every `reload()`.
     var loadedStartISO: String = ""
     var loadedEndISO: String = ""
+
+    /// The range the screen shows, as a date filter: the two days `reload()` last loaded, which the
+    /// list, the chips and the chart are drawn from, and which the hand-offs pass on (#2012). Written
+    /// once, in the device's zone (`isoDay(_:)`), so no hand-off formats a day of its own, and the
+    /// pickers, which a reader can move without pressing Show, are not read. `nil` before a load.
+    var loadedRange: DateRange? {
+        guard !loadedStartISO.isEmpty, !loadedEndISO.isEmpty else { return nil }
+        return DateRange(earliest: loadedStartISO, latest: loadedEndISO)
+    }
 
     /// Per-bucket, per-volume counts backing the distribution chart (placed docs only).
     var chartBuckets: [ChronologyChartBucket] = []

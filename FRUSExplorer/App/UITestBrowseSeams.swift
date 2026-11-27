@@ -99,6 +99,8 @@ import notify
 ///   1.7 — R6a (F4): the signals that add and delete a note from outside All Notes
 ///   1.8 — #2013 (L57): the search seam's hand-off can carry two days (``searchOnSignalDates``), as Chronology's
 ///          Search in this range hands them
+///   1.9 — #2012 (L56): Chronology can open on a range a test names (``chronologyRange``), which its date
+///          pickers cannot be set to in a test
 enum UITestBrowseSeams {
 
     // MARK: - 0. A signal from the test
@@ -579,6 +581,43 @@ enum UITestBrowseSeams {
                 print("[UITestBrowseSeams] Queued \(volumeId)'s download")
             }
         }
+    }
+
+    // MARK: - 8. Chronology opened on a range (#2012, L56)
+
+    /// Launch key for the range Chronology loads when it opens, as `yyyy-MM-dd/yyyy-MM-dd`: two days the screen
+    /// would otherwise be set to by its two date pickers and Show (#2012, L56). Unset, it opens on the manifest's
+    /// latest year, as it does for a reader.
+    ///
+    /// The pickers are compact date pickers, which a UI test can set only through their calendars, a month at a
+    /// time: 1962 is 64 years from the manifest's latest. `ChronologyRangeHandOffTests` and
+    /// `ChronologyRangeSaveTests` open the screen on the browse fixture's three months instead.
+    static let chronologyRangeKey = "FRUS_UI_TEST_CHRONOLOGY_RANGE"
+
+    /// The armed range as Chronology's parameters, or `nil` when the seam is not armed.
+    static var chronologyRange: ChronologyParameters? {
+        ProcessInfo.processInfo.environment[chronologyRangeKey].flatMap(chronologyParameters(from:))
+    }
+
+    /// The parameters a `yyyy-MM-dd/yyyy-MM-dd` value names, or `nil` when it does not name two days.
+    ///
+    /// Each day is its midnight in the device's zone, which is the date the screen's pickers hold for a day they
+    /// show, so the screen loads, and shows, the two days written. A test that runs the app in another zone (`TZ`)
+    /// gets those days there.
+    ///
+    /// - Parameter value: The launch key's value.
+    /// - Returns: The parameters, or `nil`.
+    static func chronologyParameters(from value: String) -> ChronologyParameters? {
+        let days = value.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        guard days.count == 2 else { return nil }
+        let calendar = Calendar(identifier: .gregorian)
+        let dates = days.compactMap { day -> Date? in
+            let parts = day.split(separator: "-").compactMap { Int($0) }
+            guard parts.count == 3 else { return nil }
+            return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+        }
+        guard dates.count == 2 else { return nil }
+        return ChronologyParameters(rangeStart: dates[0], rangeEnd: dates[1])
     }
 }
 
