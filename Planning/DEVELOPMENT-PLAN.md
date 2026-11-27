@@ -5053,3 +5053,9 @@ The orchestrator session ("Development session orchestration") started this one 
 **Not changed:** run 45930491832's `openSettings()` failure is the same class (the editor host's fixed 5 s `settle(until:)` in `CollectionTests`), left out since raising it means reading every caller; the day's two 1,200 s failures are the job's own slowness.
 
 **Checks.** Before the queue, on `1778feac` with the change: `build-for-testing`, the `GeneratedSummary` residue alone; the six suites that call the changed waits, 42 tests in 6 suites passed; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**At the head of the queue,** on `9b83be59` (tree `2bb798db`; the merge `ca1b726f` took `v2` at `97c4a8a9` in), in one `Scripts/heavy.sh` call from 19:18 to 19:36 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped, and the one test with the six known issues, in 791 s; both real-TEI suites ran and passed.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: no package input changed.
