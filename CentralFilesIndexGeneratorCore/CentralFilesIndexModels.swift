@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SourceNoteKit
 
 // MARK: - CentralFilesIndex
 
@@ -269,6 +270,9 @@ public extension CentralFilesIndex {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: initial implementation
+///   1.1 — 2026-11-26 (#1974, plan of record row L31, decision 176): `caseNumber(fromFileNumber:)` forwards to
+///         SourceNoteKit's `NumericalFileCitation`, the rule FRUSCoreKit's reading forwards to, so a decimal-era
+///         citation carries no case number here either
 public struct NumericalFileIndex: Codable, Sendable, Equatable {
 
     /// NARA series NAID for the Numerical File (`654171`).
@@ -360,24 +364,13 @@ public extension NumericalFileIndex {
         return roll(forCaseNumber: caseNumber)
     }
 
-    /// Extracts the integer case number from a FRUS "File No." citation.
+    /// The integer case number of a FRUS "File No." citation (`"697/43"` → 697), or `nil` for a
+    /// decimal-file citation, which carries none: SourceNoteKit's `NumericalFileCitation.caseNumber(fromFileNumber:)`,
+    /// the one rule FRUSCoreKit's reading forwards to as well (#1974, decision 176).
     ///
-    /// Strips a leading `File No.`/`File`/`No.` label, then takes the first run of
-    /// digits (the case number); the `/NN` sub-document suffix is intentionally dropped.
+    /// It took the first run of digits, without the guard #722 gave the kit's copy, so the Source Explorer
+    /// export read `723.2515/110` in a 1908 document as case 723 and listed that case's rolls.
     static func caseNumber(fromFileNumber fileNumber: String) -> Int? {
-        let scalars = fileNumber.unicodeScalars
-        var digits = ""
-        var seenDigit = false
-        for scalar in scalars {
-            if scalar.properties.numericType == .decimal || ("0"..."9").contains(scalar) {
-                digits.unicodeScalars.append(scalar)
-                seenDigit = true
-            } else if seenDigit {
-                // Stop at the first non-digit after the leading integer (e.g. the "/" in 697/43).
-                break
-            }
-            // Skip leading non-digits (the "File No." label).
-        }
-        return Int(digits)
+        NumericalFileCitation.caseNumber(fromFileNumber: fileNumber)
     }
 }

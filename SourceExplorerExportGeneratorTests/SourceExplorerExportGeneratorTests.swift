@@ -217,8 +217,12 @@ struct ExportRecordTests {
           "numericalFile": {
             "seriesNaId": "654171", "microfilm": "M862",
             "rolls": [
+              { "naId": "19779400", "title": "Numerical File: 500-599", "caseStart": 500,
+                "caseEnd": 599, "catalogURL": "https://catalog.archives.gov/id/19779400" },
               { "naId": "19779414", "title": "Numerical File: 600-720", "caseStart": 600,
-                "caseEnd": 720, "catalogURL": "https://catalog.archives.gov/id/19779414" }
+                "caseEnd": 720, "catalogURL": "https://catalog.archives.gov/id/19779414" },
+              { "naId": "19779415", "title": "Numerical File: 721-760", "caseStart": 721,
+                "caseEnd": 760, "catalogURL": "https://catalog.archives.gov/id/19779415" }
             ]
           },
           "countrySeries": [],
@@ -312,6 +316,22 @@ struct ExportRecordTests {
         let record = try makeRecord(note: "File No. 5000/1.", year: 1908)
         #expect(record.resolution.numericalFileRolls == nil)
         #expect(record.resolution.numericalFileCoverageGap == true)
+    }
+
+    /// The fixture's rolls hold cases 511 and 723, so a decimal citation read as a case would list them: the
+    /// export did, for about 335 records, while the app's views have refused the case since #722 (#1974).
+    @Test("a decimal-era citation in the 1906–1910 window gets no roll, and a numerical one still does (#1974)")
+    func decimalCitationInTheWindowGetsNoRoll() throws {
+        for note in ["File No. 723.2515/110.", "File No. 511. 4A1/914."] {
+            let record = try makeRecord(note: note, year: 1908)
+            #expect(record.strategy == "centralDecimalFile", "\(note): \(record.parsed)")
+            #expect(record.resolution.numericalFileRolls == nil, "\(note)")
+            #expect(record.resolution.numericalFileCoverageGap == true, "\(note)")
+            #expect(record.offlineOutcome != "resolvedNumericalFile", "\(note)")
+        }
+        let numerical = try makeRecord(note: "File No. 697/43.", year: 1908)
+        #expect(numerical.resolution.numericalFileRolls?.map(\.naId) == ["19779414"])
+        #expect(numerical.offlineOutcome == "resolvedNumericalFile")
     }
 
     @Test("a File No. outside the year window never consults the rolls")
