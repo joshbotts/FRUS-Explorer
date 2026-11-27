@@ -4547,6 +4547,92 @@ The plan of record's session started this one for row L29, on `claude/l29-collec
   - The `FRUSExplorerMac` build succeeded.
   - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
 
+## Session 2026-11-27 — L32, the semantic map's slice: a revealed document is ringed where the slice draws it, the regions list opens a region's card there, a slice with no dated volume lays out rather than trapping, and the ring and a region focus follow the layout
+
+Row L32 of the plan of record from 2026-11-25 (#2010, #1986), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `a7d8e017` (L28's merge) on `claude/l32-semantic-map-slice-647427`:
+- `60cdb2ea` (#2010) and `494711bf` (#1986);
+- `4710e5f6` and `12ebb489`, the owner's two twins of #2010;
+- `081ca9f6`, the records;
+- then, at the head of the queue, `v2` at `2db58c5a` taken in, and the landing's records.
+
+The owner answered, in the session, the two questions the reading raised: decisions 211 and 212.
+
+**#2029's merge**
+- L29 merged as `2db58c5a`, a squash onto `24616a57`, at 08:34:40 UTC on 2026-11-27, from its head `7d7b0ddd`. Its tree, `92d43924`, is the head's. It closed #1995, #1996 and #2000. This entry records it.
+- L33's #2028 (`24616a57`, onto `5fba4c9a`, at 07:20:39 UTC, from `17aa6225`, tree `34462b9e`, closing #1971, #1973 and #1989) is recorded in L29's entry above, L61's #2027 in L33's, L28's #2026 in L61's, and L31's #2025 in L28's.
+
+**What was found, each defect first** (decision 183)
+- **#1986, in the package, on the unchanged kit at `a7d8e017`:** a slice with no dated volume ended `swift test` on signal 5, "Swift runtime failure: arithmetic overflow" in `SemanticMapSlice.layout` at `SemanticMapSlice.swift:117:45`. The host suite's other 11 tests passed.
+- **#2010 and the twins, on the iPhone 17 under iOS 27.0:** four model tests failed, 11 expectations in all, and the reveal suite's other 22 passed.
+  - The reveal rang the plane's (23247, −4588), where the slice draws the document at (−16091, −15150), and the camera went there.
+  - The regions list's row selected `frus1933v05` d324 and moved the camera.
+  - After *…to here* the ring sat at the plane's (−23752, −5501), where the slice draws the document at (20038, 30000).
+  - A region focus left the slice, its scale, its poles and its positions in place.
+- **Two twins of #2010 in the reading, both in 1.0 (1861), both taken by the owner:** the ring after a re-layout (decision 211), and a region focus arriving at the Mac's one map window while it shows a slice (decision 212).
+- **One of the issue's claims, as read:** its second path, "a continuation that carries an axis and a document", has no sender in the app. Handoff carries the axis and no document, and *On the Map* the document and no axis. The defect is reached on the Mac instead, where *On the Map* arrives at the one Semantic Analytics window while it shows a slice.
+- **One finding for §5, unfiled:** on a slice, the regions list's spoken summary says *Position shows similarity, not time*.
+
+**What changed**
+- **#2010:** `SemanticMapReveal.reveal` takes the positions the host draws (`positions:`, `nil` for the plane) and returns `nil` when they hold no place for the row; the model passes what it draws. The regions list's row is the model's (`selectRegionFromList(_:size:isReadable:)`): on the plane the view's old steps, on a slice the region's card with no hit test.
+- **#1986:** the span from the dated volumes alone; `Scale.hasDatedYears` and `SemanticMapSlice.tickYears(for:)`, which the overlay reads.
+- **The twins:** `placeSelectionInLayout()` in both branches of `setSlice`; `focusRegion(id:digest:reapplyLens:)` clears a slice before a focus lands, and the view's two call sites pass the lens.
+- **Docs:** both manuals' §15.6, and the Mac's Browse ▸ Clusters; 21 EditableContent ranges re-pointed (15 on `SemanticMapSpikeView.swift`, 6 on `SemanticMapSlice.swift`); the FRUSCoreKit runbook; the plan's L32 record, decisions 211 and 212, and §5.
+
+**Checks, on the branch at `12ebb489`**
+- `swift build --target FRUSCoreKit`; the package's map suites, 143 tests in 14 suites and 16 in 4, none failed.
+- The kit's symbol diff against the unchanged code's object: the two signatures replaced, `Scale.hasDatedYears` and `tickYears(for:)` added, nothing else.
+- Six mutations, each failing the expectation written for it, four in the package and two in the app.
+- 29 app suites on the iPhone 17 under iOS 27.0: 381 tests, 376 passed, 5 skipped by their gates, the `GeneratedSummary` residue alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**The landing checks, on the merged tree** (`e02c84d3`, tree `dd97e763`, with `v2` at `2db58c5a`), through `heavy.sh`, from 08:43 to 09:41 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+- The unit target there, the app removed first and the TEI mirror set: 8,336 tests in 1,010 suites, of which 8,318 passed, 17 skipped and 1 was an expected failure (8,328 at L29's landing, and this row's 8), from 08:45 to 08:59 UTC.
+  - The script named the scheme and no test target, so the run went on into FRUSExplorerUITests, which a landing does not owe, and held the lock 38 minutes more until the orchestrator saw it. It was stopped at 09:37 UTC.
+  - The stop left the result bundle unreadable, so the counts are the console's, reconciled with the run's own total: two result lines were split by the app's log output.
+- `swift build --target FRUSCoreKit` with no warning.
+- `swift test` ran 5,260 tests in 610 suites over 39 runs, and none failed (5,257 at L29's landing, and this row's 3). Its build printed no warning.
+- The `FRUSExplorerMac` build succeeded.
+- Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**Still owed at the push**
+- The by-hand check, on the iPhone 17 simulator by the orchestrator's word: the plan's check names no platform, and the Mac's screen was locked. It runs on the app the landing built, under the lock, behind three other rows' jobs at 09:41 UTC, and is recorded in the PR's body when made.
+- The same check on the Mac in the check copy, as a note on the PR, once the screen unlocks.
+- After the merge, the two hand-over notes for FRUS Explorer Light (#2010, #1986).
+
+## Session 2026-11-27 — L37, the rail through a rebuild: a reader built again by a layout that changed with width keeps its rail as the reader left it, and *Open Documents In* still applies at every open (F11)
+
+The orchestration session started this one for row L37, on `claude/l37-rail-through-rebuild-cb4b9e` from `v2` at `5fba4c9a`, L61's merge. The row: F11, seen on the owner's iPad during F8's check of 1.0 (1842) on 2026-11-20 and sent to the first update on the owner's word: a window resize that switches Browse between one pane and two closes the document's rail. Commits: `4c34ef40`, the test, the defect shown first; `83eab313`, the fix; `370d1199`, the records; then, at the head of the queue, `v2` at `5026ead5` taken in (`a7dfbd5d`), and the landing's records.
+
+**#2030's merge**
+- L32 merged as `5026ead5`, a squash onto `2db58c5a`, at 10:25:34 UTC on 2026-11-27, from its head `da8e29fc`. Its tree, `27917818`, is the head's. It closed #1986 and #2010. This entry records it.
+- L29's #2029 (`2db58c5a`, onto `24616a57`, at 08:34:40 UTC, from `7d7b0ddd`, tree `92d43924`, closing #1995, #1996 and #2000) is recorded in L32's entry above, L33's #2028 in L29's, L61's #2027 in L33's, and L28's #2026 in L61's.
+- This branch took `v2` in at `5026ead5` (`a7dfbd5d`). The three conflicts were all records, the session log, the Amendment-Log and the plan's §5, each resolved with `v2`'s side first and this row's after it. This row takes no decision, so L32's 212 is still the last. On the merged tree a script read all 837 ranged EditableContent blocks: each starts on its key.
+
+**The defect, first** (decision 183)
+- `RailAtCompactWidthTests.testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail`, new: under *Open Documents In* ▸ Read it opens the fixture's first document in Browse's two-pane layout by `TwoPaneDocumentTests`' walk, opens its rail, narrows the window to Browse's one-pane stack and widens it again, and requires the rail still open; then a different document must open without it, and the rail is turned on again.
+- **On `v2`'s app** (iPad Pro 13-inch (M5), iOS 27.2, Windowed Apps): it failed at the widened window, the rail closed, in 277 s, after every step before it held: the document opened without its rail, the toggle opened it, and the window narrowed under the gate.
+- **The brief's confirmation, on the same build:** the same steps under Remember Last, a twin of the test run once and not committed, passed in 246 s. So what closes the rail is the setting applied again at the rebuild, as R6a's session had read from the code.
+- **Two traps of the walk, met on its first two runs:** the volume's Editors' Annotations put its compilation below the fold of a lazy list, so a row must be scrolled to before it is waited for; and in landscape XCUI reports the app's frame in portrait, so `app.swipeUp` landed in the list pane and scrolled nothing. The walk drags in the window's own frame. XCUI's screenshots in landscape are portrait-sized too, so the attachments miss the rail column at the window's right edge; the assertions read the rail's Cite tile.
+
+**The fix**
+- **How it differs from the brief's words.** The brief's likely rule compared documents: apply the setting only when a different document opens. A reader built again cannot tell for itself, and comparing with the document the scene last opened would have gone wrong both ways: Read would stop applying when a reader opens again the document it has just left, and the setting would apply to a rebuild after a sheet or another tab had opened another document in between. So the reader tells a rebuild by its moment.
+- **`ReaderRebuildLedger`** (`DocumentView.swift`) counts the readers each scene shows, by document. A reader is its document's built again when another reader in the scene still shows the document, or one stopped showing it within a second of this one's start: SwiftUI does not promise the order, and both occur. The per-open task asks first, before anything awaits, since the task waits on the indexing pipeline, which can be busy for minutes.
+- **`DocumentView.railSetting(for:isPhone:isBuiltAgain:)`** writes nothing on an iPad reader built again; every open applies the setting as before, a document opened again within the window aside, and an iPhone closes the rail at every start (#404). Research's reader, which Research's own gate rebuilds, keeps its rail too: a probe, run once on the fixed code, passed.
+- **A `ReaderRebuild` log line** names each rebuild with the gap it measured. Over the fixed code's run, 64: each 0.00006 to 0.155 s after a reader of its document stopped, or while one still showed it.
+- **`BrowserView.swift`:** the two-pane gate's note says that crossing it builds the reader anew, and where the rail is kept.
+
+**Checks**
+- **The fixed code on the iPads:** `RailAtCompactWidthTests` on the iPad Pro 13-inch (M5) under iOS 27.2 in Windowed Apps, 3 tests passed (the Read test 287 s, the narrowing test 566 s, the first 210 s); its first test under 27.0, passed (194 s).
+- **The unit target, scoped,** on the iPhone 17 under iOS 27.0: `RailThroughRebuildTests` (10 tests), `DocumentViewTests`, `EnvironmentSelfReferenceTests`, `EditableContentKeyTests` (the nine ranges), `CodingStandardsAuditTests`, `UnconstructedViewAuditTests` and `AppSourceTreeTests`: 115 tests in 7 suites passed, 327 cases with each parameterized argument. `build-for-testing` printed the two known residues alone, and `Scripts/check_repo_hygiene.py` passed its six checks. The test's comments, messages and a constant's name were edited after the iPad run, and compiled.
+- **At the head of the queue,** on the merge `a7dfbd5d` (tree `3529ee66`), in one `heavy.sh` call: `build-for-testing`, with the two residues alone; the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, the app removed first, 8,346 tests in 1,011 suites, 8,328 passed, 17 skipped as at L29 and L32, and the one test with the six known issues, in 760 s (L32's landing ran 8,336 in 1,010, and this row adds `RailThroughRebuildTests`' 10 in 1); the `FRUSExplorerMac` build, with the residues alone. No `swift test`: the row changes no file a package target compiles or reads, so the package's input is `v2`'s, which L32's landing ran. `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session ("I merge on green (Recommended)"). Its Auto-fix is on and GitHub's auto-merge is off.
+- **Offered, not taken** (decision 183): a tab's return applies the setting too. Under Read, a reader's rail opened, Search chosen and Browse chosen again 3 s later: the rail is closed (a probe on the fixed code). Pre-existing, since `v2`'s code applied the setting at every run of the per-open task. It is in the plan's §5, under *Found by L37, unfiled*.
+- **The manuals and Settings are not changed:** the iOS manual's §4.4 says the setting chooses how a newly opened document starts, and the Reading footer that the rail toggle inside a document always wins for that document, which F11 broke at a resize and the fix restores.
+- **By hand:** L37's brief names none. The owner's check on the iPad, for R9, is the pull request's *Visual review*.
+
 ## Session 2026-11-27 — L41, the Zotero client: a send returns as soon as its last write succeeds, and Zotero's `Backoff` holds the account's next write from any client; each wait is said through the send's status; a date `Retry-After` is read; #1923's resume proposed, not built
 
 The plan of record's session started this one for row L41, on `claude/l41-zotero-client-f9a33d`, held until L29 had merged and then begun on the orchestrator's "go" from `v2` at `2db58c5a`, L29's merge. The row: #1924, #1925 and #1926, and #1923's resume as a proposal (decision 138). Commits: `54bf4f86` (the client and its suite), `8ab12121` (the reader's two Share sends), and a docs commit.

@@ -362,6 +362,44 @@ portrait, 12 in landscape with every section open), so the sheet is what the tes
 `.safeAreaInset`), and SwiftUI makes no sheet of it. **Measured on R6a's code:** the suite's 2 tests passed, the
 narrowing test in 558 s.
 
+**`testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail` resizes the window under Read (L37, F11).** The suite's
+other two tests launch under *Open Documents In* ▸ Remember Last, which writes no rail setting at an open, so neither
+could see F11: a resize across Browse's two-pane width builds the reader anew, and its per-open task applied the setting
+again. This one launches under Read with `-frus.filterDownloadedOnly YES`, turns to landscape, widens the window, and
+opens the fixture's first document in Browse's two-pane layout by `TwoPaneDocumentTests`' walk (Subseries ▸ Subseries
+1961-63 ▸ Kennedy-Khrushchev ▸ UI Test Compilation, Index Now on a cold run, UI Test Document One). It requires the
+document opened without its rail (Read applied), opens the rail from its toggle, narrows the window to its least width,
+where Browse draws its one-pane stack at compact width, widens it to the two-pane layout again, and requires the rail
+still open. (At a document below 1,100 pt of content the two-pane layout gives up its list pane, and beside the tab
+sidebar the widened window's reader fills the layout, its own Back above it: the layout, not the list, is what the
+gate switches.) Then it goes Back to the compilation and requires UI Test Document Two to open without its rail, since
+Read still applies to a different document, and turns the rail on again so that the stored setting is left on. It
+needs Windowed Apps and skips without it, as the narrowing test does. Two traps the walk met on its first runs, both
+in landscape: a lazy list leaves a row below the fold out of the tree, and the volume's Editors' Annotations put its
+compilation well below the fold, so the walk scrolls before it gives a row up; and `app.swipeUp` scrolled nothing,
+since XCUI reports the app's frame in portrait and the swipe's centre fell in the list pane, so the walk drags in the
+window's own frame, at 80% of its width.
+**On the code before L37** (`v2` at `5fba4c9a`, iPad Pro 13-inch (M5), iOS 27.2, Windowed Apps) it fails at the
+widened window, the rail closed, in 277 s, after every step before it held. **The brief's confirmation, on the same
+code:** the same steps under Remember Last (a twin of the test, run once and not committed) passed in 246 s: the rail
+stayed through both crossings, so the setting applied again at the rebuild is what closed it.
+**Measured on L37's code** (the same iPad, iOS 27.2, Windowed Apps): the suite's 3 tests passed, the Read test in 287 s,
+the narrowing test in 566 s and the first in 210 s, and the first passed under `OS=27.0` too (194 s). The reader's
+`ReaderRebuild` log line named 64 rebuilds over that run, every one either 0.00006 to 0.155 s after a reader of the
+same document stopped or while one still showed it, so both orders SwiftUI stops and starts the two readers in were
+met; the rule's window is one second. **XCUI's screenshots in landscape are portrait-sized**, as its frames are, so
+the rail column at the window's right edge falls outside the attachments: read the assertions, which ask for the
+rail's Cite tile, not the pictures.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/RailAtCompactWidthTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+```
+
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
