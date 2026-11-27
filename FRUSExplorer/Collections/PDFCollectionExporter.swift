@@ -146,6 +146,8 @@ import ImageIO
 ///   1.26 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its fields
 ///          (`StructuredSummaryDisplay`), a line each opening with its label in bold, where it printed its stored
 ///          JSON (`summaryAttributedString`); a `.general` summary prints as before
+///   1.27 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
+///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the PDF
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -849,9 +851,9 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.endPDFPage()
         pageNumber += 1
 
-        // ── Research note pages (one per note; the per-entry override when resolved,
-        //    else options.includeNotes — Phase 5) ─
-        guard doc.includeNotesOverride ?? options.includeNotes else { return }
+        // ── Research note pages (one per note; the document's setting, else its section's,
+        //    else the collection's — Phase 5, #2000) ─
+        guard doc.includesNotes(options: options) else { return }
         for note in doc.noteTexts where !note.isEmpty {
             ctx.beginPDFPage(nil)
             var ny = H - M

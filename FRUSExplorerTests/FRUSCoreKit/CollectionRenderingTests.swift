@@ -199,7 +199,10 @@ enum CollectionRenderingFixtures {
                 citation: "Foreign Relations of the United States, 1958–1960, Volume VI, Document 10.",
                 historyStateGovURL: "https://history.state.gov/historicaldocuments/frus1958-60v06/d10",
                 includeHeadnote: true, headnoteText: "A headnote written by hand.",
-                headnoteAuthorship: .userWritten, includeNotesOverride: false)),
+                headnoteAuthorship: .userWritten, includeNotesOverride: false,
+                // Since L29 (#2000) the notes-off document has a record too, whose note BibTeX and RIS leave out.
+                zoteroItem: zoteroItem("The Havana despatch", volume: "frus1958-60v06", document: "d10",
+                                       note: "Not sent: the override turns notes off."))),
             .document(CollectionExportDocument(
                 documentId: "d7", volumeId: "frus1961-63v11b", sortOrder: 5, bodyDepth: .full,
                 title: "Cuban Missile Crisis — d7 again", bodyText: flat,
@@ -286,6 +289,12 @@ enum CollectionRenderingFixtures {
 /// 2026-10-25 pins (42,639 and 36,190 bytes), so no byte of the documents already pinned moved; BibTeX
 /// and RIS print no summary, and `d11` has no Zotero item, so their pins hold.
 ///
+/// Re-taken by L29 for `everything.bib` and `everything.ris` (#2000), because `d10`, the document whose
+/// override turns its notes off, gained a Zotero item with a note: its record now prints, without the
+/// note, which until #2000 BibTeX and RIS would have printed. Rendered by the new code with `d10` taken
+/// out, both matched their 2026-10-25 pins (1,061 and 810 bytes), so no byte of the records already
+/// pinned moved. The page and the package read no Zotero item, so their pins hold.
+///
 /// Version history:
 ///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): initial implementation
 ///   1.1 — 2026-10-31: `structuredSummaryFields`; the page and the package re-pinned for `d11`
@@ -305,6 +314,9 @@ enum CollectionRenderingFixtures {
 ///   1.5 — R6a (F6): the three HTML pages re-pinned for the stylesheet's comment on an index entry's
 ///          landing, which now says the script brings the entry's first line into view: each grew by
 ///          the 7 bytes `ReaderPageTests` names; the Word, BibTeX and RIS pins hold
+///   1.6 — L29 (#2000): the BibTeX and RIS pins re-taken, because the everything collection's `d10`, the
+///          document whose override turns its notes off, gained a Zotero item with a note: its record now
+///          prints, without the note. The page and the package read no Zotero item, so their pins hold
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -314,8 +326,8 @@ struct CollectionRenderingPinTests {
     static let pins: [String: (sha256: String, bytes: Int)] = [
         "everything.html": ("3d194da032ba7e316166f760b71557b8b8886e009ec3b5e6166c36a63651dca2", 47_670),
         "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
-        "everything.bib": ("e04c1eb921acae782e6113bcc18055dc81e9e43dbb9eca97848c6356c78df7ad", 1_061),
-        "everything.ris": ("25e92393bdda73437bfcf1879d65cb790eb62df10c964a135d596faabcdc4fbc", 810),
+        "everything.bib": ("75a10d49fdb5c3a7b266ca6cdc7f02ca5644462e96b459c8e7ab51b92036afc7", 1_529),
+        "everything.ris": ("c02c50f3080a7a18039dfc545f672767edb536ec284a675f815b61ae92da4f93", 1_163),
         "plain.html": ("6988a6cfebc4f096c5a911546007a661c6300ec713fedfc05cab4fe71471573b", 32_009),
         "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
         "preview.html": ("a6f7f2c0b9f748bcf0a843cb2d136c984009d326c8af446138c1a12d9ece127b", 30_872),
@@ -395,8 +407,11 @@ struct CollectionRenderingPinTests {
         let (_, items, options) = try await F.everything()
         let bib = BibTeXCollectionExporter().bibTeX(for: items, options: options)
         let ris = ZoteroCollectionExporter().ris(for: items, options: options)
-        #expect(bib.components(separatedBy: "@incollection{").count - 1 == 2)
-        #expect(ris.components(separatedBy: "TY  - CHAP").count - 1 == 2)
+        #expect(bib.components(separatedBy: "@incollection{").count - 1 == 3)
+        #expect(ris.components(separatedBy: "TY  - CHAP").count - 1 == 3)
+        // d10's record is there, without the note its override turns off (#2000).
+        #expect(bib.contains("frus1958-60v06") && ris.contains("frus1958-60v06/d10"))
+        #expect(!bib.contains("Not sent") && !ris.contains("Not sent"), "d10's note went out")
         Self.expectPin("everything.bib", Data(bib.utf8))
         Self.expectPin("everything.ris", Data(ris.utf8))
     }
@@ -457,6 +472,114 @@ struct CollectionRenderingPinTests {
         #expect(pacific.formatter.string(from: moment) == "October 25, 2026")
         #expect(CollectionColophon.text(for: [], dated: F.exportDate)
                 == "Compiled with FRUS Explorer · 0 documents from 0 volumes · October 25, 2026")
+    }
+}
+
+// MARK: - CollectionNotesSettingTests
+
+/// A document's research-notes setting holds in every export that carries notes as text (#2000).
+///
+/// The PDF, the web page and Word print a document's notes by its own setting or its section's, which
+/// the assembly hands on as one value, else by the collection's. Until #2000 the four exports that
+/// carry notes as text did not: BibTeX and RIS read the collection's switch alone, the Zotero send
+/// read no setting at all, and a shared `.fruscollection` file carried every document's notes once
+/// the export sheet's *Include my research notes* was on. So a note its author had turned off for a
+/// document or a section went into a `.bib` or `.ris` file, a Zotero library or a colleague's copy.
+/// The references' test and the shared file's failed on the code before the fix. The records the
+/// send posts are `ZoteroCollectionExporter.records(for:options:)`, held here too; that the sheet's
+/// send posts them is the app's test, which reads the sheet (`CollectionZoteroSendNotesTests`).
+///
+/// Version history:
+///   1.0 — L29 (#2000): initial implementation
+@Suite("A document's research-notes setting holds in BibTeX, RIS, the Zotero send and a shared file (#2000)")
+struct CollectionNotesSettingTests {
+
+    typealias F = CollectionRenderingFixtures
+    typealias R = CollectionResolutionFixtures
+
+    /// Three documents, each with one note and a Zotero item that carries it: `d1` follows the
+    /// collection, `d2` has its notes off and `d3` has them on.
+    static func documents() -> [CollectionExportItem] {
+        let settings: [(id: String, notes: Bool?)] = [("d1", nil), ("d2", false), ("d3", true)]
+        return settings.enumerated().map { index, document -> CollectionExportItem in
+            let (id, notes) = document
+            return .document(CollectionExportDocument(
+                documentId: id, volumeId: "frus1961-63v11", sortOrder: index, title: id, bodyText: "",
+                noteTexts: ["The note on \(id)."], citation: "Document \(id).",
+                includeNotesOverride: notes,
+                zoteroItem: F.zoteroItem("Document \(id)", volume: "frus1961-63v11", document: id,
+                                         note: "The note on \(id).")))
+        }
+    }
+
+    /// The documents whose note `text` holds, in order.
+    static func carried(_ text: String) -> [String] {
+        ["d1", "d2", "d3"].filter { text.contains("The note on \($0).") }
+    }
+
+    @Test("BibTeX and RIS carry a document's notes where the page prints them, and only there",
+          arguments: [true, false])
+    func referencesFollowThePage(collectionNotes: Bool) {
+        var options = CollectionExportOptions()
+        options.includeNotes = collectionNotes
+        let items = Self.documents()
+        let page = CollectionItemHTMLRenderer(options: options).pageHTML(
+            metadata: CollectionExportMetadata(name: "Notes", note: nil, exportDate: F.exportDate), items: items)
+        let bib = BibTeXCollectionExporter().bibTeX(for: items, options: options)
+        let ris = ZoteroCollectionExporter().ris(for: items, options: options)
+        // The page prints d1's note by the collection's switch, d2's never and d3's always.
+        let printed = collectionNotes ? ["d1", "d3"] : ["d3"]
+        #expect(Self.carried(page) == printed)
+        #expect(Self.carried(bib) == printed, "\(bib)")
+        #expect(Self.carried(ris) == printed, "\(ris)")
+        // Every record stays, with its tags: only the notes are left out.
+        #expect(bib.components(separatedBy: "@incollection{").count - 1 == 3)
+        #expect(ris.components(separatedBy: "TY  - CHAP").count - 1 == 3)
+        #expect(ris.components(separatedBy: "KW  - Quarantine").count - 1 == 3)
+    }
+
+    @Test("The Zotero send's records are the RIS file's, each with its notes where they print and its tags always",
+          arguments: [true, false])
+    func zoteroSendRecords(collectionNotes: Bool) {
+        var options = CollectionExportOptions()
+        options.includeNotes = collectionNotes
+        let records = ZoteroCollectionExporter.records(for: Self.documents(), options: options)
+        #expect(records.map { $0.notes?.map(\.note) ?? [] }
+                == [collectionNotes ? ["The note on d1."] : [], [], ["The note on d3."]])
+        #expect(records.allSatisfy { $0.tags?.map(\.tag) == ["Quarantine"] })
+        let exporter = RISExporter()
+        #expect(records.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
+                == ZoteroCollectionExporter().ris(for: Self.documents(), options: options))
+    }
+
+    @Test("A shared file with notes included carries a document's notes where its notes print, and only there")
+    func sharedFileFollowsTheSettings() {
+        func collection(notes: Bool) -> CollectionExport {
+            CollectionExport(
+                id: UUID(), name: "Notes", projectIds: [],
+                entries: [
+                    R.entry(0, kind: .document, document: "d1"),
+                    R.entry(1, kind: .document, document: "d2") { $0.includeNotesOverride = false },
+                    R.entry(2, kind: .heading, text: "Part") { $0.includeNotesOverride = false },
+                    R.entry(3, kind: .document, document: "d3"),
+                    R.entry(4, kind: .document, document: "d4") { $0.includeNotesOverride = true },
+                    R.entry(5, kind: .heading, text: "Another part"),
+                    R.entry(6, kind: .document, document: "d5"),
+                ],
+                defaultBodyDepth: "full", footnoteStyle: "all", tocStyle: "citation", applyHighlights: false,
+                includeNotes: notes, includeWordCloud: false, defaultIncludeHeadnote: false)
+        }
+        func carried(_ value: CollectionExport, sheetSwitch: Bool = true) -> [String] {
+            NativeCollectionSerializer.makeFile(from: value, includeNotes: sheetSwitch) {
+                ["The note on \($0.documentId)."]
+            }.entries.filter { $0.notes != nil }.compactMap(\.documentId)
+        }
+        // d2's own setting and d3's section's turn them off; d4's own turns them on under the
+        // section; "Another part" closes the section, so d5 follows the collection again.
+        #expect(carried(collection(notes: true)) == ["d1", "d4", "d5"])
+        #expect(carried(collection(notes: false)) == ["d4"])
+        // The sheet's switch still comes first: off, no document's notes travel.
+        #expect(carried(collection(notes: true), sheetSwitch: false) == [])
     }
 }
 

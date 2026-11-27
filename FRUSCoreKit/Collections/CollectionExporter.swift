@@ -647,6 +647,10 @@ public struct CollectionExportOptions: Sendable {
 ///          (`StructuredSummaryDisplay`) and not as its stored JSON. Both default to `.general`,
 ///          which prints as before. `withSummary(_:format:)` takes the summary's format, and now
 ///          keeps the headnote's authorship, which the copy had dropped to `.aiGenerated`
+///   1.9 — L29 (#2000): `includesNotes(options:)`, the rule the web page, the PDF and Word print a
+///          document's research notes by, and `citationRecord(options:)`, the Zotero item BibTeX, RIS
+///          and the Zotero send carry by the same rule, where they had read the collection's switch
+///          alone or none
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -714,8 +718,7 @@ public struct CollectionExportDocument: Sendable {
     /// the collection-level behavior exactly.
     public let applyHighlightsOverride: Bool?
     /// The entry/section research-notes override resolved by the cascade (Phase 5).
-    /// `nil` = inherit — renderers gate note blocks on
-    /// `includeNotesOverride ?? options.includeNotes`.
+    /// `nil` = inherit — every export reads it through `includesNotes(options:)`.
     public let includeNotesOverride: Bool?
     /// The entry/section footnote override resolved by the cascade (Phase 5). `nil` =
     /// inherit — every renderer (the shared HTML renderer / preview, PDF, and DOCX —
@@ -739,6 +742,30 @@ public struct CollectionExportDocument: Sendable {
 
     /// Backward-compatible single-note accessor.
     public var noteText: String? { noteTexts.first }
+
+    /// Whether this document's research notes go out with it: its own setting or its section's, which the
+    /// assembly hands on as `includeNotesOverride`, else the collection's (`options.includeNotes`). The web
+    /// page, the PDF and Word print the notes by it, and BibTeX, RIS, the Zotero send and a shared file carry
+    /// them by it (#2000).
+    ///
+    /// - Parameter options: The export's options.
+    /// - Returns: Whether the document's notes print.
+    public func includesNotes(options: CollectionExportOptions) -> Bool {
+        includeNotesOverride ?? options.includeNotes
+    }
+
+    /// The document's citation record as BibTeX, RIS and the Zotero send carry it: its Zotero item, without its
+    /// research notes where they do not print (`includesNotes(options:)`, #2000). Its tags stay either way. Until
+    /// #2000 BibTeX and RIS read the collection's switch alone and the send read none, so a note its author had
+    /// turned off for a document or a section went out.
+    ///
+    /// - Parameter options: The export's options.
+    /// - Returns: The record, or `nil` for a document with no Zotero item.
+    public func citationRecord(options: CollectionExportOptions) -> ZoteroJSONExporter.Item? {
+        guard var item = zoteroItem else { return nil }
+        if !includesNotes(options: options) { item.notes = nil }
+        return item
+    }
 
     /// The top-of-document export heading (M3, D4): the user's `titleOverride` when
     /// non-empty, else the citation (or `title` when no citation). The single centralizer

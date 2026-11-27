@@ -59,11 +59,12 @@ extension NativeCollectionSerializer {
     ///
     /// - Parameters:
     ///   - collection: The collection to serialize. Its entries are emitted in `sortOrder`.
-    ///   - includeNotes: When `true`, each document entry carries the inline note texts from
+    ///   - includeNotes: When `true`, each document entry whose notes print — its own setting, else its
+    ///     section's, else the collection's (#2000) — carries the inline note texts from
     ///     `resolveNoteTexts`; when `false` (the D9a default), notes are omitted entirely.
     ///   - resolveNoteTexts: Supplies the research-note bodies for a document entry (the caller
     ///     resolves `selectedNoteIds`/`researchNoteId` against its store). Only invoked when
-    ///     `includeNotes` is `true`.
+    ///     `includeNotes` is `true`, for a document entry whose notes print.
     static func makeFile(
         from collection: Collection,
         includeNotes: Bool,
