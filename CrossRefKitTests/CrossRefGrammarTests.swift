@@ -21,6 +21,7 @@ import Testing
 /// Version history:
 ///   1.0 — Session 6 (#240A)
 ///   1.1 — #1693: the footnote, whole-volume and `mailto:` branches, as the app reads them
+///   1.2 — 2026-11-27 (L39): a roman-numeral page is `.romanPage`, as the app reads it
 struct CrossRefGrammarTests {
 
     private static func url(_ s: String) -> URL { URL(string: s)! }
@@ -61,10 +62,15 @@ struct CrossRefGrammarTests {
             ("#pg_313", "frus1901", .page(volumeId: "frus1901", page: 313)),
             ("frus1955-57v17#pg_313", nil, .page(volumeId: "frus1955-57v17", page: 313)),
             ("#page42", nil, .page(volumeId: nil, page: 42)),
-            // Roman-numeral / non-arabic pages are unresolved.
-            ("#pg_XIII", nil, .unresolved),
+            // A page of the front matter, numbered in Roman numerals (L39), in either case.
+            ("#pg_XIII", nil, .romanPage(volumeId: nil, page: 13)),
+            ("#pg_III", "frus1961-63v06", .romanPage(volumeId: "frus1961-63v06", page: 3)),
+            ("frus1901#pg_xliv", "frus1900", .romanPage(volumeId: "frus1901", page: 44)),
+            ("#pageIX", nil, .romanPage(volumeId: nil, page: 9)),
+            // Any other page anchor is unresolved.
             ("#pg_", nil, .unresolved),
             ("#pg_313a", nil, .unresolved),
+            ("#pg_XIIIa", nil, .unresolved),
             // Same-document anchors are unresolved.
             ("#fn2", nil, .unresolved),
             ("#note3", nil, .unresolved),

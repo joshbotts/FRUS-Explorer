@@ -2620,13 +2620,13 @@ Reset view
 
 #### `personNotFound.dismiss` and `personNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1724–1725 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1652 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1759–1760 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1652 -->
 
 Done
 
 <!-- END SOURCE: personNotFound.dismiss -->
 
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 337–337 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:331 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 340–340 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:331 -->
 
 OK
 
@@ -2636,13 +2636,13 @@ OK
 
 #### `glossNotFound.dismiss` and `glossNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1757–1758 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1685 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1792–1793 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1685 -->
 
 Done
 
 <!-- END SOURCE: glossNotFound.dismiss -->
 
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 347–347 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:341 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 350–350 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:341 -->
 
 OK
 

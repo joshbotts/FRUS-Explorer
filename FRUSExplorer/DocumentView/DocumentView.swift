@@ -253,6 +253,9 @@ enum DocumentSheet: Identifiable {
 ///          context with its scene id, for the `.researchRail` sheet
 ///   3.17 — L31 (#1975): `extractYear(from:)` forwards to `CentralFilesClassifier.documentYear(fromDateline:)`,
 ///          the one copy of the dateline's year rule, where it kept its own
+///   3.18 — L39 (F7): a page link whose page names no document opens the division that begins on it
+///          (the Index a Contents line links to), and a page numbered in Roman numerals
+///          (`.romanPage`, the Preface's) opens what `PageLink` finds on it; both did nothing
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -1331,6 +1334,9 @@ struct DocumentView: View {
         case .page(let volumeId, let page):
             resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId, citing: citing)
 
+        case .romanPage(let volumeId, let page):
+            resolveRomanPageReference(page: page, volumeId: volumeId ?? entry.volumeId)
+
         case .volume(let volumeId):
             openCrossRefVolume(volumeId)
 
@@ -1468,10 +1474,12 @@ struct DocumentView: View {
     /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
     /// reference's edge against. Where it goes is `PageLink`'s (#1766), which the Mac's reader asks
-    /// too: a volume on the device answers from its page index, as before, and from the bundled page
-    /// map where that names nothing; a volume that is not answers from the map, and the document
-    /// opens as a link to it does, offering the download; a page of it the map does not list opens
-    /// the volume's page in Browse, which names it.
+    /// too: a volume on the device answers from its page index, as before, then, where that names no
+    /// document, from the division that begins on the page (F7, L39: the Index a Contents line links
+    /// to, opened by its id as Browse opens it), and from the bundled page map where neither names
+    /// anything; a volume that is not answers from the map, and the document opens as a link to it
+    /// does, offering the download; a page of it the map does not list opens the volume's page in
+    /// Browse, which names it.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
         // When the app cannot yet tell what is on the device, the page index answers, as before #1766.
         let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
@@ -1489,6 +1497,33 @@ struct DocumentView: View {
                 case nil:
                     #if DEBUG
                     print("[DocumentView] Page ref: p. \(page) of \(volumeId) names no document in the page index")
+                    #endif
+                }
+            }
+        }
+    }
+
+    /// Opens what a page of a volume's front matter, numbered in Roman numerals, holds (F7, L39): a
+    /// volume's Contents links its Preface, its Sources and its lists of abbreviations and persons that
+    /// way (`#pg_III`), which the grammar read as nothing until L39. Where it goes is `PageLink`'s,
+    /// which the Mac's reader asks too: a document that begins on the page, else the section that
+    /// begins on it, opened by its id as Browse opens the Preface, else the section the page is printed
+    /// in; a volume not on the device opens its page in Browse, which names no page for it.
+    private func resolveRomanPageReference(page: Int, volumeId: String) {
+        let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
+        let store = appState.pageRangeStore
+        Task {
+            let destination = await PageLink.destination(romanPage: page, volumeId: volumeId,
+                                                         onDevice: onDevice, store: store)
+            await MainActor.run {
+                switch destination {
+                case .document(let volumeId, let documentId)?:
+                    navigateToCrossRef(documentId: documentId, volumeId: volumeId)
+                case .volume(let volumeId, let page)?:
+                    openCrossRefVolume(volumeId, followedPage: page)
+                case nil:
+                    #if DEBUG
+                    print("[DocumentView] Page ref: roman p. \(page) of \(volumeId) names nothing in the page index")
                     #endif
                 }
             }
