@@ -4538,3 +4538,11 @@ The plan of record's session started this one for row L29, on `claude/l29-collec
   - `swift test` over the collection suites: 32 tests in 6 suites, the one failure the BibTeX and RIS pins, re-taken.
   - The app's collection, export, import and source-scan suites on the iPhone 17 under iOS 27.0 (54 suites named, `RichTextRestingCapTests` left to the full run as known flaky): 623 tests, 621 passed. The two failures were the pins and the send test's own string, which looked for `records(for:` on one line; it now looks for the call. `EditableContentKeyTests`, `CodingStandardsAuditTests` and both boundary suites passed.
   - The warnings were the two known residues.
+- **After the snapshot was made to read the smart collection's live entries** (folded into `b340bd6e`), its six suites ran again on `7f3c1b92`, clean, through `Scripts/heavy.sh`: 36 tests on the iPhone 17 under iOS 27.0, all passed, `EditableContentKeyTests` among them.
+- **The landing checks, on the merged tree** (`9ab170a3`, tree `de365719`, with `v2` at `24616a57`), in one `heavy.sh` call, from 07:33 to 07:54 UTC, once L37's job had released the lock:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+  - The unit target there, the app removed first and the TEI mirror set: 8,328 tests in 1,010 suites, of which 8,310 passed, 17 skipped and 1 was an expected failure, and none failed, in 753 s (8,315 at L33's landing, and this row's 13). Each of the 13 new tests passed, and so did `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary suites, `CloudKitSchemaInventoryTests` and `CollectionRenderingPinTests`. `RichTextRestingCapTests` passed 21 of 21 on the first run after the boot, so the colour-picker test L33's landing met needed no rerun.
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,257 tests in 610 suites over 39 runs, and none failed (5,253 at L33's landing, and this row's 4). Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
