@@ -4229,7 +4229,7 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
 - **The Mac build** (`FRUSExplorerMac`, where `SupportingTypes.swift` compiles too): it succeeded, with the two known residues and no other warning.
 
 **For the owner**
-- **The pull request**, on your word.
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session: "You can turn on auto-fix when sessions land PRs and you can turn on auto-merge when sessions' PRs pass CI", with "I merge on green (Recommended)" to how a PR merges once CI passes. Its Auto-fix is on and GitHub's auto-merge is off. The landing checks ran on the merged tree first: the full unit target and the Mac build. `swift test` was not owed, since the diff names no package input.
 - **#1835:** its own test passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. Closing it as not reproduced is yours; the pull request does not close it.
 - **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is a finding of its own, not filed. Where it goes is yours.
 - **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
