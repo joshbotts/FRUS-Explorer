@@ -84,6 +84,9 @@ struct NavigationHistoryEntry: Sendable {
 ///          them), not the displayed ones, so a graph whose dated neighbours fold into one date
 ///          cluster keeps its timeline, its layout picker and its brush through a resize, an expanded
 ///          cluster or a brushed range
+///   1.10 — 2026-11-27 (#1990, L42): `saveCapture()`, what the graph's two saves take, by the kit's rule,
+///          over the graph as built and the range the timeline draws within (`drawnDateWindow`), and
+///          `saveDocumentLabel`, the name both saves give the central document
 @Observable
 @MainActor
 final class CrossReferenceGraphViewModel {
@@ -857,6 +860,34 @@ final class CrossReferenceGraphViewModel {
         default:
             return nil
         }
+    }
+
+    // MARK: - What the graph saves (#1990)
+
+    /// The brushed range the timeline draws within: `timelineBrushRange` while the timeline is drawn,
+    /// and `nil` when no range is brushed or the network is drawn, which shows every date whatever range
+    /// a timeline left brushed. The range the graph's saves hold their documents to.
+    var drawnDateWindow: ClosedRange<TimeInterval>? {
+        layoutMode == .timeline && timelineEligible ? timelineBrushRange : nil
+    }
+
+    /// What the graph's two saves take as it is drawn now, by the kit's rule
+    /// (`CrossReferenceGraphDisplay.capture(nodes:edges:graph:dateValues:dateWindow:)`), or `nil` before
+    /// a graph has loaded.
+    ///
+    /// Read over the graph as built (`baseDisplayNodes`), not the timeline's displayed nodes, whose date
+    /// clusters fold documents, with the dates the layout places them by and the range it draws within.
+    func saveCapture() -> CrossReferenceGraphCapture? {
+        guard let graph, !baseDisplayNodes.isEmpty else { return nil }
+        return CrossReferenceGraphDisplay.capture(nodes: baseDisplayNodes, edges: baseDisplayEdges, graph: graph,
+                                                  dateValues: nodeDateValues, dateWindow: drawnDateWindow)
+    }
+
+    /// The central document as both saves name it: its volume and printed number, "frus1952-54v02p1,
+    /// Doc. 16" (`CrossReferenceGraphCapture.documentLabel(volumeId:documentId:documentNumber:)`).
+    var saveDocumentLabel: String {
+        CrossReferenceGraphCapture.documentLabel(volumeId: centralVolumeId, documentId: centralDocumentId,
+                                                 documentNumber: graph?.nodeMetadata[centralKey]?.documentNumber)
     }
 
     /// Returns the edge whose `id` matches `resolvedEdgeKey` (hovered, else pinned),
