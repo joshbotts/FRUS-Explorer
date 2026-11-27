@@ -8551,7 +8551,7 @@ struct CitationDocNumberRegressionTests {
                 rawText: nil,
                 subseries: "1969-76",
                 volumeNumber: "I",
-                documentNumber: 15,
+                documentNumber: "15",
                 pageNumber: nil,
                 titleFragment: nil,
                 parserConfidence: .structured

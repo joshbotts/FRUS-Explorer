@@ -117,6 +117,9 @@ import Observation
 ///   2.15 — 2026-11-15: #1905 (L15) — an unnamed subject chip reads *Subject filter*
 ///   2.16 — 2026-11-15: #1918 (L18, IPS-1) — `filterSheetOpened()` and `filterSheetClosed()`: the Filters sheet's
 ///          closing runs the search on screen again when the filters changed, or ends it when nothing is left to search
+///   2.17 — 2026-11-27: #2013 (L57) — the date filter's two days are read and written in the zone its pickers are in
+///          (`dateRangeTimeZone`, `filterDay(of:in:)`, `filterDate(ofDay:in:)`), where they were in GMT; Visualize in
+///          Corpus Analytics reads `dateRangeYears`
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -177,6 +180,26 @@ final class SearchViewModel {
     var facetYearKeys: [String]? = nil
     var dateRangeStart: Date = Calendar.current.date(byAdding: .year, value: -80, to: .now) ?? .distantPast
     var dateRangeEnd: Date = .now
+
+    /// The zone the date filter's two days are read and written in: the device's, which is the zone Filters' two date
+    /// pickers show and set ``dateRangeStart`` and ``dateRangeEnd`` in (`SearchFilterView.dateRangeSection`).
+    ///
+    /// A day handed to Search becomes the first moment of that day in this zone, so the picker shows that day; and a date
+    /// is written as the day it falls on here, whatever its time of day, so the day written is the day the picker shows.
+    /// Until #2013 both ran in GMT: west of UTC a hand-off's 1 October 1962 showed as 30 September, and a pick, which keeps
+    /// the time of day of the date the picker held (20:00 after that hand-off in New York, measured by L57), was written as
+    /// the day after. The tests set it, to read and write in a zone of their own; nothing else does. The Mac's Search
+    /// window converts its own days, in the device's zone too (`MacSearchViewModel`).
+    @ObservationIgnored var dateRangeTimeZone: TimeZone = .autoupdatingCurrent
+
+    /// The years the date filter runs from and to, read in ``dateRangeTimeZone``, or `nil` while it is off: what
+    /// Visualize in Corpus Analytics opens its chart on (`SearchView.openSearchInAnalytics()`), so a chart of 1961 to 1963
+    /// followed to Search comes back as 1961 to 1963.
+    var dateRangeYears: (start: Int, end: Int)? {
+        guard dateRangeEnabled else { return nil }
+        let calendar = Self.filterCalendar(in: dateRangeTimeZone)
+        return (calendar.component(.year, from: dateRangeStart), calendar.component(.year, from: dateRangeEnd))
+    }
 
     // MARK: - Tag Filter Parameters
 
@@ -2274,8 +2297,8 @@ final class SearchViewModel {
             .filter { !$0.isEmpty }
         let range: DateRange? = dateRangeEnabled
             ? DateRange(
-                earliest: SearchViewModel.isoDate(dateRangeStart),
-                latest: SearchViewModel.isoDate(dateRangeEnd)
+                earliest: shownDay(dateRangeStart),
+                latest: shownDay(dateRangeEnd)
               )
             : nil
         let scoped = projectScopedGates
@@ -2439,8 +2462,8 @@ final class SearchViewModel {
     func applyFacetNarrowing(_ narrowing: FacetNarrowing) {
         switch narrowing {
         case .year(let year):
-            guard let start = Self.date(fromISO: "\(year)-01-01"),
-                  let end = Self.date(fromISO: "\(year)-12-31") else { return }
+            guard let start = Self.filterDate(ofDay: "\(year)-01-01", in: dateRangeTimeZone),
+                  let end = Self.filterDate(ofDay: "\(year)-12-31", in: dateRangeTimeZone) else { return }
             dateRangeEnabled = true
             dateRangeStart = start
             dateRangeEnd = end
@@ -2501,7 +2524,7 @@ final class SearchViewModel {
     private func narrowingValue(_ id: String) -> String? {
         switch id {
         case "date":
-            return dateRangeEnabled ? "\(Self.isoDate(dateRangeStart))/\(Self.isoDate(dateRangeEnd))" : nil
+            return dateRangeEnabled ? "\(shownDay(dateRangeStart))/\(shownDay(dateRangeEnd))" : nil
         case "years":
             return facetYearKeys.map { $0.sorted().joined(separator: ",") }
         case "volume":
@@ -2581,15 +2604,6 @@ final class SearchViewModel {
         return dropped || after.rollupId != before.rollupId
     }
 
-    /// Parses a `yyyy-MM-dd` string into a `Date`, for the year-facet narrowing.
-    private static func date(fromISO iso: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.date(from: iso)
-    }
-
     /// The narrowings currently in force, as clearable summaries (R-1c).
     ///
     /// iOS has never had an active-filter row — only a filled filter glyph, which says
@@ -2606,7 +2620,7 @@ final class SearchViewModel {
             out.append(ActiveNarrowing(
                 id: "date",
                 label: String(localized: "search.narrowing.date",
-                              defaultValue: "\(Self.isoDate(dateRangeStart)) to \(Self.isoDate(dateRangeEnd))")))
+                              defaultValue: "\(shownDay(dateRangeStart)) to \(shownDay(dateRangeEnd))")))
         }
         if let years = facetYearKeys {
             out.append(ActiveNarrowing(
@@ -2783,10 +2797,13 @@ final class SearchViewModel {
         facetYearKeys = params.yearKeys
         if let range = params.dateRange {
             dateRangeEnabled = true
-            let fmt = ISO8601DateFormatter()
-            fmt.formatOptions = [.withFullDate]
-            if let earliest = range.earliest { dateRangeStart = fmt.date(from: earliest) ?? dateRangeStart }
-            if let latest   = range.latest   { dateRangeEnd   = fmt.date(from: latest)   ?? dateRangeEnd }
+            // Each day becomes its first moment in the pickers' zone, so they show the days handed over (#2013).
+            if let earliest = range.earliest {
+                dateRangeStart = Self.filterDate(ofDay: earliest, in: dateRangeTimeZone) ?? dateRangeStart
+            }
+            if let latest = range.latest {
+                dateRangeEnd = Self.filterDate(ofDay: latest, in: dateRangeTimeZone) ?? dateRangeEnd
+            }
         } else {
             dateRangeEnabled = false
         }
@@ -2859,11 +2876,60 @@ final class SearchViewModel {
         return (subseries, individual)
     }
 
-    // MARK: - Private Helpers
+    // MARK: - The Date Filter's Days (#2013)
 
-    private static func isoDate(_ date: Date) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
-        return formatter.string(from: date)
+    /// The `yyyy-MM-dd` day `date` falls on in `timeZone`: the day a date picker in that zone shows it on.
+    ///
+    /// The date filter writes its two days with this, in ``dateRangeTimeZone`` (``searchParameters``, the *Narrowed by*
+    /// chip), so the day written is the day Filters' picker shows at whatever time of day the date stands: a hand-off's
+    /// date is the day's first moment, the filter's first dates are the moment the view model was made, and a pick keeps
+    /// the time of day of the date the picker held.
+    ///
+    /// - Parameters:
+    ///   - date: One of the filter's two dates.
+    ///   - timeZone: The zone to read its day in.
+    /// - Returns: The day, as `yyyy-MM-dd`.
+    nonisolated static func filterDay(of date: Date, in timeZone: TimeZone) -> String {
+        let day = filterCalendar(in: timeZone).dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+    }
+
+    /// The first moment of the day `day` names in `timeZone`, or `nil` when `day` is not a `yyyy-MM-dd` day there.
+    ///
+    /// The date a date picker in that zone shows `day` for, and so what the filter holds for a day that a hand-off, a
+    /// saved search or a facet's year gives it. It is the day's noon taken back to the day's start, not a formatter's
+    /// reading: where a change of clocks skips a day's midnight, the day starts at the first hour it has, where a strict
+    /// `DateFormatter` reads no date at all (L57 measured 27 such days from 1861 to 2000 in São Paulo, 42 in Havana and
+    /// 4 in Tokyo).
+    ///
+    /// - Parameters:
+    ///   - day: A day, as `yyyy-MM-dd`.
+    ///   - timeZone: The zone the day is in.
+    /// - Returns: The day's first moment, or `nil` for a string that names no day (`1962-02-30`, `1962-10-1`).
+    nonisolated static func filterDate(ofDay day: String, in timeZone: TimeZone) -> Date? {
+        let fields = day.split(separator: "-", omittingEmptySubsequences: false)
+        guard fields.count == 3, fields[0].count == 4, fields[1].count == 2, fields[2].count == 2,
+              fields.allSatisfy({ field in field.allSatisfy { ("0"..."9").contains($0) } }),
+              let year = Int(fields[0]), let month = Int(fields[1]), let dayOfMonth = Int(fields[2]) else { return nil }
+        let calendar = filterCalendar(in: timeZone)
+        guard let noon = calendar.date(from: DateComponents(year: year, month: month, day: dayOfMonth, hour: 12)) else {
+            return nil
+        }
+        let start = calendar.startOfDay(for: noon)
+        let named = calendar.dateComponents([.year, .month, .day], from: start)
+        guard named.year == year, named.month == month, named.day == dayOfMonth else { return nil }
+        return start
+    }
+
+    /// A Gregorian calendar in `timeZone`: the calendar the filter's days are counted in.
+    nonisolated private static func filterCalendar(in timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+
+    /// The day `date` falls on in ``dateRangeTimeZone``: the day the filter's pickers show it on.
+    private func shownDay(_ date: Date) -> String {
+        Self.filterDay(of: date, in: dateRangeTimeZone)
     }
 }

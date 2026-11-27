@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2378–2378 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2454–2454 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2379–2380 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2455–2456 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2684–2685 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2764–2765 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1559,6 +1559,44 @@ Zotero is receiving too many requests right now. Try again in a moment.
 
 <!-- END SOURCE: zotero.error.rateLimited.v2 -->
 
+#### A Zotero send waiting to try again — one second
+<!-- L41 of the plan of record from 2026-11-25 (#1925), new 2026-11-27. What a send to Zotero says before it
+     waits out a refusal (HTTP 429) and tries again: in a collection export sheet's progress line, under the
+     Mac Share popover's Send to Zotero Library, and as the iOS Share menu's send row while the send runs.
+     `%@` is the wait in whole seconds, rounded up. This form is for ONE second, so keep it singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 370–371 | key: zotero.status.retry.one -->
+
+Zotero is busy: trying again in %@ second…
+
+<!-- END SOURCE: zotero.status.retry.one -->
+
+#### A Zotero send waiting to try again — two or more seconds
+<!-- The same line for any other number of seconds, up to 60, the longest the app waits at once. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 372–373 | key: zotero.status.retry.many -->
+
+Zotero is busy: trying again in %@ seconds…
+
+<!-- END SOURCE: zotero.status.retry.many -->
+
+#### A Zotero send waiting out Zotero's pause — one second
+<!-- L41 (#1924, #1925), new 2026-11-27. What a send says before its next request when Zotero has asked
+     the app to slow down (its `Backoff`), whether that send's last write asked or an earlier send's did: the
+     pause is waited before the next request, from any send, and not after the write that asked for it. Shown
+     where the line above is. `%@` is the wait in whole seconds, rounded up. Keep this form singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 381–382 | key: zotero.status.backoff.one -->
+
+Zotero asked for a pause: continuing in %@ second…
+
+<!-- END SOURCE: zotero.status.backoff.one -->
+
+#### A Zotero send waiting out Zotero's pause — two or more seconds
+<!-- The same line for any other number of seconds, up to 60. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 383–384 | key: zotero.status.backoff.many -->
+
+Zotero asked for a pause: continuing in %@ seconds…
+
+<!-- END SOURCE: zotero.status.backoff.many -->
+
 ### A document with no printed title
 
 Most FRUS documents carry a printed head, and that is what the app shows in every list. A few do
@@ -2140,14 +2178,14 @@ These documents overlap your range but their dates are imprecise enough to reach
 <!-- END SOURCE: chronology.overflow.chip.a11y.many -->
 
 #### Footer — Paste a chapter’s footnotes. Numbered notes are split on…
-<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.inputSection | lines: 226–227 | key: citation.batch.footer -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.inputSection | lines: 229–230 | key: citation.batch.footer -->
 
 Paste a chapter’s footnotes. Numbered notes are split on their numbers, and a note wrapped across lines is rejoined; an unnumbered list is one citation per line.
 
 <!-- END SOURCE: citation.batch.footer -->
 
 #### Empty state — No FRUS documents matched the provided citation. Check the…
-<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.resultsSection | lines: 406–407 | key: citation.noMatch.detail -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.resultsSection | lines: 413–414 | key: citation.noMatch.detail -->
 
 No FRUS documents matched the provided citation. Check the subseries and volume, then try again.
 
@@ -2172,7 +2210,7 @@ No FRUS documents matched the provided citation. Check the subseries and volume,
      a footnote that opens with its date and gives its volume's years without naming the series —
      "Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84" — was read as the subseries 1962 and drew
      this note under Volume V, though the citation names Volume V; it now reads 1961–1963. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1344–1345 | key: citation.match.unmetFieldsNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1414–1415 | key: citation.match.unmetFieldsNote -->
 
 This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it.
 
@@ -2202,7 +2240,7 @@ This result comes from a volume the citation does not name, so it may not be the
      https://…/frus1961-63v05" draws this note. A single year read that way is a date and is not:
      "FRUS, vol. V, doc. 84, Memorandum, May 5, 1962" and "Senate Committee on Foreign Relations,
      May 5, 1962, vol. V, doc. 84" beside the Volume V link drew it until then, and no longer do. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1357–1358 | key: citation.match.linkProseNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1427–1428 | key: citation.match.linkProseNote -->
 
 The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it.
 
@@ -2216,7 +2254,7 @@ The link names this volume, but the citation’s text names a different one, and
      "part 2", joined as a list: "volume XX and part 2". It may be followed by "and page 50 is
      outside the pages this document may be printed on …" (the next two blocks). Keep it
      lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1338–1339 | key: citation.match.unmetFields -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1408–1409 | key: citation.match.unmetFields -->
 
 this volume does not match the cited \(fields)
 
@@ -2237,7 +2275,7 @@ this volume does not match the cited \(fields)
      for a short document with none, over the pages between the breaks on either side of it. When
      the range is one page, the next block is shown instead. Keep it lower-case: it continues the
      label, and may follow the previous block after "and". -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1377–1378 | key: citation.match.pageOutside -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1462–1463 | key: citation.match.pageOutside -->
 
 page \(page) is outside the pages this document may be printed on (\(first)–\(last))
 
@@ -2251,7 +2289,7 @@ page \(page) is outside the pages this document may be printed on (\(first)–\(
      page-1 floor it is also the form for a document the index records no start for whose only
      arabic page break of its own is page 1, which reads "(1)" (corrected in review round 4, which
      found this note naming only the first case). Keep it lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1374–1375 | key: citation.match.pageOutsideOnePage -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1459–1460 | key: citation.match.pageOutsideOnePage -->
 
 page \(page) is not the page this document is printed on (\(first))
 
@@ -2261,11 +2299,37 @@ page \(page) is not the page this document is printed on (\(first))
 <!-- The note under that best guess (#1474 review round 1). The document on the cited page, when
      there is one, is listed after it as a second result — since #1503 the document that begins on
      that page, or every one of them when several do, each carrying the next block's note. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1383–1384 | key: citation.match.pageOutsideNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1468–1469 | key: citation.match.pageOutsideNote -->
 
 The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it.
 
 <!-- END SOURCE: citation.match.pageOutsideNote -->
+
+#### Best guess — this volume prints no document \(…)
+<!-- The explanation after "Best guess — " on a Citation Lookup document found by the number of a
+     citation whose letter the volume does not print (#1977, the owner's choice of 2026-11-26):
+     "FRUS, 1898, Document 1190c" finds the 1898 volume's Document 1190, labelled "Best guess — this
+     volume prints no document 1190c". `\(number)` is the cited number as the lookup read it. A
+     number the volume prints with its letter — 1190b, or 550A typed as 550a — finds its own
+     document and never shows this. Nor does a microfiche supplement's prefixed number (GT–6) or an
+     appendix's letter (C), which a volume that does not print them answers with nothing, nor a
+     history.state.gov link, whose volume answers alone. It may follow the explanation "this
+     volume does not match the cited …" and come before "page … is outside the pages …", the three
+     joined as a list. Keep it lower-case: it continues the label. -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.numberNotPrinted | lines: 1436–1437 | key: citation.match.numberNotPrinted -->
+
+this volume prints no document \(number)
+
+<!-- END SOURCE: citation.match.numberNotPrinted -->
+
+#### This volume prints no document with the citation’s number and letter…
+<!-- The note under that best guess (#1977). In a volume before 1955 the line "Match — document
+     number assigned digitally" follows it, as it follows every best guess found by number there. -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.numberNotPrintedNote | lines: 1442–1443 | key: citation.match.numberNotPrintedNote -->
+
+This volume prints no document with the citation’s number and letter, so this is the document with that number alone, which may not be the one cited. Check the citation before relying on it.
+
+<!-- END SOURCE: citation.match.numberNotPrintedNote -->
 
 #### A page alone cannot say which of the documents printed on it…
 <!-- The note under each result of a citation that names a page but no document when that page
@@ -2276,7 +2340,7 @@ The citation’s page is not one this document is printed on, so its document nu
      Batch counts the note as ambiguous, and a collection's Add Documents never adds it as
      resolved. In the E-volumes that number their pages afresh in every document the next block is
      shown instead (#1503 review round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1288–1289 | key: citation.match.sharedPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1358–1359 | key: citation.match.sharedPageNote -->
 
 A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation.
 
@@ -2289,7 +2353,7 @@ A page alone cannot say which of the documents printed on it the citation means.
      a page of that number is listed, up to ten, each labelled "Possible match — one of 12
      documents printed on page 2", or, when one document alone has such a page, "Possible match —
      page 57 is printed only in this document"; even that one is not treated as a match. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1304–1305 | key: citation.match.perDocumentPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1374–1375 | key: citation.match.perDocumentPageNote -->
 
 This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation.
 
@@ -2305,7 +2369,7 @@ This volume numbers its pages afresh in every document, so a page number alone d
      block's label instead — except for a link to the whole volume with no document or page beside
      it, which names nothing an index could find and shows this label either way (#1522 review
      round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1391–1392 | key: citation.match.linkVolumeOnly -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1476–1477 | key: citation.match.linkVolumeOnly -->
 
 Volume identified — no document the citation names was found in it
 
@@ -2332,7 +2396,7 @@ Volume identified — no document the citation names was found in it
      reason (review round 1 corrected this note, which said it gave this line). The result shows the
      volume's title and has no button. It says "not yet indexed" rather than "being indexed"
      because a volume whose indexing was cut short is not being indexed until it is indexed again. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1406–1407 | key: citation.match.notYetIndexed -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1491–1492 | key: citation.match.notYetIndexed -->
 
 Volume identified — downloaded but not yet indexed; look it up again once it is
 
@@ -2374,14 +2438,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 812–813 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 878–879 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 875–876 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 941–942 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2399,7 +2463,7 @@ You followed a link to page %lld of this volume, which isn’t downloaded.
 *Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1585–1586 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1651–1652 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 

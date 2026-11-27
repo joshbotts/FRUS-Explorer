@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import os
 import SwiftUI
 import SwiftData
 import TipKit
@@ -253,7 +254,10 @@ enum DocumentSheet: Identifiable {
 ///          context with its scene id, for the `.researchRail` sheet
 ///   3.17 — L31 (#1975): `extractYear(from:)` forwards to `CentralFilesClassifier.documentYear(fromDateline:)`,
 ///          the one copy of the dateline's year rule, where it kept its own
-///   3.18 — L39 (F7): a page link whose page names no document opens the division that begins on it
+///   3.18 — L37 (F11): *Open Documents In* is applied when a document opens and not when its reader is built again by
+///          a layout that changed with width (``ReaderRebuildLedger``, `railSetting(for:isPhone:isBuiltAgain:)`), so a
+///          window resized across Browse's two-pane width keeps the rail as the reader left it
+///   3.19 — L39 (F7): a page link whose page names no document opens the division that begins on it
 ///          (the Index a Contents line links to), and a page numbered in Roman numerals
 ///          (`.romanPage`, the Preface's) opens what `PageLink` finds on it; both did nothing
 struct DocumentView: View {
@@ -386,6 +390,11 @@ struct DocumentView: View {
     @AppStorage(SettingsKeys.edgeTapNavigationEnabled) private var edgeTapNavigationEnabled = true
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
+    /// The document this reader is counted as showing in ``readerLedger``, from its per-open task until it leaves the
+    /// screen (L37, F11).
+    @State private var countedShowing: ReaderRebuildLedger.Key?
+    /// The readers on screen in every scene, which tell a reader built again from a document opened (L37, F11).
+    private static let readerLedger = ReaderRebuildLedger()
 
     @Environment(\.openWindow) private var openWindow
     // NO `@Environment(\.openURL)` HERE — deliberately, and do not re-add it.
@@ -518,6 +527,9 @@ struct DocumentView: View {
             }
         }
         .task(id: entry.documentId + "/" + entry.volumeId) {
+            // L37 (F11): whether this run opens the document or is its reader built again by a layout that changed with
+            // width, asked first, before anything here awaits, so that the moment it reads is this reader's start.
+            let builtAgain = startShowing(entry)
             // Reset vm if we detect view reuse for a different entry.
             // bootstrapViewModel() alone is not enough because it guards on vm == nil.
             if let existingVm = vm,
@@ -552,13 +564,11 @@ struct DocumentView: View {
             // — never auto-presented by the default mode, because a sheet covering the document on
             // every open is intrusive. So every mode resolves to CLOSED on iPhone (which also makes a
             // fresh install's unset `panelVisible` key, defaulting `true`, read as closed).
-            switch defaultDocumentMode {
-            case .read:
-                panelVisible = false
-            case .research:
-                panelVisible = !isPhone
-            case .rememberLast:
-                if isPhone { panelVisible = false }
+            //
+            // L37 (F11): never on an iPad reader built again for the document it showed, which keeps the rail as the
+            // reader left it. `railSetting(for:isPhone:isBuiltAgain:)` has the rule.
+            if let rail = Self.railSetting(for: defaultDocumentMode, isPhone: isPhone, isBuiltAgain: builtAgain) {
+                panelVisible = rail
             }
             // #404: the iPhone rail is user-triggered only, so never leave its sheet up across a
             // document open — including SwiftUI view reuse, where a sheet raised for the PREVIOUS
@@ -627,9 +637,65 @@ struct DocumentView: View {
         }
         .onDisappear {
             ownsKeyboardCommands = false
+            stopShowing()
             #if DEBUG
             print("[DocumentView] keyboard commands released by \(entry.volumeId)/\(entry.documentId)")
             #endif
+        }
+    }
+
+    // MARK: - The rail through a rebuild (L37, F11)
+
+    /// Counts this reader as showing `entry` in its scene, and answers whether it is that document's reader built again
+    /// rather than the document opened (L37, F11; ``ReaderRebuildLedger``).
+    ///
+    /// A reader already counted for another document is this view given a new one in place, by a page turn or a link,
+    /// which is an open whatever the ledger holds. A reader already counted for `entry` ran its task again without
+    /// leaving the screen, which opens nothing.
+    ///
+    /// - Parameter entry: The document the per-open task is for.
+    /// - Returns: `true` when the reader is the document's built again, so that *Open Documents In* is not applied.
+    private func startShowing(_ entry: DocumentBrowserEntry) -> Bool {
+        let key = ReaderRebuildLedger.Key(scene: sceneID?.raw, document: entry.id)
+        guard countedShowing != key else { return true }
+        let now = ContinuousClock.now
+        let turnedInPlace = countedShowing != nil
+        if let previous = countedShowing {
+            Self.readerLedger.readerStops(showing: previous, at: now)
+        }
+        countedShowing = key
+        let builtAgain = Self.readerLedger.readerStarts(showing: key, at: now)
+        return builtAgain && !turnedInPlace
+    }
+
+    /// Takes this reader off the ledger as it leaves the screen (L37, F11).
+    private func stopShowing() {
+        guard let key = countedShowing else { return }
+        Self.readerLedger.readerStops(showing: key, at: .now)
+        countedShowing = nil
+    }
+
+    /// What a reader's per-open task writes to the stored rail setting, or `nil` to leave it as it is (D2, Session 154;
+    /// #404; L37, F11).
+    ///
+    /// - On iPhone the rail is a sheet only the reader raises, so every mode closes it, at every start (#404).
+    /// - On iPad a reader built again for the document it showed writes nothing, so the rail stays as the reader left
+    ///   it. Before L37 it applied the mode again: under Read a window resized across Browse's two-pane width closed
+    ///   the rail the reader had opened (F11), and under Research the same code opened one the reader had closed.
+    /// - Otherwise the mode: Read closes the rail, Research opens it, Remember Last leaves it.
+    ///
+    /// - Parameters:
+    ///   - mode: *Open Documents In*.
+    ///   - isPhone: Whether the reader runs on an iPhone.
+    ///   - isBuiltAgain: Whether the reader is its document's built again (``ReaderRebuildLedger``).
+    /// - Returns: The rail setting to store, or `nil` to store nothing.
+    static func railSetting(for mode: DefaultDocumentMode, isPhone: Bool, isBuiltAgain: Bool) -> Bool? {
+        if isPhone { return false }
+        guard !isBuiltAgain else { return nil }
+        switch mode {
+        case .read:         return false
+        case .research:     return true
+        case .rememberLast: return nil
         }
     }
 
@@ -2299,6 +2365,8 @@ struct DocumentView: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation sheet
+///   1.1 — L41 (#1925): while a send runs, its row reads what the send last said through its
+///          `status`, a wait on Zotero's word with its seconds included
 struct DocumentShareMenu<LabelContent: View>: View {
     let vm: DocumentViewModel
     /// The `Menu`'s tap target. The default construction (see the extension below) uses the standard
@@ -2318,6 +2386,9 @@ struct DocumentShareMenu<LabelContent: View>: View {
     @State private var zoteroSending = false
     @State private var zoteroResult: ZoteroSendResult?
     @State private var zoteroError: String?
+    /// What the send in progress last said through its `status`: its step, or how long Zotero asked
+    /// it to wait (#1925). Nil when no send runs.
+    @State private var zoteroStatus: String?
 
     var body: some View {
         Menu {
@@ -2325,8 +2396,13 @@ struct DocumentShareMenu<LabelContent: View>: View {
                 Button {
                     Task { await sendToZoteroLibrary() }
                 } label: {
-                    Label(String(localized: "document.share.sendZoteroLibrary",
-                                 defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
+                    // A menu closes when chosen, so the send's row reads its progress while it runs.
+                    if zoteroSending, let zoteroStatus {
+                        Label(zoteroStatus, systemImage: "hourglass")
+                    } else {
+                        Label(String(localized: "document.share.sendZoteroLibrary",
+                                     defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
+                    }
                 }
                 .disabled(zoteroSending)
                 Divider()
@@ -2401,11 +2477,15 @@ struct DocumentShareMenu<LabelContent: View>: View {
             return
         }
         zoteroSending = true
-        defer { zoteroSending = false }
+        zoteroStatus = nil
+        defer { zoteroSending = false; zoteroStatus = nil }
         do {
             let result = try await ZoteroAPIClient().send(
                 items: [item], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username)
+                apiKey: apiKey, userID: userID, username: store.username
+            ) { message in
+                Task { @MainActor in zoteroStatus = message }
+            }
             zoteroResult = result
         } catch {
             zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
@@ -3098,5 +3178,88 @@ private struct GlossDetailSheet: View {
 // (`DocumentView/UserTagPickerSheet.swift`), consolidated with the former macOS
 // `MacTagPickerSheet` (Session 1 / #242).
 
+// MARK: - ReaderRebuildLedger
+
+/// The readers on screen in each scene, by document, which tell a reader built again from a document opened (L37, F11).
+///
+/// ## Why a reader cannot tell for itself
+/// A layout that changes with width builds its reader anew for the document it already shows: Browse draws one pane or
+/// two (`BrowseTwoPaneMetrics.showsDetailPane`), and so does Research (`ResearchView.isTwoPane`), whose crossing
+/// rebuilds every view pushed on it. The new reader's state is new, and its per-open task looks like an open. Before L37
+/// that task applied *Open Documents In* again, so under Read a window resized across Browse's two-pane width closed the
+/// rail the reader had opened (F11, seen on the owner's iPad during F8's check of 1.0 (1842)).
+///
+/// ## What tells them apart: the moment, not the document
+/// A reader built again starts in the same update as its predecessor stops, in an order SwiftUI does not promise, so a
+/// reader is the document's built again when another reader in its scene still shows the document, or one stopped
+/// showing it within ``window`` of this one's start. Whether the document is the one the scene last opened would not do:
+/// it would skip the setting when a reader goes back to the document it just read, and apply it to a rebuild after
+/// another reader, in a sheet or another tab, opened something else in between. So every open applies the setting as
+/// before, a document opened again included, and only a rebuild keeps the rail as it was.
+///
+/// Two opens count as a rebuild too, and keep the rail as it is: a document opened again within ``window`` of leaving
+/// it, and a second reader of a document already on screen in the scene, such as a sheet opened over it. The window is
+/// wide against the gap it measures, a stop and a start in the same SwiftUI update.
+///
+/// Version history:
+///   1.0 — L37 (F11): initial implementation
+@MainActor
+final class ReaderRebuildLedger {
+
+    /// A document in a scene.
+    struct Key: Hashable, Sendable {
+        /// The scene's raw token (`SceneID.raw`), or `nil` for a reader whose host published none.
+        let scene: String?
+        /// The document's `volumeId/documentId` (`DocumentBrowserEntry.id`).
+        let document: String
+    }
+
+    /// How near another reader's stop must come to a reader's start for the start to be a rebuild.
+    static let window: Duration = .seconds(1)
+
+    /// How many readers show each document, by scene.
+    private var shown: [Key: Int] = [:]
+    /// When the last reader of a document stopped showing it, for the stops within ``window`` of the latest call.
+    private var stopped: [Key: ContinuousClock.Instant] = [:]
+
+    /// One line for each rebuild, with the gap it measured, for a device's log (`ReaderRebuild`).
+    private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "ReaderRebuild")
+
+    /// Counts a reader as showing `key`'s document from `now`, and answers whether the reader is that document's built
+    /// again: another reader in the scene shows the document, or one stopped showing it within ``window`` of `now`.
+    ///
+    /// - Parameters:
+    ///   - key: The document, in the reader's scene.
+    ///   - now: The reader's start.
+    /// - Returns: `true` for a reader built again, `false` for a document opened.
+    func readerStarts(showing key: Key, at now: ContinuousClock.Instant) -> Bool {
+        forgetStops(before: now)
+        let alsoShown = shown[key, default: 0] > 0
+        let lastStop = stopped[key]
+        shown[key, default: 0] += 1
+        stopped[key] = nil
+        guard alsoShown || lastStop != nil else { return false }
+        let gap = lastStop.map { "stopped \($0.duration(to: now)) before" } ?? "still shown"
+        Self.log.notice("A reader of \(key.document, privacy: .public) built again: its last reader \(gap, privacy: .public)")
+        return true
+    }
+
+    /// Notes that a reader stopped showing `key`'s document at `now`.
+    ///
+    /// - Parameters:
+    ///   - key: The document, in the reader's scene.
+    ///   - now: The moment the reader left the screen or turned to another document.
+    func readerStops(showing key: Key, at now: ContinuousClock.Instant) {
+        guard let count = shown[key] else { return }
+        shown[key] = count > 1 ? count - 1 : nil
+        stopped[key] = now
+        forgetStops(before: now)
+    }
+
+    /// Drops the stops more than ``window`` before `now`.
+    private func forgetStops(before now: ContinuousClock.Instant) {
+        stopped = stopped.filter { $0.value.duration(to: now) <= Self.window }
+    }
+}
 
 #endif // os(iOS)

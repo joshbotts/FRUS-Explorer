@@ -590,6 +590,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         for Source Explorer's year where the dateline gives none; `extractDateRange(from:dateTimeMin:dateTimeMax:)`
 ///         is read by `SourceExplorerDocumentContext.year(of:)` for the Source Explorer export; nothing the
 ///         indexer stores changes
+///  4.69 — 2026-11-26 (plan of record row L30): `document(forDocumentNumber:inVolume:)` matches the
+///         number as written, then ignoring case, for Citation Lookup's printed numbers (#1977:
+///         `1190B` finds `1190b`); nothing the indexer stores changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -3734,12 +3737,17 @@ public actor IndexingPipeline {
     /// the digits (dates, telegram numbers, page references) and the result cap starves
     /// out the actual document row in any realistically-sized volume.
     ///
-    /// - Parameters:
     /// Where two documents carry the same number, the first in the volume's order answers
     /// (`document_order`, then rowid, as ``documents(forVolume:)`` lists them; #1978).
     ///
+    /// The number is matched as written first and then ignoring case (#1977), as
+    /// ``document(forDocumentId:inVolume:)`` matches an id: a citation may print `1190B` for
+    /// `frus1898`'s `1190b`, or `550a` for `frus1955-57v03mSupp`'s `550A`, and SQLite's `=` is
+    /// case-sensitive. Measured over the index at version 76, no volume prints two numbers that
+    /// differ only in case, so the fallback cannot pick the wrong one.
+    ///
     /// - Parameters:
-    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
+    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`, `"1190b"`, `"GT–6"`).
     ///   - volumeId: The volume to query.
     /// - Returns: The matching entry, or `nil`.
     public func document(
@@ -3748,14 +3756,15 @@ public actor IndexingPipeline {
     ) throws -> DocumentBrowserEntry? {
         let sql = """
             SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
-            FROM document_cache WHERE volume_id = ? AND document_number = ?
-            ORDER BY \(volumeOrder)
+            FROM document_cache WHERE volume_id = ? AND document_number = ? COLLATE NOCASE
+            ORDER BY document_number = ? DESC, \(volumeOrder)
             LIMIT 1
             """
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         sqlite3_bind_text(stmt, 2, documentNumber, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 3, documentNumber, -1, SQLITE_TRANSIENT_IP)
 
         // auxStep (not a raw sqlite3_step) so a step-level error (I/O, corruption)
         // throws instead of masquerading as "no such document" — a silent false
