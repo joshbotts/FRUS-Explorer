@@ -4455,7 +4455,13 @@ The orchestrator session ("Development session orchestration") started this one 
   - The app's 18 affected suites there: 250 tests passed, none failed or skipped. `CodingStandardsAuditTests`, `EditableContentKeyTests`, `FRUSCoreKitBoundaryTests` and `SharedKitsBoundaryTests` were among them.
   - `Scripts/check_repo_hygiene.py`: all six checks pass.
   - The version-history lines were dated afterwards, in place, and the thirteen ranges checked again by script against their keys.
-- **At the head of the queue:** the landing run on the merged tree, recorded here once it has run.
+- **The landing checks, on the merged tree** (`ec2293fe`, tree `78acbd78`, with `v2` at `5fba4c9a`), in one `heavy.sh` call:
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,253 tests in 609 suites over 39 runs, none failed (`v2`'s 5,248 and this row's 5). Its build printed one older warning, an unused binding at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - A clean `build-for-testing` on the iPhone 17 under iOS 27.0.
+  - The unit target there, the app removed first and the TEI mirror set: 8,315 tests, of which 8,296 passed, 17 skipped and 1 was an expected failure, in 772 s. The six new tests passed. One failed: `RichTextRestingCapTests.theColorPickerKeepsTheBlockOpen()`, whose Text Color presented no colour picker in 15 s, the test CI's job C skips by name for that failure and the one L27's landing met. Its suite alone, rerun on the same simulator from the same build, failed it again (20 of 21 passed). So `v2` at `5fba4c9a` was built from a `git archive` in a folder of its own, and the suite ran base, branch, base on that simulator: the base failed it the same way, then the branch and the base each passed 21 of 21. Each of the three failures came on the first run after the simulator booted, and both passes on later runs in the same boot.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
 
 **The symbol diff**
 - Unsigned Debug `FRUSExplorerMac`, `v2` at `a17023f9` (a `git archive`) beside `a9cb13be`, each built from empty on a real path and never launched: "** BUILD SUCCEEDED **" both (52 s and 50 s), with the same five warning lines, the known residues.
