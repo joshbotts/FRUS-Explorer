@@ -5065,7 +5065,11 @@ Row L40 of the plan of record from 2026-11-25 (D1, decision 179), started on the
 - `daa25859`, the gates;
 - `e1c3134e`, the iPad check's case;
 - the records;
-- then, at the head of the queue, `v2` taken in, and the landing's records.
+- then, at the head of the queue, `v2` at `4881c9d5` taken in (`2a8db8ed`), and the landing's records.
+
+**#2039's merge**
+- The CI fix merged as `4881c9d5`, a squash onto `97c4a8a9`, at 20:17:30 UTC on 2026-11-27, from its head `bd4af53d`. Its tree, `1e289586`, is the head's. It closed no issue, and its timeline holds no auto-merge event. This entry records it.
+- L34's #2038 (`97c4a8a9`) is recorded in the CI fix's entry above, and so back to this row's start: L42's #2037 in L34's, L39's #2036 in L42's, L30's #2035 in L39's, L57's #2034 in L30's, L41's #2032 in L57's, L37's #2031 in L41's, and L32's #2030 (`5026ead5`), where this row began, in L37's.
 
 **The files it shares.** The gates are in ten files, and four of them other rows of Wave 3 change too: `DocumentView.swift` (L37, L39, L41), `BrowserView.swift` (L37), `CrossReferenceGraphView.swift` (L42) and `SearchView.swift` (L57). The orchestrator was told before any change, and placed the row after them. Every hunk of theirs in those files sits at least seven lines from L40's.
 
@@ -5098,6 +5102,14 @@ Row L40 of the plan of record from 2026-11-25 (D1, decision 179), started on the
 - `build-for-testing` on the iPhone 17 under iOS 27.0, with the two residues alone.
 - 19 app suites that read the changed files: 283 tests, one failure, the three `AppState.swift` ranges, re-pointed since. Then `WindowTargetingTests` and `EditableContentKeyTests`: 75 tests passed.
 - Two mutations, each rebuilt: `v2`'s ten gate files beside the helper failed the scan (35 readers, ten files) and the word cloud's test; the rule without the idiom failed the phone's test alone.
+
+**At the head of the queue,** on the merge `2a8db8ed` (tree `1e2d1b30`; `v2` at `4881c9d5` taken in), in one `Scripts/heavy.sh` call from 20:46 to 21:07 UTC:
+- The merge: every source file without a conflict, `DocumentView.swift`'s three rows (L37, L39, L41) among them. The amendment log, the plan's §5 and this log met, and each is an append, `v2`'s text first.
+- On the merged tree, before the build: `AuxWindowGate` is still the flag's one reader, each of the ten files that opens an aux window declares it, and a mirror of `EditableContentKeyTests`' check reads 1,370 ranged blocks with no drift.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,429 tests in 1,017 suites, 8,411 passed, none failed, 17 skipped, and the one test with the six known issues, in 989 s. That is the CI fix's 8,426 and L40's three, each of which passed; the real-TEI suites ran and passed.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: the row changes no file a package target compiles or reads.
 
 **Afterwards.** The Duo is as found: its library, prefs and saved state were set aside by rename for the run, then put back with build 1842, folded and shut down. The three iPad simulators made for the check were deleted at the orchestrator's word, the disk being under its 40 GB floor.
 
