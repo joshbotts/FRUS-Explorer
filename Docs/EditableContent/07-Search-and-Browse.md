@@ -1759,7 +1759,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2334–2335 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2315–2316 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1769,7 +1769,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1490–1491 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1494–1495 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -2739,7 +2739,7 @@ Retry
 *The Search screen's explanatory text outside the Search Tips (§7.13) and the result-set copy §7 already carries: the filter and project-scope footers, the Meaning-mode prompts and notices, the facet panel's coverage lines, the collocation refusals, and the notice when a saved corpus had to be truncated.*
 
 #### The person filter was cleared — \(…) is no longer in the…
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1353–1354 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1356–1357 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.
