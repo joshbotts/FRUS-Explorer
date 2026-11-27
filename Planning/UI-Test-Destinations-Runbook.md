@@ -1039,23 +1039,27 @@ adds *UI Test Export Collection*: six documents of the fixture volume, two in fu
 citations, headnotes on with four stored, one summary not stored, a note and a highlight that print, and the word cloud
 on. It names Apple Intelligence off (`FRUS_UI_TEST_APPLE_INTELLIGENCE=notEnabled`, read in DEBUG by
 `AppleIntelligenceAvailability.forExport`), so the sheet also says what this device lacks. The test opens the sheet from
-the row's menu, waits for the sentence to be counted, and reads every frame from one snapshot: the sentence starting
-under the navigation bar with a line at least above the bar at the sheet's foot (`collection.export.bar`); at the
-default size the sentence and the line of what the device lacks whole above the bar, and the chosen card, PDF, above it
-too; at AX3 and AX5 the format's menu inside the bar, which the sheet draws only at an accessibility size, so the size
-took effect; and Export inside the bar and the window, and hittable. Every run prints a `[L35 fit]` line and keeps a
-screenshot. **The sentence keeps the reader's text size,** so at AX3 and AX5 a long one continues under the bar and the
-form scrolls, while the format and Export stay in view: the test requires the sentence begun, not whole, at those sizes.
+the row's menu, waits for the sentence to be counted, and reads every frame from one snapshot: at every size the
+sentence whole between the navigation bar and the bar at the sheet's foot (`collection.export.bar`), and the line of
+what the device lacks under it, whole above the bar at the default size and begun at least a line (40 pt) above it at
+AX3 and AX5; at the default size the chosen card, PDF, above the bar; at AX3 and AX5 the format's menu inside the bar,
+which the sheet draws only at an accessibility size, so the size took effect; and Export inside the bar and the window,
+and hittable. Every run prints a `[L35 fit]` line and keeps a screenshot. **The sentence and the line under it are
+drawn no larger than AX1** (decision DECISION_AX1), which is what keeps the sentence whole above the bar at AX5.
 **On the code before L35** each test fails at its first step, the row's menu having no Export…; 1.0's sheet itself,
 opened through the editor's Export… by a probe not kept, fit at the default size on the iPhone 17 (Export at y 709–773
 of 874), had Export below the screen at AX3 (the six cards to y 860), and on the iPhone SE had Export below the screen at
-the default size already (the Zotero row at y 521–542 of 667). **Measured on L35's code, iOS 27.0:** 3 of 3 on the iPhone 17
-(`80CF0F18`) and on the iPhone SE (3rd generation) (`0D979960`), 37 to 65 s a test. At the default size the sentence ended
-at y 279 and the line of what the device lacks at 412 on the iPhone 17, above the PDF card (459–517) and the bar (765);
-on the SE at 237 and 371, above the card (418–476) and the bar (592). At AX3 the bar, with the format's menu and Export,
-started at 694 on the iPhone 17 and 522 on the SE, and the sentence ran to 564 and 568; at AX5 it ran to 858 and 876, under
-the bar, and on the SE the form had not built the line's row, which is why the line is required at the default size
-alone. **The line is one element** (`.accessibilityElement(children: .combine)`): without it the identifier named the
+the default size already (the Zotero row at y 521–542 of 667). **As L35 was built first, at the reader's size** (iOS 27.0,
+3 of 3 on the iPhone 17 (`80CF0F18`) and on the iPhone SE (3rd generation) (`0D979960`) under the suite's rule then,
+which required the sentence begun, not whole, at AX3 and AX5): at the default size the sentence ended at y 279 and the
+line of what the device lacks at 412 on the iPhone 17, above the PDF card (459–517) and the bar (765); on the SE at 237
+and 371, above the card (418–476) and the bar (592). At AX3 the bar, with the format's menu and Export, started at 694 on
+the iPhone 17 and 522 on the SE, and the sentence ran to 564 and 568, under the SE's bar; at AX5 it ran to 858 and 876,
+under both, and on the SE the form had not built the line's row. **Measured with the cap, iOS 27.0:** 3 of 3 on the iPhone 17 and on the iPhone SE, 63 to 112 s a test. The default size
+measures as above. AX3 and AX5 measure the same, both drawn at AX1: the sentence ends at y 356 on the iPhone 17 and 346
+on the SE, above their bars (694 and 522), and the line of what the device lacks ends at 609 on the iPhone 17 and on the
+SE runs from 346 to 600, under the bar from 522.
+**The line is one element** (`.accessibilityElement(children: .combine)`): without it the identifier named the
 Label's icon alone, a 23-point square.
 
 **`CollectionListRowActionsTests` (L35, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad under
