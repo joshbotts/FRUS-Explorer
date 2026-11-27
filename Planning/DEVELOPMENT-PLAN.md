@@ -4702,3 +4702,48 @@ The plan of record's session started this one for row L41, on `claude/l41-zotero
   - The `FRUSExplorerMac` build: succeeded, with the two residues alone.
   - `Scripts/check_repo_hygiene.py`: six checks passed.
 - **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+
+## Session 2026-11-27 — L57, the days of Search's date filter: on iPhone and iPad they are read and written in the zone its pickers are in; shown first in New York's zone (30 September for 1 October, 1960 for 1961), a pick found to keep its time of day, and a finding filed as #2033
+
+Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by "Development session orchestration" with Wave 2's other rows, on `claude/l57-search-date-filter-zone-d90596`. It read and planned while three rows built, and began on "L57: go", from `v2` at `a7d8e017`. App code and its tests: no package input, so no `swift test`; no stored property and no index version. Commits: `a0240672` (the fix, its tests and the nine re-pointed ranges) and a docs commit.
+
+**#2032's merge**
+- L41 merged as `4fa33ba3`, a squash onto `ebacf85a`, at 12:51:53 UTC on 2026-11-27, from its head `7b59ed14`. Its tree, `925c9301`, is the head's. It closed #1924, #1925 and #1926. This entry records it.
+- L37's #2031 (`ebacf85a`) is recorded in L41's entry above, and L28's #2026 (`a7d8e017`), where this row began, in L61's.
+- This branch took `v2` in at `4fa33ba3` (`f77e1f48`). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 210, is 213, after L33's and L32's, and the plan's status line now names 210 to 212 as well.
+
+**Shown first** (decision 183), at `a7d8e017`, on the iPhone 17 simulator under iOS 27.0, in New York's zone with no zone changed. None of Search's files has changed since `1.0-release`, so this is 1.0's code.
+- **The first symptom, in the app.** A UI test handed Search 1 to 31 October 1962 through `AppState.openSearch(_:from:)`, the route Chronology's *Search in this range* takes. Filters' pickers read *Sep 30, 1962* and *Oct 30, 1962*, over the chip *1962-10-01 to 1962-10-31*. In a hosted test the filter held 30 September at 20:00 EDT and 30 October at 19:00 EST, the two midnights in GMT.
+- **The third, in a hosted test.** Corpus Analytics' own hand-off of 1961 to 1963 (`AnalyticsSearchHandoff.parameters`), read back as *Visualize in Corpus Analytics* read it (a Gregorian calendar in the device's zone), gave 1960 to 1963.
+- **What the issue could not settle: a pick keeps the time of day of the date the picker held.** A temporary `Logger` line in Filters' date section, never committed (its diff is kept at `~/Library/Caches/FRUS-Explorer/l57/probe-job1.diff`), logged From at `1962-09-30T20:00-04:00` before a tap on the 5th and `1962-09-05T20:00-04:00` after; in Tokyo's zone 09:00 stayed 09:00. So the issue's first branch held: west of UTC, after a hand-off or a saved search, a pick was written as the day after the one the picker showed. The UI control, below, then saw it: From at Sep 5 under the chip *1962-09-06 to 1962-10-31*.
+- **The same build in Tokyo's zone** (`TZ=Asia/Tokyo`) showed 1 and 31 October, so on this path the defect was west of UTC's, and the UI test's `TZ` reaches the app.
+- **Foundation, measured in the same hosted test.** `TimeZone.current`, `.autoupdatingCurrent`, a new `DateFormatter`'s zone and `Calendar(identifier: .gregorian)`'s zone were all New York's, and a `DateFormatter` is strict by default. A strict `yyyy-MM-dd` formatter in a zone reads no date for a day whose midnight a change of clocks skips: from 1861 to 2000, 27 such days in São Paulo, 42 in Havana, 33 in Beirut, 43 in Santiago, 14 each in Tehran and Cairo, 4 in Tokyo and none in New York, each count equal to the days whose first moment is not 00:00. `Calendar.startOfDay(for:)` of the day's noon gave the right day on all of them.
+
+**The fix** (the issue's: the device's zone at every site, not GMT pickers)
+- `SearchViewModel.filterDay(of:in:)` and `filterDate(ofDay:in:)` convert at the five sites: a hand-off's and a saved search's read (`applyParameters(_:)`), the facet's year, the search's two days, the *Narrowed by* chip, and the chip's record. The zone is `dateRangeTimeZone`, the device's (`.autoupdatingCurrent`), which only the tests set. *Visualize in Corpus Analytics* reads `dateRangeYears`.
+- **Why not GMT pickers:** Filters' pickers are `SearchFilterView`'s, which the Mac's Search window draws over a `SearchViewModel` of its own, so GMT pickers would have moved the Mac's; the app's other pickers and `WordCloudScope.isoFormatter()`'s rule are the device's zone; and a project's range and the filter's first dates are made in it.
+- **No one function for both view models.** The Mac converts with a strict `DateFormatter` in the device's zone, which keeps the filter's previous date on a day whose midnight is skipped; `filterDate(ofDay:in:)` takes the day's noon back to its start, so sharing it would have moved what the Mac does on those days. The Mac's file is unchanged.
+- **The candidate, `applyProjectDefaults(_:)`:** onboarding makes a project's range in the device's zone (`ManifestStore.corpusYearStart(_:)`), so east of UTC its first day was written a day early. The fix writes it as made; no line of its own.
+- **Nothing stored moves.** `SavedSearch` converts its own two dates in GMT both ways and is untouched; no CloudKit field, no index version.
+- **The search seam** (`UITestBrowseSeams`, DEBUG only) can carry two days with its words (`FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES`), for the UI test's hand-off.
+
+**Tests**
+- **`SearchDateFilterZoneTests`** (in `SearchViewTests.swift`), 10 tests, every one naming its zone: the two conversions over nine zones from UTC−11 (Pago Pago) to UTC+14 (Kiritimati), with the issue's two tables, São Paulo's skipped midnight and thirteen strings that name no day; and the view model with `dateRangeTimeZone` pinned: a hand-off, a saved search, a chart's years, a pick at four times of day, a facet's year and a project's range.
+- **The control:** each site put back in GMT alone, built and run against the suite: the hand-off's read failed 4 tests, the search's two days 6, the facet's year 1, the chip 3, and the years 2.
+- `SearchWithinResultsModelTests`' three tests and `IOSFacetNarrowingTests`' one set their dates on days in the device's zone, where they set GMT midnights. `dateRangeFilterIncludedInParameters` is unchanged: it holds anywhere now, and the new suite is the guard. The seam's two days have a test and a wiring check (`BrowseSeamSignalTests`).
+- **The row's suites and the files' neighbours** on the iPhone 17 under iOS 27.0 (22 suites, `EditableContentKeyTests` and `CodingStandardsAuditTests` among them): 237 tests, 237 passed.
+- **`FilterDateRangeHandOffTests`** (in `MeaningResultsSeamTests.swift`), two tests after a hand-off by the search seam's signal, in New York's zone: the pickers show the handed days, and a day picked in From is the day the chip names. Under iOS 27.0: **iPhone 17, 2 passed; iPad Pro 13-inch (M5), each test alone on a fresh boot, 2 passed.** **The control** (the conversions put back in GMT, iPhone 17): 2 failed, at From's *Sep 30, 1962*, and at From's *Sep 5, 1962* under the chip *1962-09-06 to 1962-10-31*.
+  - **On the iPad,** one run of both on one boot ended when `backboardd` aborted in Metal at the second launch, in #1620's frames ("Test crashed with signal kill"); each alone on a fresh boot passed.
+  - **On the iPhone,** a run with the app removed met the while-indexing guide over Search at the fresh install's first launch ("Filters did not open"); with the app installed both passed.
+  - **Two selectors the first runs taught.** The calendar opens over the sheet's navigation bar on an iPhone, so the test closes it with a tap at From's own place; and that place is fixed on the screen before the calendar opens, since `allElementsBoundByIndex` binds an element to its place among the date pickers and the open calendar takes the first (a coordinate on the bound element picked the 10th). The runbook's entry has both.
+
+**The rest**
+- **The manuals** say only that a hand-off carries its range (the iOS manual's *Limit by date*, the Mac's *Date Range*), not what the pickers show, so neither changes. No string changed, so no EditableContent block is added; nine ranges moved and are re-pointed (`Amendment-Log.md`).
+- **#2033, filed on the owner's word** ("File it (Recommended)", decision 213): on the Mac's Search and in the word cloud, a day whose midnight a change of clocks skips is read as no date. No row takes it yet.
+- **R9's check by hand** stands as the brief wrote it.
+
+**The landing checks,** on the merged tree (`f77e1f48`, tree `11ab5ab3`, with `v2` at `4fa33ba3`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning.
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,370 tests in 1,012 suites passed in 778 s, with the six known issues and 17 skipped.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning.
+- `swift test` was not owed: the diff names no package input.

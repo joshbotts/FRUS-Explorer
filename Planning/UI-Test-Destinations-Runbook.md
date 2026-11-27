@@ -1519,6 +1519,42 @@ Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExp
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
+**`FilterDateRangeHandOffTests` (#2013, L57, in `MeaningResultsSeamTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** It guards the days of Search's date filter on iPhone and iPad after a hand-off: `SearchViewModel` reads a
+day it is handed, and writes a date as a day, in the zone Filters' two pickers are in (`dateRangeTimeZone`), and the unit
+suite `SearchDateFilterZoneTests` holds the rule with its zone pinned in nine zones. The search seam hands Search a keyword
+search for "xylograph" between 1962-10-01 and 1962-10-31 (`FRUS_UI_TEST_SEARCH_ON_SIGNAL`, with
+`FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES`) through `AppState.openSearch(_:from:)`, the route Chronology's Search in this range
+takes. The test posts the search signal until the *Narrowed by* chip names the two days, since the app acts on the first
+signal after its boot has armed the seam. The spoken-row volume gives Search an index. The app runs in New York's zone
+(`TZ=America/New_York`), west of UTC, where the defect showed; under one build a run in Tokyo's zone showed 1 October where
+New York's showed 30 September, so the key reaches the app. One test reads From and To: a compact picker draws its date
+as the value of a child labelled "Date Picker" ("Oct 1, 1962"). The other taps the 5th in From's calendar, closes it, and
+requires the chip to name the day From then shows. **On an iPhone the calendar opens over the sheet's navigation bar.** A
+tap on the bar's title, or at the centre of the popover's dismiss region, which lies under the calendar, picks another day
+(the first run picked the 12th, and its teardown the 22nd). So the test closes the calendar with a tap at From's own place,
+fixed on the screen before the calendar opens: `allElementsBoundByIndex` binds an element to its place among the date
+pickers, the open calendar is a date picker and takes the first place, and a coordinate on the bound element picked the
+10th, the calendar's middle. For the same reason the test counts only the compact pickers, under 80 pt tall.
+
+Measured on 2026-11-27 under iOS 27.0, each device alone under the heavy-job lock: **iPhone 17 (`80CF0F18`): 2 tests, 2
+passed (95 and 35 s)**; **iPad Pro 13-inch (M5) (`9AB3A0C9`): each test alone on a fresh boot, 1 passed and 1 passed (73 and
+112 s)**. **The control** (the hand-off's read, the search's two days and the chip put back in GMT, as before the fix,
+iPhone 17): 2 tests, 2 failed, the first at From showing Sep 30, 1962 and the second at From showing Sep 5, 1962 under the
+chip *1962-09-06 to 1962-10-31*: a pick keeps the time of day of the date the picker held, there 20:00 EDT, which is the
+next day in GMT. **On the iPad, run each test alone on a fresh boot.** In one run of both on one boot the first passed, and
+then `backboardd` aborted in Metal as the second launched the app (`-[MTLTextureDescriptorInternal validateWithDevice:]`
+under `CA::OGL::FlattenNode::retain_surface`, #1620's frames), and the test "crashed with signal kill". Each alone, booted
+afresh with the app removed, passed. **On the iPhone, leave the app installed.** With the app removed, its first launch
+indexed the spoken-row volume and opened the while-indexing guide over Search, and the first test failed at "Filters did
+not open"; with the app left installed both passed.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/FilterDateRangeHandOffTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`SearchWithinResultsTests` (#1577 lane 4) runs on an iPhone and an iPad, and nothing skips on either.** It drives Search Within These Results end to end through lane 3's Meaning seam (`FRUS_UI_TEST_SEED_MEANING`; the `MeaningResultsSeamTests` entry above says what the seam answers and why): the near question's Meaning list of the fixture's three documents with vectors, Two, One and Three at 100, 32 and 3 percent, and the fixture's phrase, `"Synthetic UI-test content"`, which lists all six of its documents, the three with no vectors among them. Six tests, each reading the screen and not the model:
 - *Words in a Meaning list.* More ▸ Find Words in These Matches holds the three. The row that names the base reads "Searching within 3 closest matches to “…”" to VoiceOver (it shows "Within …"), the Keywords | Meaning control has gone, the field's prompt is "Words to find in these matches…", and the three stay listed until words are typed. "Two OR Three" then lists Two and Three, in the list's order, at 100 and 3 percent, under "2 of your 3 closest matches contain these words".
 - *A keyword list ranked by a question.* Sort ▸ Closest to a Question… holds the six, and the near question lists Two, One and Three first at 100, 32 and 3 percent, under "6 results · 3 ranked · 3 not ranked", with the line "3 results not ranked by meaning" below the last of them and a row with no vector under the line (on a phone the list is dragged up a third to draw it).
