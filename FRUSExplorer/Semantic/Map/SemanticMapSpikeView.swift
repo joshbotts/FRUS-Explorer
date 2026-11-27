@@ -76,7 +76,8 @@ import simd
 ///          moves and its renderer stay here
 ///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — a reveal lands where the
 ///          map draws the document (`positions`), on a slice too, and the regions list's row is the
-///          model's (`selectRegionFromList`), which opens a region's card on a slice
+///          model's (`selectRegionFromList`), which opens a region's card on a slice; and, by the owner's
+///          answer of 2026-11-27, a selection's ring follows every re-layout (`placeSelectionInLayout`)
 @MainActor
 @Observable
 final class SemanticMapModel {
@@ -713,6 +714,7 @@ final class SemanticMapModel {
             // Back to the artifact's own coordinates.
             var points = Self.mapPoints(from: map)
             positions = points.map(\.position)
+            placeSelectionInLayout()
             renderer.setPoints(points)
             renderer.setScopeFlags(scope?.flags ?? [])
             renderer.frameAll(extent: Float(map.gridExtent))
@@ -732,10 +734,28 @@ final class SemanticMapModel {
         }
         sliceScale = layout.scale
         positions = layout.positions
+        placeSelectionInLayout()
         renderer.setPoints(points)
         renderer.setScopeFlags(scope?.flags ?? [])
         renderer.frameAll(extent: Float(SemanticAxis.sliceExtent))
         camera = renderer.camera
+    }
+
+    /// Moves the selection's ring to where the layout now drawn puts its document.
+    ///
+    /// A selection carries its document's grid position, so the marker rings the document rather
+    /// than the finger, and that position belongs to the layout it was made on. A slice lays every
+    /// row out again and the way back does it once more, so a selection kept across either (the
+    /// second pole's document, whose card is open when "…to here" draws the slice) rang the old
+    /// layout's coordinates, where another document is drawn. The row names the same document and its
+    /// region is by row, so only the position moves.
+    private func placeSelectionInLayout() {
+        guard let current = selection, positions.indices.contains(current.row) else { return }
+        let drawn = positions[current.row]
+        selection = SemanticMapPicking.Selection(
+            row: current.row, volumeID: current.volumeID, documentID: current.documentID,
+            position: SIMD2(Float(drawn.x), Float(drawn.y)), regionName: current.regionName,
+            isDownloaded: current.isDownloaded)
     }
 
     /// The gutter's normalised y for undated volumes: below every dated year, with a visible gap.

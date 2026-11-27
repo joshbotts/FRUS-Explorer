@@ -56,7 +56,8 @@ private let revealTestsHaveMetal = MTLCreateSystemDefaultDevice() != nil
 ///          its renderer and the view's source are the app's
 ///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — on a slice: the kit's
 ///          reveal over a slice's positions, the model's reveal and the regions list's row, each run first
-///          on the unchanged code, where they failed; the list's row on the plane, as before
+///          on the unchanged code, where they failed; the list's row on the plane, as before; and, by the
+///          owner's answer of 2026-11-27, a selection that follows a re-layout, which failed there too
 @Suite("Revealing a document on the map")
 struct SemanticMapRevealTests {
 
@@ -639,6 +640,40 @@ struct SemanticMapRevealTests {
             model.clearRegion()
         }
         #expect(resolved > 0, "no row of the list resolved a region on the plane")
+    }
+
+    /// **A twin the row found** (the owner's answer of 2026-11-27): a selection carries its
+    /// document's position, which belongs to the layout it was made on.
+    @MainActor
+    @Test("A selection moves with a re-layout: onto the slice its second pole draws, and back",
+          .enabled(if: revealTestsHaveMetal))
+    func aSelectionFollowsTheLayout() async throws {
+        let (model, index) = try await loadedModel()
+        let plane = model.positions
+        let years = try Self.coverageYears()
+        let negative = try #require(index.volumes.first?.volumeID)
+        let positive = try #require(index.volumes.last?.volumeID)
+        // As a reader does it: "Axis: from here" on one volume, then a document of another, whose
+        // card stays open over the slice its "…to here" draws.
+        model.setPole(volumeID: negative, isPositive: false, yearForVolume: years)
+        let row = try #require(index.rows(forVolume: positive)?.first)
+        let document = try #require(index.document(at: row))
+        #expect(model.reveal(documentKey: "\(document.volumeID)/\(document.documentID)",
+                             isReadable: { _ in true }) == .revealed)
+        model.setPole(volumeID: positive, isPositive: true, yearForVolume: years)
+        try #require(model.slice != nil, "no slice was drawn: \(model.axisNotice ?? "no notice")")
+        try #require(model.positions[row] != plane[row], "the slice left the document where the plane had it")
+        let onSlice = try #require(model.selection, "the second pole's card closed with the slice")
+        #expect(onSlice.row == row)
+        #expect(onSlice.position == SIMD2(Float(model.positions[row].x), Float(model.positions[row].y)), """
+            After "…to here" the selected document stayed ringed at its place on the map's plane, \
+            which the slice gives to another document.
+            """)
+        model.clearSlice(yearForVolume: years)
+        let back = try #require(model.selection)
+        #expect(back.row == row)
+        #expect(back.position == SIMD2(Float(plane[row].x), Float(plane[row].y)),
+                "Back to the map left the ring at the slice's place")
     }
 
     // MARK: - A reveal that finds nothing says so
