@@ -2016,18 +2016,20 @@ private struct MacEntryRow: View {
         HStack(alignment: .top, spacing: 10) {
             // Document info column
             VStack(alignment: .leading, spacing: 2) {
-                Text(documentLabel)
+                // A title of the author's leads, with the volume's heading under it, as every export
+                // prints a titled document (L34, J38); the document's number then joins the volume line.
+                Text(titleOverride ?? documentLabel)
                     .font(.body)
 
                 if let header = documentHeader, !header.isEmpty {
                     Text(header)
                         .font(.callout)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(titleOverride == nil ? .primary : .secondary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Text(volumeTitle)
+                Text(titleOverride == nil ? volumeTitle : "\(documentLabel) · \(volumeTitle)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -2113,6 +2115,12 @@ private struct MacEntryRow: View {
     /// document the volume prints without one (#1493), else the raw id (`CitableDocumentNumber.rowLabel`, #1406).
     private var documentLabel: String {
         CitableDocumentNumber.rowLabel(printed: printedNumber, documentId: entry.documentId)
+    }
+
+    /// The entry's title of the author's, trimmed, or `nil` where none is given (L34, J38).
+    private var titleOverride: String? {
+        let title = entry.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? nil : title
     }
 }
 

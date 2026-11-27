@@ -533,6 +533,7 @@ final class HighlightPaintTracker {
 ///   1.6 — 2026-10-27 (FRUS Explorer Light, S18b): `init(composing:)` over a collection's values
 ///          (`CollectionExport`), the same eight fields, each absent one at the model's default, which the
 ///          content assembly reads and a host outside the app builds its options with
+///   1.7 — L34: `volumeHeadingLeads`, the third opening of a document's plan, which nothing sets until L43
 public struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     public var tocStyle: CollectionToCStyle = .citation
@@ -566,13 +567,19 @@ public struct CollectionExportOptions: Sendable {
     /// to (Composer redesign). `false` by default, so collections that never set a headnote default
     /// resolve exactly as before. Set from `Collection.defaultIncludeHeadnote`.
     public var includeHeadnoteDefault: Bool = false
+    /// Whether a document with no title of the author's opens on the volume's heading, the citation a small
+    /// line above it, rather than on the citation (`CollectionDocumentPlan.Opening`). `false`, 1.0's opening,
+    /// by default. L34 builds the opening into the plan and nothing sets it: L43 makes it the collection's
+    /// *Opening* setting (decision 158).
+    public var volumeHeadingLeads: Bool = false
 
     /// Creates options; every one defaults to the standard export, so `CollectionExportOptions()`
     /// is the look an untouched collection exports with.
     public init(tocStyle: CollectionToCStyle = .citation, includeFootnotes: Bool = true,
                 includeSourceNote: Bool = false, applyHighlights: Bool = false,
                 includeNotes: Bool = true, summaryPromptId: UUID? = nil,
-                includeWordCloud: Bool = false, includeHeadnoteDefault: Bool = false) {
+                includeWordCloud: Bool = false, includeHeadnoteDefault: Bool = false,
+                volumeHeadingLeads: Bool = false) {
         self.tocStyle = tocStyle
         self.includeFootnotes = includeFootnotes
         self.includeSourceNote = includeSourceNote
@@ -581,6 +588,7 @@ public struct CollectionExportOptions: Sendable {
         self.summaryPromptId = summaryPromptId
         self.includeWordCloud = includeWordCloud
         self.includeHeadnoteDefault = includeHeadnoteDefault
+        self.volumeHeadingLeads = volumeHeadingLeads
     }
 
     /// The options a collection's own composition gives, read from its values: what the app's
@@ -651,6 +659,10 @@ public struct CollectionExportOptions: Sendable {
 ///          document's research notes by, and `citationRecord(options:)`, the Zotero item BibTeX, RIS
 ///          and the Zotero send carry by the same rule, where they had read the collection's switch
 ///          alone or none
+///   1.10 — L34: `header` and `dateline` are the one reading's (`DocumentHeadingReading`): the heading as
+///          the volume prints it, its calls left out and through an editorial note's wrapper, and the
+///          dateline from the top level, an opener or a closer (#1992, #1994, #2003). `tocLabel(style:)`
+///          gives way to the contents rows of the export's plan (`CollectionContentsRow`)
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -683,9 +695,16 @@ public struct CollectionExportDocument: Sendable {
     /// Fully converted render model for structured export output.
     /// Non-nil when the volume XML was successfully parsed during collection assembly.
     public let renderModel: FRUSDocumentRenderModel?
-    /// The document heading extracted from the TEI body (e.g. `"1. Memorandum From…"`).
+    /// The volume's heading as the volume prints it, its calls left out: its own number and its words
+    /// (`"1. Memorandum From…"`, `"No. 98. Mr. Fish to Mr. Mathews."`), read through an editorial note's
+    /// wrapper (`DocumentHeadingReading.printedHeading`). The plan and a citation record split the number
+    /// from the words by its form (`DocumentHeadingReading.splitNumber(_:)`). Until L34 the collection read
+    /// the top level alone, a numbered call kept as "[1]" (#1992) and an editorial note's heading unread
+    /// (#2003).
     public let header: String
-    /// The dateline extracted from the TEI body.
+    /// The volume's dateline, its calls left out: the first at the top level or in an opener, else the
+    /// first in a closer (`DocumentHeadingReading.dateline`, #1994). Until L34 the collection read a
+    /// dateline at the top level alone, which 17 of 3,965 documents of eight volumes have.
     public let dateline: String?
     /// AI-generated summary text for this document, as stored. Populated when
     /// `options.bodyDepth == .summaryOnly`; `nil` otherwise.
@@ -767,28 +786,14 @@ public struct CollectionExportDocument: Sendable {
         return item
     }
 
-    /// The top-of-document export heading (M3, D4): the user's `titleOverride` when
-    /// non-empty, else the citation (or `title` when no citation). The single centralizer
-    /// so the three exporters (HTML/PDF/DOCX) stay in lockstep — each renders this instead
-    /// of re-deriving `citation.isEmpty ? title : citation`.
+    /// The words the document's leading line prints (M3, D4): the user's `titleOverride` when non-empty,
+    /// else the citation (or `title` when no citation). The preview's citation-only card names a document
+    /// by it. What a document prints, and in what order, is its plan's (`CollectionDocumentPlan`, L34), and
+    /// a contents row's words are `CollectionContentsRow`'s, which until L34 this type's `tocLabel(style:)`
+    /// gave with the title alone (#1998) and the heading read whole (#1992, #2002).
     public var exportHeading: String {
         if let override = titleOverride, !override.isEmpty { return override }
         return citation.isEmpty ? title : citation
-    }
-
-    /// Returns the ToC label appropriate for the given display style. A non-empty
-    /// `titleOverride` wins first for **both** styles (M3, D4), so the ToC label and the
-    /// export heading name the document identically.
-    public func tocLabel(style: CollectionToCStyle) -> String {
-        if let override = titleOverride, !override.isEmpty { return override }
-        switch style {
-        case .citation:
-            return citation.isEmpty ? title : citation
-        case .headerAndDateline:
-            guard !header.isEmpty else { return citation.isEmpty ? title : citation }
-            if let dl = dateline, !dl.isEmpty { return "\(header) — \(dl)" }
-            return header
-        }
     }
 
     public init(
@@ -1326,8 +1331,9 @@ extension Array where Element == CollectionExportItem {
     /// block, and each entry is a claim about where the bytes came from:
     ///
     /// - a document or a frozen quotation is the printed record, so ``ProvenanceSource/frusText``;
-    /// - a `.summaryOnly` body was written by the on-device model, so ``ProvenanceSource/appModel``
-    ///   — the one case where the exported prose is not the record's;
+    /// - a `.summaryOnly` body was written by the on-device model, so ``ProvenanceSource/appModel``,
+    ///   and so was a headnote it wrote that the export prints, the author's edit of one included
+    ///   (#2005, L34);
     /// - the researcher's own prose, and a thematic index built from their tags, are
     ///   ``ProvenanceSource/yourReading``;
     /// - an archival-sources block carries NARA identifiers where they resolved, so it adds
@@ -1344,6 +1350,12 @@ extension Array where Element == CollectionExportItem {
             case .document(let d):
                 out.insert(.frusText)
                 if d.bodyDepth == .summaryOnly { out.insert(.appModel) }
+                // A headnote the app's model wrote, or wrote and the author edited, prints the model's words
+                // (#2005, L34). Until L34 the statement went on saying "and from no other source" over it.
+                if d.includeHeadnote, let headnote = d.headnoteText, !headnote.isEmpty,
+                   d.headnoteAuthorship != .userWritten {
+                    out.insert(.appModel)
+                }
             case .excerpt:
                 out.insert(.frusText)
             case .prose:

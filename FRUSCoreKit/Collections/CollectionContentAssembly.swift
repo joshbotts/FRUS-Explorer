@@ -64,6 +64,9 @@ public enum CollectionResolveError: Error, LocalizedError {
 ///          and its model context, behind a protocol
 ///   1.1 — 2026-10-31: `generateSummaries` answers with each summary's record, so its format reaches
 ///          the exporters
+///   1.2 — L34: `summary(volumeId:documentId:promptId:)` answers with the newest summary under the prompt,
+///          by `SummaryRecency`, the order the document's rail shows them in; `headnoteSummaries` in any
+///          order, since the assembly orders them by the same rule
 @MainActor
 public protocol CollectionContentDataSource {
 
@@ -103,11 +106,13 @@ public protocol CollectionContentDataSource {
     /// The stored summary with `id`, if there is one.
     func summary(id: UUID) -> GeneratedSummaryExport?
 
-    /// A document's stored summaries other than headnote drafts, in the store's order: where a
-    /// headnote falls back to when its own summary is gone. A draft belongs to the entry that chose it.
+    /// A document's stored summaries other than headnote drafts, in any order: where a headnote falls
+    /// back to when its own summary is gone, the newest of them by `SummaryRecency`. A draft belongs to
+    /// the entry that chose it.
     func headnoteSummaries(volumeId: String, documentId: String) -> [GeneratedSummaryExport]
 
-    /// The first summary stored for a document under `promptId`, a headnote draft included, if any.
+    /// The newest summary stored for a document under `promptId` (`SummaryRecency`, the order the
+    /// document's rail shows them in), a headnote draft included, if any.
     func summary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport?
 
     /// The names a document's Zotero item lists as its tags.
@@ -226,6 +231,11 @@ extension CollectionEntryExport {
 ///          in (`CollectionExportDocument.headnoteFormat`, `summaryFormat`), so the exporters print a
 ///          structured summary as its labelled fields; `generateSummaries` answers with the summaries'
 ///          records, not their text alone, so a summary generated for an export carries its format too
+///   1.2 — L34: a document's heading and dateline are the one reading of its parse (`DocumentHeadingReading`),
+///          the dateline read in the opener and the closer as well as at the top (#1994), the heading
+///          without its calls (#1992) and through an editorial note's wrapper (#2003), and its record's
+///          title and date line with them (decisions 165 and 198); a headnote with no summary chosen prints
+///          the newest stored summary (`SummaryRecency`), where it printed the first the store returned
 @MainActor
 public struct CollectionContentAssembly {
 
@@ -799,6 +809,9 @@ public struct CollectionContentAssembly {
         let bodyTexts: [String: String]
         /// Pre-loaded render models keyed `"volumeId/documentId"`.
         let renderModels: [String: FRUSDocumentRenderModel]
+        /// The one reading of each document's heading and dateline (L34), from the same parse as its
+        /// render model, keyed `"volumeId/documentId"`.
+        let readings: [String: DocumentHeadingReading]
         /// `true` per key for documents that are editorial notes (Zotero `extra` line).
         let editorialNoteFlags: [String: Bool]
         /// The collection's default body depth raw value (cascade fallback).
@@ -867,6 +880,7 @@ public struct CollectionContentAssembly {
 
         var bodyTexts: [String: String] = [:]
         var renderModels: [String: FRUSDocumentRenderModel] = [:]
+        var readings: [String: DocumentHeadingReading] = [:]
 
         let docRefs = refs.filter {
             $0.kind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty
@@ -888,6 +902,7 @@ public struct CollectionContentAssembly {
                let ast = await source.documentAST(volumeId: ref.volumeId, documentId: ref.documentId) {
                 var converter = ASTToRenderNodeConverter(volumeId: ref.volumeId)
                 renderModels[key] = converter.convert(ast)
+                readings[key] = DocumentHeadingReading(documentNodes: ast.nodes)
                 if bodyTexts[key] == nil {
                     bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
                 }
@@ -917,6 +932,7 @@ public struct CollectionContentAssembly {
             formatter: HistoryAtStateCitationFormatter(),
             bodyTexts: bodyTexts,
             renderModels: renderModels,
+            readings: readings,
             editorialNoteFlags: editorialNoteFlags,
             collectionDefaultBodyDepth: collection.defaultBodyDepth ?? CollectionBodyDepth.full.rawValue,
             collectionDocuments: collectionDocuments,
@@ -982,8 +998,13 @@ public struct CollectionContentAssembly {
         let key = "\(ref.volumeId)/\(ref.documentId)"
         let renderModel = batch.renderModels[key]
 
-        // Extract header and dateline from the render model when available.
-        let (header, dateline) = Self.renderModelHeadAndDateline(renderModel)
+        // The one reading of the heading and the dateline (L34), from the document's parse: the heading
+        // as the volume prints it, its calls left out (#1992) and through an editorial note's wrapper
+        // (#2003), and the dateline from the top level, an opener or a closer (#1994). A document with no
+        // parse reads none, as before.
+        let reading = batch.readings[key]
+        let header = reading?.printedHeading ?? ""
+        let dateline = reading?.dateline
 
         // The volume's printed number (#1406) — `373a`, `ETA–1` — not the id's integer, which
         // `d373a` does not have.
@@ -1347,7 +1368,8 @@ public struct CollectionContentAssembly {
 
     /// Resolves the stored summary text for a headnote, with its authorship and the format it was
     /// written in: the explicitly chosen `summaryId` when set (and non-empty), else the document's
-    /// summary for `preferredPromptId` (the collection's prompt), else any non-empty stored summary.
+    /// newest summary for `preferredPromptId` (the collection's prompt), else its newest non-empty
+    /// stored summary (`SummaryRecency.headnoteFallback`, the order the document's rail shows them in).
     /// Returns `nil` when nothing is stored — headnote resolution **never** generates
     /// (renderers emit a placeholder note instead; see the type doc).
     private func headnoteText(
@@ -1375,10 +1397,9 @@ public struct CollectionContentAssembly {
         // with no headnote of its own could fall back onto the first entry's private draft.
         let stored = source.headnoteSummaries(volumeId: volumeId, documentId: documentId)
             .filter { !$0.responseText.isEmpty }
-        if let pid = preferredPromptId, let preferred = stored.first(where: { $0.promptId == pid }) {
-            return printed(preferred)
-        }
-        return stored.first.map(printed)
+        return SummaryRecency.headnoteFallback(stored, preferredPromptId: preferredPromptId,
+                                               promptId: { $0.promptId }, recency: { $0.recency })
+            .map(printed)
     }
 
     // MARK: - Summary phase
@@ -1463,23 +1484,6 @@ public struct CollectionContentAssembly {
     }
 
     // MARK: - Render Model Extraction Helpers
-
-    /// Extracts the first heading and first dateline from a render model's body nodes.
-    private static func renderModelHeadAndDateline(_ model: FRUSDocumentRenderModel?) -> (header: String, dateline: String?) {
-        guard let model else { return ("", nil) }
-        var header = ""
-        var dateline: String? = nil
-        for node in model.bodyNodes {
-            if case .heading(let c) = node, header.isEmpty {
-                header = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-            } else if case .dateline(let c) = node, dateline == nil {
-                let text = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !text.isEmpty { dateline = text }
-            }
-            if !header.isEmpty && dateline != nil { break }
-        }
-        return (header, dateline)
-    }
 
     /// Recursively extracts plain text from an array of `FRUSRenderNode` values.
     ///

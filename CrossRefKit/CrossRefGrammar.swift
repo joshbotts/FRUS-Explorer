@@ -25,7 +25,7 @@ import Foundation
 /// > Note: Validation (`CrossRefGrammar.classifyForValidation`) does **not** use this type — a
 /// > ref's navigability is a separate question from whether its target xml:id exists. A footnote
 /// > anchor resolves to `.footnote` here yet is validated by anchor existence; a roman-numeral
-/// > page is `.unresolved` here yet its `pg_` xml:id may exist and thus be a valid target.
+/// > page is `.romanPage` here, and is valid or not by whether its `pg_` xml:id exists.
 ///
 /// Version history:
 ///   1.0 — Session 6 (#240A): `document`, `page`, `external` and `unresolved`
@@ -33,6 +33,8 @@ import Foundation
 ///   1.2 — 2026-11-08: `indexEntry` (the app's the same day), which cites no document: the edge
 ///          and flow generators dropped an `inN` target at their document check before, so neither
 ///          output moves
+///   1.3 — 2026-11-27 (L39): `romanPage` (the app's the same day), a page of the front matter, which
+///          cites no document, as `.unresolved` cited none: neither generator's output moves
 public enum RefDestination: Equatable, Sendable {
     /// A FRUS document.
     case document(volumeId: String?, documentId: String)
@@ -42,6 +44,9 @@ public enum RefDestination: Equatable, Sendable {
     case footnote(volumeId: String?, documentId: String, anchor: String)
     /// A printed page in a volume.
     case page(volumeId: String?, page: Int)
+    /// A page of a volume's front matter, numbered in Roman numerals (`#pg_III`): the app's since
+    /// L39, which opens the division that begins on it. `page` is the number the numeral names.
+    case romanPage(volumeId: String?, page: Int)
     /// A whole volume, not a document in it (#1603): a target with no `#` that is a volume's id
     /// (`frus1961-63v05`), as the target gives it. It may name a volume outside the catalogue.
     case volume(volumeId: String)
@@ -51,8 +56,8 @@ public enum RefDestination: Equatable, Sendable {
     case indexEntry(volumeId: String?, anchor: String)
     /// A non-FRUS absolute URL, or a `mailto:` address — opens outside the reader.
     case external(URL)
-    /// Nothing navigable: same-document footnote/figure/table anchors, roman-numeral page
-    /// anchors, or an empty target.
+    /// Nothing navigable: same-document footnote/figure/table anchors, a page anchor that is
+    /// neither arabic nor roman (`pg_313a`), or an empty target.
     case unresolved
 
     /// The document this destination is a citation of, as the app's index stores it: a document,
@@ -68,7 +73,7 @@ public enum RefDestination: Equatable, Sendable {
         case .document(let volumeId, let documentId),
              .footnote(let volumeId, let documentId, _):
             return (volumeId, documentId)
-        case .page, .volume, .indexEntry, .external, .unresolved:
+        case .page, .romanPage, .volume, .indexEntry, .external, .unresolved:
             return nil
         }
     }
@@ -98,6 +103,8 @@ public enum RefDestination: Equatable, Sendable {
 ///          read the first two as a document named after the target, and a footnote anchor as its
 ///          document when it was `dNfnM` and as a document named after the note when it was not
 ///   1.2 — 2026-11-08: an `inN` anchor is `.indexEntry`, as the app reads it the same day
+///   1.3 — 2026-11-27 (L39): a roman-numeral page anchor (`pg_III`) is `.romanPage`, as the app
+///          reads it the same day, where it was `.unresolved`
 public enum CrossRefGrammar {
 
     // MARK: Navigation parity (mirrors resolveCrossRefTarget)
@@ -112,8 +119,9 @@ public enum CrossRefGrammar {
     /// - A footnote anchor (`d748fn3`, `cr_d6fn4`, `d705fn-sym1`) is `.footnote`, naming the
     ///   document that holds the note.
     /// - An `inN` anchor is an index's entry (`.indexEntry`).
-    /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number; roman-numeral pages
-    ///   (`pg_XIII`, front matter) are `.unresolved`.
+    /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number; a roman numeral
+    ///   (`pg_XIII`, the front matter's numbering) is `.romanPage`, and any other page anchor
+    ///   (`pg_313a`) is `.unresolved`.
     /// - Bare `fn…`/`note…`/`fig…`/`tbl…` anchors point within the current document and are
     ///   `.unresolved`.
     /// - Absolute `http(s)` URLs and `mailto:` addresses are `.external`.
@@ -151,6 +159,10 @@ public enum CrossRefGrammar {
             if !digits.isEmpty, digits.allSatisfy(\.isNumber), let page = Int(digits) {
                 return .page(volumeId: vol, page: page)
             }
+            // The app's rule since L39: a page of the front matter, `pg_III`.
+            if let page = romanPage(ofAnchor: lower) {
+                return .romanPage(volumeId: vol, page: page)
+            }
             return .unresolved
         }
         if lower.hasPrefix("fn") || lower.hasPrefix("note")
@@ -180,6 +192,35 @@ public enum CrossRefGrammar {
     static func isVolumeId(_ token: String) -> Bool {
         guard token.hasPrefix("frus") else { return false }
         return token.dropFirst(4).first?.isASCII == true && token.dropFirst(4).first?.isNumber == true
+    }
+
+    /// The number a page anchor's roman numeral names — a mirror of FRUSCoreKit's
+    /// `FRUSURLScheme.romanPage(ofAnchor:)`, which reads the numeral with `PageNumber.parse(_:)`:
+    /// `pg` or `page`, an optional `_`, and the letters `ivxlcdm` alone, summed as that parse sums
+    /// them (a letter before a greater one is subtracted).
+    ///
+    /// - Parameter lowercasedAnchor: The anchor after its `#`, lowercased.
+    /// - Returns: The number, or `nil` for any other anchor (`pg_313a`, `pg_`).
+    static func romanPage(ofAnchor lowercasedAnchor: String) -> Int? {
+        var numeral = Substring(lowercasedAnchor)
+        if numeral.hasPrefix("page") {
+            numeral = numeral.dropFirst(4)
+        } else if numeral.hasPrefix("pg") {
+            numeral = numeral.dropFirst(2)
+        } else {
+            return nil
+        }
+        if numeral.hasPrefix("_") { numeral = numeral.dropFirst() }
+        let values: [Character: Int] = ["i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000]
+        guard !numeral.isEmpty, numeral.allSatisfy({ values[$0] != nil }) else { return nil }
+        var result = 0
+        var previous = 0
+        for letter in numeral.reversed() {
+            let value = values[letter] ?? 0
+            result += value < previous ? -value : value
+            previous = value
+        }
+        return result > 0 ? result : nil
     }
 
     // MARK: Volume-prefix split (mirrors parseRefTarget)

@@ -669,3 +669,35 @@ struct CitedPageMapTests {
         #expect(map.entries.allSatisfy { $0.entry.claim != .numberedPerDocument })
     }
 }
+
+// MARK: - A page of the front matter (F7, L39)
+
+/// `PageSpanResolver.romanPageDocument(rows:divisions:)`: what a link to a page numbered in Roman
+/// numerals opens. The end-to-end case, over TEI indexed by the real pipeline and read through
+/// `PageRangeStore`, is `IndexVersion76Tests.contentsLinesOpenWhatTheyName`.
+@Suite("PageSpanResolver — what a link to a page of the front matter opens (F7, L39)")
+struct RomanPageDocumentTests {
+
+    /// What the rule opens for `rows`, the page's `page_ranges` rows in source order, and
+    /// `divisions`, those that begin on it, outermost first.
+    private func opened(_ rows: [(documentId: String, isStart: Bool)], _ divisions: [String]) -> String? {
+        PageSpanResolver.romanPageDocument(rows: rows, divisions: divisions)
+    }
+
+    @Test("A document that begins on the page comes first, then a division that begins on it, then the section the page is printed in")
+    func theOrder() {
+        // `frus1863p1`'s p. III: d636 runs onto it, d637 begins on it, and so does the division of papers.
+        #expect(opened([("d636", false), ("d637", true)], ["papers"]) == "d637")
+        // `frus1921v01`'s p. XX, which its Contents links for the President's second message: the
+        // second message begins there, and the first, whose last break it is, is printed on it.
+        #expect(opened([("messages-of-the-president-1", false)], ["messages-of-the-president-2"])
+                == "messages-of-the-president-2")
+        // Of several divisions, the outermost; of several documents beginning, the first.
+        #expect(opened([], ["sources", "sources-unpublished"]) == "sources")
+        #expect(opened([("d1", true), ("d2", true)], ["front-docs"]) == "d1")
+        // A page inside the Preface, on which nothing begins: the Preface, whose break it is.
+        #expect(opened([("preface", false)], []) == "preface")
+        // A page that names nothing opens nothing.
+        #expect(opened([], []) == nil)
+    }
+}

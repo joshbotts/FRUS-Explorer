@@ -113,6 +113,13 @@ import Foundation
 ///          `<strong>`, where it printed its stored JSON; a `.general` summary prints as before
 ///   1.17 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
 ///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the page
+///   1.18 — L34: the page draws the export's plan (`CollectionExportPlan`). A document prints its plan's
+///          lines in order: a title of the author's leads, with the citation as a line of its own and
+///          *As published:* inside the volume's heading (#1998); the source note prints once (#1991); a
+///          call whose note does not print is its number as text (#2007); each heading takes its level
+///          in the collection's outline (J32); and a requested headnote with nothing stored prints
+///          nothing, the preview alone showing its author the placeholder (J10). The contents list
+///          writes its own numbers, the documents' alone (#1993), from the plan's rows
 public struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -175,7 +182,16 @@ public struct CollectionItemHTMLRenderer {
     /// - Parameter item: The resolved item to render.
     /// - Returns: An HTML fragment string (may be empty for an empty prose payload).
     public func itemHTML(_ item: CollectionExportItem) -> String {
-        switch item {
+        itemHTML(CollectionExportPlan(items: [item], options: options, forPreview: isPreviewConfigured).items[0])
+    }
+
+    /// Renders one item of an export's plan: a document as its plan's lines, at the level its section
+    /// gives it (L34).
+    ///
+    /// - Parameter planned: The item and its plan.
+    /// - Returns: An HTML fragment string.
+    func itemHTML(_ planned: CollectionExportPlan.Item) -> String {
+        switch planned.item {
         case .heading(let heading, let level):
             let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
             return "<\(tag) class=\"\(Self.headingClass("section-heading", heading))\">"
@@ -187,7 +203,8 @@ public struct CollectionItemHTMLRenderer {
         case .generated(let block):
             return generatedBlockHTML(block)
         case .document(let doc):
-            return documentSectionHTML(doc)
+            guard let plan = planned.document else { return "" }
+            return documentSectionHTML(doc, plan: plan)
         }
     }
 
@@ -283,124 +300,123 @@ public struct CollectionItemHTMLRenderer {
             : markdownItalics(escaped(heading))
     }
 
-    /// Renders a resolved document as a `<section>` fragment: citation heading (linked to
-    /// history.state.gov when available), body per the document's effective `bodyDepth`
-    /// (full render model / flat-text fallback / summary / none), optional source note,
-    /// and optional research-note asides.
+    /// Renders a resolved document as a `<section>` fragment: its plan's lines in order (L34). The
+    /// leading line (a title of the author's, or the citation linked to history.state.gov) is a heading
+    /// at the level the document's section gives it; the volume's heading follows inside the text, or as
+    /// a line of its own where the text does not print. A requested headnote with nothing stored prints
+    /// nothing in an export (J10); the live preview shows its author the placeholder.
     ///
-    /// - Parameter doc: The pre-resolved document payload.
+    /// - Parameters:
+    ///   - doc: The pre-resolved document payload.
+    ///   - plan: The document's plan.
     /// - Returns: The document's `<section id="doc-…">…</section>` HTML fragment.
-    private func documentSectionHTML(_ doc: CollectionExportDocument) -> String {
+    private func documentSectionHTML(_ doc: CollectionExportDocument, plan: CollectionDocumentPlan) -> String {
         var body = ""
         let anchor = Self.anchorId(doc: doc)
-        // Section heading: the per-entry `titleOverride` when set, else the citation
-        // (M3, centralized via `exportHeading`), regardless of ToC style.
-        let heading = doc.exportHeading
-        body += "<section id=\"\(anchor)\">\n"
+        // Where the volume's heading leads, the region carries the citation's number, which a reader
+        // moving by landmarks hears where the headings repeat (J16).
+        let region = plan.regionName.map { " aria-label=\"\(escaped($0))\"" } ?? ""
+        body += "<section id=\"\(anchor)\"\(region)>\n"
 
-        // Citation as heading with external link — apply markdownItalics for _text_ spans.
-        if !doc.historyStateGovURL.isEmpty {
-            body += "  <h2><a href=\"\(escaped(doc.historyStateGovURL))\" "
-            body +=     "class=\"doc-ext-link\" target=\"_blank\" rel=\"noopener noreferrer\">"
-            body +=     "\(markdownItalics(escaped(heading)))</a></h2>\n"
-            body += "  <p class=\"doc-url\">"
-            body +=     "<a href=\"\(escaped(doc.historyStateGovURL))\" target=\"_blank\" rel=\"noopener noreferrer\">"
-            body +=     "\(escaped(doc.historyStateGovURL))</a></p>\n"
-        } else {
-            body += "  <h2>\(markdownItalics(escaped(heading)))</h2>\n"
-        }
-
-        // Preview: a document whose volume is not downloaded has no resolvable body —
-        // render a visibly distinct citation card in its place (never taken by exports).
-        // Research notes still render below: they live in SwiftData, not the volume.
-        // Headnote (Authoring Phase 5) — an italic abstract above the body, rendered in
-        // every body mode (including the citation-only preview card); a requested
-        // headnote with nothing stored renders the placeholder note instead.
-        if doc.includeHeadnote {
-            body += headnoteHTML(doc.headnoteText, format: doc.headnoteFormat, authorship: doc.headnoteAuthorship)
-        }
-
-        if citationOnlyVolumeIds.contains(doc.volumeId) {
-            body += citationOnlyCardHTML(doc)
-        } else {
-        // Body — controlled by doc.bodyDepth (per-entry effective depth).
-        switch doc.bodyDepth {
-        case .full:
-            // Phase 5 overrides: the per-entry/section value when resolved, else the
-            // collection-level option — untouched documents behave exactly as before.
-            let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
-            let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
-            if let model = doc.renderModel {
-                // #985: this page carries many documents, and a footnote DOM key is only unique
-                // within one. Both branches of the key repeat across documents — 46,695 note
-                // `xml:id`s recur across volumes (`d1fn2` is in 314 of them), and the synthesised
-                // branch restarts at `n-1` per document because each gets its own converter — so
-                // without a per-document scope two footnotes on one exported page share an id and
-                // every marker for the second opens the first.
-                // #1516: a figure's image is embedded in the page, from the device's figure store.
-                let images = figureImages
-                body += FRUSRenderNodeHTMLSerializer(
-                    idScope: "\(Self.anchorId(doc: doc))-",
-                    figureImages: .embedded(load: { images.data(for: $0) })
-                ).serialize(
-                    model,
-                    includeFootnotes: includeFootnotes,
-                    highlights: applyHighlights ? doc.highlights : []
-                )
-            } else if !doc.bodyText.isEmpty {
-                let paragraphs = doc.bodyText
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in paragraphs {
-                    body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
-                }
+        // The preview's own lines stand where the document's body begins: the missing headnote's
+        // placeholder, then the citation-only card of a volume not downloaded, or the summary card of a
+        // summary not yet generated. An export sets none of them.
+        let citationOnly = citationOnlyVolumeIds.contains(doc.volumeId)
+        var bodyBegun = false
+        func beginBody() {
+            guard !bodyBegun else { return }
+            bodyBegun = true
+            if plan.isHeadnoteMissing { body += headnoteMissingHTML() }
+            if citationOnly {
+                body += citationOnlyCardHTML(doc)
+            } else if doc.bodyDepth == .summaryOnly, showsSummaryPlaceholders,
+                      !plan.lines.contains(where: { $0.role == .summary }) {
+                body += summaryPlaceholderCardHTML()
             }
-        case .summaryOnly:
-            if let summary = doc.summaryText, !summary.isEmpty {
+        }
+
+        for line in plan.lines {
+            switch line.role {
+            case .title, .citation, .address, .headnote:
+                break
+            default:
+                beginBody()
+            }
+            switch line.role {
+            case .title:
+                body += "  " + Self.headingHTML(level: line.headingLevel ?? plan.documentLevel, cssClass: "doc-lead",
+                                                content: markdownItalics(escaped(line.text))) + "\n"
+            case .citation:
+                let text = markdownItalics(escaped(line.text))
+                let linked = line.link.map {
+                    "<a href=\"\(escaped($0))\" class=\"doc-ext-link\" target=\"_blank\" rel=\"noopener noreferrer\">\(text)</a>"
+                } ?? text
+                if let level = line.headingLevel {
+                    body += "  " + Self.headingHTML(level: level, cssClass: "doc-lead", content: linked) + "\n"
+                } else {
+                    body += "  <p class=\"doc-citation\">\(linked)</p>\n"
+                }
+            case .address:
+                body += "  <p class=\"doc-url\">"
+                body +=     "<a href=\"\(escaped(line.link ?? line.text))\" target=\"_blank\" rel=\"noopener noreferrer\">"
+                body +=     "\(escaped(line.text))</a></p>\n"
+            case .headnote:
+                body += headnoteHTML(line)
+            case .text:
+                // A document whose volume is not downloaded has its card in the preview instead.
+                guard !citationOnly else { break }
+                if let drawing = line.drawing, let model = doc.renderModel {
+                    // #985: this page carries many documents, and a footnote DOM key is only unique
+                    // within one, so each document's ids are scoped by its anchor. #1516: a figure's
+                    // image is embedded in the page, from the device's figure store.
+                    let images = figureImages
+                    body += FRUSRenderNodeHTMLSerializer(
+                        idScope: "\(anchor)-",
+                        figureImages: .embedded(load: { images.data(for: $0) }),
+                        headings: .init(document: drawing.headingLevel, attachment: drawing.attachmentHeadingLevel,
+                                        notes: drawing.notesHeadingLevel, label: drawing.headingLabel)
+                    ).serialize(
+                        model,
+                        footnotes: drawing.footnotes,
+                        highlights: drawing.appliesHighlights ? doc.highlights : []
+                    )
+                } else {
+                    let paragraphs = line.text
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in paragraphs {
+                        body += "  <p>\(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)))</p>\n"
+                    }
+                }
+            case .volumeHeading:
+                let label = line.label.map { "<span class=\"as-published\">\(escaped($0)) </span>" } ?? ""
+                body += "  " + Self.headingHTML(level: line.headingLevel ?? plan.documentLevel + 1,
+                                                cssClass: "doc-heading", content: label + escaped(line.text)) + "\n"
+            case .dateline:
+                body += "  <p class=\"dateline\">\(escaped(line.text))</p>\n"
+            case .summary:
+                guard !citationOnly else { break }
                 body += "  <div class=\"summary-block\">\n"
-                body += "    <p class=\"summary-label\">Summary</p>\n"
-                for para in summaryParagraphsHTML(summary, format: doc.summaryFormat) {
+                body += "    <p class=\"summary-label\">\(escaped(line.label ?? ""))</p>\n"
+                for para in summaryParagraphsHTML(line.text, format: line.format) {
                     body += "    <p>\(para)</p>\n"
                 }
                 // AI attribution (v1.9) — generated text is always labeled in exports,
                 // mirroring the in-app "AI summary" badge.
-                body += "    <p class=\"ai-attribution\">\(escaped(CollectionAIAttribution.label()))</p>\n"
+                if let attribution = line.attribution {
+                    body += "    <p class=\"ai-attribution\">\(escaped(attribution))</p>\n"
+                }
                 body += "  </div>\n"
-            } else if showsSummaryPlaceholders {
-                // Preview only: no stored summary, and .preview resolution never
-                // generates one — show the promised placeholder card instead of an
-                // empty body. Never taken by exports (the flag is preview-set only).
-                body += summaryPlaceholderCardHTML()
-            }
-        case .index:
-            break  // no body content
-        }
-        }  // end citation-only else (body kept at original indentation for diff clarity)
-
-        // Source note (options.includeSourceNote)
-        if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-            body += "  <p class=\"source-note\"><strong>Source:</strong> "
-                + "\(escaped(SourceNoteDisplay.withoutLeadingLabel(sourceNote)))</p>\n"
-        }
-
-        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
-        // "See also:" citations; empty (every untouched entry) renders nothing.
-        if !doc.relatedDocumentCitations.isEmpty {
-            let label = String(localized: "collection.related.label", defaultValue: "See also:")
-            // Each citation's own period comes off before the "; " join, and the line ends in
-            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
-            let joined = doc.relatedDocumentCitations
-                .map { markdownItalics(escaped(CitationPunctuation.withoutTerminalPeriod($0))) }
-                .joined(separator: "; ") + "."
-            body += "  <p class=\"see-also\"><strong>\(escaped(label))</strong> \(joined)</p>\n"
-        }
-
-        // Research notes — the document's setting, else its section's, else the collection's.
-        if doc.includesNotes(options: options) {
-            for note in doc.noteTexts where !note.isEmpty {
+            case .sourceNote:
+                body += "  <p class=\"source-note\"><strong>\(escaped(line.label ?? ""))</strong> "
+                    + "\(escaped(line.text))</p>\n"
+            case .seeAlso:
+                body += "  <p class=\"see-also\"><strong>\(escaped(line.label ?? ""))</strong> "
+                    + "\(markdownItalics(escaped(line.text)))</p>\n"
+            case .researchNote:
                 body += "  <aside class=\"research-note\">\n"
-                body += "    <strong>Research Note</strong>\n"
-                let noteParagraphs = note
+                body += "    <strong>\(escaped(line.label ?? ""))</strong>\n"
+                let noteParagraphs = line.text
                     .components(separatedBy: "\n\n")
                     .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                 for para in noteParagraphs {
@@ -409,9 +425,18 @@ public struct CollectionItemHTMLRenderer {
                 body += "  </aside>\n"
             }
         }
+        beginBody()
 
         body += "</section>\n\n"
         return body
+    }
+
+    /// A heading element at `level`: `h1` to `h6`, or past six a paragraph with the heading role and its
+    /// level (J32), as the serializer writes the document's own.
+    static func headingHTML(level: Int, cssClass: String, content: String) -> String {
+        let level = max(level, 1)
+        if level <= 6 { return "<h\(level) class=\"\(cssClass)\">\(content)</h\(level)>" }
+        return "<p class=\"\(cssClass)\" role=\"heading\" aria-level=\"\(level)\">\(content)</p>"
     }
 
     /// The citation-only card emitted (preview only) for a document whose volume is not
@@ -438,37 +463,40 @@ public struct CollectionItemHTMLRenderer {
         return body
     }
 
-    /// The headnote block (Authoring Phase 5): a labeled, italic abstract rendered above
-    /// the document body. When `text` is nil/empty — the entry requested a headnote but
-    /// no summary is stored (headnote resolution never generates) — a placeholder note
-    /// renders instead, in exports and preview alike, so the author sees exactly what
-    /// the artifact will carry.
+    /// The headnote block (Authoring Phase 5): a labeled, italic abstract rendered above the volume's
+    /// words, and the caption that says who wrote it. It is drawn only where a headnote is stored: since
+    /// L34 an export prints nothing for a requested headnote with nothing stored (J10), where 1.0 printed
+    /// the author an instruction in a file made for a reader.
     ///
-    /// - Parameters:
-    ///   - text: The resolved headnote (stored `GeneratedSummary` text), if any.
-    ///   - format: The format `text` was written in; a structured headnote prints as its fields.
+    /// - Parameter line: The plan's headnote line: its text, the format it was written in, its label and
+    ///   its attribution.
     /// - Returns: The `<div class="headnote">…</div>` HTML fragment.
-    private func headnoteHTML(_ text: String?, format: ResponseFormat, authorship: SummaryAuthorship) -> String {
-        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+    private func headnoteHTML(_ line: CollectionDocumentPlan.Line) -> String {
         var body = ""
         body += "  <div class=\"headnote\">\n"
-        body += "    <p class=\"headnote-label\">\(escaped(label))</p>\n"
-        if let text, !text.isEmpty {
-            for para in summaryParagraphsHTML(text, format: format) {
-                body += "    <p><em>\(para)</em></p>\n"
-            }
-            // Attribution honors the headnote's authorship (Composer redesign): an AI headnote keeps
-            // the AI label, an AI-edited one discloses the edit, a user-written one shows none.
-            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
-                body += "    <p class=\"ai-attribution\">\(escaped(attribution))</p>\n"
-            }
-        } else {
-            let missing = String(localized: "collection.headnote.missing",
-                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
-            body += "    <p class=\"headnote-missing\">\(escaped(missing))</p>\n"
+        body += "    <p class=\"headnote-label\">\(escaped(line.label ?? ""))</p>\n"
+        for para in summaryParagraphsHTML(line.text, format: line.format) {
+            body += "    <p><em>\(para)</em></p>\n"
+        }
+        // Attribution honors the headnote's authorship (Composer redesign): an AI headnote keeps
+        // the AI label, an AI-edited one discloses the edit, a user-written one shows none.
+        if let attribution = line.attribution {
+            body += "    <p class=\"ai-attribution\">\(escaped(attribution))</p>\n"
         }
         body += "  </div>\n"
         return body
+    }
+
+    /// The live preview's placeholder for a requested headnote with nothing stored: the label, and a
+    /// sentence telling the author how to fill it. An export never draws it (J10).
+    private func headnoteMissingHTML() -> String {
+        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+        let missing = String(localized: "collection.headnote.missing",
+                             defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+        return "  <div class=\"headnote\">\n"
+            + "    <p class=\"headnote-label\">\(escaped(label))</p>\n"
+            + "    <p class=\"headnote-missing\">\(escaped(missing))</p>\n"
+            + "  </div>\n"
     }
 
     /// A stored summary's paragraphs, escaped, without their `<p>`: a structured summary's fields, each
@@ -541,50 +569,60 @@ public struct CollectionItemHTMLRenderer {
         return body
     }
 
-    /// Renders the table of contents `<nav>` — label style controlled by `options.tocStyle`.
+    /// Renders the table of contents `<nav>`: the export plan's rows (`CollectionContentsRow`, L34).
     /// Documents become anchor links; headings appear as (non-link) section labels; prose
     /// blocks are omitted.
     ///
+    /// **The list writes its own numbers, and numbers the documents alone** (#1993): "4. " before the
+    /// fourth document's row, none before a section's heading or a block's title. Until L34 the browser
+    /// numbered every row of the ordered list, so the fourth document was row 6 where the PDF and Word
+    /// call it 4. The list keeps `role="list"`, which WebKit drops from a list drawn without markers.
+    /// A row's lines in small type (*As published:* and the volume's heading under a title of the
+    /// author's, #1998) are inside its link, so a reader moving by links hears them with the row.
+    ///
     /// Heading levels drive **nested lists** (Authoring Phase 4): a deeper heading opens a
     /// `<li class="toc-sub"><ol>` wrapper (valid nesting — the sub-list lives inside an
-    /// `<li>`), and documents nest inside the list of their owning section. A ToC whose
-    /// headings are all level 1 never opens a nested list, so its output is byte-identical
-    /// to the pre-Phase-4 flat markup.
+    /// `<li>`), and documents nest inside the list of their owning section.
     ///
     /// - Parameter items: The ordered items whose documents and headings populate the ToC.
     /// - Returns: The `<nav>…</nav>` HTML fragment.
     public func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
+        tableOfContentsHTML(rows: CollectionContentsRow.rows(for: items, style: options.tocStyle))
+    }
+
+    /// Renders the table of contents `<nav>` from the plan's rows.
+    func tableOfContentsHTML(rows: [CollectionContentsRow]) -> String {
         /// Line indentation for list items at a nesting level (level 1 = the pre-Phase-4
         /// four spaces; each deeper level adds two).
         func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
 
         var body = ""
-        body += "<nav>\n  <h2>Contents</h2>\n  <ol>\n"
+        body += "<nav>\n  <h2>Contents</h2>\n  <ol role=\"list\">\n"
         var level = 1
-        for item in items {
-            switch item {
-            case .document(let doc):
+        for row in rows {
+            switch row.kind {
+            case .document(let number):
+                guard let doc = row.document else { continue }
                 let anchor = Self.anchorId(doc: doc)
-                let label = doc.tocLabel(style: options.tocStyle)
-                body += "\(indent(level))<li><a href=\"#\(anchor)\">\(markdownItalics(escaped(label)))</a></li>\n"
-            case .heading(let heading, let rawLevel):
-                let target = Self.clampedLevel(rawLevel)
+                let lines = row.lines.map { "<span class=\"toc-line\">\(markdownItalics(escaped($0)))</span>" }.joined()
+                body += "\(indent(level))<li class=\"toc-document\"><a href=\"#\(anchor)\">"
+                    + "<span class=\"toc-number\">\(number).</span> \(markdownItalics(escaped(row.text)))\(lines)</a></li>\n"
+            case .section:
+                let target = row.level
                 while level > target {
                     level -= 1
                     body += "\(indent(level))</ol></li>\n"
                 }
                 while level < target {
-                    body += "\(indent(level))<li class=\"toc-sub\"><ol>\n"
+                    body += "\(indent(level))<li class=\"toc-sub\"><ol role=\"list\">\n"
                     level += 1
                 }
-                body += "\(indent(level))<li class=\"\(Self.headingClass("toc-section", heading))\">"
-                    + "\(headingText(heading))</li>\n"
-            case .generated(let block):
+                body += "\(indent(level))<li class=\"\(Self.headingClass("toc-section", row.text))\">"
+                    + "\(headingText(row.text))</li>\n"
+            case .block:
                 // A generated block is listed by title, like a section label (Phase 6);
                 // it inherits the current nesting level without changing it.
-                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(block.title)))</li>\n"
-            case .prose, .excerpt:
-                break   // interstitial content — never a ToC row
+                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(row.text)))</li>\n"
             }
         }
         while level > 1 {
@@ -627,12 +665,16 @@ public struct CollectionItemHTMLRenderer {
             body += "</figure>\n\n"
         }
 
+        // The export's plan (L34): the contents rows and each document's lines, decided once for the
+        // three formats.
+        let plan = CollectionExportPlan(items: items, options: options, forPreview: isPreviewConfigured)
+
         // Table of contents — label style controlled by options.tocStyle.
-        body += tableOfContentsHTML(for: items)
+        body += tableOfContentsHTML(rows: plan.contents)
 
         // Body items — documents render as sections; headings and prose interleave in order.
-        for item in items {
-            body += itemHTML(item)
+        for planned in plan.items {
+            body += itemHTML(planned)
         }
 
         // Method appendix (M-2) — the project's query log, opt-in only. Placed before the
@@ -858,13 +900,17 @@ public struct CollectionItemHTMLRenderer {
       margin-bottom: 0.75rem;
       color: #555;
     }
-    nav ol { padding-left: 1.25rem; }
+    /* L34 (#1993): the list writes its own numbers, the documents' alone. */
+    nav ol { list-style: none; padding-left: 0; }
     nav li  { margin: 0.3rem 0; }
     nav a   { color: #1a4c8f; text-decoration: none; }
     nav a:hover { text-decoration: underline; }
     .toc-entry { display: flex; justify-content: space-between; }
     /* #1602: #6e6e6e is 4.75:1 on the contents panel's #f7f7f5; #888 was 3.30. */
     .toc-page  { color: #6e6e6e; font-size: 0.9em; }
+    /* L34 (#1998): under a title of the author's, the volume's heading in small type. #555 is 6.92:1 on
+       the contents panel's #f7f7f5. */
+    nav .toc-line { display: block; font-size: 0.85em; color: #555; }
 
     /* ── Document sections ────────────────────────────────────────────────── */
     section {
@@ -872,7 +918,7 @@ public struct CollectionItemHTMLRenderer {
       padding-top: 2rem;
       margin-bottom: 3rem;
     }
-    section > h2 {
+    section > h2, section > .doc-lead {
       font-size: 1.25rem;
       font-weight: bold;
       margin-bottom: 0.3rem;
@@ -880,6 +926,8 @@ public struct CollectionItemHTMLRenderer {
     }
     a.doc-ext-link { color: inherit; text-decoration: none; }
     a.doc-ext-link:hover { text-decoration: underline; }
+    /* L34: the citation as a line of its own, under a title of the author's. */
+    .doc-citation { font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.3rem; }
     /* `<hi rend="strong">` serialises to <strong> (#1323). Pinned for the same reason the
        reader's template pins it: WebKit's UA `bolder` is relative, so inside a bold heading
        it climbs. Georgia ships no 900 face, so the visible effect here is smaller than in the
@@ -887,8 +935,9 @@ public struct CollectionItemHTMLRenderer {
        keeps and may open in a browser with a different font stack. */
     strong { font-weight: 700; }
     section > h2 strong,
-    h2.doc-heading strong,
-    h3.attachment-heading strong,
+    section > .doc-lead strong,
+    .doc-heading strong,
+    .attachment-heading strong,
     h3.section-heading strong,
     h4.section-heading strong { font-weight: inherit; }
     .doc-url {
@@ -897,6 +946,22 @@ public struct CollectionItemHTMLRenderer {
       margin-bottom: 1rem;
       word-break: break-all;
     }
+
+    /* ── Heading levels (L34, J32) ──────────────────────────────────────────── */
+    /* In an export a document's heading, an attachment's and the notes' take the level the
+       collection's outline gives them, so the reader's h2 and h3 rules are given to every level. */
+    .doc-heading { font-size: var(--font-size-heading); font-weight: 600; line-height: 1.3; margin: 0 0 0.65em; }
+    .attachment-heading { font-size: calc(var(--font-size-body) * 1.1); font-weight: 600; margin: 0 0 0.7em; line-height: 1.3; }
+    .fn-section-heading {
+      font-size: calc(var(--font-size-body) * 0.9);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-secondary);
+      margin: 0 0 0.75em;
+    }
+    /* The words that mark where the volume's begin (decision 154), lighter than the heading's own. */
+    .as-published { font-weight: 400; }
 
     /* ── Research notes ───────────────────────────────────────────────────── */
     aside.research-note {

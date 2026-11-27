@@ -30,6 +30,7 @@ import Foundation
 ///   1.1 — Session 2026-10-24 (FRUS Explorer Light, S15a): public, with its memberwise initialiser
 ///          spelled out with the same defaults, so `CitationLookupFields()` is the empty form as
 ///          before, for the web edition's Structured Entry
+///   1.2 — #1977: the Document field holds the number as printed, and reaches the lookup as one
 public struct CitationLookupFields: Equatable, Sendable {
 
     /// The Subseries field, e.g. `"1969-76"`.
@@ -38,7 +39,10 @@ public struct CitationLookupFields: Equatable, Sendable {
     public var volume = ""
     /// The Part field, e.g. `"1"` or `"I"` (#1474).
     public var part = ""
-    /// The Document no. field.
+    /// The Document no. field: the number as printed, `15`, `1190b`, `GT–6` or `C` (#1977), which
+    /// `input(mode:pasteText:parser:)` reads through `CitationParser.normalizedDocumentNumber(_:)`.
+    /// Until #1977 it was read as an `Int`, so a number with a letter typed in Structured Entry, or
+    /// pasted and then left alone, named no document at all.
     public var document = ""
     /// The Page field.
     public var page = ""
@@ -46,7 +50,9 @@ public struct CitationLookupFields: Equatable, Sendable {
     /// correct a print-year subseries and tell part volumes apart (#216).
     public var titleFragment: String? = nil
     /// The paste's history.state.gov link, when it carried one (#1474). Not shown: its ids are
-    /// exact, and a letter-suffixed id (`d373a`) has no place in the numeric Document field.
+    /// exact, and an id such as `eta_d1` or `d710a-1` has no place in the Document field. A link
+    /// to a numbered document fills that field with the id's number, `d373a`'s `373a` among them
+    /// since #1977.
     public var exactReference: CitationExactReference? = nil
     /// The paste text these fields were last derived from. Entering Paste mode compares it with
     /// the current text, to tell a Batch edit (re-derive) from a return from Structured Entry
@@ -78,7 +84,7 @@ public struct CitationLookupFields: Equatable, Sendable {
             subseries: parsed.subseries ?? "",
             volume: parsed.volumeNumber ?? "",
             part: parsed.partNumber.map(String.init) ?? "",
-            document: parsed.documentNumber.map(String.init) ?? "",
+            document: parsed.documentNumber ?? "",
             page: parsed.pageNumber.map(String.init) ?? "",
             titleFragment: parsed.titleFragment,
             exactReference: parsed.exactReference,
@@ -130,7 +136,7 @@ public struct CitationLookupFields: Equatable, Sendable {
             subseries: value(subseries),
             volumeNumber: value(volume),
             partNumber: CitationParser.normalizedPartNumber(part),
-            documentNumber: value(document).flatMap { Int($0) },
+            documentNumber: value(document).flatMap(CitationParser.normalizedDocumentNumber),
             pageNumber: value(page).flatMap { Int($0) },
             titleFragment: parsed == nil ? nil : titleFragment,
             exactReference: reference,

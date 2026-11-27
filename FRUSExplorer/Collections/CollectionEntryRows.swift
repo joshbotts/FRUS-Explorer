@@ -919,6 +919,8 @@ struct CollectionGeneratedEntryRow: View {
 ///          `.inspector` column). `onInsertExcerpt`/`showInspector`/`appState` moved out
 ///   1.5 — 2026-10-21: #1761 — at an accessibility text size the title and the volume line wrap
 ///          whole, where two lines cut them
+///   1.6 — L34 (J38): a title of the author's is the row's first line, with the volume's heading under
+///          it, as the exports print a titled document; the row showed the heading alone and no title
 struct EntryRow: View {
     @Binding var entry: CollectionEntry
     let availableNotes: [ResearchNote]
@@ -964,18 +966,34 @@ struct EntryRow: View {
     /// two lines held a few words of a title (#1761).
     private var lineLimit: Int? { dynamicTypeSize.isAccessibilitySize ? nil : 2 }
 
+    /// The entry's title of the author's, trimmed, or `nil` where none is given.
+    private var titleOverride: String? {
+        let title = entry.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? nil : title
+    }
+
+    /// The row's first line: the title of the author's, else the indexed header, else the raw id (L34, J38).
+    private var primaryLine: String { titleOverride ?? documentHeader ?? entry.documentId }
+
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
-                // Document identity. The indexed header is the primary line when available; the
-                // raw id remains the fallback for unindexed volumes.
-                Text(documentHeader ?? entry.documentId)
+                // Document identity. A title of the author's is the primary line, with the volume's
+                // heading under it, as every export prints a titled document (L34, J38); else the
+                // indexed header, with the raw id as the fallback for unindexed volumes.
+                Text(primaryLine)
                     .font(.body)
                     .lineLimit(lineLimit)
                     .accessibilityLabel(
                         String(localized: "collection.entry.document.accessibility",
-                               defaultValue: "Document \(documentHeader ?? entry.documentId)")
+                               defaultValue: "Document \(primaryLine)")
                     )
+                if titleOverride != nil, let header = documentHeader, !header.isEmpty {
+                    Text(header)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(lineLimit)
+                }
 
                 // Volume context (+ document id and date when the header is shown above, so
                 // the citation stays checkable at a glance).

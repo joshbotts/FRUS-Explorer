@@ -153,6 +153,12 @@ import SourceNoteKit
 ///          working reference (`givesWayToInnerLink(_:)`), written as plain text around them. The
 ///          text, its formatting and every offset are unchanged; `holdsLinksAlone(_:)` reads the links
 ///          as written
+///   1.17 — L34: `serialize(_:footnotes:highlights:)` prints the notes a collection's plan gives
+///          (`FootnotePrinting`), and a call whose note does not print is the volume's number as text, or
+///          nothing for a note it printed unnumbered, where it was a button with no popover (#2007).
+///          `Headings` levels the document's, an attachment's and the notes' headings (J32), and labels
+///          the document's first heading (*As published:*) under `data-skip`. The reader's defaults
+///          (`Headings.reader`, every note) write what they wrote
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -197,6 +203,52 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// links, which only a reader answers.
     private let listsNamedReferences: Bool
 
+    /// The levels a document's headings are written at, and the words drawn inside its heading before
+    /// its own (L34).
+    ///
+    /// The reader writes one document on a page: its heading `h2`, an attachment's `h3`, the notes'
+    /// heading `h2` (``reader``). A collection's page holds many under its own outline, so each takes
+    /// the level its plan gives it (J32): a level past six is a paragraph with the heading role and
+    /// `aria-level`, since HTML has six heading elements. Under a title of the author's the plan labels
+    /// the volume's heading *As published:*, drawn inside it under `data-skip`, so the flat text and
+    /// every highlight offset are what they were.
+    public struct Headings: Sendable, Equatable {
+        /// The level of the document's heading, the volume's.
+        public var document: Int
+        /// The level of an attachment's heading.
+        public var attachment: Int
+        /// The level of the heading over the document's notes, and over the persons and terms it names.
+        public var notes: Int
+        /// The words drawn inside the document's first heading before its own, or `nil`.
+        public var label: String?
+
+        /// Creates the levels and the label.
+        public init(document: Int, attachment: Int, notes: Int, label: String? = nil) {
+            self.document = document
+            self.attachment = attachment
+            self.notes = notes
+            self.label = label
+        }
+
+        /// The reader's: the heading `h2`, an attachment's `h3`, the notes' `h2`, and no label.
+        public static let reader = Headings(document: 2, attachment: 3, notes: 2)
+    }
+
+    /// The levels and the label this serializer writes headings with. ``Headings/reader`` by default.
+    private let headings: Headings
+
+    /// Which notes print and how each call is drawn, for the serialization in progress (L34).
+    private var footnotePrinting: FootnotePrinting = .all
+
+    /// What one serialization has drawn: whether the document's first heading has been written, so
+    /// that the label goes inside it and no other.
+    private final class DrawState {
+        var headingDrawn = false
+    }
+
+    /// The serialization in progress's state; each `serialize` call starts a fresh one.
+    private var drawState = DrawState()
+
     /// Creates a serializer.
     ///
     /// - Parameters:
@@ -207,12 +259,24 @@ public struct FRUSRenderNodeHTMLSerializer {
     ///   - figureImages: Where a figure's image comes from. Default `.placeholder`.
     ///   - listsNamedReferences: Whether the persons and terms a document names on its `@ana`
     ///     are listed below it. Default `false` (exports).
+    ///   - headings: The levels a document's headings are written at, and its heading's label.
+    ///     Default ``Headings/reader``.
     public init(annotateSourceClassification: Bool = false, idScope: String = "",
-                figureImages: FigureImages = .placeholder, listsNamedReferences: Bool = false) {
+                figureImages: FigureImages = .placeholder, listsNamedReferences: Bool = false,
+                headings: Headings = .reader) {
         self.annotateSourceClassification = annotateSourceClassification
         self.idScope = idScope
         self.figureImages = figureImages
         self.listsNamedReferences = listsNamedReferences
+        self.headings = headings
+    }
+
+    /// A heading element at `level`: `h1` to `h6`, or past six a paragraph with the heading role and its
+    /// level (J32).
+    private func headingElement(level: Int, cssClass: String, content: String) -> String {
+        let level = max(level, 1)
+        if level <= 6 { return "<h\(level) class=\"\(cssClass)\">\(content)</h\(level)>" }
+        return "<p class=\"\(cssClass)\" role=\"heading\" aria-level=\"\(level)\">\(content)</p>"
     }
 
     // MARK: - Footnote affordance (#985)
@@ -319,8 +383,8 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// - Parameters:
     ///   - model: The render model to serialise.
     ///   - includeFootnotes: When `false`, all `<aside>` popover elements and the
-    ///     `<section class="footnotes-section">` are omitted from the output.
-    ///     Use `false` when the export handles footnotes separately (e.g. source-note-only mode).
+    ///     `<section class="footnotes-section">` are omitted from the output, and each call the volume
+    ///     numbered is written as its number (``FootnotePrinting/none``, #2007).
     ///   - highlights: Flat-text character ranges to annotate with `<mark>` elements.
     ///     The serialiser injects highlight markup by post-processing the rendered HTML
     ///     using the same flat-text coordinate space as the JS offset engine.
@@ -329,6 +393,37 @@ public struct FRUSRenderNodeHTMLSerializer {
         includeFootnotes: Bool,
         highlights: [ExportHighlight]
     ) -> String {
+        serialize(model, footnotes: includeFootnotes ? .all : .none, highlights: highlights)
+    }
+
+    /// Serialises `model` with the notes `footnotes` prints, and inline highlight annotation (L34).
+    ///
+    /// A note that does not print has no popover and no entry in the notes' section, and its call is
+    /// drawn as `footnotes` says (``FootnotePrinting/call(key:label:)``): the volume's number as text, or
+    /// nothing for a note the volume printed unnumbered. Until L34 the export wrote every call as a
+    /// button whose popover it had not written, so a click did nothing (#2007).
+    ///
+    /// - Parameters:
+    ///   - model: The render model to serialise.
+    ///   - footnotes: Which notes print.
+    ///   - highlights: Flat-text character ranges to annotate with `<mark>` elements.
+    public func serialize(
+        _ model: FRUSDocumentRenderModel,
+        footnotes: FootnotePrinting,
+        highlights: [ExportHighlight]
+    ) -> String {
+        var run = self
+        run.footnotePrinting = footnotes
+        run.drawState = DrawState()
+        return run.serializeDocument(model, highlights: highlights)
+    }
+
+    /// The document's page, as the serialization in progress prints it.
+    private func serializeDocument(_ model: FRUSDocumentRenderModel, highlights: [ExportHighlight]) -> String {
+        let printedNotes = model.footnotes.filter { note in
+            guard case .footnoteBody(let id, _, _, let seq, _, _) = note else { return false }
+            return footnotePrinting.prints(FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq))
+        }
         // IMPORTANT: no whitespace is added between elements. Any inter-element
         // newline or space creates a DOM text node that the JS flat-text DFS
         // (kOffsetEngineJS) would count as a character, breaking the
@@ -338,12 +433,11 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         html += block(model.bodyNodes)
 
-        if includeFootnotes {
-            // Footnote popovers (inline popup behavior) — inside .frus-document,
-            // marked data-skip="1" so the offset engine skips them.
-            for footnote in model.footnotes {
-                html += footnoteAsideHTML(footnote)
-            }
+        // Footnote popovers (inline popup behavior) — inside .frus-document, marked data-skip="1" so the
+        // offset engine skips them. Only a note that prints has one, so every call drawn as a button has
+        // a popover to open (#2007).
+        for footnote in printedNotes {
+            html += footnoteAsideHTML(footnote)
         }
 
         html += "</div>"
@@ -361,8 +455,8 @@ public struct FRUSRenderNodeHTMLSerializer {
             html = injectHighlights(into: html, highlights: highlights)
         }
 
-        if includeFootnotes, !model.footnotes.isEmpty {
-            html += footnoteSectionHTML(model.footnotes)
+        if !printedNotes.isEmpty {
+            html += footnoteSectionHTML(printedNotes)
         }
 
         // #1599: after everything the document prints. Outside `.frus-document`, as the footnotes
@@ -397,7 +491,7 @@ public struct FRUSRenderNodeHTMLSerializer {
                 "<li><a class=\"\(linkClass)\" href=\"frusexplorer://\(host)/\(urlEncoded(entry.ref))\">"
                     + "\(escaped(entry.name))</a></li>"
             }.joined()
-            return "<h2 class=\"fn-section-heading\">\(escaped(heading))</h2>"
+            return headingElement(level: headings.notes, cssClass: "fn-section-heading", content: escaped(heading))
                 + "<ul class=\"named-list\">\(items)</ul>"
         }
         return "<section class=\"named-references\"><hr class=\"fn-rule\">"
@@ -698,7 +792,9 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// the document body. This section is outside `.frus-document` and therefore
     /// excluded from the JS flat-text offset engine.
     private func footnoteSectionHTML(_ footnotes: [FRUSRenderNode]) -> String {
-        var html = "<section class=\"footnotes-section\"><hr class=\"fn-rule\"><h2 class=\"fn-section-heading\">Footnotes</h2><ol class=\"fn-list\">"
+        var html = "<section class=\"footnotes-section\"><hr class=\"fn-rule\">"
+            + headingElement(level: headings.notes, cssClass: "fn-section-heading", content: "Footnotes")
+            + "<ol class=\"fn-list\">"
         for footnote in footnotes {
             guard case .footnoteBody(let id, let type, _, let seq, let label, let children) = footnote else { continue }
             let key = idScope + FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
@@ -738,7 +834,14 @@ public struct FRUSRenderNodeHTMLSerializer {
         // MARK: Block elements — no trailing newline (whitespace = spurious text node)
 
         case .heading(let children):
-            return "<h2 class=\"doc-heading\">\(inline(children))</h2>"
+            // The document's first heading carries the plan's label (L34: *As published:* under a title of
+            // the author's), under data-skip, so the flat text is what it was.
+            var label = ""
+            if !drawState.headingDrawn, let text = headings.label, !text.isEmpty {
+                label = "<span class=\"as-published\" data-skip=\"1\">\(escaped(text)) </span>"
+            }
+            drawState.headingDrawn = true
+            return headingElement(level: headings.document, cssClass: "doc-heading", content: label + inline(children))
 
         case .dateline(let children):
             return "<p class=\"dateline\">\(inline(children))</p>"
@@ -766,7 +869,7 @@ public struct FRUSRenderNodeHTMLSerializer {
             return "<section class=\"attachment\"\(attr)>\(block(children))</section>"
 
         case .attachmentHeading(let children):
-            return "<h3 class=\"attachment-heading\">\(inline(children))</h3>"
+            return headingElement(level: headings.attachment, cssClass: "attachment-heading", content: inline(children))
 
         case .tableBlock(let caption, let rows):
             // No whitespace between table elements — every character inside
@@ -875,7 +978,17 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         case .footnoteMarker(let id, let type, let seq, let label):
             // data-skip="1" — marker text is excluded from flat-text offset count.
-            let key = idScope + FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            let domKey = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            switch footnotePrinting.call(key: domKey, label: label) {
+            case .note:
+                break
+            case .text:
+                // The note does not print: the volume's number stays, as text (#2007).
+                return "<sup class=\"fn-call\" data-skip=\"1\">\(escaped(label ?? ""))</sup>"
+            case .omitted:
+                return ""
+            }
+            let key = idScope + domKey
             return "<button class=\"fn-marker\(label == nil ? " fn-marker-unnumbered" : "")\" "
                 + "data-skip=\"1\" popovertarget=\"fn-\(escaped(key))\" "
                 + "aria-label=\"\(escaped(Self.markerAccessibilityLabel(label: label, type: type)))\">"
