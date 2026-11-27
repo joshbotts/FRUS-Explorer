@@ -318,3 +318,124 @@ public enum WorkingCorpusProvenance {
         return description.hasPrefix(stem)
     }
 }
+
+// MARK: - WorkingCorpusCapture
+
+/// A set of documents a screen saves as a working corpus, resolved by that screen's own rule: the keys
+/// the record keeps, the whole count beside them, and the name and the source description it is saved
+/// under (#1990, L42).
+///
+/// The record a capture writes is the one the Clusters index and the semantic map's lasso write
+/// (`ClustersBrowseView`, `SemanticMapSpikeView`): the keys written out, cut at the record's budget of
+/// ``SemanticMapPicking/corpusCaptureLimit`` with the whole count beside them; no query, since no words
+/// produced the set; a description that is enough to make the set again by hand; the volumes indexed at
+/// capture; and the two truncation fields, recorded whether or not the budget cut the set. A screen that
+/// saves one builds its capture through its own rule (the cross-reference graph's is
+/// `CrossReferenceGraphCapture`) and writes it through the app's one helper, which says what the save
+/// holds before it and what it did after it. Chronology's save of a range (L56) is the second screen.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation, for the cross-reference graph's save
+public struct WorkingCorpusCapture: Equatable, Sendable {
+
+    /// The name the corpus is saved under (``name(subject:stamp:)``).
+    public let name: String
+    /// The `"volumeId/documentId"` keys the record keeps, each once and in the capture's order: at most
+    /// ``SemanticMapPicking/corpusCaptureLimit``.
+    public let documentKeys: [String]
+    /// Every document the capture held, kept or not.
+    public let total: Int
+    /// Where the set came from, for the corpus lists and the exports.
+    public let sourceDescription: String
+
+    /// A capture of `keys`, each once and in their order, cut at the record's budget.
+    ///
+    /// - Parameters:
+    ///   - name: The name it is saved under.
+    ///   - keys: Every document it holds, as `"volumeId/documentId"` keys, in the order the budget keeps
+    ///     them; a key given twice counts once.
+    ///   - sourceDescription: Where the set came from.
+    public init(name: String, keys: [String], sourceDescription: String) {
+        var seen = Set<String>()
+        let unique = keys.filter { seen.insert($0).inserted }
+        self.name = name
+        self.documentKeys = Array(unique.prefix(SemanticMapPicking.corpusCaptureLimit))
+        self.total = unique.count
+        self.sourceDescription = sourceDescription
+    }
+
+    /// Whether the record keeps fewer documents than the capture held.
+    public var isTruncated: Bool { total > documentKeys.count }
+
+    /// The name a capture is saved under: what it is, and when, in the semantic map's form
+    /// (`SemanticMapCapture.corpusName(regionNames:stamp:)`). The app looks a corpus up by its name, and
+    /// names are not unique, so two saves of one set must not share one: the stamp tells them apart.
+    ///
+    /// - Parameters:
+    ///   - subject: What the set is.
+    ///   - stamp: When it was taken (``stamp(for:locale:timeZone:)``).
+    /// - Returns: The name.
+    public static func name(subject: String, stamp: String) -> String {
+        "\(subject) — \(stamp)"
+    }
+
+    /// A capture's time as its name carries it: the semantic map's stamp
+    /// (`SemanticMapCapture.stamp(for:locale:timeZone:)`), the date abbreviated and the time short.
+    ///
+    /// - Parameters:
+    ///   - date: When the capture was taken.
+    ///   - locale: The reader's locale; the app passes its current one.
+    ///   - timeZone: The reader's time zone; the app passes its current one.
+    /// - Returns: The stamp.
+    public static func stamp(for date: Date, locale: Locale = .autoupdatingCurrent,
+                             timeZone: TimeZone = .autoupdatingCurrent) -> String {
+        SemanticMapCapture.stamp(for: date, locale: locale, timeZone: timeZone)
+    }
+
+    /// The line that says a save keeps fewer documents than its capture held, or `nil` when it keeps
+    /// them all: the lasso's words (`semanticMap.lasso.truncated %lld %lld`), with both counts grouped.
+    ///
+    /// - Parameter locale: The locale that groups the counts.
+    /// - Returns: The line, or `nil`.
+    public func truncationLine(locale: Locale = .autoupdatingCurrent) -> String? {
+        guard isTruncated else { return nil }
+        return String(format: String(localized: "workingCorpus.capture.truncated %@ %@",
+                                     defaultValue: "Saving the first %1$@ of %2$@."),
+                      documentKeys.count.formatted(.number.locale(locale)),
+                      total.formatted(.number.locale(locale)))
+    }
+
+    /// What the save holds, said before it: where the set comes from, how many of its documents this
+    /// device has indexed (``WorkingCorpusResolution/coverageDescription``, as the lasso's card says it),
+    /// the budget's cut when it makes one, and whatever the screen adds about what it leaves out.
+    ///
+    /// The coverage comes first after the source because the save may hold documents in volumes this
+    /// device has not indexed: applying the corpus narrows to the indexed ones, and one with none is
+    /// refused, so the reader hears it at capture rather than in Search.
+    ///
+    /// - Parameters:
+    ///   - coverage: The capture's kept keys resolved against this device's index.
+    ///   - notes: Sentences the screen adds, in order.
+    ///   - locale: The locale that groups the counts.
+    /// - Returns: The statement, one sentence to a line.
+    public func statement(coverage: WorkingCorpusResolution, notes: [String] = [],
+                          locale: Locale = .autoupdatingCurrent) -> String {
+        var lines = ["\(sourceDescription).", "\(coverage.coverageDescription)."]
+        if let truncation = truncationLine(locale: locale) { lines.append(truncation) }
+        lines.append(contentsOf: notes)
+        return lines.joined(separator: "\n")
+    }
+
+    /// What the save did, said after it: the name it was saved under, or that it failed.
+    ///
+    /// - Parameter savedName: The name the corpus was saved under, or `nil` when the save failed.
+    /// - Returns: The sentence the screen shows and VoiceOver hears.
+    public static func outcome(savedName: String?) -> String {
+        guard let savedName else {
+            return String(localized: "workingCorpus.capture.failed",
+                          defaultValue: "The working corpus could not be saved.")
+        }
+        return String(format: String(localized: "workingCorpus.capture.saved %@",
+                                     defaultValue: "Saved as the working corpus “%@”"), savedName)
+    }
+}

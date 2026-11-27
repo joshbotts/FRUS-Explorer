@@ -2204,3 +2204,378 @@ struct NetworkAtThreeHopsTests {
         #expect(!node("cluster/outbound/frus1951v01", kind: .clusterOutbound(volumeId: "frus1951v01", count: 3)).isPageNode)
     }
 }
+
+// MARK: - What the graph saves (#1990, L42)
+
+/// A data source that vends exactly what the packet builder reads, for the visit's preview.
+@MainActor
+private struct GraphVisitStub: TripPacketReferenceDataSource {
+    var sources: [CollectionGeneratedBlocks.SourceRecord] = []
+    var citations: [String: [ExternalCitation]] = [:]
+
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        "\(volumeId)/\(documentId)"
+    }
+    func dateMetadata(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: DocumentDateMetadata] { [:] }
+    func documentNumbers(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: String] { [:] }
+    func documentSources(for documents: [(volumeId: String, documentId: String)])
+        async -> [CollectionGeneratedBlocks.SourceRecord] {
+        let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return sources.filter { requested.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+    func externalCitations(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: [ExternalCitation]] {
+        let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return citations.filter { requested.contains($0.key) }
+    }
+    func archivalResolution(recordGroup: String?, lotFile: String?)
+        -> CollectionGeneratedBlocks.ArchivalLink? { nil }
+    func personMentions(for documents: [(volumeId: String, documentId: String)])
+        async -> [CollectionGeneratedBlocks.PersonMention] { [] }
+    func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { [] }
+}
+
+/// The rule behind the graph's two saves (#1990, decisions 180 and 181): every document the graph
+/// holds as drawn, at its depth, with the documents its volume and date clusters stand for and those in
+/// volumes not downloaded, within a brushed range where one is brushed, and without its page nodes; and
+/// the words each save says it in.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+@Suite("What the cross-reference graph saves (#1990)")
+@MainActor
+struct CrossReferenceGraphCaptureTests {
+
+    private static let english = Locale(identifier: "en_US")
+
+    private func meta(_ key: String, number: String? = nil, date: String? = nil) -> CrossReferenceNodeMetadata {
+        let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
+        return CrossReferenceNodeMetadata(documentId: parts[1], volumeId: parts[0], documentNumber: number,
+                                          header: "Head \(key)", dateline: nil, dateISO: date)
+    }
+
+    private func edge(_ source: String, _ target: String) -> CrossReferenceEdge {
+        let s = source.split(separator: "/", maxSplits: 1).map(String.init)
+        let t = target.split(separator: "/", maxSplits: 1).map(String.init)
+        return CrossReferenceEdge(sourceDocumentId: s[1], sourceVolumeId: s[0],
+                                  targetDocumentId: t[1], targetVolumeId: t[0],
+                                  context: nil, referenceType: .footnote)
+    }
+
+    /// A graph loaded at three hops: the central document, two citing it, a document and a page it
+    /// cites, and one three hops out, undated, in a volume the device lacks.
+    private func threeHopGraph() -> CrossReferenceGraph {
+        let keys: [(key: String, number: String?, date: String?)] = [
+            ("v1/d0", "0", "1962-07-25"), ("v2/d1", "1", "1962-08-01"), ("v2/d2", "2", "1963-01-10"),
+            ("v3/d3", "3", "1961-05-02"), ("v3/pg_12", nil, "1961-06-01"), ("v4/d4", "4", nil)]
+        var metadata: [String: CrossReferenceNodeMetadata] = [:]
+        for (key, number, date) in keys { metadata[key] = meta(key, number: number, date: date) }
+        return CrossReferenceGraph(
+            centralDocumentId: "d0", centralVolumeId: "v1",
+            inboundEdges: [edge("v2/d1", "v1/d0"), edge("v2/d2", "v1/d0")],
+            outboundEdges: [edge("v1/d0", "v3/d3"), edge("v1/d0", "v3/pg_12")],
+            hasUndownloadedSources: false, nodeMetadata: metadata,
+            extendedEdges: [edge("v4/d4", "v2/d1")], fetchedDegree: 3)
+    }
+
+    /// The archival nodes the graph draws for its documents: a unit and a class for v2/d1, the same
+    /// unit for v4/d4, and a unit for a document the graph does not hold.
+    private func units() -> [String: [DisplayNode]] {
+        func unit(_ document: String, _ record: String) -> DisplayNode {
+            DisplayNode(id: "unit/\(document)/\(record)", kind: .unit(collectionId: record, name: record),
+                        metadata: nil, isDownloaded: true)
+        }
+        return ["v2/d1": [unit("v2/d1", "lot:60D627"),
+                          DisplayNode(id: "class/v2/d1/611.61", kind: .centralFileClass(key: "611.61", gloss: nil),
+                                      metadata: nil, isDownloaded: true)],
+                "v4/d4": [unit("v4/d4", "lot:60D627")],
+                "v9/dElsewhere": [unit("v9/dElsewhere", "lot:X")]]
+    }
+
+    /// The graph's nodes and edges as the view model builds them, with their archival nodes attached.
+    private func built(_ graph: CrossReferenceGraph, expanded: Set<String> = [],
+                       units: [String: [DisplayNode]] = [:]) -> (nodes: [DisplayNode], edges: [DisplayEdge]) {
+        let display = CrossReferenceGraphDisplay.buildDisplayNodesAndEdges(
+            graph: graph, centralKey: "\(graph.centralVolumeId)/\(graph.centralDocumentId)",
+            expandedClusterKeys: expanded, downloadedVolumeIds: ["v1", "v2", "v3"])
+        return CrossReferenceGraphDisplay.attachingUnits(units, to: display.nodes, edges: display.edges)
+    }
+
+    private func capture(_ graph: CrossReferenceGraph, expanded: Set<String> = [],
+                         units: [String: [DisplayNode]] = [:],
+                         window: ClosedRange<TimeInterval>? = nil) -> CrossReferenceGraphCapture {
+        let (nodes, edges) = built(graph, expanded: expanded, units: units)
+        return CrossReferenceGraphDisplay.capture(
+            nodes: nodes, edges: edges, graph: graph,
+            dateValues: CrossReferenceGraphDisplay.buildDateValues(for: nodes), dateWindow: window)
+    }
+
+    private func day(_ iso: String) -> TimeInterval {
+        CrossReferenceGraphDisplay.date(fromISO: iso, calendar: Calendar(identifier: .gregorian))!
+            .timeIntervalSinceReferenceDate
+    }
+
+    @Test("Both saves take every document drawn, nearest first, and leave out its page nodes")
+    func takesTheDocumentsDrawn() {
+        let taken = capture(threeHopGraph(), units: units())
+        #expect(taken.documentKeys == ["v1/d0", "v2/d1", "v2/d2", "v3/d3", "v4/d4"], """
+            The central document, the two citing it, the one it cites and the one three hops out, in the \
+            graph's order: \(taken.documentKeys)
+            """)
+        #expect(taken.pageCount == 1, "v3/pg_12 is a page node, which opens nothing and is no document")
+        #expect(taken.depth == 3)
+        #expect(taken.dateWindow == nil)
+        #expect(taken.seeds.map { "\($0.volumeId)/\($0.documentId)" } == taken.documentKeys)
+    }
+
+    @Test("A volume in no download is held as the graph draws it")
+    func takesDocumentsInVolumesNotDownloaded() throws {
+        let graph = threeHopGraph()
+        let (nodes, _) = built(graph)
+        let undownloaded = try #require(nodes.first { $0.id == "v4/d4" })
+        #expect(!undownloaded.isDownloaded, "precondition: v4 is not downloaded")
+        #expect(capture(graph).documentKeys.contains("v4/d4"))
+    }
+
+    @Test("The archival nodes are reported by the documents they hang off, each record and class once")
+    func reportsTheArchivalNodes() {
+        let taken = capture(threeHopGraph(), units: units())
+        #expect(taken.documentsWithArchivalNodes == ["v2/d1", "v4/d4"])
+        #expect(taken.unitIds == ["lot:60D627"], "two nodes, one record: \(taken.unitIds)")
+        #expect(taken.classKeys == ["611.61"])
+        #expect(!taken.documentKeys.contains { $0.hasPrefix("unit/") || $0.hasPrefix("class/") },
+                "an archival node is not a document, and neither save takes one")
+    }
+
+    @Test("A volume cluster's documents are taken, and the set is the same with every cluster open")
+    func takesAVolumeClustersDocuments() {
+        // 25 + 10 direct references is over the display's threshold of 30, so each volume clusters.
+        let graph = makeTestGraph(inboundCount: 25, outboundCount: 10,
+                                  inboundVolumeIds: ["volA", "volB"], outboundVolumeIds: ["volC"])
+        let (nodes, _) = built(graph)
+        #expect(nodes.contains { $0.isCluster }, "precondition: the graph draws volume clusters")
+        let closed = capture(graph)
+        let open = capture(graph, expanded: ["cluster/inbound/volA", "cluster/inbound/volB",
+                                             "cluster/outbound/volC"])
+        #expect(closed.documentCount == 36, "the central document and its 35 references: \(closed.documentCount)")
+        #expect(Set(closed.documentKeys) == Set(open.documentKeys))
+        #expect(closed.documentKeys.first == "vol1/d0")
+    }
+
+    @Test("A page a closed cluster stands for is left out and counted")
+    func leavesOutAPageInAClosedCluster() {
+        var edges = (0..<31).map { edge("w\($0 % 2)/d\($0)", "v1/d0") }
+        edges.append(edge("w0/pg_9", "v1/d0"))
+        var metadata = ["v1/d0": meta("v1/d0", number: "0")]
+        for e in edges { metadata["\(e.sourceVolumeId)/\(e.sourceDocumentId)"] = meta("\(e.sourceVolumeId)/\(e.sourceDocumentId)") }
+        let graph = CrossReferenceGraph(centralDocumentId: "d0", centralVolumeId: "v1", inboundEdges: edges,
+                                        outboundEdges: [], hasUndownloadedSources: false, nodeMetadata: metadata)
+        let taken = capture(graph)
+        #expect(taken.pageCount == 1)
+        #expect(taken.documentCount == 32)
+        #expect(!taken.documentKeys.contains("w0/pg_9"))
+    }
+
+    @Test("A brushed range leaves out the documents dated outside it and keeps the undated ones")
+    func holdsToABrushedRange() {
+        // 1962-06-01 to 1962-12-31: the central document and v2/d1, not v2/d2 (1963) or v3/d3 (1961).
+        let window = day("1962-06-01")...day("1962-12-31")
+        let taken = capture(threeHopGraph(), units: units(), window: window)
+        #expect(taken.documentKeys == ["v1/d0", "v2/d1", "v4/d4"], """
+            v4/d4 has no date, so the timeline parks it in its Undated column, drawn: \(taken.documentKeys)
+            """)
+        #expect(taken.pageCount == 0, "the page is dated June 1961, outside the range, so it is not drawn")
+        #expect(taken.dateWindow == window)
+    }
+
+    @Test("A brushed range holds a volume cluster's documents to their own dates")
+    func holdsAClustersDocumentsToTheRange() {
+        var edges: [CrossReferenceEdge] = []
+        var metadata = ["v1/d0": meta("v1/d0", number: "0", date: "1962-07-25")]
+        for index in 0..<31 {
+            let key = "w/d\(index)"
+            edges.append(edge(key, "v1/d0"))
+            // Documents d0 to d9 dated 1962, the rest 1950.
+            metadata[key] = meta(key, number: "\(index)", date: index < 10 ? "1962-09-0\(index % 9 + 1)" : "1950-01-02")
+        }
+        let graph = CrossReferenceGraph(centralDocumentId: "d0", centralVolumeId: "v1", inboundEdges: edges,
+                                        outboundEdges: [], hasUndownloadedSources: false, nodeMetadata: metadata)
+        let window = day("1962-01-01")...day("1962-12-31")
+        let closed = capture(graph, window: window)
+        let open = capture(graph, expanded: ["cluster/inbound/w"], window: window)
+        #expect(closed.documentCount == 11, "the central document and the ten dated in 1962: \(closed.documentCount)")
+        #expect(Set(closed.documentKeys) == Set(open.documentKeys), """
+            The range holds a closed cluster's documents as it holds them with the cluster open, which is \
+            what the timeline draws.
+            """)
+    }
+
+    @Test("A brushed range with no document in it leaves nothing to save, and the saves say so")
+    func saysWhenARangeHoldsNothing() {
+        let metadata = ["v1/d0": meta("v1/d0", number: "0", date: "1962-07-25"),
+                        "v2/d1": meta("v2/d1", number: "1", date: "1962-08-01")]
+        let graph = CrossReferenceGraph(centralDocumentId: "d0", centralVolumeId: "v1",
+                                        inboundEdges: [edge("v2/d1", "v1/d0")], outboundEdges: [],
+                                        hasUndownloadedSources: false, nodeMetadata: metadata)
+        #expect(capture(graph).documentCount == 2)
+        #expect(capture(graph, window: day("1900-01-01")...day("1900-12-31")).documentCount == 0)
+        #expect(CrossReferenceGraphCapture.nothingToSave
+                == "The graph holds no document within the brushed dates, so there is nothing to save.")
+    }
+
+    @Test("A unit whose document the brushed range leaves out is not reported")
+    func leavesOutTheUnitsOfDocumentsOutsideTheRange() {
+        let window = day("1963-01-01")...day("1963-12-31")
+        let taken = capture(threeHopGraph(), units: units(), window: window)
+        #expect(taken.documentKeys == ["v2/d2", "v4/d4"])
+        #expect(taken.documentsWithArchivalNodes == ["v4/d4"])
+        #expect(taken.unitIds == ["lot:60D627"])
+        #expect(taken.classKeys.isEmpty, "the class hangs off v2/d1, which the range leaves out")
+    }
+
+    @Test("A timeline's date cluster is read through its members")
+    func readsADateClustersMembers() {
+        let graph = threeHopGraph()
+        let (nodes, edges) = built(graph)
+        let folded = ["v2/d1", "v2/d2", "v3/pg_12"]
+        let displayed = nodes.filter { !folded.contains($0.id) } + [
+            DisplayNode(id: "datecluster/v2/d1", kind: .dateCluster(label: "1962", count: 3, memberKeys: folded),
+                        metadata: nil, isDownloaded: true)]
+        let taken = CrossReferenceGraphDisplay.capture(
+            nodes: displayed, edges: edges, graph: graph,
+            dateValues: CrossReferenceGraphDisplay.buildDateValues(for: nodes), dateWindow: nil)
+        #expect(Set(taken.documentKeys) == Set(capture(graph).documentKeys))
+        #expect(taken.pageCount == 1)
+    }
+
+    @Test("A working corpus keeps the first 7,500 documents and says so before the save")
+    func boundsAWorkingCorpusAndSaysSo() {
+        let keys = (0..<7_501).map { "v/d\($0)" }
+        let capture = WorkingCorpusCapture(name: "N", keys: keys + ["v/d0"], sourceDescription: "Source")
+        #expect(capture.documentKeys == Array(keys.prefix(7_500)))
+        #expect(capture.total == 7_501, "a key given twice counts once")
+        #expect(capture.isTruncated)
+        #expect(capture.truncationLine(locale: Self.english) == "Saving the first 7,500 of 7,501.")
+        let whole = WorkingCorpusCapture(name: "N", keys: ["v/d1", "w/d2"], sourceDescription: "Source")
+        #expect(!whole.isTruncated)
+        #expect(whole.truncationLine(locale: Self.english) == nil)
+        let coverage = WorkingCorpusResolver(indexedVolumeIds: ["v"]).resolve(documentKeys: whole.documentKeys)
+        #expect(whole.statement(coverage: coverage, notes: ["A note."], locale: Self.english)
+                == "Source.\n1 of 2 documents indexed on this device.\nA note.")
+    }
+
+    @Test("The working corpus is named for the graph's document with the capture's stamp")
+    func namesTheWorkingCorpus() {
+        let label = CrossReferenceGraphCapture.documentLabel(volumeId: "frus1952-54v02p1", documentId: "d16",
+                                                             documentNumber: "16")
+        #expect(label == "frus1952-54v02p1, Doc. 16")
+        #expect(CrossReferenceGraphCapture.documentLabel(volumeId: "v", documentId: "ch4", documentNumber: nil)
+                == "v, ch4")
+        let taken = capture(threeHopGraph())
+        let corpus = taken.workingCorpus(documentLabel: label, stamp: "Nov 27, 2026 at 10:41 AM")
+        #expect(corpus.name == "Cross-references of frus1952-54v02p1, Doc. 16 — Nov 27, 2026 at 10:41 AM")
+        #expect(corpus.sourceDescription == "Cross-reference graph of frus1952-54v02p1, Doc. 16, at three hops")
+        #expect(corpus.documentKeys == taken.documentKeys)
+        #expect(!corpus.isTruncated)
+        #expect(CrossReferenceGraphCapture.visitName(documentLabel: label) == "Cross-references of frus1952-54v02p1, Doc. 16")
+    }
+
+    @Test("A brushed range is named in the description, which is enough to draw the set again")
+    func namesTheBrushedRange() throws {
+        let window = day("1962-06-01")...day("1962-12-31")
+        let taken = capture(threeHopGraph(), window: window)
+        let phrase = try #require(taken.dateWindowPhrase)
+        #expect(phrase.contains("1962"))
+        #expect(taken.sourceDescription(documentLabel: "v1, Doc. 0")
+                == "Cross-reference graph of v1, Doc. 0, at three hops, dated \(phrase)")
+        let one = CrossReferenceGraphCapture(documentKeys: [], pageCount: 0, documentsWithArchivalNodes: [],
+                                             unitIds: [], classKeys: [], depth: 1, dateWindow: nil)
+        #expect(one.depthPhrase == "one hop")
+        #expect(one.dateWindowPhrase == nil)
+    }
+
+    @Test("The page nodes left out are said before the save, in the singular for one")
+    func saysWhatThePagesAre() {
+        func pages(_ count: Int) -> CrossReferenceGraphCapture {
+            CrossReferenceGraphCapture(documentKeys: ["v/d1"], pageCount: count, documentsWithArchivalNodes: [],
+                                       unitIds: [], classKeys: [], depth: 3, dateWindow: nil)
+        }
+        #expect(pages(0).pagesNote(locale: Self.english) == nil)
+        #expect(pages(1).pagesNote(locale: Self.english)
+                == "The graph’s 1 cited page is not a document and is left out.")
+        #expect(pages(1_204).pagesNote(locale: Self.english)
+                == "The graph’s 1,204 cited pages are not documents and are left out.")
+    }
+
+    @Test("The visit's line says where its documents come from, what they give a visit, and what it leaves out")
+    func saysWhatAVisitLists() {
+        let taken = CrossReferenceGraphCapture(
+            documentKeys: ["v/d1", "v/d2", "w/d3"], pageCount: 0, documentsWithArchivalNodes: ["v/d1"],
+            unitIds: ["lot:A"], classKeys: ["611.61", "711.5611"], depth: 2, dateWindow: nil)
+        let label = "v, Doc. 1"
+        let source: String = "from the cross-reference graph of v, Doc. 1, at two hops."
+        let classes: String = " A footnote’s central-file class is a target only where a document’s own source note names it: "
+        #expect(taken.visitBasis(documentLabel: label, preview: nil, locale: Self.english) == source)
+        let whole = CrossReferenceGraphVisitPreview(targetCount: 12, classesListed: 1, indexedSeedCount: 3)
+        let wholeLine: String = source + " On this device a visit of these documents lists 12 targets."
+            + classes + "1 of the graph’s 2 classes."
+        #expect(taken.visitBasis(documentLabel: label, preview: whole, locale: Self.english) == wholeLine)
+        let partial = CrossReferenceGraphVisitPreview(targetCount: 1, classesListed: 0, indexedSeedCount: 2)
+        let oneClass = CrossReferenceGraphCapture(
+            documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
+            classKeys: ["611.61"], depth: 2, dateWindow: nil)
+        let partialLine: String = source
+            + " On this device a visit of these documents lists 1 target, from the 2 documents indexed here."
+            + classes + "0 of the graph’s 1 class."
+        #expect(oneClass.visitBasis(documentLabel: label, preview: partial, locale: Self.english) == partialLine)
+        let noClasses = CrossReferenceGraphCapture(
+            documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
+            classKeys: [], depth: 2, dateWindow: nil)
+        let noClassesLine: String = source + " On this device a visit of these documents lists 12 targets."
+        #expect(noClasses.visitBasis(documentLabel: label, preview: whole, locale: Self.english) == noClassesLine)
+        #expect(CrossReferenceGraphCapture.visitOutcome(documentCount: 1, planName: "P", locale: Self.english)
+                == "Added 1 document to “P”")
+        #expect(CrossReferenceGraphCapture.visitOutcome(documentCount: 1_204, planName: "P", locale: Self.english)
+                == "Added 1,204 documents to “P”")
+        #expect(WorkingCorpusCapture.outcome(savedName: "N") == "Saved as the working corpus “N”")
+        #expect(WorkingCorpusCapture.outcome(savedName: nil) == "The working corpus could not be saved.")
+    }
+
+    /// The preview reads the packet the documents derive: a footnote's class is no target, and a class a
+    /// document's own source note names is one (#784's scope, `ExternalCitation.anchorsOutsideThePacket`).
+    @Test("The visit's preview counts the packet's targets and the graph's classes among them")
+    func previewsTheVisit() async {
+        let classCitation = ExternalCitation(
+            anchor: "centralFileClass", repository: "Department of State", collection: nil, lotFile: nil,
+            lotFileNorm: nil, fileId: nil, inherited: false, rawText: "711.5611/1-1553", noteOrdinal: 1,
+            decimalClass: "711.5611")
+        let otherClass = ExternalCitation(
+            anchor: "centralFileClass", repository: "Department of State", collection: nil, lotFile: nil,
+            lotFileNorm: nil, fileId: nil, inherited: false, rawText: "611.61/2-253", noteOrdinal: 2,
+            decimalClass: "611.61")
+        let lotCitation = ExternalCitation(
+            anchor: "lotFile", repository: "Department of State", collection: nil, lotFile: "60 D 627",
+            lotFileNorm: "60D627", fileId: nil, inherited: false, rawText: "Not printed. (Lot 60 D 627)",
+            noteOrdinal: 3)
+        let stub = GraphVisitStub(
+            sources: [.init(volumeId: "v", documentId: "d1", repository: nil, recordGroup: "59", lotFile: nil,
+                            seriesName: nil, rawText: "Department of State, Central Files, 611.61/1-1553",
+                            citationEra: "decimal")],
+            citations: ["v/d2": [classCitation, otherClass, lotCitation]])
+        let taken = CrossReferenceGraphCapture(
+            documentKeys: ["v/d1", "v/d2", "w/d3"], pageCount: 0, documentsWithArchivalNodes: ["v/d2"],
+            unitIds: ["lot:60D627"], classKeys: ["711.5611", "611.61"], depth: 3, dateWindow: nil)
+        let model = await TripPacketBuilder.build(
+            sourceDocuments: taken.seeds, referenceDocuments: taken.seeds, researchQuestion: nil,
+            dataSource: stub, indexes: TripPacketIndexes())
+        let preview = CrossReferenceGraphVisitPreview(model: model, capture: taken, indexedVolumeIds: ["v"])
+        #expect(Set(model.targets.map(\.key)) == ["class|611.61", "lot|60D627"], """
+            The source note's class and the footnote's lot; neither footnote class: \(model.targets.map(\.key))
+            """)
+        #expect(preview.targetCount == 2)
+        #expect(preview.classesListed == 1, "611.61 is a target, from v/d1's own source note; 711.5611 is not")
+        #expect(preview.indexedSeedCount == 2, "w is not indexed")
+    }
+}
