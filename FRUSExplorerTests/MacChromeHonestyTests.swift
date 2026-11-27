@@ -129,12 +129,11 @@ struct MacChromeHonestyTests {
 
     @Test("the fallback is what keeps the monospaced face")
     func fallbackDrivesTypeface() {
-        // The view branches on this: an id stays monospaced, prose does not. A monospaced
-        // "Soviet Union · 1969-76 v20 · Doc 475" reads as machine output, which is half of what
-        // M-8 objects to in the first place.
-        #expect(MacDocumentTitle.isFallback(volumeLabel: nil))
-        #expect(MacDocumentTitle.isFallback(volumeLabel: ""))
-        #expect(!MacDocumentTitle.isFallback(volumeLabel: "1969-76 v20"))
+        // The view branches on this: an id stays monospaced, prose does not. A monospaced head
+        // reads as machine output, which is half of what M-8 objects to in the first place. Since
+        // L38 (F2) the centre is the head, so the fallback is a head that is empty.
+        #expect(MacDocumentTitle.isFallback(header: ""))
+        #expect(!MacDocumentTitle.isFallback(header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State"))
     }
 
     @Test("the strip never carries the volume-title boilerplate")
@@ -155,12 +154,43 @@ struct MacChromeHonestyTests {
 
     // MARK: - MAC-1 · the main window's title and centre (L21, #1921)
 
-    @Test("a document window is titled with the document's head, and with its id when it has none")
-    func windowTitleIsTheHead() {
-        #expect(MacDocumentTitle.windowTitle(
-            header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
-            documentId: "d475") == "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
-        #expect(MacDocumentTitle.windowTitle(header: "", documentId: "d475") == "d475")
+    /// F2 (L38, decision 213): the title is where the document is, the centre what it is. L21's
+    /// test here held the title to the head; the owner chose this layout over it after R6 found the
+    /// head cut in almost every window (at 1,200 pt, "The Chargé in the Soviet Union (Kenn…").
+    @Test("a document window is titled with its volume's tag and its number, and its centre is the head (F2)")
+    func windowTitleIsTheVolumeAndNumber() {
+        #expect(MacDocumentTitle.windowTitle(volumeTag: "1946 v6", documentNumber: "475", documentId: "d475")
+                == "1946 v6 · Doc 475")
+        // A document the volume prints without a number, as the centre named it until L38.
+        #expect(MacDocumentTitle.windowTitle(volumeTag: "1945 Berlin v02",
+                                             documentNumber: "[Unnumbered document following Document 710 (#1)]",
+                                             documentId: "d710a-1")
+                == "1945 Berlin v02 · Unnumbered (d710a-1)")
+        // One with no number of its own adds its id, so two on one volume read apart.
+        #expect(MacDocumentTitle.windowTitle(volumeTag: "1946 v6", documentNumber: nil, documentId: "persons")
+                == "1946 v6 · persons")
+        #expect(MacDocumentTitle.windowTitle(volumeTag: "1946 v6", documentNumber: "", documentId: "terms")
+                == "1946 v6 · terms")
+        // A volume the manifest does not hold leaves the id alone.
+        #expect(MacDocumentTitle.windowTitle(volumeTag: nil, documentNumber: "475", documentId: "d475") == "d475")
+        // The centre: the head, or the id when there is none.
+        #expect(MacDocumentTitle.headTitle(header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+                                           documentId: "d475")
+                == "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        #expect(MacDocumentTitle.headTitle(header: "", documentId: "d475") == "d475")
+    }
+
+    /// The entry's form, as both windows call it: the tag from the bundled manifest, and the number
+    /// from the id when the entry carries none, as Research's rows open documents.
+    @Test("an entry opened from Research is titled with its volume's tag and the number its id spells (F2)")
+    @MainActor
+    func windowTitleForAnEntry() throws {
+        let volume = try #require(ManifestStore().entry(forVolumeId: "frus1946v06"),
+                                  "the bundled manifest has no frus1946v06")
+        let entry = DocumentBrowserEntry(documentId: "d475", volumeId: "frus1946v06",
+                                         header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        #expect(MacDocumentTitle.windowTitle(for: entry, volume: volume) == "1946 v6 · Doc 475")
+        #expect(MacDocumentTitle.windowTitle(for: entry, volume: nil) == "d475")
     }
 
     @Test("the centre names the number the entry carries, or the one its id spells")
@@ -185,9 +215,9 @@ struct MacChromeHonestyTests {
         #expect(labels == ["1946 v6 · Doc 474", "1946 v6 · Doc 475", "1946 v6 · Doc 476"])
     }
 
-    /// The source gate for MAC-1 (#1921): the main window titles itself with the open document's
-    /// head and draws the standalone window's centre, by the same rule and the same view as the
-    /// standalone window.
+    /// The source gate for MAC-1 (#1921): the main window titles itself by the open document and
+    /// draws the standalone window's centre, by the same rule and the same view as the standalone
+    /// window. Since L38 (F2) the rule's title is the volume and number, and the centre the head.
     ///
     /// Before L21 the main window set no `.navigationTitle`, so every main window read "FRUS
     /// Explorer" in the Window menu, and its centre was `Text(entry.id)`, the raw
@@ -205,7 +235,7 @@ struct MacChromeHonestyTests {
                                  "MainWindowView has no windowTitle")
         let titleBody = try #require(NaturalLanguageReadinessScanTests.braceBody(in: main, after: title.upperBound))
         #expect(flat(String(main[titleBody])).contains(
-            "return MacDocumentTitle.windowTitle(header: entry.header, documentId: entry.documentId)"),
+            "return MacDocumentTitle.windowTitle(for: entry, volume: appState.manifestStore.entry(forVolumeId: entry.volumeId))"),
                 "the main window's title does not follow the standalone window's rule: \(main[titleBody])")
 
         // Its centre: the shared view, capped by the width budget; never the raw id again.
@@ -219,7 +249,7 @@ struct MacChromeHonestyTests {
 
         // The standalone window takes the same two.
         #expect(flat(standalone).contains(
-            ".navigationTitle(MacDocumentTitle.windowTitle(header: currentEntry.header, documentId: currentEntry.documentId))"),
+            ".navigationTitle(MacDocumentTitle.windowTitle(for: currentEntry, volume: appState.manifestStore.entry(forVolumeId: currentEntry.volumeId)))"),
                 "the standalone window's title no longer goes through MacDocumentTitle.windowTitle")
         #expect(flat(standalone).contains(
             "ToolbarItem(placement: .principal) { MacDocumentPrincipalTitle(entry: currentEntry) }"),
