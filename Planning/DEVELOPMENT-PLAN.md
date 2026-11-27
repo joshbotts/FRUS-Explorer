@@ -5023,3 +5023,33 @@ Row L34 of the plan of record from 2026-11-25 (the Collections design's lane 2 a
 **By hand, owed:** the owner's 52-document collection as a PDF, a Word file and a web page; J16's eight telegrams (`frus1946v06` d470, 473–477, 480, 486) under *Full text as printed*, by headings and landmarks with VoiceOver in Safari and in Word's Navigation pane.
 
 **The landing checks,** on the merge `60db0e24` (tree `249a3466`, with `v2` at `9e92080f` taken in), in one `Scripts/heavy.sh` job from 18:01 to 18:25 UTC: `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,324 tests in 615 suites over 39 runs, none failed; the unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set), 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped as at L42, and the one test with the six known issues (L42's 8,401 and this row's 25); no collection pin moved, so none was re-taken; the `FRUSExplorerMac` build, with the two known residues alone; `Scripts/check_repo_hygiene.py`, six checks passed. The merge's kit changes, L30's Citation Lookup, L39's page links and L42's graph capture, print nothing the pins read.
+
+## Session 2026-11-27 — CI fix, a test-only hardening for CI's runner: the selection bridge's wait 5 s to 60 s, the in-app browser's later waits 120 s to 600 s
+
+The orchestrator session ("Development session orchestration") started this one on the owner's "standby" and sent it on 2026-11-27, after C (the unit target on GitHub's runner, the iPhone 17 under iOS 27.0) had failed in four of about fourteen push runs on `v2` that day, each in a different suite and never in A or B, while the Mac's landing runs passed every one of those tests. The question: whether the fourth, run 46022965606 at `8d38c5ab`, was the code, and what the two WebKit suites among the four wait on. On `claude/v2-ci-fix-14b4de` from `v2` at `1778feac`; the fix is `8b515cf4`. It closes no issue.
+
+**#2038's merge**
+- L34 merged as `97c4a8a9`, a squash onto `9e92080f`, at 19:09:41 UTC on 2026-11-27, from its head `a6cb06cb`. Its tree, `5dd23ae7`, is the head's. It closed ten issues (#1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003, #2007); auto-merge was off. This entry records it.
+- L42's #2037 (`9e92080f`) is recorded in L34's entry above, and L39's #2036 (`1778feac`), where this session began, in L42's.
+
+**Run 46022965606: the runner's**
+- One test failed, `ListLabelSelectionTests/aLabelInAFootnotePopoverStillMapsToNothing()`: "the selection bridge posted nothing" after 5.71 s. `OffsetEngineTestHarness.selectionPayload` allowed 5 s, its clock started before the selection script runs.
+- `7ccecacb..8d38c5ab` (L30's #2035) changes Citation Lookup, one document-number query each in `IndexingPipeline` and `SearchService`, and tests and docs: nothing the reader, its scripts, WebKit or the harness reads.
+- Across 14 push runs on `v2`, read from the `unit-test-log` artifact that green runs keep too: the popover test, the only one in its suite that calls `showPopover()` before it selects, was the slowest of its 13-test suite in 8, and took 4.52 s at `24616a57` (run 45957805430, passed), before `8d38c5ab`.
+- On the Mac, through `Scripts/heavy.sh`: the file's 17 suites five times at `7ccecacb` and five times at `8d38c5ab`, a `build-for-testing` at each, on the iPhone 17 under iOS 27.0 by its UDID. All ten passed, 94 tests each; the popover test 1.59–3.37 s and 1.58–4.18 s. These WebKit tests ran slower per test on the Mac than on the runner (median 1.69 s against 0.72 s), so 5 s was tight here too.
+- The next push run, 46032962047 at `1778feac`, passed C.
+
+**Run 46011019732: a stall past the opening page**
+- `InAppBrowserCoordinatorTests.webKitAsksTheCoordinator()` timed out after 120 s waiting for WebKit's second question about `windowOn`, the main-frame load the coordinator starts for a new-window link on the site. The opening page was in after 12.4 s and the first four links were answered within 0.7 s; the page logged nothing from 14:38:52 until the test tore it down at 14:41:39, and the wait recorded its timeout about 48 s past its deadline.
+- Across 13 runs with the test, the five links took 0.9–4.5 s in 11, 66 s in run 45940058418 (passed) and more than 168 s here; both slow ones began in the host's first minute, 14 s and 49 s after its first log line. The `-999` cancel this run logged is in a green run too (45909799163).
+- `AppIntentsLiveEntityService` traps in `XPCPeerRequirement.hasEntitlement` twice in each of the day's four failed runs, in run 45930491832 both times before the test host had started: the ad-hoc-signed runner's, not a stall's trigger.
+
+**What changed** (`8b515cf4`, `FRUSExplorerTests` only)
+- `OffsetEngineTestHarness.selectionPayload` and `selectionCleared` allow 60 s, where they allowed 5; every caller expects a payload, so a pass costs what the bridge takes.
+- `FigureReaderTests`' `select` takes the harness's wait, where it took 20 s of its own for the same failure.
+- `InAppBrowserCoordinatorTests.waitLimit` is 600 s, the opening page's, where it was 120 s.
+- Each doc comment states the runs.
+
+**Not changed:** run 45930491832's `openSettings()` failure is the same class (the editor host's fixed 5 s `settle(until:)` in `CollectionTests`), left out since raising it means reading every caller; the day's two 1,200 s failures are the job's own slowness.
+
+**Checks.** Before the queue, on `1778feac` with the change: `build-for-testing`, the `GeneratedSummary` residue alone; the six suites that call the changed waits, 42 tests in 6 suites passed; `Scripts/check_repo_hygiene.py`, its six checks passed.
