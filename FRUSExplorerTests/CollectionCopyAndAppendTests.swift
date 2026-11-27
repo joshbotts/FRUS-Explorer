@@ -266,3 +266,167 @@ struct SmartCollectionSnapshotInsertTests {
         withExtendedLifetime(container) {}
     }
 }
+
+// MARK: - CollectionAppendBeforeBackMatterTests (#1995)
+
+/// An entry added to a collection used to take one past the highest position, so once a template had placed
+/// a Bibliography at the end, every document, passage, heading and note block added afterwards was listed
+/// and printed after it (#1995). Each append now lands ahead of the run of apparatus blocks that ends the
+/// collection, and leaves room there, so an append from another device that has not seen this one's lands
+/// ahead of them too.
+///
+/// The tests call the append functions the picker, the reader and both editors call, and follow the model
+/// as an open editor does (`CollectionEntryOrdering.reconciled`) where an append came from outside it.
+///
+/// Version history:
+///   1.0 — L29 (#1995): initial implementation
+@Suite("An entry added to a collection lands before its back matter (#1995)", .serialized)
+@MainActor
+struct CollectionAppendBeforeBackMatterTests {
+
+    static let volume = "frus1961-63v11"
+
+    /// A saved collection of `documents` followed by `blocks`, numbered as an editor numbers its outline
+    /// after a template places them, and the outline an open editor holds.
+    static func collection(_ documents: [String], blocks: [CollectionGeneratedBlockType],
+                           in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let collection = Collection(name: "Ends in apparatus")
+        context.insert(collection)
+        var outline: [CollectionEntry] = []
+        CollectionDocumentDiscovery.appendEntries(documents.map { (documentId: $0, volumeId: volume) },
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        for type in blocks {
+            let block = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: 0)
+            block.entryKind = .generated
+            block.generatedBlockType = type.rawValue
+            block.collection = collection
+            context.insert(block)
+            switch type.defaultPosition {
+            case .frontMatter: outline.insert(block, at: 0)
+            case .backMatter: outline.append(block)
+            }
+        }
+        CollectionEntryOrdering.renumber(outline, in: collection)
+        try context.save()
+        return (collection, outline)
+    }
+
+    /// What an entry reads as in the order: its block type, its document, or its kind and text.
+    static func label(_ entry: CollectionEntry) -> String {
+        switch entry.entryKind {
+        case .generated: return entry.generatedBlockType ?? "?"
+        case .document: return entry.documentId
+        default: return "\(entry.kind):\(entry.text ?? "")"
+        }
+    }
+
+    static func capture(_ documentId: String) -> CollectionExcerptCapture {
+        CollectionExcerptCapture(text: "A passage.", volumeId: volume, documentId: documentId, start: 0, end: 10,
+                                 renderingVersion: nil, colorTag: nil)
+    }
+
+    @Test("A document, a heading, a note block and a passage added to a collection that ends in two blocks are each ahead of both, in the order added")
+    func appendsLandAheadOfTheBackMatter() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.collection(["d1", "d2"], blocks: [.bibliography, .personsIndex],
+                                                       in: context)
+        var outline = opened
+
+        // From the reader, with the editor open: the editor follows the model.
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d3", volumeId: Self.volume,
+                                                       collection: collection, modelContext: context)
+        outline = CollectionEntryOrdering.reconciled(outline, with: collection) ?? outline
+        // From the editor: a heading and a note block, each numbered after as the editors do.
+        for kind in [CollectionEntryKind.heading, .prose] {
+            let block = try #require(CollectionEntryOrdering.appendBlock(kind: kind, to: collection,
+                                                                         outline: &outline, modelContext: context))
+            block.text = kind == .heading ? "Part II" : "A note"
+            CollectionEntryOrdering.renumber(outline, in: collection)
+        }
+        // A passage from the reader, then the editor's Add Documents.
+        CollectionExcerpts.appendToCollection(Self.capture("d1"), collection: collection, modelContext: context)
+        outline = CollectionEntryOrdering.reconciled(outline, with: collection) ?? outline
+        CollectionDocumentDiscovery.appendEntries([(documentId: "d4", volumeId: Self.volume)],
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        try context.save()
+
+        let expected = ["d1", "d2", "d3", "heading:Part II", "prose:A note", "excerpt:A passage.", "d4",
+                        "bibliography", "personsIndex"]
+        #expect(CollectionEntryOrdering.modelOrder(of: collection).map(Self.label) == expected)
+        #expect(outline.map(Self.label) == expected, "the editor's outline does not list what the model holds")
+        let positions = (collection.documentEntries ?? []).map(\.sortOrder)
+        #expect(Set(positions).count == positions.count, "two entries share a position: \(positions.sorted())")
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("A Chronology a template put at the head stays ahead: a document added goes after it, before the back matter")
+    func frontMatterStaysAhead() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, _) = try Self.collection([], blocks: [.chronology, .bibliography], in: context)
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d1", volumeId: Self.volume,
+                                                       collection: collection, modelContext: context)
+        try context.save()
+        #expect(CollectionEntryOrdering.modelOrder(of: collection).map(Self.label)
+                == ["chronology", "d1", "bibliography"])
+
+        // A collection whose last entry is not a block takes an append at its end, as before.
+        let (plain, _) = try Self.collection(["d1"], blocks: [.chronology], in: context)
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d2", volumeId: Self.volume,
+                                                       collection: plain, modelContext: context)
+        #expect(CollectionEntryOrdering.modelOrder(of: plain).map(Self.label) == ["chronology", "d1", "d2"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// Two devices that append to one collection before either has synced: each writes its own entries, and a
+    /// block's position is whichever device's write CloudKit keeps (last writer wins, per record). Each device's
+    /// store here is a container of its own holding the same records, and the merge is taken both ways.
+    @Test("Two appends from two devices that have not seen each other still end ahead of the blocks")
+    func twoDevicesAppendAheadOfTheBlocks() throws {
+        let collectionId = UUID()
+        let ids = (0..<4).map { _ in UUID() }
+        func device() throws -> (ModelContainer, Collection) {
+            let container = try ModelContainer.makeTestContainer()
+            let context = container.mainContext
+            let collection = Collection(name: "Shared")
+            collection.id = collectionId
+            context.insert(collection)
+            for (index, label) in ["d1", "d2", "bibliography", "personsIndex"].enumerated() {
+                let isBlock = index >= 2
+                let entry = CollectionEntry(collectionId: collectionId, documentId: isBlock ? "" : label,
+                                            volumeId: isBlock ? "" : Self.volume, sortOrder: index)
+                entry.id = ids[index]
+                if isBlock {
+                    entry.entryKind = .generated
+                    entry.generatedBlockType = label
+                }
+                entry.collection = collection
+                context.insert(entry)
+            }
+            try context.save()
+            return (container, collection)
+        }
+        let (containerA, onA) = try device()
+        let (containerB, onB) = try device()
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d3", volumeId: Self.volume,
+                                                       collection: onA, modelContext: containerA.mainContext)
+        try CollectionDocumentDiscovery.appendDocuments(
+            ["d4", "d5", "d6"].map { CollectionDocumentRef(volumeId: Self.volume, documentId: $0) },
+            to: onB, modelContext: containerB.mainContext)
+        try containerA.mainContext.save()
+
+        let a = Dictionary(uniqueKeysWithValues: (onA.documentEntries ?? []).map { ($0.id, $0) })
+        let b = Dictionary(uniqueKeysWithValues: (onB.documentEntries ?? []).map { ($0.id, $0) })
+        let added = a.values.filter { !ids.contains($0.id) } + b.values.filter { !ids.contains($0.id) }
+        #expect(added.map(\.documentId).sorted() == ["d3", "d4", "d5", "d6"])
+        for blockKeptFrom in [a, b] {
+            let blocks = ids[2...].map { blockKeptFrom[$0]!.sortOrder }
+            let late = added.filter { entry in blocks.contains { $0 <= entry.sortOrder } }.map(\.documentId)
+            #expect(late.isEmpty, "\(late) sit at or after a block at \(blocks): added \(added.map { ($0.documentId, $0.sortOrder) })")
+        }
+        withExtendedLifetime((containerA, containerB)) {}
+    }
+}

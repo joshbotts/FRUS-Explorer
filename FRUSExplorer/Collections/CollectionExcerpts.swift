@@ -129,11 +129,11 @@ enum CollectionExcerpts {
         return entry
     }
 
-    /// Appends excerpt entries for `captures` at the end of `sortedEntries` in the
-    /// given order, inserting each into `modelContext` — the excerpt sibling of
-    /// `CollectionDocumentDiscovery.appendEntries`, sharing its end-of-list semantics and its
-    /// first position, `CollectionEntryOrdering.nextSortOrder` (#1416; it was the outline's
-    /// count, which an excerpt added elsewhere while the editor was open had already taken).
+    /// Appends excerpt entries for `captures` to `sortedEntries` in the given order, ahead of the
+    /// collection's back matter (#1995), inserting each into `modelContext` — the excerpt sibling of
+    /// `CollectionDocumentDiscovery.appendEntries`, sharing its placement and its first position,
+    /// `CollectionEntryOrdering.nextSortOrder` (#1416; it was the outline's count, which an excerpt
+    /// added elsewhere while the editor was open had already taken).
     ///
     /// A smart collection takes none (`SmartCollectionRule`, #1619): its exports are built from its
     /// saved search and leave hand-added passages out. Both editors disable Add Highlighted
@@ -156,21 +156,23 @@ enum CollectionExcerpts {
         guard SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId) else {
             return false
         }
-        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
+        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries,
+                                                         count: captures.count)
         for capture in captures {
             let entry = makeEntry(from: capture, collectionId: collection.id, sortOrder: next)
             entry.collection = collection
             modelContext.insert(entry)
-            sortedEntries.append(entry)
+            CollectionEntryOrdering.insertAppended(entry, into: &sortedEntries)
             next += 1
         }
         return true
     }
 
-    /// Appends a single excerpt entry at the end of a collection **without** a
-    /// pane-level entries array — the path used by the document-view picker and the
-    /// entry inspector, which mutate the collection directly. The new entry's
-    /// `sortOrder` is `max + 1`, so no existing entry is renumbered.
+    /// Appends a single excerpt entry to a collection **without** a pane-level entries
+    /// array — the path used by the document-view picker and the entry inspector, which
+    /// mutate the collection directly. Its position is `CollectionEntryOrdering.nextSortOrder`,
+    /// after everything but the collection's back matter (#1995), so no entry ahead of it is
+    /// renumbered.
     ///
     /// - Parameters:
     ///   - capture: The excerpt capture to append.

@@ -221,20 +221,32 @@ enum CollectionEntryData {
 /// - the editor renumbered only the entries it held, `0..<n`, which could hand one of them the other entry's position
 ///   again.
 ///
-/// So every append takes ``nextSortOrder(in:outline:)``, the open editors seed their outline from
+/// So every append takes ``nextSortOrder(in:outline:count:)``, the open editors seed their outline from
 /// ``modelOrder(of:outline:)`` and follow the model through `CollectionEntriesModelSync` and ``reconciled(_:with:)``,
 /// and every other change they make — a reorder, a delete, Sort by Date, an added heading, note or apparatus block —
 /// numbers through ``renumber(_:in:)``. An appended document or excerpt renumbers nothing.
 ///
-/// **What it cannot promise.** ``nextSortOrder(in:outline:)`` reads one context's view of the model, so it keeps apart
-/// the appends one device sees. Two devices that append to the same collection before either has synced both take the
-/// same `max + 1`; after the import the follow shows the pair by id at their shared position, and nothing renumbers
-/// them until an editor's next reorder, delete, sort or block insert. So do positions already shared in stored data.
+/// **Ahead of the back matter (#1995).** A new entry goes after everything in the collection but its back matter, the
+/// run of apparatus blocks it ends with (``backMatter(of:)``), such as the Bibliography a template puts at the end:
+/// before #1995 every append took one past the highest position, so a document, passage, heading or note block added
+/// to such a collection was listed and printed after its Bibliography. Where the back matter leaves no room, the append
+/// moves it up, ``backMatterRoom`` positions past what it adds, and an append that finds room moves nothing. An editor's
+/// own appends put the new entry into its outline at the same place (``insertAppended(_:into:)``).
+///
+/// **What it cannot promise.** ``nextSortOrder(in:outline:count:)`` reads one context's view of the model, so it keeps
+/// apart the appends one device sees. Two devices that append to the same collection before either has synced both take
+/// the same first position; after the import the follow shows the pair by id at their shared position, and nothing
+/// renumbers them until an editor's next reorder, delete, sort or block insert. So do positions already shared in stored
+/// data. Each device that moves the back matter up writes it past its own entries by ``backMatterRoom``, so whichever
+/// write a sync keeps, the blocks stay after both devices' entries while neither adds more than that many at once.
 ///
 /// Version history:
 ///   1.0 — #1416: initial implementation
 ///   1.1 — #1619: `appendBlock` adds no heading or note block to a smart collection
 ///   1.2 — #1619, decision 22: `removeEntriesFromBeforeLink`, both editors' Remove These Entries
+///   1.3 — L29 (#1995): an append lands ahead of the collection's back matter (`backMatter(of:)`,
+///          `nextSortOrder(in:outline:count:)`, `backMatterRoom`), and an editor's append goes into its outline there
+///          (`insertAppended(_:into:)`)
 enum CollectionEntryOrdering {
 
     /// The entries `collection` holds that its context has not deleted, in no particular order. An entry deleted from
@@ -246,17 +258,76 @@ enum CollectionEntryOrdering {
         (collection.documentEntries ?? []).filter { !$0.isDeleted }
     }
 
-    /// The position a new entry appended to `collection` takes: one past the highest position held by any entry in the
-    /// model or in `outline`, or `0` when there is none. Never a count — a count collides with an entry another writer
-    /// appended at `max + 1` while the outline was not looking, and with every gap a deletion left.
+    /// The positions an append moves the back matter past what it adds, when it has to move it (#1995): the most
+    /// entries one append adds, the bulk add's limit, so that a device which has not seen another's append still writes
+    /// the back matter above both. A position is only an order, so the gap prints nothing.
+    static let backMatterRoom = CollectionDocumentDiscovery.bulkDocumentLimit
+
+    /// The entries `ordered` (a collection's entries in position order) ends with that an append goes ahead of: its back
+    /// matter (#1995). That is the run of apparatus blocks after its last entry of any other kind. In a collection that
+    /// holds nothing but blocks it is the blocks after those that open it as front matter: a Chronology, which a template
+    /// puts at the head, stays ahead of the documents to come. Empty when the collection ends in another kind of entry.
+    static func backMatter(of ordered: [CollectionEntry]) -> ArraySlice<CollectionEntry> {
+        if let last = ordered.lastIndex(where: { $0.entryKind != .generated }) {
+            return ordered[(last + 1)...]
+        }
+        let leads = ordered.prefix { entry in
+            CollectionGeneratedBlockType(rawValue: entry.generatedBlockType ?? "")?.defaultPosition == .frontMatter
+        }
+        return ordered[leads.endIndex...]
+    }
+
+    /// The position the first of `count` entries appended to `collection` takes, the others following it: one past the
+    /// highest position held by an entry in the model or in `outline` ahead of the collection's back matter
+    /// (``backMatter(of:)``), or `0` when there is none. Never a count — a count collides with an entry another writer
+    /// appended while the outline was not looking, and with every gap a deletion left.
+    ///
+    /// **It makes the room it hands out** (#1995). Where the back matter's first position is not past the `count`
+    /// positions the append takes, the back matter moves up, in its order, to ``backMatterRoom`` positions past them.
+    /// Where there is room it moves nothing. So call it once for an append, with the number of entries the append adds.
     ///
     /// - Parameters:
-    ///   - collection: The collection the entry joins.
+    ///   - collection: The collection the entries join.
     ///   - outline: The appending editor's outline, when there is one; its entries are normally in the model too.
+    ///   - count: How many entries the append adds, in order from the position returned.
     @MainActor
-    static func nextSortOrder(in collection: Collection, outline: [CollectionEntry] = []) -> Int {
-        let highest = ((collection.documentEntries ?? []) + outline).map(\.sortOrder).max()
-        return (highest ?? -1) + 1
+    static func nextSortOrder(in collection: Collection, outline: [CollectionEntry] = [], count: Int = 1) -> Int {
+        let ordered = positionOrder(of: collection, outline: outline)
+        let back = backMatter(of: ordered)
+        let next = (ordered[..<back.startIndex].map(\.sortOrder).max() ?? -1) + 1
+        if let first = back.first, first.sortOrder < next + count {
+            for (offset, block) in back.enumerated() {
+                block.sortOrder = next + count + backMatterRoom + offset
+            }
+        }
+        return next
+    }
+
+    /// `collection`'s live entries and those of `outline` the model does not hold, in position order as
+    /// ``modelOrder(of:outline:)`` orders the live ones.
+    @MainActor
+    private static func positionOrder(of collection: Collection, outline: [CollectionEntry]) -> [CollectionEntry] {
+        let live = modelOrder(of: collection, outline: outline)
+        let held = Set(live.map { ObjectIdentifier($0) })
+        let unheld = outline.filter { !held.contains(ObjectIdentifier($0)) && !$0.isDeleted }
+        guard !unheld.isEmpty else { return live }
+        let listed = Dictionary(outline.enumerated().map { (ObjectIdentifier($1), $0) },
+                                uniquingKeysWith: { first, _ in first })
+        return (live + unheld).sorted { a, b in
+            if a.sortOrder != b.sortOrder { return a.sortOrder < b.sortOrder }
+            switch (listed[ObjectIdentifier(a)], listed[ObjectIdentifier(b)]) {
+            case let (x?, y?): return x < y
+            case (.some, nil): return true
+            case (nil, .some): return false
+            case (nil, nil): return a.id.uuidString < b.id.uuidString
+            }
+        }
+    }
+
+    /// Puts `entry`, just appended, into `outline` where the collection holds it: before the first entry that sits after
+    /// it, which is the back matter when the collection has any (#1995), else at the end.
+    static func insertAppended(_ entry: CollectionEntry, into outline: inout [CollectionEntry]) {
+        outline.insert(entry, at: outline.firstIndex { $0.sortOrder > entry.sortOrder } ?? outline.endIndex)
     }
 
     /// `collection`'s live entries in the order they sit: by position; at a shared position, in the order `outline`
@@ -301,8 +372,8 @@ enum CollectionEntryOrdering {
         for (offset, entry) in unfollowed.enumerated() { entry.sortOrder = outline.count + offset }
     }
 
-    /// Appends an empty section heading or note block (`kind`) to `collection` at ``nextSortOrder(in:outline:)``,
-    /// inserting it into `modelContext` and at the end of `outline` — the structural sibling of
+    /// Appends an empty section heading or note block (`kind`) to `collection` at ``nextSortOrder(in:outline:count:)``,
+    /// inserting it into `modelContext` and into `outline` there, ahead of any back matter — the structural sibling of
     /// `CollectionDocumentDiscovery.appendEntries` and `CollectionExcerpts.append`, called by both editors' Add Section
     /// Heading and Add Note Block. Structural entries carry empty document identifiers and use `text`.
     ///
@@ -321,7 +392,7 @@ enum CollectionEntryOrdering {
         entry.text = ""
         entry.collection = collection
         modelContext.insert(entry)
-        outline.append(entry)
+        insertAppended(entry, into: &outline)
         return entry
     }
 

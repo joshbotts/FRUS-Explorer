@@ -2671,14 +2671,14 @@ Your changes to this note have not been saved.
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
 
 #### This volume is downloaded but not yet indexed. Indexing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 814–815 | key: collection.addDocs.browse.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 817–818 | key: collection.addDocs.browse.notIndexed -->
 
 This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t.
 
 <!-- END SOURCE: collection.addDocs.browse.notIndexed -->
 
 #### Each line is resolved against the FRUS manifest and your…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 963–964 | key: collection.addDocs.citations.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 966–967 | key: collection.addDocs.citations.hint -->
 
 Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work.
 
