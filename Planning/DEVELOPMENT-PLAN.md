@@ -4471,3 +4471,91 @@ The orchestrator session ("Development session orchestration") started this one 
   - **#1989 changes no name:** `duplicate(of:id:now:)` and `duplicate(in:)` keep their signatures.
 
 **Owed after the merge:** the hand-over notes for FRUS Explorer Light on #1989, #1971 and #1973, and #1972's comment, each shown to the owner first; and the memory hub's record of the row.
+
+## Session 2026-11-27 — L42, the cross-reference graph saved: every document it holds as drawn, as a working corpus after a question that says what the save holds, or as the seeds of an Archives Visit through the picker every add flow presents, with a line that says what a visit of them lists; a footnote's central-file class is a target only where a document's own source note names it (#1990)
+
+Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `claude/l42-graph-saves-a7b657` from `v2` at `24616a57`: a commit for each save, then a docs commit. No stored property, so no CloudKit change; no index version.
+
+**The rule, the kit's** (`FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift`, display 1.3)
+- `CrossReferenceGraphDisplay.capture(nodes:edges:graph:dateValues:dateWindow:)` → `CrossReferenceGraphCapture`.
+  - It reads the graph as built (the view model's `baseDisplayNodes`), never the timeline's displayed nodes, whose date clusters fold documents.
+  - It takes every document at the depth loaded, in the display build's order, nearest first. A volume cluster's documents come from the loaded graph's own direct references, in the cluster's place by key; a date cluster gives its members; documents in volumes not downloaded are taken too.
+  - Page nodes are left out and counted. The archival nodes are reported by the saved documents they hang off, by the edge that ties them.
+- **A brushed range.** The view model passes `drawnDateWindow`, the brush while the timeline is drawn and `nil` in the network.
+  - A document dated outside the range is left out, and an undated one stays, as the Undated column draws it.
+  - A closed volume cluster's documents are held to the range by their own dates, so the set is the same whichever clusters are open.
+- **Words:** the central document's label (`frus1952-54v02p1, Doc. 16`, the graph's own `graph.node.docNumber %@`), the depth, the range's two days, the name and description, the cited-pages line, the empty case, the picker's line and the toast.
+- **Tests:** `CrossReferenceGraphCaptureTests`, 16, in the file of the graph's suites, compiled in Xcode and in the package.
+
+**Save as Working Corpus** (`f7cf1b7d`)
+- *Save As ▸ Working Corpus…*, in the graph's toolbar (a named `Label`, R-8) and in a bar under the reference list (`ReferenceListPanel` 1.6), the graph an iPhone opens on.
+- A question first (`View.workingCorpusSave(_:outcome:)`): the description, the coverage line, the line for the 7,500 cut when it applies, and the cited pages left out.
+- **Save** writes the record the Clusters index and the lasso write: the keys, no query, the description, the volumes indexed at capture and both truncation fields.
+  - It is named by rule, `Cross-references of <volume>, Doc. <n> — <stamp>`.
+  - A save that fails takes its corpus out of the context again.
+- Then a toast (`transientToast`), which VoiceOver hears.
+- **The helper L56 uses:** `WorkingCorpusCapture` (kit, `Models/WorkingCorpusResolver.swift`), and the modifier with `WorkingCorpusCapture.save(in:indexedVolumeCount:)` (app, `Search/SaveWorkingCorpusSheet.swift`, beside Search's sheet). Neither file is in the row's list; no other row's list names them.
+
+**Add to Archives Visit** (`1aaf06df`)
+- *Save As ▸ Archives Visit…* opens `PlanPickerSheet`, the picker every add flow presents. It takes the same documents as seeds, both halves on, with the subject as the New row's name, and writes through `ArchiveVisitPlan.addSeeds` (`ArchiveVisitPlanWrites.addingSeeds`).
+- **The line, before the write.** The graph builds the packet the editor would derive from these seeds (`TripPacketBuilder.build`, the editor's `TripPacketDataSource`, `TripPacketIndexes.bundled`), and the line says:
+  - how many targets a visit of them lists on this device, and from how many indexed documents where some are not;
+  - how many of the graph's central-file classes are among them.
+- Then *Added 145 documents to “…”* in the graph's toast.
+
+**What did not hold** (decision 183)
+- The brief's "A visit keys every footnote citation, joined or not", and its by-hand line's "every unit and class the graph drew".
+- The packet's footnote channel leaves the class anchor out (`ExternalCitation.anchorsOutsideThePacket`, #784's scope), and `TripPacketBuilderTests.refsChannelFiltersAndMerges` pins it. So a class the graph draws for a footnote is a target only where a seed's own source note names it.
+- Units hold: every joined citation behind a unit is a target, 104 of 104 for d16.
+- The picker's line says how many of the graph's classes are listed. Whether a visit from the graph should list a footnote's class is the owner's to decide, since it would change the packet for every add flow.
+
+**Measured on a full index at version 76** (L31's harness index; a throwaway package test, deleted after its run, through the kit's store, display build, unit nodes, the rule and the builder)
+- **d16 at three hops:** 247 nodes.
+  - The saves take 145 documents and leave out 21 cited pages.
+  - Its 72 unit nodes stand for 17 records and its 9 class nodes for 8 classes, from 57 of the documents.
+  - A visit lists 49 targets: 43 from source notes, 17 from footnotes, overlapping. 5 of the 8 classes are among them.
+- **At one hop:** 15 nodes, 10 documents and 1 page, with 4 unit nodes.
+- **NSC 68 (`frus1950v01` d85) at three hops:** 1,259 nodes in 13 volume clusters and the rest.
+  - The saves take 844 documents and leave out 98 pages.
+  - A visit lists 253 targets, 36 of the 61 classes among them, and 7 packet-channel citations that join no record and draw no node.
+- **Seeds in the hundreds:**
+  - `addingSeeds` minted 844 seeds in 2.3 ms, and took 1.0 ms to find all 844 already there.
+  - The packet behind the line took 0.35 s for 844 seeds, and 0.80 s for the first build, which decodes the bundled indexes.
+  - A collection's record already adds up to 17,613 seeds through the same write. So the action is offered at every size.
+
+**By hand** (a throwaway XCUITest, appended to `AuxWindowCloseTests.swift` for the run and restored after it)
+- The device: an iPad Pro 13-inch (M5) of the session's own, under iOS 27.0, in landscape and in Full Screen Apps, with S1's volumes and L26's index at version 76. `FRUS_UI_TEST_MODE` kept SwiftData in memory and hid the tips.
+- d16 at three hops, *Working Corpus…* from the toolbar. The question read "Cross-reference graph of frus1952-54v02p1, Doc. 16, at three hops. 145 of 145 documents indexed on this device. The graph’s 21 cited pages are not documents and are left out." Save said "Saved as the working corpus “Cross-references of frus1952-54v02p1, Doc. 16 — Nov 27, 2026 at 5:22 AM”".
+- *Archives Visit…* from the list's bar. The picker's line read "… at three hops. On this device a visit of these documents lists 49 targets. A footnote’s central-file class is a target only where a document’s own source note names it: 5 of the graph’s 8 classes." New Archives Visit said "Added 145 documents to “Cross-references of frus1952-54v02p1, Doc. 16”".
+- The counts are the full-index measure's. The records themselves were not read, since the store was in memory.
+- **No spinner.** XCUI's first look after the item found the picker's line, but that look's own snapshot took 7.6 s, so the walk bounds the wait only under 9 s. The packet behind the line built in 0.35–0.80 s on this Mac, and both Save As controls are disabled while it is read.
+- **The first run failed in Windowed Apps,** a fresh iOS 27.0 simulator's default. The rail's Graph opened in a window of its own over the reader, and XCUI's next query timed out after 60 s on a remote element of the reader's web view. The second run chose Full Screen Apps in Settings first, so the graph opened as a sheet, and went through.
+
+**Review:** one pass on the diff. It found two comments to correct, folded into the visit commit:
+- `GraphSaveMenuItems.actions` had no doc comment.
+- The Mac graph window's scene said nothing under `CrossReference/` reads `@Query` or `\.modelContext`, so its container was latent. The corpus save now writes through the context and the visit picker reads `@Query`, so the comment says the container is live since #1990, and Source Explorer's beside it no longer calls the graph's latent.
+
+**Docs** (the third commit)
+- Both manuals: the graph's sections (iOS §8.6, macOS §8.5) gain *Saving the graph*, with two placeholders each for T3. The working-corpus and Archives Visit sections (§6.1f, §7.9, §14.8, §18.3) name the graph, and §18.3's first step now says the plan resolves each source note and every lot and library a footnote cites, where it said every footnote citation.
+- `Docs/screenshots/README.md` names the four placeholders.
+- EditableContent:
+  - 28 blocks added in `05-Analytics.md` (*Cross-Reference Graph — Save As (#1990)*).
+  - 12 ranged blocks on `CrossReferenceGraphView.swift` re-pointed, each to start on its key: nine in `05-Analytics.md`, three in `08-Reading-Research-Collections.md`.
+  - The README's count, and a bullet in `Amendment-Log.md`.
+- The plan's L42 record, and this entry.
+
+**Checks** (through `Scripts/heavy.sh`)
+- `swift build --target FRUSCoreKit`: no warning.
+- The package's suites for the graph, working corpora, the packet and the plan derivation: 82 tests in 7 suites passed, the new suite among them.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- 17 scoped app suites there: 218 tests passed. They include the 16 new tests, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans, the toolbar, Mac sheet and unconstructed-view audits, and the working-corpus suites.
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- At the head of the queue: LANDING-CHECKS
+
+**Offered, not taken**
+- Two layout findings from the walk, in the plan's §5 under *Found by L42*:
+  - The network's three-column layout for a small graph (`standardLayout`) places no archival node: d16 at one hop draws none of its four units there, where the timeline draws all four.
+  - At three hops the timeline parks d16's 81 archival nodes in its Undated column as a grid that covers the axis from about 1955 to its end, over the dated documents there.
+- #1764's toggle: at three hops the iPad opens the list by itself, so the walk did not try it.
+- The three older saves (Search's sheet, the lasso, the Clusters index) could write through `WorkingCorpusCapture`, as Chronology will (L56).
