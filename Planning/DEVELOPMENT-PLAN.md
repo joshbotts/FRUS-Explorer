@@ -4409,8 +4409,10 @@ The orchestration session started this one for row L61, on `claude/l61-generator
 
 The orchestrator session ("Development session orchestration") started this one for row L33 of the plan of record from 2026-11-25, on `claude/l33-four-kit-fixes-29dffb` from `v2` at `a17023f9`, L27's merge. The row: four small kit fixes FRUS Explorer Light found, #1989, #1971, #1973 and #1972, a commit each. Commits: `46f62d2b` (#1989), `a77b7e94` (#1971), `a9cb13be` (#1973) and a docs commit.
 
-**#2025's merge**
-- L31 merged as `e3260a95`, a squash onto `a17023f9`, at 03:52:01 UTC on 2026-11-27, from its head `98897b4e`. Its tree, `13374d79`, is the head's. It closed #1975, #1976 and #1974. This entry records it.
+**#2027's merge**
+- L61 merged as `5fba4c9a`, a squash onto `a7d8e017`, at 05:38:54 UTC on 2026-11-27, from its head `ac51df68`. Its tree, `6b56e90e`, is the head's. It closed #2022 and #2023. This entry records it.
+- L28's #2026 (`a7d8e017`, onto `e3260a95`, at 04:27:33 UTC, from `007981d0`, tree `a32f5e9d`, closing no issue) is recorded in L61's entry above, and L31's #2025 in L28's.
+- This branch took `v2` in at `5fba4c9a`. The three conflicts were all records: the session log, the plan of record's decisions and the Amendment-Log. Each was resolved with `v2`'s side first and this row's after it. L31's decisions 203 to 206 and L28's 207 to 209 put this row's at 210.
 
 **Each defect first** (decision 183). The new tests went in first and ran against `v2`'s code, before any fix, through `Scripts/heavy.sh`:
 - **In the package** (`swift test --filter`, FRUSCoreKitTests): 25 tests in 4 suites, the two new ones failing with 16 issues.
