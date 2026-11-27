@@ -788,6 +788,29 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **L41, the Zotero client** (#1923 to #1926; decision 138). One session, kit code and new strings in both manuals.
   - `Backoff` waited before the next request, with a deadline every client sees, since the app makes a new client for each of its three sends (#1924); the waits reported through the send's `status` (#1925); a date `Retry-After` read (#1926).
   - **#1923's resume** is a proposal whose design is the owner's. Without it the row lands the other three.
+  - **Record (2026-11-27, `claude/l41-zotero-client-f9a33d`).** From `v2` at `2db58c5a`, L29's merge, on the orchestrator's "go". `54bf4f86` (the client and its suite), `8ab12121` (the reader's two Share sends), `c6363fc4` (the docs and records), then, at the head of the queue, `v2` at `ebacf85a` taken in (`ec43ce68`).
+    - **Each defect shown first** (decision 183): seven new tests ran against `v2`'s client, the kit untouched, through `Scripts/heavy.sh` (`swift test --filter ZoteroRetryWaitTests`, the package built from empty in 92 s). Of the suite's 20 tests, the 13 already there passed and the 7 new ones failed, with 11 issues, each at its defect.
+      - **#1924:** a send of one write answered with `Backoff: 5` waited `[5.0]` after its last write. The next send, by a new client, waited `[]`.
+      - **#1925:** a 429 with `Retry-After: 5` said only *Uploading items 1–1…* and waited 5 s. A `Backoff: 3` on the collection's write was waited under *Creating collection…*, unannounced.
+      - **#1926:** a `Retry-After` 45 s after the response's `Date` waited `[30, 30, 30]` and threw `rateLimited(30)`. One an hour on did the same over 4 requests, and one 45 s after the device's clock did the same.
+    - **#1924.** A 2xx's `Backoff` sets a deadline, and each attempt of each write first waits what is left of it. A send returns as soon as its last write succeeds; its next write, or the account's next send, waits the rest.
+      - **Where the deadline lives:** per process, `ZoteroBackoffDeadlines.shared`, keyed by the Zotero user ID every write names. So the app's three sends keep `ZoteroAPIClient()`, and FRUS Explorer Light's server needs no change.
+      - A passed deadline is dropped when read. No API key is kept.
+      - The 60-second cap and #1916's header rules hold. A `Backoff` of 0 now holds nothing, where it was a sleep of 0.
+    - **#1925.** The send says *Zotero is busy: trying again in 30 seconds…* before a 429's retry, and *Zotero asked for a pause: continuing in 45 seconds…* before a `Backoff`'s wait.
+      - The seconds are whole, rounded up, in a one or many form through `CountCopy`. The step's own message is said again after the wait.
+      - The collection sheet already showed `status`. The Mac's Share popover now reads it under its row, and the iOS Share menu in its send row.
+    - **#1926.** An IMF-fixdate `Retry-After` is the seconds until it, from the response's `Date` or else the device's clock. A past date gives the 30 s default; past a minute, `rateLimited` at once. `Backoff` stays seconds alone.
+    - **#1923's resume is not built.** The owner was away, so the orchestrator asked for the proposal in the row's "ready to land" message. Four options, with A recommended: the kit reports a stopped send's progress, and the app finishes it from a device-local file, with no CloudKit field. The full proposal is in the group's notes, `L41-1923-resume-proposal.md`.
+    - **A claim of the brief does not hold:** "L41 changes … how [the collection's send] calls the client". With the deadline kept per process, and the sheet already showing `status`, `CollectionExportSheet.swift` is unchanged, so the order behind L29 cost nothing.
+    - **Candidates:** two, from Zotero's documentation, left in §5 (a 503's `Retry-After`; a `Backoff` on a refused write).
+    - **EditableContent:** four blocks added for the new keys, and four ranges re-pointed, each starting on its key's line: three in `08-Reading-Research-Collections.md` and one in `06-Archives.md`, which the first scoped run caught. A bullet in the Amendment-Log.
+    - **Checks:** through `Scripts/heavy.sh`, in one script for the control and the fix (09:46 to 09:57 UTC) and a confirm run after the review pass (10:23 to 10:26 UTC).
+      - `swift build --target FRUSCoreKit`: no warning, both times.
+      - `swift test --filter Zotero`: 56 tests in 8 suites passed, both times. They are the suite's 26 with the NARA and Zotero host suites.
+      - The app's 18 affected suites on the iPhone 17 under iOS 27.0, the app removed first: 184 tests, 183 passed. The failure was `EditableContentKeyTests` on the two ranges the row had missed, then re-pointed. After the review, `EditableContentKeyTests`, `ResearchGuideCoverageTests`, `ZoteroRetryWaitTests` and `CodingStandardsAuditTests`: 118 tests, all passed.
+      - `build-for-testing` from empty, and the `FRUSExplorerMac` build: the two known residues and no other warning.
+    - **At the head of the queue,** on the merge `ec43ce68` (tree `d8715bbc`, with `v2` at `ebacf85a` taken in; four conflicts, three of them records and one three ranges both L37 and this row had re-pointed, set from the merged file): `build-for-testing`, with the two residues alone; the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, the app removed first, 8,359 tests in 1,011 suites, 8,341 passed, none failed, 17 skipped as at L37, and the one test with the six known issues (L37's 8,346 and this row's 13); `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,273 tests in 610 suites over 39 runs, none failed (L32's 5,260 and the same 13); the `FRUSExplorerMac` build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
 
 - **L42, the cross-reference graph saved** (#1990; decisions 146, 180 and 181). One session, one pull request: a commit for each save, then a docs commit. A kit rule and app code, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change; no index version.
   - **What the graph draws** (`DisplayNode.Kind`, `CrossReferenceGraphDisplay.swift:36-64`): documents, as the central node, its inbound and outbound neighbours and those two or three hops out; page nodes, which open nothing (`isPageNode`, `:163`); volume clusters and date clusters, each standing for documents; and the archival units and central-file classes that its documents' footnotes point at, a node for each citing document (`unitNodes(rowsByDocument:authority:)`, `:451`).
@@ -1206,7 +1229,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **Before L43:** the two-device run, the file run and the desk check (§2).
 - **With its row,** where the row proposes and the owner chooses:
   - L38: what the Mac's title bar holds when its room is short (F2).
-  - L41: the design of #1923's resume.
+  - L41: the design of #1923's resume. Proposed on 2026-11-27, four options with A recommended (L41's record, in its brief); unanswered when the row was ready to land.
   - L43: the Note on the Text's sentences.
   - L46: the sign for an omission, and the four things its brief says the design leaves open.
   - L47: what a saved template holds.
@@ -1293,6 +1316,12 @@ The 35 of the review's S3 findings that no 1.0 row took. Each has its evidence a
 ### Found by L37, unfiled
 
 - **A tab's return applies *Open Documents In* again.** Under Read, a reader's rail opened by its toggle closes when the reader's tab is left and chosen again: measured once on L37's code (iPad Pro 13-inch (M5), iOS 27.2: the fixture's document in Browse, its rail opened, Search chosen and Browse chosen again 3 s later). The reader's per-open task (`DocumentView.swift`, its `.task(id:)`) runs again whenever the reader returns to the screen, and the setting is applied at each such run unless L37's ledger reads a rebuild, which a return seconds later is not. By the same code, not measured: under Research a rail the reader closed comes back, and a reader uncovered by Back applies the setting too. Pre-existing: `v2`'s code applied the setting at every run of the task. A fix would count a reader's own return to the screen as no open; whether Back should count as one is the owner's to settle. Filed on the owner's word.
+
+### Found by L41, unfiled
+
+From Zotero's Web API v3 documentation (*Basics*, *Write Requests*, read 2026-11-27) beside the client, and not seen in a send.
+- **A 503 during Zotero's maintenance stops a send as an unexpected error.** The documentation says a 503 also carries a `Retry-After` while the API is down for maintenance. `ZoteroAPIClient.checkStatus` reads `Retry-After` on a 429 alone, so a 503 reaches the caller as `ZoteroAPIError.http(503)`, *Zotero returned an unexpected error (HTTP 503)*, with no retry, and the writes before it kept in the library.
+- **A `Backoff` on a refused write holds nothing.** The documentation says a `Backoff` "can be included in any response, including successful ones". The client reads it on a 2xx alone, as #1916 left it, so one on a 429 or a 5xx sets no deadline for the account's next request.
 
 ### P2 — later
 

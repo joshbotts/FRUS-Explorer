@@ -2330,6 +2330,8 @@ struct DocumentView: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation sheet
+///   1.1 — L41 (#1925): while a send runs, its row reads what the send last said through its
+///          `status`, a wait on Zotero's word with its seconds included
 struct DocumentShareMenu<LabelContent: View>: View {
     let vm: DocumentViewModel
     /// The `Menu`'s tap target. The default construction (see the extension below) uses the standard
@@ -2349,6 +2351,9 @@ struct DocumentShareMenu<LabelContent: View>: View {
     @State private var zoteroSending = false
     @State private var zoteroResult: ZoteroSendResult?
     @State private var zoteroError: String?
+    /// What the send in progress last said through its `status`: its step, or how long Zotero asked
+    /// it to wait (#1925). Nil when no send runs.
+    @State private var zoteroStatus: String?
 
     var body: some View {
         Menu {
@@ -2356,8 +2361,13 @@ struct DocumentShareMenu<LabelContent: View>: View {
                 Button {
                     Task { await sendToZoteroLibrary() }
                 } label: {
-                    Label(String(localized: "document.share.sendZoteroLibrary",
-                                 defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
+                    // A menu closes when chosen, so the send's row reads its progress while it runs.
+                    if zoteroSending, let zoteroStatus {
+                        Label(zoteroStatus, systemImage: "hourglass")
+                    } else {
+                        Label(String(localized: "document.share.sendZoteroLibrary",
+                                     defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
+                    }
                 }
                 .disabled(zoteroSending)
                 Divider()
@@ -2432,11 +2442,15 @@ struct DocumentShareMenu<LabelContent: View>: View {
             return
         }
         zoteroSending = true
-        defer { zoteroSending = false }
+        zoteroStatus = nil
+        defer { zoteroSending = false; zoteroStatus = nil }
         do {
             let result = try await ZoteroAPIClient().send(
                 items: [item], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username)
+                apiKey: apiKey, userID: userID, username: store.username
+            ) { message in
+                Task { @MainActor in zoteroStatus = message }
+            }
             zoteroResult = result
         } catch {
             zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription

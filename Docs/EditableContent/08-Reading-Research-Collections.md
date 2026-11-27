@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2409–2409 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2419–2419 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2410–2411 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2420–2421 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2715–2716 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2729–2730 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1558,6 +1558,44 @@ Search is not ready yet. Try again in a moment.
 Zotero is receiving too many requests right now. Try again in a moment.
 
 <!-- END SOURCE: zotero.error.rateLimited.v2 -->
+
+#### A Zotero send waiting to try again — one second
+<!-- L41 of the plan of record from 2026-11-25 (#1925), new 2026-11-27. What a send to Zotero says before it
+     waits out a refusal (HTTP 429) and tries again: in a collection export sheet's progress line, under the
+     Mac Share popover's Send to Zotero Library, and as the iOS Share menu's send row while the send runs.
+     `%@` is the wait in whole seconds, rounded up. This form is for ONE second, so keep it singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 370–371 | key: zotero.status.retry.one -->
+
+Zotero is busy: trying again in %@ second…
+
+<!-- END SOURCE: zotero.status.retry.one -->
+
+#### A Zotero send waiting to try again — two or more seconds
+<!-- The same line for any other number of seconds, up to 60, the longest the app waits at once. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 372–373 | key: zotero.status.retry.many -->
+
+Zotero is busy: trying again in %@ seconds…
+
+<!-- END SOURCE: zotero.status.retry.many -->
+
+#### A Zotero send waiting out Zotero's pause — one second
+<!-- L41 (#1924, #1925), new 2026-11-27. What a send says before its next request when Zotero has asked
+     the app to slow down (its `Backoff`), whether that send's last write asked or an earlier send's did: the
+     pause is waited before the next request, from any send, and not after the write that asked for it. Shown
+     where the line above is. `%@` is the wait in whole seconds, rounded up. Keep this form singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 381–382 | key: zotero.status.backoff.one -->
+
+Zotero asked for a pause: continuing in %@ second…
+
+<!-- END SOURCE: zotero.status.backoff.one -->
+
+#### A Zotero send waiting out Zotero's pause — two or more seconds
+<!-- The same line for any other number of seconds, up to 60. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 383–384 | key: zotero.status.backoff.many -->
+
+Zotero asked for a pause: continuing in %@ seconds…
+
+<!-- END SOURCE: zotero.status.backoff.many -->
 
 ### A document with no printed title
 
