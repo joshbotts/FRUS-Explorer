@@ -47,6 +47,10 @@ import WordCloudKit
 ///          labels), resolved volume-grain like `.subseries`
 ///   1.4 — 2026-11-24 (FRUS Explorer Light, S29b): moved into FRUSCoreKit, public, with its signatures,
 ///          for a host that names a scope as the app does; its title's dates are still the user's calendar's
+///   1.5 — 2026-11-27: #2033 (L62) — `isoDay(from:in:)` and `day(fromISO:in:)` convert through `DateRange.day(of:in:)`
+///          and `firstMoment(ofDay:in:)`, Search's pair, so a day whose midnight a change of clocks skips reads as that
+///          day, where the strict formatter read no date; they and `dateRangeTitle(startISO:endISO:in:)` take a zone,
+///          the device's by default
 /// #752/M-31: `Codable` so the scope can key a value-based `WindowGroup` on iPad. The word cloud
 /// was the only Research-rail tool without a scene of its own, which is why it alone rode a
 /// cross-window hand-off and opened in the wrong window from a standalone document window.
@@ -154,8 +158,8 @@ public enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
 
     // MARK: - Date-range helpers
 
-    /// Shared `yyyy-MM-dd` formatter (user's current timezone, POSIX locale) for
-    /// date-range signatures.
+    /// The `yyyy-MM-dd` day string (in the user's local calendar) for a date, for
+    /// building a `.dateRange` scope.
     ///
     /// The index's ISO day keys are timezone-less calendar days, so the timezone
     /// here only governs the `Date` ↔ day-string conversion — and it MUST match
@@ -163,27 +167,36 @@ public enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
     /// Chronology view model's `Calendar.startOfDay` normalisation, and the
     /// localized display formatters). A UTC formatter here shifted the bounds by
     /// one day for any non-UTC user and walked the range a day earlier on each
-    /// Cloud → Chronology round trip.
-    private static func isoFormatter(in timeZone: TimeZone) -> DateFormatter {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = timeZone
-        return f
-    }
-
-    /// The `yyyy-MM-dd` day string (in the user's local calendar) for a date, for
-    /// building a `.dateRange` scope.
+    /// Cloud → Chronology round trip. Both directions convert through `DateRange`'s
+    /// pair since #2033, as Search's date filter does.
+    ///
+    /// - Parameters:
+    ///   - date: A moment, such as a picker's date.
+    ///   - timeZone: The zone the pickers are in: the device's, `.current`, unless a test passes another.
+    /// - Returns: The day, as `yyyy-MM-dd`.
     public static func isoDay(from date: Date, in timeZone: TimeZone = .current) -> String {
-        isoFormatter(in: timeZone).string(from: date)
+        DateRange.day(of: date, in: timeZone)
     }
 
-    /// Parses a `yyyy-MM-dd` day string back to a `Date` (local start of that day).
+    /// Parses a `yyyy-MM-dd` day string back to a `Date`: the first moment of that
+    /// day in `timeZone` (`DateRange.firstMoment(ofDay:in:)`).
+    ///
+    /// That is the day's midnight, unless a change of clocks skips it: then the
+    /// day's first moment, where the strict `DateFormatter` this read with until
+    /// #2033 read no date, and the range's pickers fell back to the year 1 and now.
+    ///
+    /// - Parameters:
+    ///   - iso: A day, as `yyyy-MM-dd`.
+    ///   - timeZone: The zone the pickers are in: the device's, `.current`, unless a test passes another.
+    /// - Returns: The day's first moment, or `nil` for a string that names no day.
     public static func day(fromISO iso: String, in timeZone: TimeZone = .current) -> Date? {
-        isoFormatter(in: timeZone).date(from: iso)
+        DateRange.firstMoment(ofDay: iso, in: timeZone)
     }
 
     /// A readable title for a date-range scope, e.g. "Feb 1969 – Dec 1969".
+    ///
+    /// Each day is named in words at its first moment in `timeZone`, the device's unless a test passes another; a
+    /// string that names no day is printed as it is.
     public static func dateRangeTitle(startISO: String, endISO: String, in timeZone: TimeZone = .current) -> String {
         let display = DateFormatter()
         display.locale = .autoupdatingCurrent

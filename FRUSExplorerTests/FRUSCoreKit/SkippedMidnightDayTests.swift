@@ -24,8 +24,8 @@ import Foundation
 
 // MARK: - SkippedMidnightDay
 
-/// A day whose midnight a change of clocks skips, in its zone: the clocks there went from 23:59 to 01:00 or later, so
-/// the day has no 00:00, and a strict `DateFormatter` in the zone reads it as no date (#2033).
+/// A day whose midnight a change of clocks skips, in its zone: the clocks there went from the day before to a moment
+/// past the day's 00:00, so the day has no 00:00, and a strict `DateFormatter` in the zone reads it as no date (#2033).
 ///
 /// The days are #2033's, measured by L57 on iOS 27.0's Foundation: the first three of each zone in its table of the
 /// days from 1861 to 2000, and its four recent days. The app's Search tests read them too
@@ -100,6 +100,91 @@ struct SkippedMidnightDay: Sendable, CustomTestStringConvertible {
         SkippedMidnightDay(zoneID: "Asia/Beirut", day: "2024-03-31"),
         SkippedMidnightDay(zoneID: "America/Santiago", day: "2024-09-08"),
     ]
+
+    /// The issue's four recent days, from 2018 to 2024.
+    static let recent: [SkippedMidnightDay] = all.filter { $0.day.hasPrefix("20") }
+}
+
+// MARK: - DateRangeDayTests
+
+/// A day's two conversions, the kit's since #2033 (`DateRange.day(of:in:)`, `firstMoment(ofDay:in:)`): Search's date
+/// filter on iPhone, iPad and the Mac, and the word cloud's date range, read and write a day through them.
+///
+/// Every test names its zone, for the reason `WordCloudDateRangeSkippedMidnightTests` gives. A day is read back here by
+/// a formatter in its zone, which never fails to write one, and not by the functions under test.
+///
+/// Version history:
+///   1.0 — #2033 (L62): initial implementation
+@Suite("A day's two conversions, on days a change of clocks cuts short (#2033)")
+struct DateRangeDayTests {
+
+    @Test("A day whose midnight a change of clocks skips is read as its first moment, and written back as itself",
+          arguments: SkippedMidnightDay.all)
+    func aSkippedMidnightIsTheDaysFirstMoment(_ skipped: SkippedMidnightDay) throws {
+        let zone = try skipped.zone()
+        let date = try #require(DateRange.firstMoment(ofDay: skipped.day, in: zone),
+                                "\(skipped.testDescription) read as no date")
+        #expect(try skipped.shownDay(date) == skipped.day, "read as another day")
+        #expect(try skipped.shownDay(date.addingTimeInterval(-1)) != skipped.day, "not the day's first moment")
+        #expect(DateRange.day(of: date, in: zone) == skipped.day, "written back as another day")
+    }
+
+    /// The issue's four recent days, each a change to summer time at midnight: the clocks went from 23:59 to 01:00.
+    @Test("The issue's four recent days begin at one in the morning, where their midnight would have been",
+          arguments: SkippedMidnightDay.recent)
+    func theRecentDaysBeginAtOne(_ skipped: SkippedMidnightDay) throws {
+        let zone = try skipped.zone()
+        let date = try #require(DateRange.firstMoment(ofDay: skipped.day, in: zone))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        let time = calendar.dateComponents([.hour, .minute, .second], from: date)
+        #expect(time.hour == 1 && time.minute == 0 && time.second == 0,
+                "\(skipped.testDescription) begins at \(String(describing: time.hour)):\(String(describing: time.minute))")
+    }
+
+    /// Havana left its mean time at noon on 19 July 1925, so that day has no 12:00: the calendar reads the noon forward,
+    /// within the day, and the day still begins at its midnight.
+    @Test("A day whose noon a change of clocks skips is still read as that day, from its midnight")
+    func aSkippedNoon() throws {
+        let skipped = SkippedMidnightDay(zoneID: "America/Havana", day: "1925-07-19")
+        let zone = try skipped.zone()
+        let date = try #require(DateRange.firstMoment(ofDay: skipped.day, in: zone))
+        #expect(try skipped.shownDay(date) == "1925-07-19")
+        #expect(try skipped.shownDay(date.addingTimeInterval(-1)) == "1925-07-18")
+    }
+
+    /// Samoa crossed the date line at the end of 29 December 2011, so its clocks went from that day to 31 December.
+    @Test("A day the clocks skip whole is no day, and the days either side of it are days")
+    func aDaySkippedWhole() throws {
+        let zone = try #require(TimeZone(identifier: "Pacific/Apia"))
+        #expect(DateRange.firstMoment(ofDay: "2011-12-30", in: zone) == nil)
+        for day in ["2011-12-29", "2011-12-31"] {
+            let date = try #require(DateRange.firstMoment(ofDay: day, in: zone), "\(day) read as no date in Apia")
+            #expect(DateRange.day(of: date, in: zone) == day)
+        }
+    }
+
+    @Test("A day whose midnight there is is read as that midnight",
+          arguments: ["America/New_York", "UTC", "Asia/Tokyo", "Pacific/Kiritimati"])
+    func aMidnightThatIs(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        for day in ["1962-10-01", "1861-01-01", "1992-12-31", "1948-02-29"] {
+            let date = try #require(DateRange.firstMoment(ofDay: day, in: zone), "\(day) read as no date in \(zoneID)")
+            let named = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+            #expect(DateRange.day(of: date, in: zone) == day)
+            #expect(named.hour == 0 && named.minute == 0 && named.second == 0, "\(day) in \(zoneID) is not its midnight")
+        }
+    }
+
+    @Test("A string that names no day reads as no date",
+          arguments: ["", "1962", "1962-10", "1962-10-1", "62-10-01", "1962-13-01", "1962-00-10", "1962-02-30",
+                      "1962-10-01T00:00:00Z", "1962/10/01", "196a-10-01", "+962-10-01", "1962-10-01-"])
+    func notADay(_ text: String) throws {
+        let zone = try #require(TimeZone(identifier: "America/Sao_Paulo"))
+        #expect(DateRange.firstMoment(ofDay: text, in: zone) == nil)
+    }
 }
 
 // MARK: - WordCloudDateRangeSkippedMidnightTests

@@ -624,6 +624,8 @@ struct FilterSheetDismissalTests {
 ///
 /// Version history:
 ///   1.0 — #2013 (L57): initial implementation
+///   1.1 — #2033 (L62): three tests over the days whose midnight a change of clocks skips (`SkippedMidnightDay`): the
+///          Mac's Filters' read, which failed in all 25 of its cases until L62, and iPhone and iPad's two, which held
 @Suite("Search's date filter, in the zone its pickers are in (#2013)")
 @MainActor
 struct SearchDateFilterZoneTests {

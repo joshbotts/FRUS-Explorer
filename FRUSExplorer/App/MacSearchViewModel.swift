@@ -130,6 +130,9 @@ import SwiftData
 ///          (`applyProjectScope()`, `FacetVolumeChoice`), and the volume filter's ✕ forgets it
 ///   1.18 — #1758: `resultSetScope` carries what narrowed the rows beyond their words (`ResultSetScope.narrowing`), read
 ///          from the filters they were found under, which a working corpus records
+///   1.19 — #2033 (L62): the filter popover's two days are read and written through the filter view model, as iPhone
+///          and iPad read and write them (`SearchViewModel.applyDateRange(_:)`, `dateRangeDays`), where a strict
+///          `DateFormatter` read a day whose midnight a change of clocks skips as no date and kept the date it held
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1512,7 +1515,8 @@ final class MacSearchViewModel {
         filterVM.selectedVolumeIds    = scope.volumes
 
         filterVM.facetYearKeys = parameters.yearKeys
-        // Read by the filter view model, which the unit target can reach (#2033).
+        // Each day becomes its first moment in the pickers' zone, as on iPhone and iPad, so a day whose midnight a change
+        // of clocks skips shows as that day, where the popover kept the date it held (#2033).
         filterVM.applyDateRange(parameters.dateRange)
 
         filterVM.phrase             = parameters.phrase ?? ""
@@ -1544,19 +1548,9 @@ final class MacSearchViewModel {
     func applyAdvancedFilters() {
         guard let filterVM else { return }
 
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-
         parameters.yearKeys = filterVM.facetYearKeys
-        if filterVM.dateRangeEnabled {
-            parameters.dateRange = DateRange(
-                earliest: fmt.string(from: filterVM.dateRangeStart),
-                latest:   fmt.string(from: filterVM.dateRangeEnd)
-            )
-        } else {
-            parameters.dateRange = nil
-        }
+        // The days the popover's pickers show, written as iPhone and iPad write them (#2033).
+        parameters.dateRange = filterVM.dateRangeDays
 
         parameters.phrase           = filterVM.phrase.isEmpty ? nil : filterVM.phrase
         parameters.prefixWildcard   = filterVM.prefixWildcard.isEmpty ? nil : filterVM.prefixWildcard

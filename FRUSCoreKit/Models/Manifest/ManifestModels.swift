@@ -169,3 +169,61 @@ public struct DateRange: Codable, Sendable, Equatable {
         self.latest = latest
     }
 }
+
+// MARK: - A Day's Two Conversions (#2013, #2033)
+
+/// A `yyyy-MM-dd` day and the date a date picker in a zone holds for it.
+///
+/// A day string names a calendar day, with no zone; the date a picker holds is a moment in the picker's zone, which is
+/// the device's. Search's date filter on iPhone, iPad and the Mac converts between the two through this pair
+/// (`SearchViewModel.filterDay(of:in:)`, `filterDate(ofDay:in:)`, which L57 wrote for #2013 and L62 moved here), and so
+/// does the word cloud's date range (`WordCloudScope.isoDay(from:in:)`, `day(fromISO:in:)`).
+extension DateRange {
+
+    /// The `yyyy-MM-dd` day `date` falls on in `timeZone`: the day a date picker in that zone shows it on.
+    ///
+    /// - Parameters:
+    ///   - date: A moment.
+    ///   - timeZone: The zone to read its day in.
+    /// - Returns: The day, as `yyyy-MM-dd`.
+    public static func day(of date: Date, in timeZone: TimeZone) -> String {
+        let day = dayCalendar(in: timeZone).dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+    }
+
+    /// The first moment of the day `day` names in `timeZone`, or `nil` when `day` is not a `yyyy-MM-dd` day there.
+    ///
+    /// The date a date picker in that zone shows `day` for. It is the day's noon taken back to the day's start, not a
+    /// formatter's reading: where a change of clocks skips a day's midnight, the day starts at the first moment it has,
+    /// where a strict `DateFormatter` reads no date at all (#2033). From 1861 to 2000 there are 27 such days in São
+    /// Paulo, 42 in Havana and 4 in Tokyo, by L57's measurement on iOS 27.0's Foundation and L62's on macOS 27.2's. Most
+    /// begin at 01:00, and a few minutes past midnight where a zone left a local mean time (São Paulo's 1 January 1914
+    /// at 00:06:28). A noon that a change of clocks skips is read forward within its day (Havana's 19 July 1925), so
+    /// that day still starts at its midnight; a day the clocks skip whole is no day (Samoa's 30 December 2011).
+    ///
+    /// - Parameters:
+    ///   - day: A day, as `yyyy-MM-dd`.
+    ///   - timeZone: The zone the day is in.
+    /// - Returns: The day's first moment, or `nil` for a string that names no day there (`1962-02-30`, `1962-10-1`).
+    public static func firstMoment(ofDay day: String, in timeZone: TimeZone) -> Date? {
+        let fields = day.split(separator: "-", omittingEmptySubsequences: false)
+        guard fields.count == 3, fields[0].count == 4, fields[1].count == 2, fields[2].count == 2,
+              fields.allSatisfy({ field in field.allSatisfy { ("0"..."9").contains($0) } }),
+              let year = Int(fields[0]), let month = Int(fields[1]), let dayOfMonth = Int(fields[2]) else { return nil }
+        let calendar = dayCalendar(in: timeZone)
+        guard let noon = calendar.date(from: DateComponents(year: year, month: month, day: dayOfMonth, hour: 12)) else {
+            return nil
+        }
+        let start = calendar.startOfDay(for: noon)
+        let named = calendar.dateComponents([.year, .month, .day], from: start)
+        guard named.year == year, named.month == month, named.day == dayOfMonth else { return nil }
+        return start
+    }
+
+    /// A Gregorian calendar in `timeZone`: the calendar a day's two conversions count in.
+    private static func dayCalendar(in timeZone: TimeZone) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar
+    }
+}
