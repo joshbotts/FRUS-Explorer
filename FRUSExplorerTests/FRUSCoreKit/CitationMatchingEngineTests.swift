@@ -512,7 +512,7 @@ struct CitationMatchingEngineTests {
         #expect(met.first?.correctionNote == nil)
     }
 
-    @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats, marked and as Copy Citation copies it, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505)")
+    @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats, marked and as Copy Citation copies it, by document 1 and by a printed number that is not whole, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505, #1977)")
     func ownCitationsAreNeverBestGuesses() async throws {
         let entries = try testManifestEntries()
         #expect(entries.count > 500, "the bundled manifest decoded to \(entries.count) volumes")
@@ -541,6 +541,12 @@ struct CitationMatchingEngineTests {
             ("Chicago", ChicagoCitationFormatter()),
             ("Turabian", TurabianCitationFormatter()),
         ]
+        // Each volume is cited twice: by document 1, and by a printed number that is not whole, the
+        // four kinds #1977 names in turn — a letter, an appendix's letter, a microfiche supplement's
+        // prefix and a capital letter. Until #1977 the parser took only a number's digits out of the
+        // title fragment, so "Document 1190b" left a "b" in it and "Document C" the whole of itself:
+        // words no title has, in the words that choose a volume.
+        let printedForms = ["1190b", "C", "GT–6", "550A"]
         var variants = 0
         for format in formats {
             for plain in [false, true] {
@@ -548,34 +554,38 @@ struct CitationMatchingEngineTests {
                 var misses: [String] = []
                 var bestGuesses: [String] = []
                 var marksLeft: [String] = []
-                for entry in entries {
+                for (offset, entry) in entries.enumerated() {
                     let volume = FRUSVolumeMetadata(entry)
-                    let marked = format.formatter.format(
-                        document: FRUSDocumentMetadata(documentId: "d1", documentNumber: "1",
-                                                       header: "Header", dateline: "Dateline"),
-                        volume: volume)
-                    let citation = plain ? CitationPlainText.plain(marked) : marked
-                    // The plain form is the plain form (#1505 review round 1): every format opens
-                    // with the title, so with its marks removed the citation begins with the title
-                    // itself and holds no `_` or `*`. Otherwise this half would silently re-run
-                    // the marked half — and the prefix-stripping the fragment lost the name to
-                    // could not fire on a text beginning with a mark.
-                    if plain, !citation.hasPrefix(volume.title) || citation.contains(where: { "_*".contains($0) }) {
-                        marksLeft.append("\(entry.volumeId): \(citation.prefix(40))")
-                    }
-                    let results = try await engine.match(input: parser.parse(citation))
-                    guard let first = results.first, first.volumeId == entry.volumeId else {
-                        misses.append("\(entry.volumeId) → \(results.prefix(3).map(\.volumeId))")
-                        continue
-                    }
-                    if first.confidenceLabel != ConfidenceLabels.manifestOnly {
-                        bestGuesses.append("\(entry.volumeId): \(first.confidenceLabel)")
+                    for number in ["1", printedForms[offset % printedForms.count]] {
+                        let marked = format.formatter.format(
+                            document: FRUSDocumentMetadata(documentId: "d1", documentNumber: number,
+                                                           header: "Header", dateline: "Dateline"),
+                            volume: volume)
+                        let citation = plain ? CitationPlainText.plain(marked) : marked
+                        // The plain form is the plain form (#1505 review round 1): every format
+                        // opens with the title, so with its marks removed the citation begins with
+                        // the title itself and holds no `_` or `*`. Otherwise this half would
+                        // silently re-run the marked half — and the prefix-stripping the fragment
+                        // lost the name to could not fire on a text beginning with a mark.
+                        if plain, !citation.hasPrefix(volume.title) || citation.contains(where: { "_*".contains($0) }) {
+                            marksLeft.append("\(entry.volumeId): \(citation.prefix(40))")
+                        }
+                        let results = try await engine.match(input: parser.parse(citation))
+                        guard let first = results.first, first.volumeId == entry.volumeId else {
+                            misses.append("\(entry.volumeId) → Document \(number): \(results.prefix(3).map(\.volumeId))")
+                            continue
+                        }
+                        if first.confidenceLabel != ConfidenceLabels.manifestOnly {
+                            bestGuesses.append("\(entry.volumeId), Document \(number): \(first.confidenceLabel)")
+                        }
                     }
                 }
                 variants += 1
-                print("[CitationRoundTrip] \(name): \(entries.count - misses.count) of \(entries.count) resolve first to their own volume")
+                print("[CitationRoundTrip] \(name): \(entries.count * 2 - misses.count) of \(entries.count * 2) resolve first to their own volume")
                 #expect(bestGuesses.isEmpty, "\(name): \(bestGuesses)")
-                #expect(misses.map { String($0.prefix { $0 != " " }) } == excused, "\(name): \(misses)")
+                // The two excused volumes miss under both numbers, and no other volume misses.
+                #expect(misses.map { String($0.prefix { $0 != " " }) } == excused.flatMap { [$0, $0] },
+                        "\(name): \(misses)")
                 #expect(marksLeft.isEmpty, "\(name): \(marksLeft.count) not plain: \(marksLeft.prefix(3))")
             }
         }
@@ -887,11 +897,14 @@ struct CitationLookupIndexedTests {
 
     /// Indexes `volumes` with the real pipeline, every one downloaded, and hands `body` an engine
     /// wired the way `AppState` wires it: the search service and the page-range store over one index.
+    /// The engine's catalogue is `catalogue` when one is given — the whole bundled manifest, say, as
+    /// the app's is, with only `volumes` downloaded — and otherwise `volumes`' own entries.
     private func withEngine(
         _ volumes: [(entry: VolumeManifestEntry, docs: [Doc])],
+        catalogue: [VolumeManifestEntry]? = nil,
         _ body: (CitationMatchingEngine) async throws -> Void
     ) async throws {
-        try await withIndex(volumes) { engine, _ in try await body(engine) }
+        try await withIndex(volumes, catalogue: catalogue) { engine, _ in try await body(engine) }
     }
 
     /// What `withEngine` builds, handed over whole: the engine, the page-range store it reads (the
@@ -906,6 +919,7 @@ struct CitationLookupIndexedTests {
     /// `withEngine`, also handing `body` the page-range store and the database behind it.
     private func withIndex(
         _ volumes: [(entry: VolumeManifestEntry, docs: [Doc])],
+        catalogue: [VolumeManifestEntry]? = nil,
         _ body: (CitationMatchingEngine, Index) async throws -> Void
     ) async throws {
         try await withTempDir { dir in
@@ -919,7 +933,7 @@ struct CitationLookupIndexedTests {
             let databaseURL = dir.appendingPathComponent("test.sqlite")
             let pages = try PageRangeStore(databaseURL: databaseURL)
             let entries = volumes.map(\.entry)
-            let manifestStore = await makeTestCatalogue(entries)
+            let manifestStore = await makeTestCatalogue(catalogue ?? entries)
             let engine = CitationMatchingEngine(manifestStore: manifestStore, searchService: service,
                                                 pageRangeStore: pages,
                                                 downloadedVolumeIds: Set(entries.map(\.volumeId)))
@@ -3119,6 +3133,190 @@ struct CitationLookupIndexedTests {
             #expect(rows.first?.outcome == .resolved)
             #expect(rows.first?.primaryMatch?.volumeId == "frus1865p1")
             #expect(rows.first?.primaryMatch?.documentId == "d373a")
+        }
+    }
+
+    // MARK: - Printed numbers that are not whole (#1977)
+
+    /// The four kinds of printed number #1977 names, each under its volume's own row in the bundled
+    /// manifest and numbered as its div's `@n` prints it — what the index stores and Cite cites.
+    /// Measured over the index at version 76, 722 of the corpus's 314,646 numbered documents print a
+    /// number that is not whole:
+    /// - `frus1898`'s 1190a and 1190b, after its 1190: 82 documents in 22 volumes print a number and
+    ///   a lower-case letter, and every one's number without the letter is another document of its
+    ///   volume;
+    /// - `frus1955-57v03mSupp`'s 550A, after its 550: the one capital letter;
+    /// - `frus1981-88v05`'s appendices A to C, after its documents: 11 single letters in 3 volumes;
+    /// - `frus1958-60v05mSupp`'s GT–5, GT–6 and BL–6: 628 numbers in 17 series, a capital prefix, an
+    ///   en dash and a number, all in this microfiche supplement, where no document prints a plain
+    ///   number.
+    private func printedNumberVolumes(in catalogue: [VolumeManifestEntry]) throws
+        -> [(entry: VolumeManifestEntry, docs: [Doc])] {
+        func row(_ volumeId: String) throws -> VolumeManifestEntry {
+            try #require(catalogue.first { $0.volumeId == volumeId }, "\(volumeId) is not in the bundled manifest")
+        }
+        return [
+            (try row("frus1898"),
+             [Doc(id: "d1189", number: "1189", pages: [1101]), Doc(id: "d1190", number: "1190", pages: [1102]),
+              Doc(id: "d1190a", number: "1190a", pages: [1103]), Doc(id: "d1190b", number: "1190b", pages: [1104]),
+              Doc(id: "d1191", number: "1191", pages: [1105])]),
+            (try row("frus1955-57v03mSupp"),
+             [Doc(id: "d550", number: "550", pages: []), Doc(id: "d550A", number: "550A", pages: [])]),
+            (try row("frus1981-88v05"),
+             [Doc(id: "d1", number: "1", pages: [3]), Doc(id: "appA", number: "A", pages: [1101]),
+              Doc(id: "appB", number: "B", pages: [1102]), Doc(id: "appC", number: "C", pages: [1103])]),
+            (try row("frus1958-60v05mSupp"),
+             [Doc(id: "bl_d6", number: "BL–6", pages: []), Doc(id: "gt_d5", number: "GT–5", pages: []),
+              Doc(id: "gt_d6", number: "GT–6", pages: [])]),
+        ]
+    }
+
+    /// A lookup's rows as `volume/document — label`, for a failure message.
+    private func described(_ matches: [CitationMatch]) -> String {
+        matches.isEmpty ? "nothing"
+            : matches.map { "\($0.volumeId)/\($0.documentId) — \($0.confidenceLabel)" }.joined(separator: "; ")
+    }
+
+    /// #1977's own case: Cite writes the printed number as printed, and until #1977 the parser read
+    /// only its digits. So the citation of d1190b came back as d1190 and of d550A as d550 — the
+    /// second labelled an exact match — and "Document C" and "Document GT–6" named no number at
+    /// all, and found nothing. Each citation here is the app's own, made as Copy Citation makes it,
+    /// from the index's row, and looked up against the whole bundled manifest with only these four
+    /// volumes downloaded, as a reader's library is.
+    @Test("The app's own citation of a document whose printed number is not whole finds that document: 1190b and 1190a, 550A, an appendix's C, a microfiche supplement's GT–6, in all three formats, marked and as Copy Citation copies it; and 1190 and 550 still find theirs (#1977)")
+    func ownCitationOfAPrintedNumberFindsItsDocument() async throws {
+        let catalogue = try testManifestEntries()
+        let volumes = try printedNumberVolumes(in: catalogue)
+        try await withIndex(volumes, catalogue: catalogue) { engine, index in
+            let parser = CitationParser()
+            let formatters: [any CitationFormatter] = [HistoryAtStateCitationFormatter(),
+                                                      ChicagoCitationFormatter(), TurabianCitationFormatter()]
+            let cited = [("frus1898", "d1190b"), ("frus1898", "d1190a"), ("frus1898", "d1190"),
+                         ("frus1955-57v03mSupp", "d550A"), ("frus1955-57v03mSupp", "d550"),
+                         ("frus1981-88v05", "appC"), ("frus1958-60v05mSupp", "gt_d6")]
+            var citations = 0
+            for (volumeId, documentId) in cited {
+                let entry = try #require(volumes.first { $0.entry.volumeId == volumeId }?.entry)
+                // The document as the index stores it, cited as Copy Citation cites it: its stored
+                // number through `CitableDocumentNumber.resolve`.
+                let stored = try #require(try await index.pipeline.document(forDocumentId: documentId,
+                                                                            inVolume: volumeId))
+                let document = FRUSDocumentMetadata(citing: stored, printedNumber: stored.documentNumber)
+                for formatter in formatters {
+                    let marked = formatter.format(document: document, volume: FRUSVolumeMetadata(entry))
+                    for citation in [marked, CitationPlainText.plain(marked)] {
+                        citations += 1
+                        let matches = try await engine.match(input: parser.parse(citation))
+                        #expect(matches.first?.volumeId == volumeId && matches.first?.documentId == documentId,
+                                "\(citation) → \(described(matches))")
+                        #expect(matches.first?.isBestGuess == false, "\(citation) → \(described(matches))")
+                    }
+                }
+            }
+            #expect(citations == 42)
+        }
+    }
+
+    /// The same numbers as a reader may type them, where #1977's parse read only digits: a letter
+    /// in the other case (the index stores `1190b` and `550A`), a hyphen for the en dash a supplement
+    /// prints, Structured Entry's Document field, whose `Int` reading dropped every one of them, and
+    /// Batch, whose rows the parser reads one by one.
+    @Test("A printed number is read as a reader may type it: a letter in either case, a hyphen for the en dash, in Structured Entry's Document field and in Batch (#1977)")
+    func typedPrintedNumbersFindTheirDocuments() async throws {
+        let catalogue = try testManifestEntries()
+        let volumes = try printedNumberVolumes(in: catalogue)
+        try await withEngine(volumes, catalogue: catalogue) { engine in
+            let parser = CitationParser()
+            let pasted = [
+                ("FRUS, 1898, Document 1190B", "frus1898", "d1190b"),
+                ("FRUS, 1898, doc. 1190a", "frus1898", "d1190a"),
+                ("FRUS, 1955–1957, vol. III, Microfiche Supplement, China, doc. 550a", "frus1955-57v03mSupp", "d550A"),
+                ("FRUS, 1958–1960, vol. V, Microfiche Supplement, American Republics, Document GT-6",
+                 "frus1958-60v05mSupp", "gt_d6"),
+                ("FRUS, 1981–1988, vol. V, Document C", "frus1981-88v05", "appC"),
+            ]
+            for (text, volumeId, documentId) in pasted {
+                let fields = CitationLookupFields().refreshed(forPaste: text, mode: .paste, parser: parser)
+                let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: text, parser: parser))
+                #expect(matches.first?.volumeId == volumeId && matches.first?.documentId == documentId,
+                        "\(text) → \(described(matches))")
+            }
+
+            // Structured Entry's Document field, typed.
+            for (subseries, volume, document, volumeId, documentId) in [
+                ("1898", "", "1190b", "frus1898", "d1190b"),
+                ("1981-88", "V", "c", "frus1981-88v05", "appC"),
+                ("1981-88", "V", "1", "frus1981-88v05", "d1"),
+            ] {
+                var fields = CitationLookupFields()
+                fields.subseries = subseries
+                fields.volume = volume
+                fields.document = document
+                let matches = try await engine.match(input: fields.input(mode: .structured, pasteText: "", parser: parser))
+                #expect(matches.first?.volumeId == volumeId && matches.first?.documentId == documentId,
+                        "Structured Entry \(subseries) \(volume) \(document) → \(described(matches))")
+            }
+
+            // Batch: each note's own number.
+            let entries = CitationBlockSplitter.split("""
+                1. FRUS, 1898, Document 1190b.
+                2. FRUS, 1981–1988, vol. V, Document C.
+                3. FRUS, 1958–1960, vol. V, Microfiche Supplement, American Republics, Document GT–6.
+                """)
+            #expect(entries.count == 3)
+            let collector = BatchRowCollector()
+            await BatchCitationRunner.run(entries: entries, engine: engine, parser: parser) { row in
+                collector.rows.append(row)
+            }
+            let rows = await collector.rows
+            #expect(rows.map { $0.primaryMatch.map { "\($0.volumeId)/\($0.documentId)" } ?? "-" }
+                    == ["frus1898/d1190b", "frus1981-88v05/appC", "frus1958-60v05mSupp/gt_d6"])
+            #expect(rows.map(\.outcome) == [.resolved, .resolved, .resolved])
+        }
+    }
+
+    /// The fallback #1977 asks for: a number with a letter that the volume does not print is looked
+    /// up by its digits. The document so found is not the one cited, so it is a best guess that names
+    /// the number (the owner's choice, 2026-11-26), where the parse that read the digits alone called
+    /// it a match. Nothing else falls back: a history.state.gov link to an id the volume lacks is
+    /// answered with the volume (#1474 review round 1), and a prefix or a single letter the volume
+    /// does not print finds nothing, though the volume prints a document 1.
+    @Test("A number with a letter the volume does not print finds the document of its digits as a best guess that says so; a link to such an id, and a prefix or a single letter the volume does not print, find no other document (#1977)")
+    func aLetterTheVolumeDoesNotPrintIsABestGuess() async throws {
+        let catalogue = try testManifestEntries()
+        let volumes = try printedNumberVolumes(in: catalogue)
+        try await withEngine(volumes, catalogue: catalogue) { engine in
+            let parser = CitationParser()
+            let guess = try await engine.match(input: parser.parse("FRUS, 1898, Document 1190c"))
+            #expect(guess.map(\.documentId) == ["d1190"], "\(described(guess))")
+            #expect(guess.first?.isBestGuess == true, "\(described(guess))")
+            #expect(guess.first?.confidenceLabel.contains("1190c") == true, "\(described(guess))")
+            #expect(guess.first?.correctionNote != nil, "\(described(guess))")
+
+            // Batch counts it as one.
+            let collector = BatchRowCollector()
+            await BatchCitationRunner.run(entries: CitationBlockSplitter.split("FRUS, 1898, Document 1190c."),
+                                          engine: engine, parser: parser) { row in
+                collector.rows.append(row)
+            }
+            let rows = await collector.rows
+            #expect(rows.map(\.outcome) == [.bestGuess])
+
+            // A link names its document by id: one the volume lacks is answered with the volume.
+            let link = try await engine.match(input: parser.parse(
+                FRUSCanonicalURL.string(volumeId: "frus1898", documentId: "d1190c")))
+            #expect(link.map(\.documentId) == [""], "\(described(link))")
+            #expect(link.first?.volumeId == "frus1898")
+
+            // A prefix or a single letter the volume does not print finds nothing.
+            var fields = CitationLookupFields()
+            fields.subseries = "1981-88"
+            fields.volume = "V"
+            for document in ["GT–1", "D"] {
+                fields.document = document
+                let none = try await engine.match(input: fields.input(mode: .structured, pasteText: "", parser: parser))
+                #expect(none.isEmpty, "Document \(document) → \(described(none))")
+            }
         }
     }
 }
