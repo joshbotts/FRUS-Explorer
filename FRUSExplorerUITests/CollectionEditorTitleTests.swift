@@ -2052,25 +2052,26 @@ final class CollectionListRowActionsTests: XCTestCase {
 /// longest a realistic collection's is (its doc says why), launched as a device whose Apple Intelligence is off
 /// (`FRUS_UI_TEST_APPLE_INTELLIGENCE=notEnabled`), so that the sheet also says what it lacks. Once the sentence has been
 /// counted, it reads from one snapshot the window, the navigation bar, the sentence, the line of what the device lacks,
-/// the format, Export and the bar at the sheet's foot, and requires each inside the window's width; the sentence starting
-/// under the navigation bar with at least a line above the bar; at the default size the sentence and what the device
-/// lacks whole between the navigation bar and the bar, and the chosen card above the bar; at the accessibility sizes the
-/// format's menu inside the bar; and Export inside the bar and the window. The sentence keeps the reader's text size,
-/// so at AX3 and AX5 a long one continues under the bar and the form scrolls: each run's `[L35 fit]` line prints where
-/// the sentence and the line of what the device lacks end, and a screenshot is kept. The menu, which the sheet draws
-/// only at an accessibility size, is the proof that the size took effect; the card, which it draws only at a standard
-/// size, at the default.
+/// the format, Export and the bar at the sheet's foot, and requires each inside the window's width; the sentence whole
+/// between the navigation bar and the bar at every size, which it is since it is drawn no larger than AX1 (decision
+/// DECISION_AX1); the line of what the device lacks under it, whole above the bar at the default size and at the
+/// accessibility sizes begun at least a line above the bar; at the default size the chosen card above the bar; at the
+/// accessibility sizes the format's menu inside the bar; and Export inside the bar and the window. Each run's
+/// `[L35 fit]` line prints where each ends, and a screenshot is kept. The menu, which the sheet draws only at an
+/// accessibility size, is the proof that the size took effect; the card, which it draws only at a standard size, at
+/// the default.
 ///
 /// ## On 1.0 (1861)
 /// The row's menu has no Export…, so each test fails at its first step. 1.0's sheet itself, opened through the editor,
-/// is measured in the suite's runbook entry (`Planning/UI-Test-Destinations-Runbook.md`).
+/// is measured in the suite's runbook entry (`Planning/UI-Test-Destinations-Runbook.md`). L35's sheet drew the sentence
+/// at the reader's size until decision DECISION_AX1, and it ran under the bar at AX3 on the SE and at AX5 on both.
 ///
 /// ## Devices
 /// iPhone 17 and iPhone SE (3rd generation), `OS=27.0`; iPhone-only, it self-skips at iPad width, where the sheet is a
 /// form sheet with room to spare.
 ///
 /// Version history:
-///   1.0 — L35 (J9): initial implementation
+///   1.0 — L35 (J9, decision DECISION_AX1): initial implementation
 @MainActor
 final class CollectionExportSheetFitTests: XCTestCase {
 
@@ -2084,8 +2085,9 @@ final class CollectionExportSheetFitTests: XCTestCase {
     private static let patience: TimeInterval = 30
     private static let phoneOnlyReason =
         "iPhone-only: at iPad width the export sheet is a form sheet with room to spare, so a pass there is not evidence"
-    /// A line of the sentence at AX5, rounded up: what must show above the bar for the sentence to be begun.
-    private static let oneLine: CGFloat = 60
+    /// A line of the sheet's text at AX1, the largest it is drawn at, rounded up: what must show above the bar for the
+    /// line of what the device lacks to be begun.
+    private static let oneLine: CGFloat = 40
 
     var app: XCUIApplication!
 
@@ -2147,12 +2149,10 @@ final class CollectionExportSheetFitTests: XCTestCase {
                   .joined(separator: ", "))
 
         let sentenceFrame = try XCTUnwrap(frames["collection.export.sentence"], "no sentence in the snapshot at \(size)")
-        // At an accessibility size the line of what the device lacks can sit below the screen, under a long sentence,
-        // where the form has not built its row: the form scrolls to it. At the default size it must be there, whole.
-        let lacksIfBuilt = frames["collection.export.lacks"]
-        let lacks = try lacksIfBuilt ?? (accessibility ? .null : XCTUnwrap(lacksIfBuilt, """
-            The sheet does not say what this device lacks at \(size): its seam is not reaching it
-            """))
+        // The line of what the device lacks starts under the sentence, which is drawn no larger than AX1, so the form
+        // has built its row at every size.
+        let lacks = try XCTUnwrap(frames["collection.export.lacks"],
+                                  "The sheet does not say what this device lacks at \(size), or the line is below the screen")
         let missingFormat = accessibility
             ? "the menu is drawn only at an accessibility size, so the size did not take effect"
             : "the cards are drawn only at a standard size"
@@ -2160,32 +2160,31 @@ final class CollectionExportSheetFitTests: XCTestCase {
         let run = try XCTUnwrap(frames["collection.export.run"], "no Export in the snapshot at \(size)")
         let foot = try XCTUnwrap(frames["collection.export.bar"], "no bar at the sheet's foot at \(size)")
 
-        var shown = [("sentence", sentenceFrame), ("format", format), ("Export", run)]
-        if !lacks.isNull { shown.append(("lacks", lacks)) }
-        for (name, frame) in shown {
+        for (name, frame) in [("sentence", sentenceFrame), ("lacks", lacks), ("format", format), ("Export", run)] {
             XCTAssertGreaterThanOrEqual(frame.minX, window.minX - 0.5, "\(name) runs off the leading edge at \(size): \(frame)")
             XCTAssertLessThanOrEqual(frame.maxX, window.maxX + 0.5, "\(name) runs off the trailing edge at \(size): \(frame)")
             XCTAssertGreaterThan(frame.height, 0, "\(name) has no height at \(size)")
         }
-        // The sheet opens on its sentence: under the navigation bar, with a line of it at least above the bar.
+        // The sheet opens on its sentence, whole between the navigation bar and the bar at every size (decision
+        // DECISION_AX1), and the line of what the device lacks follows it.
         XCTAssertGreaterThanOrEqual(sentenceFrame.minY, navFoot - 0.5,
                                     "The sentence starts under the navigation bar at \(size): \(sentenceFrame), bar foot \(navFoot)")
-        XCTAssertLessThanOrEqual(sentenceFrame.minY, foot.minY - Self.oneLine, """
-            The sentence starts too low to be read at \(size): it starts at \(sentenceFrame.minY), the bar at \(foot.minY)
+        XCTAssertLessThanOrEqual(sentenceFrame.maxY, foot.minY + 0.5, """
+            The sentence runs under the bar at \(size): it ends at \(sentenceFrame.maxY), the bar starts at \(foot.minY)
             """)
-        if !lacks.isNull {
-            XCTAssertLessThanOrEqual(sentenceFrame.maxY, lacks.minY + 0.5, "The sentence runs into what the device lacks at \(size)")
-        }
-        if !accessibility {
-            XCTAssertLessThanOrEqual(lacks.maxY, foot.minY + 0.5, """
-                What this device lacks runs under the bar at \(size): it ends at \(lacks.maxY), the bar starts at \(foot.minY)
-                """)
-        }
+        XCTAssertLessThanOrEqual(sentenceFrame.maxY, lacks.minY + 0.5, "The sentence runs into what the device lacks at \(size)")
         if accessibility {
+            // Under a long sentence at AX1 the line may continue under the bar, where the form scrolls: it is begun above it.
+            XCTAssertLessThanOrEqual(lacks.minY, foot.minY - Self.oneLine, """
+                What this device lacks starts too low to be read at \(size): it starts at \(lacks.minY), the bar at \(foot.minY)
+                """)
             XCTAssertGreaterThanOrEqual(format.minY, foot.minY - 0.5, "The format menu is not in the bar at \(size)")
             XCTAssertLessThanOrEqual(format.maxY, run.minY + 0.5, "The format menu runs into Export at \(size)")
         } else {
-            XCTAssertGreaterThanOrEqual(format.minY, lacks.maxY - 0.5, "The chosen card is above the sentence at \(size)")
+            XCTAssertLessThanOrEqual(lacks.maxY, foot.minY + 0.5, """
+                What this device lacks runs under the bar at \(size): it ends at \(lacks.maxY), the bar starts at \(foot.minY)
+                """)
+            XCTAssertGreaterThanOrEqual(format.minY, lacks.maxY - 0.5, "The chosen card is above what the device lacks at \(size)")
             XCTAssertLessThanOrEqual(format.maxY, foot.minY + 0.5, """
                 The chosen card, PDF, runs under the bar at \(size): it ends at \(format.maxY), the bar starts at \(foot.minY)
                 """)

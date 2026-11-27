@@ -43,13 +43,13 @@ import UIKit
 ///   1.6 — L29 (#2000): Send to Zotero Library posts the RIS file's records
 ///          (`ZoteroCollectionExporter.records(for:options:)`), each document's research notes only where
 ///          they print, where it posted every item as resolved and read no setting
-///   1.7 — L35 (the plan of record's lane 1; J9, J11, decisions 192 and 198): the sentence says what the export
-///          will print, counted as the export reads the collection (`CollectionExportSentence`), where it read the
-///          collection's defaults; before Export the sheet says what this device lacks for it; the sheet opens on the
+///   1.7 — L35 (the plan of record's lane 1; J9, J11, decisions 192, 198 and DECISION_AX1): the sentence says what
+///          the export will print, counted as the export reads the collection (`CollectionExportSentence`), where it
+///          read the collection's defaults; before Export the sheet says what this device lacks for it; it opens on the
 ///          format the collection last exported as on this device (`CollectionExportFormatMemory`); on iPhone and iPad
-///          Export is pinned at the foot, and at the accessibility text sizes the format is a menu there, so the sheet
-///          opens on its sentence with the format and Export in view at any text size; BibTeX resolves no summary, which
-///          it never prints. The Collections list and Manage Collections open it (`CollectionListExportSheet`)
+///          Export is pinned at the foot, with the format a menu there at the accessibility sizes and the sentence no
+///          larger than AX1, so it opens on its sentence, format and Export at any size; BibTeX resolves no summary,
+///          which it never prints. The Collections list and Manage Collections open it (`CollectionListExportSheet`)
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -463,18 +463,18 @@ struct ExportSheetView: View {
     /// Since L35 Export is pinned at the foot (`iOSExportBar`), with the format's menu there at the accessibility text
     /// sizes, so that the sheet opens on its sentence with the format and Export in view at any text size (J9); an
     /// export's error follows the sentence, and the form scrolls to it. 1.0 put Export in the form below the Zotero row,
-    /// and below the screen from AX3 on an iPhone 17. The sentence keeps the reader's text size: at the largest sizes a
-    /// long one continues under the bar, and the form scrolls.
+    /// and below the screen from AX3 on an iPhone 17. The sentence and the line under it grow no further than
+    /// `textSizeLimit` (decision DECISION_AX1): at the reader's AX5 a long one ran under the bar on an iPhone SE.
     #if os(iOS)
     private var iOSExportBody: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 Form {
-                    // What the export will print, and what this device lacks for it (decision 192), at the reader's own
-                    // text size: the form opens on it, and at the largest sizes a long one continues under the bar and
-                    // scrolls, with the format and Export still in view there.
+                    // What the export will print, and what this device lacks for it (decision 192): the form opens on
+                    // it, drawn no larger than AX1 (decision DECISION_AX1), so that an iPhone shows the sentence whole
+                    // above the bar at every text size, with the format and Export in view there.
                     Section {
-                        whatWillPrint
+                        whatWillPrint.dynamicTypeSize(...Self.textSizeLimit)
                     }
 
                     // An export's failure, first, where its sentence is: below the form's fold it went unseen.
@@ -558,7 +558,7 @@ struct ExportSheetView: View {
     /// export is doing while it runs, else Export, which names the format; at the accessibility text sizes the format's
     /// menu above it (`usesFormatMenu`).
     ///
-    /// Its text grows no further than `barSizeLimit`, as a bar's does, and a long press shows it large (the Large
+    /// Its text grows no further than `textSizeLimit`, as a bar's does, and a long press shows it large (the Large
     /// Content Viewer): at AX5 an iPhone SE has no room for the bar at full size and the sentence above it.
     private var iOSExportBar: some View {
         VStack(spacing: 10) {
@@ -592,7 +592,7 @@ struct ExportSheetView: View {
                 .accessibilityIdentifier("collection.export.run")
             }
         }
-        .dynamicTypeSize(...Self.barSizeLimit)
+        .dynamicTypeSize(...Self.textSizeLimit)
         .padding(.horizontal, 16)
         .padding(.vertical, Self.barVerticalPadding)
         .frame(maxWidth: .infinity)
@@ -611,8 +611,8 @@ struct ExportSheetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The largest text size the bar at the sheet's foot is drawn at.
-    static let barSizeLimit: DynamicTypeSize = .accessibility1
+    /// The largest text size the sheet's sentence and the bar at its foot are drawn at (decision DECISION_AX1).
+    static let textSizeLimit: DynamicTypeSize = .accessibility1
 
     /// The space above and below the bar's controls.
     static let barVerticalPadding: CGFloat = 12
