@@ -598,6 +598,11 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
       - **The form:** a paste fills the Document no. field as printed, and Structured Entry reads it by the same rule. On iOS the field's number pad, which typed no letter or dash, is the numbers-and-punctuation keyboard. Batch follows the parser.
     - **Public:** `CitationInput.documentNumber` is `String?`, where it was `Int?`, and `extractDocumentNumber(from:)` returns one. New: `normalizedDocumentNumber(_:)`, `ConfidenceLabels.numberNotPrinted(_:)` and `.numberNotPrintedNote`. `FRUS-API.openapi.yaml`'s `documentNumber` is a string; `CitationMatch` is unchanged. The symbol diff is in the pull request.
     - **W2's candidate was left** (decision 183): naming the result by its head would take a field on `CitationMatch` or an index read for each row, and the row changes neither. It stays in §5.
+    - **By hand, on the Mac** (2026-11-27, the check copy at `cbf60d59`). The screen was locked overnight, and the owner chose that L30 wait for this walk ("Wait for the walk (Recommended)").
+      - Copy Citation for `frus1898` d1190b copied its citation, "…(Washington, D.C.: Government Printing Office, 1901), Document 1190b."
+      - Pasted into Citation Lookup, it read Document no. 1190b and found d1190b, one result, "Match — document number assigned digitally".
+      - "FRUS, 1898, Document 1190c" found d1190, as "Best guess — this volume prints no document 1190c", with its note.
+      - A link to `…/frus1898/d1190b` filled the Document no. field with 1190b, which it had left empty.
     - **Owed after the merge:** #1977's hand-over note for FRUS Explorer Light, shown to the owner first.
 
 - **L31, Source Explorer's year, and NARA's scope note** (#1975, #1976, #1974, #1970). One session, one pull request, a commit for each issue in this order.
