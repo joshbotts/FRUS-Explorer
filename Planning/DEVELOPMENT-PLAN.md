@@ -4635,7 +4635,12 @@ The orchestration session started this one for row L37, on `claude/l37-rail-thro
 
 ## Session 2026-11-27 — L41, the Zotero client: a send returns as soon as its last write succeeds, and Zotero's `Backoff` holds the account's next write from any client; each wait is said through the send's status; a date `Retry-After` is read; #1923's resume proposed, not built
 
-The plan of record's session started this one for row L41, on `claude/l41-zotero-client-f9a33d`, held until L29 had merged and then begun on the orchestrator's "go" from `v2` at `2db58c5a`, L29's merge. The row: #1924, #1925 and #1926, and #1923's resume as a proposal (decision 138). Commits: `54bf4f86` (the client and its suite), `8ab12121` (the reader's two Share sends), and a docs commit.
+The plan of record's session started this one for row L41, on `claude/l41-zotero-client-f9a33d`, held until L29 had merged and then begun on the orchestrator's "go" from `v2` at `2db58c5a`, L29's merge. The row: #1924, #1925 and #1926, and #1923's resume as a proposal (decision 138). Commits: `54bf4f86`, the client and its suite; `8ab12121`, the reader's two Share sends; `c6363fc4`, the docs and records; then, at the head of the queue, `v2` at `ebacf85a` taken in (`ec43ce68`), and the landing's records.
+
+**#2031's merge**
+- L37 merged as `ebacf85a`, a squash onto `5026ead5`, at 11:32:43 UTC on 2026-11-27, from its head `65b55c72`. Its tree, `9919a487`, is the head's. It closed no issue, since F11 has none. This entry records it.
+- L32's #2030 (`5026ead5`, onto `2db58c5a`, at 10:25:34 UTC, from `da8e29fc`, tree `27917818`, closing #1986 and #2010) is recorded in L37's entry above, L29's #2029 in L32's, L33's #2028 in L29's, and L61's #2027 in L33's.
+- This branch took `v2` in at `ebacf85a` (`ec43ce68`). Four files conflicted. Three were records, the session log, the Amendment-Log and the plan's §5, each resolved with `v2`'s side first and this row's after it. The fourth, `08-Reading-Research-Collections.md`, held three ranges in `DocumentView.swift` that L37 and this row had both re-pointed, each set from the merged file (under *Docs*, below). This row takes no decision, so L32's 212 is still the last. On the merged tree a script applying `EditableContentKeyTests`' rule read all 1,334 ranged blocks, with their 1,363 keys: each key is inside its block's range, and each range this row set starts on its key's line.
 
 **Each defect, first** (decision 183)
 - **The control, on `v2`'s client** (`2db58c5a`, the kit untouched), seven new tests written first and run through `Scripts/heavy.sh` with `swift test --filter ZoteroRetryWaitTests`, the package built from empty in 92 s: 20 tests in the suite, the 13 already there passed, and all 7 new ones failed, with 11 issues, each at its defect.
@@ -4674,19 +4679,26 @@ The plan of record's session started this one for row L41, on `claude/l41-zotero
 
 **Docs**
 - Both manuals: §11.2's Send to Zotero Library, what the send says while it waits and that a pause is waited at the next send; the collection export's Zotero bullet, its progress line. The *AI Generated* notice is kept.
-- EditableContent: four blocks added for the new keys (`zotero.status.retry.one` and `.many`, `zotero.status.backoff.one` and `.many`, `ZoteroAPIClient.swift` 370–384), and four ranges re-pointed, each starting on its key's line with its length kept: `document.toolbar.share` 2343 → 2353, `document.toolbar.share.help` 2344–2345 → 2354–2355 and `summary.block.regenerate.a11y` 2649–2650 → 2663–2664 (`DocumentView.swift`), and `source.explorer.window.empty.detail` 2145–2146 → 2161–2162 (`SupportingViews.swift`, in `06-Archives.md`). The last two were missed at first: the first scoped run's `EditableContentKeyTests` named them, and a script then read all 1,363 ranged keys, every one on its line. A bullet in the Amendment-Log.
+- EditableContent: four blocks added for the new keys (`zotero.status.retry.one` and `.many`, `zotero.status.backoff.one` and `.many`, `ZoteroAPIClient.swift` 370–384), and four ranges re-pointed, each starting on its key's line with its length kept. In `DocumentView.swift`, `document.toolbar.share` 2343 → 2353, `document.toolbar.share.help` 2344–2345 → 2354–2355 and `summary.block.regenerate.a11y` 2649–2650 → 2663–2664 on this row's base, and at the merge, from the lines L37 left, 2409 → 2419, 2410–2411 → 2420–2421 and 2715–2716 → 2729–2730. In `SupportingViews.swift`, which L37 does not touch, `source.explorer.window.empty.detail` 2145–2146 → 2161–2162 (in `06-Archives.md`). The last two were missed at first: the first scoped run's `EditableContentKeyTests` named them, and a script then read every ranged key, each inside its block's range. A bullet in the Amendment-Log.
 - The plan's L41 record, §4's #1923 line, and two §5 findings.
 
 **Checks**
-- **The scoped runs,** through `Scripts/heavy.sh`. The control and the fix ran in one script under one lock, 04:46 to 04:57, since waiters on the lock are not served in order; L32's landing job had held it from 03:43, its UI suites included, and this job took it at 04:46.
+- **The scoped runs,** through `Scripts/heavy.sh`. The control and the fix ran in one script under one lock, 09:46 to 09:57 UTC, since waiters on the lock are not served in order; L32's landing job had held it from 08:43 UTC, its UI suites included, and this job took it at 09:46.
   - `swift build --target FRUSCoreKit` on the fixed client: no warning.
   - `swift test --filter Zotero`: 56 tests in 8 suites passed. They are the suite's 26 with the NARA and Zotero host suites.
   - `build-for-testing` from empty on the iPhone 17 under iOS 27.0 (`80CF0F18`): the two known residues and no other warning.
   - The app's affected suites there, the app removed first (`ZoteroRetryWaitTests` and the file's four other suites, `NARAAndZoteroClientHostTests`, `ZoteroIOSDeadEndTests`, `CollectionZoteroSendNotesTests`, `CollectionExportNamingTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests`, `SharedKitsBoundaryTests`, `AppSourceTreeTests`, `UnconstructedViewAuditTests`, `ResearchGuideCoverageTests`, `DocumentViewTests` and `EnvironmentSelfReferenceTests`): 184 tests in 18 suites, 183 passed. The failure was `EditableContentKeyTests`, on two ranges this row had missed: `source.explorer.window.empty.detail` and `summary.block.regenerate.a11y`. Both were re-pointed.
   - The `FRUSExplorerMac` build: succeeded, the two known residues only. It compiles the Share popover, whose change is Mac-only code.
 - **The review pass** on the diff, before the docs commit: three doc comments corrected in the client, with no code change. A deadline for an account that never writes again is not dropped. `hold` holds writes. The 429's seconds may come from a date. The status keys moved one line, and their four blocks with them.
-- **The confirm run** after it, 05:23 to 05:26 on `8ab12121` with the docs uncommitted:
+- **The confirm run** after it, 10:23 to 10:26 UTC on `8ab12121` with the docs uncommitted:
   - `swift build --target FRUSCoreKit`: no warning.
   - `swift test --filter Zotero`: 56 of 56.
   - `EditableContentKeyTests`, `ResearchGuideCoverageTests`, `ZoteroRetryWaitTests` and `CodingStandardsAuditTests`: 118 tests, all passed, with the known residues only.
-- **Owed at landing,** on the merged tree: the full unit target, `swift build --target FRUSCoreKit`, `swift test` and the Mac build.
+- **At the head of the queue,** on the merge `ec43ce68` (tree `d8715bbc`), with `v2` at `ebacf85a` taken in, in one `heavy.sh` call from 11:44 to 12:04 UTC, which waited until then behind L40's iPad check:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder: the two known residues alone.
+  - The unit target there (`-only-testing:FRUSExplorerTests`), the app removed first and the TEI mirror set: 8,359 tests in 1,011 suites, of which 8,341 passed, none failed, 17 were skipped as at L37's landing, and 1 was the expected failure, the one test with the six known issues, in 777 s, from 11:47 to 12:01 UTC. L37's landing ran 8,346 in 1,011 on `v2`'s code, and this row adds 13 tests to `ZoteroRetryWaitTests`, which held 13 and now holds 26.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,273 tests in 610 suites over 39 runs, and none failed. Its build printed no warning. L32's landing ran 5,260, L37 changed no package input, and the package compiles this row's 13 too.
+  - The `FRUSExplorerMac` build: succeeded, with the two residues alone.
+  - `Scripts/check_repo_hygiene.py`: six checks passed.
+- **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
