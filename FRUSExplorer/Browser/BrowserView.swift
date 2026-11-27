@@ -187,8 +187,8 @@ struct BrowserView: View {
     // pendingBrowseDocument/filterDownloadedOnly below.
 
     @Environment(\.horizontalSizeClass) private var sizeClass
-    /// Gates the semantic map onto its own window where one is available (F-25 / CW-9a).
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Gates the semantic map onto its own window where one opens (F-25 / CW-9a; ``AuxWindowGate``).
+    @AuxWindowGate private var opensAuxWindows
     /// Opens the value-based `semanticMapScene`.
     @Environment(\.openWindow) private var openWindow
 
@@ -444,7 +444,7 @@ struct BrowserView: View {
                 // Trends, and a reader who wanted the network beside it would have no way to ask
                 // for a second window. Where the surface is a sheet, one item is right — a sheet
                 // has no side-by-side to offer, and the picker inside it already switches modes.
-                if supportsMultipleWindows {
+                if opensAuxWindows {
                     Menu {
                         ForEach(PersonAnalyticsMode.allCases, id: \.self) { mode in
                             Button {
@@ -1187,7 +1187,7 @@ struct BrowserView: View {
     /// Opens Corpus Analytics in a window where one is available, and in the sheet where it is
     /// not (UI review F-11 / CW-9b) — the twin of ``presentSemanticMap``.
     private func presentAnalytics(_ params: AnalyticsParameters?) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(params ?? AnalyticsParameters(term: ""),
                                    from: sceneID, using: openWindow)
             return
@@ -1202,7 +1202,7 @@ struct BrowserView: View {
     /// The request's `mode` is window identity, so Trends and Network open as two windows while
     /// asking twice for the same one focuses it — see `PersonAnalyticsRequest`.
     private func presentPersonAnalytics(_ request: PersonAnalyticsRequest?) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(request ?? PersonAnalyticsRequest(),
                                    from: sceneID, using: openWindow)
             return
@@ -1223,7 +1223,7 @@ struct BrowserView: View {
     /// Opens Cross-Reference Analytics in a window where one is available, and in the sheet where
     /// it is not (UI review F-11 / CW-9e).
     private func presentCrossRefAnalytics() {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(CrossReferenceAnalyticsRequest(),
                                    from: sceneID, using: openWindow)
             return
@@ -1233,7 +1233,7 @@ struct BrowserView: View {
 
     /// Chronology twin of ``presentAnalytics``.
     private func presentChronology(_ params: ChronologyParameters?) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(params ?? ChronologyParameters(),
                                    from: sceneID, using: openWindow)
             return
@@ -1258,9 +1258,9 @@ struct BrowserView: View {
     /// is **settled: F-18 was PROBED (W-2d, 2026-08-27, iPad Pro 13-inch simulator, iPadOS 26.5)
     /// and a Full Screen Apps iPad reports true TRUTHFULLY**, opening a real second full-screen
     /// scene; `FRUSExplorerApp`'s scene table states the measurement. The fallback is still a
-    /// real path, but for iPhone, where the flag is false, rather than for a doubted iPad.
+    /// real path, for every phone (``AuxWindowGate``, the iPhone Duo too), not a doubted iPad.
     private func presentSemanticMap(_ request: SemanticMapRequest?) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             // A nil request is the whole-corpus map, which is this menu item's normal meaning.
             appState.openAuxWindow(request ?? .wholeCorpus, from: sceneID, using: openWindow)
             return

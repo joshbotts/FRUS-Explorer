@@ -99,8 +99,8 @@ struct VolumeSourcesView: View {
     @Environment(\.documentHostID) private var documentHostID
     #endif
     #if os(iOS)
-    /// Gates the neighbors window on iOS: sheet fallback wherever windows are unavailable.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Gates the neighbors window on iOS: the sheet wherever ``AuxWindowGate`` answers false.
+    @AuxWindowGate private var opensAuxWindows
     /// #338 aux-window origin: this main window's scene, recorded as the Archival Neighbors window's
     /// origin so a row-tap document routes back here.
     @Environment(\.sceneID) private var sceneID
@@ -412,7 +412,7 @@ struct VolumeSourcesView: View {
                         // exist (macOS; iPad with windowed multitasking) — browsable
                         // beside the reading window. Hoisted sheet only where they don't.
                         #if os(iOS)
-                        guard supportsMultipleWindows else {
+                        guard opensAuxWindows else {
                             sourceNeighborsTarget = presented
                             return
                         }
@@ -482,7 +482,7 @@ struct VolumeSourcesView: View {
                     // hoisted parent sheet on iOS. `openWindow` is an action, so it
                     // is safe inside this section-emitting view (unlike a sheet).
                     //
-                    // Deliberately NOT gated on supportsMultipleWindows (unlike the
+                    // Deliberately NOT gated on opensAuxWindows (unlike the
                     // neighbors trigger above): the CrossVolumeProvenanceRequest scene
                     // is still macOS-only (#241's stretch goal, not ported), so an iOS
                     // openWindow(value:) would be a silent no-op and the button would do

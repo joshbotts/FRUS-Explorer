@@ -397,12 +397,12 @@ struct DocumentView: View {
     //
     // External (non-FRUS) cross-reference URLs now go straight to `UIApplication.shared.open`
     // in `handleCrossRefTap`.
-    /// `true` only when the platform can actually open a second window — Stage
-    /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
-    /// "Open in New Window" affordance so it isn't offered where `openWindow`
+    /// `true` only where a second window opens: an iPad with windows, never a phone, the
+    /// iPhone Duo included (``AuxWindowGate``). The rail's tools open as windows there and as
+    /// sheets elsewhere, and "Open in New Window" is offered only there, never where `openWindow`
     /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
     /// is therefore the wrong proxy for multi-window capability.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    @AuxWindowGate private var opensAuxWindows
 
     /// `true` on iPhone — the rail presents as a bottom sheet there; iPad (and any regular-width
     /// idiom) gets the trailing column. Uses `userInterfaceIdiom`, not `sizeClass`, because an
@@ -643,7 +643,7 @@ struct DocumentView: View {
     ///   menu offers no Print item. A menu entry wired to nothing is worse than no entry.
     /// - `openInNewWindow` — `openWindow(value:)` silently does nothing on iPhone and on any
     ///   iPad without Stage Manager, which is why the rail's own "Open in New Window" is gated
-    ///   on `supportsMultipleWindows`. The menu applies the same gate.
+    ///   on ``AuxWindowGate``. The menu applies the same gate.
     /// - `findNext` / `findPrevious` — `UIFindInteraction` owns next/previous itself, inside
     ///   the find bar it presents. Declaring ⌘G against it would be a second owner of a key
     ///   the system already binds.
@@ -684,7 +684,7 @@ struct DocumentView: View {
             highlightSelection: { color in createHighlight(color: color) },
             toggleResearchPanel: { toggleRail() },
             openInNewWindow: {
-                guard supportsMultipleWindows else { return }
+                guard opensAuxWindows else { return }
                 var id = DocumentWindowID(entry: entry)
                 id.header = vm.documentTitle ?? entry.header
                 openWindow(value: id)
@@ -1188,7 +1188,7 @@ struct DocumentView: View {
         // marking it invalidated on every document open, burning the id for every existing user.
         // That is why the tip was deleted rather than re-anchored. Phase 1 adds its replacement
         // under a new type; when it lands, its `.invalidate` belongs here.
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(GraphWindowRequest(entry: entry), from: sceneID, using: openWindow)
         } else {
             activeSheet = .crossReferenceGraph
@@ -1205,7 +1205,7 @@ struct DocumentView: View {
     /// not, and #752/M-31 is the bug that cost (see `openRailTool`).
     private func openWordCloud() {
         let scope = WordCloudScope.document(volumeId: entry.volumeId, documentId: entry.documentId)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(scope, from: sceneID, using: openWindow)
         } else {
             activeSheet = .wordCloud(scope)
@@ -1213,7 +1213,7 @@ struct DocumentView: View {
     }
 
     private func openSourceExplorer(vm: DocumentViewModel) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(SourceExplorerRequest(
                 rawSourceNote: vm.sourceNote ?? "",
                 documentYear: Self.extractYear(from: entry.dateline),
@@ -1235,7 +1235,7 @@ struct DocumentView: View {
         let request = SemanticMapRequest(
             volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
             focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)")
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(request, from: sceneID, using: openWindow)
         } else {
             activeSheet = .semanticMap(request)
@@ -1252,7 +1252,7 @@ struct DocumentView: View {
             anchorYear: Self.extractYear(from: entry.dateline),
             weights: relatedWeights,
             scope: .allIndexed)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(request, from: sceneID, using: openWindow)
         } else {
             activeSheet = .relatedDocuments(request)

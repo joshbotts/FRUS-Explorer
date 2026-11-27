@@ -294,11 +294,11 @@ struct SearchView: View {
     #endif
 
     @Environment(\.openWindow) private var openWindow
-    /// `true` when the platform can open a second window (Stage Manager on iPad).
-    /// When set, opening a result opens the document in its own window so the
-    /// results list stays visible alongside; otherwise the document is pushed onto
-    /// the search navigation stack as before.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    #if os(iOS)
+    /// Whether Corpus Analytics, a result's Open in New Window and its Archival Neighbors open
+    /// windows here: an iPad with windows, never a phone (``AuxWindowGate``).
+    @AuxWindowGate private var opensAuxWindows
+    #endif
     /// #338 step 2: this scene's identity, injected into the Saved Searches sheet so its Word Cloud
     /// action addresses THIS window (a sheet doesn't reliably inherit `\.sceneID`).
     @Environment(\.sceneID) private var sceneID
@@ -2486,7 +2486,7 @@ struct SearchView: View {
         // therefore no tab hop. The teleport below was never a routing bug; it was the only way to
         // reach a sheet another tab owned, which is exactly what F-13 said.
         #if os(iOS)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(params, from: sceneID, using: openWindow)
             return
         }
@@ -2708,7 +2708,7 @@ struct SearchView: View {
                         } label: {
                             Label(ResultSelectionCopy.open, systemImage: "arrow.up.right.square")
                         }
-                        if supportsMultipleWindows {
+                        if opensAuxWindows {
                             Button {
                                 appState.openAuxWindow(DocumentWindowID(
                                     volumeId: result.volumeId,
@@ -2734,7 +2734,7 @@ struct SearchView: View {
                             }
                             Divider()
                         }
-                        if supportsMultipleWindows {
+                        if opensAuxWindows {
                             Button {
                                 appState.openAuxWindow(DocumentWindowID(
                                     volumeId: result.volumeId,
@@ -2754,7 +2754,7 @@ struct SearchView: View {
                             // window, so it survives opening result after result from this list
                             // — the same reason `openResult` prefers a document window above.
                             // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
-                            if supportsMultipleWindows {
+                            if opensAuxWindows {
                                 appState.openAuxWindow(ArchivalNeighborsRequest.document(
                                     volumeId:     result.volumeId,
                                     documentId:   result.documentId,

@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import UIKit
 @testable import FRUSExplorer
 
 /// An action taken inside an iPad window must happen in **that** window (#752).
@@ -44,6 +45,8 @@ import Foundation
 /// 4. Closing an iPad auxiliary window brings a main window forward instead of leaving the reader
 ///    on the Home Screen (#1368): the one activation site, the destination rule, the close action,
 ///    and every Done and hand-off exit that closes a window.
+/// 5. A phone presents these surfaces as sheets, the iPhone Duo too (D1): `AuxWindowGate`'s rule,
+///    and that it is the one reader of `\.supportsMultipleWindows`.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #752
@@ -53,6 +56,7 @@ import Foundation
 ///          (4a′, the launch-recording tests), a hand-off close with no target is still a hand-off,
 ///          and every closing exit's hand-off is addressed to the window its close fronts
 ///          (`everyClosingExitAddressesTheWindowItFronts`)
+///   1.3 — L40 (D1, decision 179): section 5, `AuxWindowGate`; the word cloud's local branch reads it
 @Suite("iPad window targeting")
 struct WindowTargetingTests {
 
@@ -91,7 +95,7 @@ struct WindowTargetingTests {
     /// iPadOS does not raise. Offscreen, the tap looked like it did nothing.
     ///
     /// The cause was structural rather than an OS gap, and that is what these tests pin. Four rail
-    /// tools resolve `supportsMultipleWindows ? openAuxWindow : sheet` **locally**, so they open
+    /// tools resolve `opensAuxWindows ? openAuxWindow : sheet` **locally**, so they open
     /// where they were launched. The word cloud was the only one riding the app-level hand-off,
     /// because it was the only one with no scene of its own.
     @Test("The document rail's word cloud resolves locally, like its four siblings")
@@ -99,8 +103,8 @@ struct WindowTargetingTests {
         let source = try Self.source("DocumentView/DocumentView.swift")
         let body = try Self.functionBody("private func openWordCloud()", in: source, limit: 700)
 
-        #expect(body.contains("supportsMultipleWindows"),
-                "the word cloud must branch on multi-window like graph/sources/map/related")
+        #expect(body.contains("opensAuxWindows"),
+                "the word cloud must branch on the aux-window gate like graph/sources/map/related")
         #expect(body.contains("openAuxWindow"), "the multi-window branch must open its own scene")
         #expect(body.contains("activeSheet = .wordCloud"),
                 "the single-window branch must present in THIS view, not an ancestor's sheet")
@@ -1125,5 +1129,91 @@ struct WindowTargetingTests {
                 "MainTabView must read its window's UISceneSession — a SwiftUI view cannot see it")
         #expect(code.contains { $0.contains("appState.registerSceneSession($0, for: SceneID(sceneIDToken))") },
                 "and register it under the same token it registers as a live scene")
+    }
+
+    // MARK: - 5. A phone presents sheets, the iPhone Duo too (D1, L40)
+
+    /// The iPhone Duo is the one iPhone whose scenes support multiple windows (R6b,
+    /// `Planning/iPhone-Duo-Assessment-2026-11-19.md`). Every gate took the iPad's side there: the
+    /// analytics and the other surfaces opened as full-screen windows, and one closed with Done kept
+    /// its scene session, so the next launch read "2 Views Open". Decision 179: on a phone idiom the
+    /// gate answers as a phone, whatever the scene supports.
+    @Test("A phone idiom presents sheets even where its scenes support windows: the iPhone Duo")
+    func phoneIdiomPresentsSheets() {
+        #expect(!AuxWindowGate.opensWindows(supportsMultipleWindows: true, idiom: .phone),
+                "the iPhone Duo supports multiple windows, and must present sheets as every iPhone does (D1)")
+        #expect(!AuxWindowGate.opensWindows(supportsMultipleWindows: false, idiom: .phone),
+                "every other iPhone")
+    }
+
+    /// Everywhere else the scene decides, as it did before the gate: an iPad opens windows in every
+    /// multitasking mode, where its flag is true and truthful (W-2d), and sheets where it is false.
+    @Test("Every other idiom follows its scene, so the iPad's windows are unchanged")
+    func otherIdiomsFollowTheirScene() {
+        for idiom in [UIUserInterfaceIdiom.pad, .unspecified, .mac, .vision] {
+            #expect(AuxWindowGate.opensWindows(supportsMultipleWindows: true, idiom: idiom),
+                    "idiom \(idiom.rawValue), with windows")
+            #expect(!AuxWindowGate.opensWindows(supportsMultipleWindows: false, idiom: idiom),
+                    "idiom \(idiom.rawValue), without")
+        }
+    }
+
+    /// Every Swift file under `FRUSExplorer/`, by name, as its code lines.
+    private static func appCodeFiles() throws -> [(file: String, lines: [(line: Int, text: String)])] {
+        let root = Self.appSourceRoot
+        let walker = try #require(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil),
+                                  "could not enumerate \(root.path)")
+        var files: [(file: String, lines: [(line: Int, text: String)])] = []
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            files.append((file: url.lastPathComponent, lines: Self.codeLines(text)))
+        }
+        return files
+    }
+
+    /// One reader of the flag, so a gate added later cannot read it without the idiom beside it. In
+    /// 1.0 (1861) the 25 gates each read it themselves, and that is how the Duo took the iPad's side.
+    /// And a file that opens an aux window declares the gate, so its window has a sheet beside it.
+    @Test("Only AuxWindowGate reads supportsMultipleWindows, and a file that opens an aux window declares the gate")
+    func everyGateReadsTheHelper() throws {
+        // Vacuity control first: the scan sees a reader, and not a comment that names one.
+        #expect(Self.codeLines("@Environment(\\.supportsMultipleWindows) private var flag")
+                    .contains { $0.text.contains("supportsMultipleWindows") },
+                "the scan must see a reader of the flag")
+        #expect(Self.codeLines("/// `\\.supportsMultipleWindows` is plist-derived").isEmpty,
+                "and a comment that names it is not a reader")
+
+        let appState = try Self.source("App/AppState.swift")
+        let anchor = try #require(appState.range(of: "struct AuxWindowGate: DynamicProperty {"),
+                                  "AuxWindowGate not found — moved or renamed?")
+        let block = try #require(Self.balancedBlock(in: appState, from: anchor.lowerBound))
+        let firstLine = appState[..<anchor.lowerBound].filter { $0 == "\n" }.count + 1
+        let gateLines = firstLine...(firstLine + block.filter { $0 == "\n" }.count)
+
+        let files = try Self.appCodeFiles()
+        #expect(files.count > 100, "read only \(files.count) Swift files under FRUSExplorer/ — moved?")
+        let readers = files.flatMap { file in
+            file.lines.filter { $0.text.contains("supportsMultipleWindows") }.map { (file: file.file, line: $0.line) }
+        }
+        let outside = readers.filter { !($0.file == "AppState.swift" && gateLines.contains($0.line)) }
+        #expect(outside.isEmpty, """
+            Only AuxWindowGate may read \\.supportsMultipleWindows (D1, L40). Read by: \
+            \(outside.map { "\($0.file):\($0.line)" }.joined(separator: ", ")). A gate that reads the flag itself \
+            takes the iPad's side on the iPhone Duo; declare `@AuxWindowGate private var opensAuxWindows`.
+            """)
+        #expect(readers.contains { $0.file == "AppState.swift" && gateLines.contains($0.line) },
+                "and AuxWindowGate must read it, or no gate ever opens a window")
+
+        let openers = files.filter { file in
+            file.lines.contains { $0.text.contains("appState.openAuxWindow(") || $0.text.contains("appState?.openAuxWindow(") }
+        }
+        #expect(openers.count > 5, "found \(openers.count) files that open an aux window — the needle moved?")
+        let ungated = openers.filter { file in
+            !file.lines.contains { $0.text == "@AuxWindowGate private var opensAuxWindows" }
+        }
+        #expect(ungated.isEmpty, """
+            These files open an aux window and declare no AuxWindowGate: \(ungated.map(\.file).sorted()). \
+            On the iPhone Duo an ungated window opens where every other iPhone shows a sheet (D1).
+            """)
     }
 }

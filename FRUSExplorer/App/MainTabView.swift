@@ -140,8 +140,8 @@ struct MainTabView: View {
     /// that is not wrapped, so nothing changes for those.
     @Environment(\.sceneID) private var inheritedSceneID
 
-    /// Gates Archival Analytics onto its own window where one is available (F-11 / CW-9c).
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Gates Archival Analytics onto its own window where one opens (F-11 / CW-9c; ``AuxWindowGate``).
+    @AuxWindowGate private var opensAuxWindows
     /// Opens the value-based `archivalAnalyticsScene`.
     @Environment(\.openWindow) private var openWindow
 
@@ -425,7 +425,7 @@ struct MainTabView: View {
         // rather than a sheet over the tab bar. The hand-off is still the single entry point #833
         // made it — every topic door and the Browse menu produce one, and this consumer decides
         // only where it lands, so the two-presenter determinism above is unchanged.
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(handoff.payload, from: mine, using: openWindow)
             return
         }
