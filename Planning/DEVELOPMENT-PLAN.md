@@ -4086,13 +4086,93 @@ On the owner's word ("start the plan of record from PR2011. note that PR2017 mer
 - **Decision 191's three texts** (the graph's *Navigating the graph*, Flows' *What Flows reads* and its export's Scope caveat) are in their EditableContent blocks for your reading. The class lens's self-citation caveat still says "about three in five", which was 69.8% before this row and is 67.6% after it: not changed here.
 - **After the merge:** #1978's hand-over note for FRUS Explorer Light, posted as a comment on the issue; its server refuses a version-76 export until its pin moves.
 
+## Session 2026-11-26 — CR: the Collections design brought to the owner's answers and reviewed a third time, with three changes to index version 76 taken the same day
+
+Row CR of the plan of record from 2026-11-25 (decision 149), started from the plan's session on the Mac, and planning only: no build, no app run. The last merge before this entry is L26's, #2019, as `bbe6686c`, on 2026-11-26 at 21:53:08 UTC, after #2017's (`d8b70f5f`). The review was read on `v2` at `b3acd7ad`, before either merged. Its commits were rebased onto L26's merge.
+
+**What was done, in order**
+- **The design's text brought to decisions 153 to 174** (`b3542992`), so that the review read what will be built:
+  - *As published:* where it had *In the volume:*;
+  - lane 5, §4.4 and §5.1's two rows withdrawn;
+  - §4.3's table with decision 158's openings and decision 167's names;
+  - §8.1 and §8.2 marked with what was taken, A5 not offered;
+  - §10's questions marked answered;
+  - step 2 counted at 17 controls.
+- **A2 read first,** since it gates L26 (`0fa40e16`). Measured over the TEI at corpus `216cdb764`, 124,491 of 497,026 document–term pairs (25.0%; 28.6% from 1955) are linked only in notes. So `term_mentions` needed the part of the document each term is linked in. Put to the owner ("Should L26 add a parts column to term_mentions before it lands?"), the owner answered "Add it to v76". The answer went to the L26 session with a hand-over note in the shared notes folder, and L26 built it as decision 188.
+- **The review,** after its cost was put to the owner, who chose "Nine agents (Recommended)":
+  - six reviewers by discipline, then three skeptics, on the second review's method;
+  - the canvas's boards read from the artifact, with the briefs naming what in them the owner's answers superseded;
+  - the whole public TEI read on disk.
+- **Two more findings changed index version 76** and were put to the owner before the skeptics ran, since L26 was about to land:
+  - DATA-2: a list entry with two spellings was one row, and 809 links found no term. The owner chose "Add it to v76 (Recommended)", and it is decision 189.
+  - EDI-2: the index resolves a page reference to one document and kept neither the page nor the choice. "Add it to v76 (Recommended)", and it is decision 190.
+  - The session re-read each one's code and recounted it with a script of its own before asking. The skeptics then confirmed all three.
+
+**What it found** (`Planning/Collections-Design-Third-Review-2026-11-26.md`)
+- **The count.** 58 findings and the session's A2, merged to 48: 1 at S1, 22 at S2, 25 at S3. None was refuted, seven were re-rated down, and 29 merged errors in the design or the plan were listed.
+- **The S1, J1:** *Same settings as…*, built as L47's brief reads, copies the ids that name a document's own headnote and notes. A target then prints the source's, and an edit or a delete through it deletes the source's headnote. INT, ENG and DATA found it independently.
+- **The headnote in the collection file** is not yet defined. Off does not travel, a 1.0 app prints a stand-in where the design said it prints nothing, and "with who wrote it" has no key.
+- **No row owns the export sheet's sentence.** A *Summaries* export fails on a device without Apple Intelligence even with every summary stored, a 1.0 defect.
+- **Selected passages have no home once imported.** The iPad's settings column brings back what Composer v2 removed, with no width rule.
+- **Where the volume's heading leads,** headings do not tell documents apart for most volumes before 1952.
+- **A tagged PDF needs an API that is newer than the app's 26.0 floor,** or the older `CGPDFContextBeginTag`.
+- **Four claims about the volumes were false:** "central files are in", "the only pointers there are" before 1955, the 1952–1954 rule for the volume's own number, and "the volumes before 1952 print no numbers".
+
+**What changed**
+- **`Planning/Collections-Design-Third-Review-2026-11-26.md`** (new).
+- **`Planning/collections-design-review-3/`** (new): the two briefs, the six reviewers' and three skeptics' reports, A2's measurement with its script, and every agent's scripts.
+- **The design:**
+  - corrected in 26 places, each marked *Corrected by the third review* with its finding;
+  - a section's headnote default settled as a new property;
+  - the counts redone (Wording 13, 54 controls, seven pickers in a section's sheet);
+  - §5.7 gains the iPad column Composer v2 removed;
+  - A2, A3, A4 and §8.1's item 10 rewritten from what the index stores;
+  - decisions 188 and 189 cited.
+- **The plan of record:**
+  - a *From the third review* bullet in the briefs of L29, L34 to L36 and L43 to L55;
+  - §1c's answer on the three things §4.4 said, and the promotion at six fields;
+  - the third departure corrected (L43, not lane 4, feeds the preview's list);
+  - CR's record and C2's eight questions;
+  - the runs owed for L43 and L35, and R12's two-device run with a drag on the 1.0 device;
+  - two defects for §5.
+- **Outside the repository:** three hand-over notes for L26 in the shared notes folder.
+
+**Checks**
+- No test reads these files but `planOfRecordMatchesTheVisualMarketingPlan`, which reads the plan's status line and its §7 list. Neither was changed here.
+- Every corrected line of the design was re-read after the edit. The tables' cells were counted where a column was added.
+- Nothing was built or run.
+
+**Cost**
+- 4,868,675 subagent tokens over nine agents, as the harness reported them.
+- The account's weekly limit for all models went from 17% to 24% over the session.
+
+**C2's eight questions, answered the same day** (decisions 191 to 198), one at a time:
+- **Six as recommended.** L35 owns the sheet's sentence (192). A headnote switched off stays off (193). A saved template holds step 1's seven settings (195). A3 is titled *Archival files cited* (196). A citation names history.state.gov's number (197). The records' date line takes the new reading, and the *Summaries* export's defect is filed (198).
+- **C2-3, the compiler's name** (194). Each headnote carries its writer's name, so the promotion is seven fields or eight.
+- **C2-5's grammar.** The owner asked whether the post-1963 central files could be added to the footnote grammar. Told the change is measured first and reaches every reader of the pointers, the owner chose "In 1.1, joining v76 now" (191). It went to the L26 session with a hand-over note.
+- **#2018, filed on the owner's word:** a *Summaries* export fails on a device without Apple Intelligence even when every summary is stored. It is placed in L35 (§1a).
+
+**C2's rest, answered the same day** (decisions 199 to 202), on the owner's request for the questions still open:
+- **Three rows split** (199). The second halves take the next free numbers: L58 (the Note on the Text, the statement of sources and the file's keys), L59 (the iPad's settings column and the drawn opening) and L60 (the tagged PDF, last). Their briefs were divided bullet by bullet, and the rows' table, the table of what each row touches, the order where rows meet, §1c's table and the calendar were brought to them.
+- **Decisions 147 and 148 stand** (200). The submission falls about 2026-12-22 by the arithmetic, and the Office has said early December, with no day.
+- **The design is accepted as reviewed** (201).
+- **A person's name in the web page links like a term** (202), in L52.
+
+**For the owner**
+- **Nothing more from CR.** Wave 4 starts once its own runs are made (the plan's §2).
+- **The pull request,** opened on the owner's word ("Yes. Open PR after L26 merge") once L26 had merged. In the rebase onto `bbe6686c`:
+  - this log kept #2017's, L26's and this entry in that order;
+  - the plan of record kept L26's decision 191 and dropped CR's copy;
+  - L53's brief was brought to decision 191.
+- **The design's status** stays PROPOSED until C2.
+
 ## Session 2026-11-26 — L27, the tab shell's banner: F1 not reproduced through a whole 75 → 76 re-index on the iPad simulator, nor through 1823's own 74 → 75 start, so the build measures the room against the banner once a change settles and logs it for R9; #1835's test passes under iOS 27.0, and the keyboard row's one failure there is the year-range popover's own keyboard
 
 The plan of record's session started this one for row L27, on `claude/l27-tab-shell-banner-42ab07` from `v2` at `bbe6686c`, L26's merge. The row: F1, the blank band under the tab shell's banner on the owner's iPad during 1823's first-launch re-index (R6's PD3), which R6a could not reproduce; and #1835, the same reserve with the keyboard up, on the iPad mini under iOS 27.0. Commits: `c7f7d4cb` (the measurement, its log line and three tests) and a docs commit.
 
-**#2019's merge**
+**#2019's and #2020's merges**
 - L26 merged as `bbe6686c`, a squash onto `d8b70f5f`, at 21:53:08 UTC on 2026-11-26, from its head `7110aaae`. Its tree, `7277ac1b`, is the head's. It closed #1978 and #1854. This entry records it.
-- CR's #2020 was still open when this entry was written. Whichever of the two lands second takes the other in, with the two entries in the order they merged.
+- CR merged as `af771601`, a squash onto `bbe6686c`, at 23:14:57 UTC on 2026-11-26, from its head `a79a6780`. Its tree, `1120d01a`, is the head's. It closed no issue. This branch took `v2` in after it, with CR's entry above this one; the session log was the one conflict, and the plan of record merged cleanly.
 
 **F1, first: not reproduced** (decision 183)
 - **The setup.** The device was S1, the iPad Pro 13-inch (M5) under iOS 27.0, in Windowed Apps and in landscape, with its library at 75 as L26 left it. The owner's frame shows Windowed Apps' corner grip too.
