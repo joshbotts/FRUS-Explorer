@@ -4236,3 +4236,78 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
 - **#1835: closed as not reproduced** on the owner's word ("Close as not reproduced", 2026-11-26), once its own test had passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. The closing comment holds the run, the 26.5 control and the row's move.
 - **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
 - **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
+
+## Session 2026-11-26 — L31: Source Explorer reads a document's year by one rule, the dateline's and then the index's date; the export's year and Numerical File case follow the app's; a live lookup shows NARA's scope note
+
+Row L31 of the plan of record from 2026-11-25 (#1975, #1976, #1974, #1970), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `bbe6686c` (L26's merge) on `claude/l31-source-explorer-year-7a9f4b`:
+- `00bb6465` (#1975), `164245a2` (#1976), `bea93498` (#1974) and `f45cb40e` (#1970);
+- `69105ead`, the records and `Planning/source-explorer-export/` regenerated;
+- then, at the head of the queue, `v2` taken in (`4186ed4e`) and the landing's records.
+
+The owner answered, in the session, the four questions the measurement raised: decisions 203 to 206.
+
+**#2021's merge**
+- L27 merged as `a17023f9`, a squash onto `af771601`, at 02:48:27 UTC on 2026-11-27, from its head `f9240661`. Its tree, `3139b6c9`, is the head's. It closed no issue; #1835 was closed by hand, as L27's entry records. This entry records it. This branch took `v2` in after it as `4186ed4e`, with no conflict.
+
+**What was found, each defect first** (decision 183)
+- **Eleven of the row's tests fail on the unchanged code** at `bbe6686c`, in a detached worktree. They are four of #1975's rule tests, the two scope-note tests, the two `evaluate` tests of #1976, the export's dateline-first and decimal-citation tests, and the generator core's case number. The two guards of what the rule read right pass there as here.
+- **A harness over a full v76 index read the control's answers:**
+  - frus1969-76v09 d46: 1515;
+  - frus1919Parisv01 d398: 1919 (its received date);
+  - frus1941v01 d121: 1940;
+  - frus1921v02 d749: 1291;
+  - frus1909 d429: no year;
+  - frus1864p4 d120: "Not checked — no year";
+  - frus1873p1v2 d63 (`Madrid, 24 December, 1872.`): 134 rolls by an undated lookup.
+- **Four places where the brief's rule would do what it did not mean** (decisions 203 to 206):
+  - an 1800 floor drops nine correct pre-1800 dates;
+  - a word boundary refuses two datelines the rule read right;
+  - the editors' bracket reaches 32 datelines, not 21;
+  - the index-date fallback reaches the pre-1906 section, where 462 documents print no year and 266 print a year alone, which the section matched against every roll of a country's series.
+- **The plan's first hand check cannot be seen on its document.** `frus1969-76v09` d46's Source Explorer draws no year, at the control or now. A year shows only through the Numerical File's box, a decimal citation's filing period, or a note-less document's series. The misread year shows on `frus1921v02` d749, whose filing period the control's 1291 labels 1789–1906.
+- **Two findings for §5, unfiled:**
+  - In the country series index, two of Austria's 51 despatch rolls carry inverted dates, and so do 44 of the 50 Mexican rolls a summer's lookup lists. The index's guard matches such a roll on any date.
+  - Dateline misprints now reach the export through the dateline-first year (`frus1910` d91, 1914).
+
+**What changed**
+- **#1975:** `CentralFilesClassifier.datelineDateISO(from:)`:
+  - reads a day-first date, the earlier of the two forms being the sent date;
+  - ends the year before an ASCII letter;
+  - takes the editors' bracketed year;
+  - holds the year to 1600–2029.
+
+  `documentYear(fromDateline:)` is the one copy: the app's two `extractYear(from:)` forward to it, and the Research rail calls it.
+- **#1976** (decision 175):
+  - `IndexingPipeline.SourceExplorerFacts` carries `document_dates`' first and last day.
+  - The hydrated year is the route's, else the dateline's, else the index's.
+  - The gate calls a year of 1906 or later not applicable before it asks for a dateline.
+  - By decision 206: `CountrySeriesRollDates` and the span lookup, with `centralFiles.rolls.indexedNote` in both views (a new EditableContent block, 101 ranges re-pointed) and a sentence in both manuals.
+  - The export parses each volume with FRUSCoreKit (`DocumentYearExtractor` 2.0, over `SourceExplorerDocumentContext.year(of:)`), so its core now depends on the kit.
+- **#1974** (decision 176): SourceNoteKit's `NumericalFileCitation`, to which `CentralFilesIndex` and `NumericalFileIndex` forward.
+- **#1970:** `NARACatalogClient.buildResult(from:)` reads a v2 record's own `scopeAndContentNote` first, and an empty note is none.
+- **Docs:** the FRUSCoreKit and Generators runbooks, the export's README, and the plan's L31 record and §5.
+
+**Checks**
+- **#1975, over the 301,070 datelines of a full v76 index:** 41 change year, 4,058 gain a day, 5 change day and 6 lose their date. The chiefs-of-mission tenure match moves for none of the 46,326 pre-1906 candidates.
+- **#1976:** 22,394 documents gain a year in Source Explorer, 8,033 of them with a source note. Of those, 10 gain Numerical File rolls and 11 the coverage gap. 678 of the 46,326 pre-1906 outcomes move.
+- **The export, against a control at `bbe6686c`:**
+  - #1975 moves none, #1976 141 and #1974 335.
+  - Every record's year is the one Source Explorer hydrates: 264,736 of 264,736. At the control, 157 differed and 8,033 had none.
+- **By hand, on the Mac**, in the check copy built from `f45cb40e`, its 298 volumes re-indexed to 76:
+  - frus1909 d429 lists the Numerical File's rolls;
+  - frus1864p4 d120 lists its rolls under the new line, and d119 the same rolls without it;
+  - frus1921v02 d749's filing period reads 1910–1929.
+
+  The scope note was not checked: the copy has no NARA key, and the owner chose "Skip the scope-note check".
+- **The branch's runs:**
+  - `swift build --target FRUSCoreKit` and the package suites the row touches;
+  - `build-for-testing`, with the two residues alone;
+  - 18 scoped app suites on the iPhone 17 under iOS 27.0, 250 tests passed;
+  - the Mac build.
+- **At the head of the queue, after `v2` was taken in,** on `b7a75db2` (tree `f6ec50f0`, with `v2` at `a17023f9` taken in as `4186ed4e`): `build-for-testing`, with the two residues alone (`v2`'s merge brought no shared code, and L27's three app files compiled clean); the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,309 tests in 1,003 suites passed, 17 skipped as at L26, the six known issues; `swift build --target FRUSCoreKit`; `swift test`, 5,234 tests in 606 suites over 39 runs, none failed; the Mac build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**For the owner**
+- **This row's pull request**, opened once L31 reached the head of the queue.
+- **The four answers** are decisions 203 to 206.
+- **Two findings** are in §5, unfiled.
+- **After the merge:** the four hand-over notes for FRUS Explorer Light, shown to you before any is posted.

@@ -450,6 +450,26 @@ struct CentralFilesIndexTests {
         #expect(!index.isUntrustworthyNAID(""))
     }
 
+    /// A document the index dates across several days is matched to every roll covering one of them
+    /// (#1976, L31), and one day is the span from it through it, so the single-day forms answer as before.
+    @Test("A roll covering any day of a span matches it, and a one-day span is the one-day test")
+    func countryRollSpanMatching() {
+        let roll = CountryRoll(naId: "189207217", title: "Jan. 16, 1864-Dec. 26, 1865", geoKeys: ["austria"],
+                               startISO: "1864-01-16", endISO: "1865-12-26",
+                               catalogURL: "u", fileUnitNaId: nil, fileUnitTitle: nil)
+        #expect(roll.matchesDates(from: "1863-12-01", through: "1864-01-16"), "a span ending on its first day")
+        #expect(roll.matchesDates(from: "1865-12-26", through: "1866-02-01"), "a span starting on its last day")
+        #expect(roll.matchesDates(from: "1863-01-01", through: "1866-12-31"), "a span holding the whole roll")
+        #expect(!roll.matchesDates(from: "1863-01-01", through: "1864-01-15"))
+        #expect(!roll.matchesDates(from: "1865-12-27", through: "1866-02-01"))
+        for day in ["1864-01-15", "1864-01-16", "1865-06-01", "1865-12-26", "1865-12-27"] {
+            #expect(roll.matchesDates(from: day, through: day) == roll.matchesDate(day), "\(day)")
+            #expect(roll.matches(geoKey: "austria", from: day, through: day) == roll.matches(geoKey: "austria", dateISO: day))
+        }
+        #expect(roll.matches(geoKey: "austria", from: nil, through: nil), "an undated query matches any, as before")
+        #expect(!roll.matches(geoKey: "france", from: "1864-02-01", through: "1864-02-01"))
+    }
+
     /// An OCR-mangled country-roll date (a stray case number in the title parsed as an
     /// implausible year) must be ignored, not used to *exclude* the roll from date-filtered
     /// queries (NARA review 2026-07-17; 8 such rolls measured, 7 of them date-inverted).

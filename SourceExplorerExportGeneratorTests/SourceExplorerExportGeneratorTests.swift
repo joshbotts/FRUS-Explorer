@@ -155,7 +155,7 @@ struct AuthorityLookupParityTests {
 struct DocumentYearExtractorTests {
 
     @Test("years keyed by xml:id; undated and id-less divs omitted; nesting safe")
-    func extraction() {
+    func extraction() async throws {
         let xml = """
         <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0">
           <div type="chapter">
@@ -168,8 +168,39 @@ struct DocumentYearExtractorTests {
           </div>
         </TEI>
         """
-        let years = DocumentYearExtractor.extract(fromXML: Data(xml.utf8))
-        #expect(years == ["d1": 1946, "d3": 1907])
+        let years = try await DocumentYearExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(years["d1"] == 1946)
+        #expect(years["d2"] == nil, "a document with no dateline and no date has no year")
+        #expect(years["d3"] == 1907)
+        #expect(years[""] == nil, "a document with no id is keyed by none")
+    }
+
+    /// The export read the attribute alone, where Source Explorer reads the dateline: 8,175 documents of the
+    /// catalogue had another year in the export than on screen (#1976). Each document here is one way the two
+    /// differed: a dateline of another year than the TEI's date, none at all, a time group misread as a year,
+    /// and an original's slip the editors correct in brackets.
+    @Test("the dateline's year comes first and the document's date after it, as Source Explorer reads them (#1976)")
+    func datelineFirst() async throws {
+        let xml = """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1" frus:doc-dateTime-min="1910-05-01T00:00:00-05:00">
+            <head>A despatch</head><opener><dateline>Washington, May 1, 1914.</dateline></opener>
+            <note type="source">File No. 697/43.</note>
+          </div>
+          <div type="document" xml:id="d2" frus:doc-dateTime-min="1908-03-02T00:00:00-05:00">
+            <head>A memorandum</head><note type="source">File No. 697/43.</note>
+          </div>
+          <div type="document" xml:id="d3" frus:doc-dateTime-min="1972-10-22T00:00:00-05:00">
+            <head>A telegram</head><opener><dateline>Saigon, October 22, 1515Z.</dateline></opener>
+          </div>
+          <div type="document" xml:id="d4" frus:doc-dateTime-min="1924-10-22T00:00:00-05:00">
+            <head>A despatch</head>
+            <opener><dateline>Habana, October 22, 1924 [1925]. [Received October 27.]</dateline></opener>
+          </div>
+        </body></text></TEI>
+        """
+        let years = try await DocumentYearExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(years == ["d1": 1914, "d2": 1908, "d3": 1972, "d4": 1925])
     }
 }
 
@@ -186,8 +217,12 @@ struct ExportRecordTests {
           "numericalFile": {
             "seriesNaId": "654171", "microfilm": "M862",
             "rolls": [
+              { "naId": "19779400", "title": "Numerical File: 500-599", "caseStart": 500,
+                "caseEnd": 599, "catalogURL": "https://catalog.archives.gov/id/19779400" },
               { "naId": "19779414", "title": "Numerical File: 600-720", "caseStart": 600,
-                "caseEnd": 720, "catalogURL": "https://catalog.archives.gov/id/19779414" }
+                "caseEnd": 720, "catalogURL": "https://catalog.archives.gov/id/19779414" },
+              { "naId": "19779415", "title": "Numerical File: 721-760", "caseStart": 721,
+                "caseEnd": 760, "catalogURL": "https://catalog.archives.gov/id/19779415" }
             ]
           },
           "countrySeries": [],
@@ -281,6 +316,22 @@ struct ExportRecordTests {
         let record = try makeRecord(note: "File No. 5000/1.", year: 1908)
         #expect(record.resolution.numericalFileRolls == nil)
         #expect(record.resolution.numericalFileCoverageGap == true)
+    }
+
+    /// The fixture's rolls hold cases 511 and 723, so a decimal citation read as a case would list them: the
+    /// export did, for about 335 records, while the app's views have refused the case since #722 (#1974).
+    @Test("a decimal-era citation in the 1906–1910 window gets no roll, and a numerical one still does (#1974)")
+    func decimalCitationInTheWindowGetsNoRoll() throws {
+        for note in ["File No. 723.2515/110.", "File No. 511. 4A1/914."] {
+            let record = try makeRecord(note: note, year: 1908)
+            #expect(record.strategy == "centralDecimalFile", "\(note): \(record.parsed)")
+            #expect(record.resolution.numericalFileRolls == nil, "\(note)")
+            #expect(record.resolution.numericalFileCoverageGap == true, "\(note)")
+            #expect(record.offlineOutcome != "resolvedNumericalFile", "\(note)")
+        }
+        let numerical = try makeRecord(note: "File No. 697/43.", year: 1908)
+        #expect(numerical.resolution.numericalFileRolls?.map(\.naId) == ["19779414"])
+        #expect(numerical.offlineOutcome == "resolvedNumericalFile")
     }
 
     @Test("a File No. outside the year window never consults the rolls")
@@ -450,8 +501,8 @@ struct RunnerEndToEndTests {
     }
 
     private func runOnce(_ sandbox: (volumes: URL, manifest: String, cfi: String,
-                                     vsi: String, authority: String, out: URL, root: URL)) throws {
-        try SourceExplorerExportRunner.run(
+                                     vsi: String, authority: String, out: URL, root: URL)) async throws {
+        try await SourceExplorerExportRunner.run(
             volumesDir: sandbox.volumes, manifestPath: sandbox.manifest,
             centralFilesIndexPath: sandbox.cfi, volumeSourcesIndexPath: sandbox.vsi,
             collectionAuthorityPath: sandbox.authority,
@@ -459,10 +510,10 @@ struct RunnerEndToEndTests {
     }
 
     @Test("end-to-end: records, summary counts, manifest filter, valid JSON")
-    func endToEnd() throws {
+    func endToEnd() async throws {
         let sandbox = try makeSandbox()
         defer { try? FileManager.default.removeItem(at: sandbox.root) }
-        try runOnce(sandbox)
+        try await runOnce(sandbox)
 
         let exportData = try Data(contentsOf: sandbox.out
             .appendingPathComponent("source-explorer-export.json"))
@@ -502,15 +553,15 @@ struct RunnerEndToEndTests {
     }
 
     @Test("byte-stable determinism across runs")
-    func deterministic() throws {
+    func deterministic() async throws {
         let sandbox = try makeSandbox()
         defer { try? FileManager.default.removeItem(at: sandbox.root) }
-        try runOnce(sandbox)
+        try await runOnce(sandbox)
         let first = try Data(contentsOf: sandbox.out
             .appendingPathComponent("source-explorer-export.json"))
         let firstSummary = try Data(contentsOf: sandbox.out
             .appendingPathComponent("source-explorer-export-summary.json"))
-        try runOnce(sandbox)
+        try await runOnce(sandbox)
         #expect(try Data(contentsOf: sandbox.out
             .appendingPathComponent("source-explorer-export.json")) == first)
         #expect(try Data(contentsOf: sandbox.out

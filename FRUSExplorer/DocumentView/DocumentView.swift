@@ -251,6 +251,8 @@ enum DocumentSheet: Identifiable {
 ///          `.inspector`, which SwiftUI showed as a sheet as a window narrowed: the host the iPad's crash
 ///          came from, left up empty under iOS 27.2. The rail is also handed `AppState` and the model
 ///          context with its scene id, for the `.researchRail` sheet
+///   3.17 — L31 (#1975): `extractYear(from:)` forwards to `CentralFilesClassifier.documentYear(fromDateline:)`,
+///          the one copy of the dateline's year rule, where it kept its own
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -1280,30 +1282,12 @@ struct DocumentView: View {
 
     // MARK: - Document Year Extraction
 
-    /// Extracts a 4-digit year from a dateline string such as
-    /// "Washington, January 15, 1946" or "Moscow, April 3, 1963".
-    /// Returns `nil` when no plausible year is found.
-    ///
-    /// It first tries the strict "Month D, YYYY" parse (`CentralFilesClassifier.datelineDateISO`,
-    /// the same parse that drives roll/geo resolution downstream) so a stray 4-digit token in a
-    /// footnote-bearing dateline blob can't hijack the year via first-match. It then falls back to
-    /// a loose 18xx–20xx (through 2029) scan for datelines with no parseable Month-D-YYYY (e.g.
-    /// bare-year editorial notes). Widening to 18xx lets pre-1906 FRUS datelines reach the Source
-    /// Explorer's pre-1906 country-series resolution (issue #215). Keep in sync with the fallback
-    /// pattern in `MacDocumentView.extractYear` and the inline extractor in `SupportingViews`.
+    /// The year a dateline gives ("Washington, January 15, 1946" → 1946), or `nil` when it gives none:
+    /// `CentralFilesClassifier.documentYear(fromDateline:)`, the one rule Source Explorer and Related
+    /// Documents read a document's year by (#1975). It kept a copy of its own, as did
+    /// `MacDocumentView.extractYear(from:)` and the Research rail, until the rule moved there.
     static func extractYear(from dateline: String?) -> Int? {
-        guard let dl = dateline else { return nil }
-        if let iso = CentralFilesClassifier.datelineDateISO(from: dl),
-           let year = Int(iso.prefix(4)) {
-            return year
-        }
-        let pattern = #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(
-                  in: dl, range: NSRange(dl.startIndex..., in: dl)),
-              let range = Range(match.range(at: 1), in: dl)
-        else { return nil }
-        return Int(dl[range])
+        CentralFilesClassifier.documentYear(fromDateline: dateline)
     }
 
     // MARK: - Cross-Reference Navigation

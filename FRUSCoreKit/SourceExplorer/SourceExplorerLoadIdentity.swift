@@ -37,6 +37,10 @@ import Foundation
 ///         `documentYear(fromDateline:)` `hydrate` reads; `SourceExplorerDocumentContext` is public, since
 ///         `SourceExplorerResolution` holds it; `document(volumeId:documentId:rawSourceNote:documentYear:)`, the
 ///         key less the pipeline, for a view to tell a load of the document it shows from a load of another
+///   1.5 — 2026-11-26 (#1976, plan of record row L31): `SourceExplorerDocumentContext` falls back to the index's
+///         own date for a year the dateline does not give (`year(dateline:indexDateISO:)`, the owner's
+///         decision 175), carries the days the pre-1906 section matches rolls by (`rollDates`), and gives the
+///         Source Explorer export the same year for a parsed document (`year(of:)`)
 enum MacSourceExplorerLoadIdentity {
 
     /// A key that changes whenever anything `load()` reads changes.
@@ -87,6 +91,8 @@ public struct SourceExplorerDocumentContext: Sendable, Equatable {
     public let year: Int?
     /// The serial FRUS prints above the document, from the index, or `nil`.
     public let despatchSerial: String?
+    /// The days the pre-1906 section looks the document's own rolls up by, and where they come from.
+    public let rollDates: CountrySeriesRollDates
 
     /// Fills in what the route did not supply. One rule per case:
     ///
@@ -97,8 +103,10 @@ public struct SourceExplorerDocumentContext: Sendable, Equatable {
     /// - **R3** — no index row: keep the route's values.
     /// - **R4** — the serial always comes from the index.
     ///
-    /// The year is the route's when it passed one, else the chosen dateline's
-    /// (`CentralFilesClassifier.documentYear(fromDateline:)`). A blank dateline counts as none.
+    /// The year is the route's when it passed one, else ``year(dateline:indexDateISO:)``'s: the chosen
+    /// dateline's, else the index's own date for the document (#1976, the owner's decision 175: "views
+    /// fall back to the index's date"). A blank dateline counts as none. The roll dates are
+    /// ``CountrySeriesRollDates/reading(dateline:indexed:)``'s.
     static func hydrate(routeHeader: String?, routeDateline: String?, routeYear: Int?,
                         documentId: String?,
                         indexed: IndexingPipeline.SourceExplorerFacts?) -> SourceExplorerDocumentContext {
@@ -119,8 +127,38 @@ public struct SourceExplorerDocumentContext: Sendable, Equatable {
         }
         return SourceExplorerDocumentContext(
             header: header, dateline: dateline,
-            year: routeYear ?? CentralFilesClassifier.documentYear(fromDateline: dateline),
-            despatchSerial: indexed?.despatchSerial)
+            year: routeYear ?? year(dateline: dateline, indexDateISO: indexed?.dateISO),
+            despatchSerial: indexed?.despatchSerial,
+            rollDates: .reading(dateline: dateline, indexed: indexed))
+    }
+
+    /// The year Source Explorer gives a document from its dateline and its own date: the dateline's
+    /// (`CentralFilesClassifier.documentYear(fromDateline:)`), else the date's, `yyyy-MM-dd` as
+    /// `document_dates` stores it, else `nil`.
+    ///
+    /// The one rule the views' hydration and the Source Explorer export read a year by (#1976): the
+    /// export read `frus:doc-dateTime-min` alone where the views read the dateline alone, and the two gave
+    /// 8,175 documents of the catalogue different years.
+    static func year(dateline: String?, indexDateISO: String?) -> Int? {
+        CentralFilesClassifier.documentYear(fromDateline: dateline) ?? indexDateISO.flatMap { Int($0.prefix(4)) }
+    }
+
+    /// The year Source Explorer gives a parsed document, from the dateline and the first day the index
+    /// stores for it: ``year(dateline:indexDateISO:)`` over `IndexingPipeline.extractDateline(from:)` and
+    /// the first day of `IndexingPipeline.extractDateRange(from:dateTimeMin:dateTimeMax:)`, the two
+    /// functions the index stores them by.
+    ///
+    /// For the Source Explorer export, which parses each volume as the index does
+    /// (`FRUSDocumentParser.parseVolumeFull(volumeData:named:)`) and so reads the year the views hydrate
+    /// from an index of the same file. `SourceExplorerEvaluationTests.yearOfAParseIsTheHydratedYear` holds the
+    /// two to each other.
+    ///
+    /// - Parameter document: One document of a volume's parse.
+    /// - Returns: The year, or `nil` when neither the dateline nor the document's date gives one.
+    public static func year(of document: FRUSDocumentAST) -> Int? {
+        year(dateline: IndexingPipeline.extractDateline(from: document.nodes),
+             indexDateISO: IndexingPipeline.extractDateRange(from: document.nodes, dateTimeMin: document.dateTimeMin,
+                                                             dateTimeMax: document.dateTimeMax).min)
     }
 
     /// The document's own day from the index (`IndexingPipeline.documentDay`), or `nil` when there
