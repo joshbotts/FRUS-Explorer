@@ -593,6 +593,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.69 — 2026-11-26 (plan of record row L30): `document(forDocumentNumber:inVolume:)` matches the
 ///         number as written, then ignoring case, for Citation Lookup's printed numbers (#1977:
 ///         `1190B` finds `1190b`); nothing the indexer stores changes
+///  4.70 — 2026-11-27 (plan of record row L39, F7): `divisions(startingOn:inVolume:)` runs
+///         `PageSpanResolver.divisionsStartingOnPageSQL`, the query the reader's `PageRangeStore` runs for
+///         a page link no document holds, and `SettledCrossReferenceTarget` keeps a page in Roman numerals
+///         (`.romanPage`) as collected, as it keeps `.unresolved`; nothing the indexer stores changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
