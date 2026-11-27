@@ -5161,3 +5161,27 @@ Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a 
 - **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
 - `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
+
+## Session 2026-11-27 — CI fix, Spotlight in the unit-test host: the donor reaches Spotlight only outside a unit test's host, so no removal waits on the simulator's daemon
+
+The same CI fix session, on the orchestrator's second case: push run 46054712743 at `97c4a8a9` failed C on `DocumentRevisionsTests.swift:687` and `:770`, each over the 20-minute allowance, in a C of 2 h 41 min, as run 45966752299 at `2db58c5a` had on `:687` and `:751`. The question: whether the removed-volume tests are slow by design or only on the runner, and the smallest change that makes them hold. On `claude/v2-ci-fix-document-revisions` from `v2` at `4881c9d5` (#2039's merge); the orchestrator accepted the change before it landed. It closes no issue.
+
+**#2041's merge**
+- L62 merged as `d9b86ae2`, a squash onto `b710da3b`, at 23:13:43 UTC on 2026-11-27, from its head `17c7860b`. Its tree, `eda40b7c`, is the head's. It closed #2033; auto-merge was off. This entry records it.
+- L40's #2040 (`b710da3b`) is recorded in L62's entry above, and #2039 (`4881c9d5`), where this branch began, in L40's.
+
+**Slow only on the runner, and not in the tests' work**
+- The fixture is three short documents: every index pass logs "complete — 3 docs, total 0.0s".
+- `IndexingPipeline.removeVolume` runs two SQLite deletes, then `await donor?.withdraw(volumeId:)`. In the Xcode build the suites' `IndexingPipeline(fts5Store:databaseURL:volumesDirectory:…)` is the app's initialiser, which passes `SpotlightDonor()`, whose `withdraw` awaits `CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers:)`; the package's suites get the same call with no donor (`IndexingTestSupport.swift`), so `swift test` never waited.
+- In 16 C logs (14 green, the two failed), the first removal returned at the same minute the test host's own Spotlight rebuild was answered (`rebuildSpotlightIndex: resubmitted 0 items`) in 14: 7.3–21.1 min after the host launched in green runs, 82 and 86 min in the failed ones. The test's length was the rest of that wait (7.5–559 s green).
+- Not only the first: in green runs 46032962047 and 46002209676 four or five tests a run had their longest silence ended by a removal's return (the removed-volume test, the storage hubs' routing, the research export's strip, the UI suite's labels, the index dispatch): 21.0 and 17.3 min of each C.
+- Run 45930491832's `ResultSelectionTests.swift:1520` (1,200 s) was the same wait: a removal begun 17 minutes into the host had not returned when the test was killed. So three of the day's failed C runs (45930491832, 45966752299, 46054712743) are this one wait.
+- Run 46054712743's spindump at the second timeout (20:33:36) shows the simulator's `searchd` idle, its main thread last run 570 s before; its own indexing watchdog aborted it at 20:49:21 (`__si_indexingWatchdogInit_block_invoke`). That run's first failure, `CodingStandardsAuditTests/countsGoThroughCountCopy()` ("The test runner timed out while preparing to run tests"), came before any removal, with the host's main thread in XCTest's loop: not this, and left alone.
+- On the Mac the daemon answers at once.
+
+**What changed**
+- `1d419b30`, the test first: `SpotlightDonor.reachesSpotlight(_:)`, which `donate` and `withdraw` consult, answering `true` as the donor behaved, and `IndexingSeamsTests.theSpotlightDonorStaysOffSpotlightInATestHost`. Run on the Mac there: "11 tests in 1 suite failed … with 2 issues", the two for a unit test's host.
+- `15982273`, the fix: `reachesSpotlight` answers `!FigureImageStore.isUnitTestHost(environment)`, the rule that already keeps the figure store and its network pass out of the test host. App code, changing behaviour only in a unit test's host: the app a reader launches and a UI test's app donate and withdraw as before, and the pipeline still carries a `SpotlightDonor`, so #1604's `theAppsPipelineHasTheSpotlightDonor` is unchanged.
+- Not taken: a smaller fixture (the work is a tenth of a second), a CI-only bound (the wait can be endless) or a skip in `ci.yml` (12 suite types remove a volume, and C would stop checking removal).
+
+**Checks.** Before the queue, at `15982273` on the iPhone 17 under iOS 27.0: the twelve suite types that remove a volume, 108 tests in 12 suites passed in 4.5 s (the removed-volume test in 0.054 s); both builds with the two residues alone.
