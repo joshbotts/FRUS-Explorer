@@ -23,6 +23,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #1693
+///   1.1 — 2026-11-27 (L39): `romanPage`, a page of the front matter, in both enums and the table
 @Suite("Cross-reference grammar — the twin and the app's function")
 struct CrossRefGrammarAppParityTests {
 
@@ -36,6 +37,8 @@ struct CrossRefGrammarAppParityTests {
             return .footnote(volumeId: volumeId, documentId: documentId, anchor: anchor)
         case .page(let volumeId, let page):
             return .page(volumeId: volumeId, page: page)
+        case .romanPage(let volumeId, let page):
+            return .romanPage(volumeId: volumeId, page: page)
         case .volume(let volumeId):
             return .volume(volumeId: volumeId)
         case .indexEntry(let volumeId, let anchor):
@@ -51,7 +54,8 @@ struct CrossRefGrammarAppParityTests {
     private static let anchors = [
         "d80", "d6B", "d100fn2", "d6Bfn3", "d80fn", "d12fn5a", "d705fn-sym1", "cr_d6fn4",
         "es_d2fn1", "appendix-fn", "fnord", "fn2", "note3", "fig1", "tbl4", "FN1",
-        "pg_313", "pg313", "page42", "Page7", "pg_XIII", "pg_", "pg_313a", "pg-seq-3",
+        "pg_313", "pg313", "page42", "Page7", "pg_XIII", "pg_iii", "pageIX", "pg_XIIIa", "pg_", "pg_313a",
+        "pg-seq-3",
         "in14", "t_NSC1", "about-the-digital-edition", "ch1", "comp3", "p_HK1", "",
     ]
 
@@ -86,8 +90,9 @@ struct CrossRefGrammarAppParityTests {
             }
         }
         #expect(compared > 500, "only \(compared) targets compared")
-        #expect(branches == ["document", "footnote", "page", "volume", "indexEntry", "external", "unresolved"],
-                "the table reaches only \(branches.sorted()) of the app's seven cases")
+        #expect(branches == ["document", "footnote", "page", "romanPage", "volume", "indexEntry", "external",
+                             "unresolved"],
+                "the table reaches only \(branches.sorted()) of the app's eight cases")
     }
 
     @Test("The twin's cited document is the one the app's index stores a reference under")
@@ -102,7 +107,7 @@ struct CrossRefGrammarAppParityTests {
                                                                        volumeId: "frus1913").citedDocument)
         #expect(document.volumeId == "frus1913")
         #expect(document.documentId == "d12")
-        for target in ["#pg_313", "frus1961-63v05", "mailto:history@state.gov", "#fn2", "", "#in2"] {
+        for target in ["#pg_313", "#pg_III", "frus1961-63v05", "mailto:history@state.gov", "#fn2", "", "#in2"] {
             #expect(CrossRefGrammar.resolveDestination(target, volumeId: "frus1913")
                         .citedDocument == nil, "\(target) cites no document")
         }

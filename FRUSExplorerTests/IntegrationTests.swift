@@ -80,7 +80,7 @@ struct ComponentWiringTests {
         let input = parser.parse("FRUS, 1969–76, vol. I, doc. 15")
         #expect(input.isActionable)
         #expect(input.subseries == "1969-76")
-        #expect(input.documentNumber == 15)
+        #expect(input.documentNumber == "15")
     }
 
     // MARK: - Session 30 — CitationMatchingEngine
@@ -141,7 +141,7 @@ struct ComponentWiringTests {
     @Test("ComponentWiringTest: CitationInput.isActionable reflects field presence")
     func citationInputActionability() {
         #expect(!CitationInput().isActionable)
-        #expect(CitationInput(documentNumber: 1).isActionable)
+        #expect(CitationInput(documentNumber: "1").isActionable)
         #expect(CitationInput(pageNumber: 47).isActionable)
         #expect(CitationInput(volumeNumber: "I").isActionable)
     }

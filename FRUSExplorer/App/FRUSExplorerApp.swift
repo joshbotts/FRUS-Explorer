@@ -1331,10 +1331,10 @@ struct FRUSExplorerApp: App {
         WindowGroup(id: "frus.crossReferenceGraph", for: GraphWindowRequest.self) { $request in
             CrossReferenceGraphWindowView(request: request)
                 .environment(appState)
-                // Parity with every other scene. Nothing under `CrossReference/` reads `@Query` or
-                // `\.modelContext` today, so this is latent rather than a live defect — but the
-                // About window is what a latent one looks like after two months, so it is closed
-                // here rather than left for the first `@Query` added to this subtree.
+                // Parity with every other scene, and live since the graph's saves (#1990): the
+                // corpus save writes through `\.modelContext`, and the visit picker reads `@Query`.
+                // It was closed here while latent, since the About window is what a latent one
+                // looks like after two months, before anything under this subtree read either.
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
         }
@@ -1363,7 +1363,7 @@ struct FRUSExplorerApp: App {
         WindowGroup(id: "frus.sourceExplorer", for: SourceExplorerRequest.self) { $request in
             SourceExplorerWindowView(request: request)
                 .environment(appState)
-                // Latent, same as the Cross-Reference Graph window above: no `@Query` under
+                // Latent, as the Cross-Reference Graph window's was until #1990: no `@Query` under
                 // `SourceExplorer/` today.
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }

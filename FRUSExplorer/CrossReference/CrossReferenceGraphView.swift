@@ -155,6 +155,11 @@ private enum CompactGraphContent {
 ///          the VoiceOver list takes the reference list's order
 ///   2.13 — 2026-11-26 (L26, decision 191): "Navigating the graph" names the Subject-Numeric file
 ///          beside the decimal one, since from index version 76 its footnote citations are class nodes
+///   2.14 — 2026-11-27 (#1990, L42): a Save As menu in the toolbar and under the reference list, which
+///          saves every document the graph holds as drawn as a working corpus, after a question that says
+///          what the save holds (`workingCorpusSave(_:outcome:)`), or adds them to an Archives Visit
+///          through the picker every add flow presents, both halves on, with a line that says what a visit
+///          of them lists; each says what it did in the graph's toast
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -200,6 +205,18 @@ struct CrossReferenceGraphView: View {
     @State private var requestedDownloadVolumeIds: Set<String> = []
     /// Whether the regular-width layout shows the reference list side panel.
     @State private var showReferenceList = false
+    /// The working corpus the reader asked to save from the graph, while the question before the save is
+    /// up (#1990).
+    @State private var corpusSaveRequest: WorkingCorpusSaveRequest? = nil
+    /// The Archives Visit picker over the graph's documents, once their preview is read (#1990).
+    @State private var planPickerRequest: PlanPickerRequest? = nil
+    /// How many documents the picker on screen adds, for what the add says after it.
+    @State private var planPickerDocumentCount = 0
+    /// Whether the visit's preview is being read, between the menu item and the picker.
+    @State private var isPreparingVisit = false
+    /// What a save just did, in the graph's toast, which VoiceOver hears (#1990, as L19's Add to
+    /// Collection says it).
+    @State private var saveOutcome: String? = nil
     #if os(iOS)
     /// Compact-width content choice. The list is the default on iPhone, where
     /// the canvas is hardest to read and operate; the Graph/List picker in the
@@ -288,6 +305,9 @@ struct CrossReferenceGraphView: View {
                     resetViewportButton
                 }
                 ToolbarItem(placement: .primaryAction) {
+                    saveMenu
+                }
+                ToolbarItem(placement: .primaryAction) {
                     Button {
                         showInfoPopover.toggle()
                     } label: {
@@ -352,6 +372,103 @@ struct CrossReferenceGraphView: View {
                 .environment(appState)
                 .environment(\.sceneID, sceneID ?? .anyWindow)
         }
+        // #1990: the graph's two saves. The question before a corpus is saved, and the picker a
+        // visit's add goes through, each saying what it did after in the graph's toast.
+        .workingCorpusSave($corpusSaveRequest, outcome: $saveOutcome)
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request) { plan in
+                saveOutcome = CrossReferenceGraphCapture.visitOutcome(documentCount: planPickerDocumentCount,
+                                                                      planName: plan.displayName)
+            }
+            .environment(appState)
+        }
+        .transientToast($saveOutcome)
+    }
+
+    // MARK: - Saving the graph (#1990)
+
+    /// The graph's two saves, for the toolbar's Save As menu and the reference list's.
+    private var saveActions: GraphSaveActions {
+        GraphSaveActions(isEnabled: !vm.isLoading && !vm.baseDisplayNodes.isEmpty && !isPreparingVisit,
+                         saveAsWorkingCorpus: saveAsWorkingCorpus,
+                         addToArchivesVisit: addToArchivesVisit)
+    }
+
+    /// The toolbar's Save As menu (#1990): the graph's documents as a working corpus, or as the seeds of
+    /// an Archives Visit. A named `Label`, as every item of this toolbar is (R-8): the toolbar holds up to four
+    /// items and Done, and an item that overflows takes its name from its label.
+    private var saveMenu: some View {
+        Menu {
+            GraphSaveMenuItems(actions: saveActions)
+        } label: {
+            Label(Self.saveAsName, systemImage: "square.and.arrow.down")
+        }
+        .disabled(!saveActions.isEnabled)
+        .controlHelp(
+            Self.saveAsName,
+            detail: String(localized: "graph.save.menu.help",
+                           defaultValue: "Save the graph’s documents as a working corpus, or add them to an Archives Visit"),
+            systemImage: "square.and.arrow.down"
+        )
+    }
+
+    /// What the graph's saves take now, or `nil` with the toast saying why when it holds no document,
+    /// which only a brushed range can leave. Read when an item is chosen, not as the menu draws: the
+    /// canvas redraws the view at each frame of a settling layout, and the menu's state reads none of it.
+    private func savableCapture() -> CrossReferenceGraphCapture? {
+        guard let capture = vm.saveCapture() else { return nil }
+        guard capture.documentCount > 0 else {
+            saveOutcome = CrossReferenceGraphCapture.nothingToSave
+            return nil
+        }
+        return capture
+    }
+
+    /// Asks to save every document the graph holds as drawn as a working corpus (decision 180): the
+    /// question says what the save holds, and the graph's toast what it did.
+    private func saveAsWorkingCorpus() {
+        guard let capture = savableCapture() else { return }
+        let corpus = capture.workingCorpus(documentLabel: vm.saveDocumentLabel,
+                                           stamp: WorkingCorpusCapture.stamp(for: Date()))
+        corpusSaveRequest = WorkingCorpusSaveRequest(capture: corpus,
+                                                     notes: capture.pagesNote().map { [$0] } ?? [])
+    }
+
+    /// Opens the Archives Visit picker over every document the graph holds as drawn, as its seeds with both
+    /// halves on (decision 181), once the line that says what a visit of them lists is read.
+    ///
+    /// The picker's write is `ArchiveVisitPlan.addSeeds`, the one every add flow shares, which upserts each
+    /// document under its derived id in one pass over the plan's seeds, so a graph's few hundred are one
+    /// write; a collection's record adds up to 17,613 through it.
+    private func addToArchivesVisit() {
+        guard let capture = savableCapture() else { return }
+        let label = vm.saveDocumentLabel
+        isPreparingVisit = true
+        Task {
+            let preview = await visitPreview(of: capture)
+            isPreparingVisit = false
+            planPickerDocumentCount = capture.documentCount
+            planPickerRequest = PlanPickerRequest(
+                documents: capture.seeds, includeSource: true, includeExternalRefs: true,
+                basis: capture.visitBasis(documentLabel: label, preview: preview),
+                suggestedName: CrossReferenceGraphCapture.visitName(documentLabel: label))
+        }
+    }
+
+    /// What a visit of the capture's documents lists on this device: the packet the plan editor would
+    /// derive from them, both halves on, read through the same data source and bundled indexes
+    /// (`ArchiveVisitEditorView`'s). `nil` when the device has no index to read it from.
+    private func visitPreview(of capture: CrossReferenceGraphCapture) async -> CrossReferenceGraphVisitPreview? {
+        guard let pipeline = appState.indexingPipeline else { return nil }
+        let manifest = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        let dataSource = TripPacketDataSource(
+            pipeline: pipeline,
+            manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first }))
+        let model = await TripPacketBuilder.build(
+            sourceDocuments: capture.seeds, referenceDocuments: capture.seeds, researchQuestion: nil,
+            dataSource: dataSource, indexes: .bundled)
+        return CrossReferenceGraphVisitPreview(model: model, capture: capture,
+                                               indexedVolumeIds: appState.indexedVolumeIds)
     }
 
     // MARK: - Content Area
@@ -364,7 +481,7 @@ struct CrossReferenceGraphView: View {
         #if os(iOS)
         if horizontalSizeClass == .compact {
             if compactContentMode == .list {
-                ReferenceListPanel(vm: vm, openDocument: openDocument)
+                ReferenceListPanel(vm: vm, openDocument: openDocument, saveActions: saveActions)
             } else {
                 graphWithLegend
             }
@@ -413,7 +530,7 @@ struct CrossReferenceGraphView: View {
             graphWithLegend
             if showReferenceList {
                 Divider()
-                ReferenceListPanel(vm: vm, openDocument: openDocument)
+                ReferenceListPanel(vm: vm, openDocument: openDocument, saveActions: saveActions)
                     .frame(width: 320)
             }
         }
@@ -1506,9 +1623,9 @@ struct CrossReferenceGraphView: View {
         )
     }
 
-    /// Names for the three icon-only graph toolbar controls. Each is read twice — from the
-    /// `Label` (the iPadOS toolbar-overflow row) and from `.controlHelp` (the in-bar
-    /// control) — so each has exactly one definition. See R-8 / `ControlHelpModifier`.
+    /// Names for the graph toolbar's icon-only controls, four since the Save As menu (#1990). Each is
+    /// read twice — from the `Label` (the iPadOS toolbar-overflow row) and from `.controlHelp` (the
+    /// in-bar control) — so each has exactly one definition. See R-8 / `ControlHelpModifier`.
     /// Computed rather than stored so the lookup is re-resolved per render exactly as the
     /// inline `String(localized:)` calls they replaced were.
     static var graphInfoName: String {
@@ -1521,6 +1638,10 @@ struct CrossReferenceGraphView: View {
     /// Name of the reset-viewport control; see ``graphInfoName``.
     static var resetViewportName: String {
         String(localized: "graph.resetView.a11y", defaultValue: "Reset view")
+    }
+    /// Name of the Save As menu, in the toolbar and on the reference list (#1990); see ``graphInfoName``.
+    static var saveAsName: String {
+        String(localized: "graph.save.menu", defaultValue: "Save As")
     }
 
     /// The open item of the node menu and of the reference list's row menu, named for what it does
@@ -2191,6 +2312,42 @@ struct TimelineBrushView: View {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.setLocalizedDateFormatFromTemplate("MMM y")
         return formatter.string(from: Date(timeIntervalSinceReferenceDate: t))
+    }
+}
+
+// MARK: - Saving the graph (#1990)
+
+/// The graph's two saves, as the toolbar's Save As menu and the reference list's offer them (#1990):
+/// every document the graph holds as drawn, as a working corpus or as the seeds of an Archives Visit.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+struct GraphSaveActions {
+    /// Whether the graph holds a document to save and no save is being prepared.
+    let isEnabled: Bool
+    /// Asks to save the documents as a working corpus.
+    let saveAsWorkingCorpus: () -> Void
+    /// Opens the Archives Visit picker over the documents.
+    let addToArchivesVisit: () -> Void
+}
+
+/// The Save As menu's two items, one definition for the toolbar's menu and the reference list's (#1990).
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+struct GraphSaveMenuItems: View {
+    /// The saves the two items run.
+    let actions: GraphSaveActions
+
+    var body: some View {
+        Button(action: actions.saveAsWorkingCorpus) {
+            Label(String(localized: "graph.save.corpus", defaultValue: "Working Corpus…"),
+                  systemImage: "tray.full")
+        }
+        Button(action: actions.addToArchivesVisit) {
+            Label(String(localized: "graph.save.visit", defaultValue: "Archives Visit…"),
+                  systemImage: "building.columns")
+        }
     }
 }
 

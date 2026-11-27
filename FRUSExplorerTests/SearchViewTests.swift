@@ -604,6 +604,211 @@ struct FilterSheetDismissalTests {
     }
 }
 
+// MARK: - SearchDateFilterZoneTests (#2013, L57)
+
+/// Search's date filter, on iPhone and iPad, reads and writes its two days in the zone Filters' two pickers are in (#2013).
+///
+/// ## The defect
+/// `SearchViewModel` turned a day it was handed into a date at midnight GMT, and a date into the day it falls on in GMT,
+/// while Filters' pickers show and set the same dates in the device's zone. In New York's zone, on this Mac's iPhone 17
+/// simulator, a hand-off of 1 to 31 October 1962 read back as 30 September and 30 October, and a chart of 1961 to 1963
+/// followed to Search gave Visualize in Corpus Analytics 1960 (L57's record of the issue's two runs).
+///
+/// ## Why every test names its zone
+/// A test in the device's own zone sees half of it at most. West of UTC a midnight in the device's zone falls on the same
+/// day in GMT, so `SearchViewTests.dateRangeFilterIncludedInParameters` passed in New York with the defect in place, and
+/// the CI's runner is in UTC, where the two zones are one. So the two conversions take their zone
+/// (`SearchViewModel.filterDay(of:in:)`, `filterDate(ofDay:in:)`), and the view model's tests pin
+/// `dateRangeTimeZone`, which is the pickers' zone otherwise. A picker's day is read here by a formatter in the zone,
+/// not by the functions under test.
+///
+/// Version history:
+///   1.0 — #2013 (L57): initial implementation
+@Suite("Search's date filter, in the zone its pickers are in (#2013)")
+@MainActor
+struct SearchDateFilterZoneTests {
+
+    /// Zones on both sides of UTC, and UTC: the six of the issue's two tables, Honolulu, and the two ends of the clock's
+    /// range, Pago Pago (UTC−11) and Kiritimati (UTC+14).
+    nonisolated static let zones = ["Pacific/Pago_Pago", "Pacific/Honolulu", "America/Los_Angeles", "America/New_York",
+                                    "UTC", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney", "Pacific/Kiritimati"]
+
+    /// The day a date picker in `zone` shows `date` on.
+    static func shownDay(_ date: Date, in zone: TimeZone) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = zone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    /// The date at `hour`:`minute` on the day `year`-`month`-`day` in `zone`.
+    static func date(_ year: Int, _ month: Int, _ day: Int, at hour: Int = 0, _ minute: Int = 0,
+                     in zone: TimeZone) throws -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        return try #require(calendar.date(from: DateComponents(year: year, month: month, day: day,
+                                                               hour: hour, minute: minute)))
+    }
+
+    /// A view model over an empty index, reading and writing its days in `zone`.
+    private func makeViewModel(in zone: TimeZone) throws -> (dir: URL, vm: SearchViewModel) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDateZone-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("zone.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir,
+                                            concurrencyLimit: 1)
+        let vm = SearchViewModel(searchService: SearchService(fts5Store: store, pipeline: pipeline))
+        vm.dateRangeTimeZone = zone
+        return (dir, vm)
+    }
+
+    /// The *Narrowed by* chip's label for the date filter, or `nil` when it is off.
+    private func dateChip(_ vm: SearchViewModel) -> String? {
+        vm.activeNarrowings.first { $0.id == "date" }?.label
+    }
+
+    // MARK: The two conversions
+
+    @Test("A day read in a zone is the day a picker there shows, and is written back as itself", arguments: zones)
+    func aDayReadIsTheDayAPickerShows(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        for day in ["1962-10-01", "1962-10-31", "1961-01-01", "1963-12-31", "1948-02-29", "1861-01-01", "1992-12-31"] {
+            let date = try #require(SearchViewModel.filterDate(ofDay: day, in: zone), "\(day) read as no date in \(zoneID)")
+            #expect(Self.shownDay(date, in: zone) == day, "\(day) shows as another day in \(zoneID)")
+            #expect(SearchViewModel.filterDay(of: date, in: zone) == day, "\(day) is written as another day in \(zoneID)")
+            #expect(Self.shownDay(date.addingTimeInterval(-1), in: zone) != day, "\(day) is not its day's first moment")
+        }
+    }
+
+    /// The issue's second table, with a minute before midnight added: 1 October 1962 at five times of day.
+    @Test("A date is written as the day it falls on in its zone, whatever its time of day", arguments: zones)
+    func aDateIsWrittenAsItsDay(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        for (hour, minute) in [(0, 0), (8, 30), (12, 0), (20, 30), (23, 59)] {
+            let date = try Self.date(1962, 10, 1, at: hour, minute, in: zone)
+            #expect(SearchViewModel.filterDay(of: date, in: zone) == "1962-10-01",
+                    "1 October 1962 at \(hour):\(minute) in \(zoneID) is written as another day")
+        }
+    }
+
+    @Test("A day whose midnight a change of clocks skips starts at its first hour, and is still that day")
+    func aSkippedMidnight() throws {
+        // São Paulo moved its clocks from midnight to 01:00 on 4 November 2018.
+        let zone = try #require(TimeZone(identifier: "America/Sao_Paulo"))
+        let date = try #require(SearchViewModel.filterDate(ofDay: "2018-11-04", in: zone),
+                                "a strict DateFormatter reads this day as no date; the filter must not")
+        let firstHour = try Self.date(2018, 11, 4, at: 1, in: zone)
+        #expect(date == firstHour)
+        #expect(Self.shownDay(date, in: zone) == "2018-11-04")
+        #expect(SearchViewModel.filterDay(of: date, in: zone) == "2018-11-04")
+    }
+
+    @Test("A string that names no day reads as no date",
+          arguments: ["", "1962", "1962-10", "1962-10-1", "62-10-01", "1962-13-01", "1962-00-10", "1962-02-30",
+                      "1962-10-01T00:00:00Z", "1962/10/01", "196a-10-01", "+962-10-01", "1962-10-01-"])
+    func notADay(_ text: String) throws {
+        let zone = try #require(TimeZone(identifier: "America/New_York"))
+        #expect(SearchViewModel.filterDate(ofDay: text, in: zone) == nil)
+    }
+
+    // MARK: The view model, its zone pinned
+
+    @Test("After a hand-off the pickers show its two days, and the search and its chip name them", arguments: zones)
+    func aHandOff(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let handed = DateRange(earliest: "1962-10-01", latest: "1962-10-31")
+        vm.applyParameters(SearchParameters(dateRange: handed))
+        #expect(vm.dateRangeEnabled)
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == "1962-10-01", "From shows another day in \(zoneID)")
+        #expect(Self.shownDay(vm.dateRangeEnd, in: zone) == "1962-10-31", "To shows another day in \(zoneID)")
+        #expect(vm.searchParameters.dateRange == handed)
+        #expect(dateChip(vm) == "1962-10-01 to 1962-10-31")
+    }
+
+    @Test("A saved search's two days come back to the pickers as they were saved", arguments: zones)
+    func aSavedSearch(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let range = DateRange(earliest: "1962-10-16", latest: "1962-10-28")
+        // The record converts its own two dates in GMT both ways, so its days come back the same in any zone.
+        let saved = SavedSearch(name: "Cuba", parameters: SearchParameters(keywords: "missile", dateRange: range))
+        vm.applyParameters(saved.searchParameters)
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == "1962-10-16", "From shows another day in \(zoneID)")
+        #expect(Self.shownDay(vm.dateRangeEnd, in: zone) == "1962-10-28", "To shows another day in \(zoneID)")
+        #expect(vm.searchParameters.dateRange == range)
+    }
+
+    /// The issue's third symptom: Corpus Analytics hands Search the first and last days of its years.
+    @Test("A chart's years, followed to Search, are the years Visualize in Corpus Analytics opens on", arguments: zones)
+    func aChartsYears(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.applyParameters(AnalyticsSearchHandoff.parameters(term: "missile", axis: .byYear, startYear: 1961,
+                                                             endYear: 1963, yearsNarrowed: true, scopeVolumeIds: nil))
+        let start = vm.dateRangeYears?.start
+        let end = vm.dateRangeYears?.end
+        #expect(start == 1961, "the chart comes back from \(String(describing: start)) in \(zoneID)")
+        #expect(end == 1963, "the chart comes back to \(String(describing: end)) in \(zoneID)")
+        #expect(vm.searchParameters.dateRange == DateRange(earliest: "1961-01-01", latest: "1963-12-31"))
+    }
+
+    @Test("A day picked after a hand-off is written as the day the picker shows, at any time of day", arguments: zones)
+    func aPickAfterAHandOff(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.applyParameters(SearchParameters(dateRange: DateRange(earliest: "1962-10-01", latest: "1962-10-31")))
+        for (hour, minute) in [(0, 0), (8, 30), (20, 30), (23, 59)] {
+            vm.dateRangeStart = try Self.date(1962, 10, 5, at: hour, minute, in: zone)
+            #expect(vm.searchParameters.dateRange?.earliest == "1962-10-05",
+                    "5 October at \(hour):\(minute) in \(zoneID) is searched as another day")
+            #expect(dateChip(vm) == "1962-10-05 to 1962-10-31")
+        }
+    }
+
+    @Test("A facet's year is that year's first and last day in the pickers", arguments: zones)
+    func aFacetsYear(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.applyFacetNarrowing(.year("1948"))
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == "1948-01-01", "From shows another day in \(zoneID)")
+        #expect(Self.shownDay(vm.dateRangeEnd, in: zone) == "1948-12-31", "To shows another day in \(zoneID)")
+        #expect(vm.searchParameters.dateRange == DateRange(earliest: "1948-01-01", latest: "1948-12-31"))
+        #expect(vm.dateRangeYears?.start == 1948)
+        #expect(vm.dateRangeYears?.end == 1948)
+    }
+
+    /// Onboarding makes a project's range in the device's zone (`ManifestStore.corpusYearStart(_:)` and
+    /// `corpusYearEnd(_:)`), so here in the pinned one.
+    @Test("A project's range, made in the device's zone, is the days the search runs on", arguments: zones)
+    func aProjectsRange(_ zoneID: String) throws {
+        let zone = try #require(TimeZone(identifier: zoneID))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // The container outlives the project: a test container dropped early is a silent crash.
+        let container = try ModelContainer.makeTestContainer()
+        try withExtendedLifetime(container) {
+            let project = Project(name: "Corpus",
+                                  defaultDateRangeStart: try Self.date(1861, 1, 1, in: zone),
+                                  defaultDateRangeEnd: try Self.date(1992, 12, 31, in: zone))
+            container.mainContext.insert(project)
+            vm.applyProjectDefaults(project)
+        }
+        #expect(vm.searchParameters.dateRange == DateRange(earliest: "1861-01-01", latest: "1992-12-31"))
+        #expect(dateChip(vm) == "1861-01-01 to 1992-12-31")
+    }
+}
+
 // MARK: - EmptyLibraryNoticeTests (#1918, HCD-4 and A11Y-2)
 
 /// When a search names the library as the reason it found nothing, and what VoiceOver hears then.

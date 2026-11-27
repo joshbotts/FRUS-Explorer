@@ -613,3 +613,110 @@ struct EnvironmentSelfReferenceTests {
                 "the .external branch no longer opens the URL — links now go nowhere")
     }
 }
+
+// MARK: - The rail through a rebuild (L37, F11)
+
+/// *Open Documents In* is applied when a document opens, and not when its reader is built again by a layout that
+/// changed with width (L37, F11): `DocumentView.railSetting(for:isPhone:isBuiltAgain:)` and `ReaderRebuildLedger`.
+///
+/// The UI half is `RailAtCompactWidthTests.testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail`, which resizes a
+/// window across Browse's two-pane width under Read. These pin the rule and the ledger it reads, both orders SwiftUI
+/// may stop and start the two readers in among them.
+///
+/// Version history:
+///   1.0 — L37 (F11): initial implementation
+@Suite("The rail through a reader's rebuild")
+@MainActor
+struct RailThroughRebuildTests {
+
+    private static let scene = "4D3C2B1A-0000-4000-8000-000000000037"
+    private static let document = ReaderRebuildLedger.Key(scene: scene, document: "frus1961-63v06/d1")
+    private static let otherDocument = ReaderRebuildLedger.Key(scene: scene, document: "frus1961-63v06/d2")
+
+    // MARK: The rule
+
+    @Test("An iPad's open applies the mode: Read closes the rail, Research opens it, Remember Last leaves it")
+    func anOpenAppliesTheMode() {
+        #expect(DocumentView.railSetting(for: .read, isPhone: false, isBuiltAgain: false) == false)
+        #expect(DocumentView.railSetting(for: .research, isPhone: false, isBuiltAgain: false) == true)
+        #expect(DocumentView.railSetting(for: .rememberLast, isPhone: false, isBuiltAgain: false) == nil)
+    }
+
+    @Test("An iPad reader built again writes nothing, under every mode (F11)",
+          arguments: DefaultDocumentMode.allCases)
+    func aRebuildWritesNothing(mode: DefaultDocumentMode) {
+        #expect(DocumentView.railSetting(for: mode, isPhone: false, isBuiltAgain: true) == nil)
+    }
+
+    @Test("An iPhone closes the rail at every start, rebuilt or not (#404)",
+          arguments: DefaultDocumentMode.allCases, [false, true])
+    func anIPhoneAlwaysCloses(mode: DefaultDocumentMode, builtAgain: Bool) {
+        #expect(DocumentView.railSetting(for: mode, isPhone: true, isBuiltAgain: builtAgain) == false)
+    }
+
+    // MARK: The ledger
+
+    @Test("A first reader of a document is an open")
+    func aFirstReaderIsAnOpen() {
+        let ledger = ReaderRebuildLedger()
+        #expect(ledger.readerStarts(showing: Self.document, at: .now) == false)
+    }
+
+    @Test("A reader started just after another of its document stopped is a rebuild")
+    func aStartJustAfterAStopIsARebuild() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        _ = ledger.readerStarts(showing: Self.document, at: t0)
+        ledger.readerStops(showing: Self.document, at: t0.advanced(by: .seconds(30)))
+        #expect(ledger.readerStarts(showing: Self.document, at: t0.advanced(by: .seconds(30) + .milliseconds(16))))
+    }
+
+    @Test("A reader started while another of its document still shows it is a rebuild, whose stop comes after")
+    func aStartBeforeTheStopIsARebuild() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        _ = ledger.readerStarts(showing: Self.document, at: t0)
+        #expect(ledger.readerStarts(showing: Self.document, at: t0.advanced(by: .seconds(30))))
+        ledger.readerStops(showing: Self.document, at: t0.advanced(by: .seconds(30) + .milliseconds(16)))
+        // The rebuilt reader leaves in its turn, and a reader of the document much later opens it.
+        ledger.readerStops(showing: Self.document, at: t0.advanced(by: .seconds(60)))
+        #expect(ledger.readerStarts(showing: Self.document, at: t0.advanced(by: .seconds(90))) == false)
+    }
+
+    @Test("A document opened again after the window is an open, as going back to it is")
+    func aLaterStartIsAnOpen() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        _ = ledger.readerStarts(showing: Self.document, at: t0)
+        ledger.readerStops(showing: Self.document, at: t0.advanced(by: .seconds(5)))
+        let later = t0.advanced(by: .seconds(5) + ReaderRebuildLedger.window + .milliseconds(1))
+        #expect(ledger.readerStarts(showing: Self.document, at: later) == false)
+    }
+
+    @Test("Another document is an open, however near its start comes to a stop")
+    func anotherDocumentIsAnOpen() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        _ = ledger.readerStarts(showing: Self.document, at: t0)
+        ledger.readerStops(showing: Self.document, at: t0.advanced(by: .seconds(5)))
+        #expect(ledger.readerStarts(showing: Self.otherDocument, at: t0.advanced(by: .seconds(5))) == false)
+    }
+
+    @Test("A reader of the same document in another scene is an open")
+    func anotherSceneIsAnOpen() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        _ = ledger.readerStarts(showing: Self.document, at: t0)
+        let elsewhere = ReaderRebuildLedger.Key(scene: "4D3C2B1A-0000-4000-8000-000000000038",
+                                                document: Self.document.document)
+        #expect(ledger.readerStarts(showing: elsewhere, at: t0.advanced(by: .milliseconds(16))) == false)
+    }
+
+    @Test("A stop with no start counted changes nothing")
+    func anUncountedStopChangesNothing() {
+        let ledger = ReaderRebuildLedger()
+        let t0 = ContinuousClock.now
+        ledger.readerStops(showing: Self.document, at: t0)
+        #expect(ledger.readerStarts(showing: Self.document, at: t0.advanced(by: .milliseconds(16))) == false)
+    }
+}

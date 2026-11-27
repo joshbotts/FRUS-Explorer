@@ -148,6 +148,15 @@ import ImageIO
 ///          JSON (`summaryAttributedString`); a `.general` summary prints as before
 ///   1.27 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
 ///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the PDF
+///   1.28 — L34: the PDF draws the export's plan (`CollectionExportPlan`). The contents list is the plan's rows and
+///          runs on over as many pages as it needs, where it stopped at the first page's foot (#1984); the documents
+///          alone are numbered (#1993). A document prints its plan's lines in order, each range carrying its role
+///          (`planRoleKey`, J19): the source note follows the text and prints whole, where it was one line above the
+///          text; a research note flows under its document, where each had a page of its own and a long one was
+///          cut; a title of the author's leads, with *As published:* inside the volume's heading (#1998); a call
+///          whose note does not print is its number, and nothing where it printed none (#2007); a requested
+///          headnote with nothing stored prints nothing (J10); and a summary prints under its label, *Summary*,
+///          as the page and Word print it, where the PDF alone printed none
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -199,6 +208,12 @@ final class PDFCollectionExporter: CollectionExporter {
     /// counts, keeping painted ranges aligned with `ExportHighlight` offsets.
     private var highlightPaint: HighlightPaintTracker?
 
+    /// Which notes the text being drawn prints, and how each call is drawn: its plan's (L34).
+    private var notePrinting: FootnotePrinting = .all
+
+    /// The plan's label for the text's first heading, until that heading is drawn (L34).
+    private var pendingHeadingLabel: String?
+
     // MARK: - CollectionExporter
 
     @MainActor
@@ -242,10 +257,14 @@ final class PDFCollectionExporter: CollectionExporter {
         let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
         var pageNumber = 1
 
-        // Cover page — the table of contents reflects the composed structure
-        // (numbered documents plus authored section headings).
+        // The export's plan (L34): the contents rows and each document's lines, decided once for the three
+        // formats.
+        let plan = CollectionExportPlan(items: items, options: options)
+
+        // Cover page — the table of contents reflects the composed structure (numbered documents plus
+        // authored section headings), and runs on over as many pages as it needs (#1984).
         ctx.beginPDFPage(nil)
-        drawCoverPage(ctx: ctx, collection: collection, items: items, options: options)
+        drawCoverPage(ctx: ctx, collection: collection, rows: plan.contents, pageNumber: &pageNumber)
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
@@ -464,11 +483,13 @@ final class PDFCollectionExporter: CollectionExporter {
             flowY -= 8
         }
 
-        for item in items {
-            switch item {
+        for planned in plan.items {
+            switch planned.item {
             case .document(let doc):
                 endFlow()   // documents always start on a fresh page
-                drawDocumentSection(ctx: ctx, doc: doc, options: options, pageNumber: &pageNumber)
+                if let documentPlan = planned.document {
+                    drawDocumentSection(ctx: ctx, doc: doc, plan: documentPlan, pageNumber: &pageNumber)
+                }
             case .heading(let text, let level):
                 drawHeadingFlow(text, level: level)
             case .prose(let paragraphs):
@@ -560,8 +581,8 @@ final class PDFCollectionExporter: CollectionExporter {
     private func drawCoverPage(
         ctx: CGContext,
         collection: CollectionExportMetadata,
-        items: [CollectionExportItem],
-        options: CollectionExportOptions
+        rows: [CollectionContentsRow],
+        pageNumber: inout Int
     ) {
         let H = Self.pageHeight
         let M = Self.margin, cw = Self.contentWidth
@@ -626,56 +647,63 @@ final class PDFCollectionExporter: CollectionExporter {
              fontSize: 13, bold: true)
         y -= 30
 
-        // ToC entries in authored order: documents are numbered; authored section headings
-        // appear as bold, un-numbered labels; prose blocks are omitted. Document label style
-        // is controlled by options.tocStyle; _text_ spans render as italic.
-        var docNumber = 0
-        for item in items {
-            // Stop before a row could be drawn below the bottom margin: the tallest row
-            // is a section heading (up to a 6-pt top gap + a 44-pt label).
-            guard y >= M + 50 else { break }
-            switch item {
-            case .document(let doc):
-                docNumber += 1
-                let rawLabel = "\(docNumber).  \(doc.tocLabel(style: options.tocStyle))"
-                let labelAttr = noteAttributedString(rawLabel, fontSize: 10, gray: 0.1)
-                let lineH = measureHeight(labelAttr, width: cw - 16)
-                let rowH = min(lineH, 40) // cap at ~3 lines
-                draw(labelAttr, in: ctx,
-                     rect: CGRect(x: M + 16, y: y - rowH, width: cw - 16, height: rowH))
-                y -= rowH + 6
-            case .heading(let text, let level):
-                // Nested sections indent by resolved level (level 1 = the pre-Phase-4 row).
-                let l = min(max(level, 1), CollectionOutline.maxLevel)
-                let indentX = CGFloat(l - 1) * 16
-                let labelAttr = noteAttributedString(text, fontSize: 11, gray: 0.0, bold: true)
-                let lineH = measureHeight(labelAttr, width: cw - indentX)
-                let rowH = min(lineH, 44)
-                y -= 6   // a little breathing room above a section label
-                draw(labelAttr, in: ctx,
-                     rect: CGRect(x: M + indentX, y: y - rowH, width: cw - indentX, height: rowH))
-                y -= rowH + 6
-            case .generated(let block):
-                // A generated block is listed by its title, like a section label (Phase 6).
-                let labelAttr = noteAttributedString(block.title, fontSize: 11, gray: 0.0, bold: true)
-                let lineH = measureHeight(labelAttr, width: cw)
-                let rowH = min(lineH, 44)
-                y -= 6
-                draw(labelAttr, in: ctx,
-                     rect: CGRect(x: M, y: y - rowH, width: cw, height: rowH))
-                y -= rowH + 6
-            case .prose, .excerpt:
-                break   // interstitial content — never a ToC row
+        // The contents rows are the export plan's (L34): the documents alone numbered (#1993), a title of the
+        // author's with *As published:* and the volume's heading under it (#1998), authored section headings
+        // and block titles as bold, un-numbered labels. A row that does not fit opens a new page, where 1.0
+        // stopped at the first page's foot and left the rest of the list out (#1984). Each row is drawn whole.
+        for row in rows {
+            let attr = contentsRowAttributedString(row)
+            let indentX = row.number == nil ? CGFloat(row.level - 1) * 16 : 16 + CGFloat(row.level - 1) * 16
+            let width = cw - indentX
+            let gap: CGFloat = row.number == nil ? 6 : 0
+            let rowH = measureHeight(attr, width: width)
+            if y - gap - rowH < M + 30 {
+                drawPageNumber(ctx: ctx, number: pageNumber)
+                ctx.endPDFPage()
+                pageNumber += 1
+                ctx.beginPDFPage(nil)
+                y = H - M
+            }
+            y -= gap
+            draw(attr, in: ctx, rect: CGRect(x: M + indentX, y: y - rowH, width: width, height: rowH))
+            y -= rowH + 6
+        }
+    }
+
+    /// One contents row as the PDF prints it (L34): its number and words, `_…_` as italics, and the lines
+    /// under it in small type; a section's heading or a block's title bold. The range carries the row's
+    /// role, as each line of a document's flow does (J19).
+    private func contentsRowAttributedString(_ row: CollectionContentsRow) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        if row.number == nil {
+            result.append(noteAttributedString(row.text, fontSize: 11, gray: 0.0, bold: true))
+        } else {
+            result.append(noteAttributedString(row.numberedText, fontSize: 10, gray: 0.1))
+            for line in row.lines {
+                result.append(NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: 10, bold: false)))
+                result.append(noteAttributedString(line, fontSize: 8.5, gray: 0.35))
             }
         }
+        result.addAttribute(Self.planRoleKey, value: "contentsRow", range: NSRange(location: 0, length: result.length))
+        return result
     }
 
     // MARK: - Document Section (multi-page)
 
+    /// The attribute each line of a document's drawing carries its plan role under (L34, J19): the
+    /// `CollectionDocumentPlan.Role`'s raw value, or `contentsRow` for a contents row. Nothing reads it in
+    /// this build; it is there so that L60's tagged PDF can mark each line by its role.
+    static let planRoleKey = NSAttributedString.Key("FRUSCollectionPlanRole")
+
+    /// Draws one document from its plan (L34): the lines above its text at the head of a fresh page, each
+    /// drawn as its own run, then the rest of its lines as one flow that runs on over as many pages as it
+    /// needs, in the plan's order. The source note follows the text and prints whole, where 1.0 drew it as one
+    /// line above the text and cut it there; a research note flows under its document, where 1.0 gave each
+    /// note a page of its own and cut a note longer than the page (the design's §3.8).
     private func drawDocumentSection(
         ctx: CGContext,
         doc: CollectionExportDocument,
-        options: CollectionExportOptions,
+        plan: CollectionDocumentPlan,
         pageNumber: inout Int
     ) {
         let H = Self.pageHeight, M = Self.margin, cw = Self.contentWidth
@@ -684,254 +712,188 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.beginPDFPage(nil)
         var y = H - M
 
-        // Heading: the per-entry `titleOverride` when set, else the citation (M3,
-        // centralized via `exportHeading`). noteAttributedString renders _text_ as italic.
-        let cit = doc.exportHeading
-        let citBoldAttr = noteAttributedString(cit, fontSize: 13, gray: 0.0, bold: true)
-        let citH = measureHeight(citBoldAttr, width: cw)
-        draw(citBoldAttr, in: ctx,
-             rect: CGRect(x: M, y: y - citH, width: cw, height: citH))
-        y -= citH + 6
-
-        // history.state.gov URL
-        if !doc.historyStateGovURL.isEmpty {
-            draw(doc.historyStateGovURL, in: ctx,
-                 rect: CGRect(x: M, y: y - 11, width: cw, height: 11),
-                 fontSize: 8, bold: false, gray: 0.45)
-            y -= 17
+        // The lines above the text: a title of the author's or the citation at the heading's size, the
+        // citation as a smaller line under a title or above the volume's heading, and the address.
+        let headRoles: Set<CollectionDocumentPlan.Role> = [.title, .citation, .address]
+        for line in plan.lines where headRoles.contains(line.role) {
+            let attr: NSMutableAttributedString
+            switch line.role {
+            case .address:
+                attr = NSMutableAttributedString(string: line.text, attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45))
+            default:
+                attr = NSMutableAttributedString(attributedString: line.headingLevel != nil
+                    ? noteAttributedString(line.text, fontSize: 13, gray: 0.0, bold: true)
+                    : noteAttributedString(line.text, fontSize: 9.5, gray: 0.2))
+            }
+            attr.addAttribute(Self.planRoleKey, value: line.role.rawValue, range: NSRange(location: 0, length: attr.length))
+            let h = measureHeight(attr, width: cw)
+            draw(attr, in: ctx, rect: CGRect(x: M, y: y - h, width: cw, height: h))
+            y -= h + (line.role == .address ? 6 : 4)
         }
 
         drawHRule(ctx: ctx, y: y, gray: 0.6, thickness: 0.3)
         y -= 12
 
-        // Body — controlled by doc.bodyDepth (per-entry effective depth).
-        let bodyAttrStr: NSAttributedString
-        switch doc.bodyDepth {
-        case .full:
-            if let model = doc.renderModel {
-                // Highlight offsets are flat-text positions over the render model's
-                // body nodes (see `ExportHighlight`); the plain `bodyText` fallback
-                // below uses a different extraction path, so painting is only valid
-                // when a render model is present.
-                // Phase 5: the per-entry/section override when resolved, else the
-                // collection-level option.
-                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
-                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
-                // renderer — `false` omits the footnotes section, markers stay.
-                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
-                bodyAttrStr = bodyAttributedString(
-                    for: model,
-                    highlights: applyHighlights ? doc.highlights : [],
-                    includeFootnotes: includeFootnotes)
-            } else if !doc.bodyText.isEmpty {
-                bodyAttrStr = NSAttributedString(string: doc.bodyText,
-                                                 attributes: makeAttrs(fontSize: 10, bold: false))
-            } else {
-                bodyAttrStr = NSAttributedString()
+        // The flow: every other line, in the plan's order, each range carrying its role.
+        let composedBody = NSMutableAttributedString()
+        func append(_ part: NSAttributedString, role: CollectionDocumentPlan.Role) {
+            guard part.length > 0 else { return }
+            if composedBody.length > 0, !composedBody.string.hasSuffix("\n") {
+                composedBody.append(NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: 10, bold: false)))
             }
-        case .summaryOnly:
-            if let summary = doc.summaryText, !summary.isEmpty {
-                // AI attribution (v1.17): generated text is always labeled in exports —
-                // a small gray caption line after the summary, mirroring the in-app
-                // "AI summary" badge.
-                let labeled = NSMutableAttributedString(
-                    attributedString: summaryAttributedString(summary, format: doc.summaryFormat,
-                                                              fontSize: 10, italic: false, gray: 0))
-                labeled.append(NSAttributedString(string: "\n\n",
-                                                  attributes: makeAttrs(fontSize: 4, bold: false)))
-                labeled.append(NSAttributedString(
-                    string: CollectionAIAttribution.label(),
-                    attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
-                bodyAttrStr = labeled
-            } else {
-                bodyAttrStr = NSAttributedString()
+            let start = composedBody.length
+            composedBody.append(part)
+            composedBody.addAttribute(Self.planRoleKey, value: role.rawValue,
+                                      range: NSRange(location: start, length: composedBody.length - start))
+        }
+        let gap = { NSAttributedString(string: "\n", attributes: self.makeAttrs(fontSize: 4, bold: false)) }
+        for line in plan.lines where !headRoles.contains(line.role) {
+            switch line.role {
+            case .headnote:
+                append(headnoteAttributedString(line), role: .headnote)
+            case .text:
+                if let drawing = line.drawing, let model = doc.renderModel {
+                    // Highlight offsets are flat-text positions over the render model's body nodes (see
+                    // `ExportHighlight`); the plain `bodyText` fallback below uses a different extraction
+                    // path, so painting is only valid when a render model is present.
+                    append(bodyAttributedString(for: model,
+                                                highlights: drawing.appliesHighlights ? doc.highlights : [],
+                                                drawing: drawing), role: .text)
+                } else if !line.text.isEmpty {
+                    append(NSAttributedString(string: line.text, attributes: makeAttrs(fontSize: 10, bold: false)),
+                           role: .text)
+                }
+            case .volumeHeading:
+                let heading = NSMutableAttributedString()
+                if let label = line.label {
+                    heading.append(NSAttributedString(string: label + " ", attributes: makeAttrs(fontSize: 13, bold: false)))
+                }
+                heading.append(NSAttributedString(string: line.text, attributes: makeAttrs(fontSize: 13, bold: true)))
+                append(heading, role: .volumeHeading)
+            case .dateline:
+                append(NSAttributedString(string: line.text,
+                                          attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0)),
+                       role: .dateline)
+            case .summary:
+                // The plan's label over the summary, drawn as a headnote's is (L34: 1.0's PDF alone left it
+                // out). AI attribution (v1.17): generated text is always labeled in exports — a small gray
+                // caption line after the summary, mirroring the in-app "AI summary" badge.
+                let labeled = NSMutableAttributedString()
+                if let label = line.label {
+                    labeled.append(NSAttributedString(string: label + "\n",
+                                                      attributes: makeAttrs(fontSize: 8, bold: true, gray: 0.35)))
+                }
+                labeled.append(summaryAttributedString(line.text, format: line.format,
+                                                       fontSize: 10, italic: false, gray: 0))
+                if let attribution = line.attribution {
+                    labeled.append(NSAttributedString(string: "\n\n", attributes: makeAttrs(fontSize: 4, bold: false)))
+                    labeled.append(NSAttributedString(string: attribution,
+                                                      attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
+                }
+                append(labeled, role: .summary)
+            case .sourceNote:
+                let source = NSMutableAttributedString(attributedString: gap())
+                source.append(NSAttributedString(string: "\(line.label ?? "") \(line.text)",
+                                                 attributes: makeAttrs(fontSize: 9, bold: false, gray: 0.45)))
+                append(source, role: .sourceNote)
+            case .seeAlso:
+                let seeAlso = NSMutableAttributedString(attributedString: gap())
+                // noteAttributedString renders _text_ citation spans as italics.
+                seeAlso.append(noteAttributedString("\(line.label ?? "") \(line.text)", fontSize: 9, gray: 0.45))
+                append(seeAlso, role: .seeAlso)
+            case .researchNote:
+                let note = NSMutableAttributedString(attributedString: gap())
+                note.append(NSAttributedString(string: (line.label ?? "") + "\n",
+                                               attributes: makeAttrs(fontSize: 9.5, bold: true, gray: 0.2)))
+                // noteAttributedString renders _text_ as italic.
+                note.append(noteAttributedString(line.text, fontSize: 10.5, gray: 0.1))
+                append(note, role: .researchNote)
+            case .title, .citation, .address:
+                break
             }
-        case .index:
-            bodyAttrStr = NSAttributedString()
-        }
-
-        // Source note (options.includeSourceNote)
-        if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-            drawHRule(ctx: ctx, y: y, gray: 0.75, thickness: 0.25)
-            y -= 10
-            let snText = "Source: \(SourceNoteDisplay.withoutLeadingLabel(sourceNote))"
-            // Approximate height: one line at 9pt
-            let snH: CGFloat = 14
-            draw(snText, in: ctx,
-                 rect: CGRect(x: M, y: y - snH, width: cw, height: snH),
-                 fontSize: 9, bold: false, gray: 0.45)
-            y -= snH + 6
-        }
-
-        // Headnote (Authoring Phase 5) — a labeled italic abstract prepended to the body
-        // flow, so a long headnote paginates with the body. A requested headnote with
-        // no stored summary renders the placeholder note (never generated on demand).
-        // Prepending shifts the painted highlight attribute ranges with their text, so
-        // highlight shading stays aligned.
-        let headnotedBody = doc.includeHeadnote
-            ? headnoteAttributedString(doc.headnoteText, format: doc.headnoteFormat,
-                                       authorship: doc.headnoteAuthorship, thenBody: bodyAttrStr)
-            : bodyAttrStr
-
-        // Related documents (A10, Authoring Phase 5): a small trailing "See also:" line
-        // appended to the body flow so it paginates with it; empty (every untouched
-        // entry) leaves the flow byte-identical. Appending (after the body) leaves the
-        // painted highlight attribute ranges unshifted.
-        let composedBody: NSAttributedString
-        if doc.relatedDocumentCitations.isEmpty {
-            composedBody = headnotedBody
-        } else {
-            let label = String(localized: "collection.related.label", defaultValue: "See also:")
-            // Each citation's own period comes off before the "; " join, and the line ends in
-            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
-            let joined = doc.relatedDocumentCitations
-                .map(CitationPunctuation.withoutTerminalPeriod)
-                .joined(separator: "; ") + "."
-            let combined = NSMutableAttributedString(attributedString: headnotedBody)
-            combined.append(NSAttributedString(string: "\n\n",
-                                               attributes: makeAttrs(fontSize: 4, bold: false)))
-            // noteAttributedString renders _text_ citation spans as italics.
-            combined.append(noteAttributedString("\(label) \(joined)", fontSize: 9, gray: 0.45))
-            composedBody = combined
         }
 
         if composedBody.length > 0 {
             let framesetter = CTFramesetterCreateWithAttributedString(composedBody)
-                var charOffset = 0
-                let totalChars = composedBody.length
+            var charOffset = 0
+            let totalChars = composedBody.length
 
-                while charOffset < totalChars {
-                    let availH = y - (M + 20)
-                    if availH < 20 {
-                        // No room on this page — start a new one
+            while charOffset < totalChars {
+                let availH = y - (M + 20)
+                if availH < 20 {
+                    // No room on this page — start a new one
+                    drawPageNumber(ctx: ctx, number: pageNumber)
+                    ctx.endPDFPage()
+                    pageNumber += 1
+                    ctx.beginPDFPage(nil)
+                    y = H - M
+                    continue
+                }
+
+                let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
+                let path = CGPath(rect: rect, transform: nil)
+                let cfRange = CFRangeMake(charOffset, 0)
+                let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
+                drawFrameWithHighlights(frame, attrStr: composedBody, in: ctx)
+
+                let visible = CTFrameGetVisibleStringRange(frame)
+                if visible.length == 0 { break }
+                charOffset += visible.length
+
+                if charOffset < totalChars {
+                    // #960: a whitespace-only remainder must not open a page. Trailing
+                    // newlines in a composed body could overflow onto a fresh page on
+                    // which CoreText then draws nothing — a blank page with only its
+                    // folio, which is exactly the shipped defect (p18 of the owner's
+                    // build-43 export). Whitespace left to draw is drawing done.
+                    let remainder = (composedBody.string as NSString).substring(from: charOffset)
+                    if remainder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        charOffset = totalChars
+                        y = M + 20
+                    } else {
+                        // Text overflowed — new page
                         drawPageNumber(ctx: ctx, number: pageNumber)
                         ctx.endPDFPage()
                         pageNumber += 1
                         ctx.beginPDFPage(nil)
                         y = H - M
-                        continue
                     }
-
-                    let rect = CGRect(x: M, y: M + 20, width: cw, height: availH)
-                    let path = CGPath(rect: rect, transform: nil)
-                    let cfRange = CFRangeMake(charOffset, 0)
-                    let frame = CTFramesetterCreateFrame(framesetter, cfRange, path, nil)
-                    drawFrameWithHighlights(frame, attrStr: composedBody, in: ctx)
-
-                    let visible = CTFrameGetVisibleStringRange(frame)
-                    if visible.length == 0 { break }
-                    charOffset += visible.length
-
-                    if charOffset < totalChars {
-                        // #960: a whitespace-only remainder must not open a page. Trailing
-                        // newlines in a composed body could overflow onto a fresh page on
-                        // which CoreText then draws nothing — a blank page with only its
-                        // folio, which is exactly the shipped defect (p18 of the owner's
-                        // build-43 export). Whitespace left to draw is drawing done.
-                        let remainder = (composedBody.string as NSString)
-                            .substring(from: charOffset)
-                        if remainder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            charOffset = totalChars
-                            y = M + 20
-                        } else {
-                            // Text overflowed — new page
-                            drawPageNumber(ctx: ctx, number: pageNumber)
-                            ctx.endPDFPage()
-                            pageNumber += 1
-                            ctx.beginPDFPage(nil)
-                            y = H - M
-                        }
-                    } else {
-                        y = M + 20
-                    }
+                } else {
+                    y = M + 20
                 }
+            }
         }
 
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
-
-        // ── Research note pages (one per note; the document's setting, else its section's,
-        //    else the collection's — Phase 5, #2000) ─
-        guard doc.includesNotes(options: options) else { return }
-        for note in doc.noteTexts where !note.isEmpty {
-            ctx.beginPDFPage(nil)
-            var ny = H - M
-
-            // Note header banner
-            ctx.setFillColor(CGColor(gray: 0.93, alpha: 1))
-            ctx.fill(CGRect(x: M, y: ny - 28, width: cw, height: 28))
-            draw("Research Note", in: ctx,
-                 rect: CGRect(x: M + 8, y: ny - 22, width: cw - 16, height: 18),
-                 fontSize: 11, bold: true, gray: 0.2)
-            ny -= 36
-
-            // Citation reminder — noteAttributedString renders _text_ as italic.
-            let rawShortCit = cit.count > 100 ? String(cit.prefix(100)) + "…" : cit
-            let shortCitAttr = noteAttributedString(rawShortCit, fontSize: 8, gray: 0.5)
-            let shortCitH = measureHeight(shortCitAttr, width: cw)
-            draw(shortCitAttr, in: ctx,
-                 rect: CGRect(x: M, y: ny - shortCitH, width: cw, height: shortCitH))
-            ny -= shortCitH + 8
-
-            drawHRule(ctx: ctx, y: ny, gray: 0.7, thickness: 0.3)
-            ny -= 12
-
-            // Note body text — noteAttributedString renders _text_ as italic.
-            let noteAttr = noteAttributedString(note, fontSize: 11, gray: 0.1)
-            let framesetter = CTFramesetterCreateWithAttributedString(noteAttr)
-            let rect = CGRect(x: M, y: M + 20, width: cw, height: ny - M - 20)
-            let path = CGPath(rect: rect, transform: nil)
-            let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
-            CTFrameDraw(frame, ctx)
-
-            drawPageNumber(ctx: ctx, number: pageNumber)
-            ctx.endPDFPage()
-            pageNumber += 1
-        }
     }
 
     // MARK: - Headnote (Authoring Phase 5)
 
-    /// Builds the document flow for an entry with a headnote request: a small bold
-    /// "Headnote" label, the italic abstract (or the missing-summary placeholder when no
-    /// summary is stored — headnote resolution never generates), a small gap, then the
-    /// body. Prepending keeps a long headnote paginating naturally with the body text.
+    /// The headnote's part of a document's flow: a small bold "Headnote" label, the italic abstract and the
+    /// caption saying who wrote it, then a small gap. It is drawn only where a headnote is stored: since
+    /// L34 a requested headnote with nothing stored prints nothing (J10), where 1.0 printed the author an
+    /// instruction in a file made for a reader.
     ///
-    /// - Parameters:
-    ///   - text: The resolved headnote text, if any.
-    ///   - body: The already-built body attributed string to follow the headnote.
-    /// - Returns: The combined attributed string.
-    private func headnoteAttributedString(_ text: String?,
-                                          format: ResponseFormat,
-                                          authorship: SummaryAuthorship,
-                                          thenBody body: NSAttributedString) -> NSAttributedString {
+    /// - Parameter line: The plan's headnote line.
+    /// - Returns: The headnote's attributed string.
+    private func headnoteAttributedString(_ line: CollectionDocumentPlan.Line) -> NSAttributedString {
         let combined = NSMutableAttributedString()
-        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
         combined.append(NSAttributedString(
-            string: label + "\n",
+            string: (line.label ?? "") + "\n",
             attributes: makeAttrs(fontSize: 8, bold: true, gray: 0.35)))
-        if let text, !text.isEmpty {
-            let attrs = makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)
-            combined.append(summaryAttributedString(text, format: format, fontSize: 10, italic: true, gray: 0.15))
-            combined.append(NSAttributedString(string: "\n", attributes: attrs))
-            // Attribution honors the headnote's authorship (Composer redesign): AI keeps the
-            // caption, an AI-edited headnote discloses the edit, a user-written one shows none.
-            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
-                combined.append(NSAttributedString(
-                    string: attribution + "\n",
-                    attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
-            }
-        } else {
-            let missing = String(localized: "collection.headnote.missing",
-                                 defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
+        let attrs = makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0.15)
+        combined.append(summaryAttributedString(line.text, format: line.format, fontSize: 10, italic: true, gray: 0.15))
+        combined.append(NSAttributedString(string: "\n", attributes: attrs))
+        // Attribution honors the headnote's authorship (Composer redesign): AI keeps the caption, an
+        // AI-edited headnote discloses the edit, a user-written one shows none.
+        if let attribution = line.attribution {
             combined.append(NSAttributedString(
-                string: missing + "\n",
-                attributes: makeStyledAttrs(fontSize: 9, bold: false, italic: true, gray: 0.45)))
+                string: attribution + "\n",
+                attributes: makeAttrs(fontSize: 7.5, bold: false, gray: 0.45)))
         }
-        combined.append(NSAttributedString(string: "\n",
-                                           attributes: makeAttrs(fontSize: 4, bold: false)))
-        combined.append(body)
+        combined.append(NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: 4, bold: false)))
         return combined
     }
 
@@ -999,9 +961,26 @@ final class PDFCollectionExporter: CollectionExporter {
     func bodyAttributedString(for model: FRUSDocumentRenderModel,
                               highlights: [ExportHighlight],
                               includeFootnotes: Bool) -> NSAttributedString {
+        bodyAttributedString(for: model, highlights: highlights,
+                             notes: includeFootnotes ? .all : .none, headingLabel: nil)
+    }
+
+    /// One document's text as its plan draws it (L34): the notes the plan prints, each call by the plan's
+    /// printing, and the plan's label inside the first heading.
+    func bodyAttributedString(for model: FRUSDocumentRenderModel, highlights: [ExportHighlight],
+                              drawing: CollectionDocumentPlan.TextDrawing) -> NSAttributedString {
+        bodyAttributedString(for: model, highlights: highlights, notes: drawing.footnotes,
+                             headingLabel: drawing.headingLabel)
+    }
+
+    /// The text with `notes` printed and `headingLabel` inside its first heading.
+    private func bodyAttributedString(for model: FRUSDocumentRenderModel, highlights: [ExportHighlight],
+                                      notes: FootnotePrinting, headingLabel: String?) -> NSAttributedString {
         highlightPaint = highlights.isEmpty ? nil : HighlightPaintTracker(highlights)
-        defer { highlightPaint = nil }
-        return renderModelToAttributedString(model, includeFootnotes: includeFootnotes)
+        notePrinting = notes
+        pendingHeadingLabel = headingLabel
+        defer { highlightPaint = nil; notePrinting = .all; pendingHeadingLabel = nil }
+        return renderModelToAttributedString(model, notes: notes)
     }
 
     /// Converts a `FRUSDocumentRenderModel` into a single `NSAttributedString` for CoreText
@@ -1013,7 +992,7 @@ final class PDFCollectionExporter: CollectionExporter {
     ///   which drops footnote bodies while keeping inline markers (rendered here as
     ///   superscript labels regardless).
     private func renderModelToAttributedString(_ model: FRUSDocumentRenderModel,
-                                               includeFootnotes: Bool) -> NSAttributedString {
+                                               notes: FootnotePrinting) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for node in model.bodyNodes {
             let block = blockNodeToAttributedString(node)
@@ -1033,11 +1012,16 @@ final class PDFCollectionExporter: CollectionExporter {
 
         // Footnotes section — gated on the resolved include-footnotes flag (owner
         // decision 2026-07-03), matching the shared HTML renderer's footnote gate.
-        if includeFootnotes, !model.footnotes.isEmpty {
+        // L34: only the notes the plan prints (#1991).
+        let printed = model.footnotes.filter { note in
+            guard case .footnoteBody(let id, _, _, let seq, _, _) = note else { return false }
+            return notes.prints(FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq))
+        }
+        if !printed.isEmpty {
             let ruleAttrs: [NSAttributedString.Key: Any] = makeAttrs(fontSize: 4, bold: false,
                                                                       gray: 0.7)
             result.append(NSAttributedString(string: "\n\u{00A0}\n", attributes: ruleAttrs))
-            for note in model.footnotes {
+            for note in printed {
                 if case .footnoteBody(_, _, _, _, let label, let children) = note {
                     // #985: the printed number, or a bullet when the volume printed none.
                     let fnMark = NSMutableAttributedString(
@@ -1062,6 +1046,12 @@ final class PDFCollectionExporter: CollectionExporter {
         let result = NSMutableAttributedString()
         switch node {
         case .heading(let c):
+            // The document's first heading carries the plan's label (L34: *As published:* under a title of
+            // the author's), drawn outside the highlight walk, as no part of the volume's text.
+            if let label = pendingHeadingLabel, !label.isEmpty {
+                result.append(unpainted { NSAttributedString(string: label + " ", attributes: makeAttrs(fontSize: 13, bold: false)) })
+            }
+            pendingHeadingLabel = nil
             result.append(inlineAttributedString(c, fontSize: 13, bold: true))
             result.append(NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: 4, bold: false)))
         case .dateline(let c):
@@ -1368,7 +1358,11 @@ final class PDFCollectionExporter: CollectionExporter {
             return paintedString(s, attrs: makeStyledAttrs(fontSize: fontSize, bold: false, italic: true))
         case .lineBreak:
             return paintedString("\n", attrs: makeAttrs(fontSize: fontSize, bold: false))
-        case .footnoteMarker(_, _, _, let label):
+        case .footnoteMarker(let id, _, let seq, let label):
+            // L34: a call whose note does not print is the volume's number, and nothing where it printed
+            // none (#2007, §3.5), as the web page and Word draw it.
+            let key = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            if case .omitted = notePrinting.call(key: key, label: label) { return NSAttributedString() }
             var attrs = makeAttrs(fontSize: max(fontSize - 3, 6), bold: false)
             attrs[NSAttributedString.Key(kCTSuperscriptAttributeName as String)] = 1 as CFNumber
             // #985: a note the volume printed unnumbered gets a bullet, not an invented number.

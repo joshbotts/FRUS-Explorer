@@ -63,6 +63,8 @@ import SwiftUI
 ///          the focus in its footnote editor (`CitationLookupFocus`); its summary counts a best
 ///          guess in a bucket of its own (`BatchCitationOutcome.summary(of:)`); #1504: the
 ///          nearest-document badge is gone with its strategy
+///   1.8 — #1977: the Document no. field takes a number as printed — a letter, a dash — on iOS,
+///          where its number pad typed digits alone
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -130,8 +132,9 @@ struct CitationLookupView: View {
             .onSubmit(of: .text) { submitIfActionable() }
             .navigationTitle(String(localized: "citation.lookup.title",
                                     defaultValue: "Citation Lookup"))
-            // #861: the "Document no." and "Page" fields use .numberPad, a keyboard with NO return key,
-            // so `.submitLabel(.search)` on them is inert and nothing could dismiss it at all.
+            // #861: the "Page" field uses .numberPad, a keyboard with NO return key, so
+            // `.submitLabel(.search)` on it is inert and nothing could dismiss it at all. (The
+            // "Document no." field did too until #1977; its keyboard now has a return key.)
             .keyboardDismissBar()
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -314,6 +317,8 @@ struct CitationLookupView: View {
                 Text(String(localized: "citation.field.part", defaultValue: "Part"))
             }
 
+            // The number as the volume prints it (#1977): `1190b`, an appendix's `C`, a microfiche
+            // supplement's `GT–6`. The number pad this field had until then types none of them.
             LabeledContent {
                 TextField(String(localized: "citation.field.document.placeholder",
                                  defaultValue: "e.g. 15"),
@@ -323,8 +328,10 @@ struct CitationLookupView: View {
                     .submitLabel(.search)
                     #endif
                     #if os(iOS)
-                    .keyboardType(.numberPad)
+                    .keyboardType(.numbersAndPunctuation)
+                    .textInputAutocapitalization(.never)
                     #endif
+                    .disableAutocorrection(true)
             } label: {
                 Text(String(localized: "citation.field.document", defaultValue: "Document no."))
             }

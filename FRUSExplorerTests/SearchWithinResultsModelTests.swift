@@ -133,6 +133,8 @@ private func makeTrail() throws -> (container: ModelContainer, context: ModelCon
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — plan of record §6g, found in A8: words typed as one phrase name a held list quoted once
+///   1.2 — #2013 (L57): the date filter's two dates are set as Filters' pickers set them, on days in the device's zone,
+///          where they were midnights in GMT
 @Suite("Search within results: the iPhone and iPad view model")
 @MainActor
 struct SearchWithinResultsModelTests {
@@ -234,8 +236,8 @@ struct SearchWithinResultsModelTests {
         await vm.search()
         #expect(!vm.resultSetScope.layerFiltersNarrowed)
         vm.dateRangeEnabled = true
-        vm.dateRangeStart = try #require(ISO8601DateFormatter().date(from: "1953-01-01T00:00:00Z"))
-        vm.dateRangeEnd = try #require(ISO8601DateFormatter().date(from: "1959-12-31T00:00:00Z"))
+        vm.dateRangeStart = try #require(Calendar.current.date(from: DateComponents(year: 1953, month: 1, day: 1)))
+        vm.dateRangeEnd = try #require(Calendar.current.date(from: DateComponents(year: 1959, month: 12, day: 31)))
         await vm.search()
         #expect(vm.results.map(\.documentId) == ["d7", "d4"], "d1 is dated 1951")
         #expect(vm.resultSetScope.headerDescription
@@ -249,8 +251,8 @@ struct SearchWithinResultsModelTests {
         vm.semanticBackend = LayerMeaningSearch()
         vm.searchMode = .meaning
         vm.dateRangeEnabled = true
-        vm.dateRangeStart = try #require(ISO8601DateFormatter().date(from: "1953-01-01T00:00:00Z"))
-        vm.dateRangeEnd = try #require(ISO8601DateFormatter().date(from: "1959-12-31T00:00:00Z"))
+        vm.dateRangeStart = try #require(Calendar.current.date(from: DateComponents(year: 1953, month: 1, day: 1)))
+        vm.dateRangeEnd = try #require(Calendar.current.date(from: DateComponents(year: 1959, month: 12, day: 31)))
         vm.keywords = "how did the embassy report"
         await vm.search()
         vm.holdBase(meaningAvailable: false)
@@ -268,8 +270,8 @@ struct SearchWithinResultsModelTests {
         defer { try? FileManager.default.removeItem(at: dir) }
         // As the filter sheet's Done leaves it: set, and no search run.
         vm.dateRangeEnabled = true
-        vm.dateRangeStart = try #require(ISO8601DateFormatter().date(from: "1953-01-01T00:00:00Z"))
-        vm.dateRangeEnd = try #require(ISO8601DateFormatter().date(from: "1959-12-31T00:00:00Z"))
+        vm.dateRangeStart = try #require(Calendar.current.date(from: DateComponents(year: 1953, month: 1, day: 1)))
+        vm.dateRangeEnd = try #require(Calendar.current.date(from: DateComponents(year: 1959, month: 12, day: 31)))
         vm.holdBase(meaningAvailable: false)
         vm.keywords = "quillon"
         await vm.search()

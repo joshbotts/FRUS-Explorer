@@ -1496,6 +1496,8 @@ struct CitationPopoverView: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation popover
+///   1.1 — L41 (#1925): while a send runs, the line under its row reads what the send last said
+///          through its `status`, a wait on Zotero's word with its seconds included
 struct DocumentSharePopover: View {
     let entry: DocumentBrowserEntry
 
@@ -1508,6 +1510,9 @@ struct DocumentSharePopover: View {
     @State private var zoteroResult: ZoteroSendResult?
     @State private var zoteroSending = false
     @State private var zoteroError: String?
+    /// What the send in progress last said through its `status`: its step, or how long Zotero asked
+    /// it to wait (#1925). Nil when no send runs.
+    @State private var zoteroStatus: String?
 
     private var volumeEntry: VolumeManifestEntry? {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
@@ -1535,9 +1540,16 @@ struct DocumentSharePopover: View {
                               busy: zoteroSending) {
                         Task { await sendToZoteroLibrary(vol: vol) }
                     }
-                    Text("Adds this document — with your tags and research notes — straight to your Zotero library.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    // While a send runs, the line under its row reads what the send last said.
+                    if zoteroSending, let zoteroStatus {
+                        Text(zoteroStatus)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Adds this document — with your tags and research notes — straight to your Zotero library.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 actionRow("Export Zotero file (RIS)\u{2026}", systemImage: "doc.badge.arrow.up") {
                     sendToZoteroFile(zoteroRIS(vol: vol), ext: "ris", type: .init(filenameExtension: "ris") ?? .text)
@@ -1640,11 +1652,15 @@ struct DocumentSharePopover: View {
             return
         }
         zoteroSending = true
-        defer { zoteroSending = false }
+        zoteroStatus = nil
+        defer { zoteroSending = false; zoteroStatus = nil }
         do {
             let result = try await ZoteroAPIClient().send(
                 items: [zoteroItem(vol: vol)], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username)
+                apiKey: apiKey, userID: userID, username: store.username
+            ) { message in
+                Task { @MainActor in zoteroStatus = message }
+            }
             zoteroResult = result
         } catch {
             zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription

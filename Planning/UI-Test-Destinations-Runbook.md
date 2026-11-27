@@ -362,6 +362,44 @@ portrait, 12 in landscape with every section open), so the sheet is what the tes
 `.safeAreaInset`), and SwiftUI makes no sheet of it. **Measured on R6a's code:** the suite's 2 tests passed, the
 narrowing test in 558 s.
 
+**`testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail` resizes the window under Read (L37, F11).** The suite's
+other two tests launch under *Open Documents In* ▸ Remember Last, which writes no rail setting at an open, so neither
+could see F11: a resize across Browse's two-pane width builds the reader anew, and its per-open task applied the setting
+again. This one launches under Read with `-frus.filterDownloadedOnly YES`, turns to landscape, widens the window, and
+opens the fixture's first document in Browse's two-pane layout by `TwoPaneDocumentTests`' walk (Subseries ▸ Subseries
+1961-63 ▸ Kennedy-Khrushchev ▸ UI Test Compilation, Index Now on a cold run, UI Test Document One). It requires the
+document opened without its rail (Read applied), opens the rail from its toggle, narrows the window to its least width,
+where Browse draws its one-pane stack at compact width, widens it to the two-pane layout again, and requires the rail
+still open. (At a document below 1,100 pt of content the two-pane layout gives up its list pane, and beside the tab
+sidebar the widened window's reader fills the layout, its own Back above it: the layout, not the list, is what the
+gate switches.) Then it goes Back to the compilation and requires UI Test Document Two to open without its rail, since
+Read still applies to a different document, and turns the rail on again so that the stored setting is left on. It
+needs Windowed Apps and skips without it, as the narrowing test does. Two traps the walk met on its first runs, both
+in landscape: a lazy list leaves a row below the fold out of the tree, and the volume's Editors' Annotations put its
+compilation well below the fold, so the walk scrolls before it gives a row up; and `app.swipeUp` scrolled nothing,
+since XCUI reports the app's frame in portrait and the swipe's centre fell in the list pane, so the walk drags in the
+window's own frame, at 80% of its width.
+**On the code before L37** (`v2` at `5fba4c9a`, iPad Pro 13-inch (M5), iOS 27.2, Windowed Apps) it fails at the
+widened window, the rail closed, in 277 s, after every step before it held. **The brief's confirmation, on the same
+code:** the same steps under Remember Last (a twin of the test, run once and not committed) passed in 246 s: the rail
+stayed through both crossings, so the setting applied again at the rebuild is what closed it.
+**Measured on L37's code** (the same iPad, iOS 27.2, Windowed Apps): the suite's 3 tests passed, the Read test in 287 s,
+the narrowing test in 566 s and the first in 210 s, and the first passed under `OS=27.0` too (194 s). The reader's
+`ReaderRebuild` log line named 64 rebuilds over that run, every one either 0.00006 to 0.155 s after a reader of the
+same document stopped or while one still showed it, so both orders SwiftUI stops and starts the two readers in were
+met; the rule's window is one second. **XCUI's screenshots in landscape are portrait-sized**, as its frames are, so
+the rail column at the window's right edge falls outside the attachments: read the assertions, which ask for the
+rail's Cite tile, not the pictures.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.2" \
+  -only-testing FRUSExplorerUITests/RailAtCompactWidthTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+```
+
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
@@ -1498,6 +1536,42 @@ the chips describe").
 Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
   -only-testing FRUSExplorerUITests/FilterSheetDoneTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+**`FilterDateRangeHandOffTests` (#2013, L57, in `MeaningResultsSeamTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** It guards the days of Search's date filter on iPhone and iPad after a hand-off: `SearchViewModel` reads a
+day it is handed, and writes a date as a day, in the zone Filters' two pickers are in (`dateRangeTimeZone`), and the unit
+suite `SearchDateFilterZoneTests` holds the rule with its zone pinned in nine zones. The search seam hands Search a keyword
+search for "xylograph" between 1962-10-01 and 1962-10-31 (`FRUS_UI_TEST_SEARCH_ON_SIGNAL`, with
+`FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES`) through `AppState.openSearch(_:from:)`, the route Chronology's Search in this range
+takes. The test posts the search signal until the *Narrowed by* chip names the two days, since the app acts on the first
+signal after its boot has armed the seam. The spoken-row volume gives Search an index. The app runs in New York's zone
+(`TZ=America/New_York`), west of UTC, where the defect showed; under one build a run in Tokyo's zone showed 1 October where
+New York's showed 30 September, so the key reaches the app. One test reads From and To: a compact picker draws its date
+as the value of a child labelled "Date Picker" ("Oct 1, 1962"). The other taps the 5th in From's calendar, closes it, and
+requires the chip to name the day From then shows. **On an iPhone the calendar opens over the sheet's navigation bar.** A
+tap on the bar's title, or at the centre of the popover's dismiss region, which lies under the calendar, picks another day
+(the first run picked the 12th, and its teardown the 22nd). So the test closes the calendar with a tap at From's own place,
+fixed on the screen before the calendar opens: `allElementsBoundByIndex` binds an element to its place among the date
+pickers, the open calendar is a date picker and takes the first place, and a coordinate on the bound element picked the
+10th, the calendar's middle. For the same reason the test counts only the compact pickers, under 80 pt tall.
+
+Measured on 2026-11-27 under iOS 27.0, each device alone under the heavy-job lock: **iPhone 17 (`80CF0F18`): 2 tests, 2
+passed (95 and 35 s)**; **iPad Pro 13-inch (M5) (`9AB3A0C9`): each test alone on a fresh boot, 1 passed and 1 passed (73 and
+112 s)**. **The control** (the hand-off's read, the search's two days and the chip put back in GMT, as before the fix,
+iPhone 17): 2 tests, 2 failed, the first at From showing Sep 30, 1962 and the second at From showing Sep 5, 1962 under the
+chip *1962-09-06 to 1962-10-31*: a pick keeps the time of day of the date the picker held, there 20:00 EDT, which is the
+next day in GMT. **On the iPad, run each test alone on a fresh boot.** In one run of both on one boot the first passed, and
+then `backboardd` aborted in Metal as the second launched the app (`-[MTLTextureDescriptorInternal validateWithDevice:]`
+under `CA::OGL::FlattenNode::retain_surface`, #1620's frames), and the test "crashed with signal kill". Each alone, booted
+afresh with the app removed, passed. **On the iPhone, leave the app installed.** With the app removed, its first launch
+indexed the spoken-row volume and opened the while-indexing guide over Search, and the first test failed at "Filters did
+not open"; with the app left installed both passed.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/FilterDateRangeHandOffTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
