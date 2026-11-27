@@ -829,7 +829,7 @@ before R10 runs.
 **What R10 takes from it.** Expect L26's moves in the authority, the usage index and the flow index
 (above) besides what the corpus brings, and nothing else from code. A control separates the two
 only at R10's own base and on the corpus before the release: a row after L26 can change a
-generator (L31 changes SourceNoteKit and two generator cores), so these outputs, made at
+generator (L31, merged since, moved a rule into SourceNoteKit and touched two generator cores), so these outputs, made at
 `bbe6686c`, are no control for R10, and they were not kept. The measured cost is in §12.
 
 ---

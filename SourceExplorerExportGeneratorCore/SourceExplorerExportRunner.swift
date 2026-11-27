@@ -25,8 +25,9 @@ import VolumeSourcesIndexGeneratorCore
 /// `collection-authority.json` are the resolution surfaces; the live NARA Catalog route the
 /// app UI would offer is **recorded, never executed**. Extraction is the parity-pinned
 /// `DocumentNoteExtractor` (the exact note text the app stores), parsing is the shared
-/// `SourceNoteParser`, and strategies are `ProvenanceCategory` slugs — so every column agrees
-/// with the app by construction.
+/// `SourceNoteParser`, strategies are `ProvenanceCategory` slugs, and each document's year is the one
+/// Source Explorer reads (`DocumentYearExtractor`, the dateline's and then the document's date, #1976) —
+/// so every column agrees with the app by construction.
 ///
 /// Outputs (to `OUTPUT_DIR`):
 /// - `source-explorer-export.json` — the full export (~266k records; too large to commit,
@@ -38,6 +39,10 @@ import VolumeSourcesIndexGeneratorCore
 ///   1.0 — #335: initial implementation
 ///   1.1 — 2026-11-10 (FRUS Explorer Light, S22b): `exportRecord` public, for check 8's comparator, and
 ///         `createFile`'s unused result discarded with `_ =`, which Linux's Foundation warns of
+///   1.2 — 2026-11-26 (#1976, plan of record row L31): each record's year is the one Source Explorer reads
+///         (`DocumentYearExtractor` 2.0), and `run` is `async`, as the kit's parse of a volume is
+///   1.3 — 2026-11-26 (#1974, L31, decision 176): the Numerical File's case number is read by SourceNoteKit's
+///         `NumericalFileCitation`, through `NumericalFileIndex.caseNumber(fromFileNumber:)`, the kit's rule
 public enum SourceExplorerExportRunner {
 
     /// The export schema version.
@@ -46,9 +51,9 @@ public enum SourceExplorerExportRunner {
     public static let sampleStride = 200
 
     /// Reads configuration from the environment and runs the export.
-    public static func run() throws {
+    public static func run() async throws {
         let env = ProcessInfo.processInfo.environment
-        try run(
+        try await run(
             volumesDir: URL(fileURLWithPath: env["VOLUMES_DIR"]
                 ?? "/Users/jbotts/Development/frus/volumes", isDirectory: true),
             manifestPath: env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json",
@@ -67,7 +72,7 @@ public enum SourceExplorerExportRunner {
     public static func run(volumesDir: URL, manifestPath: String,
                            centralFilesIndexPath: String, volumeSourcesIndexPath: String,
                            collectionAuthorityPath: String,
-                           outputDir: URL, generated: String) throws {
+                           outputDir: URL, generated: String) async throws {
         // Resolution surfaces (all offline, all bundled artifacts).
         let lotResolver = try BundledLotResolver(
             indexURL: URL(fileURLWithPath: centralFilesIndexPath))
@@ -117,7 +122,7 @@ public enum SourceExplorerExportRunner {
             let data = try Data(contentsOf: file)
             let volumeId = VolumeCorpusEnumerator.volumeId(for: file)
             let notes = DocumentNoteExtractor.extract(fromXML: data)
-            let years = DocumentYearExtractor.extract(fromXML: data)
+            let years = try await DocumentYearExtractor.extract(fromXML: data, named: file.lastPathComponent)
 
             var records: [SourceExplorerExportRecord] = []
             records.reserveCapacity(notes.count)
@@ -196,8 +201,10 @@ public enum SourceExplorerExportRunner {
             }
         }
 
-        // 1906–1910 Numerical File rolls — the same gate the app applies
-        // (SourceExplorerView.swift:468: .centralFiles fileIdentifier + documentYear window).
+        // 1906–1910 Numerical File rolls — the same gate the app applies (a `.centralFiles` file
+        // identifier in the document year's 1906–1910 window), and since #1974 the same reading of its case
+        // number, SourceNoteKit's `NumericalFileCitation`, so a decimal-era citation names no case and lists
+        // no roll, as the views have refused it since #722.
         var rolls: [NumericalRollRef]?
         var coverageGap: Bool?
         if case .centralFiles(_, let fileIdentifier?) = parsed,

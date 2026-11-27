@@ -575,6 +575,36 @@ struct NARALiveRecordGroupTests {
         #expect(NARACatalogClient.buildResult(from: record)?.recordGroupNumber == "59")
     }
 
+    @Test("The live answer's scope note is the record's own, and the client reads it (#1970)")
+    func liveShapeReadsTheScopeNote() throws {
+        let record = try Self.liveRecord()
+        #expect(record["scopeAndContentNote"] is String, "fixture guard: the live record carries its note")
+        #expect(record["scopeContent"] == nil && record["description"] == nil,
+                "fixture guard: neither shape the client read before")
+        let note = try #require(NARACatalogClient.buildResult(from: record)?.scopeNote)
+        #expect(note.hasPrefix("This series includes memorandums, briefing materials"), "\(note.prefix(60))")
+    }
+
+    @Test("The two older shapes still give their notes, the record's own first; none, or an empty one, gives nil")
+    func olderScopeNoteShapesAndNone() throws {
+        var record = try Self.liveRecord()
+        let live = try #require(record["scopeAndContentNote"] as? String)
+        record["scopeContent"] = "An older note."
+        record["description"] = ["scopeAndContentNote": "A description's note."]
+        #expect(NARACatalogClient.buildResult(from: record)?.scopeNote == live, "the record's own note comes first")
+        record["scopeAndContentNote"] = nil
+        #expect(NARACatalogClient.buildResult(from: record)?.scopeNote == "An older note.")
+        record["scopeContent"] = nil
+        #expect(NARACatalogClient.buildResult(from: record)?.scopeNote == "A description's note.")
+        record["description"] = nil
+        #expect(NARACatalogClient.buildResult(from: record)?.scopeNote == nil)
+        for empty in ["", "  "] {
+            record["scopeAndContentNote"] = empty
+            record["scopeContent"] = empty
+            #expect(NARACatalogClient.buildResult(from: record)?.scopeNote == nil, "an empty note reads as none")
+        }
+    }
+
     @Test("An HTTP 200 HTML page is the client's decodingError, not an empty answer, and is not counted")
     func htmlPageIsAnError() async throws {
         let (client, provider) = Self.client(key: "cdn-error")

@@ -4166,9 +4166,160 @@ Row CR of the plan of record from 2026-11-25 (decision 149), started from the pl
   - L53's brief was brought to decision 191.
 - **The design's status** stays PROPOSED until C2.
 
+## Session 2026-11-26 — L27, the tab shell's banner: F1 not reproduced through a whole 75 → 76 re-index on the iPad simulator, nor through 1823's own 74 → 75 start, so the build measures the room against the banner once a change settles and logs it for R9; #1835's test passes under iOS 27.0, and the keyboard row's one failure there is the year-range popover's own keyboard
+
+The plan of record's session started this one for row L27, on `claude/l27-tab-shell-banner-42ab07` from `v2` at `bbe6686c`, L26's merge. The row: F1, the blank band under the tab shell's banner on the owner's iPad during 1823's first-launch re-index (R6's PD3), which R6a could not reproduce; and #1835, the same reserve with the keyboard up, on the iPad mini under iOS 27.0. Commits: `c7f7d4cb` (the measurement, its log line and three tests) and a docs commit.
+
+**#2019's and #2020's merges**
+- L26 merged as `bbe6686c`, a squash onto `d8b70f5f`, at 21:53:08 UTC on 2026-11-26, from its head `7110aaae`. Its tree, `7277ac1b`, is the head's. It closed #1978 and #1854. This entry records it.
+- CR merged as `af771601`, a squash onto `bbe6686c`, at 23:14:57 UTC on 2026-11-26, from its head `a79a6780`. Its tree, `1120d01a`, is the head's. It closed no issue. This branch took `v2` in after it, with CR's entry above this one; the session log was the one conflict, and the plan of record merged cleanly.
+
+**F1, first: not reproduced** (decision 183)
+- **The setup.** The device was S1, the iPad Pro 13-inch (M5) under iOS 27.0, in Windowed Apps and in landscape, with its library at 75 as L26 left it. The owner's frame shows Windowed Apps' corner grip too.
+  - A temporary probe, never committed, logged every banner height and frame and every reserve with its host's controller chain. It also logged every controller in the window holding an additional bottom inset, the keyboard's notices and the reader web view's frame. The diff is kept at `~/Library/Caches/FRUS-Explorer/l27/probe-final.diff`.
+  - Both builds were `AppStore`-configuration simulator builds, as L26's census was.
+- **`v2` at `bbe6686c`, through its whole 75 → 76 re-index:** 553 volumes and 321,749 documents in 992 s, none failed. What was tried, R6a's two untried conditions first:
+  - iPadOS's menu bar shown. A tap on the app's name in the status bar draws *FRUS Explorer File Edit View Document Find Window Help*, the owner's frame. Swipes from the top edge did not.
+  - Browse's pushes to the owner's own screen: Subseries, 1977–80, volume XXIV, its compilation, then Argentina's 66 documents. Documents opened and Back, in quick succession.
+  - The reader with its rail, and tab round trips.
+  - The software keyboard up and down on the Browse root's search field, with typing.
+  - Sidebar ↔ tab bar, and a portrait round trip.
+  - The Guide sheet opened and closed, and the re-index's end.
+- **1823 itself, through PD3's own start.** `build-54` was exported with the same probe, and S1's stored version set to 74, so 1823 made the 74 → 75 re-index (stopped at 186 of 553).
+  - 1823's reader still drew its rail as an `.inspector`. R6a's F8 replaced it before R6a's own probe ran, and the owner's reader band went when that rail opened. So the rail was opened, then closed (the Read state, the owner's synced setting); a document was opened with it closed and read to its end; then Back.
+  - The same path, to volume XXIII's Cuba section this time, with the menu bar shown; then the Dock raised over the window.
+- **Measured, in both runs:**
+  - Every reserve went to the tab's `TabHostingController` under `UIKitTabBarController`; the visible tab made 1,224 writes in the first run.
+  - At every write, no other controller held a bottom inset.
+  - The reserve followed each height change within 6–10 ms.
+  - Every settled frame's banner rested on the window's floor, 1,011.5 pt (1,032 less the home indicator's 20). The reader ended at the banner's top with the rail open or closed.
+  - The Dock overlays the window and leaves its inset at 20 pt.
+  - One screenshot caught a 40-pt band for a single frame. As each volume starts, the banner flips 179.5 → 139.5 → 179.5 pt within 17 ms, while its metadata row clears and returns.
+  - A document's end shows its page's own bottom padding, about 55 pt, as designed.
+- S1 holds its v75 library again (L26's pre-census clone). L26's 1861 `AppStore` simulator build is installed on it again, so it is as L26 handed it over, and it is shut down.
+
+**What the build keeps instead: the room against the banner, logged** (`c7f7d4cb`)
+- **The measurement.** A second after a change settles, `TabShellBannerReserve.ReservingView` measures the room from the tab content's bottom edge, which it shares, down to the window's safe-area floor. It measures the geometry, not the host's inset, because room set aside by a controller above the tab's host never shows in the host's own inset. That is the reading R6a left unproven.
+- **The judgment.** `TabShellBannerRoom` (`Models/SupportingTypes.swift`) requires the reserve to be the banner's height and, while a banner is up, no band.
+  - It is not judged where a tab bar sits at the bottom (an iPhone), or with no banner up: the keyboard raises the content's edge to itself, and #1070 takes the banner away.
+  - A banner left up over the keyboard, #1835's shape, is judged.
+- **The log,** category `TabShellBanner`:
+  - each tab's first measurement as a notice;
+  - an error when the room stops matching, with every value and every controller holding a bottom inset;
+  - a notice when it matches again.
+  - It writes no state and moves nothing.
+- R9's brief now says how to read it on the owner's iPad.
+
+**#1835**
+- **The keyboard row's three suites** on the iPad mini (A17 Pro) under iOS 27.0 (`22BCEC47`, Full Screen Apps): 9 tests, 8 passed, 0 skipped.
+  - #1835's own test, the Browse-root field with the banner up and then the keyboard, passed, as in the issue's sixteen runs of 2026-11-01.
+  - The one failure is `testDismissBarRendersInTheYearRangePopover`, at its last assertion, "Tapping the popover's Done left the keyboard up", as in every suite run of 2026-11-01. That is the year-range popover's own keyboard, which the issue's comment measured going down about 8 s after Done. It is not the tab shell's banner.
+  - **The control:** the same branch, that one test on the iPad mini under iOS 26.5 (`0093684B`), passed. So the failure follows the 27.0 runtime.
+- The new check logged no mismatch through the run's keyboard cycles: 11 first measurements, every band 0.0 pt.
+- **The row moved** to `OS=27.0` in `.claude/rules/ui-tests.md` and the runbook's entry, which has the run and the control. The year-range test is read on 26.5 as well until #2024 is placed. #2024 is its late keyboard, filed on the owner's word ("File it").
+
+**Checks**
+- **`TabShellBannerReserveTests`:** 7 passed on the iPhone 17 under iOS 27.0, the four that were there and three new ones. Each of three mutations, one at a time, failed the test written for it: the room read from the host's own inset, no measurement on layout, the band ignored. The unmutated baseline passed.
+- **`build-for-testing`:** the two known residues and no other warning.
+- **`TabShellBannerClearanceTests`,** which drives the reserve on screen, with the app's `TabShellBanner` log streamed:
+  - **iPhone 17 under iOS 27.0:** 6 tests, 5 passed, 1 skipped (the sidebar scenario, which is iPad-only), as its row expects.
+  - **iPad Pro 11-inch (M5) under iOS 27.0, in landscape:** 5 of 6 passed. The sixth, the sidebar scenario, never reached a step: it was the first test after the simulator booted, and the runner restarted while the app first launched, which the runbook's notes on a just-booted iPad describe. Run again alone on the same iPad, it passed in 146 s, and the band stayed 0.0 pt through the tabs' change to a sidebar and back. So 6 of 6, as its row expects.
+  - **The log, through both runs:** every tab's first measurement balanced (on the iPhone, the room not measured, a tab bar at the bottom), and no mismatch.
+- **The unit target** on the iPhone 17 under iOS 27.0, the app removed first and the TEI mirror set: 8,295 tests in 1,002 suites passed in 714 s, with the six known issues and 17 skipped. That is L26's 8,292 and this row's three.
+- **The Mac build** (`FRUSExplorerMac`, where `SupportingTypes.swift` compiles too): it succeeded, with the two known residues and no other warning.
+- **The landing checks,** on the merged tree (`2426f69c`, with `v2` at `af771601`):
+  - The unit target ran 8,295 tests with one failure: `RichTextRestingCapTests`' colour-picker test, where Text Color presented no picker in its 15 s. CI skips that test because it fails at random on that wait, and its suite run alone then passed 21 of 21.
+  - The Mac build succeeded.
+
+**For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session: "You can turn on auto-fix when sessions land PRs and you can turn on auto-merge when sessions' PRs pass CI", with "I merge on green (Recommended)" to how a PR merges once CI passes. Its Auto-fix is on and GitHub's auto-merge is off. The landing checks ran on the merged tree first: the full unit target and the Mac build. `swift test` was not owed, since the diff names no package input.
+- **#1835: closed as not reproduced** on the owner's word ("Close as not reproduced", 2026-11-26), once its own test had passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. The closing comment holds the run, the 26.5 control and the row's move.
+- **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
+- **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
+
+## Session 2026-11-26 — L31: Source Explorer reads a document's year by one rule, the dateline's and then the index's date; the export's year and Numerical File case follow the app's; a live lookup shows NARA's scope note
+
+Row L31 of the plan of record from 2026-11-25 (#1975, #1976, #1974, #1970), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `bbe6686c` (L26's merge) on `claude/l31-source-explorer-year-7a9f4b`:
+- `00bb6465` (#1975), `164245a2` (#1976), `bea93498` (#1974) and `f45cb40e` (#1970);
+- `69105ead`, the records and `Planning/source-explorer-export/` regenerated;
+- then, at the head of the queue, `v2` taken in (`4186ed4e`) and the landing's records.
+
+The owner answered, in the session, the four questions the measurement raised: decisions 203 to 206.
+
+**#2021's merge**
+- L27 merged as `a17023f9`, a squash onto `af771601`, at 02:48:27 UTC on 2026-11-27, from its head `f9240661`. Its tree, `3139b6c9`, is the head's. It closed no issue; #1835 was closed by hand, as L27's entry records. This entry records it. This branch took `v2` in after it as `4186ed4e`, with no conflict.
+
+**What was found, each defect first** (decision 183)
+- **Eleven of the row's tests fail on the unchanged code** at `bbe6686c`, in a detached worktree. They are four of #1975's rule tests, the two scope-note tests, the two `evaluate` tests of #1976, the export's dateline-first and decimal-citation tests, and the generator core's case number. The two guards of what the rule read right pass there as here.
+- **A harness over a full v76 index read the control's answers:**
+  - frus1969-76v09 d46: 1515;
+  - frus1919Parisv01 d398: 1919 (its received date);
+  - frus1941v01 d121: 1940;
+  - frus1921v02 d749: 1291;
+  - frus1909 d429: no year;
+  - frus1864p4 d120: "Not checked — no year";
+  - frus1873p1v2 d63 (`Madrid, 24 December, 1872.`): 134 rolls by an undated lookup.
+- **Four places where the brief's rule would do what it did not mean** (decisions 203 to 206):
+  - an 1800 floor drops nine correct pre-1800 dates;
+  - a word boundary refuses two datelines the rule read right;
+  - the editors' bracket reaches 32 datelines, not 21;
+  - the index-date fallback reaches the pre-1906 section, where 462 documents print no year and 266 print a year alone, which the section matched against every roll of a country's series.
+- **The plan's first hand check cannot be seen on its document.** `frus1969-76v09` d46's Source Explorer draws no year, at the control or now. A year shows only through the Numerical File's box, a decimal citation's filing period, or a note-less document's series. The misread year shows on `frus1921v02` d749, whose filing period the control's 1291 labels 1789–1906.
+- **Two findings for §5, unfiled:**
+  - In the country series index, two of Austria's 51 despatch rolls carry inverted dates, and so do 44 of the 50 Mexican rolls a summer's lookup lists. The index's guard matches such a roll on any date.
+  - Dateline misprints now reach the export through the dateline-first year (`frus1910` d91, 1914).
+
+**What changed**
+- **#1975:** `CentralFilesClassifier.datelineDateISO(from:)`:
+  - reads a day-first date, the earlier of the two forms being the sent date;
+  - ends the year before an ASCII letter;
+  - takes the editors' bracketed year;
+  - holds the year to 1600–2029.
+
+  `documentYear(fromDateline:)` is the one copy: the app's two `extractYear(from:)` forward to it, and the Research rail calls it.
+- **#1976** (decision 175):
+  - `IndexingPipeline.SourceExplorerFacts` carries `document_dates`' first and last day.
+  - The hydrated year is the route's, else the dateline's, else the index's.
+  - The gate calls a year of 1906 or later not applicable before it asks for a dateline.
+  - By decision 206: `CountrySeriesRollDates` and the span lookup, with `centralFiles.rolls.indexedNote` in both views (a new EditableContent block, 101 ranges re-pointed) and a sentence in both manuals.
+  - The export parses each volume with FRUSCoreKit (`DocumentYearExtractor` 2.0, over `SourceExplorerDocumentContext.year(of:)`), so its core now depends on the kit.
+- **#1974** (decision 176): SourceNoteKit's `NumericalFileCitation`, to which `CentralFilesIndex` and `NumericalFileIndex` forward.
+- **#1970:** `NARACatalogClient.buildResult(from:)` reads a v2 record's own `scopeAndContentNote` first, and an empty note is none.
+- **Docs:** the FRUSCoreKit and Generators runbooks, the export's README, and the plan's L31 record and §5.
+
+**Checks**
+- **#1975, over the 301,070 datelines of a full v76 index:** 41 change year, 4,058 gain a day, 5 change day and 6 lose their date. The chiefs-of-mission tenure match moves for none of the 46,326 pre-1906 candidates.
+- **#1976:** 22,394 documents gain a year in Source Explorer, 8,033 of them with a source note. Of those, 10 gain Numerical File rolls and 11 the coverage gap. 678 of the 46,326 pre-1906 outcomes move.
+- **The export, against a control at `bbe6686c`:**
+  - #1975 moves none, #1976 141 and #1974 335.
+  - Every record's year is the one Source Explorer hydrates: 264,736 of 264,736. At the control, 157 differed and 8,033 had none.
+- **By hand, on the Mac**, in the check copy built from `f45cb40e`, its 298 volumes re-indexed to 76:
+  - frus1909 d429 lists the Numerical File's rolls;
+  - frus1864p4 d120 lists its rolls under the new line, and d119 the same rolls without it;
+  - frus1921v02 d749's filing period reads 1910–1929.
+
+  The scope note was not checked: the copy has no NARA key, and the owner chose "Skip the scope-note check".
+- **The branch's runs:**
+  - `swift build --target FRUSCoreKit` and the package suites the row touches;
+  - `build-for-testing`, with the two residues alone;
+  - 18 scoped app suites on the iPhone 17 under iOS 27.0, 250 tests passed;
+  - the Mac build.
+- **At the head of the queue, after `v2` was taken in,** on `b7a75db2` (tree `f6ec50f0`, with `v2` at `a17023f9` taken in as `4186ed4e`): `build-for-testing`, with the two residues alone (`v2`'s merge brought no shared code, and L27's three app files compiled clean); the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,309 tests in 1,003 suites passed, 17 skipped as at L26, the six known issues; `swift build --target FRUSCoreKit`; `swift test`, 5,234 tests in 606 suites over 39 runs, none failed; the Mac build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**For the owner**
+- **This row's pull request**, opened once L31 reached the head of the queue.
+- **The four answers** are decisions 203 to 206.
+- **Two findings** are in §5, unfiled.
+- **After the merge:** the four hand-over notes for FRUS Explorer Light, shown to you before any is posted.
+
 ## Session 2026-11-26 — L28, the rehearsal: the runbook's corpus phases and step 11's pack run on `v2` at L26's merge, every file accounted for, two generators' defects filed, and `New-Volume-Release-Plan.md` brought to what the run found
 
-Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Development session orchestration", which runs 1.1's queue, on the owner's word that L28 "runs its phases pinned to L26's merge (bbe6686c) when the lock is quiet, e.g. overnight, and lands whenever it is done". Documents only: no regenerated file is committed. The last merge before this entry is CR's, #2020, as `af771601`: a squash onto `bbe6686c` on 2026-11-26 at 23:14:57 UTC, from its head `a79a6780`, tree `1120d01a` (the head's), closing no issue. This branch took it in by a fast-forward before its first commit.
+Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Development session orchestration", which runs 1.1's queue, on the owner's word that L28 "runs its phases pinned to L26's merge (bbe6686c) when the lock is quiet, e.g. overnight, and lands whenever it is done". Documents only: no regenerated file is committed. The rehearsal ran at `bbe6686c`; this branch was cut there, took CR's merge (`af771601`) in by a fast-forward before its first commit, and took L27's and L31's in at the head of the queue.
+
+**#2025's merge**
+- L31 merged as `e3260a95`, a squash onto `a17023f9`, at 03:52:01 UTC on 2026-11-27, from its head `98897b4e`. Its tree, `13374d79`, is the head's. It closed #1974, #1975 and #1976. This entry records it.
+- L27's #2021 (`a17023f9`, onto `af771601`, at 02:48:27 UTC, from `f9240661`, tree `3139b6c9`, closing no issue) is recorded in L31's entry above, and CR's #2020 in L27's.
+- This branch took `v2` in at `e3260a95`; the session log was the one conflict, resolved with every entry kept in merge order, and L31's decisions 203 to 206 put L28's at 207 to 209.
 
 **What ran** (`New-Volume-Release-Plan.md` §10a has each file)
 - **Where.** The fourteen release generators built in a detached checkout of `bbe6686c` outside this worktree, in 135 s; every run there, at its bundled file's own `generated` stamp, its output in a scratch folder. Each phase was one `Scripts/heavy.sh` job, and L27's and L31's jobs ran between them.
@@ -4186,7 +4337,7 @@ Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Develo
 - **For the runbook.** The manifest's run needs no token (one API call). The authority reads the root checkout's `.cache/volume-sources`, which no commit records. R10's files move figures that documents state: the website's 264,598 notes, and the manuals' and the guide's 3,977 collections. No Subject-Numeric key moves, so the label table owes R10 nothing.
 - **The brief's claims** held, but one. The bundled external citations already carry #1854's notes (L26 regenerated them for decision 191), so they are not among the files that differ by L26's moves.
 
-**The owner's three answers** (asked here; the orchestrator told first), decisions 203 to 205:
+**The owner's three answers** (asked here; the orchestrator told first), decisions 207 to 209:
 - the manifest generator's drop filed (#2022) and fixed before R10 ("File it; fix before R10 (Recommended)");
 - the packer's check filed (#2023) and fixed before R10 ("File it; fix before R10");
 - the stale `layout.bin` replaced with the shipped one ("Replace it with the shipped one (Recommended)"), which this session did that evening.
@@ -4194,7 +4345,7 @@ Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Develo
 
 **What changed**
 - **`Planning/New-Volume-Release-Plan.md`.** A head paragraph for the rehearsal, and §10a, its table and findings. The inventory: 41 files, 51.7 MB, 21 in Tier 1, `cited-page-map.json` named. §4.5's commands with every path named. Steps 1 to 4, 6, 7 and 11 as run. Phase F's 18 to 20c: an update's version page and *What's New*, the website's figures, the documents' literals. §8's CI. D-1's line for decision 148, and the doc-comment defect struck (fixed on 2026-09-04 by #1191). §12's costs, measured.
-- **`Planning/Plan-Of-Record-2026-11-25.md`.** Decisions 203 to 205 and the line under them; row L61 in §1's two tables, with its brief; #2022 and #2023 in §1a; the counts and the calendar; §2's line without the token; L28's record; the status paragraph.
+- **`Planning/Plan-Of-Record-2026-11-25.md`.** Decisions 207 to 209 and the line under them; row L61 in §1's two tables, with its brief; #2022 and #2023 in §1a; the counts and the calendar; §2's line without the token; L28's record; the status paragraph.
 - **Outside the repository.** #2022 and #2023 filed; the root checkout's `Planning/semantic-map/layout.bin` replaced (gitignored).
 
 **Checks**

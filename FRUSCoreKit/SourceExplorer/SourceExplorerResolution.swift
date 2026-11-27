@@ -54,6 +54,8 @@ import SourceNoteKit
 ///         shows; `UnprintedPointer` and its render-time join, `resolve(_:authority:)`, from `SourceExplorerView`
 ///   1.1 — 2026-11-26 (L26, decision 191): `packetPointers`, the rows "Add unprinted references (N)" counts,
 ///         which leave out the central files as the packet does
+///   1.2 — 2026-11-26 (#1976, L31): `documentRollsAreIndexDated`, whether the pre-1906 section's own rolls were
+///         matched to the index's date, which both views say above them
 public struct SourceExplorerResolution: Sendable {
 
     /// The source note as the host passed it: blank for a document that prints none.
@@ -91,6 +93,15 @@ public struct SourceExplorerResolution: Sendable {
     /// document whose three rows were all classes, an option that added nothing.
     public var packetPointers: [UnprintedPointer] {
         unprintedPointers.filter { $0.citation.isInPacketChannel }
+    }
+
+    /// Whether the rolls the pre-1906 section lists for the document itself were matched to the index's
+    /// date, the dateline printing none (#1976, the owner's choice of 2026-11-26): both views then say so
+    /// above them (`CountrySeriesRollDates.indexedNote`), since the section's opening line reads the
+    /// dateline. An enclosure's rolls are matched by its own dateline, so they never raise it.
+    public var documentRollsAreIndexDated: Bool {
+        guard case .indexed = documentContext?.rollDates else { return false }
+        return countrySeries.homes.contains { !$0.part.isEnclosure }
     }
 
     /// The documents from the same archival collection (step 7): `.notRun` until the step, and when there
