@@ -40,6 +40,14 @@ import Foundation
 /// FRUS, 1952–1954, vol. XIV, p. 847
 /// ```
 ///
+/// **A number as the volume prints it (#1977)** — with a letter, an appendix's letter, or a
+/// microfiche supplement's prefix:
+/// ```
+/// Papers Relating to the Foreign Relations of the United States, …, 1898 (…, 1901), Document 1190b.
+/// FRUS, 1981–1988, vol. V, Document C
+/// FRUS, 1958–1960, vol. V, Microfiche Supplement, Document GT–6
+/// ```
+///
 /// **A volume's part (#1474):**
 /// ```
 /// FRUS, 1952–1954, vol. II, pt. 1, doc. 41
@@ -89,6 +97,10 @@ import Foundation
 ///          Turabian publication statement, so the app's own citations reach their own volumes
 ///   1.8 — #1524: the title fragment loses the cited volume as the phrase it was printed in, or
 ///          its bare numeral as a whole word, never as a substring of the title's own words
+///   1.9 — #1977: a document number is read as printed — `Document 1190b`, `Document C`,
+///          `Document GT–6` — where only its digits were (`extractDocumentNumber(from:)`,
+///          `normalizedDocumentNumber(_:)`); a link's `d373a` names its number; and the title
+///          fragment loses the whole number, not its digits alone
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -120,8 +132,8 @@ public struct CitationParser: Sendable {
                                                   subseries: subseries,
                                                   volumeNumber: volumeNumber)
 
-        let fieldCount = [subseries, volumeNumber].compactMap { $0 }.count
-            + [documentNumber, pageNumber].compactMap { $0 }.count
+        let fieldCount = [subseries, volumeNumber, documentNumber].compactMap { $0 }.count
+            + (pageNumber == nil ? 0 : 1)
 
         let confidence: ParserConfidence
         switch fieldCount {
@@ -131,7 +143,7 @@ public struct CitationParser: Sendable {
         }
 
         #if DEBUG
-        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") part=\(partNumber.map(String.init) ?? "-") doc=\(documentNumber.map(String.init) ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
+        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") part=\(partNumber.map(String.init) ?? "-") doc=\(documentNumber ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
         #endif
 
         return CitationInput(
@@ -412,11 +424,12 @@ public struct CitationParser: Sendable {
     /// note's only "frus", and its first year is then the date the note opens with.
     private func input(fromLink link: Link, text: String, rawText: String) -> CitationInput {
         let volumeId = link.volumeId
-        let documentNumber: Int?
+        let documentNumber: String?
         let pageNumber: Int?
         var reference = link.reference
         if link.namesDocumentOrPage {
-            documentNumber = link.segment.flatMap { Int($0.dropFirst()) }
+            // The id's number, its letter kept (#1977): `d373a` is document 373a, as `d84` is 84.
+            documentNumber = link.segment.flatMap { Self.normalizedDocumentNumber(String($0.dropFirst())) }
             pageNumber = link.page
         } else {
             var prose = text
@@ -445,28 +458,125 @@ public struct CitationParser: Sendable {
             parserConfidence: .high
         )
         #if DEBUG
-        print("[CitationParser] link volume=\(volumeId) segment=\(link.segment ?? "-") page=\(pageNumber.map(String.init) ?? "-") document=\(documentNumber.map(String.init) ?? "-") proseSubseries=\(reference.prose?.subseries ?? "-") read=\(reference.prose?.subseriesReading.map { "\($0)" } ?? "-")")
+        print("[CitationParser] link volume=\(volumeId) segment=\(link.segment ?? "-") page=\(pageNumber.map(String.init) ?? "-") document=\(documentNumber ?? "-") proseSubseries=\(reference.prose?.subseries ?? "-") read=\(reference.prose?.subseriesReading.map { "\($0)" } ?? "-")")
         #endif
         return input
     }
 
     // MARK: - Document Number Extraction
 
-    /// Extracts a document number.
+    /// Extracts a document number as the citation prints it (#1977).
     ///
-    /// Recognized forms: `Document 15`, `doc. 15`, `doc 15`, `no. 15`, `no 15`, `#15`.
-    public func extractDocumentNumber(from text: String) -> Int? {
-        let patterns = [
-            #"[Dd]oc(?:ument)?\.?\s+(\d+)"#,
-            #"\bno\.?\s+(\d+)"#,
-            #"#\s*(\d+)"#,
-        ]
-        for pattern in patterns {
-            if let raw = firstCapture(pattern: pattern, in: text), let n = Int(raw) {
-                return n
+    /// Recognized phrases: `Document 15`, `doc. 15`, `doc 15`, `no. 15`, `no 15`, `#15`. The number
+    /// may carry one letter (`Document 1190b`, `doc. 550A`), and after `Document` or `doc.` it may
+    /// be a capital prefix, a dash and a number (`Document GT–6`) or a single capital letter
+    /// (`Document C`): the forms of the corpus's `@n` that Cite writes as printed. The number comes
+    /// back through `normalizedDocumentNumber(_:)`.
+    ///
+    /// Until #1977 only the digits were read, into an `Int`, so the app's own citation of 722 of the
+    /// corpus's 314,646 numbered documents named another document or none (measured over the index
+    /// at version 76): `Document 1190b` read as 1190, which `frus1898` also prints, as did every one
+    /// of the 83 numbers with a letter; and the 628 prefixed numbers, all in `frus1958-60v05mSupp`,
+    /// and the 11 single letters, appendices in three 1981–88 volumes, read as no number.
+    ///
+    /// Prose names other kinds of document, so the new forms are read narrowly
+    /// (`documentNumberPatterns`). Measured over the 43,496 clauses of the index's text that name
+    /// the series (from `FRUS` or `Foreign Relations` to the next semicolon, at most 300
+    /// characters), a letter read wherever a capital followed `document` read eleven, every one
+    /// another kind of document: the pronoun in "this document I have", "Executive Document B" and
+    /// "S. Ex. Doc. B" of the Senate, "U.N. Doc. A /70". As written, two clauses read a number other
+    /// than before, an NSC action each (`No. 487a`, which the digits alone misread as document 487
+    /// too), no clause reads a single letter, and the title fragment of those two alone loses more.
+    public func extractDocumentNumber(from text: String) -> String? {
+        for pattern in Self.documentNumberPatterns {
+            if let raw = firstParticipatingCapture(pattern: pattern, in: text),
+               let number = Self.normalizedDocumentNumber(raw) {
+                return number
             }
         }
         return nil
+    }
+
+    /// A printed number that is digits, with one letter or without (`15`, `1190b`, `550A`). A
+    /// letter followed by another letter is not one, so `84th` reads 84, as before #1977; nor is a
+    /// letter followed by a decimal point and a digit, so the decimal file `File No. 851R.00` reads
+    /// 851, as it did.
+    private static let letteredNumber = #"\d+(?:[A-Za-z](?![A-Za-z]|\.\d))?"#
+
+    /// A printed number that is a capital prefix, a dash and digits (`GT–6`), with any of the dashes
+    /// a paste may carry: the hyphen a reader types, or the en dash the corpus prints.
+    private static let prefixedNumber = #"(?-i:[A-Z]{1,3})[\u2010-\u2014\u2212-]\d+"#
+
+    /// A single capital letter (`C`), an appendix's number, with the word before it: read only
+    /// after `Document` spelled with a capital, as Cite writes it, or after `doc.` (Chicago's
+    /// `doc. C`), and not after `Executive`, `Ex.` or `U.N.`, which name a Senate's or the United
+    /// Nations' document; and only where a citation ends it — before a comma, a semicolon, a colon,
+    /// a closing bracket, a full stop ending a sentence, the end, or a space not followed by a
+    /// slash (`U.N. Doc. A /70`). The word in lower case is prose: "this document I have".
+    private static let singleLetterNumber =
+        #"(?<!Ex\.\s)(?<!Executive\s)(?<!U\.N\.\s)(?<!UN\s)(?:(?-i:Document)|doc)\.?\s+((?-i:[A-Z]))(?=[,;:)\]]|\.(?:\s|$)|\s(?!\s*/)|$)"#
+
+    /// The phrases a citation prints its document number in, each capturing the number as printed
+    /// (#1977): after `Document` or `doc.`, a single letter (`singleLetterNumber`), a prefixed
+    /// number or a number with a letter or without; after `no.` and `#`, a number with a letter or
+    /// without. Read in that order by `extractDocumentNumber(from:)`, and taken out of the title
+    /// fragment whole by `extractTitleFragment(from:subseries:volumeNumber:)`, so the two agree on
+    /// what a number is.
+    static let documentNumberPatterns = [
+        singleLetterNumber + "|" + #"[Dd]oc(?:ument)?\.?\s+("# + prefixedNumber + "|" + letteredNumber + ")",
+        #"\bno\.?\s+("# + letteredNumber + ")",
+        #"#\s*("# + letteredNumber + ")",
+    ]
+
+    /// A document number as typed in Structured Entry's Document field or printed in a citation —
+    /// `15`, `015`, `1190b`, `550A`, `GT–6`, `gt-6`, `C` — as `CitationInput.documentNumber` carries
+    /// it, or `nil` for anything else (#1977).
+    ///
+    /// The forms are the corpus's `@n`, the number the index stores and Cite writes: digits; digits
+    /// and one letter; one to three letters, a dash and digits; one letter. The digits lose their
+    /// leading zeros, as `Int` reading dropped them before #1977 and as the corpus prints none; a
+    /// prefix and a single letter are written in capitals, and a prefix's dash as the en dash, as
+    /// all 628 prefixed numbers print it; a number's letter keeps the case it was given — the
+    /// corpus prints 82 in lower case and `550A` in capitals, and the lookup ignores the case.
+    public static func normalizedDocumentNumber(_ raw: String) -> String? {
+        let text = raw.trimmingCharacters(in: .whitespaces)
+        let isDigit = { (character: Character) in character.isASCII && character.isNumber }
+        let isLetter = { (character: Character) in character.isASCII && character.isLetter }
+
+        let digits = text.prefix(while: isDigit)
+        if !digits.isEmpty {
+            // Digits, with one letter or without: 15, 1190b, 550A.
+            guard let number = Int(digits) else { return nil }
+            let rest = text.dropFirst(digits.count)
+            guard rest.count <= 1, rest.allSatisfy(isLetter) else { return nil }
+            return String(number) + rest
+        }
+
+        let letters = text.prefix(while: isLetter)
+        let rest = text.dropFirst(letters.count)
+        guard (1...3).contains(letters.count) else { return nil }
+        // One letter: an appendix, C.
+        if rest.isEmpty { return letters.count == 1 ? letters.uppercased() : nil }
+        // A prefix, a dash and digits: GT–6.
+        guard let dash = rest.first, dashes.contains(dash) else { return nil }
+        let tail = rest.dropFirst()
+        guard !tail.isEmpty, tail.allSatisfy(isDigit), let number = Int(tail) else { return nil }
+        return letters.uppercased() + "\u{2013}" + String(number)
+    }
+
+    /// The dashes a prefixed number may be typed or pasted with: the hyphen, the non-breaking
+    /// hyphen, the figure dash, the en dash, the em dash and the minus sign.
+    private static let dashes: Set<Character> = ["-", "\u{2010}", "\u{2011}", "\u{2012}", "\u{2013}",
+                                                 "\u{2014}", "\u{2212}"]
+
+    /// The number a printed number with a letter carries without it — `1190b` → `1190` — or `nil`
+    /// for every other printed number (`15`, `GT–6`, `C`): what the lookup asks for when the volume
+    /// prints no document with the letter (#1977).
+    static func digits(ofLetteredNumber printed: String) -> String? {
+        guard let last = printed.last, last.isASCII, last.isLetter else { return nil }
+        let digits = printed.dropLast()
+        guard !digits.isEmpty, digits.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return String(digits)
     }
 
     // MARK: - Page Number Extraction
@@ -553,11 +663,14 @@ public struct CitationParser: Sendable {
             }
         }
 
-        // Strip doc/page references and publication info
+        // Strip doc/page references and publication info. A document number goes whole, in the
+        // form `extractDocumentNumber(from:)` reads it (#1977): until then only its digits went, so
+        // `Document 1190b` left a "b" in the fragment and `Document C` and `Document GT–6` stayed
+        // whole, words no title has among the words that choose a volume.
         let noisePatterns = [
-            #"(?:Document|doc)\.?\s+\d+"#,
+            Self.documentNumberPatterns[0],
             #"pp?\.?\s+\d+"#,
-            #"no\.?\s+\d+"#,
+            #"no\.?\s+"# + Self.letteredNumber,
             #"\([^)]*\)"#,   // parenthetical publisher info
             #"\bvol(?:ume)?\.?\s+[IVXivx\d]+"#,
         ]
@@ -599,6 +712,18 @@ public struct CitationParser: Sendable {
     static let publicationStatement = #"\bWashington(?:,?\s*D\.?\s*C\.?)?\s*:.*?,\s*(?:1[89]|20)\d{2}\b"#
 
     // MARK: - Private Helpers
+
+    /// The first capture group that took part in `pattern`'s first match in `text`: a pattern of
+    /// alternatives captures in the group of the one that matched (`documentNumberPatterns`).
+    private func firstParticipatingCapture(pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text))
+        else { return nil }
+        for group in 1..<match.numberOfRanges {
+            if let range = Range(match.range(at: group), in: text) { return String(text[range]) }
+        }
+        return nil
+    }
 
     private func firstCapture(pattern: String, in text: String) -> String? {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),

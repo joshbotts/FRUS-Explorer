@@ -37,6 +37,8 @@ import SemanticVectorsKit
 ///
 /// Version history:
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S28a — the map's suites moved into the kit's
+///   1.1 — 2026-11-27: row L32 of the plan of record from 2026-11-25 — `slice(_:yearForVolume:)`, the
+///          series' first-to-last slice the slice's suites stand on
 enum SemanticMapFixture {
 
     /// The bundled map with the vectors it is held to.
@@ -78,6 +80,31 @@ enum SemanticMapFixture {
             binaryAt: resource("semantic-map", "bin"),
             vectorIndex: tiers.index)
         return Loaded(index: tiers.index, corpus: tiers.corpus, mapIndex: bundled.index, map: bundled.vectors)
+    }
+
+    /// A slice between the series' first and last volumes, laid out with the years a host gives.
+    ///
+    /// The axis `SemanticMapHostTests.sliceLaysTheCorpusOut` draws, for the tests that need a slice
+    /// to stand on: two volumes far apart in the series, so every row has a place along the axis
+    /// between them.
+    ///
+    /// - Parameters:
+    ///   - loaded: The bundled map and vectors.
+    ///   - yearForVolume: A volume's coverage year, as ``SemanticMapVolumes/coverageYear(of:)`` gives
+    ///     it, or none.
+    /// - Returns: The layout.
+    static func slice(_ loaded: Loaded, yearForVolume: (String) -> Int?) throws -> SemanticMapSlice.Layout {
+        let low = try #require(loaded.index.volumes.first?.volumeID)
+        let high = try #require(loaded.index.volumes.last?.volumeID)
+        let lowCentroid = try #require(
+            SemanticAxis.centroid(forVolume: low, index: loaded.index, corpus: loaded.corpus))
+        let highCentroid = try #require(
+            SemanticAxis.centroid(forVolume: high, index: loaded.index, corpus: loaded.corpus))
+        let axis = try #require(SemanticAxis.between(negative: lowCentroid, negativeLabel: low,
+                                                     positive: highCentroid, positiveLabel: high),
+                                "the series' first and last volumes made no axis")
+        return SemanticMapSlice.layout(along: axis, map: loaded.map, index: loaded.index,
+                                       corpus: loaded.corpus, yearForVolume: yearForVolume)
     }
 
     /// The bundled source-provenance aggregate's per-volume table, as the app's store decodes it.

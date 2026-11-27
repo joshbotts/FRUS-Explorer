@@ -111,6 +111,8 @@ import Foundation
 ///   1.16 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its
 ///          fields (`StructuredSummaryDisplay`), a paragraph each opening with its label in
 ///          `<strong>`, where it printed its stored JSON; a `.general` summary prints as before
+///   1.17 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
+///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the page
 public struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -393,8 +395,8 @@ public struct CollectionItemHTMLRenderer {
             body += "  <p class=\"see-also\"><strong>\(escaped(label))</strong> \(joined)</p>\n"
         }
 
-        // Research notes — the per-entry override when resolved, else options.includeNotes.
-        if doc.includeNotesOverride ?? options.includeNotes {
+        // Research notes — the document's setting, else its section's, else the collection's.
+        if doc.includesNotes(options: options) {
             for note in doc.noteTexts where !note.isEmpty {
                 body += "  <aside class=\"research-note\">\n"
                 body += "    <strong>Research Note</strong>\n"

@@ -74,6 +74,12 @@ import simd
 ///          centroid (`SemanticAxis.centroid(forVolume:index:corpus:)`), the poles' refusals
 ///          (`SemanticMapPoles`) and the slice's layout (`SemanticMapSlice`); its state, its camera
 ///          moves and its renderer stay here
+///   1.2 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010) — a reveal lands where the
+///          map draws the document (`positions`), on a slice too, and the regions list's row is the
+///          model's (`selectRegionFromList`), which opens a region's card on a slice; and, by the owner's
+///          answers of 2026-11-27, a selection's ring follows every re-layout (`placeSelectionInLayout`)
+///          and a region focus that arrives on a slice returns the map to its plane first
+///          (`focusRegion(id:digest:reapplyLens:)`)
 @MainActor
 @Observable
 final class SemanticMapModel {
@@ -387,6 +393,40 @@ final class SemanticMapModel {
     /// Dismisses the region card.
     func clearRegion() { selectedRegion = nil }
 
+    /// Selects a region from the regions list, VoiceOver's way into the map.
+    ///
+    /// **On the map's plane** the row resolves a region as a tap at its centre would, on its drawn
+    /// name or else the document nearest. It frames the map first, deliberately: `select(at:)`
+    /// hit-tests within a radius converted into grid units through the current camera scale, so a
+    /// zoomed-in camera can put a region's centre outside the view entirely and the row would read as
+    /// a dead button. Framing makes the projection well defined for every region before the hit test.
+    ///
+    /// **On a slice a region's centre has no place** (#2010): it is a coordinate of the map's plane,
+    /// and the slice draws other documents there. Projected onto the slice, it hit-tested whatever
+    /// document sat there and selected that. So the row opens the region's card, as a tap on its name
+    /// does on the plane, and the camera stays where the reader left it.
+    ///
+    /// - Parameters:
+    ///   - region: The list's region.
+    ///   - size: The view's size in points.
+    ///   - isReadable: Whether a volume's XML is on disk, as ``select(at:size:isReadable:)`` takes it.
+    func selectRegionFromList(_ region: SemanticMapArtifacts.Cluster, size: CGSize,
+                              isReadable: (String) -> Bool) {
+        guard slice == nil else {
+            // Identity from `clusters`, not the list's `labelledClusters` entry, for the reason
+            // `select(at:)` gives: the card's era rows must sum to its own headline.
+            guard let whole = clusters.first(where: { $0.id == region.id }) else { return }
+            selectedRegion = whole
+            selection = nil
+            return
+        }
+        guard size != .zero else { return }
+        frameAll()
+        let centre = SIMD2<Float>(Float(region.centreX), Float(region.centreY))
+        let point = SemanticMapLabelLayout.project(centre, camera: camera, size: size)
+        select(at: point, size: size, isReadable: isReadable)
+    }
+
     /// Reveals one document on the map: selects it and brings the camera to it.
     ///
     /// The map draws every document in the published series, so this works for a volume the device
@@ -415,10 +455,12 @@ final class SemanticMapModel {
         }
         pendingRevealKey = nil
         // Where it lands is the kit's (`SemanticMapReveal.reveal`): region identity by ROW and from
-        // `clusters`, exactly as `select(at:)` derives it, and the camera at the reveal's half-extent.
+        // `clusters`, exactly as `select(at:)` derives it, the camera at the reveal's half-extent, and
+        // the place the one the map DRAWS: `positions`, a slice's while one is drawn (#2010), and on
+        // the plane the artifact's own, which are the same.
         guard let revealed = SemanticMapReveal.reveal(
             volumeID: parts.volumeID, documentID: parts.documentID, index: index, map: map,
-            clusters: clusters, isReadable: isReadable) else { return .notFound }
+            clusters: clusters, positions: positions, isReadable: isReadable) else { return .notFound }
         // Only now, having found the document: a reveal that fails must not clear a region card the
         // reader opened. The two cards are alternatives, so a SUCCESSFUL reveal replaces one with
         // the other, exactly as `select(at:)` does.
@@ -452,12 +494,19 @@ final class SemanticMapModel {
     /// whose digest does not match the loaded artifact is refused (`.notFound` — the map opens
     /// unfocused) rather than landing on whatever re-minted cluster now wears the number.
     ///
+    /// **A region's place is the map's plane.** On a slice its centre is a coordinate the slice gives
+    /// to other documents, so a focus that arrives there (Browse's See on the semantic map, into the
+    /// Mac's one map window while it shows a slice) returns the map to its plane first, as Back to the
+    /// map does, and then frames the region (the owner's answer of 2026-11-27).
+    ///
     /// - Parameters:
     ///   - id: The artifact's cluster id.
     ///   - digest: The provenance digest the id was minted against.
+    ///   - reapplyLens: The view's lens, re-applied after a return to the plane, as
+    ///     ``clearSlice(yearForVolume:reapplyLens:)`` takes it.
     /// - Returns: What happened — `.notReady` means ask again, exactly as `reveal` documents.
     @discardableResult
-    func focusRegion(id: Int, digest: String) -> RevealOutcome {
+    func focusRegion(id: Int, digest: String, reapplyLens: (() -> Void)? = nil) -> RevealOutcome {
         guard index != nil, BundledSemanticMap.index != nil else {
             #if DEBUG
             print("[SemanticMapModel] focusRegion(\(id)) deferred: not ready")
@@ -477,6 +526,9 @@ final class SemanticMapModel {
         #if DEBUG
         print("[SemanticMapModel] focusRegion(\(id)) applied")
         #endif
+        // Back to the plane first, and only for a focus that lands: a refused one leaves the slice.
+        // The plane's layout reads no year, so none is passed.
+        if slice != nil { clearSlice(yearForVolume: { _ in nil }, reapplyLens: reapplyLens) }
         // A successful focus replaces a document card with the region card, exactly as
         // `select(at:)` swaps the two — and a FAILED one must not clear anything.
         selection = nil
@@ -674,6 +726,7 @@ final class SemanticMapModel {
             // Back to the artifact's own coordinates.
             var points = Self.mapPoints(from: map)
             positions = points.map(\.position)
+            placeSelectionInLayout()
             renderer.setPoints(points)
             renderer.setScopeFlags(scope?.flags ?? [])
             renderer.frameAll(extent: Float(map.gridExtent))
@@ -693,10 +746,28 @@ final class SemanticMapModel {
         }
         sliceScale = layout.scale
         positions = layout.positions
+        placeSelectionInLayout()
         renderer.setPoints(points)
         renderer.setScopeFlags(scope?.flags ?? [])
         renderer.frameAll(extent: Float(SemanticAxis.sliceExtent))
         camera = renderer.camera
+    }
+
+    /// Moves the selection's ring to where the layout now drawn puts its document.
+    ///
+    /// A selection carries its document's grid position, so the marker rings the document rather
+    /// than the finger, and that position belongs to the layout it was made on. A slice lays every
+    /// row out again and the way back does it once more, so a selection kept across either (the
+    /// second pole's document, whose card is open when "…to here" draws the slice) rang the old
+    /// layout's coordinates, where another document is drawn. The row names the same document and its
+    /// region is by row, so only the position moves.
+    private func placeSelectionInLayout() {
+        guard let current = selection, positions.indices.contains(current.row) else { return }
+        let drawn = positions[current.row]
+        selection = SemanticMapPicking.Selection(
+            row: current.row, volumeID: current.volumeID, documentID: current.documentID,
+            position: SIMD2(Float(drawn.x), Float(drawn.y)), regionName: current.regionName,
+            isDownloaded: current.isDownloaded)
     }
 
     /// The gutter's normalised y for undated volumes: below every dated year, with a visible gap.
@@ -956,6 +1027,11 @@ final class SemanticMapModel {
 ///         plurality provenance (`SemanticMapVolumes`), the scope's summary
 ///         (`SemanticMapColouring.scopeSummary(documents:volumes:ofVolumes:)`), a continuation's settling
 ///         (`SemanticMapReveal`), and a capture's name and source description (`SemanticMapCapture`)
+///   1.4 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#2010, #1986) — the regions list's
+///         row is the model's (`SemanticMapModel.selectRegionFromList(_:size:isReadable:)`), which opens a
+///         region's card on a slice rather than hit-testing it; the slice's ticks are the kit's for its
+///         scale (`tickYears(for:)`), none without a dated volume; its two region focuses pass the lens,
+///         which a return to the plane re-applies
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -1338,7 +1414,7 @@ struct SemanticMapSpikeView: View {
         if let pending = model.pendingFocusRegion {
             // The region-focus twin (#1051 B-7): driven from the model's memory for the
             // same measured reason as the key below.
-            model.focusRegion(id: pending.id, digest: pending.digest)
+            model.focusRegion(id: pending.id, digest: pending.digest, reapplyLens: applyLens)
         }
         guard let key = model.pendingRevealKey else { return }
         revealFailedKey = model.reveal(documentKey: key, isReadable: isReadable) == .notFound ? key : nil
@@ -1398,7 +1474,8 @@ struct SemanticMapSpikeView: View {
             // anyway. A digest-mismatched or unknown id opens the map unfocused, with no
             // banner: the request outlived its artifact, and there is nothing to point at.
             outcome = model.focusRegion(id: clusterID,
-                                        digest: continued.focusClusterDigest ?? "")
+                                        digest: continued.focusClusterDigest ?? "",
+                                        reapplyLens: applyLens)
         }
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even
@@ -1638,8 +1715,8 @@ struct SemanticMapSpikeView: View {
             GeometryReader { proxy in
                 let extent = Float(SemanticAxis.sliceExtent)
                 // Nice decade ticks between the observed years — at most five, so the edge stays
-                // a scale rather than a list.
-                let years = Self.tickYears(min: scale.minYear, max: scale.maxYear)
+                // a scale rather than a list — and none when no volume is dated (#1986).
+                let years = Self.tickYears(for: scale)
                 ForEach(years, id: \.self) { year in
                     let y = SemanticMapModel.sliceY(forYear: year, scale: scale) * extent
                     let at = SemanticMapLabelLayout.project(
@@ -1684,13 +1761,12 @@ struct SemanticMapSpikeView: View {
         }
     }
 
-    /// At most five round tick years spanning the observed range.
-    /// - Parameters:
-    ///   - min: Earliest dated year.
-    ///   - max: Latest.
-    /// - Returns: Rounded tick years within the range, ascending.
-    nonisolated static func tickYears(min: Int, max: Int) -> [Int] {
-        SemanticMapSlice.tickYears(min: min, max: max)
+    /// The tick years for a slice's scale: the kit's (`SemanticMapSlice.tickYears(for:)`), at most
+    /// five round years spanning the observed range, and none when no volume is dated.
+    /// - Parameter scale: The slice's recorded scale.
+    /// - Returns: Rounded tick years within the dated range, ascending, or none.
+    nonisolated static func tickYears(for scale: SemanticMapModel.SliceScale) -> [Int] {
+        SemanticMapSlice.tickYears(for: scale)
     }
 
     @ViewBuilder
@@ -2785,7 +2861,7 @@ struct SemanticMapSpikeView: View {
                 .accessibilityAddTraits(.isHeader)
             ForEach(clusters, id: \.id) { cluster in
                 Button {
-                    selectRegion(cluster)
+                    model.selectRegionFromList(cluster, size: surfaceSize, isReadable: isReadable)
                 } label: {
                     Text(verbatim: cluster.terms.prefix(3).joined(separator: " "))
                 }
@@ -2830,20 +2906,6 @@ struct SemanticMapSpikeView: View {
         return count + ", " + String(format: String(
             localized: "semanticMap.a11y.region.era %@",
             defaultValue: "mostly %1$@"), era.label)
-    }
-
-    /// Selects a region from the accessibility list.
-    ///
-    /// Frames the map first, deliberately. `select(at:)` hit-tests within a radius that is
-    /// converted into grid units through the current camera scale, so a zoomed-in camera can put a
-    /// region's centre outside the view entirely and the row would read as a dead button. Framing
-    /// makes the projection well defined for every region before the hit test runs.
-    private func selectRegion(_ cluster: SemanticMapArtifacts.Cluster) {
-        guard surfaceSize != .zero else { return }
-        model.frameAll()
-        let centre = SIMD2<Float>(Float(cluster.centreX), Float(cluster.centreY))
-        let point = SemanticMapLabelLayout.project(centre, camera: model.camera, size: surfaceSize)
-        model.select(at: point, size: surfaceSize, isReadable: isReadable)
     }
 
     /// - Parameters:

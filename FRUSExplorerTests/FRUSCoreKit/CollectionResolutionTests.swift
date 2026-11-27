@@ -739,6 +739,8 @@ struct CollectionValuesTests {
 
     @Test("A snapshot copies the smart collection's name, note, projects and composition, with one entry per result")
     func snapshotValues() {
+        // Since L29 (J39) the fixture's apparatus blocks travel too, its Chronology before the results and the
+        // rest after; `snapshotCarriesSettingsAndBlocks` holds them.
         var smart = CollectionResolutionFixtures.staticCollection()
         smart.name = "  Missiles  "
         smart.note = "Searches for missiles."
@@ -751,10 +753,65 @@ struct CollectionValuesTests {
         #expect(snapshot.includeFootnotes == false && snapshot.summaryPromptId == smart.summaryPromptId)
         #expect(snapshot.defaultBodyDepth == smart.defaultBodyDepth && snapshot.footnoteStyle == smart.footnoteStyle
                 && snapshot.tocStyle == smart.tocStyle && snapshot.includeNotes == smart.includeNotes)
-        #expect(snapshot.entries.map { "\($0.volumeId)/\($0.documentId)#\($0.sortOrder)" } == ["v1/d8#0", "v2/d2#1"])
-        #expect(snapshot.entries.allSatisfy { $0.entryKind == .document })
+        #expect(snapshot.entries.filter { $0.entryKind == .document }
+                    .map { "\($0.volumeId)/\($0.documentId)#\($0.sortOrder)" } == ["v1/d8#1", "v2/d2#2"])
+        #expect(snapshot.entries.map(\.entryKind)
+                == [.generated, .document, .document, .generated, .generated, .generated, .generated])
         #expect(SmartCollectionSnapshot.snapshotName("   ") == "Smart Collection (Snapshot)")
         #expect(SmartCollectionSnapshot.resultLimit == 1_000)
+    }
+
+    /// The design's §4.5: a snapshot carries every setting of the smart collection and its own blocks
+    /// (#1996), each in its place (the third review's J39). Until L29 it carried the composition alone,
+    /// and no block, so a smart collection that printed a Chronology made a snapshot that printed none.
+    /// A smart collection prints its front-matter blocks before the search's documents and the rest
+    /// after (`CollectionContentAssembly.resolveSmartItems`), so the snapshot puts them there. The
+    /// entries it held before its link, which nothing it produces prints, stay behind.
+    @Test("A snapshot carries every setting and the smart collection's own blocks in their places (#1996, J39)")
+    func snapshotCarriesSettingsAndBlocks() {
+        typealias R = CollectionResolutionFixtures
+        func block(_ sortOrder: Int, _ type: String) -> CollectionEntryExport {
+            R.entry(sortOrder, kind: .generated) { $0.generatedBlockType = type }
+        }
+        let smart = CollectionExport(
+            id: UUID(), name: "Missiles", note: "Searches for missiles.", projectIds: [UUID()],
+            savedSearchId: UUID(),
+            entries: [
+                R.entry(0, kind: .document, document: "d1"),
+                block(1, CollectionGeneratedBlockType.bibliography.rawValue),
+                R.entry(2, kind: .heading, text: "Added before the link"),
+                block(3, CollectionGeneratedBlockType.chronology.rawValue),
+                block(4, "atlas"),
+                block(5, CollectionGeneratedBlockType.personsIndex.rawValue),
+            ],
+            createdAt: Date(timeIntervalSince1970: 1_790_000_000),
+            lastModified: Date(timeIntervalSince1970: 1_790_000_100),
+            subtitle: "A reader", authorLine: "A. Researcher", introductionText: "An introduction.",
+            introductionRichText: Data("{\\rtf1 An introduction.}".utf8),
+            includeColophon: true, includeProjectProvenance: true, includeMethodAppendix: true,
+            defaultBodyDepth: "index", footnoteStyle: "none", includeFootnotes: false, includeSourceNote: true,
+            tocStyle: "headerAndDateline", applyHighlights: true, includeNotes: false, includeWordCloud: true,
+            defaultIncludeHeadnote: true, summaryPromptId: UUID())
+        let snapshot = SmartCollectionSnapshot.snapshot(of: smart, results: [("d8", "v1"), ("d2", "v2")])
+
+        // Every setting, but the link, the name and the dates.
+        var expected = smart
+        expected.id = snapshot.id
+        expected.name = "Missiles (Snapshot)"
+        expected.savedSearchId = nil
+        expected.createdAt = snapshot.createdAt
+        expected.lastModified = snapshot.lastModified
+        expected.entries = snapshot.entries
+        #expect(snapshot == expected)
+        #expect(snapshot.createdAt == nil && snapshot.lastModified == nil, "the host stamps a new collection's dates")
+
+        // The Chronology before the documents, the rest after them in their order, a block type this build
+        // does not know among them; nothing from before the link.
+        #expect(snapshot.entries.map { $0.generatedBlockType ?? "\($0.volumeId)/\($0.documentId)" }
+                == ["chronology", "v1/d8", "v2/d2", "bibliography", "atlas", "personsIndex"])
+        #expect(snapshot.entries.map(\.sortOrder) == Array(0..<6))
+        let sources = Set(smart.entries.map(\.id))
+        #expect(snapshot.entries.allSatisfy { !sources.contains($0.id) }, "a carried block keeps its source's id")
     }
 
     #if !SWIFT_PACKAGE // `SearchViewModel` is the app's

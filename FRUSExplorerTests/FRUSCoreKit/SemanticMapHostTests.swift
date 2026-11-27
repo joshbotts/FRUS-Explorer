@@ -34,6 +34,8 @@ import SemanticVectorsKit
 ///
 /// Version history:
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S28a — the map's rules moved into FRUSCoreKit
+///   1.1 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#1986) — a slice with no dated
+///          volume, which trapped on the unchanged kit, and a slice with one
 @Suite("Semantic map — the rules over a host's values")
 struct SemanticMapHostTests {
 
@@ -271,6 +273,47 @@ struct SemanticMapHostTests {
             #expect(rows.allSatisfy { abs(Int(layout.positions[$0].y) - Int(y)) <= 1 }, "\(volume.volumeID)")
         }
         #expect(layout.scale.undatedCount == undated)
+    }
+
+    @Test("A slice with no dated volume lays every row in the gutter, along the axis, with no year to tick")
+    func undatedSliceLaysOutInTheGutter() throws {
+        // #1986: with no volume dated, the year span's sentinels were still Int.max and Int.min, and
+        // their difference trapped. The app never meets it while the manifest dates all 553 volumes;
+        // a host whose catalogue gives no coverage year ended its process here.
+        let loaded = try SemanticMapFixture.load()
+        let layout = try SemanticMapFixture.slice(loaded, yearForVolume: { _ in nil })
+        let extent = Int16(SemanticAxis.sliceExtent)
+        let gutter = Int16(clamping: Int(SemanticMapSlice.gutterY * Float(SemanticAxis.sliceExtent)))
+        #expect(layout.positions.count == loaded.map.documentCount)
+        #expect(layout.positions.allSatisfy { $0.y == gutter }, "an undated row sits off the gutter")
+        let xs = layout.positions.map { $0.x }
+        #expect(xs.min() == -extent && xs.max() == extent,
+                "the order along the axis, which is the slice's content, went with the years")
+        #expect(layout.scale == SemanticMapSlice.Scale(minYear: 0, maxYear: 0,
+                                                       undatedCount: loaded.map.documentCount,
+                                                       hasDatedYears: false))
+        #expect(SemanticMapSlice.tickYears(for: layout.scale).isEmpty,
+                "a slice with no dated volume would label its edge with a year 0")
+    }
+
+    @Test("One dated volume sits on the dated band's lowest line, at the span's floor of a year")
+    func oneDatedVolumeSitsOnTheBandsFloor() throws {
+        let loaded = try SemanticMapFixture.load()
+        let dated = try #require(loaded.index.volumes.dropFirst(5).first?.volumeID)
+        let rows = try #require(loaded.index.rows(forVolume: dated))
+        try #require(!rows.isEmpty)
+        let layout = try SemanticMapFixture.slice(loaded, yearForVolume: { $0 == dated ? 1950 : nil })
+        #expect(layout.scale == SemanticMapSlice.Scale(minYear: 1950, maxYear: 1950,
+                                                       undatedCount: loaded.map.documentCount - rows.count))
+        #expect(layout.scale.hasDatedYears)
+        let floorY = SemanticMapSlice.y(forYear: 1950, scale: layout.scale)
+        #expect(abs(floorY - -0.82) < 1e-6, "one year spans nothing, so the span's floor of 1 applies")
+        let floor = Int16(clamping: Int(floorY * Float(SemanticAxis.sliceExtent)))
+        let gutter = Int16(clamping: Int(SemanticMapSlice.gutterY * Float(SemanticAxis.sliceExtent)))
+        #expect(rows.allSatisfy { layout.positions[$0].y == floor }, "the dated volume left the band's floor")
+        #expect(layout.positions.indices.allSatisfy { rows.contains($0) || layout.positions[$0].y == gutter },
+                "an undated row sits off the gutter")
+        #expect(SemanticMapSlice.tickYears(for: layout.scale) == [1950])
     }
 
     @Test("The scope's sentence counts whole volumes, and says when a scope holds nothing mapped")

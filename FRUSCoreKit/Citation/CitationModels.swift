@@ -21,6 +21,9 @@ import Foundation
 ///          carry, so Structured Entry could not name part 2 at all) and `exactReference` (a
 ///          history.state.gov link's volume and document ids, which are exact, and which a
 ///          letter-suffixed id such as `d373a` cannot pass through the numeric Document field)
+///   1.2 — #1977: `documentNumber` is the number as printed, a string, where it was an `Int` of
+///          its digits: Cite writes `Document 1190b`, `Document C` and `Document GT–6`, and the
+///          lookup read them as document 1190 and as no number at all
 public struct CitationInput: Sendable {
 
     /// Original pasted string; `nil` if the user typed fields directly.
@@ -40,8 +43,16 @@ public struct CitationInput: Sendable {
     /// manifest, so the title is not consulted.
     public let partNumber: Int?
 
-    /// Parsed document number.
-    public let documentNumber: Int?
+    /// The document number as the citation prints it (#1977): `"15"`, `"1190b"`, `"550A"`, an
+    /// appendix's `"C"`, a microfiche supplement's `"GT–6"` — the forms the corpus's `@n` takes, which
+    /// the index stores and Cite writes. `CitationParser.normalizedDocumentNumber(_:)` reads it, so a
+    /// number's leading zeros are dropped and a prefix's dash is the en dash; a letter keeps the case
+    /// it was given, which the lookup ignores.
+    ///
+    /// Until #1977 this was an `Int` of the digits alone, so 722 of the corpus's 314,646 numbered
+    /// documents could not be named: 83 with a letter were answered with the document of their
+    /// digits, and the 639 others with nothing.
+    public let documentNumber: String?
 
     /// Parsed page number.
     public let pageNumber: Int?
@@ -64,7 +75,7 @@ public struct CitationInput: Sendable {
         subseries: String? = nil,
         volumeNumber: String? = nil,
         partNumber: Int? = nil,
-        documentNumber: Int? = nil,
+        documentNumber: String? = nil,
         pageNumber: Int? = nil,
         titleFragment: String? = nil,
         exactReference: CitationExactReference? = nil,
@@ -83,7 +94,8 @@ public struct CitationInput: Sendable {
 
     /// Returns `true` when enough data is present to attempt a match.
     /// At minimum one of (documentNumber, pageNumber, volumeNumber) is required — or an exact
-    /// reference, since a link to a document whose id carries a letter (`d373a`) has no number.
+    /// reference, since a link to a document whose id carries no number (`appA`, `d710a-1`) names
+    /// none. (A link to `d373a` names its number, `373a`, since #1977.)
     public var isActionable: Bool {
         documentNumber != nil || pageNumber != nil || volumeNumber != nil || exactReference != nil
     }

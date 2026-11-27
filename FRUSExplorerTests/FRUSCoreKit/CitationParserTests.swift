@@ -30,7 +30,7 @@ struct CitationParserTests {
         let result = parser.parse(raw)
         #expect(result.subseries == "1969-76")
         #expect(result.volumeNumber == "I")
-        #expect(result.documentNumber == 15)
+        #expect(result.documentNumber == "15")
         #expect(result.parserConfidence == .high)
     }
 
@@ -42,7 +42,7 @@ struct CitationParserTests {
         let result = parser.parse(raw)
         #expect(result.subseries == "1969-76")
         #expect(result.volumeNumber == "I")
-        #expect(result.documentNumber == 15)
+        #expect(result.documentNumber == "15")
         #expect(result.pageNumber == nil)
     }
 
@@ -54,7 +54,7 @@ struct CitationParserTests {
         let result = parser.parse(raw)
         #expect(result.subseries == "1969-76")
         #expect(result.volumeNumber == "I")
-        #expect(result.documentNumber == 15)
+        #expect(result.documentNumber == "15")
         #expect(result.pageNumber == 47)
     }
 
@@ -78,7 +78,7 @@ struct CitationParserTests {
         #expect(result.subseries == "1969-76")
         // Arabic "1" should be normalized to Roman "I"
         #expect(result.volumeNumber == "I")
-        #expect(result.documentNumber == 15)
+        #expect(result.documentNumber == "15")
     }
 
     // MARK: - HyphenVariantTest
@@ -142,7 +142,7 @@ struct CitationParserTests {
         }
 
         #expect(finalResult.subseries == "1969-76")
-        #expect(finalResult.documentNumber == 15)
+        #expect(finalResult.documentNumber == "15")
     }
 
     // MARK: - SingleYearTest
@@ -208,6 +208,108 @@ struct CitationParserTests {
         #expect(CitationParser.normalizedPartNumber("two") == nil)
     }
 
+    // MARK: - Printed document numbers (#1977)
+
+    @Test("CitationParserTest: Document 1190b, Document C and Document GT–6 parse to their printed numbers, in each of the app's three formats' endings, and Document 15 still to 15 (#1977)")
+    func printedNumbersParseAsPrinted() {
+        for (text, number) in [
+            ("Papers Relating to the Foreign Relations of the United States, 1898 (Washington: GPO, 1901), Document 1190b.", "1190b"),
+            ("Foreign Relations of the United States, 1981–1988, Volume V (Washington: GPO, 2020), Document C.", "C"),
+            ("*Foreign Relations of the United States, 1958–1960, Volume V, Microfiche Supplement*. Washington: GPO, 1991. Document GT–6.", "GT–6"),
+            ("Foreign Relations of the United States, 1955–1957, Volume III (Washington: GPO, 1986), Document 550A.", "550A"),
+            ("Foreign Relations of the United States, 1969–1976, Volume I (Washington: GPO, 2003), Document 15.", "15"),
+        ] {
+            #expect(parser.parse(text).documentNumber == number, "\(text)")
+            #expect(parser.extractDocumentNumber(from: text) == number, "\(text)")
+        }
+    }
+
+    @Test("CitationParserTest: a printed number is read as a reader may type it — a letter in either case, a hyphen for the en dash, after no. and # — and its digits lose their leading zeros (#1977)")
+    func typedPrintedNumbers() {
+        for (text, number) in [
+            ("FRUS, 1955–57, vol. III, doc. 550A", "550A"),
+            ("FRUS, 1898, doc. 1190B", "1190B"),
+            ("FRUS, 1958–60, vol. V, Document GT-6", "GT–6"),
+            ("FRUS, 1958–60, vol. V, doc. ETA‐1", "ETA–1"),
+            ("FRUS, 1865, pt. 1, no. 373a", "373a"),
+            ("FRUS, 1898, #1190a", "1190a"),
+            ("FRUS, 1969–76, vol. I, Document 015", "15"),
+            ("FRUS, 1981–88, vol. V, doc. C, p. 1103", "C"),
+            ("FRUS, 1981–88, vol. V (Document B)", "B"),
+        ] {
+            #expect(parser.extractDocumentNumber(from: text) == number, "\(text)")
+        }
+    }
+
+    @Test("CitationParserTest: prose that names another kind of document is not read as a printed number — the corpus's own eleven cases among them — and a letter running into a word or a decimal is not one (#1977)")
+    func proseIsNotAPrintedNumber() {
+        for (text, number) in [
+            // A United Nations document symbol, beside the FRUS citation.
+            ("See U.N. doc. S/4387; FRUS, 1958–1960, vol. XIV, doc. 100", "100"),
+            ("U.N. doc. A/C.1/SR.123, and Document 12", "12"),
+            // An ordinal is a number and a word, as before #1977.
+            ("doc. 84th", "84"),
+            // A word, not a letter.
+            ("Document Concerning the Berlin Talks, FRUS, 1961–1963, vol. XIV, doc. 84", "84"),
+            // Lower case is a word in prose; the Document field takes it (normalizedDocumentNumber).
+            ("the document a day later, doc. 84", "84"),
+            ("doc. gt-6", nil),
+            // The corpus's own clauses that a capital after `document` read as a letter, each from
+            // a clause naming the series in the index's text at version 76: the pronoun, a
+            // Senate's executive document and the United Nations'.
+            ("Foreign Relations, 1918, pp. 439 ff. In forwarding you a copy of this document I have been requested", nil),
+            ("Foreign Relations, 1936, vol. i, p. 483. made to get religious freedom into this document. I believe", nil),
+            ("Foreign Relations, 1927, vol. i, p. 238. reproduced in the enclosed document C. I. T. E. I. Not reprinted", nil),
+            ("Foreign Relations, 1925, vol. i, pp. 297 ff. For proceedings of the Conference, see Executive Document B, 70th Cong.", nil),
+            ("Foreign Relations, 1927, vol. i, p. 288. For proceedings of the conference, see S. Ex. Doc. B, 70th Cong.", nil),
+            ("Foreign Relations, The Paris Peace Conference, 1919, vol. xiii, pp. 93 ff. see U.N. Doc. A /70, October", nil),
+            ("Foreign Relations, 1948, vol. V, Part 2, pp. 1152 – 1154. see U.N. document A /648", nil),
+            // A decimal file's letter is the file's: read as the digits were before #1977.
+            ("Foreign Relations, 1946, vol. vii, p. 51. (File No. 851R.00).", "851"),
+        ] as [(String, String?)] {
+            #expect(parser.extractDocumentNumber(from: text) == number, "\(text)")
+        }
+        // A capital `Document` before a letter where a citation ends it is still read.
+        #expect(parser.extractDocumentNumber(from: "FRUS, 1981–88, vol. V, Document C") == "C")
+        #expect(parser.extractDocumentNumber(from: "FRUS, 1981–88, vol. V, Doc. C and D") == "C")
+    }
+
+    @Test("CitationParserTest: the title fragment loses a printed number whole, so Document 1190b, C and GT–6 leave the fragment of Document 1 (#1977)")
+    func titleFragmentLosesThePrintedNumber() {
+        let volumes = [
+            "Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1898 (Washington: Government Printing Office, 1901)",
+            "Foreign Relations of the United States, 1981–1988, Volume V, Soviet Union, March 1985–October 1986, ed. Elizabeth C. Charles (Washington: Government Publishing Office, 2020)",
+            "Foreign Relations of the United States, 1958–1960, Volume V, Microfiche Supplement, American Republics, ed. Harriet D. Schwar (Washington: Government Printing Office, 1991)",
+        ]
+        for volume in volumes {
+            let base = parser.parse("\(volume), Document 1.").titleFragment
+            #expect(base != nil, "\(volume)")
+            for number in ["1190b", "C", "GT–6", "550A", "15"] {
+                #expect(parser.parse("\(volume), Document \(number).").titleFragment == base, "\(volume), \(number)")
+            }
+        }
+    }
+
+    @Test("CitationParserTest: the Document field reads the corpus's forms of a printed number, and nothing else (#1977)")
+    func normalizedDocumentNumbers() {
+        for (raw, number) in [
+            ("15", "15"), (" 15 ", "15"), ("015", "15"), ("0", "0"),
+            ("1190b", "1190b"), ("1190B", "1190B"), ("550A", "550A"),
+            ("GT–6", "GT–6"), ("GT-6", "GT–6"), ("gt-6", "GT–6"), ("GT—06", "GT–6"), ("ETA–1", "ETA–1"),
+            ("C", "C"), ("c", "C"),
+            ("", nil), ("abc", nil), ("GT", nil), ("GT–", nil), ("ABCD–1", nil), ("1190bc", nil),
+            ("1190 b", nil), ("12-3", nil), ("d84", nil), ("GT–6a", nil),
+        ] as [(String, String?)] {
+            #expect(CitationParser.normalizedDocumentNumber(raw) == number, "\(raw)")
+        }
+        // The digits a number with a letter carries without it, and none for any other number.
+        #expect(CitationParser.digits(ofLetteredNumber: "1190b") == "1190")
+        #expect(CitationParser.digits(ofLetteredNumber: "550A") == "550")
+        for printed in ["15", "GT–6", "C", ""] {
+            #expect(CitationParser.digits(ofLetteredNumber: printed) == nil, "\(printed)")
+        }
+    }
+
     // MARK: - history.state.gov links (#1474)
 
     @Test("CitationParserTest: a history.state.gov document link parses to its exact volume and document (#1474)")
@@ -217,7 +319,7 @@ struct CitationParserTests {
         #expect(parsed.subseries == "1952-54")
         #expect(parsed.volumeNumber == "II")
         #expect(parsed.partNumber == 1)
-        #expect(parsed.documentNumber == 41)
+        #expect(parsed.documentNumber == "41")
         #expect(parsed.pageNumber == nil)
         #expect(parsed.titleFragment == nil)
         #expect(parsed.isActionable)
@@ -232,17 +334,18 @@ struct CitationParserTests {
         // round 2) — `d710a-1` (217 in frus1945Berlinv02), `eta_d1` (628 in frus1958-60v05mSupp),
         // the frus1981-88 appendices' three spellings `appA` (v05, v11, v44p1), `appxA` (v04) and
         // `appendix-A` (v01), and frus1902app1's two section-shaped ids `s12` and `s05sub04`. Each
-        // id must come back exactly as the app wrote it.
-        let shapes: [(volumeId: String, documentId: String, number: Int?)] = [
-            ("frus1961-63v05", "d84", 84),
-            ("frus1952-54v02p1", "d41", 41),
-            ("frus1865p1", "d373a", nil),
-            ("frus1919Parisv01", "d5", 5),
-            ("frus1969-76ve05p1", "d10", 10),
-            ("frus1872p2v1", "d3", 3),
-            ("frus1961-63v07-09mSupp", "d1", 1),
-            ("frus1913", "d707", 707),
-            ("frus1955-57v03mSupp", "d550A", nil),
+        // id must come back exactly as the app wrote it. A `d` id's number is its document number,
+        // with its letter since #1977 (`d373a` is 373a, `d550A` 550A), where an `Int` held none.
+        let shapes: [(volumeId: String, documentId: String, number: String?)] = [
+            ("frus1961-63v05", "d84", "84"),
+            ("frus1952-54v02p1", "d41", "41"),
+            ("frus1865p1", "d373a", "373a"),
+            ("frus1919Parisv01", "d5", "5"),
+            ("frus1969-76ve05p1", "d10", "10"),
+            ("frus1872p2v1", "d3", "3"),
+            ("frus1961-63v07-09mSupp", "d1", "1"),
+            ("frus1913", "d707", "707"),
+            ("frus1955-57v03mSupp", "d550A", "550A"),
             ("frus1945Berlinv02", "d710a-1", nil),
             ("frus1958-60v05mSupp", "eta_d1", nil),
             ("frus1981-88v05", "appA", nil),
@@ -294,7 +397,7 @@ struct CitationParserTests {
                     "\(text)")
             // The link's ids decide every field, so the prose around it cannot contradict them.
             #expect(parsed.volumeNumber == "V", "\(text)")
-            #expect(parsed.documentNumber == 84, "\(text)")
+            #expect(parsed.documentNumber == "84", "\(text)")
             #expect(parsed.pageNumber == nil, "\(text)")
         }
 
@@ -314,7 +417,7 @@ struct CitationParserTests {
             prose: CitationVolumeFields(subseries: "1961-63", volumeNumber: "V")))
         #expect(chicago.subseries == "1961-63")
         #expect(chicago.volumeNumber == "V")
-        #expect(chicago.documentNumber == 84)
+        #expect(chicago.documentNumber == "84")
         #expect(chicago.pageNumber == nil)
 
         // A section link, in parentheses, beside a page.
@@ -330,7 +433,7 @@ struct CitationParserTests {
         let disagreeing = parser.parse("FRUS, 1961–1963, vol. XIV, pt. 2, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05")
         #expect(disagreeing.volumeNumber == "V")
         #expect(disagreeing.partNumber == nil)
-        #expect(disagreeing.documentNumber == 84)
+        #expect(disagreeing.documentNumber == "84")
         #expect(disagreeing.exactReference?.prose
                 == CitationVolumeFields(subseries: "1961-63", volumeNumber: "XIV", partNumber: 2))
 
@@ -339,7 +442,7 @@ struct CitationParserTests {
 
         // A link to a document by a number-bearing id still decides the document itself.
         let document = parser.parse("FRUS, 1961–1963, vol. V, doc. 12, https://history.state.gov/historicaldocuments/frus1961-63v05/d84")
-        #expect(document.documentNumber == 84)
+        #expect(document.documentNumber == "84")
         // …and reads nothing from the prose, whose fields therefore carry nothing to check.
         #expect(document.exactReference?.prose == nil)
     }
@@ -364,7 +467,7 @@ struct CitationParserTests {
         let parsed = parser.parse(dated)
         #expect(parsed.subseries == "1961-63")
         #expect(parsed.volumeNumber == "V")
-        #expect(parsed.documentNumber == 84)
+        #expect(parsed.documentNumber == "84")
 
         // Beside a link, the prose's own subseries is read the same way.
         let linked = parser.parse(dated + ", https://history.state.gov/historicaldocuments/frus1961-63v05")
@@ -687,11 +790,12 @@ struct CitationLookupFieldsTests {
         #expect(!filled.isActionable(mode: .batch, pasteText: "", parser: parser))
     }
 
-    @Test("A pasted link enables Look Up and is forwarded exactly; an edited field withdraws it (#1474)")
+    @Test("A pasted link enables Look Up and is forwarded exactly; an edited field withdraws it (#1474, #1977)")
     func linkForwardedOnlyWhileUnedited() {
         let url = "https://history.state.gov/historicaldocuments/frus1865p1/d373a"
         let fields = pasting([url])
-        #expect(fields.document == "")   // d373a has no number to show
+        // d373a's number, with its letter (#1977); until then the Document field showed nothing.
+        #expect(fields.document == "373a")
         #expect(fields.isActionable(mode: .paste, pasteText: url, parser: parser))
         #expect(fields.input(mode: .paste, pasteText: url, parser: parser).exactReference
                 == CitationExactReference(volumeId: "frus1865p1", documentId: "d373a"))
@@ -701,11 +805,21 @@ struct CitationLookupFieldsTests {
         edited.document = "12"
         let editedInput = edited.input(mode: .paste, pasteText: url, parser: parser)
         #expect(editedInput.exactReference == nil)
-        #expect(editedInput.documentNumber == 12)
+        #expect(editedInput.documentNumber == "12")
 
-        // Structured Entry never forwards a link it cannot show.
-        #expect(fields.input(mode: .structured, pasteText: url, parser: parser).exactReference == nil)
-        #expect(!fields.isActionable(mode: .structured, pasteText: url, parser: parser))
+        // Structured Entry never forwards a link it cannot show. It looks up what the fields
+        // show, which since #1977 is the number 373a: until then they showed nothing to look up.
+        let structured = fields.input(mode: .structured, pasteText: url, parser: parser)
+        #expect(structured.exactReference == nil)
+        #expect(structured.documentNumber == "373a")
+        #expect(fields.isActionable(mode: .structured, pasteText: url, parser: parser))
+
+        // A link whose id prints no number shows none, and Structured Entry has nothing to look up.
+        let section = "https://history.state.gov/historicaldocuments/frus1865p1/ch3"
+        let sectionFields = pasting([section])
+        #expect(sectionFields.document == "")
+        #expect(sectionFields.input(mode: .structured, pasteText: section, parser: parser).exactReference == nil)
+        #expect(!sectionFields.isActionable(mode: .structured, pasteText: section, parser: parser))
     }
 
     @Test("Structured Entry's Part field reaches the lookup as a part number (#1474)")
@@ -725,6 +839,29 @@ struct CitationLookupFieldsTests {
     @Test("A pasted part fills the Part field (#1474)")
     func pastedPartFillsThePartField() {
         #expect(pasting(["FRUS, 1952–1954, vol. II, pt. 2, doc. 41"]).part == "2")
+    }
+
+    @Test("A pasted printed number fills the Document field as printed, and the field reaches the lookup as one, typed in Structured Entry or left from a paste (#1977)")
+    func printedNumberFillsTheDocumentField() {
+        // The paste's number, as the volume prints it; a typed hyphen is the en dash it prints.
+        for (text, document) in [("FRUS, 1898, Document 1190b", "1190b"),
+                                 ("FRUS, 1981–1988, vol. V, Document C", "C"),
+                                 ("FRUS, 1958–1960, vol. V, Document GT-6", "GT–6")] {
+            let fields = pasting([text])
+            #expect(fields.document == document, "\(text)")
+            #expect(fields.input(mode: .paste, pasteText: text, parser: parser).documentNumber == document, "\(text)")
+        }
+        // Structured Entry, typed: until #1977 the field was read as an `Int`, and dropped all three.
+        var fields = CitationLookupFields()
+        fields.subseries = "1898"
+        for (typed, number) in [("1190b", "1190b"), (" c ", "C"), ("gt-6", "GT–6"), ("015", "15")] {
+            fields.document = typed
+            #expect(fields.input(mode: .structured, pasteText: "", parser: parser).documentNumber == number, "\(typed)")
+        }
+        // Anything else names no document, as before.
+        fields.document = "abc"
+        #expect(fields.input(mode: .structured, pasteText: "", parser: parser).documentNumber == nil)
+        #expect(!fields.isActionable(mode: .structured, pasteText: "", parser: parser))
     }
 }
 

@@ -1120,7 +1120,12 @@ paths:
         exact document number, page range, superimposed document number,
         title fragment disambiguation, and manifest-only (volume not
         downloaded). A document number the volume does not hold finds nothing
-        in it: no nearest document is offered in its place (#1504).
+        in it: no nearest document is offered in its place (#1504). The one
+        exception is a number with a letter that none of the volumes looked up
+        prints (`1190c`): it finds the document its digits name, as a
+        `bestGuess` whose explanation names the number — never beside
+        `volumeId`, and not in a volume whose index cannot yet say what it
+        holds (#1977).
 
         Volumes are resolved against the bundled catalogue only. A volume the
         reader side-loaded from their own file is not resolved, by a citation
@@ -1278,8 +1283,20 @@ paths:
         - name: documentNumber
           in: query
           schema:
-            type: integer
-          description: Printed document number to resolve.
+            type: string
+          description: |
+            The document number as the volume prints it, which is not always a
+            whole number (#1977): digits (`15`), digits and one letter
+            (`1190b`, `550A`), a capital prefix, a dash and digits (`GT–6`, in
+            the 1958–1960 American Republics microfiche supplement), or one
+            capital letter (`C`, an appendix). A letter's case is ignored, a
+            hyphen or another dash stands for the prefix's en dash, and the
+            digits' leading zeros are dropped. Any other text names no
+            document. A number with a letter that none of the volumes looked
+            up prints finds the document its digits name, as a `bestGuess`
+            explaining `this volume prints no document 1190c`; beside
+            `volumeId` it does not fall back, and the volume is answered as
+            for any number it does not hold.
         - name: pageNumber
           in: query
           schema:

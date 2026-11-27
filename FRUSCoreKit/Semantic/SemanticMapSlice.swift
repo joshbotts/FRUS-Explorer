@@ -36,6 +36,10 @@ import SemanticVectorsKit
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S28a — out of `SemanticMapModel` (the layout, its scale,
 ///          the gutter and a year's place) and `SemanticMapSpikeView` (the ticks and the caveat), which
 ///          call it
+///   1.1 — 2026-11-27: row L32 of the plan of record from 2026-11-25 (#1986) — the layout's year span is
+///          taken from the dated volumes alone, so a slice with none lays out rather than trapping; the
+///          scale says whether any volume is dated (`Scale.hasDatedYears`), and its ticks are none
+///          without one (`tickYears(for:)`)
 public enum SemanticMapSlice {
 
     /// The year range a slice's vertical axis spans, and how many documents fell outside it.
@@ -44,22 +48,30 @@ public enum SemanticMapSlice {
     /// gutter note and the caveat all read these rather than re-deriving them, so the scale on
     /// screen is the scale the layout used — the same one-source rule the scope mask follows.
     public struct Scale: Equatable, Sendable {
-        /// The earliest coverage-midpoint year among dated volumes.
+        /// The earliest coverage-midpoint year among dated volumes, or 0 when none is dated.
         public let minYear: Int
-        /// The latest.
+        /// The latest, or 0 when none is dated.
         public let maxYear: Int
         /// Documents whose volume has no parseable coverage year, laid out in the gutter.
         public let undatedCount: Int
+        /// Whether any volume on the slice has a coverage year.
+        ///
+        /// **Without one there is no year range to label** (#1986): every row is in the gutter, and
+        /// the scale's 0 and 0 are a convention, not years. The ticks read it
+        /// (``SemanticMapSlice/tickYears(for:)``), so such a slice is not labelled with a year 0.
+        public let hasDatedYears: Bool
 
         /// Creates a scale.
         /// - Parameters:
-        ///   - minYear: The earliest coverage-midpoint year among dated volumes.
-        ///   - maxYear: The latest.
+        ///   - minYear: The earliest coverage-midpoint year among dated volumes, or 0 when none is dated.
+        ///   - maxYear: The latest, or 0 when none is dated.
         ///   - undatedCount: Documents whose volume has no parseable coverage year.
-        public init(minYear: Int, maxYear: Int, undatedCount: Int) {
+        ///   - hasDatedYears: Whether any volume is dated.
+        public init(minYear: Int, maxYear: Int, undatedCount: Int, hasDatedYears: Bool = true) {
             self.minYear = minYear
             self.maxYear = maxYear
             self.undatedCount = undatedCount
+            self.hasDatedYears = hasDatedYears
         }
     }
 
@@ -114,7 +126,12 @@ public enum SemanticMapSlice {
             minYear = min(minYear, year); maxYear = max(maxYear, year)
             for row in rows where row < yearByRow.count { yearByRow[row] = Int16(clamping: year) }
         }
-        let yearSpan = Float(max(1, maxYear - minYear))
+        // **The span is the dated volumes' alone** (#1986). With none dated the sentinels are still
+        // `Int.max` and `Int.min`, and their difference trapped: never in the app while the manifest
+        // dates all 553 volumes, and at once in a host whose catalogue gives no coverage year. No row
+        // then has a year, so every one goes to the gutter and the span is never read.
+        let hasDatedYears = minYear <= maxYear
+        let yearSpan = Float(hasDatedYears ? max(1, maxYear - minYear) : 1)
 
         let extent = Float(SemanticAxis.sliceExtent)
 
@@ -161,9 +178,10 @@ public enum SemanticMapSlice {
                                           Int16(clamping: Int(normalisedYear * extent))))
         }
         return Layout(positions: positions,
-                      scale: Scale(minYear: minYear == Int.max ? 0 : minYear,
-                                   maxYear: maxYear == Int.min ? 0 : maxYear,
-                                   undatedCount: undated))
+                      scale: Scale(minYear: hasDatedYears ? minYear : 0,
+                                   maxYear: hasDatedYears ? maxYear : 0,
+                                   undatedCount: undated,
+                                   hasDatedYears: hasDatedYears))
     }
 
     /// At most five round tick years spanning the observed range.
@@ -179,6 +197,15 @@ public enum SemanticMapSlice {
         let step = rough <= 5 ? 5 : rough <= 10 ? 10 : rough <= 20 ? 20 : rough <= 25 ? 25 : 50
         let first = ((min + step - 1) / step) * step
         return Array(stride(from: first, through: max, by: step))
+    }
+
+    /// The tick years a slice's scale is labelled with: ``tickYears(min:max:)`` over its dated years,
+    /// and none when no volume is dated (#1986), where the scale's 0 and 0 are no years.
+    ///
+    /// - Parameter scale: The slice's recorded scale.
+    /// - Returns: Rounded tick years within the dated range, ascending, or none.
+    public static func tickYears(for scale: Scale) -> [Int] {
+        scale.hasDatedYears ? tickYears(min: scale.minYear, max: scale.maxYear) : []
     }
 
     /// The caveat a slice carries.

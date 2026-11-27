@@ -59,11 +59,12 @@ extension NativeCollectionSerializer {
     ///
     /// - Parameters:
     ///   - collection: The collection to serialize. Its entries are emitted in `sortOrder`.
-    ///   - includeNotes: When `true`, each document entry carries the inline note texts from
+    ///   - includeNotes: When `true`, each document entry whose notes print — its own setting, else its
+    ///     section's, else the collection's (#2000) — carries the inline note texts from
     ///     `resolveNoteTexts`; when `false` (the D9a default), notes are omitted entirely.
     ///   - resolveNoteTexts: Supplies the research-note bodies for a document entry (the caller
     ///     resolves `selectedNoteIds`/`researchNoteId` against its store). Only invoked when
-    ///     `includeNotes` is `true`.
+    ///     `includeNotes` is `true`, for a document entry whose notes print.
     static func makeFile(
         from collection: Collection,
         includeNotes: Bool,
@@ -98,6 +99,12 @@ extension NativeCollectionSerializer {
     /// as new `ResearchNote` records in the recipient's store and linked via `selectedNoteIds`. Every
     /// model mints its own id, as before, and every field the values leave out keeps the model's
     /// default.
+    ///
+    /// A headnote the file names by a draft this store holds — a file opened on its author's own account —
+    /// gets a draft of its own, as Duplicate gives one (`GeneratedSummary.duplicateHeadnoteDraft(id:to:in:)`,
+    /// #1999). Until then the imported entry named the original's draft: editing the copy's headnote deleted
+    /// the original's, and deleting the copy deleted them all. A document's own summary, and an id this store
+    /// does not hold, are kept as the file names them.
     ///
     /// - Returns: The newly inserted `Collection` (the caller saves the context).
     @discardableResult
@@ -169,6 +176,7 @@ extension NativeCollectionSerializer {
             entry.selectedNoteIds = noteIds
 
             context.insert(entry)
+            GeneratedSummary.duplicateHeadnoteDraft(id: value.headnoteSummaryId, to: entry, in: context)
         }
 
         return collection

@@ -32,6 +32,8 @@ import Testing
 ///          go are kit tests, run by `swift test` too, since `WholeVolumeLink` and `PageLink` moved
 ///          into the kit; they read a link's target with the kit's `FRUSURLScheme`, which the
 ///          handler's `resolveCrossRefTarget` forwards to
+///   1.4 — 2026-11-27 (L39, F7): a page of the front matter's link in the table; the grammar reads its
+///          roman numeral, and a page no document holds opens the division that begins on it
 @Suite("FRUSCoreKit — the reader's links read back")
 struct ReaderLinkTests {
 
@@ -62,6 +64,8 @@ struct ReaderLinkTests {
                          citing: hint([], [(8, 17, 1888)]))),
         ("frusexplorer://doc/%23pg_683?no=497&day=8-17-1888",
          .crossReference(target: "#pg_683", volumeId: nil, citing: hint(["497"], [(8, 17, 1888)]))),
+        // A Contents line for the Preface: a page of the front matter, numbered in Roman numerals (L39).
+        ("frusexplorer://doc/%23pg_III", .crossReference(target: "#pg_III", volumeId: nil, citing: nil)),
         // A query that names nothing is no hint: nil, as `PageCitationHint(queryItems:)` returns.
         ("frusexplorer://doc/%23pg_683?retry=1", .crossReference(target: "#pg_683", volumeId: nil, citing: nil)),
         ("frusexplorer://doc/%23pg_683?no=&day=13", .crossReference(target: "#pg_683", volumeId: nil, citing: nil)),
@@ -371,6 +375,58 @@ extension ReaderLinkTests {
         #expect(destination(130, map: map) == .volume(volumeId: paris, page: 130))
         #expect(destination(628, in: "frus1919Parisv03", map: map) == .volume(volumeId: "frus1919Parisv03", page: 628))
         #expect(destination(628, map: nil) == .volume(volumeId: paris, page: 628))
+    }
+
+    @Test("A page anchor in Roman numerals is a page of the front matter, and any other that is not arabic is nothing (L39)")
+    func aRomanPageAnchorIsRead() throws {
+        let volume = "frus1961-63v06"
+        // The table's own Contents line, read and resolved as the readers do.
+        let url = try #require(URL(string: "frusexplorer://doc/%23pg_III"))
+        guard case .crossReference(let target, let hint, _) = FRUSURLScheme.readerLink(from: url) else {
+            Issue.record("\(url.absoluteString) is not read as a cross-reference")
+            return
+        }
+        #expect(FRUSURLScheme.resolveCrossRefTarget(target, volumeId: hint ?? volume)
+                == .romanPage(volumeId: volume, page: 3))
+        // Either case, with or without the underscore, and another volume's.
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_xxi", volumeId: volume) == .romanPage(volumeId: volume, page: 21))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#pageXLIV", volumeId: nil) == .romanPage(volumeId: nil, page: 44))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1921v01#pg_XX", volumeId: volume)
+                == .romanPage(volumeId: "frus1921v01", page: 20))
+        // An arabic page is read as it was, and an anchor that is neither is nothing.
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_315", volumeId: volume) == .page(volumeId: volume, page: 315))
+        for anchor in ["#pg_", "#pg_313a", "#pg_XIIIa", "#page"] {
+            #expect(FRUSURLScheme.resolveCrossRefTarget(anchor, volumeId: volume) == .unresolved, "\(anchor)")
+        }
+    }
+
+    @Test("On the device, a page no document holds opens the division that begins on it, and a page of the front matter what the index finds on it (F7, L39)")
+    func aPageNoDocumentHoldsOpensItsDivision() throws {
+        let map = try Self.parisPageMap()
+        let paris = "frus1919Parisv02"
+        // The page index comes first: a division that begins on a page a document holds changes nothing.
+        #expect(PageLink.destination(page: 628, volumeId: paris, citing: nil, onDevice: true,
+                                     deviceDocument: "d512", deviceDivision: "ch5", map: map)
+                == .document(volumeId: paris, documentId: "d512"))
+        // Where it names none, the division, before the map: the device's own copy decides.
+        #expect(PageLink.destination(page: 628, volumeId: paris, citing: nil, onDevice: true,
+                                     deviceDocument: nil, deviceDivision: "ch5", map: map)
+                == .document(volumeId: paris, documentId: "ch5"))
+        #expect(PageLink.destination(page: 315, volumeId: paris, citing: nil, onDevice: true,
+                                     deviceDocument: nil, deviceDivision: "index", map: nil)
+                == .document(volumeId: paris, documentId: "index"))
+        // What the device's index says is never read for a volume not on the device.
+        #expect(PageLink.destination(page: 130, volumeId: paris, citing: nil, onDevice: false,
+                                     deviceDocument: nil, deviceDivision: "ch5", map: map)
+                == .volume(volumeId: paris, page: 130))
+
+        // A page of the front matter opens what the device's index finds on it, else nothing; with
+        // the volume not on the device, the volume, naming no page, since Browse names an arabic one.
+        #expect(PageLink.destination(romanPage: 3, volumeId: paris, onDevice: true, deviceDocument: "preface")
+                == .document(volumeId: paris, documentId: "preface"))
+        #expect(PageLink.destination(romanPage: 14, volumeId: paris, onDevice: true, deviceDocument: nil) == nil)
+        #expect(PageLink.destination(romanPage: 3, volumeId: paris, onDevice: false, deviceDocument: "preface")
+                == .volume(volumeId: paris, page: nil))
     }
 
     @Test("The table's page link reaches the document its footnote's day names through the bundled map, when its volume is not on the device (#1766)")

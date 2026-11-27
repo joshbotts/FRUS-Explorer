@@ -619,6 +619,18 @@ struct BrowseSeamSignalTests {
                 "the failed download's VoiceOver suite does not send the start-download signal by its name")
         #expect(failing.contains("\"\(UITestBrowseSeams.downloadOnSignalKey)\""),
                 "the failed download's VoiceOver suite no longer arms \(UITestBrowseSeams.downloadOnSignalKey)")
+        // #2013 (L57): the date filter's hand-off suite, in the Filters suites' file, sends the search signal by its name
+        // and arms the seam's words and its two days. It is a second sender of a signal counted above, so it stays out
+        // of the count below.
+        let dated = try String(
+            contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/MeaningResultsSeamTests.swift"),
+            encoding: .utf8)
+        #expect(dated.contains("searchSignal = \"\(UITestBrowseSeams.Signal.search.rawValue)\""),
+                "the date filter's hand-off suite does not send the search signal by its name")
+        #expect(dated.contains("\"\(UITestBrowseSeams.searchOnSignalKey)\""),
+                "the date filter's hand-off suite no longer arms \(UITestBrowseSeams.searchOnSignalKey)")
+        #expect(dated.contains("\"\(UITestBrowseSeams.searchOnSignalDatesKey)\""),
+                "the date filter's hand-off suite no longer arms \(UITestBrowseSeams.searchOnSignalDatesKey)")
         // And no other name the app would never hear.
         let named = (suite + spoken + failing + notes)
             .components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
@@ -633,6 +645,17 @@ struct BrowseSeamSignalTests {
                                     "the test that arms \(key) never sends .\(signal)")
             #expect(suite[armed.upperBound..<sent.lowerBound].contains("XCTAssertTrue("),
                     "\(signal) is sent before the test has asserted the state the seam holds")
+        }
+    }
+
+    /// The search seam's two days (#2013, L57): two `yyyy-MM-dd` days joined by a slash, passed on as they are written,
+    /// and nothing else.
+    @Test("The search seam's hand-off carries the two days its key names, and none for a value that names other than two")
+    func theSearchSeamsTwoDays() {
+        #expect(UITestBrowseSeams.handOffDateRange(from: "1962-10-01/1962-10-31")
+                == DateRange(earliest: "1962-10-01", latest: "1962-10-31"))
+        for value in ["", "1962-10-01", "1962-10-01/", "/1962-10-31", "1962-10-01/1962-10-31/1962-11-30"] {
+            #expect(UITestBrowseSeams.handOffDateRange(from: value) == nil, "\"\(value)\" names two days")
         }
     }
 }
