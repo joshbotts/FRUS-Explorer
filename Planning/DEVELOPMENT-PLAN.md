@@ -4967,7 +4967,7 @@ Row L34 of the plan of record from 2026-11-25 (the Collections design's lane 2 a
 **#2037's merge**
 - L42 merged as `9e92080f`, a squash onto `1778feac`, at 17:54:53 UTC on 2026-11-27, from its head `c20b4e4e`. Its tree, `6654cbbd`, is the head's. It closed #1990. This entry records it.
 - L39's #2036 (`1778feac`) is recorded in L42's entry above, L30's #2035 (`8d38c5ab`) in L39's, and L57's #2034 (`7ccecacb`), where this row began, in L30's.
-- This branch took `v2` in at `9e92080f` (⟦MERGE⟧). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decisions are 215 to 217, after L30's 214.
+- This branch took `v2` in at `9e92080f` (`60db0e24`). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decisions are 215 to 217, after L30's 214.
 
 **Shown first** (decision 183)
 - **In 1.0 (1861),** in a Mac check copy the session built at `1.0-release` (`08e8bac8`) under a bundle id of its own, with `frus1961-63v11` and `frus1946v06` seeded, and removed after. One collection (a section, `frus1961-63v11` d1, `frus1946v06` d474 and d475, *Full text as printed*) as a web page, Word and a PDF, and one of 45 documents (d470–d514) as a PDF.
@@ -5021,3 +5021,5 @@ Row L34 of the plan of record from 2026-11-25 (the Collections design's lane 2 a
 - `Docs/EditableContent/08-Reading-Research-Collections.md`: six blocks for the plan's labels, the missing headnote's block moved by hand to the preview's function, and eleven ranges re-pointed, eight of them in the inspector for the candidate; a bullet in the Amendment-Log.
 
 **By hand, owed:** the owner's 52-document collection as a PDF, a Word file and a web page; J16's eight telegrams (`frus1946v06` d470, 473–477, 480, 486) under *Full text as printed*, by headings and landmarks with VoiceOver in Safari and in Word's Navigation pane.
+
+**The landing checks,** on the merge `60db0e24` (tree `249a3466`, with `v2` at `9e92080f` taken in), in one `Scripts/heavy.sh` job from 18:01 to 18:25 UTC: `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,324 tests in 615 suites over 39 runs, none failed; the unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set), 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped as at L42, and the one test with the six known issues (L42's 8,401 and this row's 25); no collection pin moved, so none was re-taken; the `FRUSExplorerMac` build, with the two known residues alone; `Scripts/check_repo_hygiene.py`, six checks passed. The merge's kit changes, L30's Citation Lookup, L39's page links and L42's graph capture, print nothing the pins read.
