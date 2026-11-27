@@ -15,13 +15,16 @@ import SwiftData
 
 extension SmartCollectionSnapshot {
 
-    /// Builds a new static collection from a smart collection's resolved results and inserts it
-    /// (plus one ordered `.document` entry per result) into `context`.
+    /// Builds a new static collection from a smart collection's resolved results and inserts it into
+    /// `context`, with its entries.
     ///
-    /// The snapshot is FRUSCoreKit's `snapshot(of:results:)`: the source's display name (suffixed),
-    /// note, project membership, and composition settings, but **no** `savedSearchId`, so it is a
-    /// normal editable collection. Every field the values leave out keeps the model's default. The
-    /// caller saves the context and selects/opens the result.
+    /// The snapshot is FRUSCoreKit's `snapshot(of:results:)`: every setting of the smart collection under
+    /// its display name (suffixed) and with **no** `savedSearchId`, so it is a normal editable collection,
+    /// and its entries are the smart collection's apparatus blocks around one `.document` entry per result
+    /// (#1996, the third review's J39). The values are written into the models as Import from JSON writes
+    /// them (`writeImport`), every field the values carry, so the snapshot holds every setting they hold;
+    /// the models' dates are now. A carried block that names a headnote draft gets one of its own, so the
+    /// two collections share no draft (#1999). The caller saves the context and selects/opens the result.
     ///
     /// - Returns: The newly inserted snapshot `Collection`.
     @discardableResult
@@ -30,28 +33,26 @@ extension SmartCollectionSnapshot {
         results: [DocumentRef],
         into context: ModelContext
     ) -> Collection {
-        let value = snapshot(of: CollectionExport(smart, entries: []), results: results)
-        let snapshot = Collection(name: value.name, note: value.note, projectIds: value.projectIds)
-        snapshot.defaultBodyDepth = value.defaultBodyDepth ?? snapshot.defaultBodyDepth
-        snapshot.footnoteStyle = value.footnoteStyle ?? snapshot.footnoteStyle
-        snapshot.includeFootnotes = value.includeFootnotes
-        snapshot.includeSourceNote = value.includeSourceNote
-        snapshot.tocStyle = value.tocStyle ?? snapshot.tocStyle
-        snapshot.applyHighlights = value.applyHighlights ?? snapshot.applyHighlights
-        snapshot.includeNotes = value.includeNotes ?? snapshot.includeNotes
-        snapshot.includeWordCloud = value.includeWordCloud ?? snapshot.includeWordCloud
-        snapshot.summaryPromptId = value.summaryPromptId
+        // The smart collection's live entries: `documentEntries` goes on listing an entry deleted from the context
+        // until a save processes the deletion (#1359), and a block the reader has just deleted must not travel.
+        let entries = (smart.documentEntries ?? []).filter { !$0.isDeleted }
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .map(CollectionEntryExport.init)
+        let value = snapshot(of: CollectionExport(smart, entries: entries), results: results)
+        let snapshot = Collection.newForImport(value)
+        let now = Date.now
+        snapshot.createdAt = now
+        snapshot.lastModified = now
         context.insert(snapshot)
 
         for entryValue in value.entries {
-            let entry = CollectionEntry(
-                collectionId: snapshot.id,
-                documentId: entryValue.documentId,
-                volumeId: entryValue.volumeId,
-                sortOrder: entryValue.sortOrder
-            )
+            let entry = CollectionEntry.newForImport(entryValue)
+            entry.collectionId = snapshot.id
+            entry.createdAt = now
+            entry.lastModified = now
             entry.collection = snapshot
             context.insert(entry)
+            GeneratedSummary.duplicateHeadnoteDraft(id: entryValue.headnoteSummaryId, to: entry, in: context)
         }
 
         return snapshot

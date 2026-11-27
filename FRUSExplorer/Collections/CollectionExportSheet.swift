@@ -40,6 +40,9 @@ import UIKit
 ///   1.5 — 2026-10-09: #1585 — the exporter's options come from `ExportFormat.exportOptions(for:)`
 ///          where the sheet built them itself, asking for the word cloud of PDF and HTML only; a
 ///          Word export now carries the cloud the Composition section turned on
+///   1.6 — L29 (#2000): Send to Zotero Library posts the RIS file's records
+///          (`ZoteroCollectionExporter.records(for:options:)`), each document's research notes only where
+///          they print, where it posted every item as resolved and read no setting
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -732,7 +735,11 @@ struct ExportSheetView: View {
         defer { isExporting = false; preparingMessage = nil }
         do {
             let docs = try await resolvedZoteroDocuments()
-            let items = docs.sorted { $0.sortOrder < $1.sortOrder }.compactMap(\.zoteroItem)
+            // The records the RIS file prints, under the options it is written with: each document's research
+            // notes go only where they print (#2000). The send took every item as resolved and read no setting.
+            let items = ZoteroCollectionExporter.records(
+                for: docs.map(CollectionExportItem.document),
+                options: ExportFormat.zoteroJSON.exportOptions(for: collection))
             guard !items.isEmpty else {
                 exportError = String(localized: "export.zotero.empty",
                                      defaultValue: "This collection has no documents to send.")

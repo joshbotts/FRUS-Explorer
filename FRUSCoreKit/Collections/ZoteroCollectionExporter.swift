@@ -16,9 +16,10 @@ import Foundation
 /// Each document's `CollectionExportDocument.zoteroItem` already carries its
 /// own tags and notes (resolved by `CollectionEditorView.resolveDocuments()` /
 /// `.resolveSmartDocuments()` via `ZoteroJSONExporter.fetchTagsAndNotes`); those
-/// `Item`s are rendered to RIS by `RISExporter.export(zoteroItem:)`.
-/// `options.includeNotes == false` strips child notes from every item so the
-/// exported file contains tags but not research-note text.
+/// `Item`s are rendered to RIS by `RISExporter.export(zoteroItem:)`. A document's child notes
+/// go out where its notes print — its own setting, else its section's, else the collection's
+/// (`CollectionExportDocument.citationRecord(options:)`, #2000) — and its tags always; the
+/// Zotero send posts the same records (`records(for:options:)`).
 ///
 /// This RIS file is the **Zotero desktop** path: it imports via File → Import
 /// (no Better BibTeX plugin required), bringing in every record — with notes
@@ -42,10 +43,30 @@ import Foundation
 ///         writes `Untitled Collection-zotero.ris` rather than `-zotero.ris`
 ///   2.3 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public, over the kit's
 ///         `RISExporter`; `ris(for:options:)` gives the text `export` writes
+///   2.4 — L29 (#2000): `records(for:options:)`, the records the file prints and the Zotero send posts,
+///         each document's notes left out where its notes do not print; the file followed the
+///         collection's switch alone, and the send read none
 public final class ZoteroCollectionExporter: CollectionExporter {
 
     /// Creates an exporter.
     public init() {}
+
+    /// The records an RIS file prints for `items`, which the collection's Zotero send posts too: each
+    /// document's Zotero item, in collection order, without its research notes where they do not print
+    /// (`CollectionExportDocument.citationRecord(options:)`, #2000).
+    ///
+    /// - Parameters:
+    ///   - items: The ordered, pre-resolved items; only `.document` items with a Zotero item apply. A
+    ///     Zotero RIS file is a flat reference list: section headings and prose blocks have no Zotero
+    ///     representation and are dropped.
+    ///   - options: The export's options.
+    /// - Returns: The records.
+    public static func records(for items: [CollectionExportItem],
+                               options: CollectionExportOptions) -> [ZoteroJSONExporter.Item] {
+        items.documents
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .compactMap { $0.citationRecord(options: options) }
+    }
 
     /// The RIS file's text for `items`: one record per document that carries a Zotero item, in
     /// collection order, blank-line separated — what `export` writes, for a host that keeps the text
@@ -53,23 +74,13 @@ public final class ZoteroCollectionExporter: CollectionExporter {
     ///
     /// - Parameters:
     ///   - items: The ordered, pre-resolved items; only `.document` items apply.
-    ///   - options: The export's options; `includeNotes == false` strips the child notes.
+    ///   - options: The export's options; a document's child notes go out where its notes print.
     /// - Returns: The RIS text.
     public func ris(for items: [CollectionExportItem], options: CollectionExportOptions) -> String {
-        // A Zotero RIS file is a flat reference list — only `.document` items apply; section
-        // headings and prose blocks have no Zotero representation and are dropped.
-        var zoteroItems = items.documents
-            .sorted { $0.sortOrder < $1.sortOrder }
-            .compactMap(\.zoteroItem)
-
-        if !options.includeNotes {
-            for index in zoteroItems.indices {
-                zoteroItems[index].notes = nil
-            }
-        }
-
         let exporter = RISExporter()
-        return zoteroItems.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
+        return Self.records(for: items, options: options)
+            .map { exporter.export(zoteroItem: $0) }
+            .joined(separator: "\n\n")
     }
 
     // MARK: - CollectionExporter

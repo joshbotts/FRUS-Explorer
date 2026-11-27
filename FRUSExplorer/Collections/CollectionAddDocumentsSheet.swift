@@ -131,9 +131,11 @@ enum CollectionDocumentDiscovery {
     /// Phase 4).
     ///
     /// The first entry takes `CollectionEntryOrdering.nextSortOrder` — one past the highest
-    /// position in the model or the outline — and the rest follow it. Before #1416 it took
-    /// `sortedEntries.count`, the position the Add to Collection picker had just given, as
-    /// `max + 1`, to a document the open editor's outline had not followed.
+    /// position in the model or the outline ahead of the collection's back matter — and the rest
+    /// follow it, each put into the outline there (`insertAppended`), so a collection that ends in a
+    /// Bibliography keeps it last (#1995). Before #1416 it took `sortedEntries.count`, the position
+    /// the Add to Collection picker had just given, as `max + 1`, to a document the open editor's
+    /// outline had not followed.
     ///
     /// A smart collection takes none (`SmartCollectionRule`, #1619): its documents come from its
     /// saved search. Both editors disable Add Documents for one; this holds as well for a sheet
@@ -151,7 +153,7 @@ enum CollectionDocumentDiscovery {
         guard SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId) else {
             return false
         }
-        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
+        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries, count: refs.count)
         for ref in refs {
             let entry = CollectionEntry(
                 collectionId: collection.id,
@@ -161,16 +163,17 @@ enum CollectionDocumentDiscovery {
             )
             entry.collection = collection
             modelContext.insert(entry)
-            sortedEntries.append(entry)
+            CollectionEntryOrdering.insertAppended(entry, into: &sortedEntries)
             next += 1
         }
         return true
     }
 
-    /// Appends a single document entry at the end of a collection **without** a pane-level
-    /// entries array — the path used by `CollectionPickerSheet`, which mutates the collection
-    /// directly. The exact sibling of `CollectionExcerpts.appendToCollection`, and the reason
-    /// this overload exists: `sortOrder` is `max + 1`, so no existing entry is renumbered.
+    /// Appends a single document entry to a collection **without** a pane-level entries array —
+    /// the path used by `CollectionPickerSheet`, which mutates the collection directly. The exact
+    /// sibling of `CollectionExcerpts.appendToCollection`, and the reason this overload exists: its
+    /// position is `CollectionEntryOrdering.nextSortOrder`, after everything but the collection's back
+    /// matter (#1995), so no entry ahead of it is renumbered.
     ///
     /// ## The link is the INVERSE assignment, not `collection.documentEntries?.append`
     /// `documentEntries` is `nil` — not `[]` — on a collection that has not been saved since it

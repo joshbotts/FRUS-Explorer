@@ -4405,6 +4405,201 @@ The orchestration session started this one for row L61, on `claude/l61-generator
 - **The release runbook's** §2 manifest row, step 2, §4.5 and step 11 keep their checks and now name the fixes as landed (L28's brief), and §10a says both landed. The plan's L61 brief, L28's, has this row's record under it.
 - **Offered, not taken** (decision 183): the two scripts still default to the 300m's store and pool, which the brief did not ask to change and which the corpus gates' documents cite. A run at the defaults now ends in a refusal: `build_layout.py` refuses the default pool as it stands, which names no store, and a layout of the 300m's, made once `pool_docs.py` has run again at its defaults, is refused by the pack before anything is written.
 
+## Session 2026-11-26 — L33, three small kit fixes: a duplicated Archives Visit shows the row its original shows, the Mac's Chronology magnifier names its months, and the series export's caveat takes its host's locale; #1972 left out, on the owner's word, since FRUS Explorer Light's phase 4 changed what it asked for
+
+The orchestrator session ("Development session orchestration") started this one for row L33 of the plan of record from 2026-11-25, on `claude/l33-four-kit-fixes-29dffb` from `v2` at `a17023f9`, L27's merge. The row: four small kit fixes FRUS Explorer Light found, #1989, #1971, #1973 and #1972, a commit each. Commits: `46f62d2b` (#1989), `a77b7e94` (#1971), `a9cb13be` (#1973) and a docs commit.
+
+**#2027's merge**
+- L61 merged as `5fba4c9a`, a squash onto `a7d8e017`, at 05:38:54 UTC on 2026-11-27, from its head `ac51df68`. Its tree, `6b56e90e`, is the head's. It closed #2022 and #2023. This entry records it.
+- L28's #2026 (`a7d8e017`, onto `e3260a95`, at 04:27:33 UTC, from `007981d0`, tree `a32f5e9d`, closing no issue) is recorded in L61's entry above, and L31's #2025 in L28's.
+- This branch took `v2` in at `5fba4c9a`. The three conflicts were all records: the session log, the plan of record's decisions and the Amendment-Log. Each was resolved with `v2`'s side first and this row's after it. L31's decisions 203 to 206 and L28's 207 to 209 put this row's at 210.
+
+**Each defect first** (decision 183). The new tests went in first and ran against `v2`'s code, before any fix, through `Scripts/heavy.sh`:
+- **In the package** (`swift test --filter`, FRUSCoreKitTests): 25 tests in 4 suites, the two new ones failing with 16 issues.
+  - #1989: the kit's `duplicate(of:id:now:)` dated all eight copies' target rows at the copy. Under six of the eight copy ids, which a script had predicted by the kit's own hash, the copy showed the later row's note.
+  - #1971: both magnifier calls named February and October `M02` and `M10`, where the reader's own calendar names them `Feb` and `Oct`.
+- **In the app's unit target** on the iPhone 17 under iOS 27.0: 26 tests, 23 passed and the 3 new ones failed.
+  - The app's test, on decision 62's fixture of two notes' rows answering one class target: `duplicate(in:)` dated the copied rows at the copy (04:11 UTC on 2026-11-27, against their sources' 21 September). On this run the copy also showed the other note's row ("second", Day two, included) where the original shows "first", Day one, excluded. The issue says that part shows only by chance.
+  - The two kit tests failed as in the package.
+- **#1971 was not seen in 1.0 (1861).** `tools/mac-check-copy/setup.sh --ref 1.0-release` and `build.sh --no-launch` ran in a scratch of their own (`~/Library/Caches/FRUS-Explorer/l33/mac`), so the shared copy and its home were untouched: built in 263 s, 27 volumes seeded and indexed.
+  - Chronology over 12/31/1955–12/31/1992 drew the year chart over 1960–63, capped, so the magnifier would read the aggregate path.
+  - No pointer raised the magnifier: computer use's moves, with full-screen control or without, nor real mouse-moved events posted at the bar with CoreGraphics (posting allowed). The README's limits say so: synthetic hover misses SwiftUI's hover.
+  - The code at the tag is the code the tests ran (`monthLabel` and the view's `Text(verbatim: bar.label)`). The shared preferences were exported first and put back after (163 keys, none differing); the walk changed one window frame.
+- **#1973 shows nowhere on an Apple screen.** A probe on this Mac (macOS 27.2.1, Swift 6.4.2) printed `.formatted(.list(type: .and))` as the process's locale joins it: "A, B, and C" in en_US, "A, B und C" under `-AppleLocale de_DE`, "A, B and C" in en_GB. The same probe printed `M02` and `M10` from `Calendar(identifier: .gregorian)` under all three, whose locale is the root locale.
+
+**#1972: left out** (decision 210). Reading FRUS Explorer Light's `main` (`0e1990d6`, the README streamlined after phase 4's sign-off) before writing the type:
+- its server counts with a tagger of its own (`FRUSWordCloudTagger`), so it counts a live scope's cloud (S29e), ranks Distinctive (S29f) and reads Collocates (S29f);
+- the refusals it still words itself, citing #1972, are others: Distinctive's and Collocates' count in printed forms with no printed-form reference (`WordCloudDistinctive.keynessDetail(_:)`, `Collocates.detail(for:)` and `printedFormsNote(for:)`), and a lens its tagger cannot serve (`WordCloudLive.lensUnavailable(_:health:)`), the three name lenses, phase 5's.
+- The orchestrator was told in one line. The owner answered L33's question "Leave it out (Recommended)", over re-scoping it to today's refusals or building it as decided. A comment for #1972, shown to the owner first, says so.
+
+**#1989** (`46f62d2b`)
+- `ArchiveVisitPlanWrites.duplicate(of:id:now:)`: each copied stored target keeps its source's `createdAt`, or `now` where it has none, which shows the same row, as a missing date sorts last; `lastModified` stays `now`; the plan and its seeds are created `now`. The doc says a tie still falls to the re-derived ids, and the type's note on dates says a duplicate's targets are the one exception.
+- `ArchiveVisitPlan.duplicate(in:)` sets `state.createdAt = copied.createdAt` after the initialiser. `ModelModificationStamper` writes `lastModified` alone, and never on an inserted model, so the copy keeps the date.
+- Tests: `ArchiveVisitPlanWritesTests.duplicateKeepsEachTargetsCreationDate` over eight copy ids, with a guard that one sorts the later row first, and a row with no date; the existing duplicate test brought to the rule; `ArchiveVisitStoredClassKeyTests.aDuplicateShowsItsOriginalsRow` over SwiftData through the derivation.
+
+**#1971** (`a77b7e94`)
+- `monthLabel(fromMonthKey:locale:)` gives the Gregorian calendar the locale; `magnifierBreakdown(for:locale:)` and `magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:locale:)` take `locale: Locale = .autoupdatingCurrent`, through `dateBucketLabel(forKey:locale:)`. The app's forwarders and the package's test support keep their signatures; the view model's two doc comments name the kit's calls as they read now.
+- Tests: `ChronologyMagnifierLabelTests`, three: with no locale, the reader's own month names by both calls; "Feb" and "Oct" in en_US and "Feb" and "Okt" in de_DE by both; a month's bars by day and a day's by volume in every locale.
+
+**#1973** (`a9cb13be`)
+- `SeriesAnalyticsExport.provenance(…, locale: Locale = .autoupdatingCurrent)` joins the hidden categories with `.list(type: .and).locale(locale)`. The app passes none, so its caveat is the one it was.
+- Test: `SeriesAnalyticsExportTests.hiddenCategoriesAreListedInTheLocalePassed`: three categories in en_US and de_DE, two by the locale's word, the default the formatter's own join, none hidden no caveat.
+
+**EditableContent.** Thirteen ranged blocks in `08-Reading-Research-Collections.md` re-pointed by script, each checked to start on its key's line before and after: `chronology.spanning.header` 374 → 376 with #1971, and the twelve on `SeriesAnalyticsExport.swift` with #1973. A bullet each in `Amendment-Log.md`. No text changed.
+
+**Checks**
+- **While developing,** through `Scripts/heavy.sh`, after the three fixes:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test --filter 'ArchiveVisit|DuplicateRecordOrderTests|Chronology|SeriesAnalyticsExportTests|AnalyticsProvenanceOverrideTests|SourceProvenanceDataTests'`: 126 tests in 16 suites passed.
+  - `build-for-testing` on the iPhone 17 under iOS 27.0: the known residues alone, `GeneratedSummary`'s redundant `Sendable` and the AppIntents note.
+  - The app's 18 affected suites there: 250 tests passed, none failed or skipped. `CodingStandardsAuditTests`, `EditableContentKeyTests`, `FRUSCoreKitBoundaryTests` and `SharedKitsBoundaryTests` were among them.
+  - `Scripts/check_repo_hygiene.py`: all six checks pass.
+  - The version-history lines were dated afterwards, in place, and the thirteen ranges checked again by script against their keys.
+- **The landing checks, on the merged tree** (`ec2293fe`, tree `78acbd78`, with `v2` at `5fba4c9a`), in one `heavy.sh` call:
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,253 tests in 609 suites over 39 runs, none failed (`v2`'s 5,248 and this row's 5). Its build printed one older warning, an unused binding at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - A clean `build-for-testing` on the iPhone 17 under iOS 27.0.
+  - The unit target there, the app removed first and the TEI mirror set: 8,315 tests, of which 8,296 passed, 17 skipped and 1 was an expected failure, in 772 s. The six new tests passed. One failed: `RichTextRestingCapTests.theColorPickerKeepsTheBlockOpen()`, whose Text Color presented no colour picker in 15 s, the test CI's job C skips by name for that failure and the one L27's landing met. Its suite alone, rerun on the same simulator from the same build, failed it again (20 of 21 passed). So `v2` at `5fba4c9a` was built from a `git archive` in a folder of its own, and the suite ran base, branch, base on that simulator: the base failed it the same way, then the branch and the base each passed 21 of 21. Each of the three failures came on the first run after the simulator booted, and both passes on later runs in the same boot.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**The symbol diff**
+- Unsigned Debug `FRUSExplorerMac`, `v2` at `a17023f9` (a `git archive`) beside `a9cb13be`, each built from empty on a real path and never launched: "** BUILD SUCCEEDED **" both (52 s and 50 s), with the same five warning lines, the known residues.
+- `nm -j` of each `FRUS Explorer.debug.dylib`, demangled, with private discriminators and closure numbers dropped: 257,479 names on `v2` and 257,483 here, 17 removed and 21 added (raw, 267,719 and 267,723, 21 and 25).
+  - **Renamed by the new parameter, 17:** `ChronologyGrouping.magnifierBreakdown(for:)` and `magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:)`, each with five closures and thunks; the private `monthLabel(fromMonthKey:)` and `dateBucketLabel(forKey:)`; `SeriesAnalyticsExport.provenance(…)` with its closure and `extra`'s default-argument generator. Each is among the added under its new signature.
+  - **New, 4:** the generators of the three `locale` defaults, which the app's calls use since they pass none, and `Calendar.locale`'s setter, which the month label now calls.
+  - **#1989 changes no name:** `duplicate(of:id:now:)` and `duplicate(in:)` keep their signatures.
+
+**Owed after the merge:** the hand-over notes for FRUS Explorer Light on #1989, #1971 and #1973, and #1972's comment, each shown to the owner first; and the memory hub's record of the row.
+
+## Session 2026-11-27 — L29, what leaves a collection and what a copy keeps: a document's research-notes setting holds in BibTeX, RIS, the Zotero send and a shared file; a collection file opened on its author's account makes its own headnote drafts; Duplicate and the snapshot carry every setting, the snapshot the smart collection's blocks; an added entry lands before the back matter
+
+The plan of record's session started this one for row L29, on `claude/l29-collection-notes-and-copies-4e4dd7` from `v2` at `a17023f9`, L27's merge, in Wave 2 with L30, L32, L33 and L57 on the owner's "start Wave 2". The row: #2000, #1999's import half, #1996, #1995, and the third review's J39. Commits: `d927be62` (#2000), `ab4a5100` (#1999's import half), `b340bd6e` (#1996 and J39), `c9a9b0ae` (#1995), and a docs commit.
+
+**#2028's merge**
+- L33 merged as `24616a57`, a squash onto `5fba4c9a`, at 07:20:39 UTC on 2026-11-27, from its head `17aa6225`. Its tree, `34462b9e`, is the head's. It closed #1971, #1973 and #1989. This entry records it.
+- L61's #2027 (`5fba4c9a`, onto `a7d8e017`, at 05:38:54 UTC, from `ac51df68`, tree `6b56e90e`, closing #2022 and #2023) is recorded in L33's entry above, L28's #2026 in L61's, and L31's #2025 in L28's.
+- This branch took `v2` in at `24616a57` (`71bcbcdf`). The two conflicts were both records, the session log and the Amendment-Log, each resolved with `v2`'s side first and this row's after it. This row takes no decision, so L33's 210 is still the last. On the merged tree a script read all 837 ranged EditableContent blocks: each starts on its key.
+
+**Each defect, first** (decision 183)
+- **#1999 in 1.0 (1861).** Asked who should make the design's §12 run, the owner chose "This session (Recommended)". So this session made it with Computer Use, in the Mac check copy built at `1.0-release` (`08e8bac8`), which has its own bundle id (`…maccheck`) and a local store, with `frus1961-63v01` seeded.
+  - A collection, *L29 Original*, of d1, its headnote turned on and written: *ORIGINAL headnote written by the author.*
+  - Exported as a `.fruscollection`. The file named the headnote by its draft's id alone: `"headnoteSummaryId" : "7E8E3DA1-E4FB-4B47-B150-788670E8BF52"`, and no text.
+  - Imported through *Import Collection…*: a second *L29 Original*, whose preview printed the original's headnote.
+  - The copy's headnote edited to *COPY headnote, edited after import.* The original's settings then read *No headnote yet*, and its preview *No stored summary for this document — generate one in the document view to fill this headnote.*
+  - The copy's store: the original's entry still named `7E8E3DA1…`, which it no longer held; the one draft left was the copy's, `C914BA17…`.
+  - The copy was quit and its preferences put back with `prefs-restore.swift` (163 keys, none differing).
+- **The others as failing tests,** written first and run on the tree with no fix, through `Scripts/heavy.sh`:
+  - **The kit** (`swift test`, `CollectionNotesSettingTests` and `CollectionValuesTests`): 9 tests in 2 suites, the three new ones failing with 9 issues. BibTeX and RIS carried the notes-off document's note with the collection's notes on, and dropped the notes-on document's with them off, while the page printed exactly the expected two. A shared file with notes included carried `d1` to `d5`, where `d2` and `d3` are off. A snapshot carried neither the settings nor the blocks.
+  - **The app** (the iPhone 17 under iOS 27.0, `80CF0F18`): 18 tests, 8 passed and 10 failed, each new test at its defect.
+    - The import named the original's draft (`F7D61CA9…` both).
+    - Duplicate dropped *Stamp active project*.
+    - Create Static Snapshot inserted no setting and no block.
+    - A document, a heading, a note block and a passage added to a collection ending in a Bibliography and a Persons Index were listed after both (`d1, d2, bibliography, personsIndex, d3, …`).
+    - A document added to a collection of a Chronology and a Bibliography went after the Bibliography.
+    - Two devices' appends sat at or after the blocks: `d3` at 4, `d4` to `d6` at 4 to 6, the blocks at 2 and 3.
+    - The send, read from the sheet, posted every item as resolved.
+
+**#2000** (`d927be62`)
+- **One rule.** `CollectionExportDocument.includesNotes(options:)` is the rule the web page, the PDF and Word print a document's notes by: its own setting or its section's, which the assembly hands on, else the collection's. The three renderers now call it.
+- `citationRecord(options:)` is the document's Zotero item by that rule, its tags kept either way. BibTeX writes through it, and RIS through `ZoteroCollectionExporter.records(for:options:)`.
+- **The Zotero send** posts those records, under the options the RIS file is written with (`ExportFormat.zoteroJSON.exportOptions(for:)`). It had posted every item as resolved and read no setting.
+- **A shared file** writes a document's notes only where they print and the sheet's switch is on. The section's setting is read through `CollectionOutline.sectionOverrideValues`, the cascade the assembly resolves by. The file's format does not change.
+- **The pins** (`CollectionRenderingPinTests`): `everything.bib` and `everything.ris` re-taken (1,061 → 1,529 bytes and 810 → 1,163), since the fixture's notes-off document, `d10`, gained a Zotero item with a note: its record now prints, without the note. With `d10` taken out, a throwaway test (never committed) rendered both to their 2026-10-25 pins, so no byte of the records already pinned moved. The page and the package read no Zotero item, so their pins hold.
+
+**#1999, the import's half** (`ab4a5100`)
+- `GeneratedSummary.duplicateHeadnoteDraft(id:to:in:)` is Duplicate's copy of a draft, by its id; Duplicate's own call forwards to it. `NativeCollectionSerializer.apply` calls it for each entry it inserts, so all three import paths make their own drafts: Import Collection… on either platform, and a file opened from Files, Mail, AirDrop or Finder.
+- A document's own summary stays shared, and an id this store does not hold, a colleague's, is kept as the file wrote it.
+- The file carrying a headnote as its text is L58's (decision 199).
+
+**#1996 and J39** (`b340bd6e`)
+- Duplicate copies *Stamp active project* and *Append the query log*.
+- **The snapshot** (`SmartCollectionSnapshot.snapshot(of:results:id:entryIds:)`) carries every field of the smart collection's values but its id, name, link and dates, where it had carried the composition alone. So a setting added to the values later travels too.
+- **Its entries** are the smart collection's front-matter blocks, the results, then its other blocks, each group in its order, as `resolveSmartItems` prints them. A block type this build does not know goes after the results. The entries from before the link stay behind.
+- The app writes the values into the models through `writeImport`, Import from JSON's one mapping, every field. It reads the smart collection's live entries, since `documentEntries` goes on listing one deleted from the context until a save (#1359): a block deleted a moment before is not carried, which its test holds.
+- **A claim of the brief does not hold, as CR's J39 had said:** "the snapshot copies what its comment says it copies" asked for nothing, since the comment described the code. The snapshot now does what the design's §4.5 says.
+- **Duplicate's test** compares the two collections as the research export records them, every field. A setting the export carries and Duplicate drops fails it. The walk over the schema, with what a snapshot must not copy, is L43's.
+
+**#1995** (`c9a9b0ae`)
+- **The rule.** `CollectionEntryOrdering.nextSortOrder(in:outline:count:)` puts an append after everything but the collection's back matter: the run of apparatus blocks it ends with (`backMatter(of:)`), or, in a collection of blocks alone, those after the front-matter blocks that open it.
+- **Room.** Where the back matter's first position is not past the positions the append takes, the run moves up to `backMatterRoom` (1,000, the bulk add's limit) past them. An append that finds room moves nothing.
+- **Two devices** that append before either syncs each write the blocks past their own entries, so whichever write a sync keeps, the blocks stay last while neither adds more than 1,000 at once.
+- An editor's own append goes into its outline at the same place (`insertAppended(_:into:)`), so the outline, the preview and an export agree at once.
+- **Every append path** goes through it: Add to Collection from the reader and from Search, the bulk add, the editors' Add Documents and Add Highlighted Passages, a passage from the reader or an entry's settings, and Add Section Heading and Add Note Block.
+
+**Docs**
+- Both manuals' chapter 12: where a new row goes; that BibTeX, RIS, the Zotero send and a shared file carry a document's notes where they print; that a file opened on its author's account gets headnotes of its own; that Duplicate and the snapshot keep every setting, the snapshot the blocks. The *AI Generated* notice is kept.
+- 23 EditableContent blocks re-pointed, each checked by script against its key, with a bullet in the amendment log. No shipped string changes.
+- The plan's L29 record.
+
+**Checks**
+- **The scoped run** of the fixes, through `Scripts/heavy.sh` in one script:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test` over the collection suites: 32 tests in 6 suites, the one failure the BibTeX and RIS pins, re-taken.
+  - The app's collection, export, import and source-scan suites on the iPhone 17 under iOS 27.0 (54 suites named, `RichTextRestingCapTests` left to the full run as known flaky): 623 tests, 621 passed. The two failures were the pins and the send test's own string, which looked for `records(for:` on one line; it now looks for the call. `EditableContentKeyTests`, `CodingStandardsAuditTests` and both boundary suites passed.
+  - The warnings were the two known residues.
+- **After the snapshot was made to read the smart collection's live entries** (folded into `b340bd6e`), its six suites ran again on `7f3c1b92`, clean, through `Scripts/heavy.sh`: 36 tests on the iPhone 17 under iOS 27.0, all passed, `EditableContentKeyTests` among them.
+- **The landing checks, on the merged tree** (`9ab170a3`, tree `de365719`, with `v2` at `24616a57`), in one `heavy.sh` call, from 07:33 to 07:54 UTC, once L37's job had released the lock:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+  - The unit target there, the app removed first and the TEI mirror set: 8,328 tests in 1,010 suites, of which 8,310 passed, 17 skipped and 1 was an expected failure, and none failed, in 753 s (8,315 at L33's landing, and this row's 13). Each of the 13 new tests passed, and so did `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary suites, `CloudKitSchemaInventoryTests` and `CollectionRenderingPinTests`. `RichTextRestingCapTests` passed 21 of 21 on the first run after the boot, so the colour-picker test L33's landing met needed no rerun.
+  - `swift build --target FRUSCoreKit` with no warning.
+  - `swift test` ran 5,257 tests in 610 suites over 39 runs, and none failed (5,253 at L33's landing, and this row's 4). Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+  - The `FRUSExplorerMac` build succeeded.
+  - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+## Session 2026-11-27 — L32, the semantic map's slice: a revealed document is ringed where the slice draws it, the regions list opens a region's card there, a slice with no dated volume lays out rather than trapping, and the ring and a region focus follow the layout
+
+Row L32 of the plan of record from 2026-11-25 (#2010, #1986), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `a7d8e017` (L28's merge) on `claude/l32-semantic-map-slice-647427`:
+- `60cdb2ea` (#2010) and `494711bf` (#1986);
+- `4710e5f6` and `12ebb489`, the owner's two twins of #2010;
+- `081ca9f6`, the records;
+- then, at the head of the queue, `v2` at `2db58c5a` taken in, and the landing's records.
+
+The owner answered, in the session, the two questions the reading raised: decisions 211 and 212.
+
+**#2029's merge**
+- L29 merged as `2db58c5a`, a squash onto `24616a57`, at 08:34:40 UTC on 2026-11-27, from its head `7d7b0ddd`. Its tree, `92d43924`, is the head's. It closed #1995, #1996 and #2000. This entry records it.
+- L33's #2028 (`24616a57`, onto `5fba4c9a`, at 07:20:39 UTC, from `17aa6225`, tree `34462b9e`, closing #1971, #1973 and #1989) is recorded in L29's entry above, L61's #2027 in L33's, L28's #2026 in L61's, and L31's #2025 in L28's.
+
+**What was found, each defect first** (decision 183)
+- **#1986, in the package, on the unchanged kit at `a7d8e017`:** a slice with no dated volume ended `swift test` on signal 5, "Swift runtime failure: arithmetic overflow" in `SemanticMapSlice.layout` at `SemanticMapSlice.swift:117:45`. The host suite's other 11 tests passed.
+- **#2010 and the twins, on the iPhone 17 under iOS 27.0:** four model tests failed, 11 expectations in all, and the reveal suite's other 22 passed.
+  - The reveal rang the plane's (23247, −4588), where the slice draws the document at (−16091, −15150), and the camera went there.
+  - The regions list's row selected `frus1933v05` d324 and moved the camera.
+  - After *…to here* the ring sat at the plane's (−23752, −5501), where the slice draws the document at (20038, 30000).
+  - A region focus left the slice, its scale, its poles and its positions in place.
+- **Two twins of #2010 in the reading, both in 1.0 (1861), both taken by the owner:** the ring after a re-layout (decision 211), and a region focus arriving at the Mac's one map window while it shows a slice (decision 212).
+- **One of the issue's claims, as read:** its second path, "a continuation that carries an axis and a document", has no sender in the app. Handoff carries the axis and no document, and *On the Map* the document and no axis. The defect is reached on the Mac instead, where *On the Map* arrives at the one Semantic Analytics window while it shows a slice.
+- **One finding for §5, unfiled:** on a slice, the regions list's spoken summary says *Position shows similarity, not time*.
+
+**What changed**
+- **#2010:** `SemanticMapReveal.reveal` takes the positions the host draws (`positions:`, `nil` for the plane) and returns `nil` when they hold no place for the row; the model passes what it draws. The regions list's row is the model's (`selectRegionFromList(_:size:isReadable:)`): on the plane the view's old steps, on a slice the region's card with no hit test.
+- **#1986:** the span from the dated volumes alone; `Scale.hasDatedYears` and `SemanticMapSlice.tickYears(for:)`, which the overlay reads.
+- **The twins:** `placeSelectionInLayout()` in both branches of `setSlice`; `focusRegion(id:digest:reapplyLens:)` clears a slice before a focus lands, and the view's two call sites pass the lens.
+- **Docs:** both manuals' §15.6, and the Mac's Browse ▸ Clusters; 21 EditableContent ranges re-pointed (15 on `SemanticMapSpikeView.swift`, 6 on `SemanticMapSlice.swift`); the FRUSCoreKit runbook; the plan's L32 record, decisions 211 and 212, and §5.
+
+**Checks, on the branch at `12ebb489`**
+- `swift build --target FRUSCoreKit`; the package's map suites, 143 tests in 14 suites and 16 in 4, none failed.
+- The kit's symbol diff against the unchanged code's object: the two signatures replaced, `Scale.hasDatedYears` and `tickYears(for:)` added, nothing else.
+- Six mutations, each failing the expectation written for it, four in the package and two in the app.
+- 29 app suites on the iPhone 17 under iOS 27.0: 381 tests, 376 passed, 5 skipped by their gates, the `GeneratedSummary` residue alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**The landing checks, on the merged tree** (`e02c84d3`, tree `dd97e763`, with `v2` at `2db58c5a`), through `heavy.sh`, from 08:43 to 09:41 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder.
+- The unit target there, the app removed first and the TEI mirror set: 8,336 tests in 1,010 suites, of which 8,318 passed, 17 skipped and 1 was an expected failure (8,328 at L29's landing, and this row's 8), from 08:45 to 08:59 UTC.
+  - The script named the scheme and no test target, so the run went on into FRUSExplorerUITests, which a landing does not owe, and held the lock 38 minutes more until the orchestrator saw it. It was stopped at 09:37 UTC.
+  - The stop left the result bundle unreadable, so the counts are the console's, reconciled with the run's own total: two result lines were split by the app's log output.
+- `swift build --target FRUSCoreKit` with no warning.
+- `swift test` ran 5,260 tests in 610 suites over 39 runs, and none failed (5,257 at L29's landing, and this row's 3). Its build printed no warning.
+- The `FRUSExplorerMac` build succeeded.
+- Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+**Still owed at the push**
+- The by-hand check, on the iPhone 17 simulator by the orchestrator's word: the plan's check names no platform, and the Mac's screen was locked. It runs on the app the landing built, under the lock, behind three other rows' jobs at 09:41 UTC, and is recorded in the PR's body when made.
+- The same check on the Mac in the check copy, as a note on the PR, once the screen unlocks.
+- After the merge, the two hand-over notes for FRUS Explorer Light (#2010, #1986).
+
 ## Session 2026-11-27 — L37, the rail through a rebuild: a reader built again by a layout that changed with width keeps its rail as the reader left it, and *Open Documents In* still applies at every open (F11)
 
 The orchestration session started this one for row L37, on `claude/l37-rail-through-rebuild-cb4b9e` from `v2` at `5fba4c9a`, L61's merge. The row: F11, seen on the owner's iPad during F8's check of 1.0 (1842) on 2026-11-20 and sent to the first update on the owner's word: a window resize that switches Browse between one pane and two closes the document's rail. A commit for the test, one for the fix, and the docs.

@@ -36,10 +36,10 @@ private func seed(_ key: String, source: Bool = true, refs: Bool = true,
 }
 
 private func target(_ key: String, tier: UUID? = nil, included: Bool = true, note: String? = nil,
-                    id: UUID? = nil) -> ArchiveVisitTargetExport {
+                    id: UUID? = nil, createdAt: Date = created) -> ArchiveVisitTargetExport {
     ArchiveVisitTargetExport(id: id ?? ArchiveVisitPlanWrites.derivedChildId(planId: planId, key: key),
                              targetKey: key, tierId: tier, included: included, userNote: note,
-                             createdAt: created, lastModified: created)
+                             createdAt: createdAt, lastModified: createdAt)
 }
 
 private func plan(name: String = "Berlin blockade", inquiry: String? = nil,
@@ -125,6 +125,7 @@ struct ArchiveVisitDerivedIdTests {
 ///
 /// Version history:
 ///   1.0 — 2026-11-24: FRUS Explorer Light's S30b — the plan's write rules moved into FRUSCoreKit
+///   1.1 — 2026-11-26 (#1989): a duplicate's stored targets keep their creation dates
 @Suite("Archive Visit plan writes — the rules over records")
 struct ArchiveVisitPlanWritesTests {
 
@@ -193,9 +194,54 @@ struct ArchiveVisitPlanWritesTests {
         #expect(copy.targets.first?.tierId == tier.id)
         #expect(copy.targets.first?.userNote == "Ask about the divided series.")
         #expect(copy.targets.first?.included == true)
-        #expect(copy.documents.allSatisfy { $0.createdAt == now } && copy.targets.allSatisfy { $0.createdAt == now })
+        #expect(copy.createdAt == now && copy.documents.allSatisfy { $0.createdAt == now })
+        #expect(copy.targets.map(\.createdAt) == [created], "a stored target keeps its source's creation date (#1989)")
+        #expect(copy.documents.allSatisfy { $0.lastModified == now } && copy.targets.allSatisfy { $0.lastModified == now })
         #expect(ArchiveVisitPlanWrites.duplicate(of: plan(name: "")).name
                 == "\(ArchiveVisitPlanWrites.untitledName) copy")
+    }
+
+    /// Eight copies' ids. Under six of them the later row's derived id sorts first (the second and the last five,
+    /// by the kit's hash), so a copy dated at the copy shows the later row there; the test's guard requires one.
+    private static let copyIds = [
+        "0B6F3A52-1C0D-4E57-9A7B-2D4C6E8F1A03", "1D2E3F40-5A6B-4C7D-8E9F-0A1B2C3D4E5F",
+        "2F4A6C8E-0B1D-4F3A-9C5E-7A9B1D3F5A7C", "3A5C7E9F-1B3D-4E5F-8A7C-9E1B3D5F7A9B",
+        "4C6E8A0B-2D4F-4A6C-8E0B-1D3F5A7C9E1B", "5E7A9C1D-3F5A-4C7E-9A1B-3D5F7A9C1E3B",
+        "6A8C0E2F-4B6D-4E8A-8C2E-5F7A9C1E3B5D", "7C9E1A3B-5D7F-4A9C-9E3B-7A9C1E3B5D7F",
+    ].map { UUID(uuidString: $0)! }
+
+    /// #1989. A target that several stored rows answer for, none under its own key, shows the earliest created of
+    /// them (`ArchiveVisitTargetKeys.shownRow(among:answeringFor:)`). A copy that dated every row at the copy
+    /// would show whichever row the copy's derived ids sort first, with that row's note.
+    @Test("A duplicate's stored targets keep their creation dates, so a target several rows answer for shows the original's row (#1989)")
+    func duplicateKeepsEachTargetsCreationDate() throws {
+        let key = "lot|64D199"
+        let first = target("r|Lot 64 D 199, Box 3", note: "first", createdAt: created)
+        let second = target("r|Lot 64 D 199 Box 3", tier: UUID(), note: "second",
+                            createdAt: created.addingTimeInterval(100))
+        let original = plan(targets: [second, first])
+        #expect(ArchiveVisitTargetKeys.shownRow(among: original.targets, answeringFor: key)?.userNote == "first")
+        // The guard: under at least one copy's id the later row's derived id sorts first, so a copy that dated
+        // both rows alike would show the later row there.
+        try #require(Self.copyIds.contains { id in
+            ArchiveVisitPlanWrites.derivedChildId(planId: id, key: second.targetKey).uuidString
+                < ArchiveVisitPlanWrites.derivedChildId(planId: id, key: first.targetKey).uuidString
+        })
+
+        for copyId in Self.copyIds {
+            let copy = ArchiveVisitPlanWrites.duplicate(of: original, id: copyId, now: now)
+            #expect(copy.targets.map(\.createdAt) == original.targets.map(\.createdAt), "\(copyId)")
+            #expect(copy.targets.allSatisfy { $0.lastModified == now }, "\(copyId): a copy's rows are modified now")
+            let shown = ArchiveVisitTargetKeys.shownRow(among: copy.targets, answeringFor: key)
+            #expect(shown?.userNote == "first" && shown?.tierId == nil, "\(copyId): «\(shown?.userNote ?? "none")»")
+        }
+
+        // A row that carries no creation date is dated at the copy, as a missing date sorts last.
+        var undated = target("r|Lot 64 D 199", note: "undated")
+        undated.createdAt = nil
+        let copy = ArchiveVisitPlanWrites.duplicate(of: plan(targets: [undated, first]), id: Self.copyIds[0], now: now)
+        #expect(copy.targets.map(\.createdAt) == [now, created])
+        #expect(ArchiveVisitTargetKeys.shownRow(among: copy.targets, answeringFor: key)?.userNote == "first")
     }
 
     // MARK: Deletion
