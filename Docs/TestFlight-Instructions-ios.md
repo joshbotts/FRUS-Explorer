@@ -1,41 +1,34 @@
-# Testing FRUS Explorer 1.0 (iOS)
+# Testing FRUS Explorer 1.1 (iOS)
 
-**Release candidate.** Version 1.0 (1861) is the app meant for the App Store; unless your reports stop it, this is 1.0.
+**Early build.** Version 1.1 (1862) is the first build of the update to 1.0 (1861), which is on the App Store. The Collections overhaul is not in it yet: it comes in a later build.
 
 FRUS Explorer puts the State Department's *Foreign Relations of the United States* on your iPhone and iPad: download volumes, then read, search, annotate, cite and chart their documents offline. Notes, highlights, tags and collections sync through iCloud.
 
-**Tested 1.0 (1823)?** Nothing re-indexes. **From 1.0 (1812) or (1787)**, first launch re-indexes your library once; from 1776 it also rebuilds People once, in the background.
+**First launch re-indexes your library once,** whichever build you had: about 15 minutes for the whole series, less for a smaller library. You can keep reading while it runs.
 
-## New since 1.0 (1812)
+## New since 1.0 (1861)
 
-- **Subjects**, the Office of the Historian's experimental subject data, replace detected topics: Browse ▸ **Subjects**, Search's filters, the Research rail and **Related**, each with one caption saying where the data comes from.
-- **Import from JSON…** (Settings ▸ System ▸ **Data & Recovery**) reads an export from this app or from FRUS Explorer Light, and shows what it would add, replace and keep before it writes anything.
-- **Collections:** six templates under **Start from a template — optional** in Collection settings, each named for what it does, from **Full text as printed** to **Everything included**. On iPhone they are chips, and the settings row names the one in force.
-- **Downloads:** Volumes & Storage's **Cancel All** asks first, and a download that fails says so, with **Retry**.
-- **Search:** Filters' **Done** runs the search again with what you changed.
-- Settings ▸ System ▸ About ▸ **Legal** links the privacy policy and the support page.
+- **Central files after 1963:** footnotes that cite the Subject-Numeric File (1963–1973) or the Central Foreign Policy File are now read. Source Explorer lists them under **Unprinted Material**, and the cross-reference graph draws the Subject-Numeric File's classes.
+- **Zotero:** a send that Zotero asks to wait now says so, and for how long.
+- **Shared code:** Related Documents, search by **Meaning**, the semantic map, the word cloud and Archives Visits now run on code shared with FRUS Explorer Light, the web edition. Each should work as it did in 1.0.
 
 ## Getting started
 
 - **Onboarding** offers the whole series, a subseries or one volume, with the size it takes on the device. A banner and a Live Activity count the queue as volumes download and index.
-- **Browse** goes from subseries to volume, chapter and document; each volume's page lists what its editors annotated. **Analysis Tools** charts terms, people, cross-references and archives.
+- **Browse** goes from subseries to volume, chapter and document. Select text to highlight it or add a note; the **Research rail** holds **Cite**, **Sources**, **Graph**, **Related**, the **Summary** and your notes, tags and collections.
 
-## Reading and research
-
-- Select text to highlight it or add a note. The **Research rail** holds **Cite**, **Sources**, **Graph**, **Related**, the **Summary** and your notes, tags and collections.
-- Search by **Keywords** or **Meaning** (EmbeddingGemma 2, an optional 310 MB download), narrow with **Facets**, and search within the results.
-- Collections export as PDF, Word or HTML; citations copy as BibTeX or RIS, or go to Zotero.
-
-**Fixed since 1.0 (1812):** many things, on every tab, among them two crashes on an iPad: deleting a note from All Notes, and narrowing the window with a document's Research rail open.
+**Fixed since 1.0 (1861):** many things, on every tab.
 
 ## What to test
 
-1. **Earlier testers:** are your notes, highlights, tags and collections all there? Are your reports fixed?
-2. **iPad:** open a document with its Research rail, then narrow the window and widen it again, several times (Stage Manager or Windowed Apps). Does the app stay up, with the rail back at full width?
-3. **Two devices:** keep All Notes open on one while you add and delete a note on the other. Does the list follow without a relaunch?
-4. **Collections:** on an iPhone, swipe a collection and tap **Delete**. Does the question wait for your answer, and does closing it keep the collection?
-5. **Import:** export as JSON on one device (Settings ▸ System ▸ Data & Recovery ▸ **Export as JSON**) and **Import from JSON…** it on another, or one from FRUS Explorer Light. Does the report match what you had?
-6. **Indexes and graphs:** in a volume's index, does a *See* reference bring its entry into view? Zoomed in, does each network graph stay inside its frame?
-7. **Templates:** apply each of the six to a collection, then export it.
+1. **The re-index:** once it ends, are your notes, highlights, tags and collections all there? Does Search find what it found before?
+2. **Shared code:** Related's **Beyond your library**, Project Home, a **Meaning** search and **Search Within Results**, the **Semantic Map** and a slice of it, the word cloud's **Distinctive** and **Collocates**, and an Archives Visit (**Duplicate** it, then export its packet). Does each behave as in 1.0?
+3. **Order:** in Browse, open *1969–1976, Volume E–9, Part 1*. Does its *Note on U.S. Covert Actions* come before Document 1, as printed?
+4. **Source Explorer:** in the 1909 volume, does Document 429 read 1909 and list the Numerical File's rolls?
+5. **Citation Lookup:** copy the citation of Document 1190b in the 1898 volume and paste it in. Does it find that document?
+6. **Search's dates:** in Chronology, pick a month and tap **Search in this range**. Do the date filter's pickers show its first and last days?
+7. **Collections:** turn off a document's **Research notes**, then export its collection as BibTeX or RIS, or send it to Zotero. Are the notes left out? Does **Duplicate** keep every setting?
+8. **iPad:** with **Read** chosen in Settings ▸ Reading & Search ▸ Display, open a document's Research rail in Browse, then narrow the window to one pane and widen it again. Is the rail still open?
+9. **iPad, while the re-index runs:** with Browse in two panes and a document open, does the indexing banner stay at the bottom, with no blank band above it? If not, take a screenshot and note the time.
 
 Report device, iOS version, taps, expected, actual and a document id. Thanks!
