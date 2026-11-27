@@ -10941,6 +10941,44 @@ struct IndexVersion76Tests {
         }
     }
 
+    @Test("A volume's Contents line opens its Index, an arabic page no document holds, and reads its Preface's roman page (F7, L39)")
+    func contentsLinesOpenWhatTheyName() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let front = """
+                <pb n="III" xml:id="pg_III"/>
+                <div subtype="preface" type="section" xml:id="preface"><head>Preface</head>
+                  <p>The series presents the record.</p><pb n="IV" xml:id="pg_IV"/><p>More.</p></div>
+                <pb n="XV" xml:id="pg_XV"/>
+                <div subtype="table-of-contents" type="section" xml:id="toc"><head>Contents</head>
+                  <list type="toc"><item><ref target="#pg_III">Preface</ref></item>
+                  <item><ref target="#pg_3">Index</ref></item></list></div>
+                """
+            let back = """
+                <pb n="3" xml:id="pg_3"/>
+                <div subtype="index" type="section" xml:id="index"><head>Index</head>
+                  <list type="index"><item>Adenauer, Konrad, <ref target="#pg_1">1</ref></item></list></div>
+                """
+            let documents = [
+                "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Letter</head><p>Text.</p><pb n=\"2\" xml:id=\"pg_2\"/><p>More.</p></div>",
+            ]
+            try volumeXML(volumeId: "frus1961-63v06", front: front, bodyLead: "<pb n=\"1\" xml:id=\"pg_1\"/>",
+                          documents: documents, back: back)
+                .write(to: dir.appendingPathComponent("volumes/frus1961-63v06.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1961-63v06")
+            let store = try PageRangeStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+
+            // The Index line: page 3, which the break before the Index names and no document holds.
+            let index = await PageLink.destination(page: 3, volumeId: "frus1961-63v06", citing: nil, onDevice: true,
+                                                   store: store, map: { nil })
+            #expect(index == .document(volumeId: "frus1961-63v06", documentId: "index"),
+                    "the Index line opened \(String(describing: index))")
+            // The Preface line: a roman page, which the grammar must read before anything can open it.
+            #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_III", volumeId: "frus1961-63v06") != .unresolved,
+                    "the grammar reads the Preface line's #pg_III as nothing")
+        }
+    }
+
     /// `page_ranges` rows for a volume as `"<type> <number>"`.
     private func rawPageRows(_ dbURL: URL, volumeId: String) throws -> [String] {
         var db: OpaquePointer?
