@@ -610,6 +610,26 @@ Windowed Apps: all eleven fail under that mutant), and the document-window case 
 install and no launch argument sets it, so check it before reading a green run as a guard against
 the drop.
 
+**Its relaunch case, `testAWindowClosedWithDoneIsNotBackAtTheNextLaunch` (L40, decision 179), is the iPad's check of
+D1** (`Planning/iPhone-Duo-Assessment-2026-11-19.md`): on the iPhone Duo before L40 a window closed with Done stayed one
+of the app's windows, and the next launch read *2 Views Open*. The case opens Cross-Reference Analytics, taps Done,
+quits, launches again, then shows iPadOS's app switcher and counts the app's cards there: SpringBoard names each
+`card:<bundle identifier>:sceneID:<scene>`. **The count is the switcher's, not the element tree's.** On the Duo the
+closed window was never connected again, only listed, so a check of the tree would have passed the defect. Measured
+on 2026-11-27, each on a simulator made for the run:
+- **iPad Pro 13-inch (M5), iOS 27.2, Windowed Apps (its default):** passed (139 s): one card after the relaunch, and
+  no analytics in the tree. An earlier form, which counted no cards, drew the same switcher (235 s), and SpringBoard's
+  log never named the closed window's scene after the quit. Until the quit that scene stayed connected in the
+  background: 3 s after Done the tree still held its heading.
+- **The same, with Done made to front its launcher and leave its own window open:** failed on two cards, with no
+  analytics in the tree.
+- **iOS 27.0, Windowed Apps:** could not run. `backboardd` aborted on the Metal texture assertion below
+  (`MTLSimDevice newTextureWithDescriptor`), on the iPad Pro 13-inch at the app's first launch, before any window of its
+  own, and on the iPad Pro 11-inch (M5) as the analytics window opened. So on 27.0 the assertion is not the restored
+  windows' alone.
+
+It takes about four minutes on a fresh simulator, so pass `-maximum-test-execution-time-allowance 600`.
+
 **On 2026-11-16 its four rail cases could not be read on the iPad Pro 13-inch (M5) under 27.0, in Windowed Apps.** Each
 window a case opened aborted the simulator's `backboardd` on a Metal texture assertion (`MTLSimDevice`), which killed
 the test runner, on `v2`'s code as on L19's: seven reports between 11:50 and 12:43. The app then restored five window

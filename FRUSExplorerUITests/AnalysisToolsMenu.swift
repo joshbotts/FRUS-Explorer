@@ -144,11 +144,11 @@ enum AnalysisToolsMenu {
 /// Browse toolbar's.
 ///
 /// **On iPad it is a WINDOW, not a sheet, and that is why it survives.**
-/// `BrowserView.presentAnalytics` branches on `\.supportsMultipleWindows`: where the environment
-/// grants them — every iPad — it calls `appState.openAuxWindow` and the analytics surface is a
+/// `BrowserView.presentAnalytics` branches on `AuxWindowGate`: where it grants windows — every
+/// iPad — it calls `appState.openAuxWindow` and the analytics surface is a
 /// second window scene — `corpusAnalyticsScene`, a value-based `WindowGroup` the app's own scene
-/// table describes as *"Value-based — restores correctly"*. Only where the environment withholds
-/// multiple windows (iPhone) is it the `.sheet(isPresented:)` bound to `showAnalytics`. Restoring
+/// table describes as *"Value-based — restores correctly"*. Only where the gate withholds
+/// windows (every phone) is it the `.sheet(isPresented:)` bound to `showAnalytics`. Restoring
 /// correctly is exactly the property a test inherits here. **Nothing in the app restores
 /// it**: `showAnalytics` is plain `@State`, which no relaunch brings back, so an explanation
 /// reaching for the app's own persistence is looking in the wrong place — an earlier draft of this
