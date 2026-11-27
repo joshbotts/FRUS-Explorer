@@ -4959,3 +4959,66 @@ Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `
   - At three hops the timeline parks d16's 81 archival nodes in its Undated column as a grid that covers the axis from about 1955 to its end, over the dated documents there.
 - #1764's toggle: at three hops the iPad opens the list by itself, so the walk did not try it.
 - The three older saves (Search's sheet, the lasso, the Clusters index) could write through `WorkingCorpusCapture`, as Chronology will (L56).
+
+## Session 2026-11-27 — L56, a range of Chronology saved as a working corpus: every document whose dates overlap the range the screen shows, after a question that says what it holds, cut at the last whole day that fits over 7,500, from a This Range menu that keeps Done in an iPhone's bar; and #2012 seen in the app and fixed: Search in this range hands Search the days the screen shows, in any zone
+
+Row L56 of the plan of record from 2026-11-25 (decisions 184 to 186; #2012), on `claude/l56-chronology-range-corpus-00a5b8` from `v2` at `9e92080f`, L42's merge: a commit for #2012, one for the kit's rule and the index's read, one for the screen, a docs commit, and one correcting `documentKeysInDateRange`'s doc comment, on the owner's word. No stored property, so no CloudKit change; a read is added and nothing stored, so no index version.
+
+**Merges since the last entry**
+MERGES
+
+**#2012, shown first** (decision 183)
+- A DEBUG seam opens Chronology on a range a test names (`UITestBrowseSeams.chronologyRange`, `FRUS_UI_TEST_CHRONOLOGY_RANGE`). The compact pickers are set a month at a time through their calendars, and the manifest's latest year is 64 years after the browse fixture's 1962.
+- `ChronologyRangeHandOffTests` opens it on 1 January to 31 March 1962 and reads Search's *Narrowed by* chip after *Search in this range*. On the code before the fix (an iPhone 17 made for the row, iOS 27.0):
+  - in Tokyo's zone, *Remove the 1961-12-31 to 1962-03-30 filter*: a day early at both ends, as the issue read from the code, and the first time it was seen in the app;
+  - in New York's, with From moved to the 5th and Show not pressed, *Remove the 1962-01-05 to 1962-03-31 filter*: the pickers' days.
+- The first run of the Tokyo test on the fresh simulator failed before the hand-off: the first launch indexed the fixture as a queue, and the while-indexing guide came up over Browse as Analysis Tools opened. Alone on the same build it reached the chip. The fixture now taps through the guide when it opens.
+- The fix: both hand-offs pass `ChronologyViewModel.loadedRange`, the two days `reload()` loaded, written once in the device's zone; neither is offered while a load runs.
+
+**The rule, the kit's** (`FRUSCoreKit/Chronology/ChronologyRangeSave.swift`)
+- `ChronologyRangeSave.plan(entries:startISO:endISO:limit:)` over the range's documents. Its three counts are `ChronologyGrouping.kind`'s, `partition` and then `splitOverflow` over two dates (`ChronologyRow.spanDays(dateISO:dateISOMax:)` and `overflowDirection(dateISO:dateISOMax:startISO:endISO:)`, which the row's forms now call).
+- Over 7,500 the save ends the day before the one on which the 7,501st document by first day begins: every document of the shorter range, a day never split, first days in any order. A range whose first day with documents is already over is refused, with the day and its count.
+- The name (*Chronology, ‹the two days› — ‹stamp›*), the description (*Chronology, ‹the two days›: every document whose dates overlap the range*), the sentence of kinds, the cut, the legend's note and the two toasts in the question's place.
+- 11 tests in `ChronologyRangeSaveTests` (one over four budgets): the kinds against the screen's rules over `ChronologyOverflowLoad`'s three loads, the whole range under the budget, the cut at four budgets, a day never split, the order read, the refusals, the days either side across months, years and leap days, and the words.
+
+**The index's read**
+- `IndexingPipeline.documentDatesInDateRange(_:)`, through `chronologyRangeConditions`, the one builder of conditions the list's statement now uses too; `ChronologyUserSourceTests`' SHA-256 pin of the list's statements passed unchanged.
+- Ordered by first day alone. First ordered as the list orders a day's, it took 6.6 s for the whole series in the measure, where the list took 0.6 s; on the command line it waited on its sort, spilling to disk without a `LIMIT` (8.6 s at 24% CPU), and by first day alone, which the index gives with no sort and a covering index for the join, it took 0.7 s.
+- 3 tests in `ChronologyRangeReadTests`: the list's documents and dates, by first day; the list's conditions and binds, word for word; and no dated row whose document the index lacks, which the keys-only read takes. The second first passed vacuously, both extractions `nil`, and its `!= nil` expectation failed it: a multi-line literal's `ORDER BY` begins a line.
+
+**The screen**
+- A toolbar menu, *This Range*: *Search in this range*, *Word Cloud for this range* and *Save as Working Corpus…*. The save is offered whenever the range holds a document of any kind, the hand-offs where the summary line's link is drawn.
+- **The bar's fit, read first as the brief asked:** with *Save as Working Corpus…* as a sixth item, the save's UI test failed at "Chronology has no Done", and the UI's hierarchy at the failure showed the bar on the iPhone 17 at the default text size: Hide chart, Oldest first, Chart colors, Word Cloud for this range, Save as Working Corpus… and More, which held Done and About Chronology. At the largest size it shows four items and More, as before the row. So the range's actions are one menu, in Word Cloud's place.
+- The question through L42's helper, the record, the toast. The rule runs off the main actor. The iPhone's Chronology sheet takes the shared model container.
+
+**What did not hold** (decision 183)
+- "A second save from the next day on takes the rest": it takes again the documents whose dates reach across that day, 404 of 1945's.
+- The manifest's five years over 7,500: the index has eight, 1951, 1948 and 1954 too.
+- The bar's fit at the largest sizes: a sixth item did not fit at the default size.
+
+**Measured on a full index at version 76** (the kept `l31/v76-index`, read-only and immutable through the kit; a throwaway package test, run twice, deleted)
+- No dated row lacks its document, so the read, the list and the keys-only read took the same documents for every range.
+- October 1962: 1,195 documents in 28 volumes, 500, 25 and 670, the screen's split exactly. 1945: 12,030, saved to 14 August (7,492); 1944 to 27 October; 1954 to 30 November; the whole series to 18 December 1865.
+- Five words in October 1962's corpus and under the month's date filter, in as many documents each: 246, 279, 98, 191, 128.
+
+**Checks** (through `Scripts/heavy.sh`)
+- `swift build --target FRUSCoreKit`: no warning.
+- The package's Chronology suites and the graph's capture suite: 83 tests in 11 suites, none failed (84 in 12 with the throwaway measure). The first run did not compile: three `#expect`s compared array literals of `Int`, which `IndexPath` and `IndexSet` also take, so the comparison was ambiguous; a helper typed `[Int]` settled it.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone. One run failed in five seconds on a regex literal ending in a space, and the script went on to run stale products, two of whose "passes" ran no test; the scripts after it stop on a failed build, and every count was read back.
+- 23 scoped app suites there, 218 tests, none failed: the kit's and the read's suites, `CodingStandardsAuditTests`, `EditableContentKeyTests` (its first run found two ranges the row's edits had moved, on `ChronologyGrouping.swift` and `BrowserView.swift`, re-pointed), both boundary scans, the toolbar, scene, symbol, unconstructed-view and unreferenced-declaration audits, and the working-corpus suites.
+- The UI suites: iPhone 17 under iOS 27.0, 4 passed. iPad Pro 13-inch (M5), each test alone on a fresh boot: under 27.2, 4 passed; under 27.0, 3 passed, and the save test aborted `backboardd` at Done after the save in five runs of five, whether or not the toast was up (§5, *Found by L56*).
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+LANDING
+
+**Docs** (the fourth commit)
+- Both manuals: Chronology (§15.7) gains the menu and *Saving the range as a working corpus*, with a placeholder each for T3 (`ipad/chronology-save-corpus`, `macos/chronology-save-corpus`), and the working-corpus sections (iOS §6.1f and §7.9, macOS §7.9) name Chronology. `Docs/screenshots/README.md` names the placeholders.
+- EditableContent: 16 blocks added in `05-Analytics.md` (*Chronology — Save as Working Corpus (L56)*); 15 ranged blocks re-pointed, 13 on `ChronologyView.swift`, one on `ChronologyGrouping.swift` and one on `BrowserView.swift`; the README's count, and a bullet in `Amendment-Log.md`.
+- `.claude/rules/ui-tests.md`'s row and the runbook's entry for the two suites; the plan's L56 record with §5's *Found by L56*; this entry.
+
+**Offered, not taken**
+- The headline's two counts (L56's candidate, §5).
+- Three findings in §5 under *Found by L56*, settled by the owner's answers of 2026-11-28 ("File which?" and "Small notes", in the orchestrator's session):
+  - the iPad's Chronology window opens on 1969 and loads it: **filed as #2047** (bug, iOS), read from the code;
+  - under iOS 27.0, closing that window after a save aborted the iPad simulator's render server, which 27.2 did not: **a memory note** (`env_ipad_sim_backboardd_analytics`);
+  - `documentKeysInDateRange`'s doc comment said Search calls it: **corrected in this row**, in a commit of its own.
