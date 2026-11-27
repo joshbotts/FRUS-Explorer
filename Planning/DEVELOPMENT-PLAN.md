@@ -4748,9 +4748,226 @@ Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by 
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning.
 - `swift test` was not owed: the diff names no package input.
 
+## Session 2026-11-27 — L30, Citation Lookup: a document number read as the volume prints it, Document 1190b, Document C, Document GT–6, so the app's own citation of 722 documents finds each one, and a number with a letter the volume does not print finds the document of its digits as a best guess
+
+The plan of record's session started this one for row L30, on `claude/l30-citation-printed-number-2e294d` from `v2` at `a17023f9`, L27's merge. The row: #1977, Citation Lookup reading only a citation's digits, so Cite's own citation of a document whose printed number is not whole named another document or none. Commits: `e871df1c` (the failing tests, first), `802b652f` (the fix), `204e915e` (a test the package does not compile), `cbf60d59` (the manuals, EditableContent and the plan) and `89593c96` (the plan's record of the Mac walk), with the landing's.
+
+**#2034's merge**
+- L57 merged as `7ccecacb`, a squash onto `4fa33ba3`, at 13:53:31 UTC on 2026-11-27, from its head `68f863d7`. Its tree, `91edcc8f`, is the head's. It closed #2013. This entry records it.
+- L41's #2032 (`4fa33ba3`) is recorded in L57's entry above, and so back to this row's start: L37's #2031 in L41's, L32's #2030 in L37's, L29's #2029 in L32's, L33's #2028 in L29's, L61's #2027 in L33's, L28's #2026 in L61's, L31's #2025 in L28's, and L27's #2021 (`a17023f9`), where this row began, in L31's.
+
+**The defect, first** (decision 183)
+- **Measured over a full index at version 76** (L31's kept index, 553 volumes): 722 of 314,646 numbered documents print a number that is not whole, as the issue counts them.
+  - 82 with a lower-case letter, in 22 volumes, and `frus1955-57v03mSupp`'s `550A`. Each one's digits' document is in its own volume.
+  - 628 with a capital prefix, an en dash and a number, in 17 series, all in `frus1958-60v05mSupp`, where no document prints a plain number.
+  - 11 single letters, appendices in three 1981–88 volumes.
+  - No volume prints two numbers that differ only in case.
+- **Four tests committed before the fix** (`e871df1c`), run in the package on `v2`'s code: all four failed, with 61 issues.
+  - The app's own citation, made as Copy Citation makes it, in all three formats, marked and plain: `frus1898`'s 1190b and 1190a answered d1190, "Match — document number assigned digitally"; `frus1955-57v03mSupp`'s 550A answered d550 as "Exact match"; `frus1981-88v05`'s appendix C and `frus1958-60v05mSupp`'s GT–6 found nothing.
+  - The round trip of every bundled volume by a printed number that is not whole, one of the four kinds in turn: 71 of the 551 volumes not excused missed their own volume in history.state.gov and Chicago form, and 69 in Turabian form, marked or plain, where none did by document 1. The title fragment kept the number's letter, or the whole of "Document C".
+
+**A claim of the brief that does not hold** (decision 183)
+- The brief gives the digits fallback as "so that *Document 1190* still reaches 1190b". `frus1898` prints a Document 1190, so that citation asks for 1190 and finds d1190, as the issue's own test expects. The fallback answers only a letter the volume does not print: "Document 1190c" finds d1190.
+- The issue's and the plan's `ParsedCitation` is `CitationInput` (`CitationModels.swift:44`).
+
+**The owner's two answers**
+- Decision 214: how that fallback's answer is labelled. The owner chose "Best guess (Recommended)": "Best guess — this volume prints no document 1190c", with a note to check the citation, as the engine's rule since #1474 has every result that fails a cited field.
+- Whether L30 waits for the by-hand Mac walk, the screen being locked overnight: "Wait for the walk (Recommended)".
+
+**The fix** (`802b652f`, `204e915e`)
+- **`CitationInput.documentNumber` is the printed number**, a `String?`, where it was an `Int?` of its digits. `CitationParser.normalizedDocumentNumber(_:)` is the one rule the parse and the Document field read it by: digits lose their leading zeros, a prefix and a single letter are capitals, a prefix's dash is the en dash, and a number's letter keeps its case.
+- **The parser** reads a number with one letter, a capital prefix with a dash and digits, and a single capital letter. The title fragment loses the whole number.
+  - **The guards are the corpus's own.** Over the 43,496 clauses of the index's text that name the series (from `FRUS` or `Foreign Relations` to the next semicolon, at most 300 characters), a letter read after any capital that followed "document" read eleven, each another kind of document: the pronoun in "this document I have", "Executive Document B" and "S. Ex. Doc. B" of the Senate, "U.N. Doc. A /70". So a single letter is read only after "Document" with its capital or "doc.", not after "Executive", "Ex." or "U.N.", and where a citation ends it. A number's letter followed by a decimal point is the file's: `File No. 851R.00` reads 851, as before.
+  - **As written**, two of the 43,496 read a number other than before, an NSC action each (`No. 487a`), which the digits alone misread as documents 487 and 266 too. No clause reads a single letter, and the title fragment of those two alone loses more.
+  - The patterns were checked under ICU with the file's own strings, 22 cases.
+- **The engine** asks for the printed number, which the index's lookup by number (`document(forDocumentNumber:inVolume:)`, one read of `IndexingPipeline.swift`) now matches as written and then ignoring case: `1190B` finds 1190b, and `550a` finds 550A, not its neighbour 550.
+  - A number with a letter that no volume the lookup reads prints falls back to its digits (`letteredNumberFallsBack(_:among:)`), and the document found is a best guess naming the number. Decided once per lookup, "only when the token finds nothing": before 1955 the lookup reads every candidate past a hit, so a fallback volume by volume would have answered a number one volume prints with another's document of its digits as well.
+  - No fallback beside a history.state.gov link (#1474 review round 1), in a volume whose index cannot yet say what it holds (#1522), or for a prefix or a single letter.
+- **The form.** A paste fills the Document no. field with the printed number, and Structured Entry reads the field by the same rule. On iOS the field's number pad, which typed no letter or dash, is the numbers-and-punctuation keyboard. A link to `…/d373a` fills `373a`, where it filled nothing. Batch reads each note through the parser.
+- **Tests:** the four defect-first ones, with exact labels added, and two more in the indexed suite (the once-per-lookup fallback, and none where the index cannot answer); in `CitationParserTests` the three forms, the typed forms, the corpus's own eleven false readings, the title fragment and the field's rule; in `CitationLookupFieldsTests` the Document field. The round trip reads every bundled volume's own citation by each of the four kinds as it reads document 1 (2,212 of 2,212 a format).
+
+**Public API and the symbol diff**
+- `CitationInput.documentNumber`, `String?`; `CitationParser.extractDocumentNumber(from:)`, `String?`; new `CitationParser.normalizedDocumentNumber(_:)`, `ConfidenceLabels.numberNotPrinted(_:)` and `.numberNotPrintedNote`. Nothing the indexer stores changes, so no index version.
+- `FRUS-API.openapi.yaml`: `/citation-lookup`'s `documentNumber` is a string, with the forms and the fallback; `CitationMatch` is unchanged.
+- **The symbol diff** of the Mac debug dylibs (`nm -U -j`, fully demangled, private discriminators and closure numbers dropped), each built unsigned in Debug from empty, `v2` at `a17023f9` from a `git archive`: 253,103 names on `v2` and 253,162 here, 80 removed and 139 added.
+  - Removed: `CitationInput.documentNumber` and its initialiser as `Int?`, `extractDocumentNumber(from:) -> Int?`, the engine's `matchByDocumentNumber` and `qualified` with their async parts and closures, and the Parsed Fields section's SwiftUI types.
+  - Added: the same as `String?`; the rule, the patterns and their initialisers; the two labels; `letteredNumberFallsBack(_:among:)`; the new `matchByDocumentNumber` and `qualified` with the tuple they return; and the Parsed Fields section's types under the Document field's new modifiers.
+  - Nothing of `SearchService` or `IndexingPipeline` moves.
+
+**W2's candidate, offered and left** (decision 183): a pasted citation's result names its document by id alone (`CitationLookupView.swift:779` now). Naming it by its head would take a field on `CitationMatch`, a public type with an OpenAPI schema, or an index read for each row, and the row changes neither. It stays in the plan's §5, which says so.
+
+**The manuals and EditableContent** (`cbf60d59`): both manuals' §11.4 say how a number is read and what the fallback's best guess says, with their *AI Generated* notice kept; `08-Reading-Research-Collections.md` gains the two new strings' blocks, and the twelve ranges the row's lines moved start on their keys again (`Amendment-Log.md`).
+
+**Checks**
+- `swift build --target FRUSCoreKit`: no warning. The package's citation suites, 167 tests in 15 suites, passed, the eleven new tests and the three changed among them.
+- **The unit target, scoped,** on the iPhone 17 under iOS 27.0: the citation suites, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `CitationLookupViewWiringTests`, `IntegrationTests` and both boundary gates, 257 tests, all passed, with no source warning. Its first run found one test the package does not compile, `CollectionTests`' injected matcher keyed on an `Int` (`204e915e`).
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- **By hand, on the Mac,** in the check copy at `cbf60d59`, on 2026-11-27 once the screen was unlocked:
+  - Copy Citation for `frus1898` d1190b copied "Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1898 (Washington, D.C.: Government Printing Office, 1901), Document 1190b."
+  - Pasted into Citation Lookup, it read Subseries 1898 and Document no. 1190b, and found d1190b, one result, "Match — document number assigned digitally".
+  - "FRUS, 1898, Document 1190c" found d1190 as "Best guess — this volume prints no document 1190c", with its note and the digital-number label after it.
+  - A link to `…/frus1898/d1190b` filled the Document no. field with 1190b and found d1190b.
+
+**The landing checks,** on the merged tree (`e2ba6376`, tree `17db5347`, with `v2` at `7ccecacb`), in one `Scripts/heavy.sh` job:
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,381 tests in 1,012 suites passed in 816 s, with the six known issues and 17 skipped. L57's landing ran 8,370, and this row adds 11. Its build printed the two known residues and no other warning.
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,284 tests in 610 suites over 39 runs, and none failed. L41's landing ran 5,273, L57 changed no package input, and the package compiles this row's 11 too. Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- **The symbol diff, re-taken** against `v2` at `7ccecacb`, from a `git archive` built the same way: 253,406 names there and 253,465 here, 80 removed and 139 added, the same names as against `a17023f9`.
+- `Scripts/check_repo_hygiene.py`, on the merged tree: six checks passed.
+
+**For the owner**
+- **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+- **After the merge:** #1977's hand-over note for FRUS Explorer Light, shown to the owner before it is posted.
+
+## Session 2026-11-27 — L39, links that open nothing: a volume's Contents opens its Preface, its lists and its Index, and a page link whose page no document holds opens the division that begins on it
+
+The orchestrator session ("Development session orchestration") started this one for row L39 of the plan of record from 2026-11-25 (F7, decision 178), on `claude/l39-links-that-open-nothing-bddfae` from `v2` at `2db58c5a`, L29's merge. The row: a volume's Contents links its front matter by roman page (`#pg_III`), which the kit's grammar read as nothing, and its Index by the arabic page before it (`#pg_315` of `frus1961-63v06`), which no document holds, so `PageLink` opened nothing; L26 stored the page each division begins on for this tap. Commits: `7bfe9121` (the test, first), `c92b89b3` (the fix), `f239e046` (the docs) and `7bac6605` (the symbol diff's record); at the head of the queue, `v2` at `8d38c5ab` taken in (`97b7dd5b`), the pipeline's version history (`803ce6a8`) and the landing's records.
+
+**#2035's merge**
+- L30 merged as `8d38c5ab`, a squash onto `7ccecacb`, at 15:13:27 UTC on 2026-11-27, from its head `300a08fe`. Its tree, `7af8ee6f`, is the head's. It closed #1977. This entry records it.
+- L57's #2034 (`7ccecacb`) is recorded in L30's entry above, and so back to this row's start: L41's #2032 in L57's, L37's #2031 in L41's, L32's #2030 in L37's, and L29's #2029 (`2db58c5a`), where this row began, in L32's.
+
+**Each defect first** (decision 183). The row's test, committed alone first and run on `v2`'s kit through `Scripts/heavy.sh` (`swift test --filter FRUSCoreKitTests.IndexVersion76Tests`), failed on both counts and on nothing else: the Index line's destination was nil ("the Index line opened nil"), and the grammar read `#pg_III` as `.unresolved`. The suite's other seven tests passed.
+
+**Measured, before changing anything.** A harness (stdlib Python, in the session's scratchpad) read every `<ref target>` whose anchor is a page in the 553 catalogue volumes at corpus `216cdb764`, 2,170,212 of them, most of them an index's page numbers, through the grammar's rules, and answered each from a full index at version 76 of the same files (24,009 `division_start_pages` rows in 552 volumes; its volumes' git blob SHA-1s are the corpus's), taking each target volume as on the device:
+- **Today 5,536 open nothing; with the row's rule, 559.** In a volume's Contents, 2,306 of 19,453 did and 89 do. All 2,472 to a roman page did (1,493 in a Contents, 64 into another volume), and 89 do. Of the 3,056 to an arabic page no document holds, 2,594 open a division. Of the 4,202 links that now open a division, roman or arabic, by its subtype: `index` 1,047 (the Index, and the lists of abbreviations and of persons, which the corpus types alike), a referral 734, a compilation's title page 718, a chapter's 515, a preface or an introduction (`preface`) 384, the Sources 249; 775 more open the section a roman page is printed in.
+- **§5's candidate, the 608** (L6's population at `6170e4b32`: page links into another volume from a document's text and notes): 48,608 such links here, 626 naming no document; the rule opens 432, 200 of them a compilation's title page. The 194 left are pages printed inside the Index or a list, pages whose break does not parse, and pages the cited volume does not print.
+- **Where a division and a section share a roman page,** 12 references name a page where a division begins and another section is printed and no document begins, four of them Contents lines: `frus1921v01`'s line for the President's second message links `#pg_XX`, whose break ends the first. So a division comes before the section the page is printed in.
+- **Found, offered and not taken:** 405 Contents lines name a division that begins part-way down a page another document runs onto, and open that document (`frus1907p1`'s line for the Danish trade-marks agreement, `#pg_305`, opens `d261`). The page index answers first, and its answer is the stored edge's (#1509).
+
+**The fix** (`c92b89b3`)
+- **The grammar** (`FRUSURLScheme.resolveCrossRefTarget`): `CrossRefDestination.romanPage(volumeId:page:)`, for `pg`/`page`, an optional `_`, and letters `PageNumber.parse(_:)` reads as a roman numeral (`FRUSURLScheme.romanPage(ofAnchor:)`); any other page anchor stays `.unresolved`. Nothing the index stores moves: `SettledCrossReferenceTarget` keeps such a row as collected, as it kept `.unresolved`; both page passes filter `GLOB 'pg_[0-9]*'`; the converter's citing hint, `PageReferenceForm` and the generators read `.page` alone. CrossRefKit's twin has the case (`RefDestination.romanPage`, `CrossRefGrammar.romanPage(ofAnchor:)`), `CrossRefGrammarAppParityTests` holds the two to each other over eight cases, and `citedDocument` is nil for it, so neither the edge nor the flow generator's output moves.
+- **`PageLink`:** on the device, the page index first, as before; where it names no document, the outermost division that begins on the page; then the map. `destination(romanPage:volumeId:onDevice:store:)`: a document that begins on the page, else the outermost division that begins on it, else the section the page is printed in (`PageSpanResolver.romanPageDocument(rows:divisions:)`); not on the device, the volume, naming no page, since Browse names an arabic one (`PageLink.volume`'s `page` is `Int?`).
+- **`PageRangeStore.divisions(startingOn:inVolume:)` and `document(forRomanPage:inVolume:)`** read on the reader's own read-only connection, through `PageSpanResolver.divisionsStartingOnPageSQL`, which `IndexingPipeline.divisions(startingOn:inVolume:)` now runs too, and `romanPageRowsSQL`. The plan named the pipeline's read for the tap; a tap would wait on that actor while it indexes, as every library does at 1.1's first launch.
+- **Both readers:** `.romanPage` goes to `resolveRomanPageReference(page:volumeId:)`, which asks `PageLink` as `resolvePageReference` does; a division opens by its id, as Browse opens a front-matter section.
+- **Tests:** `IndexVersion76Tests.contentsLinesOpenWhatTheyName` (the shape of `frus1961-63v06` with `frus1921v01`'s two messages, indexed through the pipeline and read through `PageRangeStore`: every Contents line opens what begins on its page, the page index first, a page the Preface is printed on opens the Preface, a blank page nothing, each division one the parser opens by its id, the store's read the pipeline's); `RomanPageDocumentTests`; `ReaderLinkTests.aRomanPageAnchorIsRead` and `aPageNoDocumentHoldsOpensItsDivision`, with the Contents line's href in the table; `CrossRefResolverTests.pageAnchors` brought to `.romanPage`, the reason written there; the twin's table and the parity suite.
+
+**Docs.** Both manuals' passages on a link to a printed page (the iOS manual's §8.1, the Mac's table of links in §8.2). EditableContent: 13 ranges re-pointed on the two readers (the eight on `DocumentView.swift` again at landing, from the numbers L37 and L41 left), a bullet in the Amendment-Log, no text changed. The plan's L39 record and §5's *Found by L39*.
+
+**Checks.** While developing, in one `Scripts/heavy.sh` call: `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,261 tests in 611 suites over 39 runs, none failed (two older warnings, the unused bindings `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`); a `build-for-testing` from empty on the iPhone 17 under iOS 27.0, the two known residues alone; 16 suites there, the row's and the gates' (`ReaderLinkTests`, `IndexVersion76Tests`, `PageSpanResolverTests`, `RomanPageDocumentTests`, `CitationLookupIndexedTests`, `CrossRefResolverTests`, `CrossReferenceStoreTests`, `AppStateTests`, the reader's and the export's pins, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans and `AppSourceTreeTests`), 270 tests passed, none failed or skipped. The Mac build: succeeded, the two known residues alone.
+
+**At the head of the queue,** on `803ce6a8` (tree `ca63ccfc`; the merge `97b7dd5b` took `v2` at `8d38c5ab` in), in one `Scripts/heavy.sh` call from 15:21 to 15:43 UTC:
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,288 tests in 611 suites over 39 runs, none failed, with the same two older warnings.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,385 tests in 1,013 suites, 8,367 passed, none failed, 17 skipped as at L37, and the one test with the six known issues.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**The symbol diff** (the orchestrator's word, since the row changes public API). Unsigned Debug `FRUSExplorerMac` of `v2` at `2db58c5a`, a `git archive` built from empty in a folder of its own (`~/Library/Caches/FRUS-Explorer/l39/symdiff`), beside the branch's Debug `FRUSExplorerMac` from the development run, of `c92b89b3`'s code; neither launched. `nm -j` of each `FRUS Explorer.debug.dylib`, demangled, with private discriminators, closure numbers and local symbols' numbered suffixes dropped: 256,839 names on `v2` and 256,891 here, 2 removed and 54 added (raw, 267,886 and 267,942).
+- **Removed, 2:** `PageLink.destination(page:volumeId:citing:onDevice:deviceDocument:map:)`, back among the added with `deviceDivision:`; and `PageLink.volume`'s `(volumeId: String, page: Int)` payload, now `page: Int?`.
+- **Added, 54, every one the row's own:** the page destination with `deviceDivision:` and two more suspension points of its async read (3); the two roman destinations and their parts (3 and 5); `PageRangeStore`'s two reads with their `defer`s (2 and 2); the two shared queries (6 each) and `romanPageDocument(rows:divisions:)` (2); `FRUSURLScheme.romanPage(ofAnchor:)` (2); the Mac reader's `resolveRomanPageReference(page:volumeId:)` and its task's closures (13); `PageLink.volume`'s new payload (1); the rows' `(documentId:isStart:)` tuple and array (9).
+- `CrossRefDestination.romanPage` adds no symbol (its enum is not resilient), and CrossRefKit's twin is the package's alone.
+
+**Owed after the merge:** a hand-over note for FRUS Explorer Light, shown to the owner first (`CrossRefDestination.romanPage` is a new case its `ReaderLinks.swift` switch must take; `PageLink.destination(romanPage:volumeId:onDevice:store:)` answers it); and the memory hub's record of the row.
+
+## Session 2026-11-27 — L42, the cross-reference graph saved: every document it holds as drawn, as a working corpus after a question that says what the save holds, or as the seeds of an Archives Visit through the picker every add flow presents, with a line that says what a visit of them lists; a footnote's central-file class is a target only where a document's own source note names it (#1990)
+
+Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `claude/l42-graph-saves-a7b657` from `v2` at `24616a57`, L33's merge: a commit for each save, then a docs commit (`f7cf1b7d`, `1aaf06df` and `316c8807`); at the head of the queue, `v2` at `1778feac` taken in (`8cd4233d`) and the landing's records. No stored property, so no CloudKit change; no index version.
+
+**#2036's merge**
+- L39 merged as `1778feac`, a squash onto `8d38c5ab`, at 16:21:45 UTC on 2026-11-27, from its head `4d796de9`. Its tree, `05d5a677`, is the head's. It closed nothing: F7 has no issue. This entry records it.
+- L30's #2035 (`8d38c5ab`) is recorded in L39's entry above, and so back to this row's start: L57's #2034 in L30's, L41's #2032 in L57's, L37's #2031 in L41's, L32's #2030 in L37's, L29's #2029 in L32's, and L33's #2028 (`24616a57`), where this row began, in L29's.
+
+**The rule, the kit's** (`FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift`, display 1.3)
+- `CrossReferenceGraphDisplay.capture(nodes:edges:graph:dateValues:dateWindow:)` → `CrossReferenceGraphCapture`.
+  - It reads the graph as built (the view model's `baseDisplayNodes`), never the timeline's displayed nodes, whose date clusters fold documents.
+  - It takes every document at the depth loaded, in the display build's order, nearest first. A volume cluster's documents come from the loaded graph's own direct references, in the cluster's place by key; a date cluster gives its members; documents in volumes not downloaded are taken too.
+  - Page nodes are left out and counted. The archival nodes are reported by the saved documents they hang off, by the edge that ties them.
+- **A brushed range.** The view model passes `drawnDateWindow`, the brush while the timeline is drawn and `nil` in the network.
+  - A document dated outside the range is left out, and an undated one stays, as the Undated column draws it.
+  - A closed volume cluster's documents are held to the range by their own dates, so the set is the same whichever clusters are open.
+- **Words:** the central document's label (`frus1952-54v02p1, Doc. 16`, the graph's own `graph.node.docNumber %@`), the depth, the range's two days, the name and description, the cited-pages line, the empty case, the picker's line and the toast.
+- **Tests:** `CrossReferenceGraphCaptureTests`, 16, in the file of the graph's suites, compiled in Xcode and in the package.
+
+**Save as Working Corpus** (`f7cf1b7d`)
+- *Save As ▸ Working Corpus…*, in the graph's toolbar (a named `Label`, R-8) and in a bar under the reference list (`ReferenceListPanel` 1.6), the graph an iPhone opens on.
+- A question first (`View.workingCorpusSave(_:outcome:)`): the description, the coverage line, the line for the 7,500 cut when it applies, and the cited pages left out.
+- **Save** writes the record the Clusters index and the lasso write: the keys, no query, the description, the volumes indexed at capture and both truncation fields.
+  - It is named by rule, `Cross-references of <volume>, Doc. <n> — <stamp>`.
+  - A save that fails takes its corpus out of the context again.
+- Then a toast (`transientToast`), which VoiceOver hears.
+- **The helper L56 uses:** `WorkingCorpusCapture` (kit, `Models/WorkingCorpusResolver.swift`), and the modifier with `WorkingCorpusCapture.save(in:indexedVolumeCount:)` (app, `Search/SaveWorkingCorpusSheet.swift`, beside Search's sheet). Neither file is in the row's list; no other row's list names them.
+
+**Add to Archives Visit** (`1aaf06df`)
+- *Save As ▸ Archives Visit…* opens `PlanPickerSheet`, the picker every add flow presents. It takes the same documents as seeds, both halves on, with the subject as the New row's name, and writes through `ArchiveVisitPlan.addSeeds` (`ArchiveVisitPlanWrites.addingSeeds`).
+- **The line, before the write.** The graph builds the packet the editor would derive from these seeds (`TripPacketBuilder.build`, the editor's `TripPacketDataSource`, `TripPacketIndexes.bundled`), and the line says:
+  - how many targets a visit of them lists on this device, and from how many indexed documents where some are not;
+  - how many of the graph's central-file classes are among them.
+- Then *Added 145 documents to “…”* in the graph's toast.
+
+**What did not hold** (decision 183)
+- The brief's "A visit keys every footnote citation, joined or not", and its by-hand line's "every unit and class the graph drew".
+- The packet's footnote channel leaves the class anchor out (`ExternalCitation.anchorsOutsideThePacket`, #784's scope), and `TripPacketBuilderTests.refsChannelFiltersAndMerges` pins it. So a class the graph draws for a footnote is a target only where a seed's own source note names it.
+- Units hold: every joined citation behind a unit is a target, 104 of 104 for d16.
+- The picker's line says how many of the graph's classes are listed. Whether a visit from the graph should list a footnote's class is the owner's to decide, since it would change the packet for every add flow.
+
+**Measured on a full index at version 76** (L31's harness index; a throwaway package test, deleted after its run, through the kit's store, display build, unit nodes, the rule and the builder)
+- **d16 at three hops:** 247 nodes.
+  - The saves take 145 documents and leave out 21 cited pages.
+  - Its 72 unit nodes stand for 17 records and its 9 class nodes for 8 classes, from 57 of the documents.
+  - A visit lists 49 targets: 43 from source notes, 17 from footnotes, overlapping. 5 of the 8 classes are among them.
+- **At one hop:** 15 nodes, 10 documents and 1 page, with 4 unit nodes.
+- **NSC 68 (`frus1950v01` d85) at three hops:** 1,259 nodes in 13 volume clusters and the rest.
+  - The saves take 844 documents and leave out 98 pages.
+  - A visit lists 253 targets, 36 of the 61 classes among them, and 7 packet-channel citations that join no record and draw no node.
+- **Seeds in the hundreds:**
+  - `addingSeeds` minted 844 seeds in 2.3 ms, and took 1.0 ms to find all 844 already there.
+  - The packet behind the line took 0.35 s for 844 seeds, and 0.80 s for the first build, which decodes the bundled indexes.
+  - A collection's record already adds up to 17,613 seeds through the same write. So the action is offered at every size.
+
+**By hand** (a throwaway XCUITest, appended to `AuxWindowCloseTests.swift` for the run and restored after it)
+- The device: an iPad Pro 13-inch (M5) of the session's own, under iOS 27.0, in landscape and in Full Screen Apps, with S1's volumes and L26's index at version 76. `FRUS_UI_TEST_MODE` kept SwiftData in memory and hid the tips.
+- d16 at three hops, *Working Corpus…* from the toolbar. The question read "Cross-reference graph of frus1952-54v02p1, Doc. 16, at three hops. 145 of 145 documents indexed on this device. The graph’s 21 cited pages are not documents and are left out." Save said "Saved as the working corpus “Cross-references of frus1952-54v02p1, Doc. 16 — Nov 27, 2026 at 5:22 AM”".
+- *Archives Visit…* from the list's bar. The picker's line read "… at three hops. On this device a visit of these documents lists 49 targets. A footnote’s central-file class is a target only where a document’s own source note names it: 5 of the graph’s 8 classes." New Archives Visit said "Added 145 documents to “Cross-references of frus1952-54v02p1, Doc. 16”".
+- The counts are the full-index measure's. The records themselves were not read, since the store was in memory.
+- **No spinner.** XCUI's first look after the item found the picker's line, but that look's own snapshot took 7.6 s, so the walk bounds the wait only under 9 s. The packet behind the line built in 0.35–0.80 s on this Mac, and both Save As controls are disabled while it is read.
+- **The first run failed in Windowed Apps,** a fresh iOS 27.0 simulator's default. The rail's Graph opened in a window of its own over the reader, and XCUI's next query timed out after 60 s on a remote element of the reader's web view. The second run chose Full Screen Apps in Settings first, so the graph opened as a sheet, and went through.
+
+**Review:** one pass on the diff. It found two comments to correct, folded into the visit commit:
+- `GraphSaveMenuItems.actions` had no doc comment.
+- The Mac graph window's scene said nothing under `CrossReference/` reads `@Query` or `\.modelContext`, so its container was latent. The corpus save now writes through the context and the visit picker reads `@Query`, so the comment says the container is live since #1990, and Source Explorer's beside it no longer calls the graph's latent.
+
+**Docs** (the third commit)
+- Both manuals: the graph's sections (iOS §8.6, macOS §8.5) gain *Saving the graph*, with two placeholders each for T3. The working-corpus and Archives Visit sections (§6.1f, §7.9, §14.8, §18.3) name the graph, and §18.3's first step now says the plan resolves each source note and every lot and library a footnote cites, where it said every footnote citation.
+- `Docs/screenshots/README.md` names the four placeholders.
+- EditableContent:
+  - 28 blocks added in `05-Analytics.md` (*Cross-Reference Graph — Save As (#1990)*).
+  - 12 ranged blocks on `CrossReferenceGraphView.swift` re-pointed, each to start on its key: nine in `05-Analytics.md`, three in `08-Reading-Research-Collections.md`.
+  - The README's count, and a bullet in `Amendment-Log.md`.
+- The plan's L42 record, and this entry.
+
+**Checks** (through `Scripts/heavy.sh`)
+- `swift build --target FRUSCoreKit`: no warning.
+- The package's suites for the graph, working corpora, the packet and the plan derivation: 82 tests in 7 suites passed, the new suite among them.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- 17 scoped app suites there: 218 tests passed. They include the 16 new tests, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans, the toolbar, Mac sheet and unconstructed-view audits, and the working-corpus suites.
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- **At the head of the queue,** on the merge `8cd4233d` (tree `74b470a9`, with `v2` at `1778feac` taken in; three conflicts, each where both sides had appended), in one `Scripts/heavy.sh` call from 16:42 to 17:03 UTC:
+  - The unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,401 tests in 1,014 suites, 8,383 passed, none failed, 17 skipped as at L37, and the one test with the six known issues, in 781 s. L39's landing ran 8,385 in 1,013 suites, and this row adds 16 in one. `RichTextRestingCapTests` passed in the run, so the script's rerun of it was not needed. The build printed the two known residues and no other warning.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,304 tests in 612 suites over 39 runs, none failed, with the same two older warnings (the unused `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`). L39's landing ran 5,288 in 611.
+  - The `FRUSExplorerMac` build: the residues alone.
+  - `Scripts/check_repo_hygiene.py` on the merge: six checks passed. Every ranged EditableContent block still holds its key there (1,364), by a port of `EditableContentKeyTests`' rule run before the unit target, which ran the test itself.
+
+**Offered, not taken**
+- Two layout findings from the walk, in the plan's §5 under *Found by L42*:
+  - The network's three-column layout for a small graph (`standardLayout`) places no archival node: d16 at one hop draws none of its four units there, where the timeline draws all four.
+  - At three hops the timeline parks d16's 81 archival nodes in its Undated column as a grid that covers the axis from about 1955 to its end, over the dated documents there.
+- #1764's toggle: at three hops the iPad opens the list by itself, so the walk did not try it.
+- The three older saves (Search's sheet, the lasso, the Clusters index) could write through `WorkingCorpusCapture`, as Chronology will (L56).
+
 ## Session 2026-11-27 — L34, one plan for three formats: FRUSCoreKit resolves each document of a collection into the lines it prints, and the web page, the PDF and Word draw them; the source note once, the contents numbered alike and the PDF's past its first page, a title over *As published:*, the volume's note numbers in Word, a heading and a dateline read once; Word's contents linked rows with no page field; R2b's finding taken
 
 Row L34 of the plan of record from 2026-11-25 (the Collections design's lane 2 and §3.8; #1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003, #2007, and #2005's sentence), started by "Development session orchestration" on `claude/l34-one-plan-three-formats-e90101`, from `v2` at `7ccecacb` (L57's merge). Kit and app code: package input, so `swift build --target FRUSCoreKit` and `swift test`; no stored property, no CloudKit identifier and no index version. Commits: `2e95dc92` (the plan, its formats, the candidate, the tests, the pins and the docs) and a records commit.
+
+**#2037's merge**
+- L42 merged as `9e92080f`, a squash onto `1778feac`, at 17:54:53 UTC on 2026-11-27, from its head `c20b4e4e`. Its tree, `6654cbbd`, is the head's. It closed #1990. This entry records it.
+- L39's #2036 (`1778feac`) is recorded in L42's entry above, L30's #2035 (`8d38c5ab`) in L39's, and L57's #2034 (`7ccecacb`), where this row began, in L30's.
+- This branch took `v2` in at `9e92080f` (⟦MERGE⟧). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decisions are 215 to 217, after L30's 214.
 
 **Shown first** (decision 183)
 - **In 1.0 (1861),** in a Mac check copy the session built at `1.0-release` (`08e8bac8`) under a bundle id of its own, with `frus1961-63v11` and `frus1946v06` seeded, and removed after. One collection (a section, `frus1961-63v11` d1, `frus1946v06` d474 and d475, *Full text as printed*) as a web page, Word and a PDF, and one of 45 documents (d470–d514) as a PDF.
