@@ -4165,3 +4165,41 @@ Row CR of the plan of record from 2026-11-25 (decision 149), started from the pl
   - the plan of record kept L26's decision 191 and dropped CR's copy;
   - L53's brief was brought to decision 191.
 - **The design's status** stays PROPOSED until C2.
+
+## Session 2026-11-26 — L28, the rehearsal: the runbook's corpus phases and step 11's pack run on `v2` at L26's merge, every file accounted for, two generators' defects filed, and `New-Volume-Release-Plan.md` brought to what the run found
+
+Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Development session orchestration", which runs 1.1's queue, on the owner's word that L28 "runs its phases pinned to L26's merge (bbe6686c) when the lock is quiet, e.g. overnight, and lands whenever it is done". Documents only: no regenerated file is committed. The last merge before this entry is CR's, #2020, as `af771601`: a squash onto `bbe6686c` on 2026-11-26 at 23:14:57 UTC, from its head `a79a6780`, tree `1120d01a` (the head's), closing no issue. This branch took it in by a fast-forward before its first commit.
+
+**What ran** (`New-Volume-Release-Plan.md` §10a has each file)
+- **Where.** The fourteen release generators built in a detached checkout of `bbe6686c` outside this worktree, in 135 s; every run there, at its bundled file's own `generated` stamp, its output in a scratch folder. Each phase was one `Scripts/heavy.sh` job, and L27's and L31's jobs ran between them.
+- **Step 1, read only.** A `git fetch` of `~/Development/frus` found `origin/master` at `216cdb764`, its head; no file under `volumes/` differs from `6170e4b32`, the commit the bundle names.
+- **Phase A.** The manifest online, with no `GITHUB_TOKEN`, twice; the taxonomy over a copy of the bundled file.
+- **Phase B's keyless path** (steps 4 and 6), which the brief did not name: Phase C's readers take the authority that step 6 writes, and the brief's last bullet counts its moves.
+- **Phase C.** The authority's three readers on both authorities, the shipped one, to tie each figure to L26's, and the regenerated one, as R10 will run them; the edge index and page map from a full index at 76; the annotations index on it; the source provenance, the administrations, the cross-reference validation; `CloudVectorsGenerator` with `VERIFY_PRINTED_WALK=1`, since its tokenizers moved into WordCloudKit (#1979) and the OS is 27.2.1 where the files were written under 27.0.
+- **Step 10's read-only half and step 11**, from EmbeddingGemma 2's store, with no new harvest: the store's checksums and contract, the pool, the layout and the pack.
+
+**What it found**
+- **The moves since 1.0 changed nothing a generator writes.** Byte for byte the bundled file: the manifest (at its second run), the taxonomy, the volume sources, the external citations on the shipped authority, the edge index and the page map, the annotations index, the source provenance, the administrations, the broken references and the validation's two report files, the five semantic files and all 553 shards, and the four word-cloud files under `VERIFY_PRINTED_WALK=1`, whose walk found every lens's printed counts equal to a walk with no lemma scheme in all 553 volumes.
+- **L26's moves, to its figures.** The authority gains `lot:56D676` and gives `lot:63D351` the volume `frus1951v03p1`, and nothing else (3,977 → 3,978 records); its report moves in those 14 lines. The usage index: 138 more notes in 47 volumes, 83 more in a collection in 29 records, 47 more with a class in 32 class records, two keys new, all as L26 measured; on the regenerated authority, one note more, in `lot:56D676`. The flow index: 19 more collection references joined and 12 class, the same file on either authority. The external citations on the regenerated authority: the authority's count alone.
+- **#2022, the manifest generator's silent drop.** The first run's six header fetches answered HTTP 503, and it wrote 547 of the 553 volumes, printed "✓ manifest.json written" and exited 0. Every entry it kept equalled the bundled one, and the second run had no failure.
+- **#2023, the map's commands.** As the runbook gave them, `pool_docs.py` and `build_layout.py` read the 300m's store and pool by default, and the packer's preflight checks a layout's count, not what it was laid out over. The root checkout's gitignored `layout.bin` was the 300m's beside EmbeddingGemma 2's `layout-meta.json`.
+- **For the runbook.** The manifest's run needs no token (one API call). The authority reads the root checkout's `.cache/volume-sources`, which no commit records. R10's files move figures that documents state: the website's 264,598 notes, and the manuals' and the guide's 3,977 collections. No Subject-Numeric key moves, so the label table owes R10 nothing.
+- **The brief's claims** held, but one. The bundled external citations already carry #1854's notes (L26 regenerated them for decision 191), so they are not among the files that differ by L26's moves.
+
+**The owner's three answers** (asked here; the orchestrator told first), decisions 203 to 205:
+- the manifest generator's drop filed (#2022) and fixed before R10 ("File it; fix before R10 (Recommended)");
+- the packer's check filed (#2023) and fixed before R10 ("File it; fix before R10");
+- the stale `layout.bin` replaced with the shipped one ("Replace it with the shipped one (Recommended)"), which this session did that evening.
+- The orchestrator made the two fixes one row, L61, which its own session builds.
+
+**What changed**
+- **`Planning/New-Volume-Release-Plan.md`.** A head paragraph for the rehearsal, and §10a, its table and findings. The inventory: 41 files, 51.7 MB, 21 in Tier 1, `cited-page-map.json` named. §4.5's commands with every path named. Steps 1 to 4, 6, 7 and 11 as run. Phase F's 18 to 20c: an update's version page and *What's New*, the website's figures, the documents' literals. §8's CI. D-1's line for decision 148, and the doc-comment defect struck (fixed on 2026-09-04 by #1191). §12's costs, measured.
+- **`Planning/Plan-Of-Record-2026-11-25.md`.** Decisions 203 to 205 and the line under them; row L61 in §1's two tables, with its brief; #2022 and #2023 in §1a; the counts and the calendar; §2's line without the token; L28's record; the status paragraph.
+- **Outside the repository.** #2022 and #2023 filed; the root checkout's `Planning/semantic-map/layout.bin` replaced (gitignored).
+
+**Checks**
+- Each regenerated file was compared with `cmp` against its bundled file. Each that differed was read key by key, with a script that resolves the usage, flow and external-citation indexes' positional rows to their keys before it compares them.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- No app or test was built or run. This pull request changes documents alone, which owes no Mac runs (the brief).
+
+**Cost.** 93 minutes of the lock over three hours and a quarter of the evening, against the brief's hour and a half: the build 135 s; Phase A 55 s and the manifest's second run 39 s; Phase B 352 s; C1's five runs 1,587 s; the edge index and the annotations 425 s; the provenance, the administrations and the validation 261 s; step 11 about 457 s; CloudVectors with its walk 2,258 s. One pass with one run of each is about 75 minutes. No subagent. The checkout, its build folder and the rehearsal's outputs were removed afterwards.
