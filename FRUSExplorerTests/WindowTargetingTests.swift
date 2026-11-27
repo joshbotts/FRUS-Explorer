@@ -1195,10 +1195,12 @@ struct WindowTargetingTests {
         let readers = files.flatMap { file in
             file.lines.filter { $0.text.contains("supportsMultipleWindows") }.map { (file: file.file, line: $0.line) }
         }
+        // Names, not tuples: a failed expectation prints its operands, and these stay one line each.
         let outside = readers.filter { !($0.file == "AppState.swift" && gateLines.contains($0.line)) }
+            .map { "\($0.file):\($0.line)" }
         #expect(outside.isEmpty, """
             Only AuxWindowGate may read \\.supportsMultipleWindows (D1, L40). Read by: \
-            \(outside.map { "\($0.file):\($0.line)" }.joined(separator: ", ")). A gate that reads the flag itself \
+            \(outside.joined(separator: ", ")). A gate that reads the flag itself \
             takes the iPad's side on the iPhone Duo; declare `@AuxWindowGate private var opensAuxWindows`.
             """)
         #expect(readers.contains { $0.file == "AppState.swift" && gateLines.contains($0.line) },
@@ -1210,9 +1212,9 @@ struct WindowTargetingTests {
         #expect(openers.count > 5, "found \(openers.count) files that open an aux window — the needle moved?")
         let ungated = openers.filter { file in
             !file.lines.contains { $0.text == "@AuxWindowGate private var opensAuxWindows" }
-        }
+        }.map(\.file).sorted()
         #expect(ungated.isEmpty, """
-            These files open an aux window and declare no AuxWindowGate: \(ungated.map(\.file).sorted()). \
+            These files open an aux window and declare no AuxWindowGate: \(ungated). \
             On the iPhone Duo an ungated window opens where every other iPhone shows a sheet (D1).
             """)
     }
