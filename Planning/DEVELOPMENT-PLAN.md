@@ -4476,6 +4476,10 @@ The orchestrator session ("Development session orchestration") started this one 
 
 The plan of record's session started this one for row L29, on `claude/l29-collection-notes-and-copies-4e4dd7` from `v2` at `a17023f9`, L27's merge, in Wave 2 with L30, L32, L33 and L57 on the owner's "start Wave 2". The row: #2000, #1999's import half, #1996, #1995, and the third review's J39. Commits: `d927be62` (#2000), `ab4a5100` (#1999's import half), `b340bd6e` (#1996 and J39), `c9a9b0ae` (#1995), and a docs commit.
 
+**#2028's merge**
+- L33 merged as `24616a57`, a squash onto `5fba4c9a`, at 07:20:39 UTC on 2026-11-27, from its head `17aa6225`. Its tree, `34462b9e`, is the head's. It closed #1971, #1973 and #1989. This entry records it.
+- L61's #2027 (`5fba4c9a`, onto `a7d8e017`, at 05:38:54 UTC, from `ac51df68`, tree `6b56e90e`, closing #2022 and #2023) is recorded in L33's entry above, L28's #2026 in L61's, and L31's #2025 in L28's.
+- This branch took `v2` in at `24616a57` (`71bcbcdf`). The two conflicts were both records, the session log and the Amendment-Log, each resolved with `v2`'s side first and this row's after it. This row takes no decision, so L33's 210 is still the last. On the merged tree a script read all 837 ranged EditableContent blocks: each starts on its key.
 
 **Each defect, first** (decision 183)
 - **#1999 in 1.0 (1861).** Asked who should make the design's §12 run, the owner chose "This session (Recommended)". So this session made it with Computer Use, in the Mac check copy built at `1.0-release` (`08e8bac8`), which has its own bundle id (`…maccheck`) and a local store, with `frus1961-63v01` seeded.
