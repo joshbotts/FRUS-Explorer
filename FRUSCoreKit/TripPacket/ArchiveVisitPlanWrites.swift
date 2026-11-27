@@ -35,10 +35,11 @@ import Foundation
 ///
 /// **A rule stamps no date on a row it changes.** A host stamps its own writes, as the app's
 /// `ModelModificationStamper` does at save. A record a rule mints carries `now` as its creation and
-/// modification date; the app makes its rows through their initialisers, which stamp the moment they
-/// are made and derive a child's id as the rule did, and takes each record's keys and values, writing a
-/// stored row's fields only where the rule changes them (``SeedAddition/turnsOnSource``, a target's one
-/// field), as its write sites always have.
+/// modification date, but for a duplicate's stored targets, which keep their sources' creation dates
+/// (``duplicate(of:id:now:)``, #1989); the app makes its rows through their initialisers, which stamp the
+/// moment they are made and derive a child's id as the rule did, and takes each record's keys and values,
+/// a duplicate's target's creation date among them, writing a stored row's fields only where the rule
+/// changes them (``SeedAddition/turnsOnSource``, a target's one field), as its write sites always have.
 ///
 /// What stays the host's: finding the project a plan is made or re-seeded under, gathering its seeds,
 /// asking the reader before a topic is replaced, and saving; and the plain writes of one row no rule
@@ -50,6 +51,9 @@ import Foundation
 ///          delete), its plan-state extension (a re-seed, its topic, an added seed and a target's stored
 ///          row) and the editor's commits (a rename's and a note's draft, and the tiers' add, rename,
 ///          reorder and removal), each unchanged in what it writes
+///   1.1 — 2026-11-26 (#1989): a duplicate's stored targets keep their sources' creation dates, so a target
+///          several rows answer for shows the row its original shows; the plan and its seeds are created `now`,
+///          and every row is modified `now`
 public enum ArchiveVisitPlanWrites {
 
     // MARK: - Derived child ids (§2a)
@@ -160,7 +164,16 @@ public enum ArchiveVisitPlanWrites {
     /// Child rows get **fresh derived ids** — recomputed from the new plan's id, since a derived
     /// id is a function of `planId | key` and the keys are unchanged. Tier ids are deliberately
     /// NOT re-minted: a stored target's `tierId` references them, and re-minting would strand
-    /// every copied assignment in the implicit Unprioritized group. Every row is created `now`.
+    /// every copied assignment in the implicit Unprioritized group.
+    ///
+    /// **A copied stored target keeps its source's creation date** (#1989), and every row is modified
+    /// `now`. A target several stored rows answer for, none under its own key, shows the earliest created
+    /// of them (``ArchiveVisitTargetKeys/shownRow(among:answeringFor:)``), so a copy dated at the copy
+    /// showed whichever row its new ids sorted first, with that row's tier, note and exclusion. A row
+    /// that carries no date is dated `now`, which shows the row its original shows, as a missing date
+    /// sorts last. Two rows created at the same instant still fall to their ids, which the copy
+    /// re-derives, so they could show each other; creation dates are rarely equal. The plan and its
+    /// seeds are created `now`: no rule reads a seed's creation date across rows.
     ///
     /// What the records do not carry, the app's reserved `stateData` of each seed and stored target
     /// and the tiers' and deliverables' blobs as stored, the app copies from the plan's own rows. A plan
@@ -171,7 +184,8 @@ public enum ArchiveVisitPlanWrites {
     /// - Parameters:
     ///   - plan: the plan, with its seeds and stored targets.
     ///   - id: the copy's id, random unless a test names one.
-    ///   - now: the copy's rows' creation and modification date.
+    ///   - now: the copy's creation and modification date, its seeds', and every stored target's
+    ///     modification date.
     public static func duplicate(of plan: ArchiveVisitPlanExport, id: UUID = UUID(),
                                  now: Date = Date()) -> ArchiveVisitPlanExport {
         ArchiveVisitPlanExport(
@@ -196,7 +210,7 @@ public enum ArchiveVisitPlanWrites {
                     tierId: target.tierId,
                     included: target.included,
                     userNote: target.userNote,
-                    createdAt: now, lastModified: now)
+                    createdAt: target.createdAt ?? now, lastModified: now)
             },
             createdAt: now,
             lastModified: now)

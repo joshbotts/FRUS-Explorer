@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2343–2343 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2419–2419 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2344–2345 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2420–2421 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2649–2650 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2729–2730 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -894,7 +894,7 @@ One quotation cites a document that is no longer in its volume.
 ### Collections Export
 
 #### Native-format export explanation
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 597–598 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 600–601 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
 Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
@@ -1405,7 +1405,7 @@ Unit: a source note is not a document. Only documents whose editors recorded whe
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 43–44 | key: series.export.caveat.corpus %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 45–46 | key: series.export.caveat.corpus %lld -->
 
 Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything.
 
@@ -1417,7 +1417,7 @@ Corpus: these figures come from a data file that ships with the app and covers a
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 53–54 | key: series.export.caveat.scope %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 55–56 | key: series.export.caveat.scope %@ -->
 
 Scoped to %@ — every figure below is recomputed from that subset’s volumes alone and is not comparable with a whole-series export.
 
@@ -1427,7 +1427,7 @@ Scoped to %@ — every figure below is recomputed from that subset’s volumes a
 
 #### Production & timeliness — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 76–77 | key: series.export.dating.production -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 78–79 | key: series.export.dating.production -->
 
 Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume’s own documents.
 
@@ -1437,7 +1437,7 @@ Dating: no document date is read. A volume sits at its print year, taken from th
 
 #### Geographic emphasis — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 97–98 | key: series.export.dating.geography -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 99–100 | key: series.export.dating.geography -->
 
 Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume’s own subject tags. So these figures count volumes concerned with a region, not documents about it.
 
@@ -1447,7 +1447,7 @@ Dating: no document date is read. A volume is placed by the coverage range decla
 
 #### Archival sourcing — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 147–148 | key: series.export.dating.provenance -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 153–154 | key: series.export.dating.provenance -->
 
 Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume’s declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes.
 
@@ -1459,7 +1459,7 @@ Dating: no document date is read. Each source note sits in the coverage decade o
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 134–135 | key: series.export.caveat.provenanceNotes %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 140–141 | key: series.export.caveat.provenanceNotes %lld -->
 
 Unit: %lld parsed source notes. A source note is the citation naming where a document’s archival original was found. “Other / Unclassified” means a citation the parser could not classify, not a missing note.
 
@@ -1471,7 +1471,7 @@ Unit: %lld parsed source notes. A source note is the citation naming where a doc
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 129–130 | key: series.export.caveat.hiddenCategories %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 135–136 | key: series.export.caveat.hiddenCategories %@ -->
 
 Re-based: %@ are hidden, and every share in this table is a share of the categories shown rather than of all source notes. A decade with nothing in any shown category is zero here, not absent.
 
@@ -1481,7 +1481,7 @@ Re-based: %@ are hidden, and every share in this table is a share of the categor
 
 #### Administration profiles — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 206–207 | key: series.export.dating.administration.v2 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 212–213 | key: series.export.dating.administration.v2 -->
 
 Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. Those attributes are instants normalised to −05:00, so where the document’s own dateline names the same instant its day is taken from the dateline instead — otherwise the day at −05:00 stands. There is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out.
 
@@ -1491,7 +1491,7 @@ Dating: each document is placed by its own editorial date bounds, the frus:doc-d
 
 #### Administration profiles — what the year range does
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 162–163 | key: series.export.caveat.adminYears -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 168–169 | key: series.export.caveat.adminYears -->
 
 Year range: this selects which administrations appear, by whether the president’s term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.
 
@@ -1501,7 +1501,7 @@ Year range: this selects which administrations appear, by whether the president�
 
 #### Administration profiles — why the counts overlap
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 169–170 | key: series.export.caveat.adminOverlap -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 175–176 | key: series.export.caveat.adminOverlap -->
 
 Attribution: a document counts toward every administration its date range overlaps. The counts therefore overlap each other and add up to more than the whole series. A term ends on the day the next president takes office. A document dated on a succession day therefore belongs to the incoming president. These counts measure whose foreign policy the documents cover, not when the volumes were published.
 
@@ -1513,7 +1513,7 @@ Attribution: a document counts toward every administration its date range overla
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 189–190 | key: series.export.caveat.adminNotes.v2 %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 195–196 | key: series.export.caveat.adminNotes.v2 %@ -->
 
 Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date; excluding them also withholds a volume whose only tie to an administration is such a note.
 
@@ -1558,6 +1558,44 @@ Search is not ready yet. Try again in a moment.
 Zotero is receiving too many requests right now. Try again in a moment.
 
 <!-- END SOURCE: zotero.error.rateLimited.v2 -->
+
+#### A Zotero send waiting to try again — one second
+<!-- L41 of the plan of record from 2026-11-25 (#1925), new 2026-11-27. What a send to Zotero says before it
+     waits out a refusal (HTTP 429) and tries again: in a collection export sheet's progress line, under the
+     Mac Share popover's Send to Zotero Library, and as the iOS Share menu's send row while the send runs.
+     `%@` is the wait in whole seconds, rounded up. This form is for ONE second, so keep it singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 370–371 | key: zotero.status.retry.one -->
+
+Zotero is busy: trying again in %@ second…
+
+<!-- END SOURCE: zotero.status.retry.one -->
+
+#### A Zotero send waiting to try again — two or more seconds
+<!-- The same line for any other number of seconds, up to 60, the longest the app waits at once. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 372–373 | key: zotero.status.retry.many -->
+
+Zotero is busy: trying again in %@ seconds…
+
+<!-- END SOURCE: zotero.status.retry.many -->
+
+#### A Zotero send waiting out Zotero's pause — one second
+<!-- L41 (#1924, #1925), new 2026-11-27. What a send says before its next request when Zotero has asked
+     the app to slow down (its `Backoff`), whether that send's last write asked or an earlier send's did: the
+     pause is waited before the next request, from any send, and not after the write that asked for it. Shown
+     where the line above is. `%@` is the wait in whole seconds, rounded up. Keep this form singular. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 381–382 | key: zotero.status.backoff.one -->
+
+Zotero asked for a pause: continuing in %@ second…
+
+<!-- END SOURCE: zotero.status.backoff.one -->
+
+#### A Zotero send waiting out Zotero's pause — two or more seconds
+<!-- The same line for any other number of seconds, up to 60. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 383–384 | key: zotero.status.backoff.many -->
+
+Zotero asked for a pause: continuing in %@ seconds…
+
+<!-- END SOURCE: zotero.status.backoff.many -->
 
 ### A document with no printed title
 
@@ -1967,7 +2005,7 @@ Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s wind
 <!-- END SOURCE: semanticMap.export.caveat.frame.labels %lld %lld -->
 
 #### Artifact: drawn from the bundled source-provenance…
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 123–124 | key: series.export.caveat.artifact %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 129–130 | key: series.export.caveat.artifact %@ -->
 
 Artifact: drawn from the bundled source-provenance aggregate generated %@. Every figure on this surface reads that one file; a plate from a different generation is a different figure.
 
@@ -2064,7 +2102,7 @@ Document distribution over the selected dates, stacked by volume. Counts are lis
 
 *#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyGrouping.swift` (FRUSCoreKit, since FRUS Explorer Light’s S24b; `ChronologyViewModel.swift` before), so the two are worded together.*
 
-<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 374–374 | key: chronology.spanning.header -->
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 376–376 | key: chronology.spanning.header -->
 
 Spans more than a year
 
@@ -2374,14 +2412,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 809–810 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 875–876 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 872–873 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 938–939 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2399,7 +2437,7 @@ You followed a link to page %lld of this volume, which isn’t downloaded.
 *Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1550–1551 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1616–1617 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -2671,14 +2709,14 @@ Your changes to this note have not been saved.
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
 
 #### This volume is downloaded but not yet indexed. Indexing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 814–815 | key: collection.addDocs.browse.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 817–818 | key: collection.addDocs.browse.notIndexed -->
 
 This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t.
 
 <!-- END SOURCE: collection.addDocs.browse.notIndexed -->
 
 #### Each line is resolved against the FRUS manifest and your…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 963–964 | key: collection.addDocs.citations.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 966–967 | key: collection.addDocs.citations.hint -->
 
 Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work.
 
@@ -2718,7 +2756,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1070–1071 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1074–1075 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
@@ -2727,7 +2765,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1078–1078 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1082–1082 | key: collection.smart.listLabel -->
 
 *What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
@@ -2736,7 +2774,7 @@ Smart collection
 <!-- END SOURCE: collection.smart.listLabel -->
 
 #### Not part of the smart collection: added before it was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1033–1034 | key: collection.smart.earlier.heading -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.entriesFromBeforeLinkHeading | lines: 1037–1038 | key: collection.smart.earlier.heading -->
 
 *The dimmed heading over a smart collection's entries from before its link (#1619; decision 22 of the 2026-10-14 plan of record), in a section of its own under the collection's Contents: in the iPhone and iPad editor, which is also the Mac's New Collection sheet, and in the Mac's Collections window. A smart collection takes no hand-added document, section heading, note block or passage, so an entry of those kinds is one it held before it was linked, and every export, the preview and the Archives Visit list leave it out. The section shows only while there is such an entry; each is listed dimmed, by its title or its words.*
 
@@ -2745,7 +2783,7 @@ Not part of the smart collection: added before it was linked to its saved search
 <!-- END SOURCE: collection.smart.earlier.heading -->
 
 #### Remove These Entries
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1039–1039 | key: collection.smart.earlier.remove -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLink | lines: 1043–1043 | key: collection.smart.earlier.remove -->
 
 *The button under those entries, on iPhone, iPad and Mac, and the destructive button of the dialog it opens. It removes nothing itself: the dialog asks first, and only its button removes them. Nothing else removes them; unlinked, the collection counts them again.*
 
@@ -2754,7 +2792,7 @@ Remove These Entries
 <!-- END SOURCE: collection.smart.earlier.remove -->
 
 #### Remove These Entries?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1044–1044 | key: collection.smart.earlier.remove.confirm.title -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkTitle | lines: 1048–1048 | key: collection.smart.earlier.remove.confirm.title -->
 
 *The title of the dialog that asks before the entries from before the link are removed. Its message is the next block, or the one after it for more than one entry.*
 
@@ -2763,7 +2801,7 @@ Remove These Entries?
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.title -->
 
 #### Removes the entry added before this collection was linked…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1055–1056 | key: collection.smart.earlier.remove.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1059–1060 | key: collection.smart.earlier.remove.confirm.message.one -->
 
 *The dialog's message when one entry would go.*
 
@@ -2772,7 +2810,7 @@ Removes the entry added before this collection was linked to its saved search.
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.one -->
 
 #### Removes the %@ entries added before this collection was…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1057–1058 | key: collection.smart.earlier.remove.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count:locale:) | lines: 1061–1062 | key: collection.smart.earlier.remove.confirm.message.many -->
 
 *The dialog's message when more than one entry would go. `%@` is the count, grouped: "Removes the 1,204 entries added before…".*
 
@@ -2781,7 +2819,7 @@ Removes the %@ entries added before this collection was linked to its saved sear
 <!-- END SOURCE: collection.smart.earlier.remove.confirm.message.many -->
 
 #### Empty note block
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1064–1064 | key: collection.smart.earlier.emptyNote -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.emptyNoteBlock | lines: 1068–1068 | key: collection.smart.earlier.emptyNote -->
 
 *What a row in that section prints for a note block that holds no text. A section heading with none reads "Untitled section", as it does in the entry inspector.*
 
@@ -3009,14 +3047,14 @@ No headnote yet. Edit to write a key takeaway, or generate a document summary to
 <!-- END SOURCE: collection.inspector.headnote.empty -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 669–670 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 672–673 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.
 
 <!-- END SOURCE: export.zotero.send.caption.iosNoAccount -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 672–673 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 675–676 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.
 
@@ -3025,7 +3063,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1605–1606 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1632–1633 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -3045,14 +3083,14 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1027–1028 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1054–1055 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 464–465 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 466–467 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.
@@ -3085,7 +3123,7 @@ Rename Collection
 <!-- END SOURCE: collection.rename.title -->
 
 #### Delete “\(…)”?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 919–920 | key: collection.delete.confirm.title.named -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 923–924 | key: collection.delete.confirm.title.named -->
 
 *The title of the dialog that asks before one collection is deleted (#1823), naming it. It asks wherever a collection is deleted: a row's swipe, its menu or Edit's Delete in the Collections list on iPhone and iPad, and Manage Collections and Collection ▸ Delete Collection… on the Mac. Its message follows the title blocks below.*
 
@@ -3094,7 +3132,7 @@ Delete “\(name)”?
 <!-- END SOURCE: collection.delete.confirm.title.named -->
 
 #### Delete %@ collection?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 924–924 | key: collection.delete.confirm.title.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 928–928 | key: collection.delete.confirm.title.one -->
 
 *The count form of the title for one collection. The dialog names a single collection instead (the block above), so this form is the grammar's and is not drawn today.*
 
@@ -3103,7 +3141,7 @@ Delete %@ collection?
 <!-- END SOURCE: collection.delete.confirm.title.one -->
 
 #### Delete %@ collections?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 925–925 | key: collection.delete.confirm.title.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 929–929 | key: collection.delete.confirm.title.many -->
 
 *The title when Edit's Delete in the Collections list on iPhone and iPad deletes several collections at once; `%@` is the count, grouped for the reader's locale.*
 
@@ -3112,7 +3150,7 @@ Delete %@ collections?
 <!-- END SOURCE: collection.delete.confirm.title.many -->
 
 #### Delete Collection?
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 915–915 | key: collection.delete.confirm.title.none -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.title(for:locale:) | lines: 919–919 | key: collection.delete.confirm.title.none -->
 
 *What the title reads for the moment the dialog takes to close after its Delete, once there is nothing left for it to name.*
 
@@ -3121,7 +3159,7 @@ Delete Collection?
 <!-- END SOURCE: collection.delete.confirm.title.none -->
 
 #### Its section headings, note blocks and headnotes go with it…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 934–935 | key: collection.delete.confirm.message.one -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 938–939 | key: collection.delete.confirm.message.one -->
 
 *The dialog's message when one collection would go. A collection's headings, note blocks and headnotes are the reader's own writing, and the delete reaches every device, which is why the dialog asks at all.*
 
@@ -3130,7 +3168,7 @@ Its section headings, note blocks and headnotes go with it, on your other device
 <!-- END SOURCE: collection.delete.confirm.message.one -->
 
 #### Their section headings, note blocks and headnotes go with them…
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 936–937 | key: collection.delete.confirm.message.many -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionDeletion.message(count:) | lines: 940–941 | key: collection.delete.confirm.message.many -->
 
 *The dialog's message when several collections would go.*
 
@@ -3223,7 +3261,7 @@ Show this document’s notes, highlights, tags, and provenance in the inspector 
 <!-- END SOURCE: collection.entry.inspect.help -->
 
 #### Error message — This collection was made with a newer version of FRUS…
-<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 327–328 | key: collection.import.error.version -->
+<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 331–332 | key: collection.import.error.version -->
 
 This collection was made with a newer version of FRUS Explorer (format \(version)). Update the app to open it.
 

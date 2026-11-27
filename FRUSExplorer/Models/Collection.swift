@@ -791,10 +791,11 @@ extension Collection {
 
 extension Collection {
     /// Creates an independent, fully-editable deep copy of this collection and inserts it — with a
-    /// copy of every entry and each entry's own headnote draft — into `context`. All composition,
-    /// front-matter, headnote, and smart-link settings are copied; ids are new throughout, so the
-    /// original is untouched and the two share no state (#300). Returns the new collection; the caller
-    /// saves the context.
+    /// copy of every entry and each entry's own headnote draft — into `context`. Every setting is
+    /// copied: the composition, the front matter, the title page's colophon, project stamp and query
+    /// log (the last two since #1996), the headnote default and the smart-collection link. Ids are new
+    /// throughout, so the original is untouched and the two share no state (#300). Returns the new
+    /// collection; the caller saves the context.
     @discardableResult
     func duplicate(in context: ModelContext) -> Collection {
         let base = name.isEmpty
@@ -812,6 +813,9 @@ extension Collection {
         copy.introductionText = introductionText
         copy.introductionRichText = introductionRichText
         copy.includeColophon = includeColophon
+        // The title page's project stamp and the query log (#1996), which the copy dropped.
+        copy.includeProjectProvenance = includeProjectProvenance
+        copy.includeMethodAppendix = includeMethodAppendix
 
         // Smart-collection link
         copy.savedSearchId = savedSearchId

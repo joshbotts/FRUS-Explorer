@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SwiftData
 @testable import FRUSExplorer
 
 // MARK: - FRUSCanonicalURLTests
@@ -120,5 +121,79 @@ struct ZoteroIOSDeadEndTests {
         // Both the missing-credentials guard and the catch must set it — a send can fail either way.
         #expect(sheet.components(separatedBy: "zoteroFileRecoveryOffered = true").count - 1 >= 2,
                 "both failure paths must offer the recovery")
+    }
+}
+
+// MARK: - CollectionZoteroSendNotesTests
+
+/// The collection's Zotero send follows each document's research-notes setting (#2000).
+///
+/// The send took each resolved document's Zotero item as it stood and read no setting, so a note its
+/// author had turned off for the collection, a section or a document went into their Zotero library.
+/// It is a `private` function of a view, which no test can call, so the first test reads it: the send
+/// posts the RIS file's records (`ZoteroCollectionExporter.records(for:options:)`, which the kit's
+/// `CollectionNotesSettingTests` hold to the page), under the options the RIS file is written with.
+/// It failed on the code before the fix. The second test holds those options to the collection's own
+/// switch, which is the app's.
+///
+/// Version history:
+///   1.0 — L29 (#2000): initial implementation
+@Suite("The collection's Zotero send follows each document's research-notes setting (#2000)")
+struct CollectionZoteroSendNotesTests {
+
+    private func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appending(path: path), encoding: .utf8)
+    }
+
+    /// The text of `signature`'s function in `code`, to its closing brace at the same indentation.
+    private func body(of signature: String, in code: String) throws -> Substring {
+        let start = try #require(code.range(of: signature), "no \(signature)")
+        let end = try #require(code.range(of: "\n    }\n", range: start.upperBound..<code.endIndex),
+                               "\(signature) has no closing brace at its indentation")
+        return code[start.lowerBound..<end.upperBound]
+    }
+
+    @Test("The send posts the RIS file's records, under the options the RIS file is written with")
+    func sendPostsTheFilesRecords() throws {
+        let sheet = try source("FRUSExplorer/Collections/CollectionExportSheet.swift")
+        let send = try body(of: "private func sendToZoteroLibrary() async {", in: sheet)
+        let file = try body(of: "private func exportZoteroRIS() async {", in: sheet)
+        #expect(send.contains("ZoteroCollectionExporter.records("), """
+            The send must post the records the RIS file prints, each document's notes left out where \
+            its notes are off. It posted every item as resolved (#2000).
+            """)
+        #expect(!send.contains(#"compactMap(\.zoteroItem)"#), "the send still posts the items as resolved")
+        let options = "ExportFormat.zoteroJSON.exportOptions(for: collection)"
+        #expect(send.contains(options) && file.contains(options),
+                "the send and the RIS file must read the collection's settings through the same options")
+    }
+
+    @Test("The options the send reads carry the collection's research-notes switch")
+    @MainActor
+    func theOptionsCarryTheCollectionsSwitch() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let collection = Collection(name: "Notes")
+        container.mainContext.insert(collection)
+        let item = ZoteroJSONExporter.Item(itemType: "bookSection", title: "Document 1",
+                                           notes: [ZoteroJSONExporter.Note(note: "A note.")])
+        let settings: [Bool?] = [nil, true]
+        let documents: [CollectionExportItem] = settings.enumerated().map { index, notes in
+            .document(CollectionExportDocument(documentId: "d\(index + 1)", volumeId: "frus1961-63v11",
+                                               sortOrder: index, title: "", bodyText: "",
+                                               includeNotesOverride: notes, zoteroItem: item))
+        }
+        func notesSent() -> [Int] {
+            ZoteroCollectionExporter.records(for: documents,
+                                             options: ExportFormat.zoteroJSON.exportOptions(for: collection))
+                .map { $0.notes?.count ?? 0 }
+        }
+        #expect(notesSent() == [1, 1])
+        collection.includeNotes = false
+        // The collection's Off holds for the document that follows it; the other's own On wins, as
+        // the page prints it.
+        #expect(notesSent() == [0, 1])
+        withExtendedLifetime(container) {}
     }
 }
