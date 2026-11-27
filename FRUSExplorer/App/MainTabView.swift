@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 #if os(iOS)
+import os
 import SwiftUI
 import SwiftData
 
@@ -744,8 +745,21 @@ struct TabShellBannerModifier<Banner: View>: ViewModifier {
 /// no SwiftUI state at any point (a representable that does so while it is being built is the trap that once blanked
 /// the semantic map).
 ///
+/// ## The room against the banner, once settled (L27, F1)
+/// A second after the last change (a reserve written, or this view laid out again), the view measures the room the
+/// tab actually sets aside: from the bottom edge of the tab's content, which this view shares, down to the window's
+/// own safe-area floor. That room should be the banner's height. ``TabShellBannerRoom`` judges it, and the result is
+/// written to the log, category `TabShellBanner`: once per view as a notice, as an error whenever the room stops
+/// matching the banner, and as a notice when it matches again. It writes no state and moves nothing.
+///
+/// F1 is why: during the re-index at 1823's first launch the owner's iPad drew a 188-pt banner at the top of about
+/// 322 pt of room. No simulator has shown it (R6a; L27 through `v2`'s whole 75 → 76 re-index and through 1823's own
+/// 74 → 75 start), so this is what R9's pass on the owner's iPad reads. The room is measured, not taken from the host's own inset, because the
+/// reading R6a left unproven, room set aside by a controller above the tab's host, never shows in the host's inset.
+///
 /// Version history:
 ///   1.0 — #1565: initial implementation
+///   1.1 — L27 (F1): the room is measured against the banner once a change settles, and logged when they disagree
 struct TabShellBannerReserve: UIViewRepresentable {
 
     /// How much room to set aside, in points.
@@ -788,6 +802,13 @@ struct TabShellBannerReserve: UIViewRepresentable {
             reserveSoon()
         }
 
+        /// Measures the room again once this layout has settled. This view shares the tab content's frame, so a change
+        /// to the room from anywhere, a controller above the host included, lays it out again.
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            checkRoomSoon()
+        }
+
         /// Queues the write for after the current update.
         func reserveSoon() {
             DispatchQueue.main.async { [weak self] in self?.reserve() }
@@ -813,6 +834,105 @@ struct TabShellBannerReserve: UIViewRepresentable {
             if host.additionalSafeAreaInsets.bottom != height {
                 host.additionalSafeAreaInsets.bottom = height
             }
+            checkRoomSoon()
+        }
+
+        // MARK: The room against the banner (L27, F1)
+
+        /// How long after the last change the room is measured: past the reserve's write, the layout it starts and a
+        /// banner's transition. Each banner change leaves a frame or two in which the banner has its new height and
+        /// the room its old one; measured on the iPad Pro 13-inch (M5), the reserve followed within 6–10 ms. The unit
+        /// tests shorten it.
+        static var roomSettleDelay: TimeInterval = 1
+
+        /// Where the room's findings are written: category `TabShellBanner`.
+        private static let roomLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "TabShellBanner")
+
+        /// The room as last measured once a change had settled, or `nil` before the first measurement.
+        private(set) var settledRoom: TabShellBannerRoom?
+
+        /// Counts the changes, so a measurement queued before a later change is dropped.
+        private var roomCheckGeneration = 0
+
+        /// Whether this view has written its first measurement to the log.
+        private var hasLoggedRoom = false
+
+        /// The last room logged that did not match its banner, while it still does not; `nil` while the room matches.
+        private var loggedOffRoom: TabShellBannerRoom?
+
+        /// Queues a measurement of the room for when this change has settled, dropping any queued before it.
+        private func checkRoomSoon() {
+            roomCheckGeneration &+= 1
+            let generation = roomCheckGeneration
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.roomSettleDelay) { [weak self] in
+                guard let self, self.roomCheckGeneration == generation else { return }
+                self.checkRoom()
+            }
+        }
+
+        /// Measures the room against the banner and writes what it finds to the log: the first measurement as a
+        /// notice, a room that stops matching the banner as an error, with every controller that holds a bottom inset,
+        /// and its return as a notice.
+        private func checkRoom() {
+            guard !isDismantled, let window, let host = reservedHost,
+                  window.windowScene?.activationState != .background else { return }
+            let windowInset = window.safeAreaInsets.bottom
+            let room = TabShellBannerRoom(
+                bannerHeight: height,
+                reserve: host.additionalSafeAreaInsets.bottom,
+                room: Self.tabBarSitsAtTheBottom(of: host, in: window) ? nil
+                    : TabShellBannerRoom.room(windowBottom: window.bounds.maxY, windowInset: windowInset,
+                                              contentBottom: convert(bounds, to: window).maxY),
+                windowInset: windowInset,
+                host: TabShellBannerRoom.typeName(of: host),
+                parent: host.parent.map { TabShellBannerRoom.typeName(of: $0) } ?? "none")
+            settledRoom = room
+            Self.roomLog.debug("Tab shell room: \(room.summary, privacy: .public)")
+            if !hasLoggedRoom {
+                hasLoggedRoom = true
+                Self.roomLog.notice("Tab shell room, first measured: \(room.summary, privacy: .public)")
+            }
+            if room.isBalanced {
+                if loggedOffRoom != nil {
+                    loggedOffRoom = nil
+                    Self.roomLog.notice("Tab shell room matches the banner again: \(room.summary, privacy: .public)")
+                }
+            } else if room != loggedOffRoom {
+                loggedOffRoom = room
+                let insets = Self.bottomInsets(below: window.rootViewController)
+                Self.roomLog.error("""
+                    Tab shell room does not match the banner: \(room.summary, privacy: .public); \
+                    controllers holding a bottom inset: \(insets, privacy: .public)
+                    """)
+            }
+        }
+
+        /// Whether a tab bar sits at the bottom of `window`, as on an iPhone. Its share of the inset below the tab's
+        /// content is UIKit's, so the room is not measured there. An iPad's floating tab bar and its sidebar are not at
+        /// the bottom.
+        private static func tabBarSitsAtTheBottom(of host: UIViewController, in window: UIWindow) -> Bool {
+            guard let tabBar = host.tabBarController?.tabBar, !tabBar.isHidden, tabBar.alpha > 0.01,
+                  tabBar.window === window else { return false }
+            let frame = tabBar.convert(tabBar.bounds, to: window)
+            return frame.height > 0 && frame.midY > window.bounds.midY
+        }
+
+        /// Every controller under `root`, presented ones included, that holds an additional bottom inset, as
+        /// "Type +N pt", or "none". Read only when the room does not match the banner.
+        private static func bottomInsets(below root: UIViewController?) -> String {
+            var found: [String] = []
+            func visit(_ controller: UIViewController) {
+                let inset = controller.additionalSafeAreaInsets.bottom
+                if inset != 0 {
+                    found.append("\(TabShellBannerRoom.typeName(of: controller)) +\(String(format: "%.1f", Double(inset))) pt")
+                }
+                controller.children.forEach(visit)
+                if let presented = controller.presentedViewController, presented.presentingViewController === controller {
+                    visit(presented)
+                }
+            }
+            if let root { visit(root) }
+            return found.isEmpty ? "none" : found.joined(separator: ", ")
         }
 
         /// The first view controller up this view's responder chain: the one whose view holds it.
