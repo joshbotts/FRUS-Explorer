@@ -147,6 +147,11 @@ import SwiftData
 ///          generated, so a structured summary's format reaches the exporters, which print its fields
 ///   1.17 — L14 (plan of record decision 124): an export's indexing of the volumes it needs starts through
 ///          `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
+///   1.18 — L35 (#2018, decision 198): an export of summaries prints each one stored and asks Apple Intelligence, the
+///          summarization service and the prompt only for a document with none, and where Apple Intelligence cannot
+///          write it says how many and why (`CollectionSummaryExportError`); it checked Apple Intelligence first, and
+///          ended "The export could not be rendered." with every summary stored. `exportTally` counts what an export
+///          prints, for the export sheet's sentence (decision 192)
 @MainActor
 class CollectionContentResolver {
 
@@ -184,6 +189,10 @@ class CollectionContentResolver {
     /// Where an export's absent figure images are fetched through (#1516). The app's store; a
     /// test sets its own.
     var figureImages: FigureImageStore = .shared
+
+    /// Whether Apple Intelligence can write a summary here: the system's answer, read when an export has a summary to
+    /// write (#2018). A test sets its own, since a simulator's answer is its Mac's.
+    var appleIntelligence: () -> AppleIntelligenceAvailability = { .forExport }
 
     /// Shown while an export fetches the figure images it lacks (`fetchAbsentFigureImages`).
     static var fetchingFiguresStatus: String {
@@ -545,13 +554,7 @@ class CollectionContentResolver {
             let all = (try? resolver.modelContext.fetch(FetchDescriptor<DocumentHighlight>())) ?? []
             return all
                 .filter { $0.volumeId == volumeId && $0.documentId == documentId }
-                .map {
-                    DocumentHighlightExport(id: $0.id, volumeId: $0.volumeId, documentId: $0.documentId,
-                                            startOffset: $0.startOffset, endOffset: $0.endOffset,
-                                            colorTag: $0.colorTag, noteId: $0.noteId,
-                                            selectedText: $0.selectedText,
-                                            renderingVersion: $0.renderingVersion, createdAt: $0.createdAt)
-                }
+                .map(Self.values)
         }
 
         func summary(id: UUID) -> GeneratedSummaryExport? {
@@ -615,14 +618,122 @@ class CollectionContentResolver {
         }
 
         /// A stored summary's values: what the assembly reads of it is its text, its prompt and its
-        /// authorship; the rest is carried as stored.
-        private static func values(_ summary: GeneratedSummary) -> GeneratedSummaryExport {
+        /// authorship; the rest is carried as stored. `TallySource` maps its records with it too.
+        fileprivate static func values(_ summary: GeneratedSummary) -> GeneratedSummaryExport {
             GeneratedSummaryExport(id: summary.id, documentId: summary.documentId, volumeId: summary.volumeId,
                                    promptId: summary.promptId, responseText: summary.responseText,
                                    responseFormat: summary.responseFormat, wasChunked: summary.wasChunked,
                                    projectId: summary.projectId, createdAt: summary.createdAt,
                                    lastModified: summary.lastModified, authorship: summary.authorship,
                                    isHeadnoteDraft: summary.isHeadnoteDraft)
+        }
+
+        /// A highlight's values, as the assembly reads them. `TallySource` maps its records with it too.
+        fileprivate static func values(_ highlight: DocumentHighlight) -> DocumentHighlightExport {
+            DocumentHighlightExport(id: highlight.id, volumeId: highlight.volumeId, documentId: highlight.documentId,
+                                    startOffset: highlight.startOffset, endOffset: highlight.endOffset,
+                                    colorTag: highlight.colorTag, noteId: highlight.noteId,
+                                    selectedText: highlight.selectedText,
+                                    renderingVersion: highlight.renderingVersion, createdAt: highlight.createdAt)
+        }
+    }
+
+    // MARK: - What an export will print (L35)
+
+    /// What an export of `collection` will print, counted for the export sheet's sentence (L35, decision 192): each
+    /// document as the export resolves it, with its body depth, its headnote, its stored summary, and its notes and
+    /// highlights where they print.
+    ///
+    /// It runs the export's own assembly in its preview purpose over the store alone (`TallySource`): no volume is
+    /// parsed or readied, no figure image fetched, no index read and Apple Intelligence never asked, so the sheet can
+    /// say it as it opens. Only the documents are resolved, with the headings whose section defaults reach them; the
+    /// collection's prose, passages and apparatus blocks print as the export prints them and are not counted. A smart
+    /// collection runs its saved search, as its export does.
+    ///
+    /// - Parameters:
+    ///   - collection: The collection to count.
+    ///   - entries: Its entries, as the sheet holds them (ignored for a smart collection).
+    ///   - allNotes: Every research note, for the notes each document prints.
+    /// - Returns: What the export prints, counted.
+    /// - Throws: `CollectionResolveError` when a smart collection's search cannot run; `CancellationError`.
+    func exportTally(collection: Collection, entries: [CollectionEntry],
+                     allNotes: [ResearchNote]) async throws -> CollectionExportTally {
+        let counted = collection.savedSearchId == nil
+            ? entries.filter { $0.entryKind == .document || $0.entryKind == .heading } : []
+        let values = CollectionExport(collection, entries: counted.map(CollectionEntryExport.init))
+        let assembly = CollectionContentAssembly(
+            collection: values, notes: allNotes.map(Self.noteValues),
+            source: TallySource(resolver: self, collection: collection))
+        let items = try await assembly.resolve(
+            entries: counted.map { CollectionContentAssembly.Entry(CollectionEntryExport($0), proseParagraphs: nil) },
+            introduction: nil, purpose: .preview)
+        return CollectionExportTally(documents: items.documents, options: CollectionExportOptions(composing: values))
+    }
+
+    /// The data source `exportTally` resolves through: the researcher's store, each kind of record fetched once, and a
+    /// smart collection's search. It reads nothing of the library: without the manifest a document resolves with no
+    /// citation, without the index with no source note, and without its parsed text with no body, none of which the
+    /// tally counts. It never readies, fetches or writes anything, which the preview purpose never asks of it either.
+    private struct TallySource: CollectionContentDataSource {
+        /// The resolver whose context and saved search answer.
+        let resolver: CollectionContentResolver
+        /// The collection being counted, whose saved search a smart collection runs.
+        let collection: Collection
+        /// Every stored summary, by `volumeId/documentId`.
+        private let summaries: [String: [GeneratedSummary]]
+        /// Every highlight, by `volumeId/documentId`.
+        private let highlightsByDocument: [String: [DocumentHighlight]]
+
+        init(resolver: CollectionContentResolver, collection: Collection) {
+            self.resolver = resolver
+            self.collection = collection
+            let context = resolver.modelContext
+            summaries = Dictionary(grouping: (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? [],
+                                   by: { "\($0.volumeId)/\($0.documentId)" })
+            highlightsByDocument = Dictionary(
+                grouping: (try? context.fetch(FetchDescriptor<DocumentHighlight>())) ?? [],
+                by: { "\($0.volumeId)/\($0.documentId)" })
+        }
+
+        var manifestEntries: [VolumeManifestEntry] { [] }
+        var indexingPipeline: IndexingPipeline? { nil }
+        func documentAST(volumeId: String, documentId: String) async -> FRUSDocumentAST? { nil }
+        func crossReferenceTargets(volumeId: String, documentId: String) async
+            -> [(volumeId: String, documentId: String)]? { nil }
+        var personMentionStore: PersonMentionStore? { nil }
+        var archivalIndexes: ArchivalIndexes { ArchivalIndexes() }
+
+        func highlights(volumeId: String, documentId: String) -> [DocumentHighlightExport] {
+            (highlightsByDocument["\(volumeId)/\(documentId)"] ?? []).map(AppContentSource.values)
+        }
+
+        func summary(id: UUID) -> GeneratedSummaryExport? {
+            summaries.values.lazy.flatMap { $0 }.first { $0.id == id }.map(AppContentSource.values)
+        }
+
+        func headnoteSummaries(volumeId: String, documentId: String) -> [GeneratedSummaryExport] {
+            (summaries["\(volumeId)/\(documentId)"] ?? []).filter { !$0.isHeadnoteDraft }
+                .map(AppContentSource.values)
+        }
+
+        func summary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport? {
+            (summaries["\(volumeId)/\(documentId)"] ?? []).first { $0.promptId == promptId }
+                .map(AppContentSource.values)
+        }
+
+        func zoteroTags(volumeId: String, documentId: String) -> [String] { [] }
+        func userTags() -> [UserTagExport] { [] }
+        func tagAssignments() -> [DocumentTagAssignmentExport] { [] }
+
+        func smartDocumentRefs() async throws -> [SmartCollectionDocumentRef] {
+            try await resolver.smartRefs(for: collection)
+        }
+
+        func prepareVolumesForExport(_ volumeIds: Set<String>) async {}
+        func fetchAbsentFigureImages(_ images: [FigureImageName]) async {}
+        func generateSummaries(for documents: [CollectionExportDocument], promptId: UUID,
+                               bodyTexts: [String: String]) async throws -> [String: GeneratedSummaryExport] {
+            [:]
         }
     }
 
@@ -762,19 +873,41 @@ class CollectionContentResolver {
         return existing
     }
 
-    /// Generates or fetches summaries for all entries when bodyDepth == .summaryOnly.
-    /// Returns a [key: summary] map, each summary's text and format what its document prints.
-    /// Throws if any generation fails. Export only —
-    /// `.preview` uses `storedSummary` and never reaches this path. The data source's
-    /// `generateSummaries(for:promptId:bodyTexts:)`, which the assembly's summary phase calls for each
-    /// group of documents under one prompt.
+    /// The summaries `docs` print under `promptId`, keyed `"volumeId/documentId"`: each one stored, and one written by
+    /// Apple Intelligence for each document that has none. Throws if any generation fails. Export only — `.preview`
+    /// uses `storedSummary` and never reaches this path. The data source's
+    /// `generateSummaries(for:promptId:bodyTexts:)`, which the assembly's summary phase calls for each group of documents
+    /// under one prompt.
+    ///
+    /// What is stored is read first, and prints on any device (#2018): Apple Intelligence, the summarization service and
+    /// the prompt's record are asked for only when a document has no stored summary. Where Apple Intelligence cannot
+    /// write one here, the export stops with `CollectionSummaryExportError`, which says how many documents have none and
+    /// why; it checked Apple Intelligence first, and ended "The export could not be rendered." with every summary stored.
     private func resolveSummaries(
         for docs: [CollectionExportDocument],
         promptId: UUID,
         bodyTexts: [String: String]
     ) async throws -> [String: GeneratedSummary] {
-        guard AppleIntelligenceProvider.shared.isAvailable else {
-            throw ExportError.renderingFailed
+        var result: [String: GeneratedSummary] = [:]
+        // Each document once: the same document entered twice prints the same summary, and is written once.
+        var toWrite: [CollectionExportDocument] = []
+        var seen = Set<String>()
+        for doc in docs {
+            let key = "\(doc.volumeId)/\(doc.documentId)"
+            guard seen.insert(key).inserted else { continue }
+            if let existing = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
+                                            promptId: promptId) {
+                result[key] = existing
+            } else {
+                toWrite.append(doc)
+            }
+        }
+        guard !toWrite.isEmpty else { return result }
+
+        let availability = appleIntelligence()
+        guard availability.isAvailable else {
+            throw CollectionSummaryExportError.summariesNeedAppleIntelligence(missing: toWrite.count,
+                                                                              availability: availability)
         }
         guard let service = appState.summarizationService else {
             throw ExportError.renderingFailed
@@ -787,21 +920,12 @@ class CollectionContentResolver {
         }
         let snapshot = SummarizationPromptSnapshot(from: prompt)
 
-        var result: [String: GeneratedSummary] = [:]
-        let total = docs.count
-
-        for (i, doc) in docs.enumerated() {
+        let total = toWrite.count
+        for (i, doc) in toWrite.enumerated() {
             let key = "\(doc.volumeId)/\(doc.documentId)"
             onSummaryStatus?(String(
                 localized: "export.summaryProgress",
                 defaultValue: "Generating summaries (\(i + 1) of \(total))…"))
-
-            // Check for existing summary first.
-            if let existing = storedSummary(volumeId: doc.volumeId, documentId: doc.documentId,
-                                            promptId: promptId) {
-                result[key] = existing
-                continue
-            }
 
             // Generate on demand.
             let text = bodyTexts[key] ?? doc.bodyText
@@ -820,5 +944,119 @@ class CollectionContentResolver {
         }
         onSummaryStatus?(nil)
         return result
+    }
+}
+
+// MARK: - CollectionSummaryExportError (#2018)
+
+/// Why an export of summaries stops before it is made: documents that print a summary have none stored, and Apple
+/// Intelligence cannot write one on this device (#2018, decision 198). The export sheet says the same words before
+/// Export (`CollectionExportSentence.deviceLacks`).
+///
+/// Version history:
+///   1.0 — L35 (#2018): initial implementation; the export ended "The export could not be rendered." until then
+enum CollectionSummaryExportError: LocalizedError, Equatable {
+    /// `missing` documents print a summary and have none stored, and `availability` says why this device cannot write
+    /// one.
+    case summariesNeedAppleIntelligence(missing: Int, availability: AppleIntelligenceAvailability)
+
+    /// How many documents have no stored summary, then why this device cannot write one, in the words the app's other
+    /// surfaces use (`AppleIntelligenceAvailability.unavailableSentence(notEligible:consequence:)`).
+    var errorDescription: String? {
+        switch self {
+        case .summariesNeedAppleIntelligence(let missing, let availability):
+            let count = CountCopy.phrase(missing,
+                                         one: String(localized: "export.summaries.missing.one %@",
+                                                     defaultValue: "%@ document has no stored summary."),
+                                         many: String(localized: "export.summaries.missing.many %@",
+                                                      defaultValue: "%@ documents have no stored summary."))
+            return count + " " + availability.unavailableSentence(notEligible: Self.notEligibleSentence)
+        }
+    }
+
+    /// The reason given on a device that cannot run Apple Intelligence.
+    static var notEligibleSentence: String {
+        String(localized: "export.summaries.notEligible",
+               defaultValue: "Apple Intelligence, which writes summaries, is not available on this device.")
+    }
+}
+
+// MARK: - CollectionExportTally (L35)
+
+/// What an export prints, counted from its resolved documents (`CollectionContentResolver.exportTally`): what the
+/// export sheet's sentence is written from (L35, decision 192).
+///
+/// Version history:
+///   1.0 — L35 (J9, decision 192): initial implementation
+struct CollectionExportTally: Equatable, Sendable {
+    /// The documents the export prints.
+    var documents = 0
+    /// Of those, the ones printed in full.
+    var inFull = 0
+    /// The ones printed as a summary.
+    var asSummaries = 0
+    /// The ones printed as a citation alone.
+    var asCitations = 0
+    /// The documents that ask for a headnote, by their own setting or the collection's.
+    var headnotesAsked = 0
+    /// Of those, the documents with a stored summary for the headnote to print.
+    var headnotesPrinted = 0
+    /// The documents printed as a summary with none stored, which the export has Apple Intelligence write.
+    var summariesToWrite = 0
+    /// Whether any document prints the researcher's notes.
+    var printsNotes = false
+    /// Whether any document prints the researcher's highlights.
+    var printsHighlights = false
+
+    /// Counts nothing: a collection with no documents.
+    init() {}
+
+    /// Counts `documents`, resolved for an export of a collection composed as `options` says: each document's body
+    /// depth, its headnote where it asks for one, its summary where one is stored, and its notes and highlights where
+    /// they print (`CollectionExportDocument.includesNotes(options:)`, the renderers' rule).
+    init(documents resolved: [CollectionExportDocument], options: CollectionExportOptions) {
+        documents = resolved.count
+        for document in resolved {
+            switch document.bodyDepth {
+            case .full:
+                inFull += 1
+            case .summaryOnly:
+                asSummaries += 1
+                if document.summaryText == nil { summariesToWrite += 1 }
+            case .index:
+                asCitations += 1
+            }
+            if document.includeHeadnote {
+                headnotesAsked += 1
+                if let headnote = document.headnoteText, !headnote.isEmpty { headnotesPrinted += 1 }
+            }
+            if document.includesNotes(options: options), document.noteTexts.contains(where: { !$0.isEmpty }) {
+                printsNotes = true
+            }
+            if !document.highlights.isEmpty { printsHighlights = true }
+        }
+    }
+}
+
+// MARK: - AppleIntelligenceAvailability.forExport
+
+extension AppleIntelligenceAvailability {
+
+    /// Whether Apple Intelligence can write a summary for an export here: the system's answer
+    /// (`AppleIntelligenceAvailability.current`). In a DEBUG build a UI test can name it instead with
+    /// `FRUS_UI_TEST_APPLE_INTELLIGENCE` (`available`, `notEnabled`, `modelNotReady` or `notEligible`), since a
+    /// simulator's answer is its Mac's: `CollectionExportSheetFitTests` measures the sheet with what this device lacks
+    /// said (L35).
+    static var forExport: AppleIntelligenceAvailability {
+        #if DEBUG
+        switch ProcessInfo.processInfo.environment["FRUS_UI_TEST_APPLE_INTELLIGENCE"] {
+        case "available": return .available
+        case "notEnabled": return .notEnabled
+        case "modelNotReady": return .modelNotReady
+        case "notEligible": return .notEligible
+        default: break
+        }
+        #endif
+        return .current
     }
 }
