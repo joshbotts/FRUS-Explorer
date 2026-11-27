@@ -31,6 +31,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-09: #790
 ///   1.1 — 2026-11-11 (FRUS Explorer Light, S24a): moved into FRUSCoreKit, public
+///   1.2 — 2026-11-26 (FRUS Explorer Light's #1973): `provenance` takes the locale its hidden categories
+///          are listed in, the reader's own by default, so the app's caveat is unchanged
 public enum SeriesAnalyticsExport {
 
     /// Volumes in the shipped series — the denominator these dashboards actually cover.
@@ -113,10 +115,14 @@ public enum SeriesAnalyticsExport {
     ///   every number here comes from one aggregate: two plates drawn from different generations
     ///   are different figures, and without this they carry identical captions. Empty is tolerated
     ///   and simply omits the line — an absent stamp is better than a fabricated one.
+    /// - Parameter locale: The locale the hidden categories are listed in: "A, B, and C" in the
+    ///   United States, "A, B und C" in Germany. The reader's own by default, which the list was
+    ///   joined in before, so the app's caveat is unchanged; a host pins its readers' (#1973).
     public static func provenance(figureTitle: String, axisLabel: String, scopeLabel: String?,
                            yearRange: ClosedRange<Int>?, volumeCount: Int, noteCount: Int,
                            hiddenCategories: [String], generated: String = "",
-                           extra: [String] = []) -> AnalyticsProvenance {
+                           extra: [String] = [],
+                           locale: Locale = .autoupdatingCurrent) -> AnalyticsProvenance {
         var caveats = [scopeCaveat(scopeLabel)].compactMap { $0 }
         if !generated.isEmpty {
             caveats.append(String(format: String(
@@ -128,7 +134,7 @@ public enum SeriesAnalyticsExport {
             caveats.append(String(format: String(
                 localized: "series.export.caveat.hiddenCategories %@",
                 defaultValue: "Re-based: %@ are hidden, and every share in this table is a share of the categories shown rather than of all source notes. A decade with nothing in any shown category is zero here, not absent."),
-                hiddenCategories.sorted().formatted(.list(type: .and))))
+                hiddenCategories.sorted().formatted(.list(type: .and).locale(locale))))
         }
         caveats.append(String(format: String(
             localized: "series.export.caveat.provenanceNotes %lld",

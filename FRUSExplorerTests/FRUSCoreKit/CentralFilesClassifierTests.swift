@@ -1272,6 +1272,91 @@ struct AddresseeRuleTests {
     }
 }
 
+// MARK: - The dateline's year (#1975)
+
+/// The one rule Source Explorer reads a document's date and year from its dateline by
+/// (`CentralFilesClassifier.datelineDateISO(from:)` and `documentYear(fromDateline:)`), over the datelines it
+/// misread. Each is a dateline of the 553 catalogue volumes as the index stores it, read at index version 76.
+///
+/// Version history:
+///   1.0 — 2026-11-26 (#1975, plan of record row L31): initial implementation
+@Suite("The dateline's year (#1975)")
+struct DatelineYearRuleTests {
+
+    @Test("A Zulu time printed after the day is no year; one printed after the year leaves it alone")
+    func zuluTimeIsNoYear() {
+        // frus1969-76v09 d46, frus1969-76v10 d138, frus1969-76ve11p2 d143: the only three of the corpus's
+        // datelines that print the time group with no year.
+        for dateline in ["Saigon, October 22, 1515Z.", "Washington, August 19, 1412Z.", "Santiago, October 3, 1725Z."] {
+            #expect(CentralFilesClassifier.datelineDateISO(from: dateline) == nil, "\(dateline)")
+            #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == nil, "\(dateline)")
+        }
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Washington, July 4, 1961, 1312Z.") == "1961-07-04")
+    }
+
+    @Test("A day-first date is the sent date, before a received date printed after it")
+    func dayFirstIsTheSentDate() {
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Paris, 15 December, 1918. [Received January 7, 1919.]")
+                == "1918-12-15")
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Bucharest, 19 December, 1918. [Received February 17, 1919.]") == 1918)
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Seoul, 27 December 1946. [Received January 10, 1947.]") == 1946)
+        // A pre-1906 day-first dateline gives the classifier its day, where it gave none.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Madrid, 24 December, 1872.") == "1872-12-24")
+        // A received date after a month-first one is still passed over.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Paris, June 1, 1920. [Received June 3, 1920.]")
+                == "1920-06-01")
+    }
+
+    @Test("The editors' bracketed year is the year, whether or not the TEI's own date follows it")
+    func editorsBracketedYear() {
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Moscow, January 11, 1940 [1941]—4 p.m. [Received 9:56 p.m.]") == 1941)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "[Washington,] January 3, 1944[1945].") == 1945)
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Peiping, 16 January 1945 [1946].") == "1946-01-16")
+        // frus1925v02 d17, which the TEI dates 1924-10-22: the original's slip, which the editors correct.
+        #expect(CentralFilesClassifier.documentYear(
+            fromDateline: "Habana, October 22, 1924 [1925]. [Received October 27.]") == 1925)
+    }
+
+    @Test("The strict parse holds its year to 1600–2029: a misprint reads no year, a colonial charter keeps its own")
+    func strictParseRange() {
+        for dateline in ["Washington, April 5, 1291—5 p.m.", "Madrid, January 28, 7928—2 p.m. [Received 3:55 p.m.]",
+                         "Washington, June 10, 1054—7:18 p.m."] {
+            #expect(CentralFilesClassifier.datelineDateISO(from: dateline) == nil, "\(dateline)")
+            #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == nil, "\(dateline)")
+        }
+        // frus1872p2v5 d5 and frus1873p2v3 d31: an 1800 floor would have taken their dates away (the owner's
+        // choice of 1600, 2026-11-26).
+        #expect(CentralFilesClassifier.datelineDateISO(
+            from: "Extract from the charter of Massachusetts Bay, granted by Charles I of England, March 4, 1628.")
+                == "1628-03-04")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Annapolis, Md., In Council, August 23, 1793.")
+                == "1793-08-23")
+    }
+
+    @Test("A year ends before an ASCII letter only: a glued digit or a garbled dash after it still reads")
+    func yearEndsBeforeALetterOnly() {
+        // frus1881 d107 and frus1961-63v04 d58, which a word boundary after the year would have refused.
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Department of State, Washington, November 30, 18811.")
+                == "1881-11-30")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Saigon, September 4, 1963è8 p.m.") == "1963-09-04")
+    }
+
+    @Test("The datelines the rule read right read as before")
+    func unchangedReadings() {
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Ref. telegram No. 1805. Tokyo, March 14, 1905.") == 1905)
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Department of State , Washington , November 10, 1863.")
+                == "1863-11-10")
+        #expect(CentralFilesClassifier.datelineDateISO(from: "Executive Mansion , Washington, D. C. , 1861 .") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "An antique note dated 1799.") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Moscow, undated.") == nil)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: nil) == nil)
+    }
+}
+
 // MARK: - Source Explorer's shared evaluation (2026-09-13)
 
 /// The gate, the outcome states, the serial label and the year both Source Explorer views now take from
@@ -1478,6 +1563,8 @@ struct SourceExplorerEvaluationTests {
 
     // MARK: The year
 
+    /// The platform's `extractYear` forwards to the kit's rule since #1975, so the two cannot drift; this
+    /// holds the forwarding, over the cases the copies read wrong as well as those they read right.
     #if !SWIFT_PACKAGE // DocumentView and MacDocumentView, whose extractYear it reads, are the app's
     @Test("documentYear(fromDateline:) agrees with the platform's extractYear")
     @MainActor
@@ -1497,17 +1584,155 @@ struct SourceExplorerEvaluationTests {
             "Washington, January 1, 1906.", "Washington, January 1, 2029.", "Meeting held in room 2030.",
             "An antique note dated 1799.", "Department of State, Washington.",
             "Ref. telegram No. 1805. Tokyo, March 14, 1905.", "Executive Mansion , Washington, D. C. , 1861 .", nil,
+            "Saigon, October 22, 1515Z.", "Paris, 15 December, 1918. [Received January 7, 1919.]",
+            "Moscow, January 11, 1940 [1941]—4 p.m.", "Washington, April 5, 1291—5 p.m.",
         ]
         var checked = 0
         for dateline in datelines {
             #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == platform(dateline), "\(String(describing: dateline))")
             checked += 1
         }
-        #expect(checked == 12)
+        #expect(checked == 16)
+        #expect(platform("Saigon, October 22, 1515Z.") == nil && platform("Moscow, January 11, 1940 [1941]—4 p.m.") == 1941,
+                "fixture guard: the platform reads the fixed rule, not a copy")
         #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861,
                 "fixture guard: the loose scan must be exercised")
     }
     #endif
+
+    // MARK: The index's date (#1976)
+
+    /// A volume whose datelines print no year, or a year alone, beside the date the index stores for each,
+    /// indexed through the real pipeline: four of Motley's despatches from Vienna under `Austria.`, and two
+    /// documents of 1909, one with no dateline and one dated `undated`.
+    private static func indexedUndatedVolume() async throws -> (dir: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexDate-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        func despatch(_ id: String, _ dateline: String, min: String, max: String? = nil) -> String {
+            let maxAttribute = max.map { " frus:doc-dateTime-max=\"\($0)\"" } ?? ""
+            return """
+              <div type="document" xml:id="\(id)" frus:doc-dateTime-min="\(min)"\(maxAttribute)>
+                <head>Mr. Motley to Mr. Seward.</head>
+                <opener><dateline>\(dateline)</dateline></opener>
+                <p>Sir: I have the honor to report.</p>
+              </div>
+            """
+        }
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+        <div type="chapter" xml:id="ch1">
+          <head>Austria.</head>
+        \(despatch("d119", "Legation of the United States, Vienna, November 14, 1864.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d120", "Legation of the United States, Vienna, November 14.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d121", "Legation of the United States, Vienna, undated.", min: "1864-12-01T00:00:00-05:00",
+                   max: "1865-02-28T00:00:00-05:00"))
+        \(despatch("d122", "Legation of the United States, Vienna, 1864.", min: "1864-11-14T00:00:00-05:00"))
+        \(despatch("d123", "Legation of the United States, Vienna, 1864.", min: "1866-11-14T00:00:00-05:00"))
+        </div>
+        <div type="chapter" xml:id="ch2">
+          <head>Miscellaneous.</head>
+          <div type="document" xml:id="d429" frus:doc-dateTime-min="1909-06-01T00:00:00-05:00">
+            <head>Memorandum</head>
+            <p>This document prints no dateline.</p>
+          </div>
+          <div type="document" xml:id="d430" frus:doc-dateTime-min="1909-06-02T00:00:00-05:00">
+            <head>Memorandum</head>
+            <opener><dateline>Washington, undated.</dateline></opener>
+            <p>This one prints a dateline with no date.</p>
+          </div>
+          <div type="document" xml:id="d91" frus:doc-dateTime-min="1910-05-01T00:00:00-05:00">
+            <head>A despatch</head>
+            <opener><dateline>Washington, <date when="1914-05-01">May 1, 1914</date>.</dateline></opener>
+          </div>
+          <div type="document" xml:id="d46" frus:doc-dateTime-min="1972-10-22T00:00:00-05:00">
+            <head>A telegram</head>
+            <opener><dateline>Saigon, October 22, 1515Z.</dateline></opener>
+          </div>
+          <div type="document" xml:id="d17" frus:doc-dateTime-min="1924-10-22T00:00:00-05:00">
+            <head>A despatch</head>
+            <opener><dateline>Habana, October 22, 1924 [1925].<note n="1">Received October 27.</note></dateline></opener>
+          </div>
+        </div>
+        </body></text></TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, pipeline)
+    }
+
+    @Test("A document whose dateline gives no year takes the index's: a 1909 one is outside the pre-1906 section")
+    func indexDateGivesTheYear() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        for documentId in ["d429", "d430"] {
+            let result = await CentralFilesClassifier.evaluate(
+                route: Self.route(documentId), pipeline: fixture.pipeline, index: index,
+                roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+            #expect(result.context.year == 1909, "\(documentId): \(result.context)")
+            #expect(result.outcome == .notApplicable, "\(documentId): \(result.outcome)")
+        }
+    }
+
+    /// The owner's choice of 2026-11-26 (row L31): "Look rolls up by the index date", where a dateline that
+    /// prints no year left 462 pre-1906 documents unchecked and 266 that print a year alone listed every roll.
+    @Test("Where a pre-1906 dateline prints no date, the rolls are those covering the index's date")
+    func preNineteenOhSixLooksRollsUpByTheIndexDate() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        func rolls(_ documentId: String) async -> (outcome: CountrySeriesOutcome, rolls: [String]) {
+            let outcome = await CentralFilesClassifier.evaluate(
+                route: Self.route(documentId), pipeline: fixture.pipeline, index: index,
+                roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil).outcome
+            return (outcome, outcome.homes.filter { $0.classification.category == .despatches }
+                .flatMap { $0.rolls.map(\.naId) })
+        }
+        // Austria's despatches of January 1864 to December 1865, one roll of the series' 51. A dated lookup also
+        // lists the series' two rolls whose titles' dates are inverted (`Apr. 2, 1888-Mar. 31, 1869`), which the
+        // index's guard matches on any date rather than hide.
+        let roll1864 = "189207217"
+        let dated = await rolls("d119").rolls
+        // A printed year the index's date contradicts keeps the undated lookup it had: every roll of the series.
+        let undated = await rolls("d123").rolls
+        #expect(dated.contains(roll1864) && dated.count < 5, "fixture guard, the day printed in full: \(dated)")
+        #expect(undated.count > 40 && undated.contains(roll1864), "\(undated.count) rolls")
+        let day = await rolls("d120"), interval = await rolls("d121"), printedYear = await rolls("d122")
+        #expect(day.rolls == dated, "a day is looked up as a dateline printing it is: \(day.outcome)")
+        #expect(printedYear.rolls == dated, "a printed year the index's date agrees with: \(printedYear.outcome)")
+        // December 1864 to February 1865: the 1864–65 roll, and not April 1865's (`189220198`).
+        #expect(interval.rolls.contains(roll1864) && !interval.rolls.contains("189220198")
+                && interval.rolls.count < undated.count, "an interval: \(interval.outcome)")
+    }
+
+    /// The Source Explorer export reads a parse's year (`SourceExplorerDocumentContext.year(of:)`) and the views
+    /// hydrate one from the index: the two are one rule over the dateline and the date the index stores by
+    /// the same functions, so they give every document of a volume the same year (#1976).
+    @Test("The year of a volume's parse is the year Source Explorer hydrates from an index of the same file")
+    func yearOfAParseIsTheHydratedYear() async throws {
+        let fixture = try await Self.indexedUndatedVolume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let bytes = try Data(contentsOf: fixture.dir.appendingPathComponent("volumes/vol1.xml"))
+        let parsed = try await FRUSDocumentParser().parseVolumeFull(volumeData: bytes, named: "vol1.xml")
+        var compared: [String: Int?] = [:]
+        for document in parsed.documents {
+            let facts = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: document.documentId)
+            let hydrated = SourceExplorerDocumentContext.hydrate(
+                routeHeader: document.documentId, routeDateline: nil, routeYear: nil,
+                documentId: document.documentId, indexed: facts).year
+            #expect(SourceExplorerDocumentContext.year(of: document) == hydrated, "\(document.documentId)")
+            compared[document.documentId] = hydrated
+        }
+        #expect(compared == ["d119": 1864, "d120": 1864, "d121": 1864, "d122": 1864, "d123": 1864, "d429": 1909, "d430": 1909,
+                             "d91": 1914, "d46": 1972, "d17": 1925], "fixture guard: each way the two once differed")
+    }
 
     // MARK: The serial label
 

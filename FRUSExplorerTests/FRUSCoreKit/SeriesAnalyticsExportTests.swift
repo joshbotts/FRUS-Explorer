@@ -96,6 +96,7 @@ struct AnalyticsProvenanceOverrideTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #790
+///   1.1 — 2026-11-26 (#1973): the hidden categories are listed in the locale passed
 @Suite("Series analytics — export provenance")
 struct SeriesAnalyticsExportTests {
 
@@ -251,6 +252,36 @@ struct SeriesAnalyticsExportTests {
             figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: nil,
             volumeCount: 522, noteCount: 268_757, hiddenCategories: [])
         #expect(!unfiltered.extraCaveats.contains { $0.contains("Re-based") })
+    }
+
+    /// #1973: the re-based caveat lists the hidden categories in the locale passed, so a host whose process's locale is
+    /// not its readers' can pin theirs: FRUS Explorer Light's server on Linux joins three without the serial comma. With
+    /// none passed, as the app calls it, the list is the reader's own, as `.formatted(.list(type: .and))` joined it before.
+    @Test("The hidden categories are listed in the locale passed, and in the reader's own with none passed (#1973)")
+    func hiddenCategoriesAreListedInTheLocalePassed() {
+        let hidden = ["Presidential Libraries", "Lot Files", "Intelligence Records"]
+        func reBased(_ locale: Locale?, hiding categories: [String] = hidden) -> [String] {
+            let statement = locale.map {
+                SeriesAnalyticsExport.provenance(figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: nil,
+                                                 volumeCount: 522, noteCount: 268_757, hiddenCategories: categories,
+                                                 locale: $0)
+            } ?? SeriesAnalyticsExport.provenance(figureTitle: "T", axisLabel: "A", scopeLabel: nil, yearRange: nil,
+                                                  volumeCount: 522, noteCount: 268_757, hiddenCategories: categories)
+            return statement.extraCaveats.filter { $0.hasPrefix("Re-based") }
+        }
+        #expect(reBased(Locale(identifier: "en_US")).first?
+            .hasPrefix("Re-based: Intelligence Records, Lot Files, and Presidential Libraries are hidden, and every share") == true,
+                "\(reBased(Locale(identifier: "en_US")))")
+        #expect(reBased(Locale(identifier: "de_DE")).first?
+            .hasPrefix("Re-based: Intelligence Records, Lot Files und Presidential Libraries are hidden, and every share") == true,
+                "\(reBased(Locale(identifier: "de_DE")))")
+        #expect(reBased(nil) == reBased(.autoupdatingCurrent))
+        #expect(reBased(nil).first?.contains(hidden.sorted().formatted(.list(type: .and))) == true,
+                "with no locale passed, the list is joined as it was before the parameter")
+        // Two are joined by the locale's word alone, and none hidden is no caveat, in any locale.
+        #expect(reBased(Locale(identifier: "en_US"), hiding: ["Lot Files", "Intelligence Records"]).first?
+            .hasPrefix("Re-based: Intelligence Records and Lot Files are hidden") == true)
+        #expect(reBased(Locale(identifier: "de_DE"), hiding: []).isEmpty && reBased(nil, hiding: []).isEmpty)
     }
 
     @Test("The administration export corrects the two things its own controls imply wrongly")

@@ -445,98 +445,98 @@ Document tools
 <!-- END SOURCE: researchRail.tools.info.heading -->
 
 #### Cite — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1076–1076 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1074–1074 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
 
 Cite
 
 <!-- END SOURCE: researchRail.tile.cite -->
 
 #### Cite — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1077–1078 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1075–1076 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
 
 Cite this document — copy a formatted citation or export BibTeX/RIS
 
 <!-- END SOURCE: researchRail.tile.cite.help -->
 
 #### Word Cloud — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1083–1083 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1081–1081 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
 
 Word Cloud
 
 <!-- END SOURCE: researchRail.tile.wordCloud -->
 
 #### Word Cloud — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1084–1085 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1082–1083 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
 
 Show a word cloud of this document’s most frequent terms
 
 <!-- END SOURCE: researchRail.tile.wordCloud.help -->
 
 #### Sources — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1090–1090 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1088–1088 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
 
 Sources
 
 <!-- END SOURCE: researchRail.tile.sources -->
 
 #### Sources — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1091–1092 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1089–1090 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
 
 Resolve this document’s source note in the NARA Catalog or RG-59 records
 
 <!-- END SOURCE: researchRail.tile.sources.help -->
 
 #### Graph — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1097–1097 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1095–1095 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
 
 Graph
 
 <!-- END SOURCE: researchRail.tile.graph -->
 
 #### Graph — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1098–1099 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1096–1097 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
 
 Show this document’s cross-reference graph
 
 <!-- END SOURCE: researchRail.tile.graph.help -->
 
 #### Related — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1104–1104 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1102–1102 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
 
 Related
 
 <!-- END SOURCE: researchRail.tile.related -->
 
 #### Related — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1105–1106 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1103–1104 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
 
 Find related documents by archival provenance, cross-references, date, and shared people
 
 <!-- END SOURCE: researchRail.tile.related.help -->
 
 #### Share — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1111–1111 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1109–1109 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
 
 Share
 
 <!-- END SOURCE: researchRail.tile.share -->
 
 #### Share — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1112–1113 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1110–1111 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
 
 Share or export this document
 
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2359–2359 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2343–2343 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2360–2361 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2344–2345 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -593,28 +593,28 @@ mistag the app went on quoting the old reading — and the Undo beside it put th
 into the index. Both now read FRUS's parse as it stands.
 
 #### When FRUS adopts the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1194–1195 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1192–1193 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
 
 FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.
 
 <!-- END SOURCE: panel.classification.overrideNowRedundant -->
 
 #### FRUS's own tagging, beside the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1197–1198 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1195–1196 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
 
 FRUS tags this as %@ — reclassified by you.
 
 <!-- END SOURCE: panel.classification.overridden %@ -->
 
 #### The inline noun for an editorial note
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1200–1201 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1198–1199 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
 
 an editorial note
 
 <!-- END SOURCE: panel.classification.note.inline -->
 
 #### The inline noun for a document
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1202–1203 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1200–1201 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
 
 a document
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2665–2666 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2649–2650 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1405,7 +1405,7 @@ Unit: a source note is not a document. Only documents whose editors recorded whe
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 43–44 | key: series.export.caveat.corpus %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 45–46 | key: series.export.caveat.corpus %lld -->
 
 Corpus: these figures come from a data file that ships with the app and covers all %lld cataloged volumes of the series. They do not depend on which volumes you have indexed on this device. Every device shows the same numbers, and they are available before you download anything.
 
@@ -1417,7 +1417,7 @@ Corpus: these figures come from a data file that ships with the app and covers a
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 53–54 | key: series.export.caveat.scope %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 55–56 | key: series.export.caveat.scope %@ -->
 
 Scoped to %@ — every figure below is recomputed from that subset’s volumes alone and is not comparable with a whole-series export.
 
@@ -1427,7 +1427,7 @@ Scoped to %@ — every figure below is recomputed from that subset’s volumes a
 
 #### Production & timeliness — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 76–77 | key: series.export.dating.production -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 78–79 | key: series.export.dating.production -->
 
 Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume’s own documents.
 
@@ -1437,7 +1437,7 @@ Dating: no document date is read. A volume sits at its print year, taken from th
 
 #### Geographic emphasis — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 97–98 | key: series.export.dating.geography -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 99–100 | key: series.export.dating.geography -->
 
 Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume’s own subject tags. So these figures count volumes concerned with a region, not documents about it.
 
@@ -1447,7 +1447,7 @@ Dating: no document date is read. A volume is placed by the coverage range decla
 
 #### Archival sourcing — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 147–148 | key: series.export.dating.provenance -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 153–154 | key: series.export.dating.provenance -->
 
 Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume’s declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes.
 
@@ -1459,7 +1459,7 @@ Dating: no document date is read. Each source note sits in the coverage decade o
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 134–135 | key: series.export.caveat.provenanceNotes %lld -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 140–141 | key: series.export.caveat.provenanceNotes %lld -->
 
 Unit: %lld parsed source notes. A source note is the citation naming where a document’s archival original was found. “Other / Unclassified” means a citation the parser could not classify, not a missing note.
 
@@ -1471,7 +1471,7 @@ Unit: %lld parsed source notes. A source note is the citation naming where a doc
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 129–130 | key: series.export.caveat.hiddenCategories %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 135–136 | key: series.export.caveat.hiddenCategories %@ -->
 
 Re-based: %@ are hidden, and every share in this table is a share of the categories shown rather than of all source notes. A decade with nothing in any shown category is zero here, not absent.
 
@@ -1481,7 +1481,7 @@ Re-based: %@ are hidden, and every share in this table is a share of the categor
 
 #### Administration profiles — dating rule
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 206–207 | key: series.export.dating.administration.v2 -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 212–213 | key: series.export.dating.administration.v2 -->
 
 Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. Those attributes are instants normalised to −05:00, so where the document’s own dateline names the same instant its day is taken from the dateline instead — otherwise the day at −05:00 stands. There is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out.
 
@@ -1491,7 +1491,7 @@ Dating: each document is placed by its own editorial date bounds, the frus:doc-d
 
 #### Administration profiles — what the year range does
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 162–163 | key: series.export.caveat.adminYears -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 168–169 | key: series.export.caveat.adminYears -->
 
 Year range: this selects which administrations appear, by whether the president’s term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.
 
@@ -1501,7 +1501,7 @@ Year range: this selects which administrations appear, by whether the president�
 
 #### Administration profiles — why the counts overlap
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 169–170 | key: series.export.caveat.adminOverlap -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 175–176 | key: series.export.caveat.adminOverlap -->
 
 Attribution: a document counts toward every administration its date range overlaps. The counts therefore overlap each other and add up to more than the whole series. A term ends on the day the next president takes office. A document dated on a succession day therefore belongs to the incoming president. These counts measure whose foreign policy the documents cover, not when the volumes were published.
 
@@ -1513,7 +1513,7 @@ Attribution: a document counts toward every administration its date range overla
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 189–190 | key: series.export.caveat.adminNotes.v2 %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | lines: 195–196 | key: series.export.caveat.adminNotes.v2 %@ -->
 
 Editorial notes: %@. Editorial-note documents carry a span of dates rather than a single date; excluding them also withholds a volume whose only tie to an administration is such a note.
 
@@ -1530,14 +1530,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 347–348 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 349–350 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 337–338 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 339–340 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -1774,7 +1774,7 @@ corpus). Softening the "cannot see this change" sentence would turn a disclosed 
 silent inconsistency.*
 
 #### The override confirmation warning
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1232–1233 | key: classification.override.warning.v2 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1230–1231 | key: classification.override.warning.v2 -->
 
 The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search.
 
@@ -1967,7 +1967,7 @@ Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s wind
 <!-- END SOURCE: semanticMap.export.caveat.frame.labels %lld %lld -->
 
 #### Artifact: drawn from the bundled source-provenance…
-<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 123–124 | key: series.export.caveat.artifact %@ -->
+<!-- SOURCE: FRUSCoreKit/Analytics/Export/SeriesAnalyticsExport.swift | SeriesAnalyticsExport.provenance | lines: 129–130 | key: series.export.caveat.artifact %@ -->
 
 Artifact: drawn from the bundled source-provenance aggregate generated %@. Every figure on this surface reads that one file; a plate from a different generation is a different figure.
 
@@ -1985,7 +1985,7 @@ This is a “%@” link from inside a FRUS document. It works while reading that
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 373–374 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 375–376 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
@@ -2064,7 +2064,7 @@ Document distribution over the selected dates, stacked by volume. Counts are lis
 
 *#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyGrouping.swift` (FRUSCoreKit, since FRUS Explorer Light’s S24b; `ChronologyViewModel.swift` before), so the two are worded together.*
 
-<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 374–374 | key: chronology.spanning.header -->
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyGrouping.swift | ChronologyGrouping.spanningSectionHeader | lines: 376–376 | key: chronology.spanning.header -->
 
 Spans more than a year
 
@@ -2374,14 +2374,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 807–808 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 809–810 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 870–871 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 872–873 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2399,7 +2399,7 @@ You followed a link to page %lld of this volume, which isn’t downloaded.
 *Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1566–1567 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1550–1551 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 

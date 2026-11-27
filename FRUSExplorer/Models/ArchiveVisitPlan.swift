@@ -64,6 +64,8 @@ import SwiftData
 ///         duplicate and the delete's cascade are FRUSCoreKit's rules over the plan's records
 ///         (`ArchiveVisitPlanWrites`), which `make`, `duplicate(in:)` and `deleteWithChildren(in:)` apply
 ///         through the context; no stored property changed
+///   1.5 — 2026-11-26 (#1989): `duplicate(in:)` gives each copied stored target its source's creation date,
+///         from the kit's record, so the copy shows the row its original shows; no stored property changed
 @Model final class ArchiveVisitPlan {
 
     // MARK: - Identity
@@ -307,6 +309,8 @@ import SwiftData
     /// The rule is FRUSCoreKit's (``ArchiveVisitPlanWrites/duplicate(of:id:now:)``), over the plan's records,
     /// which this applies row for row: the copy's id, its fields and each child's key, halves and state, with
     /// the blobs and each child's reserved `stateData`, which the records do not carry, copied from the rows.
+    /// Each copied stored target takes its record's creation date, its source's (#1989), over the moment its
+    /// initialiser stamps, so a target several stored rows answer for shows the row the original shows.
     @discardableResult
     func duplicate(in context: ModelContext) -> ArchiveVisitPlan {
         let documentRows = documents ?? [], targetRows = targets ?? []
@@ -329,6 +333,7 @@ import SwiftData
         for (target, copied) in zip(targetRows, duplicated.targets) {
             let state = ArchiveVisitTarget(planId: copy.id, targetKey: copied.targetKey)
             state.plan = copy
+            state.createdAt = copied.createdAt
             state.tierId = copied.tierId
             state.included = copied.included
             state.userNote = copied.userNote

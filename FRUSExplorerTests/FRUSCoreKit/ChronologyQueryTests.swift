@@ -1528,3 +1528,97 @@ struct ChronologyLabelLocaleTests {
         #expect(chart.buckets.map(\.label) == ["1969-02", "1970-07"].map { Self.readersOwnLabel($0, .month) })
     }
 }
+
+// MARK: - ChronologyMagnifierLabelTests
+
+/// The Mac's hover magnifier names a year's months in a locale (#1971). `ChronologyGrouping`'s month label read
+/// `Calendar(identifier: .gregorian).shortStandaloneMonthSymbols`, and a calendar made with `init(identifier:)`
+/// holds the root locale, whose names are "M01" to "M12" whatever the process's locale: a probe on macOS 27.2.1
+/// printed "M02" and "M10" under en_US, de_DE and en_GB alike. Both of the magnifier's calls read that label for
+/// a year's months, the loaded group's (`magnifierBreakdown(for:locale:)`) and the capped chart's
+/// (`magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:locale:)`).
+///
+/// Version history:
+///   1.0 — 2026-11-26 (#1971): initial implementation
+@Suite("FRUSCoreKit — Chronology's magnifier names its months, in the locale a caller passes (#1971)")
+struct ChronologyMagnifierLabelTests {
+
+    /// A document dated to the day `iso`.
+    private static func row(_ doc: String, _ iso: String, volume: String = "frus1961-63v10") -> ChronologyRow {
+        ChronologyRow(volumeId: volume, documentId: doc, header: "Header \(doc)", dateline: nil, summary: nil,
+                      dateISO: iso, dateISOMax: iso, precision: .day, certainty: .exact,
+                      isEditorialNote: false, isFrontMatter: false, documentNumber: nil)
+    }
+
+    /// 1962: two documents in February and three in October.
+    private static let year = ChronologyDateGroup(
+        bucketKey: "1962", granularity: .year, sortDate: .distantPast, displayLabel: "1962",
+        rows: [row("d1", "1962-02-05"), row("d2", "1962-02-26"),
+               row("d3", "1962-10-16"), row("d4", "1962-10-22"), row("d5", "1962-10-28", volume: "frus1961-63v11")],
+        volumeCount: 2, subseriesCount: 1, editorialNoteCount: 0)
+
+    /// The same months as the capped chart's aggregate counts give them.
+    private static let monthCounts: [(bucketKey: String, volumeId: String, count: Int)] = [
+        ("1962-02", "frus1961-63v10", 2), ("1962-10", "frus1961-63v10", 2), ("1962-10", "frus1961-63v11", 1),
+    ]
+
+    /// A month's short name as the reader's own calendar writes it: the Gregorian calendar in `.autoupdatingCurrent`.
+    private static func readersOwnMonth(_ month: Int) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = .autoupdatingCurrent
+        return calendar.shortStandaloneMonthSymbols[month - 1]
+    }
+
+    @Test("With no locale passed, as the app calls them, a year's months are named in the reader's own locale, by both of the magnifier's calls")
+    func withNoLocaleTheMonthsAreTheReadersOwn() {
+        let months = ChronologyGrouping.magnifierBreakdown(for: Self.year)
+        #expect(months.map(\.label) == [Self.readersOwnMonth(2), Self.readersOwnMonth(10)])
+        #expect(months.map(\.count) == [2, 3])
+        let bars = ChronologyGrouping.magnifierBarsByBucket(counts: Self.monthCounts, parentPrefix: 4,
+                                                            volumeBreakdown: false)
+        #expect(bars["1962"]?.map(\.label) == [Self.readersOwnMonth(2), Self.readersOwnMonth(10)])
+        #expect(bars["1962"]?.map(\.count) == [2, 3])
+        #expect(months.map(\.label) == ChronologyGrouping.magnifierBreakdown(for: Self.year, locale: .autoupdatingCurrent).map(\.label))
+    }
+
+    @Test("A year's months are named in the locale passed: Feb and Oct in the United States, Feb and Okt in Germany, by both calls")
+    func aYearsMonthsAreNamedInTheLocalePassed() {
+        for (identifier, names) in [("en_US", ["Feb", "Oct"]), ("de_DE", ["Feb", "Okt"])] {
+            let locale = Locale(identifier: identifier)
+            let months = ChronologyGrouping.magnifierBreakdown(for: Self.year, locale: locale)
+            #expect(months.map(\.label) == names, "\(identifier)")
+            #expect(months.map(\.count) == [2, 3], "\(identifier)")
+            #expect(months.allSatisfy { $0.seriesKey == nil }, "\(identifier)")
+            let bars = ChronologyGrouping.magnifierBarsByBucket(counts: Self.monthCounts, parentPrefix: 4,
+                                                                volumeBreakdown: false, locale: locale)
+            #expect(bars["1962"]?.map(\.label) == names, "\(identifier)")
+            #expect(bars["1962"]?.map(\.count) == [2, 3], "\(identifier)")
+        }
+    }
+
+    @Test("A month's bars are its days' numbers and a day's its volumes, whatever the locale")
+    func finerBarsAreTheSameInEveryLocale() {
+        let october = ChronologyDateGroup(
+            bucketKey: "1962-10", granularity: .month, sortDate: .distantPast, displayLabel: "October 1962",
+            rows: Self.year.rows.filter { $0.dateISO.hasPrefix("1962-10") },
+            volumeCount: 2, subseriesCount: 1, editorialNoteCount: 0)
+        let day = ChronologyDateGroup(
+            bucketKey: "1962-10-22", granularity: .day, sortDate: .distantPast, displayLabel: "October 22, 1962",
+            rows: [Self.row("d6", "1962-10-22"), Self.row("d7", "1962-10-22"),
+                   Self.row("d8", "1962-10-22", volume: "frus1961-63v11")],
+            volumeCount: 2, subseriesCount: 1, editorialNoteCount: 0)
+        let dayCounts: [(bucketKey: String, volumeId: String, count: Int)] = [
+            ("1962-10-16", "frus1961-63v10", 1), ("1962-10-22", "frus1961-63v10", 1), ("1962-10-28", "frus1961-63v11", 1),
+        ]
+        for locale in [Locale(identifier: "en_US"), Locale(identifier: "de_DE"), .autoupdatingCurrent] {
+            #expect(ChronologyGrouping.magnifierBreakdown(for: october, locale: locale).map(\.label) == ["16", "22", "28"])
+            let volumes = ChronologyGrouping.magnifierBreakdown(for: day, locale: locale)
+            #expect(volumes.map(\.label) == ["frus1961-63v10", "frus1961-63v11"])
+            #expect(volumes.map(\.seriesKey) == ["frus1961-63v10", "frus1961-63v11"])
+            #expect(ChronologyGrouping.magnifierBarsByBucket(counts: dayCounts, parentPrefix: 7, volumeBreakdown: false,
+                                                             locale: locale)["1962-10"]?.map(\.label) == ["16", "22", "28"])
+            #expect(ChronologyGrouping.magnifierBarsByBucket(counts: dayCounts, parentPrefix: 10, volumeBreakdown: true,
+                                                             locale: locale)["1962-10-22"]?.map(\.label) == ["frus1961-63v10"])
+        }
+    }
+}

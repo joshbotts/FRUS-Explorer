@@ -107,6 +107,8 @@ import AppKit
 ///   1.19 — 2026-11-26 (L26, decision 191): the toolbar's Add to Archives Visit menu counts and offers the
 ///           rows the packet takes (`packetPointers`), and is disabled where it would offer none. Mirrors
 ///           SourceExplorerView 1.21.
+///   1.20 — 2026-11-26 (#1976, L31): the pre-1906 box says when its rolls match the index's date, the dateline
+///           printing none (`documentRollsAreIndexDated`). Mirrors SourceExplorerView 1.22.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -1718,6 +1720,12 @@ struct MacSourceExplorerView: View {
                             defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if resolution?.documentRollsAreIndexDated == true {
+                    // #1976, the twin of the iOS line: the rolls match the index's date, the dateline printing none.
+                    Text(CountrySeriesRollDates.indexedNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if case .resolved(_, let serialLabel) = countrySeriesOutcome,
                    let serial = documentContext?.despatchSerial {
                     // #965 — the hand-maintained twin of the iOS placement. Inside the roll box on
