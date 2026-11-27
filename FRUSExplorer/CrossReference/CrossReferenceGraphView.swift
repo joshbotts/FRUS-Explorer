@@ -208,6 +208,12 @@ struct CrossReferenceGraphView: View {
     /// The working corpus the reader asked to save from the graph, while the question before the save is
     /// up (#1990).
     @State private var corpusSaveRequest: WorkingCorpusSaveRequest? = nil
+    /// The Archives Visit picker over the graph's documents, once their preview is read (#1990).
+    @State private var planPickerRequest: PlanPickerRequest? = nil
+    /// How many documents the picker on screen adds, for what the add says after it.
+    @State private var planPickerDocumentCount = 0
+    /// Whether the visit's preview is being read, between the menu item and the picker.
+    @State private var isPreparingVisit = false
     /// What a save just did, in the graph's toast, which VoiceOver hears (#1990, as L19's Add to
     /// Collection says it).
     @State private var saveOutcome: String? = nil
@@ -366,9 +372,16 @@ struct CrossReferenceGraphView: View {
                 .environment(appState)
                 .environment(\.sceneID, sceneID ?? .anyWindow)
         }
-        // #1990: the question before a corpus is saved from the graph, which says what it did after in
-        // the graph's toast.
+        // #1990: the graph's two saves. The question before a corpus is saved, and the picker a
+        // visit's add goes through, each saying what it did after in the graph's toast.
         .workingCorpusSave($corpusSaveRequest, outcome: $saveOutcome)
+        .sheet(item: $planPickerRequest) { request in
+            PlanPickerSheet(request: request) { plan in
+                saveOutcome = CrossReferenceGraphCapture.visitOutcome(documentCount: planPickerDocumentCount,
+                                                                      planName: plan.displayName)
+            }
+            .environment(appState)
+        }
         .transientToast($saveOutcome)
     }
 
@@ -376,8 +389,9 @@ struct CrossReferenceGraphView: View {
 
     /// The graph's two saves, for the toolbar's Save As menu and the reference list's.
     private var saveActions: GraphSaveActions {
-        GraphSaveActions(isEnabled: !vm.isLoading && !vm.baseDisplayNodes.isEmpty,
-                         saveAsWorkingCorpus: saveAsWorkingCorpus)
+        GraphSaveActions(isEnabled: !vm.isLoading && !vm.baseDisplayNodes.isEmpty && !isPreparingVisit,
+                         saveAsWorkingCorpus: saveAsWorkingCorpus,
+                         addToArchivesVisit: addToArchivesVisit)
     }
 
     /// The toolbar's Save As menu (#1990): the graph's documents as a working corpus, or as the seeds of
@@ -418,6 +432,43 @@ struct CrossReferenceGraphView: View {
                                            stamp: WorkingCorpusCapture.stamp(for: Date()))
         corpusSaveRequest = WorkingCorpusSaveRequest(capture: corpus,
                                                      notes: capture.pagesNote().map { [$0] } ?? [])
+    }
+
+    /// Opens the Archives Visit picker over every document the graph holds as drawn, as its seeds with both
+    /// halves on (decision 181), once the line that says what a visit of them lists is read.
+    ///
+    /// The picker's write is `ArchiveVisitPlan.addSeeds`, the one every add flow shares, which upserts each
+    /// document under its derived id in one pass over the plan's seeds, so a graph's few hundred are one
+    /// write; a collection's record adds up to 17,613 through it.
+    private func addToArchivesVisit() {
+        guard let capture = savableCapture() else { return }
+        let label = vm.saveDocumentLabel
+        isPreparingVisit = true
+        Task {
+            let preview = await visitPreview(of: capture)
+            isPreparingVisit = false
+            planPickerDocumentCount = capture.documentCount
+            planPickerRequest = PlanPickerRequest(
+                documents: capture.seeds, includeSource: true, includeExternalRefs: true,
+                basis: capture.visitBasis(documentLabel: label, preview: preview),
+                suggestedName: CrossReferenceGraphCapture.visitName(documentLabel: label))
+        }
+    }
+
+    /// What a visit of the capture's documents lists on this device: the packet the plan editor would
+    /// derive from them, both halves on, read through the same data source and bundled indexes
+    /// (`ArchiveVisitEditorView`'s). `nil` when the device has no index to read it from.
+    private func visitPreview(of capture: CrossReferenceGraphCapture) async -> CrossReferenceGraphVisitPreview? {
+        guard let pipeline = appState.indexingPipeline else { return nil }
+        let manifest = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
+        let dataSource = TripPacketDataSource(
+            pipeline: pipeline,
+            manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first }))
+        let model = await TripPacketBuilder.build(
+            sourceDocuments: capture.seeds, referenceDocuments: capture.seeds, researchQuestion: nil,
+            dataSource: dataSource, indexes: .bundled)
+        return CrossReferenceGraphVisitPreview(model: model, capture: capture,
+                                               indexedVolumeIds: appState.indexedVolumeIds)
     }
 
     // MARK: - Content Area
@@ -2276,6 +2327,8 @@ struct GraphSaveActions {
     let isEnabled: Bool
     /// Asks to save the documents as a working corpus.
     let saveAsWorkingCorpus: () -> Void
+    /// Opens the Archives Visit picker over the documents.
+    let addToArchivesVisit: () -> Void
 }
 
 /// The Save As menu's two items, one definition for the toolbar's menu and the reference list's (#1990).
@@ -2283,12 +2336,17 @@ struct GraphSaveActions {
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
 struct GraphSaveMenuItems: View {
+    /// The saves the two items run.
     let actions: GraphSaveActions
 
     var body: some View {
         Button(action: actions.saveAsWorkingCorpus) {
             Label(String(localized: "graph.save.corpus", defaultValue: "Working Corpus…"),
                   systemImage: "tray.full")
+        }
+        Button(action: actions.addToArchivesVisit) {
+            Label(String(localized: "graph.save.visit", defaultValue: "Archives Visit…"),
+                  systemImage: "building.columns")
         }
     }
 }

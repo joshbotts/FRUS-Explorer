@@ -1400,6 +1400,15 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
     /// How many documents the saves take.
     public var documentCount: Int { documentKeys.count }
 
+    /// The documents as a visit's seeds, `(volumeId, documentId)`, in the same order.
+    public var seeds: [(volumeId: String, documentId: String)] {
+        documentKeys.compactMap { key in
+            let parts = key.split(separator: "/", maxSplits: 1)
+            guard parts.count == 2 else { return nil }
+            return (String(parts[0]), String(parts[1]))
+        }
+    }
+
     // MARK: Words
 
     /// The graph's central document as both saves name it: its volume and its printed number,
@@ -1507,5 +1516,132 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
             many: String(localized: "graph.save.pages.many %@",
                          defaultValue: "The graph’s %@ cited pages are not documents and are left out."),
             locale: locale)
+    }
+
+    // MARK: The visit's line
+
+    /// The picker's line for *Add to Archives Visit*: where the documents come from, how many targets
+    /// they give a visit on this device, and what of the graph's archival nodes a visit does not list.
+    ///
+    /// **A visit lists more than the graph draws, in one way, and less in another.** More: it keys every
+    /// lot and library a seed's footnotes cite, joined to the collection authority or not, where the graph
+    /// draws a unit only for a citation that joins (``CrossReferenceGraphDisplay/unitNodes(rowsByDocument:authority:)``);
+    /// and with the source half on it lists the file each seed's own source note names. Less: the packet's
+    /// footnote channel leaves the central-file class out (`ExternalCitation.anchorsOutsideThePacket`,
+    /// #784's scope), so a class the graph draws for a footnote is a target only where a seed's own source
+    /// note names it. The line says how many of the graph's classes that is.
+    ///
+    /// The picker shows the line after its own words, "Adding 143 documents: archival sources +
+    /// unprinted references — ", so it begins in lower case, as the other surfaces' lines do ("from the
+    /// collection “Berlin 1948”"). Without a preview, where the device has no index to read the packet
+    /// from, it says where the documents come from and no more.
+    ///
+    /// - Parameters:
+    ///   - documentLabel: The central document (``documentLabel(volumeId:documentId:documentNumber:)``).
+    ///   - preview: What the documents give a visit, read from the packet they derive, or `nil`.
+    ///   - locale: The locale that groups the counts.
+    /// - Returns: The line, which the picker shows after its count of documents.
+    public func visitBasis(documentLabel: String, preview: CrossReferenceGraphVisitPreview?,
+                           locale: Locale = .autoupdatingCurrent) -> String {
+        var sentences = [dated(String(format: String(localized: "graph.save.visit.source %@ %@",
+                                                     defaultValue: "from the cross-reference graph of %1$@, at %2$@"),
+                                      documentLabel, depthPhrase))]
+        if let preview {
+            let targets = CountCopy.phrase(
+                preview.targetCount,
+                one: String(localized: "graph.save.visit.targets.one %@", defaultValue: "%@ target"),
+                many: String(localized: "graph.save.visit.targets.many %@", defaultValue: "%@ targets"),
+                locale: locale)
+            if preview.indexedSeedCount < documentCount {
+                sentences.append(String(format: String(
+                    localized: "graph.save.visit.partial %@ %@",
+                    defaultValue: "On this device a visit of these documents lists %1$@, from the %2$@ indexed here"),
+                    targets, CountCopy.documents(preview.indexedSeedCount, locale: locale)))
+            } else {
+                sentences.append(String(format: String(
+                    localized: "graph.save.visit.whole %@",
+                    defaultValue: "On this device a visit of these documents lists %@"), targets))
+            }
+            if !classKeys.isEmpty {
+                // The form follows the graph's classes, and the listed count is a noun phrase's, so
+                // no verb has to agree with it.
+                sentences.append(CountCopy.phrase(
+                    classKeys.count,
+                    one: String(localized: "graph.save.visit.classes.one %@ %@",
+                                defaultValue: "A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ class"),
+                    many: String(localized: "graph.save.visit.classes.many %@ %@",
+                                 defaultValue: "A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ classes"),
+                    then: [preview.classesListed.formatted(.number.locale(locale))],
+                    locale: locale))
+            }
+        }
+        return sentences.joined(separator: ". ") + "."
+    }
+
+    /// The name a visit made from the picker's New row takes: the set's subject, with no stamp, since a
+    /// visit is not looked up by its name.
+    ///
+    /// - Parameter documentLabel: The central document (``documentLabel(volumeId:documentId:documentNumber:)``).
+    /// - Returns: The suggested name.
+    public static func visitName(documentLabel: String) -> String {
+        subject(documentLabel: documentLabel)
+    }
+
+    /// What *Add to Archives Visit* did, said after it, as Add to Collection says it (L19).
+    ///
+    /// - Parameters:
+    ///   - documentCount: How many documents were added.
+    ///   - planName: The visit's name as its list shows it.
+    ///   - locale: The locale that groups the count.
+    /// - Returns: The sentence the graph shows and VoiceOver hears.
+    public static func visitOutcome(documentCount: Int, planName: String,
+                                    locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            documentCount,
+            one: String(localized: "graph.save.visit.added.one %@ %@",
+                        defaultValue: "Added %1$@ document to “%2$@”"),
+            many: String(localized: "graph.save.visit.added.many %@ %@",
+                         defaultValue: "Added %1$@ documents to “%2$@”"),
+            then: [planName], locale: locale)
+    }
+}
+
+// MARK: - CrossReferenceGraphVisitPreview
+
+/// What an Archives Visit seeded from the graph's documents would list, read before the write from the
+/// packet those documents derive on this device (`TripPacketBuilder.build`, both halves on), for the
+/// picker's line (``CrossReferenceGraphCapture/visitBasis(documentLabel:preview:locale:)``).
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+public struct CrossReferenceGraphVisitPreview: Equatable, Sendable {
+
+    /// How many targets the documents give: what a new visit of them lists.
+    public let targetCount: Int
+    /// How many of the graph's central-file classes are among those targets, which a document's own
+    /// source note names (`class|<key>`, the drawn-from channel's key).
+    public let classesListed: Int
+    /// How many of the documents are in volumes indexed on this device, the only ones the packet reads.
+    public let indexedSeedCount: Int
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(targetCount: Int, classesListed: Int, indexedSeedCount: Int) {
+        self.targetCount = targetCount
+        self.classesListed = classesListed
+        self.indexedSeedCount = indexedSeedCount
+    }
+
+    /// The preview of `capture`'s documents, from the packet they derive.
+    ///
+    /// - Parameters:
+    ///   - model: The packet built from the capture's documents, both halves on.
+    ///   - capture: What the graph saves.
+    ///   - indexedVolumeIds: The volumes this device has indexed.
+    public init(model: TripPacketModel, capture: CrossReferenceGraphCapture, indexedVolumeIds: Set<String>) {
+        let targetKeys = Set(model.targets.map(\.key))
+        self.targetCount = model.targets.count
+        self.classesListed = capture.classKeys.count { targetKeys.contains("class|\($0)") }
+        self.indexedSeedCount = WorkingCorpusResolver(indexedVolumeIds: indexedVolumeIds)
+            .resolve(documentKeys: capture.documentKeys).indexedCount
     }
 }

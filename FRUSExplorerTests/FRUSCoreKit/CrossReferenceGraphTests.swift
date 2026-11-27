@@ -2207,6 +2207,36 @@ struct NetworkAtThreeHopsTests {
 
 // MARK: - What the graph saves (#1990, L42)
 
+/// A data source that vends exactly what the packet builder reads, for the visit's preview.
+@MainActor
+private struct GraphVisitStub: TripPacketReferenceDataSource {
+    var sources: [CollectionGeneratedBlocks.SourceRecord] = []
+    var citations: [String: [ExternalCitation]] = [:]
+
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        "\(volumeId)/\(documentId)"
+    }
+    func dateMetadata(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: DocumentDateMetadata] { [:] }
+    func documentNumbers(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: String] { [:] }
+    func documentSources(for documents: [(volumeId: String, documentId: String)])
+        async -> [CollectionGeneratedBlocks.SourceRecord] {
+        let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return sources.filter { requested.contains("\($0.volumeId)/\($0.documentId)") }
+    }
+    func externalCitations(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: [ExternalCitation]] {
+        let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return citations.filter { requested.contains($0.key) }
+    }
+    func archivalResolution(recordGroup: String?, lotFile: String?)
+        -> CollectionGeneratedBlocks.ArchivalLink? { nil }
+    func personMentions(for documents: [(volumeId: String, documentId: String)])
+        async -> [CollectionGeneratedBlocks.PersonMention] { [] }
+    func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord] { [] }
+}
+
 /// The rule behind the graph's two saves (#1990, decisions 180 and 181): every document the graph
 /// holds as drawn, at its depth, with the documents its volume and date clusters stand for and those in
 /// volumes not downloaded, within a brushed range where one is brushed, and without its page nodes; and
@@ -2297,6 +2327,7 @@ struct CrossReferenceGraphCaptureTests {
         #expect(taken.pageCount == 1, "v3/pg_12 is a page node, which opens nothing and is no document")
         #expect(taken.depth == 3)
         #expect(taken.dateWindow == nil)
+        #expect(taken.seeds.map { "\($0.volumeId)/\($0.documentId)" } == taken.documentKeys)
     }
 
     @Test("A volume in no download is held as the graph draws it")
@@ -2448,6 +2479,7 @@ struct CrossReferenceGraphCaptureTests {
         #expect(corpus.sourceDescription == "Cross-reference graph of frus1952-54v02p1, Doc. 16, at three hops")
         #expect(corpus.documentKeys == taken.documentKeys)
         #expect(!corpus.isTruncated)
+        #expect(CrossReferenceGraphCapture.visitName(documentLabel: label) == "Cross-references of frus1952-54v02p1, Doc. 16")
     }
 
     @Test("A brushed range is named in the description, which is enough to draw the set again")
@@ -2475,5 +2507,75 @@ struct CrossReferenceGraphCaptureTests {
                 == "The graph’s 1 cited page is not a document and is left out.")
         #expect(pages(1_204).pagesNote(locale: Self.english)
                 == "The graph’s 1,204 cited pages are not documents and are left out.")
+    }
+
+    @Test("The visit's line says where its documents come from, what they give a visit, and what it leaves out")
+    func saysWhatAVisitLists() {
+        let taken = CrossReferenceGraphCapture(
+            documentKeys: ["v/d1", "v/d2", "w/d3"], pageCount: 0, documentsWithArchivalNodes: ["v/d1"],
+            unitIds: ["lot:A"], classKeys: ["611.61", "711.5611"], depth: 2, dateWindow: nil)
+        let label = "v, Doc. 1"
+        let source: String = "from the cross-reference graph of v, Doc. 1, at two hops."
+        let classes: String = " A footnote’s central-file class is a target only where a document’s own source note names it: "
+        #expect(taken.visitBasis(documentLabel: label, preview: nil, locale: Self.english) == source)
+        let whole = CrossReferenceGraphVisitPreview(targetCount: 12, classesListed: 1, indexedSeedCount: 3)
+        let wholeLine: String = source + " On this device a visit of these documents lists 12 targets."
+            + classes + "1 of the graph’s 2 classes."
+        #expect(taken.visitBasis(documentLabel: label, preview: whole, locale: Self.english) == wholeLine)
+        let partial = CrossReferenceGraphVisitPreview(targetCount: 1, classesListed: 0, indexedSeedCount: 2)
+        let oneClass = CrossReferenceGraphCapture(
+            documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
+            classKeys: ["611.61"], depth: 2, dateWindow: nil)
+        let partialLine: String = source
+            + " On this device a visit of these documents lists 1 target, from the 2 documents indexed here."
+            + classes + "0 of the graph’s 1 class."
+        #expect(oneClass.visitBasis(documentLabel: label, preview: partial, locale: Self.english) == partialLine)
+        let noClasses = CrossReferenceGraphCapture(
+            documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
+            classKeys: [], depth: 2, dateWindow: nil)
+        let noClassesLine: String = source + " On this device a visit of these documents lists 12 targets."
+        #expect(noClasses.visitBasis(documentLabel: label, preview: whole, locale: Self.english) == noClassesLine)
+        #expect(CrossReferenceGraphCapture.visitOutcome(documentCount: 1, planName: "P", locale: Self.english)
+                == "Added 1 document to “P”")
+        #expect(CrossReferenceGraphCapture.visitOutcome(documentCount: 1_204, planName: "P", locale: Self.english)
+                == "Added 1,204 documents to “P”")
+        #expect(WorkingCorpusCapture.outcome(savedName: "N") == "Saved as the working corpus “N”")
+        #expect(WorkingCorpusCapture.outcome(savedName: nil) == "The working corpus could not be saved.")
+    }
+
+    /// The preview reads the packet the documents derive: a footnote's class is no target, and a class a
+    /// document's own source note names is one (#784's scope, `ExternalCitation.anchorsOutsideThePacket`).
+    @Test("The visit's preview counts the packet's targets and the graph's classes among them")
+    func previewsTheVisit() async {
+        let classCitation = ExternalCitation(
+            anchor: "centralFileClass", repository: "Department of State", collection: nil, lotFile: nil,
+            lotFileNorm: nil, fileId: nil, inherited: false, rawText: "711.5611/1-1553", noteOrdinal: 1,
+            decimalClass: "711.5611")
+        let otherClass = ExternalCitation(
+            anchor: "centralFileClass", repository: "Department of State", collection: nil, lotFile: nil,
+            lotFileNorm: nil, fileId: nil, inherited: false, rawText: "611.61/2-253", noteOrdinal: 2,
+            decimalClass: "611.61")
+        let lotCitation = ExternalCitation(
+            anchor: "lotFile", repository: "Department of State", collection: nil, lotFile: "60 D 627",
+            lotFileNorm: "60D627", fileId: nil, inherited: false, rawText: "Not printed. (Lot 60 D 627)",
+            noteOrdinal: 3)
+        let stub = GraphVisitStub(
+            sources: [.init(volumeId: "v", documentId: "d1", repository: nil, recordGroup: "59", lotFile: nil,
+                            seriesName: nil, rawText: "Department of State, Central Files, 611.61/1-1553",
+                            citationEra: "decimal")],
+            citations: ["v/d2": [classCitation, otherClass, lotCitation]])
+        let taken = CrossReferenceGraphCapture(
+            documentKeys: ["v/d1", "v/d2", "w/d3"], pageCount: 0, documentsWithArchivalNodes: ["v/d2"],
+            unitIds: ["lot:60D627"], classKeys: ["711.5611", "611.61"], depth: 3, dateWindow: nil)
+        let model = await TripPacketBuilder.build(
+            sourceDocuments: taken.seeds, referenceDocuments: taken.seeds, researchQuestion: nil,
+            dataSource: stub, indexes: TripPacketIndexes())
+        let preview = CrossReferenceGraphVisitPreview(model: model, capture: taken, indexedVolumeIds: ["v"])
+        #expect(Set(model.targets.map(\.key)) == ["class|611.61", "lot|60D627"], """
+            The source note's class and the footnote's lot; neither footnote class: \(model.targets.map(\.key))
+            """)
+        #expect(preview.targetCount == 2)
+        #expect(preview.classesListed == 1, "611.61 is a target, from v/d1's own source note; 711.5611 is not")
+        #expect(preview.indexedSeedCount == 2, "w is not indexed")
     }
 }
