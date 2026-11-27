@@ -4546,3 +4546,61 @@ The plan of record's session started this one for row L29, on `claude/l29-collec
   - `swift test` ran 5,257 tests in 610 suites over 39 runs, and none failed (5,253 at L33's landing, and this row's 4). Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
   - The `FRUSExplorerMac` build succeeded.
   - Both Xcode builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks.
+
+## Session 2026-11-27 — L41, the Zotero client: a send returns as soon as its last write succeeds, and Zotero's `Backoff` holds the account's next write from any client; each wait is said through the send's status; a date `Retry-After` is read; #1923's resume proposed, not built
+
+The plan of record's session started this one for row L41, on `claude/l41-zotero-client-f9a33d`, held until L29 had merged and then begun on the orchestrator's "go" from `v2` at `2db58c5a`, L29's merge. The row: #1924, #1925 and #1926, and #1923's resume as a proposal (decision 138). Commits: `54bf4f86` (the client and its suite), `8ab12121` (the reader's two Share sends), and a docs commit.
+
+**Each defect, first** (decision 183)
+- **The control, on `v2`'s client** (`2db58c5a`, the kit untouched), seven new tests written first and run through `Scripts/heavy.sh` with `swift test --filter ZoteroRetryWaitTests`, the package built from empty in 92 s: 20 tests in the suite, the 13 already there passed, and all 7 new ones failed, with 11 issues, each at its defect.
+  - **#1924:** a send of one write answered with `Backoff: 5` waited `[5.0]` after its last write, before it returned. Sent again by a new client, the next send waited `[]`.
+  - **#1925:** a 429 with `Retry-After: 5` told its caller `Uploading items 1–1…` and waited 5 s, saying nothing of the wait. A `Backoff: 3` on the collection's write was waited under *Creating collection…*, unannounced, before *Uploading items 1–1…*.
+  - **#1926:** a `Retry-After` 45 s after the response's `Date` waited `[30, 30, 30]` and threw `rateLimited(30)`; one an hour on did the same over 4 requests, where it should throw at once carrying 3,600; one 45 s after the device's clock, with no `Date`, waited `[30, 30, 30]`.
+- Those seven were then made exact for the fix: a `TestClock` the client's sleep moves, so a deadline and a message are compared whole, and a wall clock a test sets for a date counted with no `Date`.
+
+**#1924, the `Backoff`** (`54bf4f86`)
+- **Before:** `ZoteroAPIClient.writeRequest` waited a `Backoff`, up to a minute, after Zotero's 2xx and before it returned. So a send's last write, or a send of one write, held the send up to a minute after everything was written, and the next send, by a new client, waited nothing.
+- **After:** a 2xx's `Backoff` sets a deadline (`now + min(Backoff, 60)`), and each attempt of each write first waits what is left of it (`holdToBackoff`). A send returns at its last write; the send's next write, or the account's next send, waits the rest.
+- **Where the deadline lives:** `ZoteroBackoffDeadlines`, an actor in the client's file, one per process (`.shared`), keyed by the Zotero user ID that every write names in its path. The app makes a new `ZoteroAPIClient()` for each of its three sends, so a deadline kept in a client would be gone at the next send. A deadline that has passed is dropped when read, and a later one is never shortened by an earlier. No API key is kept. `resolveAccount(key:)`, which reads `/keys/` with no user ID, does not consult it.
+- **Unchanged:** the 60-second cap, #1916's header rules, and a `Backoff` read on a 2xx alone. A `Backoff` of 0 now holds nothing, where it was a sleep of 0.
+
+**#1925, the waits said** (`54bf4f86`, `8ab12121`)
+- **The kit:** before a 429's retry, `retryStatus(seconds:locale:)`, *Zotero is busy: trying again in 30 seconds…*; before a `Backoff`'s wait, `backoffStatus(seconds:locale:)`, *Zotero asked for a pause: continuing in 45 seconds…*. The seconds are whole, rounded up (`wholeSeconds`), and the form is chosen one or many through `CountCopy`, since the count scan refuses a `%lld` before *seconds*. After the wait the step's own message is said again, so the line does not keep the wait while the write runs. A wait of 0 s says nothing.
+- **The app:** the collection export sheet already put `status` in its progress line (`preparingMessage`), so it is unchanged. The Mac's Share popover (`DocumentSharePopover`) reads the send's status in the line under its row while it runs, and the iOS Share menu (`DocumentShareMenu`) its send row, with an hourglass, since a menu closes when chosen.
+
+**#1926, a date `Retry-After`** (`54bf4f86`)
+- `retryAfterSeconds(_:responseDate:localNow:)`: a `Retry-After` of seconds as before; else an IMF-fixdate (`httpDate(_:)`, a POSIX formatter in GMT, not lenient) counted from the response's own `Date`, or from the device's clock (a seam a test sets) when it has none the client can read. A date before that moment gives no seconds, so the 30 s default; past a minute, `rateLimited` at once with the seconds. `Backoff` stays seconds alone. The two obsolete forms of an HTTP date are not read.
+
+**#1923, the resume: proposed, not built**
+- The plan says its design is the owner's. The owner was away overnight, so the orchestrator asked for the proposal in this row's "ready to land" message rather than a question that would hold the session. It is in the group's notes (`L41-1923-resume-proposal.md`), summarised there:
+  - **A (recommended):** the kit throws `ZoteroSendStopped` with a progress value (the Zotero collection's key, each written item's key by its URL, the notes written, the batch in flight with its write token), and `send(…, resuming:)` makes no collection and skips what was written; a batch whose answer was lost is re-sent under its own token, and Zotero's 412 for a token it has seen means it landed. The app records the partial send as `zotero-api` with the count written (no CloudKit field) and offers **Finish Sending**, the progress kept in a device-local file for 12 hours.
+  - **B:** as A, the progress on the history row, so another device can finish it: new stored properties, joining 1.1's promotion.
+  - **C:** record only, and warn before a second send.
+  - **D:** ask Zotero what is in the collection, and skip it.
+- Zotero's documentation, read for it (2026-11-27): a write token is remembered 12 hours after a successful request and a reused one is refused with 412, carrying no keys; a 200 can carry `successful` and `failed` together; a collection's items list 100 a page with their `url`; there is no lookup by URL.
+
+**A claim of the brief that does not hold** (decision 183)
+- The plan has L41 change "how [the collection's send] calls the client" (`CollectionExportSheet.sendToZoteroLibrary()`), and L29 and L41 ordered on it. With the deadline kept per process, the sheet's `ZoteroAPIClient()` holds to it as it is, and the sheet already showed `status`, so `CollectionExportSheet.swift` is unchanged. The order cost nothing.
+
+**Found, and left in §5** (decision 183: offered, not taken)
+- Zotero's *Basics* says a 503 during maintenance carries a `Retry-After`; the client reads one on a 429 alone, so a 503 stops a send as *an unexpected error (HTTP 503)*.
+- The same page says a `Backoff` can come on any response; the client reads it on a 2xx alone.
+
+**Docs**
+- Both manuals: §11.2's Send to Zotero Library, what the send says while it waits and that a pause is waited at the next send; the collection export's Zotero bullet, its progress line. The *AI Generated* notice is kept.
+- EditableContent: four blocks added for the new keys (`zotero.status.retry.one` and `.many`, `zotero.status.backoff.one` and `.many`, `ZoteroAPIClient.swift` 370–384), and four ranges re-pointed, each starting on its key's line with its length kept: `document.toolbar.share` 2343 → 2353, `document.toolbar.share.help` 2344–2345 → 2354–2355 and `summary.block.regenerate.a11y` 2649–2650 → 2663–2664 (`DocumentView.swift`), and `source.explorer.window.empty.detail` 2145–2146 → 2161–2162 (`SupportingViews.swift`, in `06-Archives.md`). The last two were missed at first: the first scoped run's `EditableContentKeyTests` named them, and a script then read all 1,363 ranged keys, every one on its line. A bullet in the Amendment-Log.
+- The plan's L41 record, §4's #1923 line, and two §5 findings.
+
+**Checks**
+- **The scoped runs,** through `Scripts/heavy.sh`. The control and the fix ran in one script under one lock, 04:46 to 04:57, since waiters on the lock are not served in order; L32's landing job had held it from 03:43, its UI suites included, and this job took it at 04:46.
+  - `swift build --target FRUSCoreKit` on the fixed client: no warning.
+  - `swift test --filter Zotero`: 56 tests in 8 suites passed. They are the suite's 26 with the NARA and Zotero host suites.
+  - `build-for-testing` from empty on the iPhone 17 under iOS 27.0 (`80CF0F18`): the two known residues and no other warning.
+  - The app's affected suites there, the app removed first (`ZoteroRetryWaitTests` and the file's four other suites, `NARAAndZoteroClientHostTests`, `ZoteroIOSDeadEndTests`, `CollectionZoteroSendNotesTests`, `CollectionExportNamingTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests`, `SharedKitsBoundaryTests`, `AppSourceTreeTests`, `UnconstructedViewAuditTests`, `ResearchGuideCoverageTests`, `DocumentViewTests` and `EnvironmentSelfReferenceTests`): 184 tests in 18 suites, 183 passed. The failure was `EditableContentKeyTests`, on two ranges this row had missed: `source.explorer.window.empty.detail` and `summary.block.regenerate.a11y`. Both were re-pointed.
+  - The `FRUSExplorerMac` build: succeeded, the two known residues only. It compiles the Share popover, whose change is Mac-only code.
+- **The review pass** on the diff, before the docs commit: three doc comments corrected in the client, with no code change. A deadline for an account that never writes again is not dropped. `hold` holds writes. The 429's seconds may come from a date. The status keys moved one line, and their four blocks with them.
+- **The confirm run** after it, 05:23 to 05:26 on `8ab12121` with the docs uncommitted:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test --filter Zotero`: 56 of 56.
+  - `EditableContentKeyTests`, `ResearchGuideCoverageTests`, `ZoteroRetryWaitTests` and `CodingStandardsAuditTests`: 118 tests, all passed, with the known residues only.
+- **Owed at landing,** on the merged tree: the full unit target, `swift build --target FRUSCoreKit`, `swift test` and the Mac build.

@@ -756,6 +756,29 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **L41, the Zotero client** (#1923 to #1926; decision 138). One session, kit code and new strings in both manuals.
   - `Backoff` waited before the next request, with a deadline every client sees, since the app makes a new client for each of its three sends (#1924); the waits reported through the send's `status` (#1925); a date `Retry-After` read (#1926).
   - **#1923's resume** is a proposal whose design is the owner's. Without it the row lands the other three.
+  - **Record (2026-11-27, `claude/l41-zotero-client-f9a33d`).** From `v2` at `2db58c5a`, L29's merge, on the orchestrator's "go". `54bf4f86` (the client and its suite), `8ab12121` (the reader's two Share sends), then a docs commit.
+    - **Each defect shown first** (decision 183): seven new tests ran against `v2`'s client, the kit untouched, through `Scripts/heavy.sh` (`swift test --filter ZoteroRetryWaitTests`, the package built from empty in 92 s). Of the suite's 20 tests, the 13 already there passed and the 7 new ones failed, with 11 issues, each at its defect.
+      - **#1924:** a send of one write answered with `Backoff: 5` waited `[5.0]` after its last write. The next send, by a new client, waited `[]`.
+      - **#1925:** a 429 with `Retry-After: 5` said only *Uploading items 1–1…* and waited 5 s. A `Backoff: 3` on the collection's write was waited under *Creating collection…*, unannounced.
+      - **#1926:** a `Retry-After` 45 s after the response's `Date` waited `[30, 30, 30]` and threw `rateLimited(30)`. One an hour on did the same over 4 requests, and one 45 s after the device's clock did the same.
+    - **#1924.** A 2xx's `Backoff` sets a deadline, and each attempt of each write first waits what is left of it. A send returns as soon as its last write succeeds; its next write, or the account's next send, waits the rest.
+      - **Where the deadline lives:** per process, `ZoteroBackoffDeadlines.shared`, keyed by the Zotero user ID every write names. So the app's three sends keep `ZoteroAPIClient()`, and FRUS Explorer Light's server needs no change.
+      - A passed deadline is dropped when read. No API key is kept.
+      - The 60-second cap and #1916's header rules hold. A `Backoff` of 0 now holds nothing, where it was a sleep of 0.
+    - **#1925.** The send says *Zotero is busy: trying again in 30 seconds…* before a 429's retry, and *Zotero asked for a pause: continuing in 45 seconds…* before a `Backoff`'s wait.
+      - The seconds are whole, rounded up, in a one or many form through `CountCopy`. The step's own message is said again after the wait.
+      - The collection sheet already showed `status`. The Mac's Share popover now reads it under its row, and the iOS Share menu in its send row.
+    - **#1926.** An IMF-fixdate `Retry-After` is the seconds until it, from the response's `Date` or else the device's clock. A past date gives the 30 s default; past a minute, `rateLimited` at once. `Backoff` stays seconds alone.
+    - **#1923's resume is not built.** The owner was away, so the orchestrator asked for the proposal in the row's "ready to land" message. Four options, with A recommended: the kit reports a stopped send's progress, and the app finishes it from a device-local file, with no CloudKit field. The full proposal is in the group's notes, `L41-1923-resume-proposal.md`.
+    - **A claim of the brief does not hold:** "L41 changes … how [the collection's send] calls the client". With the deadline kept per process, and the sheet already showing `status`, `CollectionExportSheet.swift` is unchanged, so the order behind L29 cost nothing.
+    - **Candidates:** two, from Zotero's documentation, left in §5 (a 503's `Retry-After`; a `Backoff` on a refused write).
+    - **EditableContent:** four blocks added for the new keys, and four ranges re-pointed, each starting on its key's line: three in `08-Reading-Research-Collections.md` and one in `06-Archives.md`, which the first scoped run caught. A bullet in the Amendment-Log.
+    - **Checks:** through `Scripts/heavy.sh`, in one script for the control and the fix (04:46 to 04:57) and a confirm run after the review pass (05:23 to 05:26).
+      - `swift build --target FRUSCoreKit`: no warning, both times.
+      - `swift test --filter Zotero`: 56 tests in 8 suites passed, both times. They are the suite's 26 with the NARA and Zotero host suites.
+      - The app's 18 affected suites on the iPhone 17 under iOS 27.0, the app removed first: 184 tests, 183 passed. The failure was `EditableContentKeyTests` on the two ranges the row had missed, then re-pointed. After the review, `EditableContentKeyTests`, `ResearchGuideCoverageTests`, `ZoteroRetryWaitTests` and `CodingStandardsAuditTests`: 118 tests, all passed.
+      - `build-for-testing` from empty, and the `FRUSExplorerMac` build: the two known residues and no other warning.
+      - Owed at landing, on the merged tree: the full unit target, `swift build --target FRUSCoreKit`, `swift test` and the Mac build.
 
 - **L42, the cross-reference graph saved** (#1990; decisions 146, 180 and 181). One session, one pull request: a commit for each save, then a docs commit. A kit rule and app code, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change; no index version.
   - **What the graph draws** (`DisplayNode.Kind`, `CrossReferenceGraphDisplay.swift:36-64`): documents, as the central node, its inbound and outbound neighbours and those two or three hops out; page nodes, which open nothing (`isPageNode`, `:163`); volume clusters and date clusters, each standing for documents; and the archival units and central-file classes that its documents' footnotes point at, a node for each citing document (`unitNodes(rowsByDocument:authority:)`, `:451`).
@@ -1174,7 +1197,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
 - **Before L43:** the two-device run, the file run and the desk check (§2).
 - **With its row,** where the row proposes and the owner chooses:
   - L38: what the Mac's title bar holds when its room is short (F2).
-  - L41: the design of #1923's resume.
+  - L41: the design of #1923's resume. Proposed on 2026-11-27, four options with A recommended (L41's record, in its brief); unanswered when the row was ready to land.
   - L43: the Note on the Text's sentences.
   - L46: the sign for an omission, and the four things its brief says the design leaves open.
   - L47: what a saved template holds.
@@ -1253,6 +1276,12 @@ The 35 of the review's S3 findings that no 1.0 row took. Each has its evidence a
 
 - **A country-series roll with one date, or two inverted, matches far more of a lookup than its span.** Of the bundled index's 6,654 country-series rolls, 295 carry a plausible end date alone and 111 a start alone, and `CountryRoll.matches` filters them by that one bound, so each matches every day before its end or after its start; 155 carry two inverted dates, which its guard matches on every day rather than hide (`FRUSCoreKit/SourceExplorer/CentralFilesIndex.swift`). So a dated lookup lists them wherever their place matches: a lookup of July 1865 among Mexico's diplomatic despatches lists 50 rolls, 44 of them end-only, and every lookup of Austria's lists the two inverted ones. Measured by L31's harness over a full v76 index; nothing changed, since it is the index's reading of NARA's titles and the guard is deliberate. A fix would be the generator's (`CountrySeriesIndexBuilder` reads the bounds from NARA's titles) and a regenerated `central-files-index.json`. Filed on the owner's word.
 - **A dateline's misprinted year now reaches the export, as it always reached Source Explorer.** Decision 175 has the export read the dateline first, as the views do. Of the 141 records whose export year moved at L31, 32 now carry a year outside their volume's where the TEI's date was inside it: mostly the dateline's own misprints (`frus1949v09` d28, *Lisbon, May 19, 1919*; `frus1944v07` d503, *October 18, 1964*; `frus1952-54v07p2` d845, *February 5, 1976*), with a few documents FRUS prints out of their year (`frus1914` d602, of 1907). One crosses the Numerical File's window: `frus1910` d91 cites case 21614 and its dateline prints 1914, so neither the views nor now the export list its roll. The views read each of these years before L31. A rule that preferred the TEI's own date where the dateline's year falls outside its volume's would be a new decision, for both. Filed on the owner's word.
+
+### Found by L41, unfiled
+
+From Zotero's Web API v3 documentation (*Basics*, *Write Requests*, read 2026-11-27) beside the client, and not seen in a send.
+- **A 503 during Zotero's maintenance stops a send as an unexpected error.** The documentation says a 503 also carries a `Retry-After` while the API is down for maintenance. `ZoteroAPIClient.checkStatus` reads `Retry-After` on a 429 alone, so a 503 reaches the caller as `ZoteroAPIError.http(503)`, *Zotero returned an unexpected error (HTTP 503)*, with no retry, and the writes before it kept in the library.
+- **A `Backoff` on a refused write holds nothing.** The documentation says a `Backoff` "can be included in any response, including successful ones". The client reads it on a 2xx alone, as #1916 left it, so one on a 429 or a 5xx sets no deadline for the account's next request.
 
 ### P2 — later
 
