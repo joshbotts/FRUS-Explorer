@@ -1090,8 +1090,17 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     /// the coordinator decodes it with `decodeFRUSSelectionEvent` — the same payload whose
     /// `hasOffsets` decides whether `DocumentView` enables Highlight and Excerpt. A cleared
     /// selection is not a payload and is skipped.
+    ///
+    /// `timeout` bounds a hang, not WebKit's pace: its clock starts before `action` runs, and the
+    /// first payload ends the wait, so a pass costs only what the bridge takes. It was 5 s until
+    /// 2026-11-27, when CI's three-core runner went past it: `ListLabelSelectionTests`' popover
+    /// test, the slowest of its suite in 8 of 14 runs there, took 4.52 s in one and failed after
+    /// 5.71 s in another with nothing posted, each time more than five times the median of the
+    /// rest of its suite (run 46022965606, at a commit that changed no reader code).
+    /// `FigureReaderTests` had already waited 20 s for the same failure, seen once on an iPhone 17
+    /// under iOS 26.4. A bridge that never posts costs a minute a test.
     func selectionPayload(
-        timeout: Duration = .seconds(5),
+        timeout: Duration = .seconds(60),
         after action: () async throws -> Void
     ) async throws -> SelectionPayload? {
         let (events, continuation) = AsyncStream.makeStream(of: SelectionPayload.self)
@@ -1111,9 +1120,10 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
 
     /// Runs `action` and returns whether the production bridge reports the page's selection cleared
     /// within `timeout`: the `{ start: -1, end: -1 }` message `postCleared` sends, which the
-    /// coordinator turns into `onSelectionCleared` (#1540).
+    /// coordinator turns into `onSelectionCleared` (#1540). `timeout` bounds a hang, as
+    /// ``selectionPayload(timeout:after:)``'s does.
     func selectionCleared(
-        timeout: Duration = .seconds(5),
+        timeout: Duration = .seconds(60),
         after action: () async throws -> Void
     ) async throws -> Bool {
         let (events, continuation) = AsyncStream.makeStream(of: Void.self)
@@ -2254,12 +2264,12 @@ struct FigureReaderTests {
     /// Sets the page's selection between two JS-expressed boundary points and returns the payload
     /// the production bridge posts.
     ///
-    /// The wait is 20 seconds, not the harness's 5: it starts before the script runs, and in the
-    /// first run of a newly built test host, with twelve suites running, 5 was not enough once
+    /// The wait is the harness's. It was 20 s here, against the harness's 5, from the first run
+    /// of a newly built test host, with twelve suites running, in which 5 was not enough once
     /// (iPhone 17, iOS 26.4: "the selection bridge posted nothing"; the next three runs passed).
     private func select(_ harness: OffsetEngineTestHarness, from start: String, _ startOffset: String,
                         to end: String, _ endOffset: String) async throws -> SelectionPayload? {
-        try await harness.selectionPayload(timeout: .seconds(20)) {
+        try await harness.selectionPayload {
             let result = try await harness.evaluateString("""
                 (() => {
                   const a = \(start);
