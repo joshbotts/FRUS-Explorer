@@ -10,7 +10,7 @@ import Foundation
 import SourceExplorerExportGeneratorCore
 
 do {
-    try SourceExplorerExportRunner.run()
+    try await SourceExplorerExportRunner.run()
 } catch {
     FileHandle.standardError.write(Data("SourceExplorerExportGenerator failed: \(error)\n".utf8))
     exit(1)

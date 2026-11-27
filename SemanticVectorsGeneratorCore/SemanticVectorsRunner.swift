@@ -50,6 +50,8 @@ import WordCloudKit
 ///   1.3 — B4 (#1659, 2026-10-15): the measured recall is keyed by model as well as width
 ///         (``funnelMeasurements``), and a model's score calibration is packed with it
 ///         (``scoreCalibrations``), for the move to EmbeddingGemma 2
+///   1.4 — #2023 (row L61): the map preflight is handed `STORE`'s run manifest, and refuses a
+///         layout laid out over another store's vectors before anything is written
 public enum SemanticVectorsRunner {
 
     /// Artifact schema version for `semantic-vectors-index.json`.
@@ -224,7 +226,9 @@ public enum SemanticVectorsRunner {
     /// `LAYOUT_DIR/layout.bin` exists, so a map pass will follow — everything that pass can refuse
     /// on: the manifest's coverage dates (`loadVolumeEras`), which the map's era histograms read
     /// and which decode a stricter shape than the volume list does; then the store's volume heads;
-    /// then `SemanticMapPacker.preflight` (#1439). Only then are the output directories created.
+    /// then `SemanticMapPacker.preflight` (#1439), which since #2023 also refuses a layout laid out
+    /// over the vectors of a store other than `STORE`, by the two run manifests, and a `layout.bin`
+    /// that is not the file its metadata describes. Only then are the output directories created.
     /// Before #1439 the map pass made its refusals after the vector artifacts were on disk, which
     /// left new vectors beside the previous map. `RunWriteOrderTests` pins the order in this body:
     /// both calls come before every write, and after the first write the map block makes no call
@@ -317,7 +321,7 @@ public enum SemanticVectorsRunner {
                 documentsInStore += head.docs
             }
             try SemanticMapPacker.preflight(
-                layoutDir: layoutDir, expectedDocumentCount: documentsInStore,
+                layoutDir: layoutDir, expectedDocumentCount: documentsInStore, store: runManifest,
                 lexiconsPath: lexiconsPath, stopwordsPath: stopwordsPath,
                 health: languageAnalysis())
         }

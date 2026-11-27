@@ -958,11 +958,9 @@ struct ResearchRailView: View {
         if appState.currentSourceNoteDocumentId != entry.documentId
             || appState.currentSourceNoteVolumeId != entry.volumeId {
             appState.currentSourceNote = entry.sourceNote ?? ""
-            appState.currentSourceNoteYear = nil
-            if let dl = entry.dateline,
-               let m = dl.range(of: #"\b(1[89][0-9]{2}|20[0-2][0-9])\b"#, options: .regularExpression) {
-                appState.currentSourceNoteYear = Int(dl[m])
-            }
+            // The one rule (#1975), where an inline scan read the first 18xx–2029 number alone, so
+            // `Paris, 9 January, 1918 [1919].` was 1918.
+            appState.currentSourceNoteYear = CentralFilesClassifier.documentYear(fromDateline: entry.dateline)
             appState.currentSourceNoteHeader     = entry.header
             appState.currentSourceNoteDateline   = entry.dateline
             appState.currentSourceNoteVolumeId   = entry.volumeId

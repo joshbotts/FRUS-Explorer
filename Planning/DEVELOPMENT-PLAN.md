@@ -4237,6 +4237,174 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
 - **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
 - **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
 
+## Session 2026-11-26 — L31: Source Explorer reads a document's year by one rule, the dateline's and then the index's date; the export's year and Numerical File case follow the app's; a live lookup shows NARA's scope note
+
+Row L31 of the plan of record from 2026-11-25 (#1975, #1976, #1974, #1970), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `bbe6686c` (L26's merge) on `claude/l31-source-explorer-year-7a9f4b`:
+- `00bb6465` (#1975), `164245a2` (#1976), `bea93498` (#1974) and `f45cb40e` (#1970);
+- `69105ead`, the records and `Planning/source-explorer-export/` regenerated;
+- then, at the head of the queue, `v2` taken in (`4186ed4e`) and the landing's records.
+
+The owner answered, in the session, the four questions the measurement raised: decisions 203 to 206.
+
+**#2021's merge**
+- L27 merged as `a17023f9`, a squash onto `af771601`, at 02:48:27 UTC on 2026-11-27, from its head `f9240661`. Its tree, `3139b6c9`, is the head's. It closed no issue; #1835 was closed by hand, as L27's entry records. This entry records it. This branch took `v2` in after it as `4186ed4e`, with no conflict.
+
+**What was found, each defect first** (decision 183)
+- **Eleven of the row's tests fail on the unchanged code** at `bbe6686c`, in a detached worktree. They are four of #1975's rule tests, the two scope-note tests, the two `evaluate` tests of #1976, the export's dateline-first and decimal-citation tests, and the generator core's case number. The two guards of what the rule read right pass there as here.
+- **A harness over a full v76 index read the control's answers:**
+  - frus1969-76v09 d46: 1515;
+  - frus1919Parisv01 d398: 1919 (its received date);
+  - frus1941v01 d121: 1940;
+  - frus1921v02 d749: 1291;
+  - frus1909 d429: no year;
+  - frus1864p4 d120: "Not checked — no year";
+  - frus1873p1v2 d63 (`Madrid, 24 December, 1872.`): 134 rolls by an undated lookup.
+- **Four places where the brief's rule would do what it did not mean** (decisions 203 to 206):
+  - an 1800 floor drops nine correct pre-1800 dates;
+  - a word boundary refuses two datelines the rule read right;
+  - the editors' bracket reaches 32 datelines, not 21;
+  - the index-date fallback reaches the pre-1906 section, where 462 documents print no year and 266 print a year alone, which the section matched against every roll of a country's series.
+- **The plan's first hand check cannot be seen on its document.** `frus1969-76v09` d46's Source Explorer draws no year, at the control or now. A year shows only through the Numerical File's box, a decimal citation's filing period, or a note-less document's series. The misread year shows on `frus1921v02` d749, whose filing period the control's 1291 labels 1789–1906.
+- **Two findings for §5, unfiled:**
+  - In the country series index, two of Austria's 51 despatch rolls carry inverted dates, and so do 44 of the 50 Mexican rolls a summer's lookup lists. The index's guard matches such a roll on any date.
+  - Dateline misprints now reach the export through the dateline-first year (`frus1910` d91, 1914).
+
+**What changed**
+- **#1975:** `CentralFilesClassifier.datelineDateISO(from:)`:
+  - reads a day-first date, the earlier of the two forms being the sent date;
+  - ends the year before an ASCII letter;
+  - takes the editors' bracketed year;
+  - holds the year to 1600–2029.
+
+  `documentYear(fromDateline:)` is the one copy: the app's two `extractYear(from:)` forward to it, and the Research rail calls it.
+- **#1976** (decision 175):
+  - `IndexingPipeline.SourceExplorerFacts` carries `document_dates`' first and last day.
+  - The hydrated year is the route's, else the dateline's, else the index's.
+  - The gate calls a year of 1906 or later not applicable before it asks for a dateline.
+  - By decision 206: `CountrySeriesRollDates` and the span lookup, with `centralFiles.rolls.indexedNote` in both views (a new EditableContent block, 101 ranges re-pointed) and a sentence in both manuals.
+  - The export parses each volume with FRUSCoreKit (`DocumentYearExtractor` 2.0, over `SourceExplorerDocumentContext.year(of:)`), so its core now depends on the kit.
+- **#1974** (decision 176): SourceNoteKit's `NumericalFileCitation`, to which `CentralFilesIndex` and `NumericalFileIndex` forward.
+- **#1970:** `NARACatalogClient.buildResult(from:)` reads a v2 record's own `scopeAndContentNote` first, and an empty note is none.
+- **Docs:** the FRUSCoreKit and Generators runbooks, the export's README, and the plan's L31 record and §5.
+
+**Checks**
+- **#1975, over the 301,070 datelines of a full v76 index:** 41 change year, 4,058 gain a day, 5 change day and 6 lose their date. The chiefs-of-mission tenure match moves for none of the 46,326 pre-1906 candidates.
+- **#1976:** 22,394 documents gain a year in Source Explorer, 8,033 of them with a source note. Of those, 10 gain Numerical File rolls and 11 the coverage gap. 678 of the 46,326 pre-1906 outcomes move.
+- **The export, against a control at `bbe6686c`:**
+  - #1975 moves none, #1976 141 and #1974 335.
+  - Every record's year is the one Source Explorer hydrates: 264,736 of 264,736. At the control, 157 differed and 8,033 had none.
+- **By hand, on the Mac**, in the check copy built from `f45cb40e`, its 298 volumes re-indexed to 76:
+  - frus1909 d429 lists the Numerical File's rolls;
+  - frus1864p4 d120 lists its rolls under the new line, and d119 the same rolls without it;
+  - frus1921v02 d749's filing period reads 1910–1929.
+
+  The scope note was not checked: the copy has no NARA key, and the owner chose "Skip the scope-note check".
+- **The branch's runs:**
+  - `swift build --target FRUSCoreKit` and the package suites the row touches;
+  - `build-for-testing`, with the two residues alone;
+  - 18 scoped app suites on the iPhone 17 under iOS 27.0, 250 tests passed;
+  - the Mac build.
+- **At the head of the queue, after `v2` was taken in,** on `b7a75db2` (tree `f6ec50f0`, with `v2` at `a17023f9` taken in as `4186ed4e`): `build-for-testing`, with the two residues alone (`v2`'s merge brought no shared code, and L27's three app files compiled clean); the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,309 tests in 1,003 suites passed, 17 skipped as at L26, the six known issues; `swift build --target FRUSCoreKit`; `swift test`, 5,234 tests in 606 suites over 39 runs, none failed; the Mac build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**For the owner**
+- **This row's pull request**, opened once L31 reached the head of the queue.
+- **The four answers** are decisions 203 to 206.
+- **Two findings** are in §5, unfiled.
+- **After the merge:** the four hand-over notes for FRUS Explorer Light, shown to you before any is posted.
+
+## Session 2026-11-26 — L28, the rehearsal: the runbook's corpus phases and step 11's pack run on `v2` at L26's merge, every file accounted for, two generators' defects filed, and `New-Volume-Release-Plan.md` brought to what the run found
+
+Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Development session orchestration", which runs 1.1's queue, on the owner's word that L28 "runs its phases pinned to L26's merge (bbe6686c) when the lock is quiet, e.g. overnight, and lands whenever it is done". Documents only: no regenerated file is committed. The rehearsal ran at `bbe6686c`; this branch was cut there, took CR's merge (`af771601`) in by a fast-forward before its first commit, and took L27's and L31's in at the head of the queue.
+
+**#2025's merge**
+- L31 merged as `e3260a95`, a squash onto `a17023f9`, at 03:52:01 UTC on 2026-11-27, from its head `98897b4e`. Its tree, `13374d79`, is the head's. It closed #1974, #1975 and #1976. This entry records it.
+- L27's #2021 (`a17023f9`, onto `af771601`, at 02:48:27 UTC, from `f9240661`, tree `3139b6c9`, closing no issue) is recorded in L31's entry above, and CR's #2020 in L27's.
+- This branch took `v2` in at `e3260a95`; the session log was the one conflict, resolved with every entry kept in merge order, and L31's decisions 203 to 206 put L28's at 207 to 209.
+
+**What ran** (`New-Volume-Release-Plan.md` §10a has each file)
+- **Where.** The fourteen release generators built in a detached checkout of `bbe6686c` outside this worktree, in 135 s; every run there, at its bundled file's own `generated` stamp, its output in a scratch folder. Each phase was one `Scripts/heavy.sh` job, and L27's and L31's jobs ran between them.
+- **Step 1, read only.** A `git fetch` of `~/Development/frus` found `origin/master` at `216cdb764`, its head; no file under `volumes/` differs from `6170e4b32`, the commit the bundle names.
+- **Phase A.** The manifest online, with no `GITHUB_TOKEN`, twice; the taxonomy over a copy of the bundled file.
+- **Phase B's keyless path** (steps 4 and 6), which the brief did not name: Phase C's readers take the authority that step 6 writes, and the brief's last bullet counts its moves.
+- **Phase C.** The authority's three readers on both authorities, the shipped one, to tie each figure to L26's, and the regenerated one, as R10 will run them; the edge index and page map from a full index at 76; the annotations index on it; the source provenance, the administrations, the cross-reference validation; `CloudVectorsGenerator` with `VERIFY_PRINTED_WALK=1`, since its tokenizers moved into WordCloudKit (#1979) and the OS is 27.2.1 where the files were written under 27.0.
+- **Step 10's read-only half and step 11**, from EmbeddingGemma 2's store, with no new harvest: the store's checksums and contract, the pool, the layout and the pack.
+
+**What it found**
+- **The moves since 1.0 changed nothing a generator writes.** Byte for byte the bundled file: the manifest (at its second run), the taxonomy, the volume sources, the external citations on the shipped authority, the edge index and the page map, the annotations index, the source provenance, the administrations, the broken references and the validation's two report files, the five semantic files and all 553 shards, and the four word-cloud files under `VERIFY_PRINTED_WALK=1`, whose walk found every lens's printed counts equal to a walk with no lemma scheme in all 553 volumes.
+- **L26's moves, to its figures.** The authority gains `lot:56D676` and gives `lot:63D351` the volume `frus1951v03p1`, and nothing else (3,977 → 3,978 records); its report moves in those 14 lines. The usage index: 138 more notes in 47 volumes, 83 more in a collection in 29 records, 47 more with a class in 32 class records, two keys new, all as L26 measured; on the regenerated authority, one note more, in `lot:56D676`. The flow index: 19 more collection references joined and 12 class, the same file on either authority. The external citations on the regenerated authority: the authority's count alone.
+- **#2022, the manifest generator's silent drop.** The first run's six header fetches answered HTTP 503, and it wrote 547 of the 553 volumes, printed "✓ manifest.json written" and exited 0. Every entry it kept equalled the bundled one, and the second run had no failure.
+- **#2023, the map's commands.** As the runbook gave them, `pool_docs.py` and `build_layout.py` read the 300m's store and pool by default, and the packer's preflight checks a layout's count, not what it was laid out over. The root checkout's gitignored `layout.bin` was the 300m's beside EmbeddingGemma 2's `layout-meta.json`.
+- **For the runbook.** The manifest's run needs no token (one API call). The authority reads the root checkout's `.cache/volume-sources`, which no commit records. R10's files move figures that documents state: the website's 264,598 notes, and the manuals' and the guide's 3,977 collections. No Subject-Numeric key moves, so the label table owes R10 nothing.
+- **The brief's claims** held, but one. The bundled external citations already carry #1854's notes (L26 regenerated them for decision 191), so they are not among the files that differ by L26's moves.
+
+**The owner's three answers** (asked here; the orchestrator told first), decisions 207 to 209:
+- the manifest generator's drop filed (#2022) and fixed before R10 ("File it; fix before R10 (Recommended)");
+- the packer's check filed (#2023) and fixed before R10 ("File it; fix before R10");
+- the stale `layout.bin` replaced with the shipped one ("Replace it with the shipped one (Recommended)"), which this session did that evening.
+- The orchestrator made the two fixes one row, L61, which its own session builds.
+
+**What changed**
+- **`Planning/New-Volume-Release-Plan.md`.** A head paragraph for the rehearsal, and §10a, its table and findings. The inventory: 41 files, 51.7 MB, 21 in Tier 1, `cited-page-map.json` named. §4.5's commands with every path named. Steps 1 to 4, 6, 7 and 11 as run. Phase F's 18 to 20c: an update's version page and *What's New*, the website's figures, the documents' literals. §8's CI. D-1's line for decision 148, and the doc-comment defect struck (fixed on 2026-09-04 by #1191). §12's costs, measured.
+- **`Planning/Plan-Of-Record-2026-11-25.md`.** Decisions 207 to 209 and the line under them; row L61 in §1's two tables, with its brief; #2022 and #2023 in §1a; the counts and the calendar; §2's line without the token; L28's record; the status paragraph.
+- **Outside the repository.** #2022 and #2023 filed; the root checkout's `Planning/semantic-map/layout.bin` replaced (gitignored).
+
+**Checks**
+- Each regenerated file was compared with `cmp` against its bundled file. Each that differed was read key by key, with a script that resolves the usage, flow and external-citation indexes' positional rows to their keys before it compares them.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- No app or test was built or run. This pull request changes documents alone, which owes no Mac runs (the brief).
+
+**Cost.** 93 minutes of the lock over three hours and a quarter of the evening, against the brief's hour and a half: the build 135 s; Phase A 55 s and the manifest's second run 39 s; Phase B 352 s; C1's five runs 1,587 s; the edge index and the annotations 425 s; the provenance, the administrations and the validation 261 s; step 11 about 457 s; CloudVectors with its walk 2,258 s. One pass with one run of each is about 75 minutes. No subagent. The checkout, its build folder and the rehearsal's outputs were removed afterwards.
+
+## Session 2026-11-26 — L61, two generators' guards before R10: a manifest run that could not read a volume writes nothing and exits 1, naming it, after a 429 or a 5xx has been tried four times; the map's pack refuses a layout laid out over another store's vectors, a `layout.bin` its metadata does not describe, and a layout that names neither
+
+The orchestration session started this one for row L61, on `claude/l61-generator-guards-d464ee` from `v2` at `a17023f9`, L27's merge. The row: #2022 and #2023, both found by L28's rehearsal of `New-Volume-Release-Plan.md` (2026-11-26) and filed on the owner's word, each to be fixed before R10 (decisions 207 and 208). Commits: `849b30ba` (#2022), `7e3e8f28` (#2023) and a docs commit.
+
+**#2026's merge**
+- L28 merged as `a7d8e017`, a squash onto `e3260a95`, at 04:27:33 UTC on 2026-11-27, from its head `007981d0`. Its tree, `a32f5e9d`, is the head's. It closed no issue. This entry records it.
+- L31's #2025 (`e3260a95`, onto `a17023f9`, at 03:52:01 UTC, from `98897b4e`, tree `13374d79`, closing #1974, #1975 and #1976, with #1970 closed by hand) is recorded in L28's entry above, and L27's #2021 in L31's.
+- This branch took `v2` in at `a7d8e017`; the session log was the one conflict, resolved with every entry kept in merge order. L31's decisions 203 to 206 put L28's at 207 to 209, so this row's are 207 (#2022) and 208 (#2023).
+
+**#2022, first: the defect in a test** (decision 183)
+- A live 503 cannot be called up, so the online pass moved behind a seam first, with its behaviour unchanged: `ManifestGeneratorRunner.runOnline`, its listing, header fetch and pause handed in, as `SemanticVectorsRunner.run(environment:languageAnalysis:)` takes its inputs. `ManifestFetchFailureTests` drives it over a listing of three of L28's six volumes and a host that answers each from a script, and records the pauses instead of sleeping them.
+- **Against the seam before the fix:** seven of its eight tests failed, with 26 issues, and the control (every fetch answered) passed. A 503 every time wrote a manifest of two volumes and returned; a 503 that cleared was not tried again; a 404, a header that does not parse and two failures together each wrote the rest.
+
+**#2022, the fix** (`849b30ba`)
+- **The refusal.** A run writes nothing, and leaves the file at `OUTPUT_PATH` as it was, when any volume of the listing has no entry: a fetch, a parse or a listing entry that failed. It refuses too when the entries number fewer than the listing, by whatever road. `RunError.incompleteListing` names each volume and its reason in file-name order, and `run()` prints it and exits 1.
+- **Not only a fetch** (decision 183, a few lines in code the row changes): a header that does not parse leaves its volume out by the same road, and L28's step 2 already required `Errors: 0`, which counts it. L28's own description of the fix says "when `Errors` is not 0".
+- **The retry.** A fetch that answers a 429 or a 5xx (`TEIHeaderFetcher.isWorthRetrying`) is tried again after 2, 4 and 8 seconds (`retryPauses`), four tries in all, before it counts. Anything else counts at once, a 404, a missing `</teiHeader>` and a transport error among them.
+- A failed listing exits 1 as before. The offline overlay is unchanged: it never drops a volume.
+
+**#2023, first: the defect in a test** (decision 183)
+- `LayoutStoreTests` drives `run(environment:languageAnalysis:)` over two of the suite's two-kilobyte stores, one under each model with the same width, chunking and prefix. The fixture's layouts name their store and their `layout.bin`, in the form the fixed `build_layout.py` writes, and the refusals' cases were declared and not yet thrown.
+- **Against the preflight before the fix:** five of the six tests failed, each "got nil" (the run packed the layout, map and all), and the copy-of-the-store control passed. Driven directly, `pack` packed the 300m's layout over EmbeddingGemma 2's vectors. The other twelve suites passed with the new fixture: 90 tests in 13 suites.
+
+**#2023, the fix** (`7e3e8f28`)
+- **The pool names its store.** `pool_docs.py` writes `pool_source.json` last, and removes the last run's first, so a pool that did not finish names none: the store's path (a home folder as `~`), the eight fields of its `run-manifest.json` from `model` to `script_sha256`, and the SHA-256 of `doc_f32_768.npy`.
+- **The layout carries it.** `build_layout.py` exits before PCA on a pool without one, or whose matrix is not the one it names, and adds `store` (those fields with the path) and `layoutSHA256` (the SHA-256 of the `layout.bin` it writes) to `layout-meta.json`.
+- **The pack checks it.** Handed `STORE`'s run manifest, `SemanticMapPacker.preflight` refuses, before anything is written: a layout whose store differs in the model, its GGUF SHA-256, the width, the chunking or the prefix (`PackError.layoutFromAnotherStore`, naming each field); a `layout.bin` that is not the file its metadata describes (`layoutFileMismatch`, the issue's second road); and a layout that names neither (`unattributedLayout`). The path, the harvest date and the script are not compared, so a copy of the store elsewhere packs, and the corpus stays the document count's to check. `pack` repeats the store check against the vector artifact's own provenance, as it repeats the preflight's other refusals.
+- **What a layout written before the fix gets** (the session's to settle): it is refused. It cannot say which store it was laid out over; the scripts remake the shipped layout byte for byte (below); and taking it would leave the stale-`layout.bin` road open, since metadata that names no layout cannot refuse one. The committed `Planning/semantic-map/layout-meta.json` is still 2026-10-15's, so the packer refuses it until the next layout run, R10's step 11, writes the new form. Re-committing it now would only redate the shipped layout.
+
+**What the issues said that did not hold** (decision 183)
+- **#2023's document count.** The issue proposed the store's identity as "the model, its GGUF SHA-256 and the document count, from the store's `run-manifest.json`". That file's only count is `totals_this_run`, the last harvest pass's: the 300m's store says 1,142 documents there, the two volumes harvested again on 2026-10-10, where its heads add up to 314,616. So the identity is the model, its weights and the contract, and the count stays the preflight's, from the heads, as it was.
+
+**Checks**
+- **#2022:** `ManifestGeneratorTests` 68 tests in 6 suites passed; `swift build --target ManifestGeneratorCore` succeeded, with no warning from the manifest files. **Online, once the fix was in** (no `GITHUB_TOKEN`): 553 volumes, `Errors: 0`, no fetch tried again, and the bundled `manifest.json` byte for byte, in 49 s with the build.
+- **#2023:** `SemanticVectorsGeneratorTests` 90 tests in 13 suites passed. One mutation run took `pack`'s own store check out and the preflight's file check out: exactly the two tests written for them failed (the run wrote its output directory and shards before `pack` refused; `pack` packed the 300m's layout), and every other test passed.
+- **#2023, end to end on the M5 Air,** one `heavy.sh` call:
+  - `pool_docs.py` over EmbeddingGemma 2's store: 12.5 s at 7.0 GB peak, its seven files byte for byte B2's pool (`~/frus-b2/gates-eg2/pool`), the matrix `d1e05355…`, the committed `sourceMatrixSHA256`.
+  - `build_layout.py` at its default `POOL_DIR`, the 300m's pool of 2026-10-10: refused before PCA, no output directory.
+  - `build_layout.py` over the new pool: 224 s at 6.2 GB, `layout.bin` `46799d5a…`, the shipped layout byte for byte; `layout-meta.json` the committed one but for its date, two timings and the two new fields.
+  - The pack with that layout (`EXPECT_DIGEST=89481b18…`, `GENERATED_DATE=2026-10-15`): all five bundled artifacts byte for byte and 553 shards, in 193 s at 5.6 GB peak.
+  - The same scripts over the 300m's store: its matrix byte for byte its pool of 2026-10-10, and `layout.bin` `80a9af07…`, the 300m's layout, the file the root checkout held until L28. The pack of EmbeddingGemma 2's store with it: refused, naming the model and its weights, exit 1, no output directory.
+  - The committed `layout-meta.json` beside the shipped `layout.bin`: refused as written before #2023, exit 1, no output directory.
+- **Before landing, on the branch:** `swift build --target FRUSCoreKit` succeeded; `swift test` ran 5,229 tests in 606 suites over 39 runs, none failed (L26's 5,215 and this row's 14); the unit target's `SharedKitsBoundaryTests`, `FRUSCoreKitBoundaryTests` and `CodingStandardsAuditTests` on the iPhone 17 under iOS 27.0: 85 tests, all passed.
+- **The landing checks, on the merged tree** (`878a63b5`, tree `0e71f505`, with `v2` at `a7d8e017`), in one `heavy.sh` call: `swift build --target FRUSCoreKit` with no kit warning; `swift test` ran 5,248 tests in 608 suites over 39 runs, none failed; the unit target on the iPhone 17 under iOS 27.0, the app removed first and the TEI mirror set, 8,309 tests, of which 8,291 passed, 17 skipped and 1 was an expected failure, none failed, in 963 s; and the `FRUSExplorerMac` build succeeded. Both builds printed the two known residues and no other warning, and `Scripts/check_repo_hygiene.py` passed its six checks. The two tests CI's job C failed on `a17023f9` passed here: `CollectionEditorNamingTests`' "A rename made elsewhere reaches the real editor's name field and survives its next edit" in 2.3 s, and `UITestBulkVolumeSeederTests`' "The index follows the launch, and a search for the word lists the thirty documents", which reached its 1,200-s limit on CI.
+
+**For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session ("I merge on green (Recommended)"). Its Auto-fix is on and GitHub's auto-merge is off.
+- **The release runbook's** §2 manifest row, step 2, §4.5 and step 11 keep their checks and now name the fixes as landed (L28's brief), and §10a says both landed. The plan's L61 brief, L28's, has this row's record under it.
+- **Offered, not taken** (decision 183): the two scripts still default to the 300m's store and pool, which the brief did not ask to change and which the corpus gates' documents cite. A run at the defaults now ends in a refusal: `build_layout.py` refuses the default pool as it stands, which names no store, and a layout of the 300m's, made once `pool_docs.py` has run again at its defaults, is refused by the pack before anything is written.
+
 ## Session 2026-11-26 — L33, three small kit fixes: a duplicated Archives Visit shows the row its original shows, the Mac's Chronology magnifier names its months, and the series export's caveat takes its host's locale; #1972 left out, on the owner's word, since FRUS Explorer Light's phase 4 changed what it asked for
 
 The orchestrator session ("Development session orchestration") started this one for row L33 of the plan of record from 2026-11-25, on `claude/l33-four-kit-fixes-29dffb` from `v2` at `a17023f9`, L27's merge. The row: four small kit fixes FRUS Explorer Light found, #1989, #1971, #1973 and #1972, a commit each. Commits: `46f62d2b` (#1989), `a77b7e94` (#1971), `a9cb13be` (#1973) and a docs commit.

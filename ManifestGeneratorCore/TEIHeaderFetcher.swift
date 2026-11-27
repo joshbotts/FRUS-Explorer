@@ -34,7 +34,21 @@ public enum TEIHeaderFetcherError: Error, Sendable {
 ///          `URLSession` there. swift-corelibs-foundation has no `URLSession.bytes(for:)`, so on
 ///          Linux the response is read whole with `data(for:)` and then scanned for `</teiHeader>`
 ///          as before; Apple platforms still stream it with `bytes(for:)`
+///   1.2 — #2022 (row L61): `isWorthRetrying(_:)`, the statuses the manifest run tries again
 public struct TEIHeaderFetcher {
+
+    /// Whether a fetch that failed may succeed if it is tried again: the host answered 429, too
+    /// many requests, or a 5xx (#2022). Anything else, a 404 or a header that is not there among
+    /// them, answers the same way every time, and so does a transport error the runner sees here
+    /// only as itself.
+    ///
+    /// - Parameter error: What `fetch(from:session:)` threw.
+    /// - Returns: `true` for `badHTTPStatus` 429 or 500 to 599.
+    static func isWorthRetrying(_ error: any Error) -> Bool {
+        guard let fetchError = error as? TEIHeaderFetcherError,
+              case .badHTTPStatus(let status) = fetchError else { return false }
+        return status == 429 || (500...599).contains(status)
+    }
 
     /// Maximum bytes to read before giving up on finding `</teiHeader>`.
     /// Headers are always within the first 512 KB; this guards against malformed files.
