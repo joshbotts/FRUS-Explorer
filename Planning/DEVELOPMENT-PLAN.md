@@ -5185,3 +5185,10 @@ The same CI fix session, on the orchestrator's second case: push run 46054712743
 - Not taken: a smaller fixture (the work is a tenth of a second), a CI-only bound (the wait can be endless) or a skip in `ci.yml` (12 suite types remove a volume, and C would stop checking removal).
 
 **Checks.** Before the queue, at `15982273` on the iPhone 17 under iOS 27.0: the twelve suite types that remove a volume, 108 tests in 12 suites passed in 4.5 s (the removed-volume test in 0.054 s); both builds with the two residues alone.
+
+**At the head of the queue,** on `735fd9ca` (tree `f8981c54`; the merge `77b2fdbf` took `v2` at `d9b86ae2` in), in one `Scripts/heavy.sh` call from 23:14 to 23:36 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,441 tests in 1,019 suites, 8,423 passed, none failed, 17 skipped, and the one test with the six known issues, in 764 s.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `swift build --target FRUSCoreKit`: no warning. `swift test`: 5,332 tests in 617 suites over 39 runs, none failed, no warning.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
