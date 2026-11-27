@@ -10,7 +10,8 @@ Reads STORE (read-only; default ~/frus-semantic-raw, the 300m's store). Writes t
 (ASSESS_DIR/pool/).
 
 Last of all it writes pool_source.json (#2023): the store's path, the fields of its
-run-manifest.json that say which vectors it holds, and the SHA-256 of doc_f32_768.npy.
+run-manifest.json that say which vectors it holds and which harvest wrote them, and the SHA-256
+of doc_f32_768.npy.
 tools/semantic-map/build_layout.py carries the first two into layout-meta.json, and
 SemanticVectorsGenerator refuses a layout whose store is not the STORE it packs: both stores
 hold 314,616 documents of 768 dimensions, so nothing else told a map laid out over the 300m's

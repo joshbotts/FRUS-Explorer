@@ -4236,3 +4236,49 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
 - **#1835: closed as not reproduced** on the owner's word ("Close as not reproduced", 2026-11-26), once its own test had passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. The closing comment holds the run, the 26.5 control and the row's move.
 - **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
 - **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
+
+## Session 2026-11-26 — L61, two generators' guards before R10: a manifest run that could not read a volume writes nothing and exits 1, naming it, after a 429 or a 5xx has been tried four times; the map's pack refuses a layout laid out over another store's vectors, a `layout.bin` its metadata does not describe, and a layout that names neither
+
+The orchestration session started this one for row L61, on `claude/l61-generator-guards-d464ee` from `v2` at `a17023f9`, L27's merge. The row: #2022 and #2023, both found by L28's rehearsal of `New-Volume-Release-Plan.md` (2026-11-26) and filed on the owner's word, each to be fixed before R10 (decisions 203 and 204). Commits: `849b30ba` (#2022), `7e3e8f28` (#2023) and a docs commit.
+
+**MERGES_PLACEHOLDER**
+
+**#2022, first: the defect in a test** (decision 183)
+- A live 503 cannot be called up, so the online pass moved behind a seam first, with its behaviour unchanged: `ManifestGeneratorRunner.runOnline`, its listing, header fetch and pause handed in, as `SemanticVectorsRunner.run(environment:languageAnalysis:)` takes its inputs. `ManifestFetchFailureTests` drives it over a listing of three of L28's six volumes and a host that answers each from a script, and records the pauses instead of sleeping them.
+- **Against the seam before the fix:** seven of its eight tests failed, with 26 issues, and the control (every fetch answered) passed. A 503 every time wrote a manifest of two volumes and returned; a 503 that cleared was not tried again; a 404, a header that does not parse and two failures together each wrote the rest.
+
+**#2022, the fix** (`849b30ba`)
+- **The refusal.** A run writes nothing, and leaves the file at `OUTPUT_PATH` as it was, when any volume of the listing has no entry: a fetch, a parse or a listing entry that failed. It refuses too when the entries number fewer than the listing, by whatever road. `RunError.incompleteListing` names each volume and its reason in file-name order, and `run()` prints it and exits 1.
+- **Not only a fetch** (decision 183, a few lines in code the row changes): a header that does not parse leaves its volume out by the same road, and L28's step 2 already required `Errors: 0`, which counts it. L28's own description of the fix says "when `Errors` is not 0".
+- **The retry.** A fetch that answers a 429 or a 5xx (`TEIHeaderFetcher.isWorthRetrying`) is tried again after 2, 4 and 8 seconds (`retryPauses`), four tries in all, before it counts. Anything else counts at once, a 404, a missing `</teiHeader>` and a transport error among them.
+- A failed listing exits 1 as before. The offline overlay is unchanged: it never drops a volume.
+
+**#2023, first: the defect in a test** (decision 183)
+- `LayoutStoreTests` drives `run(environment:languageAnalysis:)` over two of the suite's two-kilobyte stores, one under each model with the same width, chunking and prefix. The fixture's layouts name their store and their `layout.bin`, in the form the fixed `build_layout.py` writes, and the refusals' cases were declared and not yet thrown.
+- **Against the preflight before the fix:** five of the six tests failed, each "got nil" (the run packed the layout, map and all), and the copy-of-the-store control passed. Driven directly, `pack` packed the 300m's layout over EmbeddingGemma 2's vectors. The other twelve suites passed with the new fixture: 90 tests in 13 suites.
+
+**#2023, the fix** (`7e3e8f28`)
+- **The pool names its store.** `pool_docs.py` writes `pool_source.json` last, and removes the last run's first, so a pool that did not finish names none: the store's path (a home folder as `~`), the eight fields of its `run-manifest.json` from `model` to `script_sha256`, and the SHA-256 of `doc_f32_768.npy`.
+- **The layout carries it.** `build_layout.py` exits before PCA on a pool without one, or whose matrix is not the one it names, and adds `store` (those fields with the path) and `layoutSHA256` (the SHA-256 of the `layout.bin` it writes) to `layout-meta.json`.
+- **The pack checks it.** Handed `STORE`'s run manifest, `SemanticMapPacker.preflight` refuses, before anything is written: a layout whose store differs in the model, its GGUF SHA-256, the width, the chunking or the prefix (`PackError.layoutFromAnotherStore`, naming each field); a `layout.bin` that is not the file its metadata describes (`layoutFileMismatch`, the issue's second road); and a layout that names neither (`unattributedLayout`). The path, the harvest date and the script are not compared, so a copy of the store elsewhere packs, and the corpus stays the document count's to check. `pack` repeats the store check against the vector artifact's own provenance, as it repeats the preflight's other refusals.
+- **What a layout written before the fix gets** (the session's to settle): it is refused. It cannot say which store it was laid out over; the scripts remake the shipped layout byte for byte (below); and taking it would leave the stale-`layout.bin` road open, since metadata that names no layout cannot refuse one. The committed `Planning/semantic-map/layout-meta.json` is still 2026-10-15's, so the packer refuses it until the next layout run, R10's step 11, writes the new form. Re-committing it now would only redate the shipped layout.
+
+**What the issues said that did not hold** (decision 183)
+- **#2023's document count.** The issue proposed the store's identity as "the model, its GGUF SHA-256 and the document count, from the store's `run-manifest.json`". That file's only count is `totals_this_run`, the last harvest pass's: the 300m's store says 1,142 documents there, the two volumes harvested again on 2026-10-10, where its heads add up to 314,616. So the identity is the model, its weights and the contract, and the count stays the preflight's, from the heads, as it was.
+
+**Checks**
+- **#2022:** `ManifestGeneratorTests` 68 tests in 6 suites passed; `swift build --target ManifestGeneratorCore` succeeded, with no warning from the manifest files. **Online, once the fix was in** (no `GITHUB_TOKEN`): 553 volumes, `Errors: 0`, no fetch tried again, and the bundled `manifest.json` byte for byte, in 49 s with the build.
+- **#2023:** `SemanticVectorsGeneratorTests` 90 tests in 13 suites passed. One mutation run took `pack`'s own store check out and the preflight's file check out: exactly the two tests written for them failed (the run wrote its output directory and shards before `pack` refused; `pack` packed the 300m's layout), and every other test passed.
+- **#2023, end to end on the M5 Air,** one `heavy.sh` call:
+  - `pool_docs.py` over EmbeddingGemma 2's store: 12.5 s at 7.0 GB peak, its seven files byte for byte B2's pool (`~/frus-b2/gates-eg2/pool`), the matrix `d1e05355…`, the committed `sourceMatrixSHA256`.
+  - `build_layout.py` at its default `POOL_DIR`, the 300m's pool of 2026-10-10: refused before PCA, no output directory.
+  - `build_layout.py` over the new pool: 224 s at 6.2 GB, `layout.bin` `46799d5a…`, the shipped layout byte for byte; `layout-meta.json` the committed one but for its date, two timings and the two new fields.
+  - The pack with that layout (`EXPECT_DIGEST=89481b18…`, `GENERATED_DATE=2026-10-15`): all five bundled artifacts byte for byte and 553 shards, in 193 s at 5.6 GB peak.
+  - The same scripts over the 300m's store: its matrix byte for byte its pool of 2026-10-10, and `layout.bin` `80a9af07…`, the 300m's layout, the file the root checkout held until L28. The pack of EmbeddingGemma 2's store with it: refused, naming the model and its weights, exit 1, no output directory.
+  - The committed `layout-meta.json` beside the shipped `layout.bin`: refused as written before #2023, exit 1, no output directory.
+- **Before landing, on the branch:** `swift build --target FRUSCoreKit` succeeded; `swift test` ran 5,229 tests in 606 suites over 39 runs, none failed (L26's 5,215 and this row's 14); the unit target's `SharedKitsBoundaryTests`, `FRUSCoreKitBoundaryTests` and `CodingStandardsAuditTests` on the iPhone 17 under iOS 27.0: 85 tests, all passed.
+
+**For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session ("I merge on green (Recommended)"). Its Auto-fix is on and GitHub's auto-merge is off.
+- **The release runbook's step 2 and §4.5** keep their checks, and their notes now name the fix as landed (L28's brief).
+- **Offered, not taken** (decision 183): the two scripts still default to the 300m's store and pool, which the brief did not ask to change and which the corpus gates' documents cite. A run at the defaults now ends in a refusal: `build_layout.py` refuses the default pool as it stands, which names no store, and a layout of the 300m's, made once `pool_docs.py` has run again at its defaults, is refused by the pack before anything is written.

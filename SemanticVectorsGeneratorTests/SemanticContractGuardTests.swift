@@ -413,9 +413,10 @@ struct MapPassRefusesBeforeTheVectorsTests {
 ///
 /// Since the fix `layout-meta.json` names the store its pool was made from (`store`, the run
 /// manifest `pool_docs.py` read) and the `layout.bin` written with it (`layoutSHA256`), and the
-/// preflight compares both. Each test drives `run(environment:languageAnalysis:)` over the suite's
-/// two-kilobyte stores, one under each model with the same width, chunking and prefix, and requires
-/// the refusal and no output directory.
+/// preflight compares both. Each refusal is driven through `run(environment:languageAnalysis:)`
+/// over the suite's two-kilobyte stores, one under each model with the same width, chunking and
+/// prefix, and requires the refusal and no output directory; a copy of the store at another path is
+/// the control that packs, and `pack` is driven on its own once, after a sound run.
 ///
 /// Version history:
 ///   1.0 — #2023 (row L61): initial implementation
