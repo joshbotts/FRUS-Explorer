@@ -49,6 +49,8 @@ import Observation
 ///          there, and the state and `reload()` stay
 ///   1.10 — 2026-11-22 (FRUS Explorer Light, #1912): two doc comments name the kit's calls as they now
 ///          read, each with a `locale` the app leaves at the reader's own; the calls are unchanged
+///   1.11 — 2026-11-26 (#1971): the magnifier's two forwarders name the kit's calls as they now read, each
+///          with a `locale` the app leaves at the reader's own, which names a year's months; the calls are unchanged
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -372,13 +374,14 @@ final class ChronologyViewModel {
         ChronologyGrouping.spanningSectionHeader
     }
 
-    /// A date group's own rows one granularity finer: `ChronologyGrouping.magnifierBreakdown(for:)`.
+    /// A date group's own rows one granularity finer: `ChronologyGrouping.magnifierBreakdown(for:locale:)`, in the
+    /// reader's own locale.
     nonisolated static func magnifierBreakdown(for group: ChronologyDateGroup) -> [ChronologyMagnifierBar] {
         ChronologyGrouping.magnifierBreakdown(for: group)
     }
 
     /// The hover magnifier's bars from aggregate counts:
-    /// `ChronologyGrouping.magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:)`.
+    /// `ChronologyGrouping.magnifierBarsByBucket(counts:parentPrefix:volumeBreakdown:locale:)`, in the reader's own locale.
     nonisolated static func magnifierBarsByBucket(
         counts: [(bucketKey: String, volumeId: String, count: Int)],
         parentPrefix: Int,

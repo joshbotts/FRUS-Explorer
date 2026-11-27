@@ -114,7 +114,7 @@ new volume does to them: 21 in Tier 1, 5 in Tier 2, 11 in Tier 3 and 4 in Tier 4
 
 | Artifact | Generator | Notes / cost |
 |---|---|---|
-| `manifest.json` | `ManifestGenerator` (`GITHUB_TOKEN` optional: step 2) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. **A header fetch that fails drops its volume from the file, and the run still writes it and exits 0**: read its `Errors:` line (step 2). |
+| `manifest.json` | `ManifestGenerator` (`GITHUB_TOKEN` optional: step 2) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. **A run with a volume it could not read writes nothing and exits 1, naming it** (#2022, L61; until then it wrote the file without the volume and exited 0): read its `Errors:` line all the same (step 2). |
 | `volume-sources-index.json` | `VolumeSourcesIndexGenerator` | Corpus front-matter Sources + offline lot resolution against `central-files-index.json`. Needs `CATALOG_API_KEY` only if the new volume names lots the bundle cannot answer. |
 | `collection-authority.json` (+ report) | `CollectionAuthorityGenerator -c release` | Re-clusters the whole cross-volume authority. **Ids can move** — #696's `president's `→`presidential ` fold once killed 28 collection ids covering 2,040 documents. Everything downstream must be rebuilt from the *new* authority, never from a stale export. |
 | `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 645,052 bytes today (630 KiB, the figure `CLAUDE.md` gives as "630KB"). |
@@ -307,19 +307,28 @@ the scripts; B4 passed its own paths, `POOL_DIR=~/frus-b2/gates-eg2/pool`, and t
 were not brought to them). `pool_docs.py` reads `STORE`, default `~/frus-semantic-raw`, the
 300m's store, and writes to `ASSESS_DIR/pool`, default `~/frus-semantic-gates/pool`, which holds the
 300m's pool of 2026-10-10; `build_layout.py` reads `POOL_DIR`, default that same pool. Both stores
-hold 314,616 documents of 768 dimensions, so nothing refuses the 300m's: `SemanticMapPacker.preflight`
-checks the layout's document count, its length and that a row is clustered, not which vectors it
-was laid out over, and a map laid out and labelled over the 300m's vectors would ship beside
-EmbeddingGemma 2's (#2023, the preflight's refusal, owed before R10). **And a gitignored `layout.bin` can outlive its `layout-meta.json`**: until
+hold 314,616 documents of 768 dimensions, and until L61 nothing refused the 300m's:
+`SemanticMapPacker.preflight` checked the layout's document count, its length and that a row is
+clustered, not which vectors it was laid out over, so a map laid out and labelled over the 300m's
+vectors would have shipped beside EmbeddingGemma 2's. **Since L61 (#2023) the pack refuses it,
+before anything is written.** `pool_docs.py` records the store in the pool's `pool_source.json`;
+`build_layout.py` refuses a pool without one before PCA, the default pool among them, and writes
+the store (`store`) and its `layout.bin`'s SHA-256 (`layoutSHA256`) into `layout-meta.json`; and
+the preflight refuses a layout whose store is not `STORE` by its model, weights, width, chunking or
+prefix, a `layout.bin` that is not the file its metadata describes, and a layout that names
+neither. The committed `layout-meta.json` of 2026-10-15 names neither, so the pack refuses it until
+step 11 writes a new one. **And a gitignored `layout.bin` can outlive its `layout-meta.json`**: until
 2026-11-26 the root checkout's `Planning/semantic-map/` held the committed `layout-meta.json` of
 EmbeddingGemma 2's layout (2026-10-15) beside a `layout.bin` that was the 300m's (SHA-256
 `80a9af07…`, 2026-10-10), since B4 laid its layout out elsewhere, so a pack run there with the
 default `LAYOUT_DIR` and no new layout would have read the 300m's map under EmbeddingGemma 2's
 metadata. On the owner's word that evening, L28 copied the shipped layout over it (`46799d5a…`,
-which the rehearsal reproduced byte for byte). Pack only from the folder the layout was just
-written to. **The check:** `layout-meta.json`'s `sourceMatrixSHA256` names the pool it was laid out
-over; it must be the SHA-256 of the pool just made from EmbeddingGemma 2's store, and while the
-store is unchanged, `d1e05355…`, the committed one's.
+which the rehearsal reproduced byte for byte). Since L61 the pack refuses a `layout.bin` its
+metadata does not describe. Pack only from the folder the layout was just written to. **The
+check:** `layout-meta.json`'s `sourceMatrixSHA256` names the pool it was laid out over; it must be
+the SHA-256 of the pool just made from EmbeddingGemma 2's store, and while the store is unchanged,
+`d1e05355…`, the committed one's. Its `store` must name EmbeddingGemma 2's: `embeddinggemma-2-Q8_0`,
+GGUF `2188ac1d…`.
 
 What that costs, from the measured 2026-08-12 run: PCA + UMAP 6.6 min + HDBSCAN 8.2 min ≈ **15 min
 of compute**, and then the part that is not compute — **179 clusters get re-derived and re-labelled**.
@@ -591,14 +600,18 @@ Steps marked **[owner]** cannot be done from this repository.
    the listing of `volumes/`, and reads each header from its `download_url` on
    raw.githubusercontent.com, which sends no token and which the API's limit of 60 calls an hour
    without one does not count (read from `GitHubClient` and the runner, and run so on 2026-11-26).
-   **Read its `Errors:` line before anything else: a header fetch that fails drops that volume
-   from the file, and the run still writes it, prints "✓ manifest.json written" and exits 0.** In
-   the rehearsal of 2026-11-26 (L28) six of the 553 fetches answered HTTP 503 at the default eight
-   at a time, with no retry, and the file held 547 volumes, each equal to its bundled entry and in
-   the same order (`frus1961-63v20`, `v22`, `frus1964-68v02`, `v17`, `frus1969-76v08`, `v13` were
-   the six). Every generator below takes the manifest as the shippable set, so a file with a
-   volume missing removes it from the catalogue. Run again until `Errors: 0`, with `Processed:`
-   equal to the listing's count (`553 volumes to process`). #2022 is the fix, owed before R10.
+   **Read its `Errors:` line before anything else.** Until L61 a header fetch that failed dropped
+   that volume from the file, and the run still wrote it, printed "✓ manifest.json written" and
+   exited 0. In the rehearsal of 2026-11-26 (L28) six of the 553 fetches answered HTTP 503 at the
+   default eight at a time, with no retry, and the file held 547 volumes, each equal to its bundled
+   entry and in the same order (`frus1961-63v20`, `v22`, `frus1964-68v02`, `v17`, `frus1969-76v08`,
+   `v13` were the six). Every generator below takes the manifest as the shippable set, so a file
+   with a volume missing removes it from the catalogue. **Since L61 (#2022) such a run writes
+   nothing and exits 1**, naming each volume and its reason, once a 429 or a 5xx has been tried
+   four times (2, 4 and 8 seconds apart); a header that does not parse refuses it too, and the
+   file at `OUTPUT_PATH` is left as it was. Run one that exits 1 again; and check one that exits 0
+   all the same: `Errors: 0`, with `Processed:` equal to the listing's count (`553 volumes to
+   process`).
 3. `swift run TaxonomyGenerator` — cheap; run it unless the new volume's tags are all already in
    `volume-tag-taxonomy.json`. With `OUTPUT_PATH` elsewhere, start that file as a copy of the
    bundled one, so the gate (#1600) measures the source against the file it would replace.
@@ -643,8 +656,9 @@ L26's measured changes alone (§10a).
     `shasum -c SHA256SUMS`.
 11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`: §4.5's three
     commands as written there, every path named, since the two scripts' defaults are the 300m's
-    store and pool and nothing downstream refuses them. Check the layout's `sourceMatrixSHA256`
-    before the pack.
+    store and pool. Since L61 (#2023) `build_layout.py` refuses the default pool, which names no
+    store, and the pack refuses a layout of another store before anything is written. Check the
+    layout's `sourceMatrixSHA256` and its `store` before the pack all the same.
 12. Verify the provenance digest is unchanged. Review the new cluster labels properly.
     **The language analysis is checked before step 11 writes anything** (#1439, closed by lane
     HYG, PR #1558, 2026-10-02): the map pass refuses without a lemmatiser, and that refusal, with
@@ -805,7 +819,7 @@ by the changes L26 made and measured, and by nothing else.
 
 **What it found.** L28 commits nothing but this runbook and its records, so each code defect below
 was offered, not taken (decision 183); the owner had both filed that evening, each to be fixed
-before R10 runs.
+before R10 runs. Both fixes landed with L61.
 - **The manifest generator writes a catalogue with volumes missing, and exits 0** (step 2;
   #2022). A header fetch that fails is logged and its volume left out; six of 553 answered HTTP
   503 at the default eight fetches at a time, and a second run had none. The fix: write nothing

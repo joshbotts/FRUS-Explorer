@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import CryptoKit
 import Foundation
 import GeneratorKit
 import SemanticVectorsKit
@@ -25,6 +26,12 @@ import WordCloudKit
 /// and a packer that refused to emit vectors because no layout existed would hold the shipping
 /// feature hostage to an experimental one.
 ///
+/// **A layout is packed only over the vectors it was laid out over (#2023).** EmbeddingGemma 300m's
+/// store and EmbeddingGemma 2's both hold 314,616 documents of 768 dimensions, so a layout's count
+/// and length cannot tell them apart, and the map's two scripts defaulted to the 300m's store and
+/// pool. `layout-meta.json` names the store its pool was made from and the `layout.bin` written with
+/// it, and both passes refuse a layout that names another store, another file or neither.
+///
 /// Version history:
 ///   1.0 — V-4: initial implementation
 ///   1.1 — #1373 review round 3: `pack` refuses first, before reading anything, when this process's
@@ -33,6 +40,10 @@ import WordCloudKit
 ///          the runner can make them before it writes a byte; `readLayoutMeta` is shared with `pack`
 ///   1.3 — #1439 review, round 1: `preflight`'s doc names the runner's other pre-write read, the
 ///          manifest's coverage dates, which this function does not make
+///   1.4 — #2023 (row L61): `preflight` and `pack` refuse a layout laid out over another store's
+///          vectors (`VectorSource`, `requireSource(of:is:)`), a `layout.bin` that is not the file
+///          its metadata describes (`requireLayoutFile(in:describedBy:)`), and a layout whose
+///          metadata names neither, as every layout before #2023
 public enum SemanticMapPacker {
 
     /// Artifact schema version for `semantic-map-index.json`.
@@ -52,6 +63,21 @@ public enum SemanticMapPacker {
         case storeCountMismatch(layout: Int, store: Int)
         /// Every document came back unclustered, so there is nothing to label or draw regions from.
         case noClusters
+        /// `layout-meta.json` does not say which store's vectors the layout was laid out over, or
+        /// which `layout.bin` it describes: a layout written before #2023, or by hand. `missing`
+        /// names the absent fields.
+        case unattributedLayout(missing: [String])
+        /// The layout was laid out over the vectors of another store (#2023): each field of the
+        /// store's run manifest on which the layout's store and the packed one differ.
+        case layoutFromAnotherStore(differences: [String])
+        /// `layout.bin` is not the file `layout-meta.json` describes (#2023): their SHA-256s.
+        case layoutFileMismatch(recorded: String, actual: String)
+
+        /// How to make a layout the packer takes, or to pack without one.
+        private static let rebuild = "Run tools/semantic-harvest/corpus-gates/pool_docs.py with STORE "
+            + "set to the store this run packs, then tools/semantic-map/build_layout.py over that pool "
+            + "into LAYOUT_DIR, or point LAYOUT_DIR at a directory with no layout.bin to pack the "
+            + "vectors without a map"
 
         public var description: String {
             switch self {
@@ -70,6 +96,20 @@ public enum SemanticMapPacker {
                     + "pack the vectors without a map"
             case .noClusters:
                 return "the layout produced no clusters; refusing to write a map with no regions"
+            case .unattributedLayout(let missing):
+                return "layout-meta.json records no \(missing.joined(separator: " and no ")): it was "
+                    + "written before #2023, or by hand, so it cannot say which store's vectors the "
+                    + "layout was laid out over, nor that layout.bin is the file it describes. "
+                    + "Nothing was written. " + Self.rebuild
+            case .layoutFromAnotherStore(let differences):
+                return "the layout was laid out over another store's vectors ("
+                    + differences.joined(separator: "; ") + "), so its map would place and label "
+                    + "documents by vectors this pack does not hold. Nothing was written. " + Self.rebuild
+            case .layoutFileMismatch(let recorded, let actual):
+                return "layout.bin has SHA-256 \(actual.prefix(12))…, and layout-meta.json describes "
+                    + "\(recorded.prefix(12))…: the two come from different layout runs (a gitignored "
+                    + "layout.bin can outlive the metadata committed beside it). Nothing was written. "
+                    + Self.rebuild
             }
         }
     }
@@ -93,6 +133,103 @@ public enum SemanticMapPacker {
         let umap: UMAP
         let hdbscan: HDBSCAN
         let grid: Grid
+        /// The store the layout's pool was made from, as `pool_docs.py` read its run manifest and
+        /// `build_layout.py` copied it (#2023); `nil` in a layout written before.
+        let store: VectorSource?
+        /// The SHA-256 of the `layout.bin` written with this metadata (#2023); `nil` before.
+        let layoutSHA256: String?
+    }
+
+    /// What says which vectors a store holds: the fields of its `run-manifest.json` that the vector
+    /// artifact's provenance is built from, under the manifest's own names (#2023).
+    ///
+    /// The path, the harvest date and the harvester script are left out. A store is its vectors, not
+    /// its folder, and a store harvested again under the same model, weights and contract holds the
+    /// same family of vectors; the corpus it covers is checked on its own, by the document count.
+    struct VectorSource: Decodable, Equatable {
+        /// The model id the store was embedded under.
+        let model: String
+        /// The SHA-256 of the model's GGUF weights.
+        let modelFileSHA256: String
+        /// The native embedding width.
+        let dim: Int
+        /// Characters per chunk window.
+        let chunkChars: Int
+        /// Characters of overlap between consecutive windows.
+        let overlapChars: Int
+        /// The document-side prompt, trailing space included.
+        let prefix: String
+
+        private enum CodingKeys: String, CodingKey {
+            case model
+            case modelFileSHA256 = "model_file_sha256"
+            case dim
+            case chunkChars = "chunk_chars"
+            case overlapChars = "overlap_chars"
+            case prefix
+        }
+
+        /// Each field on which `self`, the layout's store, and `packed`, the store being packed,
+        /// differ, under the run manifest's name for it, in a fixed order.
+        ///
+        /// - Parameter packed: The source of the vectors being packed.
+        /// - Returns: `name: the layout's …, the packed store's …` for each differing field.
+        func differences(from packed: VectorSource) -> [String] {
+            // Compared as values, shown abbreviated: two digests that share a prefix still differ.
+            var found: [String] = []
+            func note(_ name: String, differ: Bool, _ layout: String, _ packedValue: String) {
+                guard differ else { return }
+                found.append("\(name): the layout's \(layout), the packed store's \(packedValue)")
+            }
+            note("model", differ: model != packed.model, "\"\(model)\"", "\"\(packed.model)\"")
+            note("model_file_sha256", differ: modelFileSHA256 != packed.modelFileSHA256,
+                 "\(modelFileSHA256.prefix(12))…", "\(packed.modelFileSHA256.prefix(12))…")
+            note("dim", differ: dim != packed.dim, String(dim), String(packed.dim))
+            note("chunk_chars", differ: chunkChars != packed.chunkChars,
+                 String(chunkChars), String(packed.chunkChars))
+            note("overlap_chars", differ: overlapChars != packed.overlapChars,
+                 String(overlapChars), String(packed.overlapChars))
+            note("prefix", differ: prefix != packed.prefix, "\"\(prefix)\"", "\"\(packed.prefix)\"")
+            return found
+        }
+    }
+
+    /// Refuses a layout whose metadata does not say which store's vectors it was laid out over, or
+    /// says another's (#2023).
+    ///
+    /// - Parameters:
+    ///   - layoutMeta: The layout's metadata.
+    ///   - vectors: The source of the vectors being packed: the store's run manifest before the
+    ///     vectors are written, the vector artifact's provenance after.
+    /// - Throws: `PackError.unattributedLayout` or `PackError.layoutFromAnotherStore`.
+    static func requireSource(of layoutMeta: LayoutMeta, is vectors: VectorSource) throws {
+        let missing = [layoutMeta.store == nil ? "store" : nil,
+                       layoutMeta.layoutSHA256 == nil ? "layoutSHA256" : nil].compactMap { $0 }
+        guard missing.isEmpty, let store = layoutMeta.store else {
+            throw PackError.unattributedLayout(missing: missing)
+        }
+        let differences = store.differences(from: vectors)
+        guard differences.isEmpty else {
+            throw PackError.layoutFromAnotherStore(differences: differences)
+        }
+    }
+
+    /// Refuses a `layout.bin` that is not the file `layout-meta.json` describes (#2023): until L28 the
+    /// root checkout held the 300m's gitignored `layout.bin` beside the committed metadata of
+    /// EmbeddingGemma 2's layout, and the two read as one layout of the right length.
+    ///
+    /// - Parameters:
+    ///   - layoutDir: Directory holding `layout.bin`.
+    ///   - layoutMeta: The layout's metadata, whose `layoutSHA256` ``requireSource(of:is:)`` has
+    ///     required.
+    /// - Throws: `PackError.layoutFileMismatch`, or the read's error.
+    static func requireLayoutFile(in layoutDir: URL, describedBy layoutMeta: LayoutMeta) throws {
+        let data = try Data(contentsOf: layoutDir.appendingPathComponent("layout.bin"))
+        let actual = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        let recorded = layoutMeta.layoutSHA256 ?? ""
+        guard recorded.lowercased() == actual else {
+            throw PackError.layoutFileMismatch(recorded: recorded, actual: actual)
+        }
     }
 
     /// Reads `layout.bin` into placements.
@@ -151,16 +288,20 @@ public enum SemanticMapPacker {
     /// ## What it checks, in ``pack(layoutDir:index:storeURL:eraForVolume:lexiconsPath:stopwordsPath:generated:)``'s order
     /// 1. the tagger verdict lemmatises (`ClusterLabeller.requireLanguageAnalysis`);
     /// 2. `layout-meta.json` reads;
-    /// 3. the layout places `expectedDocumentCount` documents;
-    /// 4. `layout.bin` is that many rows;
-    /// 5. at least one row is clustered;
-    /// 6. the stopword and lexicon payloads read (`ClusterLabeller.makeTokenizer`).
+    /// 3. it names the store its pool was made from and the `layout.bin` written with it, and that
+    ///    store holds the vectors `store` describes (``requireSource(of:is:)``, #2023);
+    /// 4. `layout.bin` is the file it names (``requireLayoutFile(in:describedBy:)``, #2023);
+    /// 5. the layout places `expectedDocumentCount` documents;
+    /// 6. `layout.bin` is that many rows;
+    /// 7. at least one row is clustered;
+    /// 8. the stopword and lexicon payloads read (`ClusterLabeller.makeTokenizer`).
     ///
     /// That is every `throw` in `pack`. `pack` keeps its own, because its count is the exact one —
     /// the rows the vector pass really pooled — where the runner hands this the sum of the store's
     /// volume heads. The two agreed on all 553 volumes of the shipped store (measured 2026-10-01:
     /// 314,571 by either count; 314,616 by either on 2026-10-10), so a store whose heads misstate its documents is the one case
-    /// that can still refuse after the vectors are written.
+    /// that can still refuse after the vectors are written. Its source check reads the vector
+    /// artifact's provenance, which the runner builds from the same run manifest this one reads.
     ///
     /// **`pack`'s throws are not the runner's whole map block.** The runner also decodes the
     /// manifest's coverage dates for the era histograms (`SemanticVectorsRunner.loadVolumeEras`),
@@ -172,6 +313,7 @@ public enum SemanticMapPacker {
     /// - Parameters:
     ///   - layoutDir: Directory holding `layout.bin` and `layout-meta.json`.
     ///   - expectedDocumentCount: How many documents the vector pass will place.
+    ///   - store: The run manifest of the store the vector pass will pack.
     ///   - lexiconsPath: Path to the word-cloud lexicons.
     ///   - stopwordsPath: Path to the word-cloud stopwords.
     ///   - health: The tagger verdict the labels would be counted under.
@@ -179,12 +321,17 @@ public enum SemanticMapPacker {
     static func preflight(
         layoutDir: URL,
         expectedDocumentCount: Int,
+        store: SemanticRawStore.RunManifest,
         lexiconsPath: String,
         stopwordsPath: String,
         health: NaturalLanguageHealth
     ) throws {
         try ClusterLabeller.requireLanguageAnalysis(health)
         let layoutMeta = try readLayoutMeta(in: layoutDir)
+        try requireSource(of: layoutMeta, is: VectorSource(
+            model: store.model, modelFileSHA256: store.modelFileSHA256, dim: store.dim,
+            chunkChars: store.chunkChars, overlapChars: store.overlapChars, prefix: store.prefix))
+        try requireLayoutFile(in: layoutDir, describedBy: layoutMeta)
         guard layoutMeta.documents == expectedDocumentCount else {
             throw PackError.storeCountMismatch(
                 layout: layoutMeta.documents, store: expectedDocumentCount)
@@ -229,6 +376,13 @@ public enum SemanticMapPacker {
         // before reading anything rather than label every cluster in printed forms.
         try ClusterLabeller.requireLanguageAnalysis(NaturalLanguageReadiness.health)
         let layoutMeta = try readLayoutMeta(in: layoutDir)
+        // The vectors the map's rows are keyed through, and whose digest its binary carries (#2023).
+        let provenance = index.provenance
+        try requireSource(of: layoutMeta, is: VectorSource(
+            model: provenance.model, modelFileSHA256: provenance.modelFileSHA256,
+            dim: provenance.nativeDims, chunkChars: provenance.chunkChars,
+            overlapChars: provenance.overlapChars, prefix: provenance.prefix))
+        try requireLayoutFile(in: layoutDir, describedBy: layoutMeta)
         guard layoutMeta.documents == index.documentCount else {
             throw PackError.documentCountMismatch(
                 layout: layoutMeta.documents, artifact: index.documentCount)

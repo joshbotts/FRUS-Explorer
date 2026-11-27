@@ -194,6 +194,8 @@ import Foundation
 ///   1.26 — 2026-10-31: a structured summary, in a `.summaryOnly` body or a headnote, prints as its fields
 ///          (`StructuredSummaryDisplay`), a paragraph each opening with its label in a bold run, where it printed
 ///          its stored JSON; a `.general` summary prints as before
+///   1.27 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
+///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the package
 public final class DocxCollectionExporter: CollectionExporter {
 
     /// Where figure images come from (#1516): the app's store, which `ExportFormat.makeExporter()`
@@ -777,8 +779,8 @@ public final class DocxCollectionExporter: CollectionExporter {
             body += markdownItalicRuns("\(label) \(joined)", styleId: "DocURL")
         }
 
-        // Research notes — the per-entry override when resolved, else options.includeNotes.
-        guard doc.includeNotesOverride ?? options.includeNotes else { return body }
+        // Research notes — the document's setting, else its section's, else the collection's.
+        guard doc.includesNotes(options: options) else { return body }
         for note in doc.noteTexts where !note.isEmpty {
             body += researchNoteHeadingPara()
             let noteParagraphs = note
