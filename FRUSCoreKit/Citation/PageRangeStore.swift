@@ -48,6 +48,10 @@ private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type
 ///   volume numbers its pages per document decides whether a document's start places it.
 /// - ``document(forPage:inVolume:citing:)`` — the one document a page link opens: of several, the one
 ///   its footnote names (#1509), through the tie-break the indexer stores the link's edge by.
+/// - ``divisions(startingOn:inVolume:)`` — the divisions that begin on a page (`division_start_pages`,
+///   index version 76), which a page link opens where no document holds the page (F7, L39).
+/// - ``document(forRomanPage:inVolume:)`` — what a link to a page of the front matter, numbered in
+///   Roman numerals, opens (L39).
 ///
 /// ## Log prefix
 /// `[PageRangeStore]`
@@ -97,6 +101,10 @@ private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type
 ///   1.10 — A18b: `citedDocumentFacts(inVolume:)` is public, so `ResolvedEdgeIndexGenerator` writes
 ///          the bundled page map's facts through the reader's own query, beside
 ///          `documents(forPage:inVolume:)` for its entries
+///   1.11 — 2026-11-27 (L39, F7): ``divisions(startingOn:inVolume:)`` and
+///          ``document(forRomanPage:inVolume:)``, which `PageLink` asks where a page names no
+///          document, on this read-only connection rather than the indexing pipeline's, which a
+///          tap would wait behind while it indexes
 public actor PageRangeStore {
 
     // MARK: - State
@@ -290,6 +298,56 @@ public actor PageRangeStore {
     private func optionalString(at column: Int32, stmt: OpaquePointer) -> String? {
         guard let ptr = sqlite3_column_text(stmt, column) else { return nil }
         return String(cString: ptr)
+    }
+}
+
+// MARK: - A page no document holds (F7, L39)
+
+extension PageRangeStore {
+
+    /// The divisions of `volumeId` that begin on `page`, outermost first: the rows index version 76
+    /// stores for every division with an `xml:id` that is neither a document nor an editorial note
+    /// (`division_start_pages`, F7), read through ``PageSpanResolver/divisionsStartingOnPageSQL``,
+    /// the query the indexer's own read runs (`IndexingPipeline.divisions(startingOn:inVolume:)`).
+    /// What a page link opens where no document holds its page: `frus1961-63v06`'s Contents links its
+    /// Preface as `#pg_III` and its Index as `#pg_315`, the break before each division.
+    ///
+    /// Empty for a page no division begins on, for a page with no number (`.prefixed`,
+    /// `.unparseable`), and for an index from before version 76, which has no such table, until its
+    /// re-index. The page is numbered as the indexer numbers one
+    /// (`IndexingPipeline.pageRangeRow(volumeId:documentId:pageNumber:isStart:)`).
+    public func divisions(startingOn page: PageNumber, inVolume volumeId: String) -> [String] {
+        let key = IndexingPipeline.pageRangeRow(volumeId: volumeId, documentId: "", pageNumber: page)
+        guard let number = key.pageNumberInt, let db,
+              let stmt = prepare(PageSpanResolver.divisionsStartingOnPageSQL, db: db) else { return [] }
+        defer { sqlite3_finalize(stmt) }
+        bind(text: volumeId, at: 1, stmt: stmt)
+        bind(text: key.pageNumberType, at: 2, stmt: stmt)
+        sqlite3_bind_int64(stmt, 3, Int64(number))
+        var ids: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW { ids.append(string(at: 0, stmt: stmt)) }
+        return ids
+    }
+
+    /// What a link to page `page` of `volumeId`'s front matter, numbered in Roman numerals, opens, or
+    /// `nil` when the page names nothing (L39): ``PageSpanResolver/romanPageDocument(rows:divisions:)``
+    /// over the page's `page_ranges` rows (``PageSpanResolver/romanPageRowsSQL``) and the divisions
+    /// that begin on it (``divisions(startingOn:inVolume:)``). A document that begins on the page, else
+    /// the Preface or the List of Sources that does, else the section the page is printed in.
+    ///
+    /// - Parameter page: The number the page's numeral names (`pg_III` is 3).
+    public func document(forRomanPage page: Int, inVolume volumeId: String) -> String? {
+        var rows: [(documentId: String, isStart: Bool)] = []
+        if let db, let stmt = prepare(PageSpanResolver.romanPageRowsSQL, db: db) {
+            defer { sqlite3_finalize(stmt) }
+            bind(text: volumeId, at: 1, stmt: stmt)
+            sqlite3_bind_int64(stmt, 2, Int64(page))
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                rows.append((string(at: 0, stmt: stmt), sqlite3_column_int(stmt, 1) != 0))
+            }
+        }
+        return PageSpanResolver.romanPageDocument(
+            rows: rows, divisions: divisions(startingOn: .roman(page), inVolume: volumeId))
     }
 }
 

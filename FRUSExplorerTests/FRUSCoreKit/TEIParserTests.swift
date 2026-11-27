@@ -2519,14 +2519,16 @@ struct CrossRefResolverTests {
         #expect(FRUSURLScheme.resolveCrossRefTarget("#note4", volumeId: nil) == .unresolved)
     }
 
-    @Test("Printed-page anchors resolve to page numbers; roman numerals are unresolved")
+    @Test("Printed-page anchors resolve to page numbers; roman numerals to pages of the front matter")
     func pageAnchors() {
         #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_313", volumeId: nil)
                 == .page(volumeId: nil, page: 313))
         #expect(FRUSURLScheme.resolveCrossRefTarget("frus1955-57v17#pg_313", volumeId: nil)
                 == .page(volumeId: "frus1955-57v17", page: 313))
+        // L39 (F7): a roman numeral was `.unresolved`, so a volume's Contents line for its Preface
+        // opened nothing. It is the front matter's page, which the reader opens what begins on.
         #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_XIII", volumeId: nil)
-                == .unresolved)
+                == .romanPage(volumeId: nil, page: 13))
     }
 
     @Test("Bare footnote/figure anchors and external URLs classify correctly")

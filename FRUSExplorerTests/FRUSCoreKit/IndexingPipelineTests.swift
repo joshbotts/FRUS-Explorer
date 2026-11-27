@@ -10941,6 +10941,97 @@ struct IndexVersion76Tests {
         }
     }
 
+    @Test("A volume's Contents lines open what they name: the Preface on a roman page, the Index on an arabic page no document holds (F7, L39)")
+    func contentsLinesOpenWhatTheyName() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // `frus1961-63v06`'s shape, with a blank page before the Contents, and `frus1921v01`'s
+            // two messages: the second begins on the page whose break ends the first.
+            let front = """
+                <pb n="III" xml:id="pg_III"/>
+                <div subtype="preface" type="section" xml:id="preface"><head>Preface</head>
+                  <p>The series presents the record.</p><pb n="IV" xml:id="pg_IV"/><p>More.</p></div>
+                <pb n="V" xml:id="pg_V"/>
+                <div subtype="historical-document" type="section" xml:id="message1"><head>Message</head>
+                  <p>To the Congress.</p><pb n="VI" xml:id="pg_VI"/><p>Its last lines.</p></div>
+                <div subtype="historical-document" type="section" xml:id="message2"><head>Second message</head>
+                  <p>To the Senate.</p></div>
+                <pb n="[XIV]" xml:id="pg_XIV"/><pb n="XV" xml:id="pg_XV"/>
+                <div subtype="table-of-contents" type="section" xml:id="toc"><head>Contents</head>
+                  <list type="toc"><item><ref target="#pg_III">Preface</ref></item>
+                  <item><ref target="#pg_VI">Second message</ref></item>
+                  <item><ref target="#pg_1">Letters</ref></item>
+                  <item><ref target="#pg_3">Index</ref></item></list></div>
+                """
+            let back = """
+                <pb n="3" xml:id="pg_3"/>
+                <div subtype="index" type="section" xml:id="index"><head>Index</head>
+                  <list type="index"><item>Adenauer, Konrad, <ref target="#pg_1">1</ref></item></list></div>
+                """
+            let documents = [
+                "<div type=\"document\" xml:id=\"d1\" n=\"1\"><head>1. Letter</head><p>Text.</p><pb n=\"2\" xml:id=\"pg_2\"/><p>More.</p></div>",
+            ]
+            let volume = "frus1961-63v06"
+            try volumeXML(volumeId: volume, front: front, bodyLead: "<pb n=\"1\" xml:id=\"pg_1\"/>",
+                          documents: documents, back: back)
+                .write(to: dir.appendingPathComponent("volumes/\(volume).xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume(volume)
+            let store = try PageRangeStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+
+            /// Where a tap on `target` goes with the volume on the device, as both readers send it.
+            func tap(_ target: String, onDevice: Bool = true) async -> PageLink? {
+                switch FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volume) {
+                case .page(let pageVolume, let page):
+                    return await PageLink.destination(page: page, volumeId: pageVolume ?? volume, citing: nil,
+                                                      onDevice: onDevice, store: store, map: { nil })
+                case .romanPage(let pageVolume, let page):
+                    return await PageLink.destination(romanPage: page, volumeId: pageVolume ?? volume,
+                                                      onDevice: onDevice, store: store)
+                default:
+                    Issue.record("\(target) is read as no page")
+                    return nil
+                }
+            }
+
+            // The grammar reads the Preface's line as the front matter's page III.
+            #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_III", volumeId: volume)
+                    == .romanPage(volumeId: volume, page: 3))
+            // Each Contents line opens what it names: what begins on its page.
+            #expect(await tap("#pg_III") == .document(volumeId: volume, documentId: "preface"))
+            #expect(await tap("#pg_VI") == .document(volumeId: volume, documentId: "message2"),
+                    "the second message begins on the page whose break ends the first")
+            #expect(await tap("#pg_XV") == .document(volumeId: volume, documentId: "toc"))
+            #expect(await tap("#pg_3") == .document(volumeId: volume, documentId: "index"))
+            // The page index comes first: page 1 opens the letter that begins on it, not its compilation.
+            #expect(await tap("#pg_1") == .document(volumeId: volume, documentId: "d1"))
+            #expect(try await pipeline.divisions(startingOn: .arabic(1), inVolume: volume) == ["comp1"])
+            // A page the Preface is printed on, which begins nothing, opens the Preface.
+            #expect(await tap("#pg_IV") == .document(volumeId: volume, documentId: "preface"))
+            // A blank page names nothing, and opens nothing, as a page past the last opens nothing.
+            #expect(await tap("#pg_XIV") == nil)
+            #expect(await tap("#pg_9") == nil)
+            // Each division a line opens is one the reader opens by its id, as Browse opens the Preface.
+            let url = dir.appendingPathComponent("volumes/\(volume).xml")
+            for (id, head) in [("preface", "Preface"), ("message2", "Second message"), ("toc", "Contents"),
+                               ("index", "Index")] {
+                let page = try #require(try await FRUSDocumentParser().parseDocument(documentId: id, volumeURL: url),
+                                        "\(id) opens nothing")
+                let text = page.nodes.map(\.plainText).joined(separator: " ")
+                #expect(text.contains(head) && !text.contains("Its last lines"), "\(id): \(text)")
+            }
+            // The reader's read of the divisions is the indexer's, one query.
+            for page in [PageNumber.roman(3), .roman(6), .roman(15), .arabic(1), .arabic(3), .roman(4)] {
+                let indexed = try await pipeline.divisions(startingOn: page, inVolume: volume)
+                #expect(await store.divisions(startingOn: page, inVolume: volume) == indexed, "\(page)")
+            }
+
+            // With the volume not on the device, a roman page opens it, naming no page, and an arabic
+            // page the map does not list opens it naming the page, as before.
+            #expect(await tap("#pg_III", onDevice: false) == .volume(volumeId: volume, page: nil))
+            #expect(await tap("#pg_3", onDevice: false) == .volume(volumeId: volume, page: 3))
+        }
+    }
+
     /// `page_ranges` rows for a volume as `"<type> <number>"`.
     private func rawPageRows(_ dbURL: URL, volumeId: String) throws -> [String] {
         var db: OpaquePointer?

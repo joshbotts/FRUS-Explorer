@@ -593,6 +593,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.69 — 2026-11-26 (plan of record row L30): `document(forDocumentNumber:inVolume:)` matches the
 ///         number as written, then ignoring case, for Citation Lookup's printed numbers (#1977:
 ///         `1190B` finds `1190b`); nothing the indexer stores changes
+///  4.70 — 2026-11-27 (plan of record row L39, F7): `divisions(startingOn:inVolume:)` runs
+///         `PageSpanResolver.divisionsStartingOnPageSQL`, the query the reader's `PageRangeStore` runs for
+///         a page link no document holds, and `SettledCrossReferenceTarget` keeps a page in Roman numerals
+///         (`.romanPage`) as collected, as it keeps `.unresolved`; nothing the indexer stores changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -3697,6 +3701,10 @@ public actor IndexingPipeline {
     /// which no row of `page_ranges` holds, so the link opened nothing. Empty for a page no
     /// division begins on, and for every volume indexed before version 76 until its re-index.
     ///
+    /// The reader's tap asks `PageRangeStore.divisions(startingOn:inVolume:)` (L39), which runs the
+    /// same query for a numbered page (``PageSpanResolver/divisionsStartingOnPageSQL``) on its own
+    /// read-only connection, so a tap never waits on this actor while it indexes.
+    ///
     /// - Parameters:
     ///   - page: The page, as `PageNumber.parse(_:xmlId:)` reads a break's `@n`.
     ///   - volumeId: The volume.
@@ -3704,10 +3712,9 @@ public actor IndexingPipeline {
     public func divisions(startingOn page: PageNumber, inVolume volumeId: String) throws -> [String] {
         let key = Self.pageRangeRow(volumeId: volumeId, documentId: "", pageNumber: page)
         let byNumber = key.pageNumberInt != nil
-        let stmt = try auxPrepare("""
+        let stmt = try auxPrepare(byNumber ? PageSpanResolver.divisionsStartingOnPageSQL : """
             SELECT division_id FROM division_start_pages
-             WHERE volume_id = ? AND page_number_type = ?
-               AND \(byNumber ? "page_number_int = ?" : "page_number_raw = ?")
+             WHERE volume_id = ? AND page_number_type = ? AND page_number_raw = ?
              ORDER BY division_order
             """)
         defer { sqlite3_finalize(stmt) }
@@ -15623,12 +15630,13 @@ enum SettledCrossReferenceTarget: Sendable, Equatable {
     /// What `destination`'s row settles as, or `nil` when it is stored as collected. An index
     /// entry's reference (`#in2`) is stored as collected, under the item's id, as it was when the
     /// grammar read it as a document: `CrossReferenceStore` already keeps `in[0-9]*` targets out of
-    /// its rankings, so the rows and the index version do not move.
+    /// its rankings, so the rows and the index version do not move. A page of the front matter
+    /// (`#pg_III`, L39) is stored as collected too, as it was when the grammar read it as nothing.
     init?(_ destination: CrossRefDestination) {
         switch destination {
         case .footnote(_, let documentId, _): self = .document(documentId)
         case .volume(let volumeId):           self = .volume(volumeId)
-        case .document, .indexEntry, .page, .external, .unresolved: return nil
+        case .document, .indexEntry, .page, .romanPage, .external, .unresolved: return nil
         }
     }
 }

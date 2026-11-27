@@ -15,8 +15,8 @@ import Foundation
 /// FRUS TEI ref targets come in several flavours that previously all funnelled
 /// into "treat the anchor as a document ID":
 /// `#d80` · `frus1964-68v20#d104` · `#d100fn2` (footnote of another document) ·
-/// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `frus1961-63v05` (a whole volume) ·
-/// `http://…`.
+/// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `#pg_III` (a page of the front matter) ·
+/// `frus1961-63v05` (a whole volume) · `http://…`.
 public enum CrossRefDestination: Equatable, Sendable {
     /// A FRUS document.
     case document(volumeId: String?, documentId: String)
@@ -27,6 +27,19 @@ public enum CrossRefDestination: Equatable, Sendable {
     /// A printed page in a volume; resolve to the document that begins on it (#1503) via
     /// `PageRangeStore.document(forPage:inVolume:)`.
     case page(volumeId: String?, page: Int)
+    /// A page of a volume's front matter, which the volume numbers in Roman numerals (`#pg_III`,
+    /// `pg_xiv`): `page` is the number the numeral names, as `PageNumber.parse(_:)` reads a break's
+    /// `@n`. A volume's Contents links its Preface, its Sources and its lists of abbreviations and
+    /// persons this way, and an older volume's index cites the pages of a President's message printed
+    /// before page 1 (F7, L39). ``PageLink/destination(romanPage:volumeId:onDevice:store:)`` says where
+    /// it goes.
+    ///
+    /// Measured at corpus `216cdb764` over the 553 catalogue volumes, with a full index at version 76
+    /// of the same files: 2,472 references name such a page, 1,493 of them in a Contents and 64 into
+    /// another volume. Until L39 the grammar read every one as `.unresolved`, and none opened
+    /// anything; with its volume on the device, all but 89 now open what begins on the page or the
+    /// section it is printed in.
+    case romanPage(volumeId: String?, page: Int)
     /// A whole volume, not a document in it (#1603): a target with no `#` that is a volume's id
     /// (`frus1961-63v05`). The id is as the target gives it, and may name a volume a host does not
     /// hold: of the 8,266 such references in the 553 catalogue volumes at corpus `deb6a04f8`,
@@ -44,8 +57,8 @@ public enum CrossRefDestination: Equatable, Sendable {
     case indexEntry(volumeId: String?, anchor: String)
     /// A non-FRUS absolute URL — open in the browser.
     case external(URL)
-    /// Nothing navigable: same-document footnote/figure/table anchors, roman-
-    /// numeral page anchors, or an empty target.
+    /// Nothing navigable: same-document footnote/figure/table anchors, a page anchor that is neither
+    /// arabic nor roman (`pg_313a`), or an empty target.
     case unresolved
 }
 
@@ -94,6 +107,9 @@ public enum ReaderLink: Equatable, Sendable {
 ///          this file from the app's `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`
 ///   1.5 — 2026-11-08: `CrossRefDestination.indexEntry`, an index's "See" reference (Lane 2 of the
 ///          editors' annotations follow-ups plan), which `resolveCrossRefTarget` read as a document
+///   1.6 — 2026-11-27 (L39, F7): `CrossRefDestination.romanPage`, a page of the front matter
+///          (`#pg_III`), which `resolveCrossRefTarget` read as `.unresolved`; and `PageLink` opens the
+///          division that begins on a page no document holds, and a roman page
 public enum FRUSURLScheme {
 
     /// What `url` names when it is a link in the reader's page, or `nil` when it is not one: a
@@ -148,8 +164,9 @@ public enum FRUSURLScheme {
     ///   as an anchor in the volume being read.
     /// - `dNNNfnM` footnote-suffixed ids resolve to the base document `dNNN`.
     /// - `inN` anchors are an index's entries (`.indexEntry`): no document's id has that shape.
-    /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number;
-    ///   roman-numeral pages (`pg_XIII`, front matter) are `.unresolved`.
+    /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number; a roman numeral
+    ///   (`pg_XIII`, the front matter's numbering) is `.romanPage` (L39), and any other page anchor
+    ///   (`pg_313a`) is `.unresolved`.
     /// - Bare `fn…`/`note…`/`fig…`/`tbl…` anchors point within the current
     ///   document and are `.unresolved` (footnote popovers already cover them).
     /// - Absolute `http(s)` URLs are `.external`.
@@ -189,6 +206,11 @@ public enum FRUSURLScheme {
             let digits = anchor.drop { !$0.isNumber }
             if !digits.isEmpty, digits.allSatisfy(\.isNumber), let page = Int(digits) {
                 return .page(volumeId: vol, page: page)
+            }
+            // F7 (L39): a page of the front matter, whose numeral the index read from the break's
+            // `@n` as this reads it from the anchor. Until L39 the Contents' Preface line was nothing.
+            if let page = romanPage(ofAnchor: lower) {
+                return .romanPage(volumeId: vol, page: page)
             }
             return .unresolved
         }
@@ -234,6 +256,28 @@ public enum FRUSURLScheme {
     nonisolated static func isVolumeId(_ token: String) -> Bool {
         guard token.hasPrefix("frus") else { return false }
         return token.dropFirst(4).first?.isASCII == true && token.dropFirst(4).first?.isNumber == true
+    }
+
+    /// The number a page anchor's roman numeral names (L39): `pg` or `page`, an optional `_`, and
+    /// letters `PageNumber.parse(_:)` reads as a roman numeral (`pg_xiii` is 13); `nil` for any other
+    /// anchor (`pg_313a`, `pg_`). The index read each break's `@n` (`XIII`, `[XIV]`) through the same
+    /// parse, so the number is the one `page_ranges` and `division_start_pages` store the page under.
+    ///
+    /// - Parameter lowercasedAnchor: The anchor after its `#`, lowercased, as the grammar tests it.
+    nonisolated static func romanPage(ofAnchor lowercasedAnchor: String) -> Int? {
+        var numeral = Substring(lowercasedAnchor)
+        if numeral.hasPrefix("page") {
+            numeral = numeral.dropFirst(4)
+        } else if numeral.hasPrefix("pg") {
+            numeral = numeral.dropFirst(2)
+        } else {
+            return nil
+        }
+        if numeral.hasPrefix("_") { numeral = numeral.dropFirst() }
+        // The letters first, so that nothing else reaches the parse, which logs what it cannot read.
+        guard !numeral.isEmpty, numeral.allSatisfy({ "ivxlcdm".contains($0) }),
+              case .roman(let page) = PageNumber.parse(String(numeral)) else { return nil }
+        return page
     }
 
     /// The host of a figure image's URL: `frusexplorer://figure/{volumeId}/{fileName}`.
@@ -298,15 +342,29 @@ public enum WholeVolumeLink: Equatable, Sendable {
 /// - **A volume on the device** answers from its own page index
 ///   (`PageRangeStore.document(forPage:inVolume:citing:)`), as every page link did before #1766: the
 ///   document the page names, and of several the one the link's footnote names (#1509).
+/// - **A page of it no document holds** opens the division that begins on it (F7, L39;
+///   `PageRangeStore.divisions(startingOn:inVolume:)`, the rows index version 76 stores), the
+///   outermost of several, by its id, as Browse opens a front-matter section: the Index a volume's
+///   Contents links to (`frus1961-63v06`'s `#pg_315`), a compilation's or a chapter's title page, a
+///   referral to another volume. The page index comes first, so every link that opened a document
+///   still opens it, the one its stored edge names. Measured at corpus `216cdb764` over the 553
+///   catalogue volumes with a full index at version 76: of 3,056 references to an arabic page that
+///   named no document with the volume on the device, 2,594 now open a division, 761 of the 813 in a
+///   Contents among them; of the 48,608 into another volume from a document's text and notes, the
+///   population L6 measured, 626 named no document and 432 of them now open a division, 200 a
+///   compilation's title page.
+/// - **A page of the front matter**, numbered in Roman numerals (`CrossRefDestination.romanPage`,
+///   L39), is ``destination(romanPage:volumeId:onDevice:store:)``'s: the volume's page index has no
+///   arabic answer for it, and the bundled map lists none.
 /// - **A volume not on the device** answers from the bundled page map (`CitedPageMap`, A18b) where
 ///   the map lists the page. An entry is what that page index answers over a full index of the
 ///   build's corpus, and the facts beside it are what the tie-break reads, so the tap names the
 ///   document a device holding the volume would open. The reader opens it as it opens a link to a
 ///   document of a volume not on the device: it offers the download.
-/// - **A volume on the device whose page index names nothing** answers from the map too. That is a
-///   volume downloaded and not yet indexed — the one the alert's Download Volume has just fetched,
-///   whose document links already open — or a copy that prints the page where the build's corpus
-///   does not. A page neither names opens nothing, as it did before #1766.
+/// - **A volume on the device whose page index names nothing**, no document and no division, answers
+///   from the map too. That is a volume downloaded and not yet indexed — the one the alert's Download
+///   Volume has just fetched, whose document links already open — or a copy that prints the page
+///   where the build's corpus does not. A page neither names opens nothing, as it did before #1766.
 /// - **A page the map does not list, of a volume not on the device** — the first page of a
 ///   compilation cited with "ff.", an end of a range across documents, a page that names no
 ///   document, a page of a volume outside the catalogue, or any page when the bundled map cannot be
@@ -334,16 +392,22 @@ public enum WholeVolumeLink: Equatable, Sendable {
 ///   1.1 — Session 2026-10-23 (FRUS Explorer Light, S12c): moved here from the app's
 ///          `FRUSURLSchemeHandler.swift`, unchanged but public and `Sendable`, so FRUS Explorer Light sends a page
 ///          link where both readers do, with the volumes its index holds as the device's
+///   1.2 — 2026-11-27 (L39, F7): a page of a volume on the device that no document holds opens the
+///          division that begins on it, and ``destination(romanPage:volumeId:onDevice:store:)`` is where
+///          a page of the front matter goes; `volume`'s `page` is `nil` for a page Browse cannot name
 public enum PageLink: Equatable, Sendable {
-    /// The document the page names. The reader opens it as a link to that document: a volume not on
-    /// the device offers its download.
+    /// The document the page names, or, on a page no document holds, the division that begins on it
+    /// (L39), which the reader opens by its id as Browse opens a front-matter section. The reader
+    /// opens it as a link to that document: a volume not on the device offers its download.
     case document(volumeId: String, documentId: String)
     /// The volume, as a link to the whole volume opens it, for a page of it the reader cannot name a
-    /// document on without the volume. `page` is the page the link was to, which Browse names.
-    case volume(volumeId: String, page: Int)
+    /// document on without the volume. `page` is the page the link was to, which Browse names, or
+    /// `nil` for a page of the front matter's roman numbering, which Browse does not (L39).
+    case volume(volumeId: String, page: Int?)
 
     /// Where a link to `page` of `volumeId` goes, or `nil` when it goes nowhere: a page of a volume
-    /// on the device that names no document in its page index or in the map.
+    /// on the device that names no document in its page index or in the map, and on which no
+    /// division begins.
     ///
     /// - Parameters:
     ///   - page: The arabic page number the link names.
@@ -353,11 +417,18 @@ public enum PageLink: Equatable, Sendable {
     ///   - onDevice: Whether the volume is on the device.
     ///   - deviceDocument: What the device's page index answers for the page with `citing`, read
     ///     only when `onDevice` is true.
+    ///   - deviceDivision: The outermost division the device's index says begins on the page (L39),
+    ///     read only when `onDevice` is true and `deviceDocument` is `nil`.
     ///   - map: The bundled page map, or `nil` when it cannot be read.
     public static func destination(page: Int, volumeId: String, citing: PageCitationHint?, onDevice: Bool,
-                                   deviceDocument: String?, map: CitedPageMap?) -> PageLink? {
+                                   deviceDocument: String?, deviceDivision: String? = nil,
+                                   map: CitedPageMap?) -> PageLink? {
         if onDevice, let deviceDocument {
             return .document(volumeId: volumeId, documentId: deviceDocument)
+        }
+        // F7 (L39): a page no document holds — the Index's first page, a chapter's title page.
+        if onDevice, let deviceDivision {
+            return .document(volumeId: volumeId, documentId: deviceDivision)
         }
         // As one page: the documents the map lists on it, and the footnote's tie-break among several.
         if let map, let documentId = PageSpanResolver.citedDocument(inVolume: volumeId, page: page, form: .single,
@@ -367,23 +438,60 @@ public enum PageLink: Equatable, Sendable {
         return onDevice ? nil : .volume(volumeId: volumeId, page: page)
     }
 
-    /// ``destination(page:volumeId:citing:onDevice:deviceDocument:map:)``, asking `store` for a
-    /// volume on the device and reading `map` wherever that names nothing. Both are read off the
+    /// ``destination(page:volumeId:citing:onDevice:deviceDocument:deviceDivision:map:)``, asking
+    /// `store` for a volume on the device — the document its page index names, then the division
+    /// that begins on the page — and reading `map` wherever those name nothing. All are read off the
     /// main actor: the map's first read decodes the bundled file.
     ///
     /// - Parameters:
     ///   - store: The device's page index, or `nil` when it is not open; a volume on the device then
     ///     answers from the map alone.
     ///   - map: Reads the bundled page map (`CitedPageMapStore.shared` in the readers); not read when
-    ///     the page index names a document.
+    ///     the page index names a document or a division.
     public static func destination(page: Int, volumeId: String, citing: PageCitationHint?, onDevice: Bool,
                                    store: PageRangeStore?,
                                    map: @Sendable () -> CitedPageMap?) async -> PageLink? {
-        let deviceDocument = onDevice
-            ? (try? await store?.document(forPage: page, inVolume: volumeId, citing: citing)) ?? nil
-            : nil
-        if let deviceDocument { return .document(volumeId: volumeId, documentId: deviceDocument) }
+        if onDevice, let store {
+            if let document = (try? await store.document(forPage: page, inVolume: volumeId, citing: citing)) ?? nil {
+                return .document(volumeId: volumeId, documentId: document)
+            }
+            if let division = await store.divisions(startingOn: .arabic(page), inVolume: volumeId).first {
+                return .document(volumeId: volumeId, documentId: division)
+            }
+        }
         return destination(page: page, volumeId: volumeId, citing: citing, onDevice: onDevice,
                            deviceDocument: nil, map: map())
+    }
+
+    /// Where a link to `page` of `volumeId`'s front matter, numbered in Roman numerals, goes
+    /// (`CrossRefDestination.romanPage`, F7, L39), or `nil` when it goes nowhere: a page of a volume
+    /// on the device that names nothing. A volume not on the device opens as a link to the whole
+    /// volume does, naming no page: Browse names a page by its arabic number, and the bundled map
+    /// lists none of the front matter's.
+    ///
+    /// - Parameters:
+    ///   - page: The number the page's numeral names (`pg_III` is 3).
+    ///   - volumeId: The volume the page is in.
+    ///   - onDevice: Whether the volume is on the device.
+    ///   - deviceDocument: What the device's index answers for the page
+    ///     (`PageRangeStore.document(forRomanPage:inVolume:)`), read only when `onDevice` is true.
+    public static func destination(romanPage page: Int, volumeId: String, onDevice: Bool,
+                                   deviceDocument: String?) -> PageLink? {
+        guard onDevice else { return .volume(volumeId: volumeId, page: nil) }
+        return deviceDocument.map { .document(volumeId: volumeId, documentId: $0) }
+    }
+
+    /// ``destination(romanPage:volumeId:onDevice:deviceDocument:)``, asking `store` for a volume on
+    /// the device: a document that begins on the page, else the outermost division that begins on
+    /// it (the Preface a volume's Contents links to as `#pg_III`), else the document or section the
+    /// page is printed in (``PageSpanResolver/romanPageDocument(rows:divisions:)``).
+    ///
+    /// - Parameter store: The device's index, or `nil` when it is not open, when a page of a volume
+    ///   on the device names nothing.
+    public static func destination(romanPage page: Int, volumeId: String, onDevice: Bool,
+                                   store: PageRangeStore?) async -> PageLink? {
+        var deviceDocument: String?
+        if onDevice { deviceDocument = await store?.document(forRomanPage: page, inVolume: volumeId) }
+        return destination(romanPage: page, volumeId: volumeId, onDevice: onDevice, deviceDocument: deviceDocument)
     }
 }
