@@ -38,11 +38,15 @@ import SwiftUI
 ///   1.5 — #1764: each section lists its documents in catalogue order and its page nodes after them
 ///          (`CrossReferenceGraphViewModel.precedesInReferenceList`), where it listed every node by
 ///          its key as a string
+///   1.6 — 2026-11-27 (#1990, L42): a Save As bar under the list, the toolbar's menu of the graph's two
+///          saves, since the list is the graph an iPhone opens on
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
     /// Invoked when the user opens a document from a row or its context menu.
     let openDocument: (DocumentBrowserEntry) -> Void
+    /// The graph's two saves, which the bar under the list offers as the toolbar's menu does (#1990).
+    let saveActions: GraphSaveActions
 
     @Environment(AppState.self) private var appState
     /// Volumes the user queued for download from the detail section during this
@@ -54,7 +58,28 @@ struct ReferenceListPanel: View {
             detailSection
             Divider()
             referenceList
+            Divider()
+            saveBar
         }
+    }
+
+    // MARK: - Save As (#1990)
+
+    /// The graph's two saves under the list: every document the graph holds as drawn, the central
+    /// document and those a cluster stands for among them, which the list's rows alone do not show.
+    private var saveBar: some View {
+        HStack {
+            Menu {
+                GraphSaveMenuItems(actions: saveActions)
+            } label: {
+                Label(CrossReferenceGraphView.saveAsName, systemImage: "square.and.arrow.down")
+            }
+            .disabled(!saveActions.isEnabled)
+            .fixedSize()
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Detail Section (Session 162)

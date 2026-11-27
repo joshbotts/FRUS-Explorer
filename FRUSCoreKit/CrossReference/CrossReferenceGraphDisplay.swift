@@ -374,6 +374,8 @@ public struct GraphPoint: Equatable, Sendable {
 ///   1.2 — 2026-11-15 (#1914, L16): `isTimelineEligible`'s doc says to ask it of a graph's built nodes,
 ///          as the view model now does, since a timeline's date clusters have no date value; the rule is
 ///          unchanged
+///   1.3 — 2026-11-27 (#1990, L42): ``capture(nodes:edges:graph:dateValues:dateWindow:)``, what the
+///          graph's two saves take (``CrossReferenceGraphCapture``)
 public enum CrossReferenceGraphDisplay {
 
     // MARK: - Timeline eligibility
@@ -1228,5 +1230,282 @@ public enum CrossReferenceGraphDisplay {
         }
 
         return (nodes, edges)
+    }
+
+    // MARK: - What the graph saves (#1990)
+
+    /// What the graph's two saves take, *Save as Working Corpus* and *Add to Archives Visit*: every
+    /// document the graph holds as drawn (decision 180), with which of them the graph draws an archival
+    /// node for.
+    ///
+    /// **As drawn** is the graph at the depth it was loaded at, every document a volume cluster or a
+    /// timeline's date cluster stands for, and the documents in volumes this device has not downloaded,
+    /// which the graph draws too. A page node is not a document (#1799): the set leaves it out and
+    /// counts it. Where a range is brushed on a timeline, a document dated outside it is left out, as the
+    /// timeline leaves it off the canvas, and an undated one stays, as the timeline parks it in its
+    /// Undated column; a volume cluster's documents are held to the range by their own dates, which is
+    /// what the timeline would draw with the cluster open. The set is the same whichever clusters the
+    /// reader has opened.
+    ///
+    /// The archival units and central-file classes are not documents and neither save takes them. They
+    /// are reported for the visit's line, by the documents in the set whose footnotes the graph draws
+    /// them for: one hangs off its citing document by an edge (``attachingUnits(_:to:edges:)``).
+    ///
+    /// The order is the graph's own: the central document, its direct references, then those further
+    /// out, as the display build makes them, with a volume cluster's documents in its place by key. A
+    /// working corpus's budget keeps the first of them (``WorkingCorpusCapture``), so the nearest come
+    /// first; no graph the records name comes near it, the largest having 1,259 nodes.
+    ///
+    /// - Parameters:
+    ///   - nodes: The graph's nodes as built, with their archival nodes attached: the view model's
+    ///     `baseDisplayNodes`, never the timeline's displayed nodes, whose date clusters fold documents.
+    ///     A date cluster among them is read through its members.
+    ///   - edges: The edges built with them, which tie each archival node to its citing document.
+    ///   - graph: The loaded graph, whose direct references give a volume cluster's documents.
+    ///   - dateValues: Each node's date value (``buildDateValues(for:)``).
+    ///   - dateWindow: The brushed range the timeline draws within, or `nil` when no range is brushed or
+    ///     the network is drawn.
+    /// - Returns: What the two saves take.
+    public static func capture(nodes: [DisplayNode], edges: [DisplayEdge], graph: CrossReferenceGraph,
+                               dateValues: [String: TimeInterval],
+                               dateWindow: ClosedRange<TimeInterval>?) -> CrossReferenceGraphCapture {
+        var keys: [String] = []
+        var kept = Set<String>()
+        var pages = Set<String>()
+
+        /// Takes one document by its key, unless the brushed range leaves it out or it is a page.
+        func take(_ key: String, isPage: Bool, dateValue: TimeInterval?) {
+            if let dateWindow, let dateValue, !dateWindow.contains(dateValue) { return }
+            if isPage {
+                pages.insert(key)
+            } else if kept.insert(key).inserted {
+                keys.append(key)
+            }
+        }
+
+        /// A volume cluster's documents, by key, with their dates as the timeline would give them open.
+        func takeCluster(_ memberKeys: [String]) {
+            let members = memberKeys.map {
+                DisplayNode(id: $0, kind: .inbound, metadata: graph.nodeMetadata[$0], isDownloaded: true)
+            }
+            let values = buildDateValues(for: members)
+            for member in members {
+                take(member.id, isPage: member.isPageNode, dateValue: values[member.id])
+            }
+        }
+
+        for node in nodes {
+            switch node.kind {
+            case .central, .inbound, .outbound, .extended:
+                take(node.id, isPage: node.isPageNode, dateValue: dateValues[node.id])
+            case .clusterInbound(let volumeId, _):
+                takeCluster(Set(graph.inboundEdges.lazy.filter { $0.sourceVolumeId == volumeId }
+                    .map { "\($0.sourceVolumeId)/\($0.sourceDocumentId)" }).sorted())
+            case .clusterOutbound(let volumeId, _):
+                takeCluster(Set(graph.outboundEdges.lazy.filter { $0.targetVolumeId == volumeId }
+                    .map { "\($0.targetVolumeId)/\($0.targetDocumentId)" }).sorted())
+            case .dateCluster(_, _, let memberKeys):
+                // A date cluster folds the timeline's dated documents, all inside any brushed range.
+                for key in memberKeys {
+                    let documentId = graph.nodeMetadata[key]?.documentId
+                        ?? key.split(separator: "/", maxSplits: 1).last.map(String.init) ?? key
+                    take(key, isPage: documentId.hasPrefix("pg_"), dateValue: dateValues[key])
+                }
+            case .unit, .centralFileClass:
+                continue
+            }
+        }
+
+        // Each archival node's citing document, by the edge that ties them.
+        let archivalIds = Set(nodes.lazy.filter(\.terminatesWalk).map(\.id))
+        var citingDocument: [String: String] = [:]
+        for edge in edges where archivalIds.contains(edge.target) && citingDocument[edge.target] == nil {
+            citingDocument[edge.target] = edge.source
+        }
+        var unitIds: [String] = []
+        var classKeys: [String] = []
+        var seenUnits = Set<String>()
+        var seenClasses = Set<String>()
+        var citing = Set<String>()
+        for node in nodes where node.terminatesWalk {
+            guard let document = citingDocument[node.id], kept.contains(document) else { continue }
+            citing.insert(document)
+            switch node.kind {
+            case .unit(let collectionId, _):
+                if seenUnits.insert(collectionId).inserted { unitIds.append(collectionId) }
+            case .centralFileClass(let key, _):
+                if seenClasses.insert(key).inserted { classKeys.append(key) }
+            default:
+                break
+            }
+        }
+
+        return CrossReferenceGraphCapture(
+            documentKeys: keys,
+            pageCount: pages.count,
+            documentsWithArchivalNodes: keys.filter { citing.contains($0) },
+            unitIds: unitIds,
+            classKeys: classKeys,
+            depth: graph.fetchedDegree,
+            dateWindow: dateWindow)
+    }
+}
+
+// MARK: - CrossReferenceGraphCapture
+
+/// What the cross-reference graph's two saves take (#1990, decisions 180 and 181), as
+/// ``CrossReferenceGraphDisplay/capture(nodes:edges:graph:dateValues:dateWindow:)`` reads it from the
+/// graph, and the words each save says it in.
+///
+/// *Save as Working Corpus* writes ``documentKeys`` as a corpus (``workingCorpus(documentLabel:stamp:)``),
+/// and *Add to Archives Visit* adds the same documents to a plan as its seeds, both halves on
+/// (decision 181), through `ArchiveVisitPlanWrites.addingSeeds`, the one write every add flow shares.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+public struct CrossReferenceGraphCapture: Equatable, Sendable {
+
+    /// Every document the graph holds as drawn, as `"volumeId/documentId"` keys, each once, in the
+    /// graph's order.
+    public let documentKeys: [String]
+    /// How many page nodes the graph holds in the same reach, which neither save takes.
+    public let pageCount: Int
+    /// The documents of ``documentKeys`` whose footnotes the graph draws an archival node for, in the
+    /// same order.
+    public let documentsWithArchivalNodes: [String]
+    /// The collection-authority records the graph's archival units stand for, each once, in the
+    /// graph's order. A unit cited by several documents is one node for each and one record here.
+    public let unitIds: [String]
+    /// The central-file classes the graph's class nodes stand for, each once, in the graph's order.
+    public let classKeys: [String]
+    /// How many hops out the graph holds documents: the depth it was loaded at, two where a sparse
+    /// graph was widened (``CrossReferenceGraphDisplay/widensSparseGraph(loadedAtDegree:edgeCount:)``).
+    public let depth: Int
+    /// The brushed range that narrowed the set, or `nil`.
+    public let dateWindow: ClosedRange<TimeInterval>?
+
+    /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
+    public init(documentKeys: [String], pageCount: Int, documentsWithArchivalNodes: [String],
+                unitIds: [String], classKeys: [String], depth: Int,
+                dateWindow: ClosedRange<TimeInterval>?) {
+        self.documentKeys = documentKeys
+        self.pageCount = pageCount
+        self.documentsWithArchivalNodes = documentsWithArchivalNodes
+        self.unitIds = unitIds
+        self.classKeys = classKeys
+        self.depth = depth
+        self.dateWindow = dateWindow
+    }
+
+    /// How many documents the saves take.
+    public var documentCount: Int { documentKeys.count }
+
+    // MARK: Words
+
+    /// The graph's central document as both saves name it: its volume and its printed number,
+    /// "frus1952-54v02p1, Doc. 16" (the graph's own `graph.node.docNumber %@`), or its id where it prints
+    /// none.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The central document's volume.
+    ///   - documentId: Its id.
+    ///   - documentNumber: Its printed number, or `nil`.
+    /// - Returns: The label.
+    public static func documentLabel(volumeId: String, documentId: String, documentNumber: String?) -> String {
+        let number = documentNumber.flatMap { $0.isEmpty ? nil : $0 }
+        let document = number.map {
+            String(format: String(localized: "graph.node.docNumber %@", defaultValue: "Doc. %@"), $0)
+        } ?? documentId
+        return "\(volumeId), \(document)"
+    }
+
+    /// The depth in words: "one hop", "two hops", "three hops".
+    public var depthPhrase: String {
+        switch depth {
+        case ...1: String(localized: "graph.save.depth.one", defaultValue: "one hop")
+        case 2: String(localized: "graph.save.depth.two", defaultValue: "two hops")
+        case 3: String(localized: "graph.save.depth.three", defaultValue: "three hops")
+        default: CountCopy.phrase(depth, one: String(localized: "graph.save.depth.n.one", defaultValue: "%@ hop"),
+                                  many: String(localized: "graph.save.depth.n.many", defaultValue: "%@ hops"))
+        }
+    }
+
+    /// The brushed range in words, its two days ("Mar 4, 1950 – Jun 30, 1952"), or `nil` when none is
+    /// brushed. Days in a Gregorian calendar in the process's time zone and locale, as the graph's dates
+    /// are (``CrossReferenceGraphDisplay``).
+    public var dateWindowPhrase: String? {
+        guard let dateWindow else { return nil }
+        let formatter = DateIntervalFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateTemplate = "MMM d y"
+        return formatter.string(from: Date(timeIntervalSinceReferenceDate: dateWindow.lowerBound),
+                                to: Date(timeIntervalSinceReferenceDate: dateWindow.upperBound))
+    }
+
+    /// What the set is, as a name begins and a new visit is named: "Cross-references of
+    /// frus1952-54v02p1, Doc. 16".
+    ///
+    /// - Parameter documentLabel: The central document (``documentLabel(volumeId:documentId:documentNumber:)``).
+    /// - Returns: The subject.
+    public static func subject(documentLabel: String) -> String {
+        String(format: String(localized: "graph.save.subject %@", defaultValue: "Cross-references of %@"),
+               documentLabel)
+    }
+
+    /// Where the set came from, as a corpus records it: the graph's document and its depth, and the
+    /// brushed range where one narrowed it, which is enough to draw the same graph again by hand.
+    ///
+    /// - Parameter documentLabel: The central document (``documentLabel(volumeId:documentId:documentNumber:)``).
+    /// - Returns: The description.
+    public func sourceDescription(documentLabel: String) -> String {
+        dated(String(format: String(localized: "graph.save.source %@ %@",
+                                    defaultValue: "Cross-reference graph of %1$@, at %2$@"),
+                     documentLabel, depthPhrase))
+    }
+
+    /// `text` with the brushed range after it, where one narrowed the set.
+    private func dated(_ text: String) -> String {
+        guard let range = dateWindowPhrase else { return text }
+        return String(format: String(localized: "graph.save.source.dated %@ %@",
+                                     defaultValue: "%1$@, dated %2$@"), text, range)
+    }
+
+    /// The working corpus the graph saves: its documents, named for its central document with the
+    /// capture's stamp (``WorkingCorpusCapture/name(subject:stamp:)``), and described by
+    /// ``sourceDescription(documentLabel:)``.
+    ///
+    /// - Parameters:
+    ///   - documentLabel: The central document (``documentLabel(volumeId:documentId:documentNumber:)``).
+    ///   - stamp: When the save is made (``WorkingCorpusCapture/stamp(for:locale:timeZone:)``).
+    /// - Returns: The capture.
+    public func workingCorpus(documentLabel: String, stamp: String) -> WorkingCorpusCapture {
+        WorkingCorpusCapture(
+            name: WorkingCorpusCapture.name(subject: Self.subject(documentLabel: documentLabel), stamp: stamp),
+            keys: documentKeys,
+            sourceDescription: sourceDescription(documentLabel: documentLabel))
+    }
+
+    /// What either save says when the graph holds no document to save, which only a brushed range that
+    /// takes in no dated document and no undated one can leave: the central document is always held
+    /// otherwise.
+    public static var nothingToSave: String {
+        String(localized: "graph.save.empty",
+               defaultValue: "The graph holds no document within the brushed dates, so there is nothing to save.")
+    }
+
+    /// What the saves leave out of what the graph holds, said before each: its page nodes, which are not
+    /// documents. `nil` when it holds none.
+    ///
+    /// - Parameter locale: The locale that groups the count.
+    /// - Returns: The sentence, or `nil`.
+    public func pagesNote(locale: Locale = .autoupdatingCurrent) -> String? {
+        guard pageCount > 0 else { return nil }
+        return CountCopy.phrase(
+            pageCount,
+            one: String(localized: "graph.save.pages.one %@",
+                        defaultValue: "The graph’s %@ cited page is not a document and is left out."),
+            many: String(localized: "graph.save.pages.many %@",
+                         defaultValue: "The graph’s %@ cited pages are not documents and are left out."),
+            locale: locale)
     }
 }
