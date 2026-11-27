@@ -4357,9 +4357,12 @@ Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Develo
 
 ## Session 2026-11-26 — L61, two generators' guards before R10: a manifest run that could not read a volume writes nothing and exits 1, naming it, after a 429 or a 5xx has been tried four times; the map's pack refuses a layout laid out over another store's vectors, a `layout.bin` its metadata does not describe, and a layout that names neither
 
-The orchestration session started this one for row L61, on `claude/l61-generator-guards-d464ee` from `v2` at `a17023f9`, L27's merge. The row: #2022 and #2023, both found by L28's rehearsal of `New-Volume-Release-Plan.md` (2026-11-26) and filed on the owner's word, each to be fixed before R10 (decisions 203 and 204). Commits: `849b30ba` (#2022), `7e3e8f28` (#2023) and a docs commit.
+The orchestration session started this one for row L61, on `claude/l61-generator-guards-d464ee` from `v2` at `a17023f9`, L27's merge. The row: #2022 and #2023, both found by L28's rehearsal of `New-Volume-Release-Plan.md` (2026-11-26) and filed on the owner's word, each to be fixed before R10 (decisions 207 and 208). Commits: `849b30ba` (#2022), `7e3e8f28` (#2023) and a docs commit.
 
-**MERGES_PLACEHOLDER**
+**#2026's merge**
+- L28 merged as `a7d8e017`, a squash onto `e3260a95`, at 04:27:33 UTC on 2026-11-27, from its head `007981d0`. Its tree, `a32f5e9d`, is the head's. It closed no issue. This entry records it.
+- L31's #2025 (`e3260a95`, onto `a17023f9`, at 03:52:01 UTC, from `98897b4e`, tree `13374d79`, closing #1974, #1975 and #1976, with #1970 closed by hand) is recorded in L28's entry above, and L27's #2021 in L31's.
+- This branch took `v2` in at `a7d8e017`; the session log was the one conflict, resolved with every entry kept in merge order. L31's decisions 203 to 206 put L28's at 207 to 209, so this row's are 207 (#2022) and 208 (#2023).
 
 **#2022, first: the defect in a test** (decision 183)
 - A live 503 cannot be called up, so the online pass moved behind a seam first, with its behaviour unchanged: `ManifestGeneratorRunner.runOnline`, its listing, header fetch and pause handed in, as `SemanticVectorsRunner.run(environment:languageAnalysis:)` takes its inputs. `ManifestFetchFailureTests` drives it over a listing of three of L28's six volumes and a host that answers each from a script, and records the pauses instead of sleeping them.
@@ -4398,5 +4401,5 @@ The orchestration session started this one for row L61, on `claude/l61-generator
 
 **For the owner**
 - **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session ("I merge on green (Recommended)"). Its Auto-fix is on and GitHub's auto-merge is off.
-- **The release runbook's step 2 and §4.5** keep their checks, and their notes now name the fix as landed (L28's brief).
+- **The release runbook's** §2 manifest row, step 2, §4.5 and step 11 keep their checks and now name the fixes as landed (L28's brief), and §10a says both landed. The plan's L61 brief, L28's, has this row's record under it.
 - **Offered, not taken** (decision 183): the two scripts still default to the 300m's store and pool, which the brief did not ask to change and which the corpus gates' documents cite. A run at the defaults now ends in a refusal: `build_layout.py` refuses the default pool as it stands, which names no store, and a layout of the 300m's, made once `pool_docs.py` has run again at its defaults, is refused by the pack before anything is written.
