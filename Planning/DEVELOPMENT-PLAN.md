@@ -5155,3 +5155,9 @@ Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a 
 **The rest**
 - No string changed, so no EditableContent block is added; three ranges moved and are re-pointed (`Amendment-Log.md`). The manuals do not say what the pickers show on such a day, so neither changes.
 - No FRUS Explorer Light hand-over: #2033 carries none. The kit's public API gains `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, and three of `WordCloudScope`'s functions take a defaulted zone, so a caller's source compiles as before.
+
+**The landing checks,** on the merged tree (`d6ad1e68`, tree `c8a652e3`, with `v2` at `b710da3b`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning (140 s).
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
+- `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
