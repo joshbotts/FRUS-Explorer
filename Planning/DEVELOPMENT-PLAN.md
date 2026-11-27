@@ -5059,3 +5059,105 @@ The orchestrator session ("Development session orchestration") started this one 
 - The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped, and the one test with the six known issues, in 791 s; both real-TEI suites ran and passed.
 - The `FRUSExplorerMac` build: succeeded, the two known residues alone.
 - `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: no package input changed.
+## Session 2026-11-27 — L40, the iPhone Duo's windows: a phone presents Analytics and the other aux surfaces as sheets, the Duo too, through one gate; and on the iPad a window closed with Done does not come back
+
+Row L40 of the plan of record from 2026-11-25 (D1, decision 179), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `5026ead5` (L32's merge) on `claude/l40-duo-windows-28bd2c`:
+- `daa25859`, the gates;
+- `e1c3134e`, the iPad check's case;
+- the records;
+- then, at the head of the queue, `v2` at `4881c9d5` taken in (`2a8db8ed`), and the landing's records.
+
+**#2039's merge**
+- The CI fix merged as `4881c9d5`, a squash onto `97c4a8a9`, at 20:17:30 UTC on 2026-11-27, from its head `bd4af53d`. Its tree, `1e289586`, is the head's. It closed no issue, and its timeline holds no auto-merge event. This entry records it.
+- L34's #2038 (`97c4a8a9`) is recorded in the CI fix's entry above, and so back to this row's start: L42's #2037 in L34's, L39's #2036 in L42's, L30's #2035 in L39's, L57's #2034 in L30's, L41's #2032 in L57's, L37's #2031 in L41's, and L32's #2030 (`5026ead5`), where this row began, in L37's.
+
+**The files it shares.** The gates are in ten files, and four of them other rows of Wave 3 change too: `DocumentView.swift` (L37, L39, L41), `BrowserView.swift` (L37), `CrossReferenceGraphView.swift` (L42) and `SearchView.swift` (L57). The orchestrator was told before any change, and placed the row after them. Every hunk of theirs in those files sits at least seven lines from L40's.
+
+**What was found, the defect first** (decision 183), on the iPhone Duo simulator (`69E4A90C`, iOS 27.2), folded, with a Debug build of `v2` at `5026ead5` on an empty library:
+- Browse's Analysis Tools menu offered Person Analytics as a submenu, the form for a scene with windows.
+- Cross-Reference Analytics opened as a full-screen window of its own, a second scene (SpringBoard's `SceneCreationRequest`).
+- Done brought Browse back, with SpringBoard's *destroy scenes request*.
+- Quit and launched again, the app read **2 Views Open**; the views switcher drew the closed analytics window beside the main one, and SpringBoard removed it only when it was swiped away there.
+- The app's own `KnownSceneSessions` file is no measure of what comes back: it still named the analytics session at the next launch after that view was gone from the switcher.
+
+**What changed**
+- `AuxWindowGate` (`App/AppState.swift`): a property wrapper over `\.supportsMultipleWindows` and `UIDevice`'s idiom, false on a phone idiom; the 25 gates in ten files read it as `@AuxWindowGate private var opensAuxWindows`.
+- `SearchView`'s declaration moves inside `#if os(iOS)`, where its four gates are.
+- Every gate file keeps its line count, so none of its EditableContent ranges moves. `AppState.swift`'s three ranges follow the 50 lines it gained.
+- Prose that called the flag false on every iPhone: the gates' doc comments, `FRUSExplorerApp`'s scene notes, `AnalysisToolsMenu`'s note.
+- `WindowTargetingTests` §5: the rule, and a scan that `AuxWindowGate` is the flag's one reader and every file that opens an aux window declares it.
+- `AuxWindowCloseTests.testAWindowClosedWithDoneIsNotBackAtTheNextLaunch`, the iPad check, which counts the app's cards in iPadOS's app switcher after Done, a quit and a relaunch.
+- Docs: the plan's L40 record and §5; the UI-test index row and runbook entry; no manual, since both manuals already describe these surfaces as the iPad's windows and the iPhone's sheets.
+
+**Seen with the fix**, on the same Duo: Person Analytics one item; Cross-Reference Analytics a sheet, with no scene created; quit and launched again, one view and no pill. Unfolded, Semantic Analytics is a form sheet over the dimmed main window, of compact width where the window was full-screen.
+
+**The iPad check** (decision 179): a window closed with Done does not come back, so Done is unchanged.
+- On a fresh iPad Pro 13-inch (M5) under iOS 27.2, in Windowed Apps, the relaunch case passed: one switcher card after the relaunch. SpringBoard's log named the closed window's scene in 240 entries from its opening to the quit, and in none after.
+- With Done made to front its launcher and leave its own window open, the case failed on two cards.
+- The scene stays connected in the background from Done until the app quits, 33 s in the run. Nothing shows it, and it is in §5, unfiled.
+- Under iOS 27.0, no fresh iPad Pro simulator could run the case: `backboardd` aborted on its Metal texture assertion, on the 13-inch at the app's first launch and on the 11-inch (M5) as the analytics window opened.
+- The simulator control tool could not drive the new iPads (each needs the owner's grant, and the request went unanswered while the owner was away), so a UI case drove them.
+
+**Checks, on the branch**
+- `build-for-testing` on the iPhone 17 under iOS 27.0, with the two residues alone.
+- 19 app suites that read the changed files: 283 tests, one failure, the three `AppState.swift` ranges, re-pointed since. Then `WindowTargetingTests` and `EditableContentKeyTests`: 75 tests passed.
+- Two mutations, each rebuilt: `v2`'s ten gate files beside the helper failed the scan (35 readers, ten files) and the word cloud's test; the rule without the idiom failed the phone's test alone.
+
+**At the head of the queue,** on the merge `2a8db8ed` (tree `1e2d1b30`; `v2` at `4881c9d5` taken in), in one `Scripts/heavy.sh` call from 20:46 to 21:07 UTC:
+- The merge: every source file without a conflict, `DocumentView.swift`'s three rows (L37, L39, L41) among them. The amendment log, the plan's §5 and this log met, and each is an append, `v2`'s text first.
+- On the merged tree, before the build: `AuxWindowGate` is still the flag's one reader, each of the ten files that opens an aux window declares it, and a mirror of `EditableContentKeyTests`' check reads 1,370 ranged blocks with no drift.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,429 tests in 1,017 suites, 8,411 passed, none failed, 17 skipped, and the one test with the six known issues, in 989 s. That is the CI fix's 8,426 and L40's three, each of which passed; the real-TEI suites ran and passed.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: the row changes no file a package target compiles or reads.
+
+**Afterwards.** The Duo is as found: its library, prefs and saved state were set aside by rename for the run, then put back with build 1842, folded and shut down. The three iPad simulators made for the check were deleted at the orchestrator's word, the disk being under its 40 GB floor.
+
+**Still owed at the push:** nothing by hand. The Duo's check is the row's own, made above.
+
+## Session 2026-11-27 — L62, a day whose midnight a change of clocks skips: the Mac's Search window and the word cloud read it as that day, through the pair of conversions iPhone and iPad already used, now the kit's; shown first in the zones of the issue's 25 days
+
+Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a short row the owner chose on 2026-11-27 to build before R8, so that the early build carries it ("Yes, row L62 now", the owner's answer in the orchestration session, found in its transcript with the question). Started by "Development session orchestration" on `claude/l62-dst-skipped-day-7c5c2c`, from `v2` at `7ccecacb`. Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed; no stored property and no index version. Commits: `169fe473` (the defect shown first), `653ddc9e` (the fix) and a records commit.
+
+**#2040's merge**
+- L40 merged as `b710da3b`, a squash onto `4881c9d5`, at 21:56:32 UTC on 2026-11-27 (GitHub's time; the commit is stamped 21:56:31), from its head `83719cca`. Its tree, `89b5bb9a`, is the head's. It closed no issue: D1 has none. This entry records it.
+- L57's #2034 (`7ccecacb`), where this row began, is recorded in L30's entry above, and #2035 to #2039 each in the entry after its own.
+- This branch took `v2` in at `b710da3b`. Four files conflicted, all records: the session log, the Amendment-Log, the kit's runbook and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 214, is 218, after L30's 214 and L34's 215 to 217.
+
+**Shown first** (decision 183), over the issue's 25 days, each in its own zone (`SkippedMidnightDay`: the first three of each zone in its table, and its four recent days)
+- **The Mac's read.** The unit target runs on iOS, where `MacSearchViewModel` is not compiled, so the first commit moved the popover's read, as it was, into `SearchViewModel.applyDateRange(_:)`, which the Mac calls: a strict `yyyy-MM-dd` `DateFormatter`, its zone made explicit as `dateRangeTimeZone`. On the iPhone 17 under iOS 27.0 it kept the date the popover held in all 25 cases (From kept 15 June 1990 for São Paulo's 1 January 1914).
+- **The word cloud.** `WordCloudScope.day(fromISO:in:)` read each day as no date, and the range's title printed the day's string (`1914-01-01 – 1914-01-01`), in all 25 cases. The same two tests failed in all 25 under `swift test` too, on macOS 27.2.1's Foundation, which the Mac app runs on.
+- **iPhone and iPad, checked:** a hand-off's and a saved search's day held in all 25 cases on the code L57 left, and so did a facet's year whose first midnight is skipped (1914 in São Paulo). They do not meet #2033.
+- The run: 15 tests in the two suites, 12 passed and 3 failed; `swift test --filter WordCloudDateRangeSkippedMidnightTests`, 2 tests failed with 75 issues.
+
+**Foundation, measured on this Mac** (macOS 27.2.1, probe scripts run once and not committed)
+- A sweep of every day from 1861 to 2000 reproduced the issue's whole table: 27 such days in São Paulo, 43 in Santiago, 42 in Havana, 33 in Beirut, 14 each in Tehran and Cairo, 4 in Tokyo and none in New York, each count equal to the days whose first moment is not 00:00. The day's noon taken back to its start read every one of the 51,134 days in each zone as itself, from its first moment.
+- **What did not hold** (decision 183): the issue says the calendar's reads "each gave the day's first hour, 01:00". Five of its 25 days begin minutes past midnight, where a zone left a local mean time: São Paulo's 1 January 1914 at 00:06:28, Santiago's 1 July 1916 at 00:17:15, its 10 September 1918 and 1 September 1927 at 00:42:45, and Tehran's 13 June 1935 at 00:04:16. The fix takes each day's first moment, and the tests require that, not 01:00.
+- **Two edges, both tests now.** Havana's 19 July 1925 has no noon, since the zone left Havana mean time at 12:00: the calendar reads the noon forward within the day, and the day still starts at its midnight. Samoa's 30 December 2011 does not exist, since Apia crossed the date line, and reads as no date.
+
+**The fix**
+- **One pair of conversions, in the kit.** L57's two moved from `SearchViewModel` to `DateRange` (`FRUSCoreKit/Models/Manifest/ManifestModels.swift`): `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, public. `SearchViewModel.filterDay(of:in:)` and `filterDate(ofDay:in:)` forward to them, by `CLAUDE.md`'s rule that a declaration the kit needs moves into it and the app keeps its name as a forwarder.
+- **The Mac's Search window** reads and writes its popover's two days through Filters' view model, as iPhone and iPad do: `applyDateRange(_:)`, which `applyParameters(_:)` now calls, and `dateRangeDays`, which the search's parameters read. Its two `DateFormatter`s are gone.
+- **The word cloud.** `isoDay(from:in:)` and `day(fromISO:in:)` convert through the pair, so the range's pickers no longer fall back to the year 1 and now, its title names the day in words, and *View in Chronology* hands the day over. They and `dateRangeTitle(startISO:endISO:in:)` take a zone, `.current` by default, so callers' source is unchanged. `isoFormatter()` is gone, and its rule, that a day's conversion is in the pickers' zone, stands on `isoDay(from:in:)`.
+- **Nothing stored moves:** `SavedSearch` converts its own dates in GMT, which skips no midnight, and a word cloud's scope keeps its day strings. No CloudKit field, no index version.
+- `Planning/FRUSCoreKit-Runbook.md` has the move (*L62 (#2033): a day's two conversions*).
+
+**Tests**
+- **`SkippedMidnightDayTests.swift`** (new, the kit's, compiled twice): `SkippedMidnightDay`, the issue's 25 days; `DateRangeDayTests`, 6 tests (the 25 days read as their first moments and written back; the four recent ones at 01:00; the skipped noon; the day skipped whole; four zones' midnights; thirteen strings that name no day); `WordCloudDateRangeSkippedMidnightTests`, 2 (the range's read and its title).
+- **`SearchDateFilterZoneTests`** gains three: the Mac's Filters' read (`applyDateRange(_:)`), iPhone and iPad's hand-off and saved search, and a facet's year whose first midnight is skipped.
+- **The control** is the run that showed the defect: the same `-only-testing` scope failed 3 of 15 tests, each in all 25 cases, and passes now.
+- **Checked on the branch,** in one `Scripts/heavy.sh` job: on the iPhone 17 under iOS 27.0, the row's suites, the Search and word-cloud suites that build a `SearchViewModel` or read a `DateRange`, and the EditableContent, coding-standards and boundary gates, 34 types, 354 tests passed; `swift build --target FRUSCoreKit`; `swift test --filter FRUSCoreKitTests`, 3,213 tests in 378 suites passed; the FRUSExplorerMac build succeeded with the two known residues (it compiled all four changed files); `Scripts/check_repo_hygiene.py`, its six checks passed. Comments were edited after the run.
+
+**Offered, not taken** (decision 183; §5, *Found by L62*)
+- **Indexing's legacy dateline read** (`IndexingPipeline.parseDateISO(from:)`, for a document with no machine-readable date) reads a dateline with a strict formatter in the device's zone. On such a day its day forms fail, and its month-and-year form reads "January 1" as January of the year 1: a copy of its loop, on this Mac, read `Washington, January 1, 1914.` as `0001-01-01` in São Paulo's zone and `Tokyo, May 2, 1948.` as `0002-05-01` in Tokyo's, where New York's reads `1914-01-01`. How many documents reach that step was not measured; a fix changes what indexing stores, so it waits for an index version. Not filed: the owner's word decides.
+- **Two volume ranges' labels** (`IndexingSummaryCard`, `MacCorpusBrowserWindow`) print the day's string on such a day.
+
+**The rest**
+- No string changed, so no EditableContent block is added; three ranges moved and are re-pointed (`Amendment-Log.md`). The manuals do not say what the pickers show on such a day, so neither changes.
+- No FRUS Explorer Light hand-over: #2033 carries none. The kit's public API gains `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, and three of `WordCloudScope`'s functions take a defaulted zone, so a caller's source compiles as before.
+
+**The landing checks,** on the merged tree (`d6ad1e68`, tree `c8a652e3`, with `v2` at `b710da3b`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning (140 s).
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
+- `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).

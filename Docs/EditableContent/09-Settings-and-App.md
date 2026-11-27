@@ -2278,7 +2278,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 669–670 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 671–672 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 
@@ -2488,13 +2488,13 @@ Preparing to summarize…
 
 <!-- END SOURCE: liveactivity.summarizing.preparing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4669–4669 | key: liveactivity.optimizing -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4719–4719 | key: liveactivity.optimizing -->
 
 Finalizing index…
 
 <!-- END SOURCE: liveactivity.optimizing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4711–4712 | key: liveactivity.summarizing.title -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4761–4762 | key: liveactivity.summarizing.title -->
 
 Summarizing FRUS documents
 
