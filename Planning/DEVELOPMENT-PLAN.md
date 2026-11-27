@@ -4702,3 +4702,42 @@ The plan of record's session started this one for row L41, on `claude/l41-zotero
   - The `FRUSExplorerMac` build: succeeded, with the two residues alone.
   - `Scripts/check_repo_hygiene.py`: six checks passed.
 - **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+
+## Session 2026-11-27 — L38, the Mac's windows: the Research window's rows show their heads from the start, a subject's sheet shows its two doors when it opens, and a document window's title bar says something whole (#1946, #1931, F2)
+
+The orchestration session started this one for row L38, on `claude/l38-mac-windows-da5702` from `v2` at `4fa33ba3`, L41's merge. The row: #1946 (the Mac's Research window listing ids where its rows' heads belong) and #1931 (a subject's sheet in the Mac's Subjects window drawing no *All «area» subjects* door), both labelled *needs local testing*, and R6's F2 (the Mac main window's title cut short), a design question the owner chose. Commits: `835c825a`, #1946's test, the defect shown first; `89dead53`, the load keyed on the store; `87c8792d`, a read retry, taken out again in `5ed6bed4`; `e3964db4`, #1931; `7620da16`, F2; `5ed6bed4`, #1946's redraw; then the records.
+
+**#2032's merge**
+- L41 merged as `4fa33ba3`, a squash onto `ebacf85a`, at 12:51:53 UTC on 2026-11-27, from its head `7b59ed14`, tree `925c9301`, closing #1924, #1925 and #1926. This entry records it.
+- L32's by-hand check, owed at its push, was made: it is in #2030's body (*By hand, on the iPhone 17 simulator*, 10:08 to 10:15 UTC, no defect found). Neither L37's entry nor L41's says so.
+
+**The walk, in the Mac check copy** (the AppStore configuration, macOS 27.2), on the owner's word ("Unlocked, go ahead", then "Unlocked again" after the screen locked). The copies ran in a scratch folder of this row's, `~/Library/Caches/FRUS-Explorer/l38/mac`, on an APFS clone of the shared copy's home (298 volumes indexed; *All Research Documents* lists 9 documents of `frus1946v06`), so no other session's copy was touched. The shared preferences domain was exported first and put back after: 165 keys, none differing.
+
+**#1946, the defect and its two causes**
+- **In the unit target first:** `ResearchRowHeadsTests` hosts the rows' loader, moved as it was into `ResearchRowHeads`, in a window of the test host's scene, over a one-table `document_cache`. On `v2`'s keying, the documents alone, 2 of 3 failed: a store that arrives after the rows, and a store reopened. The control passed.
+- **In `v2`'s copy:** with the 27 seeded volumes copied in again just before launch and the Research window opened from the menu 14 to 17 s after it, every row showed its id (*d474*, *d473*, …) in both such launches, still so after 35 s; leaving the row and coming back showed the heads at once. Restored at launch, the window showed them.
+- **The brief's fix answers one cause.** With the load keyed on the store, a copy kept the ids in 1 of 3 such launches, past 100 s. A diagnostic copy's log then showed the restored window's first load made with no store, and boot setting it 0.9 s later; the store key is what reads the heads then.
+- **The other cause, found by a read log:** "read 9 of 9 heads, from the store", the heads merged into the view's state, and the rows still showing ids. The rows read the heads only inside the list's `ForEach`, under the split view's detail column, and `ResearchView`'s body never read them. A diagnostic build whose body read them, through an `.onChange`, never kept the ids.
+- **A reading of this row's that did not hold:** that the launch's first read came back empty while the database was locked. Every logged read found the heads, and the retry it led to (`87c8792d`) was taken out.
+- **The fix:** `ResearchRowHeads` keys its load on the documents and the store's identity; the view's body reads the heads once and passes them to the rows on the Mac's split view and both iOS layouts (`ResearchRowsRedrawSourceTests`); each read is logged (`ResearchRowHeads`, notice), so a later sighting tells a missing load from a missing redraw.
+- **On the fixed copy:** restored at launch, "read none of 9 heads, with no store", then "read 9 of 9" and the heads; opened from the menu after the volumes were copied in again, the heads in 3 of 3 launches, at load averages of 20 to 124, each read 9 of 9.
+
+**#1931, a door that was there**
+- **In `v2`'s copy:** the door was built and drawn. `axread` found `subjects.detail.browseArea`, *All Cold War subjects*, enabled, the 20th row of the sheet's table. But the first scroll to the end, by the scroll bar or by 15 ticks of the wheel, stopped 51 pt short, and the door lay under the sheet's Done bar until a second scroll. L15's walk had scrolled once, and System Events cannot read SwiftUI's names (`AXAttributedDescription`). A scratch harness of the sheet's structure drew the door above the bar: the shortfall comes from rows measured only as they come on screen.
+- **The owner's choice** (decision 214, "Doors above the volumes (Recommended)"): both doors stand above *Covering volumes*, on every platform (`SubjectSheetDoorOrderTests`). On the fixed copy the sheet opens with both in view, and the area door lands on *Subject area: Cold War — 6 subjects*.
+
+**F2, the title bar**
+- Measured with d475 open: at 1,200 pt "The Chargé in the Soviet Union (Kenn…", at the least width, 640 pt, "The Chargé in the…" with every tool in ».
+- Shown three layouts at both widths, the owner chose B (decision 213, "B: volume and number", over the recommendation, A, no title in the bar): the title is the volume's tag and the number, "1946 v6 · Doc 475", and the centre the head, cut at its tail, with the head whole and the ids in its tooltip, in both document windows. A document with no number of its own adds its id.
+- `MacChromeHonestyTests` and `CitationFormatterTests`' app-only gate follow the new rule, each with its reason where L21's held the title to the head. On the fixed copy the title reads whole at 1,200 pt and at 640 pt.
+
+**The manuals:** the macOS manual's *Title and center* says the new layout, and both manuals' subject pages put the two doors before the covering volumes. Owed to T3: `macos/toolbar`, `document`, `research-strip`, `cite-popover` and `topic-index`, and the store frames made from `research-strip` and `cite-popover`.
+
+**Checks**
+- The unit target, scoped, on the iPhone 17 under iOS 27.0: at `7620da16`, 467 tests in 45 suites passed (the Research, Subjects and Mac chrome suites, every suite that reads a changed file, and the audits); at `5ed6bed4`, 198 tests in 15 suites passed (`ResearchRowHeadsTests`, `ResearchRowsRedrawSourceTests`, the Research suites, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `UnconstructedViewAuditTests`, `AppSourceTreeTests` and the count-copy suites). The check copy built at `7620da16` and at `5ed6bed4`, the Mac's compile of the window code. The full unit target, `swift test` (a file under `FRUSExplorerTests/FRUSCoreKit/` changed, inside its `#if !SWIFT_PACKAGE`) and the `FRUSExplorerMac` build are the landing's.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+
+**For the owner**
+- **Decisions 213 and 214** are in the plan's §0, and §4's F2 line is answered.
+- **Found, offered and not taken** (decision 183): a Mac list whose rows vary in height stops its first scroll short of its end, and `CrossReferenceStore`'s batch reads return what they read so far at a step that fails. Both are in the plan's §5, under *Found by L38, unfiled*.
+- **Shell traps met:** zsh's `log` is a builtin, so `/usr/bin/log show` reads the unified log; a variable holding `-only-testing` arguments must be an array.
