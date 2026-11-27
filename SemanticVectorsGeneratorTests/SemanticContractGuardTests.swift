@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+import CryptoKit
 import Foundation
 import SemanticVectorsKit
 import WordCloudKit
@@ -164,6 +165,9 @@ struct SemanticContractGuardTests {
 ///   1.0 — #1439 (lane HYG): initial implementation
 ///   1.1 — #1439 review, round 1: a manifest `dateRange` that does not decode refuses before any
 ///         write, with a no-layout control; the no-lemmatiser refusal's message is pinned
+///   1.2 — #2023 (row L61): the fixture's layouts name the store they were laid out over and their
+///         `layout.bin`, as `build_layout.py`'s do since, and `run` and `expectNothingWritten` are
+///         shared with `LayoutStoreTests`
 @Suite("SemanticVectors — the map pass refuses before the vectors are written (#1439)")
 struct MapPassRefusesBeforeTheVectorsTests {
 
@@ -172,7 +176,7 @@ struct MapPassRefusesBeforeTheVectorsTests {
         lemmatizes: false, classifiesWords: true, recognizesNames: true)
 
     /// Runs the packer over `sandbox` and returns what it threw, if anything.
-    private static func run(
+    fileprivate static func run(
         _ sandbox: Fixture.Sandbox, health: NaturalLanguageHealth = .fullyWorking,
         overriding overrides: [String: String] = [:]
     ) -> (any Error)? {
@@ -187,7 +191,7 @@ struct MapPassRefusesBeforeTheVectorsTests {
     }
 
     /// The refusal left no trace: neither output directory was created.
-    private static func expectNothingWritten(_ sandbox: Fixture.Sandbox, _ what: String) {
+    fileprivate static func expectNothingWritten(_ sandbox: Fixture.Sandbox, _ what: String) {
         #expect(!FileManager.default.fileExists(atPath: sandbox.output.path),
                 "\(what): the run created its output directory before the map pass refused")
         #expect(!FileManager.default.fileExists(atPath: sandbox.shards.path),
@@ -394,6 +398,177 @@ struct MapPassRefusesBeforeTheVectorsTests {
     }
 }
 
+// MARK: - LayoutStoreTests
+
+/// #2023: **a layout laid out over another store's vectors is refused, before anything is written.**
+///
+/// EmbeddingGemma 300m's store and EmbeddingGemma 2's both hold 314,616 documents of 768
+/// dimensions, and the map's two layout scripts defaulted to the 300m's store and pool. The
+/// preflight checked a layout's document count, its length and that a row is clustered, never
+/// which vectors it was laid out over, so a map laid out and labelled over the 300m's vectors would
+/// have packed beside EmbeddingGemma 2's with every count agreeing. L28 read it in the code and the
+/// scripts (2026-11-26) and did not run the wrong pack. And a gitignored `layout.bin` can outlive
+/// the metadata committed beside it: the root checkout held the 300m's beside EmbeddingGemma 2's
+/// `layout-meta.json` until that evening.
+///
+/// Since the fix `layout-meta.json` names the store its pool was made from (`store`, the run
+/// manifest `pool_docs.py` read) and the `layout.bin` written with it (`layoutSHA256`), and the
+/// preflight compares both. Each test drives `run(environment:languageAnalysis:)` over the suite's
+/// two-kilobyte stores, one under each model with the same width, chunking and prefix, and requires
+/// the refusal and no output directory.
+///
+/// Version history:
+///   1.0 — #2023 (row L61): initial implementation
+@Suite("SemanticVectors — the map pass refuses a layout made from another store's vectors (#2023)")
+struct LayoutStoreTests {
+
+    /// The 300m's id as its store's run manifest names it.
+    static let model300m = "text-embedding-embeddinggemma-300m-qat"
+
+    /// A store under EmbeddingGemma 300m: another model's weights over the same documents.
+    private static func store300m() throws -> Fixture.Store {
+        try Fixture.makeStore(model: model300m,
+                              modelFileSHA256: SemanticVectorsRunner.embeddingGemma300mSHA256)
+    }
+
+    /// The fields a refusal names, each difference's text before its first colon.
+    static func fields(_ differences: [String]) -> [String] {
+        differences.map { String($0.prefix { $0 != ":" }) }
+    }
+
+    /// **The issue's own case**, both ways round: a layout made from one model's store refuses a
+    /// pack of the other's, naming the model and its weights.
+    @Test("A layout made from the other model's store refuses before any write, naming the model and its weights",
+          arguments: [false, true])
+    func aLayoutFromAnotherModelsStoreRefuses(packs300m: Bool) throws {
+        let eg2 = try Fixture.makeStore()
+        let m300 = try Self.store300m()
+        defer { eg2.remove(); m300.remove() }
+        let sandbox = try Fixture.makeSandbox(store: packs300m ? m300 : eg2)
+        defer { try? FileManager.default.removeItem(at: sandbox.root) }
+        try sandbox.writeLayout(source: .store(packs300m ? eg2 : m300))
+
+        let thrown = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        guard case SemanticMapPacker.PackError.layoutFromAnotherStore(let differences)? = thrown else {
+            Issue.record("expected layoutFromAnotherStore, got \(String(describing: thrown))")
+            return
+        }
+        #expect(Self.fields(differences) == ["model", "model_file_sha256"], "\(differences)")
+        MapPassRefusesBeforeTheVectorsTests.expectNothingWritten(sandbox, "another model's layout")
+        let message = String(describing: try #require(thrown))
+        for words in ["Nothing was written", "pool_docs.py", "LAYOUT_DIR"] {
+            #expect(message.contains(words), "the refusal does not say \"\(words)\": \(message)")
+        }
+    }
+
+    /// The model is not the only field: a store of the same weights under another document prompt
+    /// holds other vectors, and its layout refuses too, naming the prompt alone.
+    @Test("A layout made from a store of the same model under another prefix refuses, naming the prefix")
+    func aLayoutUnderAnotherPrefixRefuses() throws {
+        let other = try Fixture.makeStore(prefix: "task: search result | query: ")
+        defer { other.remove() }
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout(source: .store(other))
+
+        let thrown = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        guard case SemanticMapPacker.PackError.layoutFromAnotherStore(let differences)? = thrown else {
+            Issue.record("expected layoutFromAnotherStore, got \(String(describing: thrown))")
+            return
+        }
+        #expect(Self.fields(differences) == ["prefix"], "\(differences)")
+        MapPassRefusesBeforeTheVectorsTests.expectNothingWritten(sandbox, "another prefix's layout")
+    }
+
+    /// **The control for the two above:** a store is its vectors, not its folder. A layout made
+    /// from a copy of the store at another path packs, map and all.
+    @Test("A layout made from a copy of the store at another path packs")
+    func aLayoutFromACopyOfTheStorePacks() throws {
+        let copy = try Fixture.makeStore()
+        defer { copy.remove() }
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout(source: .store(copy))
+
+        let thrown = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        #expect(thrown == nil, "a copy of the store's layout refused: \(String(describing: thrown))")
+        #expect(FileManager.default.fileExists(
+            atPath: sandbox.output.appendingPathComponent("semantic-map.bin").path))
+    }
+
+    /// **What a layout written before the fix gets** (the session's to settle, L61's brief): it is
+    /// refused. It cannot say which store's vectors it was laid out over, the committed
+    /// `layout-meta.json` of 2026-10-15 among them, and the scripts that make a new one reproduced
+    /// the shipped layout byte for byte (L28). Taking it would leave the gitignored-`layout.bin`
+    /// road open, since a metadata file that names no layout cannot refuse one.
+    @Test("A layout whose metadata names no store, as every layout before #2023, refuses before any write")
+    func aLayoutWrittenBeforeTheFixRefuses() throws {
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout(source: .unrecorded)
+
+        let thrown = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        guard case SemanticMapPacker.PackError.unattributedLayout(let missing)? = thrown else {
+            Issue.record("expected unattributedLayout, got \(String(describing: thrown))")
+            return
+        }
+        #expect(missing == ["store", "layoutSHA256"])
+        MapPassRefusesBeforeTheVectorsTests.expectNothingWritten(sandbox, "a layout written before #2023")
+    }
+
+    /// **The issue's second road:** metadata of this store's layout, beside a `layout.bin` of the
+    /// same length that is not the one written with it.
+    @Test("A layout.bin that is not the file its metadata describes refuses before any write")
+    func aLayoutBinOfAnotherRunRefuses() throws {
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout()
+        let bin = sandbox.layout.appendingPathComponent("layout.bin")
+        var bytes = try Data(contentsOf: bin)
+        bytes[0] ^= 0x01
+        try bytes.write(to: bin)
+
+        let thrown = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        guard case SemanticMapPacker.PackError.layoutFileMismatch(let recorded, let actual)? = thrown else {
+            Issue.record("expected layoutFileMismatch, got \(String(describing: thrown))")
+            return
+        }
+        #expect(recorded != actual)
+        #expect(actual == SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined())
+        MapPassRefusesBeforeTheVectorsTests.expectNothingWritten(sandbox, "another run's layout.bin")
+    }
+
+    /// `pack` makes the same check itself, against the provenance of the vector artifact it keys its
+    /// rows through, as it repeats the preflight's other refusals: driven directly, after a sound run
+    /// has written that artifact, it refuses the other model's layout.
+    @Test("pack refuses the other model's layout against the vector artifact's own provenance")
+    func packRefusesAnotherModelsLayoutItself() throws {
+        let m300 = try Self.store300m()
+        defer { m300.remove() }
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout()
+        let sound = MapPassRefusesBeforeTheVectorsTests.run(sandbox)
+        try #require(sound == nil, "the sound run refused: \(String(describing: sound))")
+
+        try sandbox.writeLayout(source: .store(m300))
+        let indexData = try Data(contentsOf: sandbox.output.appendingPathComponent("semantic-vectors-index.json"))
+        let index = try JSONDecoder().decode(SemanticVectorsArtifacts.Index.self, from: indexData)
+        let environment = sandbox.environment
+        do {
+            _ = try SemanticMapPacker.pack(
+                layoutDir: sandbox.layout, index: SemanticVectorIndex(file: index),
+                storeURL: sandbox.store.url, eraForVolume: { _ in "0" },
+                lexiconsPath: try #require(environment["LEXICONS"]),
+                stopwordsPath: try #require(environment["STOPWORDS"]),
+                generated: "2026-10-01")
+            Issue.record("pack packed a layout made from the 300m's store over EmbeddingGemma 2's vectors")
+        } catch SemanticMapPacker.PackError.layoutFromAnotherStore(let differences) {
+            #expect(Self.fields(differences) == ["model", "model_file_sha256"], "\(differences)")
+        }
+    }
+}
+
 // MARK: - RunWriteOrderTests
 
 /// The order #1439 depends on, pinned where it is written.
@@ -518,6 +693,15 @@ private enum Fixture {
         let url: URL
         func remove() { try? FileManager.default.removeItem(at: url) }
 
+        /// The store's run manifest, as `pool_docs.py` reads it.
+        func runManifest() throws -> [String: Any] {
+            let data = try Data(contentsOf: url.appendingPathComponent("run-manifest.json"))
+            guard let manifest = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return manifest
+        }
+
         /// Rewrites the volume's head with extra keys — the harvester's post-R-2 shape.
         func rewriteHead(extra: [String: Any]) throws {
             var head: [String: Any] = ["volume": Fixture.volume, "model": Fixture.model,
@@ -562,10 +746,23 @@ private enum Fixture {
             ]
         }
 
+        /// Which store a layout's metadata names (#2023).
+        enum LayoutSource {
+            /// The sandbox's own: a layout `build_layout.py` laid out over a pool of this store.
+            case thisStore
+            /// Another store's.
+            case store(Store)
+            /// None, as in every layout written before #2023: no `store`, no `layoutSHA256`.
+            case unrecorded
+        }
+
         /// Writes a layout: `layout.bin` with one six-byte row per entry of `clusters`, and a
-        /// `layout-meta.json` saying it places `documents` documents (`nil` writes no metadata).
-        /// The defaults are a sound layout for the one-document store.
-        func writeLayout(documents: Int? = 1, clusters: [UInt16] = [0]) throws {
+        /// `layout-meta.json` saying it places `documents` documents (`nil` writes no metadata)
+        /// and, unless `source` is `.unrecorded`, naming the store it was laid out over and the
+        /// `layout.bin` written with it, as `build_layout.py` does since #2023. The defaults are a
+        /// sound layout for the one-document store.
+        func writeLayout(documents: Int? = 1, clusters: [UInt16] = [0],
+                         source: LayoutSource = .thisStore) throws {
             try FileManager.default.createDirectory(at: layout, withIntermediateDirectories: true)
             var bin = Data(capacity: clusters.count * 6)
             for (row, cluster) in clusters.enumerated() {
@@ -577,24 +774,42 @@ private enum Fixture {
             }
             try bin.write(to: layout.appendingPathComponent("layout.bin"))
             guard let documents else { return }
-            let meta: [String: Any] = [
+            var meta: [String: Any] = [
                 "documents": documents, "projectedFromDims": 256, "seed": 18_610_810,
                 "umap": ["nNeighbors": 15, "minDist": 0.1, "metric": "cosine"],
                 "hdbscan": ["minClusterSize": 250, "clusters": 1, "unclustered": 0],
                 "grid": ["extent": 30_000.0],
             ]
+            switch source {
+            case .thisStore: try meta.merge(Self.attribution(store, layout: bin)) { $1 }
+            case .store(let other): try meta.merge(Self.attribution(other, layout: bin)) { $1 }
+            case .unrecorded: break
+            }
             try JSONSerialization.data(withJSONObject: meta)
                 .write(to: layout.appendingPathComponent("layout-meta.json"))
         }
+
+        /// The two fields `build_layout.py` writes since #2023: `store`, the run manifest of the
+        /// store the pool was made from with its path, and `layoutSHA256`.
+        static func attribution(_ store: Store, layout: Data) throws -> [String: Any] {
+            var record = try store.runManifest()
+            record["path"] = store.url.path
+            let digest = SHA256.hash(data: layout).map { String(format: "%02x", $0) }.joined()
+            return ["store": record, "layoutSHA256": digest]
+        }
     }
 
-    static func makeSandbox() throws -> Sandbox {
+    static func makeSandbox(store: Store? = nil) throws -> Sandbox {
         Sandbox(root: FileManager.default.temporaryDirectory
                     .appendingPathComponent("frus-guard-run-\(UUID().uuidString)"),
-                store: try makeStore())
+                store: try store ?? makeStore())
     }
 
-    static func makeStore() throws -> Store {
+    /// A one-volume store under EmbeddingGemma 2 unless told otherwise. Both models it is asked
+    /// for are measured ones, which the run packs; the store's vectors are the same either way.
+    static func makeStore(model: String = Fixture.model,
+                          modelFileSHA256: String = SemanticVectorsRunner.embeddingGemma2SHA256,
+                          prefix: String = Fixture.prefix) throws -> Store {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("frus-guard-store-\(UUID().uuidString)")
         let vectors = root.appendingPathComponent("vectors")
@@ -605,13 +820,13 @@ private enum Fixture {
             // A measured model's digest, since B4: the run packs only a model whose funnel the
             // corpus gates measured (`SemanticVectorsRunner.funnelMeasurements`), and refuses any
             // other at every width before it reads the store.
-            "model": model, "model_file_sha256": SemanticVectorsRunner.embeddingGemma2SHA256,
+            "model": model, "model_file_sha256": modelFileSHA256,
             "dim": dim, "chunk_chars": 3200, "overlap_chars": 480, "prefix": prefix,
             "generated": "2026-09-01T00:00:00", "script_sha256": String(repeating: "cd", count: 32),
         ]
         try JSONSerialization.data(withJSONObject: runManifest)
             .write(to: root.appendingPathComponent("run-manifest.json"))
-        try store.rewriteHead(extra: [:])   // the shipped, pre-R-2 shape
+        try store.rewriteHead(extra: ["model": model])   // the shipped, pre-R-2 shape
 
         // One non-degenerate chunk vector, little-endian Float32.
         var bin = Data(capacity: dim * 4)
