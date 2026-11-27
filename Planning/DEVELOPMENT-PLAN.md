@@ -4085,3 +4085,154 @@ On the owner's word ("start the plan of record from PR2011. note that PR2017 mer
 - **CR** has read A2, as the plan asks before this row lands, and its requests of the index are decisions 188, 189 and 190, in this row, with 191 from its C2 questions, which CR numbers 192 to 198 for the rest. CR's own pull request records it in the design's A2 and L52's brief.
 - **Decision 191's three texts** (the graph's *Navigating the graph*, Flows' *What Flows reads* and its export's Scope caveat) are in their EditableContent blocks for your reading. The class lens's self-citation caveat still says "about three in five", which was 69.8% before this row and is 67.6% after it: not changed here.
 - **After the merge:** #1978's hand-over note for FRUS Explorer Light, posted as a comment on the issue; its server refuses a version-76 export until its pin moves.
+
+## Session 2026-11-26 — CR: the Collections design brought to the owner's answers and reviewed a third time, with three changes to index version 76 taken the same day
+
+Row CR of the plan of record from 2026-11-25 (decision 149), started from the plan's session on the Mac, and planning only: no build, no app run. The last merge before this entry is L26's, #2019, as `bbe6686c`, on 2026-11-26 at 21:53:08 UTC, after #2017's (`d8b70f5f`). The review was read on `v2` at `b3acd7ad`, before either merged. Its commits were rebased onto L26's merge.
+
+**What was done, in order**
+- **The design's text brought to decisions 153 to 174** (`b3542992`), so that the review read what will be built:
+  - *As published:* where it had *In the volume:*;
+  - lane 5, §4.4 and §5.1's two rows withdrawn;
+  - §4.3's table with decision 158's openings and decision 167's names;
+  - §8.1 and §8.2 marked with what was taken, A5 not offered;
+  - §10's questions marked answered;
+  - step 2 counted at 17 controls.
+- **A2 read first,** since it gates L26 (`0fa40e16`). Measured over the TEI at corpus `216cdb764`, 124,491 of 497,026 document–term pairs (25.0%; 28.6% from 1955) are linked only in notes. So `term_mentions` needed the part of the document each term is linked in. Put to the owner ("Should L26 add a parts column to term_mentions before it lands?"), the owner answered "Add it to v76". The answer went to the L26 session with a hand-over note in the shared notes folder, and L26 built it as decision 188.
+- **The review,** after its cost was put to the owner, who chose "Nine agents (Recommended)":
+  - six reviewers by discipline, then three skeptics, on the second review's method;
+  - the canvas's boards read from the artifact, with the briefs naming what in them the owner's answers superseded;
+  - the whole public TEI read on disk.
+- **Two more findings changed index version 76** and were put to the owner before the skeptics ran, since L26 was about to land:
+  - DATA-2: a list entry with two spellings was one row, and 809 links found no term. The owner chose "Add it to v76 (Recommended)", and it is decision 189.
+  - EDI-2: the index resolves a page reference to one document and kept neither the page nor the choice. "Add it to v76 (Recommended)", and it is decision 190.
+  - The session re-read each one's code and recounted it with a script of its own before asking. The skeptics then confirmed all three.
+
+**What it found** (`Planning/Collections-Design-Third-Review-2026-11-26.md`)
+- **The count.** 58 findings and the session's A2, merged to 48: 1 at S1, 22 at S2, 25 at S3. None was refuted, seven were re-rated down, and 29 merged errors in the design or the plan were listed.
+- **The S1, J1:** *Same settings as…*, built as L47's brief reads, copies the ids that name a document's own headnote and notes. A target then prints the source's, and an edit or a delete through it deletes the source's headnote. INT, ENG and DATA found it independently.
+- **The headnote in the collection file** is not yet defined. Off does not travel, a 1.0 app prints a stand-in where the design said it prints nothing, and "with who wrote it" has no key.
+- **No row owns the export sheet's sentence.** A *Summaries* export fails on a device without Apple Intelligence even with every summary stored, a 1.0 defect.
+- **Selected passages have no home once imported.** The iPad's settings column brings back what Composer v2 removed, with no width rule.
+- **Where the volume's heading leads,** headings do not tell documents apart for most volumes before 1952.
+- **A tagged PDF needs an API that is newer than the app's 26.0 floor,** or the older `CGPDFContextBeginTag`.
+- **Four claims about the volumes were false:** "central files are in", "the only pointers there are" before 1955, the 1952–1954 rule for the volume's own number, and "the volumes before 1952 print no numbers".
+
+**What changed**
+- **`Planning/Collections-Design-Third-Review-2026-11-26.md`** (new).
+- **`Planning/collections-design-review-3/`** (new): the two briefs, the six reviewers' and three skeptics' reports, A2's measurement with its script, and every agent's scripts.
+- **The design:**
+  - corrected in 26 places, each marked *Corrected by the third review* with its finding;
+  - a section's headnote default settled as a new property;
+  - the counts redone (Wording 13, 54 controls, seven pickers in a section's sheet);
+  - §5.7 gains the iPad column Composer v2 removed;
+  - A2, A3, A4 and §8.1's item 10 rewritten from what the index stores;
+  - decisions 188 and 189 cited.
+- **The plan of record:**
+  - a *From the third review* bullet in the briefs of L29, L34 to L36 and L43 to L55;
+  - §1c's answer on the three things §4.4 said, and the promotion at six fields;
+  - the third departure corrected (L43, not lane 4, feeds the preview's list);
+  - CR's record and C2's eight questions;
+  - the runs owed for L43 and L35, and R12's two-device run with a drag on the 1.0 device;
+  - two defects for §5.
+- **Outside the repository:** three hand-over notes for L26 in the shared notes folder.
+
+**Checks**
+- No test reads these files but `planOfRecordMatchesTheVisualMarketingPlan`, which reads the plan's status line and its §7 list. Neither was changed here.
+- Every corrected line of the design was re-read after the edit. The tables' cells were counted where a column was added.
+- Nothing was built or run.
+
+**Cost**
+- 4,868,675 subagent tokens over nine agents, as the harness reported them.
+- The account's weekly limit for all models went from 17% to 24% over the session.
+
+**C2's eight questions, answered the same day** (decisions 191 to 198), one at a time:
+- **Six as recommended.** L35 owns the sheet's sentence (192). A headnote switched off stays off (193). A saved template holds step 1's seven settings (195). A3 is titled *Archival files cited* (196). A citation names history.state.gov's number (197). The records' date line takes the new reading, and the *Summaries* export's defect is filed (198).
+- **C2-3, the compiler's name** (194). Each headnote carries its writer's name, so the promotion is seven fields or eight.
+- **C2-5's grammar.** The owner asked whether the post-1963 central files could be added to the footnote grammar. Told the change is measured first and reaches every reader of the pointers, the owner chose "In 1.1, joining v76 now" (191). It went to the L26 session with a hand-over note.
+- **#2018, filed on the owner's word:** a *Summaries* export fails on a device without Apple Intelligence even when every summary is stored. It is placed in L35 (§1a).
+
+**C2's rest, answered the same day** (decisions 199 to 202), on the owner's request for the questions still open:
+- **Three rows split** (199). The second halves take the next free numbers: L58 (the Note on the Text, the statement of sources and the file's keys), L59 (the iPad's settings column and the drawn opening) and L60 (the tagged PDF, last). Their briefs were divided bullet by bullet, and the rows' table, the table of what each row touches, the order where rows meet, §1c's table and the calendar were brought to them.
+- **Decisions 147 and 148 stand** (200). The submission falls about 2026-12-22 by the arithmetic, and the Office has said early December, with no day.
+- **The design is accepted as reviewed** (201).
+- **A person's name in the web page links like a term** (202), in L52.
+
+**For the owner**
+- **Nothing more from CR.** Wave 4 starts once its own runs are made (the plan's §2).
+- **The pull request,** opened on the owner's word ("Yes. Open PR after L26 merge") once L26 had merged. In the rebase onto `bbe6686c`:
+  - this log kept #2017's, L26's and this entry in that order;
+  - the plan of record kept L26's decision 191 and dropped CR's copy;
+  - L53's brief was brought to decision 191.
+- **The design's status** stays PROPOSED until C2.
+
+## Session 2026-11-26 — L27, the tab shell's banner: F1 not reproduced through a whole 75 → 76 re-index on the iPad simulator, nor through 1823's own 74 → 75 start, so the build measures the room against the banner once a change settles and logs it for R9; #1835's test passes under iOS 27.0, and the keyboard row's one failure there is the year-range popover's own keyboard
+
+The plan of record's session started this one for row L27, on `claude/l27-tab-shell-banner-42ab07` from `v2` at `bbe6686c`, L26's merge. The row: F1, the blank band under the tab shell's banner on the owner's iPad during 1823's first-launch re-index (R6's PD3), which R6a could not reproduce; and #1835, the same reserve with the keyboard up, on the iPad mini under iOS 27.0. Commits: `c7f7d4cb` (the measurement, its log line and three tests) and a docs commit.
+
+**#2019's and #2020's merges**
+- L26 merged as `bbe6686c`, a squash onto `d8b70f5f`, at 21:53:08 UTC on 2026-11-26, from its head `7110aaae`. Its tree, `7277ac1b`, is the head's. It closed #1978 and #1854. This entry records it.
+- CR merged as `af771601`, a squash onto `bbe6686c`, at 23:14:57 UTC on 2026-11-26, from its head `a79a6780`. Its tree, `1120d01a`, is the head's. It closed no issue. This branch took `v2` in after it, with CR's entry above this one; the session log was the one conflict, and the plan of record merged cleanly.
+
+**F1, first: not reproduced** (decision 183)
+- **The setup.** The device was S1, the iPad Pro 13-inch (M5) under iOS 27.0, in Windowed Apps and in landscape, with its library at 75 as L26 left it. The owner's frame shows Windowed Apps' corner grip too.
+  - A temporary probe, never committed, logged every banner height and frame and every reserve with its host's controller chain. It also logged every controller in the window holding an additional bottom inset, the keyboard's notices and the reader web view's frame. The diff is kept at `~/Library/Caches/FRUS-Explorer/l27/probe-final.diff`.
+  - Both builds were `AppStore`-configuration simulator builds, as L26's census was.
+- **`v2` at `bbe6686c`, through its whole 75 → 76 re-index:** 553 volumes and 321,749 documents in 992 s, none failed. What was tried, R6a's two untried conditions first:
+  - iPadOS's menu bar shown. A tap on the app's name in the status bar draws *FRUS Explorer File Edit View Document Find Window Help*, the owner's frame. Swipes from the top edge did not.
+  - Browse's pushes to the owner's own screen: Subseries, 1977–80, volume XXIV, its compilation, then Argentina's 66 documents. Documents opened and Back, in quick succession.
+  - The reader with its rail, and tab round trips.
+  - The software keyboard up and down on the Browse root's search field, with typing.
+  - Sidebar ↔ tab bar, and a portrait round trip.
+  - The Guide sheet opened and closed, and the re-index's end.
+- **1823 itself, through PD3's own start.** `build-54` was exported with the same probe, and S1's stored version set to 74, so 1823 made the 74 → 75 re-index (stopped at 186 of 553).
+  - 1823's reader still drew its rail as an `.inspector`. R6a's F8 replaced it before R6a's own probe ran, and the owner's reader band went when that rail opened. So the rail was opened, then closed (the Read state, the owner's synced setting); a document was opened with it closed and read to its end; then Back.
+  - The same path, to volume XXIII's Cuba section this time, with the menu bar shown; then the Dock raised over the window.
+- **Measured, in both runs:**
+  - Every reserve went to the tab's `TabHostingController` under `UIKitTabBarController`; the visible tab made 1,224 writes in the first run.
+  - At every write, no other controller held a bottom inset.
+  - The reserve followed each height change within 6–10 ms.
+  - Every settled frame's banner rested on the window's floor, 1,011.5 pt (1,032 less the home indicator's 20). The reader ended at the banner's top with the rail open or closed.
+  - The Dock overlays the window and leaves its inset at 20 pt.
+  - One screenshot caught a 40-pt band for a single frame. As each volume starts, the banner flips 179.5 → 139.5 → 179.5 pt within 17 ms, while its metadata row clears and returns.
+  - A document's end shows its page's own bottom padding, about 55 pt, as designed.
+- S1 holds its v75 library again (L26's pre-census clone). L26's 1861 `AppStore` simulator build is installed on it again, so it is as L26 handed it over, and it is shut down.
+
+**What the build keeps instead: the room against the banner, logged** (`c7f7d4cb`)
+- **The measurement.** A second after a change settles, `TabShellBannerReserve.ReservingView` measures the room from the tab content's bottom edge, which it shares, down to the window's safe-area floor. It measures the geometry, not the host's inset, because room set aside by a controller above the tab's host never shows in the host's own inset. That is the reading R6a left unproven.
+- **The judgment.** `TabShellBannerRoom` (`Models/SupportingTypes.swift`) requires the reserve to be the banner's height and, while a banner is up, no band.
+  - It is not judged where a tab bar sits at the bottom (an iPhone), or with no banner up: the keyboard raises the content's edge to itself, and #1070 takes the banner away.
+  - A banner left up over the keyboard, #1835's shape, is judged.
+- **The log,** category `TabShellBanner`:
+  - each tab's first measurement as a notice;
+  - an error when the room stops matching, with every value and every controller holding a bottom inset;
+  - a notice when it matches again.
+  - It writes no state and moves nothing.
+- R9's brief now says how to read it on the owner's iPad.
+
+**#1835**
+- **The keyboard row's three suites** on the iPad mini (A17 Pro) under iOS 27.0 (`22BCEC47`, Full Screen Apps): 9 tests, 8 passed, 0 skipped.
+  - #1835's own test, the Browse-root field with the banner up and then the keyboard, passed, as in the issue's sixteen runs of 2026-11-01.
+  - The one failure is `testDismissBarRendersInTheYearRangePopover`, at its last assertion, "Tapping the popover's Done left the keyboard up", as in every suite run of 2026-11-01. That is the year-range popover's own keyboard, which the issue's comment measured going down about 8 s after Done. It is not the tab shell's banner.
+  - **The control:** the same branch, that one test on the iPad mini under iOS 26.5 (`0093684B`), passed. So the failure follows the 27.0 runtime.
+- The new check logged no mismatch through the run's keyboard cycles: 11 first measurements, every band 0.0 pt.
+- **The row moved** to `OS=27.0` in `.claude/rules/ui-tests.md` and the runbook's entry, which has the run and the control. The year-range test is read on 26.5 as well until #2024 is placed. #2024 is its late keyboard, filed on the owner's word ("File it").
+
+**Checks**
+- **`TabShellBannerReserveTests`:** 7 passed on the iPhone 17 under iOS 27.0, the four that were there and three new ones. Each of three mutations, one at a time, failed the test written for it: the room read from the host's own inset, no measurement on layout, the band ignored. The unmutated baseline passed.
+- **`build-for-testing`:** the two known residues and no other warning.
+- **`TabShellBannerClearanceTests`,** which drives the reserve on screen, with the app's `TabShellBanner` log streamed:
+  - **iPhone 17 under iOS 27.0:** 6 tests, 5 passed, 1 skipped (the sidebar scenario, which is iPad-only), as its row expects.
+  - **iPad Pro 11-inch (M5) under iOS 27.0, in landscape:** 5 of 6 passed. The sixth, the sidebar scenario, never reached a step: it was the first test after the simulator booted, and the runner restarted while the app first launched, which the runbook's notes on a just-booted iPad describe. Run again alone on the same iPad, it passed in 146 s, and the band stayed 0.0 pt through the tabs' change to a sidebar and back. So 6 of 6, as its row expects.
+  - **The log, through both runs:** every tab's first measurement balanced (on the iPhone, the room not measured, a tab bar at the bottom), and no mismatch.
+- **The unit target** on the iPhone 17 under iOS 27.0, the app removed first and the TEI mirror set: 8,295 tests in 1,002 suites passed in 714 s, with the six known issues and 17 skipped. That is L26's 8,292 and this row's three.
+- **The Mac build** (`FRUSExplorerMac`, where `SupportingTypes.swift` compiles too): it succeeded, with the two known residues and no other warning.
+- **The landing checks,** on the merged tree (`2426f69c`, with `v2` at `af771601`):
+  - The unit target ran 8,295 tests with one failure: `RichTextRestingCapTests`' colour-picker test, where Text Color presented no picker in its 15 s. CI skips that test because it fails at random on that wait, and its suite run alone then passed 21 of 21.
+  - The Mac build succeeded.
+
+**For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session: "You can turn on auto-fix when sessions land PRs and you can turn on auto-merge when sessions' PRs pass CI", with "I merge on green (Recommended)" to how a PR merges once CI passes. Its Auto-fix is on and GitHub's auto-merge is off. The landing checks ran on the merged tree first: the full unit target and the Mac build. `swift test` was not owed, since the diff names no package input.
+- **#1835: closed as not reproduced** on the owner's word ("Close as not reproduced", 2026-11-26), once its own test had passed under iOS 27.0 again, after the sixteen runs of 2026-11-01. The closing comment holds the run, the 26.5 control and the row's move.
+- **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
+- **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.

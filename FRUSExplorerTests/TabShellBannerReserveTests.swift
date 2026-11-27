@@ -122,6 +122,23 @@ struct TabShellBannerReserveTests {
         return nil
     }
 
+    /// The reserving view `View.tabShellBanner` put under `view`.
+    private func reservingView(in view: UIView) -> TabShellBannerReserve.ReservingView? {
+        if let found = view as? TabShellBannerReserve.ReservingView { return found }
+        for subview in view.subviews {
+            if let found = reservingView(in: subview) { return found }
+        }
+        return nil
+    }
+
+    /// Runs `body` with the room measured 50 ms after a change instead of a second, and puts the delay back.
+    private func withQuickRoomChecks(_ body: () async throws -> Void) async throws {
+        let delay = TabShellBannerReserve.ReservingView.roomSettleDelay
+        TabShellBannerReserve.ReservingView.roomSettleDelay = 0.05
+        defer { TabShellBannerReserve.ReservingView.roomSettleDelay = delay }
+        try await body()
+    }
+
     @Test("The host's bottom inset follows the banner's height, up, down and back to nothing")
     func hostInsetFollowsTheBanner() async throws {
         let probe = Probe()
@@ -192,6 +209,106 @@ struct TabShellBannerReserveTests {
                 under a 40-point banner the list's bottom inset is \(list.adjustedContentInset.bottom), not                 \(bare + 40): the stack did not pass the reserve on to it
                 """)
         }
+    }
+
+    // MARK: - The room against the banner (L27, F1)
+
+    @Test("Once settled, the room measured below the content is the banner's height")
+    func settledRoomIsTheBannersHeight() async throws {
+        let probe = Probe()
+        probe.bannerHeight = 40
+        try await withQuickRoomChecks {
+            try await withHost(probe) {
+                Color.white
+            } body: { _, window in
+                let measured = try await settles {
+                    let room = reservingView(in: window)?.settledRoom
+                    return room?.reserve == 40 && room?.room == 40
+                }
+                let room = reservingView(in: window)?.settledRoom
+                #expect(measured, "the room settled as \(room?.summary ?? "nothing"), not 40 points under a 40-point banner")
+                #expect(room?.band == 0)
+                #expect(room?.isBalanced == true)
+                #expect(room?.host == "UIHostingController")
+            }
+        }
+    }
+
+    @Test("Room a controller above the host sets aside, later, is measured as a band below the banner, and its end too")
+    func roomSetAsideAboveTheHostIsABand() async throws {
+        let probe = Probe()
+        probe.bannerHeight = 40
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to lay out in")
+        // The reading R6a left unproven (F1): a controller above the tab's host holding a bottom inset of its own. The
+        // host's own reserve stays the banner's height, so only the room measured below the content can show it, and
+        // only a measurement the layout starts sees it arrive after the reserve has settled.
+        let above = UIViewController()
+        let hosted = UIHostingController(rootView: Color.white.tabShellBanner { ProbeBanner(probe: probe) })
+        above.addChild(hosted)
+        above.view.addSubview(hosted.view)
+        hosted.view.frame = above.view.bounds
+        hosted.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        hosted.didMove(toParent: above)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: Self.size)
+        window.rootViewController = above
+        window.isHidden = false
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+        try await withQuickRoomChecks {
+            let room = { reservingView(in: window)?.settledRoom }
+            let settledFirst = try await settles { room()?.reserve == 40 && room()?.band == 0 }
+            #expect(settledFirst, "before the controller above set any room aside: \(room()?.summary ?? "nothing")")
+
+            above.additionalSafeAreaInsets.bottom = 30
+            let banded = try await settles { room()?.reserve == 40 && room()?.band == 30 }
+            #expect(banded, "the room settled as \(room()?.summary ?? "nothing"), not a 30-point band under the banner")
+            #expect(hosted.additionalSafeAreaInsets.bottom == 40, "the reserve went to \(room()?.host ?? "nothing")")
+            #expect(room()?.isBalanced == false)
+
+            above.additionalSafeAreaInsets.bottom = 0
+            let backAgain = try await settles { room()?.band == 0 && room()?.isBalanced == true }
+            #expect(backAgain, "with the controller above's room given back: \(room()?.summary ?? "nothing")")
+        }
+    }
+
+    @Test("The room's judgment: balanced, F1's band, a stale reserve, the keyboard and a tab bar at the bottom")
+    func roomJudgment() {
+        func room(banner: CGFloat, reserve: CGFloat, room: CGFloat?) -> TabShellBannerRoom {
+            TabShellBannerRoom(bannerHeight: banner, reserve: reserve, room: room, windowInset: 20,
+                               host: "TabHostingController", parent: "UIKitTabBarController")
+        }
+        let balanced = room(banner: 188, reserve: 188, room: 188)
+        #expect(balanced.isBalanced && balanced.band == 0)
+
+        // The owner's PD3 frame: a 188-point banner at the top of about 322 points of room.
+        let f1 = room(banner: 188, reserve: 188, room: 322)
+        #expect(!f1.isBalanced && f1.band == 134)
+        #expect(f1.summary == """
+            banner 188.0 pt, reserve 188.0 pt on TabHostingController in UIKitTabBarController, room 322.0 pt, \
+            band 134.0 pt, window inset 20.0 pt
+            """)
+
+        // A reserve left behind by a taller banner: its room is its own, and wrong for the banner drawn.
+        #expect(!room(banner: 188, reserve: 322, room: 322).isBalanced)
+
+        // The keyboard is up: no banner (#1070), and the content's edge sits on the keyboard, which is no band.
+        let typing = room(banner: 0, reserve: 0, room: 502)
+        #expect(typing.isBalanced && typing.band == nil)
+        // #1835's shape, a banner left up over the keyboard, is a band.
+        #expect(!room(banner: 53.5, reserve: 53.5, room: 555.5).isBalanced)
+
+        // A tab bar at the bottom (an iPhone): only the reserve is judged.
+        #expect(room(banner: 155, reserve: 155, room: nil).isBalanced)
+        #expect(!room(banner: 155, reserve: 0, room: nil).isBalanced)
+        #expect(room(banner: 155, reserve: 155, room: nil).summary.contains("room not measured"))
+
+        #expect(TabShellBannerRoom.room(windowBottom: 1032, windowInset: 20, contentBottom: 682) == 330)
+        #expect(TabShellBannerRoom.typeName(of: UIHostingController(rootView: Color.white)) == "UIHostingController")
     }
 }
 #endif
