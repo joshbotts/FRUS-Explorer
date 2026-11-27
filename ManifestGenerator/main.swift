@@ -28,6 +28,11 @@ import ManifestGeneratorCore
 ///                    ```
 ///                    VOLUMES_DIR=/path/to/frus/volumes swift run ManifestGenerator
 ///                    ```
+///
+/// Online, the run exits 1 and writes nothing when the listing fails or when any volume of it does
+/// not reach the manifest — a header fetch that still fails after a 429 or a 5xx has been tried
+/// four times, a header that does not parse — and names each such volume (#2022). Until row L61 it
+/// wrote the other volumes and exited 0.
 private let environment = ProcessInfo.processInfo.environment
 await ManifestGeneratorRunner.run(
     outputPath: environment["OUTPUT_PATH"] ?? ManifestGeneratorRunner.defaultOutputPath,
