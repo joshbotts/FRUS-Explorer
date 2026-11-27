@@ -143,7 +143,7 @@ This document is no longer in the volume.
 ### Research — Changed by an update (R-5 P2)
 
 #### Sidebar row
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 794–795 | key: research.sidebar.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 796–797 | key: research.sidebar.updated -->
 
 Changed by an update
 
@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1215–1215 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1212–1212 | key: research.action.reviewChanges -->
 
 Review Changes…
 

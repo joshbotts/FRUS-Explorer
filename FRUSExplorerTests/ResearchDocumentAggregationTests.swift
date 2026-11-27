@@ -599,7 +599,7 @@ struct ResearchDocumentRowTextTests {
         let source = try String(contentsOf: root.appending(path: "FRUSExplorer/Research/ResearchView.swift"),
                                 encoding: .utf8)
         let code = NaturalLanguageReadinessScanTests.code(source)
-        let start = try #require(code.range(of: "private func documentRow(_ entry: ResearchDocumentEntry,"),
+        let start = try #require(code.range(of: "private func documentRow(_ entry: ResearchDocumentEntry) -> some View"),
                                  "ResearchView has no documentRow")
         let range = try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: start.upperBound))
         let row = code[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
@@ -783,19 +783,20 @@ struct ResearchRowHeadsTests {
 
 // MARK: - ResearchRowsRedrawSourceTests
 
-/// The Research rows take their heads from `ResearchView`'s body (L38, #1946).
+/// `ResearchView`'s body reads the rows' heads, as the rows do (L38, #1946).
 ///
 /// In the Mac check copy, with the Research window opened from the menu after launch, the log said
 /// all nine heads were read from the store and merged while every row still showed its id (*d474*,
-/// *d473*, …) until the sidebar's selection changed. The rows read `documentHeaders` only inside the
+/// *d473*, …) until the sidebar's selection changed. The rows read `documentHeaders` inside the
 /// list's `ForEach`, under the split view's detail column, and the view's own body never read it.
-/// The body now reads the heads once and passes them down, so a merge runs the body again and the
-/// rows are built with what it read. The unit target runs no Mac code; this reads the view's source,
-/// comments removed, and the check copy shows the rows themselves.
+/// The body now reads it too, so a merge runs the body again and builds the rows anew; the rows still
+/// read the state themselves, so a list pushed on the iPhone's stack sees the heads whether or not
+/// its destination closure runs again. The unit target runs no Mac code; this reads the view's
+/// source, comments removed, and the check copy shows the rows themselves.
 ///
 /// Version history:
 ///   1.0 — L38 (#1946): initial implementation
-@Suite("Research rows — the heads come from the view's body (#1946)")
+@Suite("Research rows — the view's body reads the heads (#1946)")
 struct ResearchRowsRedrawSourceTests {
 
     private static func code() throws -> String {
@@ -811,25 +812,18 @@ struct ResearchRowsRedrawSourceTests {
         return code[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
-    @Test("The body reads the heads once and passes them to every layout's rows")
+    @Test("The body reads the heads before it builds any layout")
     func bodyReadsTheHeads() throws {
-        let code = try Self.code()
-        let container = try Self.body(after: "private var navigationContainerBody: some View", in: code)
-        #expect(container.hasPrefix("let headers = documentHeaders"),
-                "the body does not read the heads before it builds the rows: \(container.prefix(200))")
-        // The Mac's detail column, the iPad's two-pane and the iPhone's stack.
-        #expect(container.components(separatedBy: "destination(for: item, headers: headers)").count == 4,
-                "a layout builds its rows without the heads the body read: \(container)")
+        let container = try Self.body(after: "private var navigationContainerBody: some View", in: try Self.code())
+        #expect(container.hasPrefix("let _ = documentHeaders"),
+                "the body does not read the heads, so a merge may not redraw the Mac's rows: \(container.prefix(200))")
     }
 
-    @Test("A row is built from the heads it is given, and reads no state for them")
-    func rowsTakeTheirHeads() throws {
-        let code = try Self.code()
-        let list = try Self.body(after: "private func documentList(for item: ResearchSidebarItem,", in: code)
-        #expect(list.contains("documentRow(entry, facts: headers[entry.id])"),
-                "the list builds its rows without the heads it was given: \(list)")
-        let row = try Self.body(after: "private func documentRow(_ entry: ResearchDocumentEntry,", in: code)
-        #expect(!row.contains("documentHeaders"),
-                "a row reads the heads from the state again, which a merge did not always redraw on the Mac")
+    @Test("A row still reads its head from the state")
+    func rowsReadTheState() throws {
+        let row = try Self.body(after: "private func documentRow(_ entry: ResearchDocumentEntry) -> some View",
+                                in: try Self.code())
+        #expect(row.contains("let facts = documentHeaders[entry.id]"),
+                "a row no longer reads its head from the state, which a list pushed on the iPhone's stack needs")
     }
 }

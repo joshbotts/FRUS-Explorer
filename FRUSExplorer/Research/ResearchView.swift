@@ -161,7 +161,7 @@ struct ResearchDocumentEntry: Identifiable {
 /// asynchronously from `document_cache` via `CrossReferenceStore.documentTitleFacts(for:)`
 /// and cached in `documentHeaders` state. The header load (`ResearchRowHeads`) runs whenever the
 /// selected category's documents change, and again when the cross-reference store arrives or is
-/// reopened; the body reads the state and builds the rows from what it read (#1946).
+/// reopened; the body reads the state as well as the rows, so a merge redraws them (#1946).
 ///
 /// Version history:
 ///   1.0 — Session 130: initial implementation
@@ -188,7 +188,7 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.10 — L21 (UI review MAC-5, #1921): each document row prints the document's number above its
 ///          head (`ResearchDocumentRowText`)
 ///   1.11 — L38 (#1946): the rows' heads load again when the cross-reference store arrives or is
-///          reopened (`ResearchRowHeads`), and the rows are built from the heads the body reads,
+///          reopened (`ResearchRowHeads`), and the body reads the heads, so a merge redraws the rows,
 ///          where a load made before the store, or a merge the Mac did not redraw, kept each row's id
 struct ResearchView: View {
 
@@ -471,19 +471,22 @@ struct ResearchView: View {
 
     @ViewBuilder
     private var navigationContainerBody: some View {
-        // **Read here, in the body, and passed down to the rows** (L38, #1946). The rows read the
-        // heads only inside the list's `ForEach`, under the split view's detail column, so this
+        // **Read here, in the body, as well as in the rows** (L38, #1946). The rows read the heads
+        // inside the list's `ForEach`, under the split view's detail column, and until L38 this
         // view's own body never read `documentHeaders`. On the Mac a merge then did not always
         // redraw the rows: in the check copy the log said all nine heads were read and merged while
         // every row still showed its id, until the sidebar's selection changed. Read here, a merge
-        // makes this body run again, and the rows are built with the heads it holds.
-        let headers = documentHeaders
+        // runs this body again, which builds the detail column and its rows anew. The rows still
+        // read the state themselves, as on every platform before, so a list pushed on the iPhone's
+        // stack, which its destination closure builds, sees the heads whether or not that closure
+        // runs again.
+        let _ = documentHeaders
         #if os(macOS)
         NavigationSplitView {
             sidebar
         } detail: {
             if let item = selectedItem {
-                destination(for: item, headers: headers)
+                destination(for: item)
             } else {
                 ContentUnavailableView(
                     String(localized: "research.empty.noSelection",
@@ -514,7 +517,7 @@ struct ResearchView: View {
                     Divider()
                     Group {
                         if let item = selectedItem {
-                            destination(for: item, headers: headers)
+                            destination(for: item)
                         } else {
                             researchDetailPlaceholder
                         }
@@ -526,7 +529,7 @@ struct ResearchView: View {
             NavigationStack(path: researchNavigationPath) {
                 sidebar
                     .navigationDestination(for: ResearchSidebarItem.self) { item in
-                        destination(for: item, headers: headers)
+                        destination(for: item)
                     }
             }
         }
@@ -540,8 +543,7 @@ struct ResearchView: View {
     /// ``ResearchSidebarItem/notes`` is the note list itself (#1275). The last two render lists of
     /// their own, so `documents(for:)` returns nothing for either.
     @ViewBuilder
-    private func destination(for item: ResearchSidebarItem,
-                             headers: [String: CrossReferenceStore.DocumentTitleFacts]) -> some View {
+    private func destination(for item: ResearchSidebarItem) -> some View {
         #if os(iOS)
         Group {
             if item == .history {
@@ -550,7 +552,7 @@ struct ResearchView: View {
                 AllNotesScreen(presentation: .embedded, snapshot: notesSnapshot,
                                onChanged: { notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) })
             } else {
-                documentList(for: item, headers: headers)
+                documentList(for: item)
             }
         }
         // **A document opened from Research reads in Research** (2026-09-11). It used to hand off to
@@ -569,7 +571,7 @@ struct ResearchView: View {
             AllNotesScreen(presentation: .embedded, snapshot: notesSnapshot,
                            onChanged: { notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) })
         } else {
-            documentList(for: item, headers: headers)
+            documentList(for: item)
         }
         #endif
     }
@@ -909,10 +911,8 @@ struct ResearchView: View {
 
     // MARK: - Document List
 
-    /// - Parameter headers: The rows' heads, as the body read them (#1946).
     @ViewBuilder
-    private func documentList(for item: ResearchSidebarItem,
-                              headers: [String: CrossReferenceStore.DocumentTitleFacts]) -> some View {
+    private func documentList(for item: ResearchSidebarItem) -> some View {
         let docs = documents(for: item)
         let emptyDescription: String = {
             switch item {
@@ -950,7 +950,7 @@ struct ResearchView: View {
             } else {
                 List {
                     ForEach(docs) { entry in
-                        documentRow(entry, facts: headers[entry.id])
+                        documentRow(entry)
                             .contentShape(Rectangle())
                             .onTapGesture { openDocument(entry) }
                             .contextMenu { contextMenuItems(for: entry) }
@@ -967,11 +967,7 @@ struct ResearchView: View {
 
     // MARK: - Document Row
 
-    /// - Parameter facts: What the index holds for the document, as the body read it, or `nil`
-    ///   until its head loads (#1946: never read here, from the state, which a merge did not
-    ///   always redraw).
-    private func documentRow(_ entry: ResearchDocumentEntry,
-                             facts: CrossReferenceStore.DocumentTitleFacts?) -> some View {
+    private func documentRow(_ entry: ResearchDocumentEntry) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             // Document header (falls back to the doc number until `loadHeaders` resolves the title).
             // `reservesSpace: true` keeps the title area a constant TWO body lines whether it shows
@@ -982,6 +978,7 @@ struct ResearchView: View {
             // so it keys on whether the facts arrived, not on whether a printed head exists. An
             // editorial note resolves to "Editorial Note 304", which is final rather than a
             // placeholder and reads as `.primary` accordingly.
+            let facts = documentHeaders[entry.id]
             let naming = ResearchDocumentRowText.parts(facts: facts, documentId: entry.documentId)
             // L21 (MAC-5): the document's number above its head, as the Mac collection manager's
             // rows print it, so same-headed telegrams no longer read alike. One line, always
@@ -1699,8 +1696,8 @@ enum ResearchDocumentRowText {
 /// **That was not the whole of #1946.** Its sightings, rows with their ids until the sidebar's
 /// selection changed, came back in the check copy with the Research window opened from the menu
 /// after launch, and this log showed all nine heads read from the store and merged: the rows were
-/// not redrawn. `ResearchView` now reads the heads in its own body and builds its rows from what it
-/// read (`navigationContainerBody`), where they read the state inside the list's `ForEach`.
+/// not redrawn. They read the state only inside the list's `ForEach`; `ResearchView` now reads it in
+/// its own body too (`navigationContainerBody`), so a merge builds the rows anew.
 ///
 /// `ResearchRowHeadsTests` starts the loader with no store, and with a store that has no row for
 /// the document; before L38 each kept the row's id.
