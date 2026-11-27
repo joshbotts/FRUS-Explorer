@@ -1145,6 +1145,8 @@ A collection can carry title-page material, edited in Collection settings under 
 
 The preview renders the collection as its HTML export, updating as you edit — without the word-cloud overview, which only an export draws — on iPad in the second column, on iPhone behind the Preview segment. PDF and Word carry the same content with their own pagination. Large collections initially render the first 20 documents, with a **Render All** bar stating the true total. A document whose volume isn't downloaded appears as a **citation card**; a bar counts the missing volumes and offers **Download**, and the cards swap for full documents when the volumes arrive. A document whose headnote is turned on but not yet written shows a note saying so here; an export prints nothing in its place.
 
+The preview keeps your place as it updates: it stays in the document you were reading, however the text above it changes, and the iPhone's **Preview** segment opens where you left it. Tapping a document's row, or its **Configure** pill on iPad, brings that document into view in the preview — behind the settings sheet on iPad, and the next time you open **Preview** on iPhone — rendering through it first when it lies past the first 20. A document entered twice is two documents in the preview, and each row brings its own.
+
 ### 12.10 Export
 
 Tap **Export…** — the share icon in the iPad toolbar, or the **Export…** row under **Actions** at the foot of the iPhone's outline. A one-line summary of how the collection is composed sits at the top so you can confirm at a glance; below it, a grid of format cards — choose one, then tap the button beneath them, which names it (**Export PDF**):
