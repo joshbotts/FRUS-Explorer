@@ -2423,17 +2423,17 @@ struct CollectionTests {
             parse: { CitationParser().parse($0) },
             match: { input in
                 switch input.documentNumber {
-                case 1:   // lone exact match → resolved
+                case "1": // lone exact match → resolved
                     return [Self.makeMatch(documentId: "d1")]
-                case 2:   // best-guess strategy → ambiguous, top match surfaced
+                case "2": // best-guess strategy → ambiguous, top match surfaced
                     return [Self.makeMatch(documentId: "d90", rank: 1,
                                            strategy: .bestGuess(explanation: "this volume does not match the cited part 2"))]
-                case 3:   // several document-level candidates, none exact → ambiguous
+                case "3": // several document-level candidates, none exact → ambiguous
                     return [Self.makeMatch(documentId: "d3", volumeId: "frusA", rank: 1,
                                            strategy: .pageRange),
                             Self.makeMatch(documentId: "d3", volumeId: "frusB", rank: 2,
                                            strategy: .pageRange)]
-                case 4:   // volume-only result (un-downloaded volume) → unresolved w/ reason
+                case "4": // volume-only result (un-downloaded volume) → unresolved w/ reason
                     return [CitationMatch(documentId: "", volumeId: "frusC", rank: 1,
                                           matchStrategy: .manifestOnly,
                                           confidenceLabel: "Volume identified",
@@ -2522,7 +2522,7 @@ struct CollectionTests {
         // the engine matched against an arbitrary manifest prefix — even a lone
         // exact-strategy hit is a guess, not a resolution.
         let resolver = CollectionCitationLineResolver(
-            parse: { line in CitationInput(rawText: line, documentNumber: 129) },
+            parse: { line in CitationInput(rawText: line, documentNumber: "129") },
             match: { _ in
                 [Self.makeMatch(documentId: "d129", volumeId: "frus1861",
                                 strategy: .superimposedDocumentNumber)]

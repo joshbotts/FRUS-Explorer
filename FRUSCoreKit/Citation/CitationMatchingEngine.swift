@@ -16,7 +16,7 @@ import Foundation
 ///
 /// | Priority | Strategy | Condition |
 /// |---|---|---|
-/// | 1 | `exactDocumentNumber` | Post-1955–57, vol resolved, doc number present |
+/// | 1 | `exactDocumentNumber` | Post-1955–57, vol resolved, doc number present, as printed (#1977) |
 /// | 2 | `pageRange` | Vol resolved, page number present, one document begins on the page (or, none beginning there, is printed on it) |
 /// | 2 | `sharedPage` | The same, but the page names several documents: listed, none vouched for (#1503) |
 /// | 3 | `superimposedDocumentNumber` | Pre-1955–57, vol resolved, doc number present |
@@ -102,6 +102,16 @@ import Foundation
 ///   start that is the page the document before them ended on, in its numbering (review round 1 of
 ///   #1503: as first written it placed them there, `frus1969-76ve05p1`'s d239 on d238's p. 2).
 ///
+/// ## A number as printed (#1977)
+/// The document number is the one the volume prints (`CitationInput.documentNumber`), and is looked
+/// up as such, ignoring a letter's case: `frus1898`'s `Document 1190b`, an appendix's `Document C`,
+/// a microfiche supplement's `Document GT–6`. Until #1977 only its digits were, so the app's own
+/// citation of 722 of the corpus's 314,646 numbered documents found another document — the 83 with
+/// a letter, each its digits' document, labelled a match — or nothing. A number with a letter that
+/// the volume does not print falls back to its digits, and the document found there is a best
+/// guess naming the number (`ConfidenceLabels.numberNotPrinted`), not a match; a link's lookup does
+/// not fall back (`matchByDocumentNumber`).
+///
 /// ## Page-only citations (#1503)
 /// A citation by volume and page alone finds the document that BEGINS on the page — the page a
 /// citation names — or, when none does, the document printed on it. When several begin on it
@@ -184,6 +194,10 @@ import Foundation
 ///          row labelled a best guess says so (`CitationMatch.volumeIsBestGuess`)
 ///   2.2 — FRUSCoreKit, part 2: moved into the kit. It holds any `CitableVolumeCatalogue`, which
 ///          the app's `ManifestStore` satisfies, where it held the store itself
+///   2.3 — #1977: a document number is looked up as printed — `1190b`, `C`, `GT–6`, a letter in
+///          either case — where its digits alone were, and a number with a letter the volume does
+///          not print finds the document of its digits as a best guess
+///          (`ConfidenceLabels.numberNotPrinted`, the owner's choice), except beside a link
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -286,6 +300,7 @@ public actor CitationMatchingEngine {
 
         var results: [CitationMatch] = []
         var rank = 1
+        let digitsFallBack = try await letteredNumberFallsBack(input, among: Array(candidates.prefix(3)))
 
         for volumeEntry in candidates.prefix(3) {
             let volumeId = volumeEntry.volumeId
@@ -322,17 +337,20 @@ public actor CitationMatchingEngine {
             }
             let listedBefore = results.count
 
-            // Strategy 1 / 3: Document number match
-            if let docNum = input.documentNumber {
+            // Strategy 1 / 3: Document number match — the number as printed, and, for a number with
+            // a letter no volume here prints, its digits as a best guess (#1977), in a volume whose
+            // index can say it prints no such number.
+            if let printed = input.documentNumber {
                 if let found = try await matchByDocumentNumber(
                     volumeId: volumeId, volumeEntry: volumeEntry,
-                    documentNumber: docNum,
-                    rank: rank, preModern: preModern
+                    printed: printed,
+                    rank: rank, preModern: preModern, fallsBack: digitsFallBack && answers
                 ) {
                     // A page the citation also names must be one the document is printed on.
-                    let miss = try await pageMiss(page: input.pageNumber, documentId: found.documentId,
+                    let miss = try await pageMiss(page: input.pageNumber, documentId: found.match.documentId,
                                                   in: volumeEntry)
-                    let match = qualified(found, unmet: unmet, pageMiss: miss)
+                    let match = qualified(found.match, unmet: unmet, numberMiss: found.numberMiss,
+                                          pageMiss: miss)
                     results.append(match)
                     rank += 1
                     // Stop only at a hit that meets every cited field: a best guess must not hide
@@ -468,13 +486,15 @@ public actor CitationMatchingEngine {
             return unmetFields(of: CitationInput(subseries: seriesYear, volumeNumber: prose.volumeNumber,
                                                  partNumber: prose.partNumber), in: entry)
         } ?? []
+        // The number is looked up as printed and never by its digits alone (#1977): a link names its
+        // volume exactly, and a document that volume does not print is not answered with another.
         var results: [CitationMatch] = []
         if let number = input.documentNumber,
            let found = try await matchByDocumentNumber(volumeId: entry.volumeId, volumeEntry: entry,
-                                                       documentNumber: number, rank: 1,
-                                                       preModern: isPreModernVolume(entry)) {
-            let miss = try await pageMiss(page: input.pageNumber, documentId: found.documentId, in: entry)
-            results.append(qualified(found, unmet: proseUnmet, pageMiss: miss,
+                                                       printed: number, rank: 1,
+                                                       preModern: isPreModernVolume(entry), fallsBack: false) {
+            let miss = try await pageMiss(page: input.pageNumber, documentId: found.match.documentId, in: entry)
+            results.append(qualified(found.match, unmet: proseUnmet, pageMiss: miss,
                                      unmetNote: ConfidenceLabels.linkProseNote))
             if miss == nil { return results }
         }
@@ -650,8 +670,9 @@ public actor CitationMatchingEngine {
         return unmet
     }
 
-    /// `match` as it may be reported for a volume that does not carry `unmet`, or for a document
-    /// whose pages do not include the cited one (`pageMiss`).
+    /// `match` as it may be reported for a volume that does not carry `unmet`, for a document found
+    /// by the digits of `numberMiss`, a number with a letter the volume does not print (#1977), or
+    /// for a document whose pages do not include the cited one (`pageMiss`).
     ///
     /// A document found that way becomes a best guess naming what it fails; a volume-only row keeps
     /// `.manifestOnly`, since it names no document to guess at, takes the same warning as its
@@ -667,14 +688,19 @@ public actor CitationMatchingEngine {
     /// `linkProseNote` for a document a link's fallback found through the prose beside it, whose
     /// volume the citation does name — in its link (#1474 review round 2).
     private func qualified(_ match: CitationMatch, unmet: [CitedField],
+                           numberMiss: String? = nil,
                            pageMiss: PageMiss? = nil,
                            unmetNote: String = ConfidenceLabels.unmetFieldsNote) -> CitationMatch {
-        guard !unmet.isEmpty || pageMiss != nil else { return match }
+        guard !unmet.isEmpty || numberMiss != nil || pageMiss != nil else { return match }
         var reasons: [String] = []
         var notes: [String] = []
         if !unmet.isEmpty {
             reasons.append(ConfidenceLabels.unmetFields(unmet.map(ConfidenceLabels.cited)))
             notes.append(unmetNote)
+        }
+        if let numberMiss {
+            reasons.append(ConfidenceLabels.numberNotPrinted(numberMiss))
+            notes.append(ConfidenceLabels.numberNotPrintedNote)
         }
         if let pageMiss {
             reasons.append(ConfidenceLabels.pageOutside(page: pageMiss.page, first: pageMiss.first,
@@ -696,7 +722,7 @@ public actor CitationMatchingEngine {
         }
         let explanation = reasons.formatted(.list(type: .and))
         #if DEBUG
-        print("[CitationMatcher] \(match.volumeId)/\(match.documentId) does not meet the cited \(unmet), page miss \(pageMiss.map { "\($0.page)" } ?? "-") — best guess")
+        print("[CitationMatcher] \(match.volumeId)/\(match.documentId) does not meet the cited \(unmet), number miss \(numberMiss ?? "-"), page miss \(pageMiss.map { "\($0.page)" } ?? "-") — best guess")
         #endif
         // A volume row keeps its strategy: it names no document for a best guess to be. It says it
         // is one by `volumeIsBestGuess`, which Batch counts with the document best guesses
@@ -950,13 +976,49 @@ public actor CitationMatchingEngine {
 
     // MARK: - Document Number Match
 
+    /// Whether a lookup of `input` falls back to the digits of its number (#1977): the number has a
+    /// letter (`1190c`), and none of the downloaded `candidates` prints it. "Only when the token
+    /// finds nothing", as the issue puts it: where one candidate prints the number, that document
+    /// is the answer, and another volume's document of its digits is not offered beside it — before
+    /// 1955 the lookup reads every candidate past a hit, so it would be. A volume whose index
+    /// cannot yet say what it holds is asked too, and a number it does not hold yet does not stop
+    /// the fallback elsewhere; within it, the fallback is withheld (`match(input:)`), since it
+    /// cannot be said to print no such number.
+    private func letteredNumberFallsBack(_ input: CitationInput,
+                                         among candidates: [VolumeManifestEntry]) async throws -> Bool {
+        guard let printed = input.documentNumber, CitationParser.digits(ofLetteredNumber: printed) != nil,
+              let service = searchService else { return false }
+        for entry in candidates where isDownloaded(entry.volumeId) {
+            if try await service.document(byNumber: printed, inVolume: entry.volumeId) != nil { return false }
+        }
+        return true
+    }
+
+    /// The document of `volumeId` that prints the number `printed` — `15`, `1190b`, `GT–6`, `C`, as
+    /// `CitationInput.documentNumber` carries it (#1977) — matched as written and then ignoring
+    /// case (`SearchService.document(byNumber:inVolume:)`), with `numberMiss` `nil`.
+    ///
+    /// When the volume prints no such number, `printed` is a number with a letter and `fallsBack`
+    /// is set, the document the number's digits name, with `numberMiss` set to `printed`: the
+    /// fallback #1977 asks for, which `qualified` reports as a best guess, since the document found
+    /// is not the one cited (the owner's choice, 2026-11-26). `Document 1190c` finds `frus1898`'s
+    /// 1190 that way. `match(input:)` sets `fallsBack` only when no volume it reads prints the
+    /// number (`letteredNumberFallsBack(_:among:)`) and this one's index can say what it holds.
+    /// Every one of the corpus's 83 numbers with a letter has its digits' document in its own
+    /// volume, measured over the index at version 76; a prefix (`GT–6`) and a single letter (`C`)
+    /// name no digits that could stand for them, and do not fall back. Neither does the lookup of a
+    /// history.state.gov link, which names its volume exactly (#1474 review round 1).
+    ///
+    /// Until #1977 the number was an `Int` of the digits alone, so `Document 1190b` found 1190, and
+    /// `frus1955-57v03mSupp`'s `Document 550A` found its 550 as an exact match.
     private func matchByDocumentNumber(
         volumeId: String,
         volumeEntry: VolumeManifestEntry,
-        documentNumber: Int,
+        printed: String,
         rank: Int,
-        preModern: Bool
-    ) async throws -> CitationMatch? {
+        preModern: Bool,
+        fallsBack: Bool
+    ) async throws -> (match: CitationMatch, numberMiss: String?)? {
         guard let service = searchService else { return nil }
 
         // Deterministic document_cache lookup by canonical printed number. The previous
@@ -965,21 +1027,29 @@ public actor CitationMatchingEngine {
         // telegram numbers, page references), and with results BM25-ranked and capped
         // at a page, the actual Document 15 row was starved out of the result set in
         // any realistically-sized volume, so valid citations resolved to nothing.
-        if let hit = try await service.document(byNumber: "\(documentNumber)",
-                                                inVolume: volumeId) {
-            let strategy: MatchStrategy = preModern ? .superimposedDocumentNumber : .exactDocumentNumber
-            let label = preModern
-                ? ConfidenceLabels.superimposedDocumentNumber
-                : ConfidenceLabels.exactMatch
-            return CitationMatch(
-                documentId: hit.documentId,
-                volumeId: volumeId,
-                rank: rank,
-                matchStrategy: strategy,
-                confidenceLabel: label
-            )
+        var hit = try await service.document(byNumber: printed, inVolume: volumeId)
+        var numberMiss: String?
+        if hit == nil, fallsBack, let digits = CitationParser.digits(ofLetteredNumber: printed) {
+            hit = try await service.document(byNumber: digits, inVolume: volumeId)
+            if hit != nil {
+                numberMiss = printed
+                #if DEBUG
+                print("[CitationMatcher] \(volumeId) prints no document \(printed) — its digits, \(digits), as a best guess")
+                #endif
+            }
         }
-        return nil
+        guard let hit else { return nil }
+        let strategy: MatchStrategy = preModern ? .superimposedDocumentNumber : .exactDocumentNumber
+        let label = preModern
+            ? ConfidenceLabels.superimposedDocumentNumber
+            : ConfidenceLabels.exactMatch
+        return (CitationMatch(
+            documentId: hit.documentId,
+            volumeId: volumeId,
+            rank: rank,
+            matchStrategy: strategy,
+            confidenceLabel: label
+        ), numberMiss)
     }
 
     // MARK: - Page Range Match
@@ -1356,6 +1426,21 @@ public enum ConfidenceLabels {
     public static let linkProseNote = String(
         localized: "citation.match.linkProseNote",
         defaultValue: "The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it."
+    )
+
+    /// The explanation a best guess carries when the volume prints no document with the cited
+    /// number and its letter, and the document found prints the number without it (#1977, the
+    /// owner's choice of 2026-11-26), e.g. "this volume prints no document 1190c" over `frus1898`'s
+    /// document 1190. `number` is the cited number as the parser reads it.
+    public static func numberNotPrinted(_ number: String) -> String {
+        String(localized: "citation.match.numberNotPrinted",
+               defaultValue: "this volume prints no document \(number)")
+    }
+
+    /// The note under such a best guess (#1977).
+    public static let numberNotPrintedNote = String(
+        localized: "citation.match.numberNotPrintedNote",
+        defaultValue: "This volume prints no document with the citation’s number and letter, so this is the document with that number alone, which may not be the one cited. Check the citation before relying on it."
     )
 
     /// The explanation a best guess carries when the document found by number is not printed on

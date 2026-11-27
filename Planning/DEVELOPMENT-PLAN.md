@@ -4747,3 +4747,76 @@ Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by 
 - **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,370 tests in 1,012 suites passed in 778 s, with the six known issues and 17 skipped.
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning.
 - `swift test` was not owed: the diff names no package input.
+
+## Session 2026-11-27 — L30, Citation Lookup: a document number read as the volume prints it, Document 1190b, Document C, Document GT–6, so the app's own citation of 722 documents finds each one, and a number with a letter the volume does not print finds the document of its digits as a best guess
+
+The plan of record's session started this one for row L30, on `claude/l30-citation-printed-number-2e294d` from `v2` at `a17023f9`, L27's merge. The row: #1977, Citation Lookup reading only a citation's digits, so Cite's own citation of a document whose printed number is not whole named another document or none. Commits: `e871df1c` (the failing tests, first), `802b652f` (the fix), `204e915e` (a test the package does not compile), `cbf60d59` (the manuals, EditableContent and the plan) and `89593c96` (the plan's record of the Mac walk), with the landing's.
+
+**#2034's merge**
+- L57 merged as `7ccecacb`, a squash onto `4fa33ba3`, at 13:53:31 UTC on 2026-11-27, from its head `68f863d7`. Its tree, `91edcc8f`, is the head's. It closed #2013. This entry records it.
+- L41's #2032 (`4fa33ba3`) is recorded in L57's entry above, and so back to this row's start: L37's #2031 in L41's, L32's #2030 in L37's, L29's #2029 in L32's, L33's #2028 in L29's, L61's #2027 in L33's, L28's #2026 in L61's, L31's #2025 in L28's, and L27's #2021 (`a17023f9`), where this row began, in L31's.
+
+**The defect, first** (decision 183)
+- **Measured over a full index at version 76** (L31's kept index, 553 volumes): 722 of 314,646 numbered documents print a number that is not whole, as the issue counts them.
+  - 82 with a lower-case letter, in 22 volumes, and `frus1955-57v03mSupp`'s `550A`. Each one's digits' document is in its own volume.
+  - 628 with a capital prefix, an en dash and a number, in 17 series, all in `frus1958-60v05mSupp`, where no document prints a plain number.
+  - 11 single letters, appendices in three 1981–88 volumes.
+  - No volume prints two numbers that differ only in case.
+- **Four tests committed before the fix** (`e871df1c`), run in the package on `v2`'s code: all four failed, with 61 issues.
+  - The app's own citation, made as Copy Citation makes it, in all three formats, marked and plain: `frus1898`'s 1190b and 1190a answered d1190, "Match — document number assigned digitally"; `frus1955-57v03mSupp`'s 550A answered d550 as "Exact match"; `frus1981-88v05`'s appendix C and `frus1958-60v05mSupp`'s GT–6 found nothing.
+  - The round trip of every bundled volume by a printed number that is not whole, one of the four kinds in turn: 71 of the 551 volumes not excused missed their own volume in history.state.gov and Chicago form, and 69 in Turabian form, marked or plain, where none did by document 1. The title fragment kept the number's letter, or the whole of "Document C".
+
+**A claim of the brief that does not hold** (decision 183)
+- The brief gives the digits fallback as "so that *Document 1190* still reaches 1190b". `frus1898` prints a Document 1190, so that citation asks for 1190 and finds d1190, as the issue's own test expects. The fallback answers only a letter the volume does not print: "Document 1190c" finds d1190.
+- The issue's and the plan's `ParsedCitation` is `CitationInput` (`CitationModels.swift:44`).
+
+**The owner's two answers**
+- Decision 214: how that fallback's answer is labelled. The owner chose "Best guess (Recommended)": "Best guess — this volume prints no document 1190c", with a note to check the citation, as the engine's rule since #1474 has every result that fails a cited field.
+- Whether L30 waits for the by-hand Mac walk, the screen being locked overnight: "Wait for the walk (Recommended)".
+
+**The fix** (`802b652f`, `204e915e`)
+- **`CitationInput.documentNumber` is the printed number**, a `String?`, where it was an `Int?` of its digits. `CitationParser.normalizedDocumentNumber(_:)` is the one rule the parse and the Document field read it by: digits lose their leading zeros, a prefix and a single letter are capitals, a prefix's dash is the en dash, and a number's letter keeps its case.
+- **The parser** reads a number with one letter, a capital prefix with a dash and digits, and a single capital letter. The title fragment loses the whole number.
+  - **The guards are the corpus's own.** Over the 43,496 clauses of the index's text that name the series (from `FRUS` or `Foreign Relations` to the next semicolon, at most 300 characters), a letter read after any capital that followed "document" read eleven, each another kind of document: the pronoun in "this document I have", "Executive Document B" and "S. Ex. Doc. B" of the Senate, "U.N. Doc. A /70". So a single letter is read only after "Document" with its capital or "doc.", not after "Executive", "Ex." or "U.N.", and where a citation ends it. A number's letter followed by a decimal point is the file's: `File No. 851R.00` reads 851, as before.
+  - **As written**, two of the 43,496 read a number other than before, an NSC action each (`No. 487a`), which the digits alone misread as documents 487 and 266 too. No clause reads a single letter, and the title fragment of those two alone loses more.
+  - The patterns were checked under ICU with the file's own strings, 22 cases.
+- **The engine** asks for the printed number, which the index's lookup by number (`document(forDocumentNumber:inVolume:)`, one read of `IndexingPipeline.swift`) now matches as written and then ignoring case: `1190B` finds 1190b, and `550a` finds 550A, not its neighbour 550.
+  - A number with a letter that no volume the lookup reads prints falls back to its digits (`letteredNumberFallsBack(_:among:)`), and the document found is a best guess naming the number. Decided once per lookup, "only when the token finds nothing": before 1955 the lookup reads every candidate past a hit, so a fallback volume by volume would have answered a number one volume prints with another's document of its digits as well.
+  - No fallback beside a history.state.gov link (#1474 review round 1), in a volume whose index cannot yet say what it holds (#1522), or for a prefix or a single letter.
+- **The form.** A paste fills the Document no. field with the printed number, and Structured Entry reads the field by the same rule. On iOS the field's number pad, which typed no letter or dash, is the numbers-and-punctuation keyboard. A link to `…/d373a` fills `373a`, where it filled nothing. Batch reads each note through the parser.
+- **Tests:** the four defect-first ones, with exact labels added, and two more in the indexed suite (the once-per-lookup fallback, and none where the index cannot answer); in `CitationParserTests` the three forms, the typed forms, the corpus's own eleven false readings, the title fragment and the field's rule; in `CitationLookupFieldsTests` the Document field. The round trip reads every bundled volume's own citation by each of the four kinds as it reads document 1 (2,212 of 2,212 a format).
+
+**Public API and the symbol diff**
+- `CitationInput.documentNumber`, `String?`; `CitationParser.extractDocumentNumber(from:)`, `String?`; new `CitationParser.normalizedDocumentNumber(_:)`, `ConfidenceLabels.numberNotPrinted(_:)` and `.numberNotPrintedNote`. Nothing the indexer stores changes, so no index version.
+- `FRUS-API.openapi.yaml`: `/citation-lookup`'s `documentNumber` is a string, with the forms and the fallback; `CitationMatch` is unchanged.
+- **The symbol diff** of the Mac debug dylibs (`nm -U -j`, fully demangled, private discriminators and closure numbers dropped), each built unsigned in Debug from empty, `v2` at `a17023f9` from a `git archive`: 253,103 names on `v2` and 253,162 here, 80 removed and 139 added.
+  - Removed: `CitationInput.documentNumber` and its initialiser as `Int?`, `extractDocumentNumber(from:) -> Int?`, the engine's `matchByDocumentNumber` and `qualified` with their async parts and closures, and the Parsed Fields section's SwiftUI types.
+  - Added: the same as `String?`; the rule, the patterns and their initialisers; the two labels; `letteredNumberFallsBack(_:among:)`; the new `matchByDocumentNumber` and `qualified` with the tuple they return; and the Parsed Fields section's types under the Document field's new modifiers.
+  - Nothing of `SearchService` or `IndexingPipeline` moves.
+
+**W2's candidate, offered and left** (decision 183): a pasted citation's result names its document by id alone (`CitationLookupView.swift:779` now). Naming it by its head would take a field on `CitationMatch`, a public type with an OpenAPI schema, or an index read for each row, and the row changes neither. It stays in the plan's §5, which says so.
+
+**The manuals and EditableContent** (`cbf60d59`): both manuals' §11.4 say how a number is read and what the fallback's best guess says, with their *AI Generated* notice kept; `08-Reading-Research-Collections.md` gains the two new strings' blocks, and the twelve ranges the row's lines moved start on their keys again (`Amendment-Log.md`).
+
+**Checks**
+- `swift build --target FRUSCoreKit`: no warning. The package's citation suites, 167 tests in 15 suites, passed, the eleven new tests and the three changed among them.
+- **The unit target, scoped,** on the iPhone 17 under iOS 27.0: the citation suites, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `CitationLookupViewWiringTests`, `IntegrationTests` and both boundary gates, 257 tests, all passed, with no source warning. Its first run found one test the package does not compile, `CollectionTests`' injected matcher keyed on an `Int` (`204e915e`).
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- **By hand, on the Mac,** in the check copy at `cbf60d59`, on 2026-11-27 once the screen was unlocked:
+  - Copy Citation for `frus1898` d1190b copied "Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1898 (Washington, D.C.: Government Printing Office, 1901), Document 1190b."
+  - Pasted into Citation Lookup, it read Subseries 1898 and Document no. 1190b, and found d1190b, one result, "Match — document number assigned digitally".
+  - "FRUS, 1898, Document 1190c" found d1190 as "Best guess — this volume prints no document 1190c", with its note and the digital-number label after it.
+  - A link to `…/frus1898/d1190b` filled the Document no. field with 1190b and found d1190b.
+
+**The landing checks,** on the merged tree (`e2ba6376`, tree `17db5347`, with `v2` at `7ccecacb`), in one `Scripts/heavy.sh` job:
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,381 tests in 1,012 suites passed in 816 s, with the six known issues and 17 skipped. L57's landing ran 8,370, and this row adds 11. Its build printed the two known residues and no other warning.
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,284 tests in 610 suites over 39 runs, and none failed. L41's landing ran 5,273, L57 changed no package input, and the package compiles this row's 11 too. Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- **The symbol diff, re-taken** against `v2` at `7ccecacb`, from a `git archive` built the same way: 253,406 names there and 253,465 here, 80 removed and 139 added, the same names as against `a17023f9`.
+- `Scripts/check_repo_hygiene.py`, on the merged tree: six checks passed.
+
+**For the owner**
+- **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+- **After the merge:** #1977's hand-over note for FRUS Explorer Light, shown to the owner before it is posted.
