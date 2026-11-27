@@ -4599,3 +4599,47 @@ The owner answered, in the session, the two questions the reading raised: decisi
 - The by-hand check, on the iPhone 17 simulator by the orchestrator's word: the plan's check names no platform, and the Mac's screen was locked. It runs on the app the landing built, under the lock, behind three other rows' jobs at 09:41 UTC, and is recorded in the PR's body when made.
 - The same check on the Mac in the check copy, as a note on the PR, once the screen unlocks.
 - After the merge, the two hand-over notes for FRUS Explorer Light (#2010, #1986).
+
+## Session 2026-11-27 — L40, the iPhone Duo's windows: a phone presents Analytics and the other aux surfaces as sheets, the Duo too, through one gate; and on the iPad a window closed with Done does not come back
+
+Row L40 of the plan of record from 2026-11-25 (D1, decision 179), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `5026ead5` (L32's merge) on `claude/l40-duo-windows-28bd2c`:
+- `daa25859`, the gates;
+- `e1c3134e`, the iPad check's case;
+- the records;
+- then, at the head of the queue, `v2` taken in, and the landing's records.
+
+**The files it shares.** The gates are in ten files, and four of them other rows of Wave 3 change too: `DocumentView.swift` (L37, L39, L41), `BrowserView.swift` (L37), `CrossReferenceGraphView.swift` (L42) and `SearchView.swift` (L57). The orchestrator was told before any change, and placed the row after them. Every hunk of theirs in those files sits at least seven lines from L40's.
+
+**What was found, the defect first** (decision 183), on the iPhone Duo simulator (`69E4A90C`, iOS 27.2), folded, with a Debug build of `v2` at `5026ead5` on an empty library:
+- Browse's Analysis Tools menu offered Person Analytics as a submenu, the form for a scene with windows.
+- Cross-Reference Analytics opened as a full-screen window of its own, a second scene (SpringBoard's `SceneCreationRequest`).
+- Done brought Browse back, with SpringBoard's *destroy scenes request*.
+- Quit and launched again, the app read **2 Views Open**; the views switcher drew the closed analytics window beside the main one, and SpringBoard removed it only when it was swiped away there.
+- The app's own `KnownSceneSessions` file is no measure of what comes back: it still named the analytics session at the next launch after that view was gone from the switcher.
+
+**What changed**
+- `AuxWindowGate` (`App/AppState.swift`): a property wrapper over `\.supportsMultipleWindows` and `UIDevice`'s idiom, false on a phone idiom; the 25 gates in ten files read it as `@AuxWindowGate private var opensAuxWindows`.
+- `SearchView`'s declaration moves inside `#if os(iOS)`, where its four gates are.
+- Every gate file keeps its line count, so none of its EditableContent ranges moves. `AppState.swift`'s three ranges follow the 50 lines it gained.
+- Prose that called the flag false on every iPhone: the gates' doc comments, `FRUSExplorerApp`'s scene notes, `AnalysisToolsMenu`'s note.
+- `WindowTargetingTests` §5: the rule, and a scan that `AuxWindowGate` is the flag's one reader and every file that opens an aux window declares it.
+- `AuxWindowCloseTests.testAWindowClosedWithDoneIsNotBackAtTheNextLaunch`, the iPad check, which counts the app's cards in iPadOS's app switcher after Done, a quit and a relaunch.
+- Docs: the plan's L40 record and §5; the UI-test index row and runbook entry; no manual, since both manuals already describe these surfaces as the iPad's windows and the iPhone's sheets.
+
+**Seen with the fix**, on the same Duo: Person Analytics one item; Cross-Reference Analytics a sheet, with no scene created; quit and launched again, one view and no pill. Unfolded, Semantic Analytics is a form sheet over the dimmed main window, of compact width where the window was full-screen.
+
+**The iPad check** (decision 179): a window closed with Done does not come back, so Done is unchanged.
+- On a fresh iPad Pro 13-inch (M5) under iOS 27.2, in Windowed Apps, the relaunch case passed: one switcher card after the relaunch. SpringBoard's log named the closed window's scene in 240 entries from its opening to the quit, and in none after.
+- With Done made to front its launcher and leave its own window open, the case failed on two cards.
+- The scene stays connected in the background from Done until the app quits, 33 s in the run. Nothing shows it, and it is in §5, unfiled.
+- Under iOS 27.0, no fresh iPad Pro simulator could run the case: `backboardd` aborted on its Metal texture assertion, on the 13-inch at the app's first launch and on the 11-inch (M5) as the analytics window opened.
+- The simulator control tool could not drive the new iPads (each needs the owner's grant, and the request went unanswered while the owner was away), so a UI case drove them.
+
+**Checks, on the branch**
+- `build-for-testing` on the iPhone 17 under iOS 27.0, with the two residues alone.
+- 19 app suites that read the changed files: 283 tests, one failure, the three `AppState.swift` ranges, re-pointed since. Then `WindowTargetingTests` and `EditableContentKeyTests`: 75 tests passed.
+- Two mutations, each rebuilt: `v2`'s ten gate files beside the helper failed the scan (35 readers, ten files) and the word cloud's test; the rule without the idiom failed the phone's test alone.
+
+**Afterwards.** The Duo is as found: its library, prefs and saved state were set aside by rename for the run, then put back with build 1842, folded and shut down. The three iPad simulators made for the check were deleted at the orchestrator's word, the disk being under its 40 GB floor.
+
+**Still owed at the push:** nothing by hand. The Duo's check is the row's own, made above.
