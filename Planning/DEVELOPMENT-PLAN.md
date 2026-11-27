@@ -4227,6 +4227,9 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
   - **The log, through both runs:** every tab's first measurement balanced (on the iPhone, the room not measured, a tab bar at the bottom), and no mismatch.
 - **The unit target** on the iPhone 17 under iOS 27.0, the app removed first and the TEI mirror set: 8,295 tests in 1,002 suites passed in 714 s, with the six known issues and 17 skipped. That is L26's 8,292 and this row's three.
 - **The Mac build** (`FRUSExplorerMac`, where `SupportingTypes.swift` compiles too): it succeeded, with the two known residues and no other warning.
+- **The landing checks,** on the merged tree (`2426f69c`, with `v2` at `af771601`):
+  - The unit target ran 8,295 tests with one failure: `RichTextRestingCapTests`' colour-picker test, where Text Color presented no picker in its 15 s. CI skips that test because it fails at random on that wait, and its suite run alone then passed 21 of 21.
+  - The Mac build succeeded.
 
 **For the owner**
 - **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, given to the orchestration session: "You can turn on auto-fix when sessions land PRs and you can turn on auto-merge when sessions' PRs pass CI", with "I merge on green (Recommended)" to how a PR merges once CI passes. Its Auto-fix is on and GitHub's auto-merge is off. The landing checks ran on the merged tree first: the full unit target and the Mac build. `swift test` was not owed, since the diff names no package input.
