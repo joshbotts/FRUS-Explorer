@@ -1711,17 +1711,28 @@ final class AllNotesFollowsOtherDevicesTests: XCTestCase {
 /// `.inspector` as the width turned compact, which is the host 1.0 (1823) crashed in on the owner's iPad (R6, PD21).
 /// That code never crashed in the simulator, in 24 narrowings, so the sheet is what the test sees, not the crash.
 ///
+/// ## A resize under Read (L37, F11)
+/// The two tests above launch under *Open Documents In* ▸ Remember Last, which leaves the stored rail setting alone at
+/// every open. `testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail` launches under Read, opens the fixture's
+/// first document in Browse's two-pane layout, opens its rail, narrows the window to Browse's one-pane stack and widens
+/// it to the two-pane layout again: each crossing builds the reader anew, and on the code before L37 each one applied
+/// Read again and closed the rail.
+/// Then the compilation's second document must open without its rail, since Read still applies when a different
+/// document opens. It needs Windowed Apps, as the narrowing test does, and skips without it.
+///
 /// ## Running it
 /// iPad only (an iPhone skips): name `FRUSExplorerUITests/RailAtCompactWidthTests` and run it on iPad Pro 13-inch (M5),
-/// `OS=27.0`, allowing 600 s, and the narrowing test on the same iPad under `OS=27.2` in Windowed Apps, allowing 900 s.
-/// On the code before L19 the first test fails at that tap, which there turned the stored setting off and opened
-/// nothing.
+/// `OS=27.0`, allowing 600 s, and the narrowing test and the Read test on the same iPad under `OS=27.2` in Windowed
+/// Apps, allowing 900 s. On the code before L19 the first test fails at that tap, which there turned the stored setting
+/// off and opened nothing.
 ///
 /// Version history:
 ///   1.0 — L19 (#1919, IPA-6): initial implementation
 ///   1.1 — R6a (F8): `testNarrowingTheWindowWithTheRailOpenCrashesNothing`
 ///   1.2 — R6a (the Facets check): the corner grip's steps forward to `WindowedAppsGrip`, which
 ///          `FacetsAtCompactWidthTests` shares
+///   1.3 — L37 (F11): `testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail`, and the Browse walk it opens its
+///          document by
 @MainActor
 final class RailAtCompactWidthTests: XCTestCase {
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
@@ -1875,7 +1886,169 @@ final class RailAtCompactWidthTests: XCTestCase {
         attachScreenshot("Widened again after \(Self.narrowings) narrowings")
     }
 
+    /// Under *Open Documents In* ▸ Read, a resize across Browse's one-pane and two-pane widths keeps the rail the reader
+    /// opened, and a different document still opens in Read (L37, F11).
+    ///
+    /// Browse draws one pane or two by width (`BrowseTwoPaneMetrics.showsDetailPane`), so a resize across that width
+    /// builds the reader anew. On the code before L37 the new reader's per-open task applied the setting again, and Read
+    /// closed the rail the reader had opened: F11, seen on the owner's iPad during F8's check of 1.0 (1842). The suite's
+    /// other tests open under Remember Last, which leaves the rail alone, so they could not see it. The window is resized
+    /// by its corner grip, which needs Windowed Apps: a window that does not narrow skips, naming the setting.
+    func testUnderReadAResizeAcrossBrowsesTwoPaneWidthKeepsTheRail() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only: an iPhone's rail is always a sheet")
+        try resizeAcrossBrowsesTwoPaneWidth(underMode: "read")
+    }
+
+    /// Opens the fixture's first document in Browse's two-pane layout under `mode`, opens its rail, narrows the window to
+    /// Browse's one-pane stack and widens it to the two-pane layout again, and requires the rail still open; under Read,
+    /// also that the document opened without its rail and that the compilation's second document opens without it. It
+    /// leaves the stored rail setting on, as the suite's other tests and `AuxWindowCloseTests` need it.
+    ///
+    /// - Parameter mode: The `frus.reading.defaultMode` the app is launched with, as stored (`read`, `research` or
+    ///   `rememberLast`). L37's confirmation ran it under `rememberLast` on the code before L37, where the rail stayed.
+    private func resizeAcrossBrowsesTwoPaneWidth(underMode mode: String) throws {
+        app.terminate()
+        app.launchArguments = UITestLaunch.arguments(startingOn: .browse, activeProjectId: Self.projectId)
+            + ["-frus.reading.defaultMode", mode, "-frus.filterDownloadedOnly", "YES"]
+        app.launch()
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        let screen = WindowedAppsGrip.landscapeScreen
+        widenTheWindow(to: screen)
+        closeTheGuideIfPresent()
+        let wide = app.windows.firstMatch.frame
+        try XCTSkipUnless(wide.width >= Self.browseTwoPaneWindowWidth, """
+            The widened window is \(Int(wide.width)) pt, under the \(Int(Self.browseTwoPaneWindowWidth)) pt that is \
+            sure of Browse's two-pane layout beside the tab sidebar: run on the iPad Pro 13-inch (M5), which this test \
+            turns to landscape.
+            """)
+
+        // The two-pane layout: the document, with its rail opened by its toggle. Below 1,100 pt of content the layout
+        // gives up its list pane beside a document (`BrowseTwoPaneMetrics.showsListPane`), so the reader may fill it.
+        openTheFixtureDocumentInBrowse(Self.documentTitle)
+        let readApplies = mode == "read"
+        if readApplies {
+            XCTAssertFalse(railTiles.waitForExistence(timeout: 3), "Under Read the document opened with its rail")
+        }
+        if !railTiles.waitForExistence(timeout: 3) { try toggleRail() }
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience),
+                      "The rail's toggle opened no rail column in Browse's two-pane layout")
+        attachScreenshot("Two-pane layout, rail open")
+
+        // One pane: the window at its least width, where Browse draws its stack and builds the reader anew.
+        closeTheGuideIfPresent()
+        WindowedAppsGrip.narrow(app, speed: 900)
+        Thread.sleep(forTimeInterval: 1.5)
+        let narrow = app.windows.firstMatch.frame
+        attachScreenshot("One pane")
+        try XCTSkipUnless(narrow.width < Self.browseTwoPaneGate, """
+            The window kept \(Int(narrow.width)) pt of its \(Int(wide.width)), over Browse's \
+            \(Int(Self.browseTwoPaneGate)) pt two-pane gate, so this simulator is not in Windowed Apps: set Settings ▸ \
+            Multitasking & Gestures ▸ Windowed Apps and run again.
+            """)
+        XCTAssertEqual(app.state, .runningForeground, "Narrowing the window crashed the app")
+
+        // The two-pane layout again: the reader built anew a second time, which must keep the rail as the reader left it.
+        widenTheWindow(to: screen, speed: 900)
+        closeTheGuideIfPresent()
+        XCTAssertTrue(app.navigationBars[Self.documentTitle].waitForExistence(timeout: Self.patience),
+                      "After the resize Browse no longer shows \(Self.documentTitle)")
+        XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), """
+            After the window crossed Browse's two-pane width and back, the rail the reader opened is closed: the reader \
+            built anew applied Open Documents In ▸ \(mode) again (F11).
+            """)
+        attachScreenshot("Two-pane layout again, rail kept")
+
+        // A different document: under Read it opens without its rail, since the setting applies to every open.
+        if readApplies {
+            let back = app.buttons.matching(NSPredicate(format: "label == %@", "Back")).firstMatch
+            XCTAssertTrue(back.waitForExistence(timeout: Self.patience),
+                          "Browse's detail pane shows no Back beside the document")
+            back.tap()
+            openRow(containing: Self.secondDocumentTitle, "the compilation's second document")
+            XCTAssertTrue(app.navigationBars[Self.secondDocumentTitle].waitForExistence(timeout: Self.patience),
+                          "The second document's row did not open it")
+            XCTAssertTrue(app.buttons["researchRailToggle"].firstMatch.waitForExistence(timeout: Self.patience),
+                          "The second document's reader has no rail toggle")
+            Thread.sleep(forTimeInterval: 2)
+            XCTAssertFalse(railTiles.exists, """
+                The second document opened with the rail the first one had open: Open Documents In ▸ Read is not applied \
+                when a different document opens.
+                """)
+            attachScreenshot("The second document, in Read")
+            // The stored setting back on.
+            try toggleRail()
+            XCTAssertTrue(railTiles.waitForExistence(timeout: Self.patience), "The toggle did not turn the rail back on")
+        }
+    }
+
     // MARK: - Steps
+
+    /// Browse's two-pane gate (`BrowseTwoPaneMetrics.minimumWidth`, a 340 pt list and a 480 pt detail floor).
+    private static let browseTwoPaneGate: CGFloat = 820
+    /// The narrowest window this test takes as sure of Browse's two-pane layout: the gate's 820 pt of content beside the
+    /// tab sidebar, which took 280 pt in landscape on the iPad Pro 13-inch (M5) under iOS 27.2.
+    private static let browseTwoPaneWindowWidth: CGFloat = 1_100
+    /// The fixture's second document, in the same compilation (`UITestVolumeSeeder`).
+    private static let secondDocumentTitle = "UI Test Document Two"
+
+    /// Browse ▸ Subseries ▸ the fixture's subseries ▸ its volume ▸ its compilation ▸ the document titled `title`, indexing
+    /// on the way if this is a cold run: `TwoPaneDocumentTests`' walk, which needs `-frus.filterDownloadedOnly YES`.
+    private func openTheFixtureDocumentInBrowse(_ title: String) {
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped, "no Browse tab")
+        let tile = app.buttons["browse.root.subseriesTile"].firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: Self.patience), "Browse's root shows no Subseries tile")
+        tile.tap()
+        openRow(beginningWith: "Subseries 1961-63", "the fixture's subseries")
+        openRow(containing: "Kennedy-Khrushchev", "the fixture volume")
+        openRow(containing: "UI Test Compilation", "the fixture's compilation")
+        let indexNow = app.buttons["Index Now"]
+        if indexNow.waitForExistence(timeout: 5), indexNow.isEnabled { indexNow.tap() }
+        closeTheGuideIfPresent()
+        // Indexing a cold run's volume lists the documents, which can take a while; the row's tap scrolls to it.
+        _ = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", title)).firstMatch
+            .waitForExistence(timeout: 60)
+        openRow(containing: title, title)
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: Self.patience),
+                      "The row did not open \(title) in Browse")
+        XCTAssertTrue(app.buttons["researchRailToggle"].firstMatch.waitForExistence(timeout: Self.patience),
+                      "\(title)'s reader has no rail toggle")
+    }
+
+    /// Taps the button whose label contains `text`, scrolling to it first.
+    private func openRow(containing text: String, _ what: String) {
+        tapRow(app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", text)).firstMatch, what)
+    }
+
+    /// Taps the button whose label begins with `text`, scrolling to it first.
+    private func openRow(beginningWith text: String, _ what: String) {
+        tapRow(app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", text)).firstMatch, what)
+    }
+
+    /// Scrolls Browse's detail pane to `row`, named `what` in a failure, and taps it.
+    ///
+    /// Two traps, both met by this walk's first runs (iPad Pro 13-inch (M5), iOS 27.2, landscape):
+    /// - A lazy list leaves a row below the fold out of the tree, so waiting for the row before scrolling fails. The
+    ///   volume's Editors' Annotations section puts its compilation well below the fold.
+    /// - `app.swipeUp` scrolled nothing: XCUI reports the app's frame in portrait while the window lies in landscape,
+    ///   so the swipe's centre fell in the list pane. The drag here is taken in the window's own frame, at 80% of its
+    ///   width, which is the detail pane whether or not the list pane is drawn.
+    private func tapRow(_ row: XCUIElement, _ what: String) {
+        var found = row.waitForExistence(timeout: 5) && row.isHittable
+        var scrolls = 0
+        let window = app.windows.firstMatch
+        while !found && scrolls < 16 {
+            window.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.75))
+                .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.35)),
+                       withVelocity: .slow, thenHoldForDuration: 0.1)
+            Thread.sleep(forTimeInterval: 0.6)
+            scrolls += 1
+            found = row.exists && row.isHittable
+        }
+        XCTAssertTrue(found, "No row for \(what) after \(scrolls) scrolls: was the fixture seeded?")
+        row.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+    }
 
     /// How many times F8's test narrows and widens the window.
     private static let narrowings = 12
