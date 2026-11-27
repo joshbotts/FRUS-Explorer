@@ -182,6 +182,9 @@ extension NARACatalogKeyProvider {
 ///          `recordGroup` ancestor (`recordGroupNumber(in:)`), where NARA's live answers carry it,
 ///          so a lot lookup's acceptance test can pass; a 2xx body that is not JSON throws
 ///          `decodingError` and is not counted, where it read as no records
+///   1.9 — 2026-11-26 (#1970, plan of record row L31): `buildResult(from:)` reads a v2 record's own
+///          `scopeAndContentNote` first, where NARA puts it, before the two older shapes, so a live lookup
+///          shows a series' scope note; an empty note reads as none
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -976,8 +979,15 @@ public actor NARACatalogClient {
             ?? (record["description"] as? [String: Any])?["title"] as? String
             ?? ""
 
-        let scopeNote = record["scopeContent"] as? String
-            ?? (record["description"] as? [String: Any])?["scopeAndContentNote"] as? String
+        // The record's own note first: a v2 record carries `scopeAndContentNote` beside its title and naId, and
+        // no `description`, so the two older shapes after it found nothing and no lookup showed a note (#1970;
+        // NARA's answer for series 2839192, `NARALiveRecordGroupTests.liveAnswer`). They are kept, so an answer
+        // in either reads as before; a note that is empty or only whitespace is none.
+        let scopeNote = [record["scopeAndContentNote"] as? String,
+                         record["scopeContent"] as? String,
+                         (record["description"] as? [String: Any])?["scopeAndContentNote"] as? String]
+            .lazy.compactMap { $0 }
+            .first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
         let rgNumber = Self.recordGroupNumber(in: record)
 

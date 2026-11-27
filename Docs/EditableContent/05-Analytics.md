@@ -1524,14 +1524,14 @@ Up and down is the volume’s coverage midpoint, not each document’s own date.
 
 
 #### Research-rail tile
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1069–1069 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1067–1067 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
 
 On the Map
 
 <!-- END SOURCE: researchRail.tile.semanticMap -->
 
 #### Research-rail tile help
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1070–1071 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1068–1069 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
 
 Show where this document sits on the semantic map, among the documents whose language is most like it
 

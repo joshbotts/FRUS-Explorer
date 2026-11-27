@@ -4237,6 +4237,124 @@ The plan of record's session started this one for row L27, on `claude/l27-tab-sh
 - **The year-range popover's keyboard,** which goes down after the test's 5-s wait under iOS 27.0 and in time under 26.5, is filed as #2024 on the owner's word ("File it"). No plan row holds it yet.
 - **R9:** the iPad's first launch of the early build is the one chance to see F1 before every reader's iPad makes the same start. Its brief now says how to catch the log line.
 
+## Session 2026-11-26 — L31: Source Explorer reads a document's year by one rule, the dateline's and then the index's date; the export's year and Numerical File case follow the app's; a live lookup shows NARA's scope note
+
+Row L31 of the plan of record from 2026-11-25 (#1975, #1976, #1974, #1970), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `bbe6686c` (L26's merge) on `claude/l31-source-explorer-year-7a9f4b`:
+- `00bb6465` (#1975), `164245a2` (#1976), `bea93498` (#1974) and `f45cb40e` (#1970);
+- `69105ead`, the records and `Planning/source-explorer-export/` regenerated;
+- then, at the head of the queue, `v2` taken in (`4186ed4e`) and the landing's records.
+
+The owner answered, in the session, the four questions the measurement raised: decisions 203 to 206.
+
+**#2021's merge**
+- L27 merged as `a17023f9`, a squash onto `af771601`, at 02:48:27 UTC on 2026-11-27, from its head `f9240661`. Its tree, `3139b6c9`, is the head's. It closed no issue; #1835 was closed by hand, as L27's entry records. This entry records it. This branch took `v2` in after it as `4186ed4e`, with no conflict.
+
+**What was found, each defect first** (decision 183)
+- **Eleven of the row's tests fail on the unchanged code** at `bbe6686c`, in a detached worktree. They are four of #1975's rule tests, the two scope-note tests, the two `evaluate` tests of #1976, the export's dateline-first and decimal-citation tests, and the generator core's case number. The two guards of what the rule read right pass there as here.
+- **A harness over a full v76 index read the control's answers:**
+  - frus1969-76v09 d46: 1515;
+  - frus1919Parisv01 d398: 1919 (its received date);
+  - frus1941v01 d121: 1940;
+  - frus1921v02 d749: 1291;
+  - frus1909 d429: no year;
+  - frus1864p4 d120: "Not checked — no year";
+  - frus1873p1v2 d63 (`Madrid, 24 December, 1872.`): 134 rolls by an undated lookup.
+- **Four places where the brief's rule would do what it did not mean** (decisions 203 to 206):
+  - an 1800 floor drops nine correct pre-1800 dates;
+  - a word boundary refuses two datelines the rule read right;
+  - the editors' bracket reaches 32 datelines, not 21;
+  - the index-date fallback reaches the pre-1906 section, where 462 documents print no year and 266 print a year alone, which the section matched against every roll of a country's series.
+- **The plan's first hand check cannot be seen on its document.** `frus1969-76v09` d46's Source Explorer draws no year, at the control or now. A year shows only through the Numerical File's box, a decimal citation's filing period, or a note-less document's series. The misread year shows on `frus1921v02` d749, whose filing period the control's 1291 labels 1789–1906.
+- **Two findings for §5, unfiled:**
+  - In the country series index, two of Austria's 51 despatch rolls carry inverted dates, and so do 44 of the 50 Mexican rolls a summer's lookup lists. The index's guard matches such a roll on any date.
+  - Dateline misprints now reach the export through the dateline-first year (`frus1910` d91, 1914).
+
+**What changed**
+- **#1975:** `CentralFilesClassifier.datelineDateISO(from:)`:
+  - reads a day-first date, the earlier of the two forms being the sent date;
+  - ends the year before an ASCII letter;
+  - takes the editors' bracketed year;
+  - holds the year to 1600–2029.
+
+  `documentYear(fromDateline:)` is the one copy: the app's two `extractYear(from:)` forward to it, and the Research rail calls it.
+- **#1976** (decision 175):
+  - `IndexingPipeline.SourceExplorerFacts` carries `document_dates`' first and last day.
+  - The hydrated year is the route's, else the dateline's, else the index's.
+  - The gate calls a year of 1906 or later not applicable before it asks for a dateline.
+  - By decision 206: `CountrySeriesRollDates` and the span lookup, with `centralFiles.rolls.indexedNote` in both views (a new EditableContent block, 101 ranges re-pointed) and a sentence in both manuals.
+  - The export parses each volume with FRUSCoreKit (`DocumentYearExtractor` 2.0, over `SourceExplorerDocumentContext.year(of:)`), so its core now depends on the kit.
+- **#1974** (decision 176): SourceNoteKit's `NumericalFileCitation`, to which `CentralFilesIndex` and `NumericalFileIndex` forward.
+- **#1970:** `NARACatalogClient.buildResult(from:)` reads a v2 record's own `scopeAndContentNote` first, and an empty note is none.
+- **Docs:** the FRUSCoreKit and Generators runbooks, the export's README, and the plan's L31 record and §5.
+
+**Checks**
+- **#1975, over the 301,070 datelines of a full v76 index:** 41 change year, 4,058 gain a day, 5 change day and 6 lose their date. The chiefs-of-mission tenure match moves for none of the 46,326 pre-1906 candidates.
+- **#1976:** 22,394 documents gain a year in Source Explorer, 8,033 of them with a source note. Of those, 10 gain Numerical File rolls and 11 the coverage gap. 678 of the 46,326 pre-1906 outcomes move.
+- **The export, against a control at `bbe6686c`:**
+  - #1975 moves none, #1976 141 and #1974 335.
+  - Every record's year is the one Source Explorer hydrates: 264,736 of 264,736. At the control, 157 differed and 8,033 had none.
+- **By hand, on the Mac**, in the check copy built from `f45cb40e`, its 298 volumes re-indexed to 76:
+  - frus1909 d429 lists the Numerical File's rolls;
+  - frus1864p4 d120 lists its rolls under the new line, and d119 the same rolls without it;
+  - frus1921v02 d749's filing period reads 1910–1929.
+
+  The scope note was not checked: the copy has no NARA key, and the owner chose "Skip the scope-note check".
+- **The branch's runs:**
+  - `swift build --target FRUSCoreKit` and the package suites the row touches;
+  - `build-for-testing`, with the two residues alone;
+  - 18 scoped app suites on the iPhone 17 under iOS 27.0, 250 tests passed;
+  - the Mac build.
+- **At the head of the queue, after `v2` was taken in,** on `b7a75db2` (tree `f6ec50f0`, with `v2` at `a17023f9` taken in as `4186ed4e`): `build-for-testing`, with the two residues alone (`v2`'s merge brought no shared code, and L27's three app files compiled clean); the unit target on the iPhone 17 under iOS 27.0 with the TEI mirror, 8,309 tests in 1,003 suites passed, 17 skipped as at L26, the six known issues; `swift build --target FRUSCoreKit`; `swift test`, 5,234 tests in 606 suites over 39 runs, none failed; the Mac build, with the residues alone; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**For the owner**
+- **This row's pull request**, opened once L31 reached the head of the queue.
+- **The four answers** are decisions 203 to 206.
+- **Two findings** are in §5, unfiled.
+- **After the merge:** the four hand-over notes for FRUS Explorer Light, shown to you before any is posted.
+
+## Session 2026-11-26 — L28, the rehearsal: the runbook's corpus phases and step 11's pack run on `v2` at L26's merge, every file accounted for, two generators' defects filed, and `New-Volume-Release-Plan.md` brought to what the run found
+
+Row L28 of the plan of record from 2026-11-25 (decision 182), started by "Development session orchestration", which runs 1.1's queue, on the owner's word that L28 "runs its phases pinned to L26's merge (bbe6686c) when the lock is quiet, e.g. overnight, and lands whenever it is done". Documents only: no regenerated file is committed. The rehearsal ran at `bbe6686c`; this branch was cut there, took CR's merge (`af771601`) in by a fast-forward before its first commit, and took L27's and L31's in at the head of the queue.
+
+**#2025's merge**
+- L31 merged as `e3260a95`, a squash onto `a17023f9`, at 03:52:01 UTC on 2026-11-27, from its head `98897b4e`. Its tree, `13374d79`, is the head's. It closed #1974, #1975 and #1976. This entry records it.
+- L27's #2021 (`a17023f9`, onto `af771601`, at 02:48:27 UTC, from `f9240661`, tree `3139b6c9`, closing no issue) is recorded in L31's entry above, and CR's #2020 in L27's.
+- This branch took `v2` in at `e3260a95`; the session log was the one conflict, resolved with every entry kept in merge order, and L31's decisions 203 to 206 put L28's at 207 to 209.
+
+**What ran** (`New-Volume-Release-Plan.md` §10a has each file)
+- **Where.** The fourteen release generators built in a detached checkout of `bbe6686c` outside this worktree, in 135 s; every run there, at its bundled file's own `generated` stamp, its output in a scratch folder. Each phase was one `Scripts/heavy.sh` job, and L27's and L31's jobs ran between them.
+- **Step 1, read only.** A `git fetch` of `~/Development/frus` found `origin/master` at `216cdb764`, its head; no file under `volumes/` differs from `6170e4b32`, the commit the bundle names.
+- **Phase A.** The manifest online, with no `GITHUB_TOKEN`, twice; the taxonomy over a copy of the bundled file.
+- **Phase B's keyless path** (steps 4 and 6), which the brief did not name: Phase C's readers take the authority that step 6 writes, and the brief's last bullet counts its moves.
+- **Phase C.** The authority's three readers on both authorities, the shipped one, to tie each figure to L26's, and the regenerated one, as R10 will run them; the edge index and page map from a full index at 76; the annotations index on it; the source provenance, the administrations, the cross-reference validation; `CloudVectorsGenerator` with `VERIFY_PRINTED_WALK=1`, since its tokenizers moved into WordCloudKit (#1979) and the OS is 27.2.1 where the files were written under 27.0.
+- **Step 10's read-only half and step 11**, from EmbeddingGemma 2's store, with no new harvest: the store's checksums and contract, the pool, the layout and the pack.
+
+**What it found**
+- **The moves since 1.0 changed nothing a generator writes.** Byte for byte the bundled file: the manifest (at its second run), the taxonomy, the volume sources, the external citations on the shipped authority, the edge index and the page map, the annotations index, the source provenance, the administrations, the broken references and the validation's two report files, the five semantic files and all 553 shards, and the four word-cloud files under `VERIFY_PRINTED_WALK=1`, whose walk found every lens's printed counts equal to a walk with no lemma scheme in all 553 volumes.
+- **L26's moves, to its figures.** The authority gains `lot:56D676` and gives `lot:63D351` the volume `frus1951v03p1`, and nothing else (3,977 → 3,978 records); its report moves in those 14 lines. The usage index: 138 more notes in 47 volumes, 83 more in a collection in 29 records, 47 more with a class in 32 class records, two keys new, all as L26 measured; on the regenerated authority, one note more, in `lot:56D676`. The flow index: 19 more collection references joined and 12 class, the same file on either authority. The external citations on the regenerated authority: the authority's count alone.
+- **#2022, the manifest generator's silent drop.** The first run's six header fetches answered HTTP 503, and it wrote 547 of the 553 volumes, printed "✓ manifest.json written" and exited 0. Every entry it kept equalled the bundled one, and the second run had no failure.
+- **#2023, the map's commands.** As the runbook gave them, `pool_docs.py` and `build_layout.py` read the 300m's store and pool by default, and the packer's preflight checks a layout's count, not what it was laid out over. The root checkout's gitignored `layout.bin` was the 300m's beside EmbeddingGemma 2's `layout-meta.json`.
+- **For the runbook.** The manifest's run needs no token (one API call). The authority reads the root checkout's `.cache/volume-sources`, which no commit records. R10's files move figures that documents state: the website's 264,598 notes, and the manuals' and the guide's 3,977 collections. No Subject-Numeric key moves, so the label table owes R10 nothing.
+- **The brief's claims** held, but one. The bundled external citations already carry #1854's notes (L26 regenerated them for decision 191), so they are not among the files that differ by L26's moves.
+
+**The owner's three answers** (asked here; the orchestrator told first), decisions 207 to 209:
+- the manifest generator's drop filed (#2022) and fixed before R10 ("File it; fix before R10 (Recommended)");
+- the packer's check filed (#2023) and fixed before R10 ("File it; fix before R10");
+- the stale `layout.bin` replaced with the shipped one ("Replace it with the shipped one (Recommended)"), which this session did that evening.
+- The orchestrator made the two fixes one row, L61, which its own session builds.
+
+**What changed**
+- **`Planning/New-Volume-Release-Plan.md`.** A head paragraph for the rehearsal, and §10a, its table and findings. The inventory: 41 files, 51.7 MB, 21 in Tier 1, `cited-page-map.json` named. §4.5's commands with every path named. Steps 1 to 4, 6, 7 and 11 as run. Phase F's 18 to 20c: an update's version page and *What's New*, the website's figures, the documents' literals. §8's CI. D-1's line for decision 148, and the doc-comment defect struck (fixed on 2026-09-04 by #1191). §12's costs, measured.
+- **`Planning/Plan-Of-Record-2026-11-25.md`.** Decisions 207 to 209 and the line under them; row L61 in §1's two tables, with its brief; #2022 and #2023 in §1a; the counts and the calendar; §2's line without the token; L28's record; the status paragraph.
+- **Outside the repository.** #2022 and #2023 filed; the root checkout's `Planning/semantic-map/layout.bin` replaced (gitignored).
+
+**Checks**
+- Each regenerated file was compared with `cmp` against its bundled file. Each that differed was read key by key, with a script that resolves the usage, flow and external-citation indexes' positional rows to their keys before it compares them.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- No app or test was built or run. This pull request changes documents alone, which owes no Mac runs (the brief).
+
+**Cost.** 93 minutes of the lock over three hours and a quarter of the evening, against the brief's hour and a half: the build 135 s; Phase A 55 s and the manifest's second run 39 s; Phase B 352 s; C1's five runs 1,587 s; the edge index and the annotations 425 s; the provenance, the administrations and the validation 261 s; step 11 about 457 s; CloudVectors with its walk 2,258 s. One pass with one run of each is about 75 minutes. No subagent. The checkout, its build folder and the rehearsal's outputs were removed afterwards.
+
 ## Session 2026-11-26 — L61, two generators' guards before R10: a manifest run that could not read a volume writes nothing and exits 1, naming it, after a 429 or a 5xx has been tried four times; the map's pack refuses a layout laid out over another store's vectors, a `layout.bin` its metadata does not describe, and a layout that names neither
 
 The orchestration session started this one for row L61, on `claude/l61-generator-guards-d464ee` from `v2` at `a17023f9`, L27's merge. The row: #2022 and #2023, both found by L28's rehearsal of `New-Volume-Release-Plan.md` (2026-11-26) and filed on the owner's word, each to be fixed before R10 (decisions 203 and 204). Commits: `849b30ba` (#2022), `7e3e8f28` (#2023) and a docs commit.

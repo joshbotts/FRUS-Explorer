@@ -21,10 +21,21 @@ added three things here: step D-c0 and the two notes under D-c1 and D-c3 in §10
 cost of a relayout at the end of §4.5. Step 13a and §4.4's last paragraph followed the same day,
 when the shards repository's own README and manifest were brought up to date.
 
+**Rehearsed and refreshed 2026-11-26** by row L28 of the plan of record from 2026-11-25 (decision
+182), at `v2` `bbe6686c` (index version 76), before the Office's next release: Phase A, Phase B's
+keyless path, Phase C and step 11 ran against the corpus as shipped, and §10a accounts for every
+file they wrote. What the run found, and the row's brief, brought these up to date: §3's inventory
+(41 files; `cited-page-map.json` named), §4.5's commands (every path named), Phase A's steps
+(the manifest generator's silent drop; no token needed), steps 6, 7 and 11, Phase F's steps 18
+to 20c (an update's version page, *What's New*, the website's figures and the documents that state
+them), §8's CI, D-1's line for decision 148 in §11, and §12's costs, measured.
+
 **What this document is for.** When OH publishes a volume, the work is not "add a row to the
-manifest". It is a **release**: 38 bundled data resources, 48.9 MB of them (36 when this was
-written — `accession-series-index.json` and `subject-numeric-labels.json` have joined), of which 18 are
-derived from the corpus and rebuilt every release; one owner-run neural harvest on a second machine;
+manifest". It is a **release**: 41 bundled data resources, 51.7 MB of them (51,706,045 bytes,
+counted 2026-11-26; 36 when this was written — `accession-series-index.json`,
+`subject-numeric-labels.json`, `keyness-baseline-printed.json`, `cited-page-map.json` and
+`volume-annotations-index.json` have joined), of which 21 are derived from the corpus and rebuilt
+every release; one owner-run neural harvest on a second machine;
 one Python layout stage; a shard published to a *different repository*; a set of artifact-pinned
 tests that will fail by design; and — when this was written — ten strings of user-visible copy
 that hard-coded `552` (§7.1: all nine that would have gone false now derive their numbers). This plan enumerates all of it, in the order it has to happen, with the
@@ -94,20 +105,22 @@ not a discovery. See D-4.
 
 ## 3. The artifact inventory
 
-38 bundled data resources (36 `.json`, 2 `.bin`; counted in `FRUSExplorer/Resources` on
-2026-10-01). Classified by what a new volume does to them.
+41 bundled data resources (39 `.json`, 2 `.bin`; counted in `FRUSExplorer/Resources` on
+2026-11-26, where the count of 2026-10-01 was 38: `keyness-baseline-printed.json`,
+`cited-page-map.json` and `volume-annotations-index.json` joined after it). Classified by what a
+new volume does to them: 21 in Tier 1, 5 in Tier 2, 11 in Tier 3 and 4 in Tier 4.
 
-### Tier 1 — corpus-derived, must be regenerated (19 artifacts, 13 generator runs)
+### Tier 1 — corpus-derived, must be regenerated (21 artifacts, 13 generator runs)
 
 | Artifact | Generator | Notes / cost |
 |---|---|---|
-| `manifest.json` | `ManifestGenerator` (needs `GITHUB_TOKEN`) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. |
+| `manifest.json` | `ManifestGenerator` (`GITHUB_TOKEN` optional: step 2) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. **A header fetch that fails drops its volume from the file, and the run still writes it and exits 0**: read its `Errors:` line (step 2). |
 | `volume-sources-index.json` | `VolumeSourcesIndexGenerator` | Corpus front-matter Sources + offline lot resolution against `central-files-index.json`. Needs `CATALOG_API_KEY` only if the new volume names lots the bundle cannot answer. |
 | `collection-authority.json` (+ report) | `CollectionAuthorityGenerator -c release` | Re-clusters the whole cross-volume authority. **Ids can move** — #696's `president's `→`presidential ` fold once killed 28 collection ids covering 2,040 documents. Everything downstream must be rebuilt from the *new* authority, never from a stale export. |
 | `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 645,052 bytes today (630 KiB, the figure `CLAUDE.md` gives as "630KB"). |
 | `external-citation-index.json` | `ExternalCitationIndexGenerator -c release` | Reads the authority **and** `decimal-class-labels.json`. |
 | `provenance-flow-index.json` | `ProvenanceFlowIndexGenerator -c release` | Reads the authority. |
-| `resolved-edge-index.json` | `ResolvedEdgeIndexGenerator -c release` | **Changes for existing volumes too**: cross-volume citations *into* the new volume become resolvable, and the new volume's own outbound citations add inbound edges to documents in volumes already shipped. |
+| `resolved-edge-index.json`, `cited-page-map.json` | `ResolvedEdgeIndexGenerator -c release` (`PAGE_MAP_OUTPUT` names the map's path) | **One run writes both**, from the one full index it builds (`INDEX_DIR` keeps it), and they are committed together: a device resolves a printed page of another volume from the map alone, so the two must come from one map. **Changes for existing volumes too**: cross-volume citations *into* the new volume become resolvable, and the new volume's own outbound citations add inbound edges to documents in volumes already shipped. The map records the index version (`PageSpanResolverTests.theShippedMap` holds it to `currentDateIndexVersion`), so every index bump regenerates it too. |
 | `volume-annotations-index.json` | `VolumeAnnotationsIndexGenerator -c release` (`CORPUS_COMMIT` required) | What each volume's editors annotated (`Planning/Editors-Annotations-Design-2026-11-06.md`). The new volume needs its row. The categories the app reads are counted from a full index of the catalogue: run it after `ResolvedEdgeIndexGenerator` with `INDEX_DB` set to the index that run kept with `INDEX_DIR`, so the corpus is indexed once. **Every index bump regenerates it too**, since the version it records must be the current one. |
 | `broken-refs-index.json` | `CrossRefValidationGenerator -c release`, then `cp Planning/cross-ref-validation/broken-refs-index.json FRUSExplorer/Resources/` | Same two-way effect: refs that were `unknownVolume` may now resolve. Do **not** point `OUTPUT_DIR` at `Resources` — that dumps the CSV and report into the bundle. |
 | `source-provenance-index.json` | `SourceProvenanceIndexGenerator -c release` | Schema 2; per-volume table must gain a row or `supportsVolumeScope` degrades. |
@@ -275,13 +288,38 @@ map reader (`BundledSemanticMap.swift:94`), and `SemanticMapReader.init` throws
 Therefore a stale `semantic-map.bin` is **refused cleanly** — no misplaced documents, no wrong
 coordinates, but the whole Clusters/Map feature disables itself for everyone.
 
-So the map must be rebuilt:
+So the map must be rebuilt, with every path named. `$VENV` is the root checkout's
+`.cache/semantic-map-venv` (gitignored, so a worktree has none), and the layout is written to the
+release's own `Planning/semantic-map/`, whose `layout-meta.json` is committed with the map:
 
 ```
-.cache/semantic-map-venv/bin/python tools/semantic-harvest/corpus-gates/pool_docs.py
-.cache/semantic-map-venv/bin/python tools/semantic-map/build_layout.py
-DIMS=512 LAYOUT_DIR=Planning/semantic-map swift run -c release SemanticVectorsGenerator
+STORE=~/frus-semantic-raw-embeddinggemma-2 ASSESS_DIR=<scratch>/gates \
+  $VENV/bin/python tools/semantic-harvest/corpus-gates/pool_docs.py
+POOL_DIR=<scratch>/gates/pool OUT_DIR=Planning/semantic-map \
+  $VENV/bin/python tools/semantic-map/build_layout.py
+STORE=~/frus-semantic-raw-embeddinggemma-2 \
+  EXPECT_DIGEST=89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 \
+  DIMS=512 LAYOUT_DIR=Planning/semantic-map GENERATED_DATE=<date> swift run -c release SemanticVectorsGenerator
 ```
+
+**Name every path: the two scripts' defaults are the 300m's** (found by L28, 2026-11-26, reading
+the scripts; B4 passed its own paths, `POOL_DIR=~/frus-b2/gates-eg2/pool`, and the commands here
+were not brought to them). `pool_docs.py` reads `STORE`, default `~/frus-semantic-raw`, the
+300m's store, and writes to `ASSESS_DIR/pool`, default `~/frus-semantic-gates/pool`, which holds the
+300m's pool of 2026-10-10; `build_layout.py` reads `POOL_DIR`, default that same pool. Both stores
+hold 314,616 documents of 768 dimensions, so nothing refuses the 300m's: `SemanticMapPacker.preflight`
+checks the layout's document count, its length and that a row is clustered, not which vectors it
+was laid out over, and a map laid out and labelled over the 300m's vectors would ship beside
+EmbeddingGemma 2's (#2023, the preflight's refusal, owed before R10). **And a gitignored `layout.bin` can outlive its `layout-meta.json`**: until
+2026-11-26 the root checkout's `Planning/semantic-map/` held the committed `layout-meta.json` of
+EmbeddingGemma 2's layout (2026-10-15) beside a `layout.bin` that was the 300m's (SHA-256
+`80a9af07…`, 2026-10-10), since B4 laid its layout out elsewhere, so a pack run there with the
+default `LAYOUT_DIR` and no new layout would have read the 300m's map under EmbeddingGemma 2's
+metadata. On the owner's word that evening, L28 copied the shipped layout over it (`46799d5a…`,
+which the rehearsal reproduced byte for byte). Pack only from the folder the layout was just
+written to. **The check:** `layout-meta.json`'s `sourceMatrixSHA256` names the pool it was laid out
+over; it must be the SHA-256 of the pool just made from EmbeddingGemma 2's store, and while the
+store is unchanged, `d1e05355…`, the committed one's.
 
 What that costs, from the measured 2026-08-12 run: PCA + UMAP 6.6 min + HDBSCAN 8.2 min ≈ **15 min
 of compute**, and then the part that is not compute — **179 clusters get re-derived and re-labelled**.
@@ -487,7 +525,7 @@ What actually failed, in the order it surfaced:
 Find the rest mechanically, after regeneration, by running both suites:
 
 ```
-swift test                                        # 37 generator/kit test targets (swift package describe, 2026-10-01)
+swift test                                        # 39 test targets (swift package describe, 2026-11-06)
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17"
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
@@ -507,7 +545,11 @@ labels that were 168-of-179 wrong and read as coherent, and the `LotClaimantsInd
 that produced an empty artifact because `recordGroupNumber` decodes as `Int` in shards and `String`
 in API responses.
 
-There is **no CI in this repository** (no `.github/workflows`), so nothing runs these for us.
+**CI runs advisory checks since #2017** (2026-11-26, `.github/workflows/ci.yml`; until then there
+was none): check B runs `swift test` and `build-for-testing` on every pull request to `v2`, so a
+package suite that a regenerated file fails shows there, and check C, the unit target, runs only
+on pushes to `v2`, after a merge. Both run about five times slower than the Mac, so the release's
+own runs on the Mac stay the check before its merge (`CLAUDE.md`, *CI*).
 
 ---
 
@@ -537,31 +579,72 @@ Steps marked **[owner]** cannot be done from this repository.
 **Phase A — corpus and manifest**
 1. `git pull` the corpus clone (`~/Development/frus`). Note both **new** volumes and **changed**
    ones (OH corrects published volumes; `VolumeUpdateChecker` exists for exactly that, and a
-   corrected volume changes every artifact a new one does).
-2. `GITHUB_TOKEN=… swift run ManifestGenerator`. Review the diff: entry count, and that no existing
-   entry changed unexpectedly.
+   corrected volume changes every artifact a new one does). Read them against the corpus the
+   bundle was built from, which `volume-annotations-index.json` names as `corpusCommit`:
+   `git diff --name-status <corpusCommit> HEAD -- volumes/`. *Rehearsed 2026-11-26 (L28):* a
+   `git fetch` found `origin/master` at `216cdb764`, the clone's head, and no file under
+   `volumes/` differing from `6170e4b32`, the bundle's (the last commit to touch `volumes/` is
+   `3a375bddf`, 2026-10-09). Other sessions read the clone, so a rehearsal fetches and leaves
+   its working tree where it is.
+2. `swift run -c release ManifestGenerator`. Review the diff: entry count, and that no existing
+   entry changed unexpectedly. **`GITHUB_TOKEN` is optional**: the run makes one GitHub API call,
+   the listing of `volumes/`, and reads each header from its `download_url` on
+   raw.githubusercontent.com, which sends no token and which the API's limit of 60 calls an hour
+   without one does not count (read from `GitHubClient` and the runner, and run so on 2026-11-26).
+   **Read its `Errors:` line before anything else: a header fetch that fails drops that volume
+   from the file, and the run still writes it, prints "✓ manifest.json written" and exits 0.** In
+   the rehearsal of 2026-11-26 (L28) six of the 553 fetches answered HTTP 503 at the default eight
+   at a time, with no retry, and the file held 547 volumes, each equal to its bundled entry and in
+   the same order (`frus1961-63v20`, `v22`, `frus1964-68v02`, `v17`, `frus1969-76v08`, `v13` were
+   the six). Every generator below takes the manifest as the shippable set, so a file with a
+   volume missing removes it from the catalogue. Run again until `Errors: 0`, with `Processed:`
+   equal to the listing's count (`553 volumes to process`). #2022 is the fix, owed before R10.
 3. `swift run TaxonomyGenerator` — cheap; run it unless the new volume's tags are all already in
-   `volume-tag-taxonomy.json`.
+   `volume-tag-taxonomy.json`. With `OUTPUT_PATH` elsewhere, start that file as a copy of the
+   bundled one, so the gate (#1600) measures the source against the file it would replace.
+   *Rehearsed 2026-11-26:* HistoryAtState/tags' `taxonomy.xml` with the committed overlay wrote the
+   bundled file byte for byte (509 tags: 121 people, 274 places, 114 topics, `lgbtq-rights` from
+   the overlay), in under a second; the test fixture's copy of that file owes nothing.
 
 **Phase B — archival chain** (§6; skip past step 4 if the volume introduces no new lots)
-4. `swift run VolumeSourcesIndexGenerator`, read the log for unresolved lots.
+4. `swift run VolumeSourcesIndexGenerator`, read the log for unresolved lots. A keyless run
+   carries `recordGroups` and `lots` forward from the file at `OUTPUT`, so an `OUTPUT` elsewhere
+   starts as a copy of the bundled file.
 5. If needed, the eight-step chain in §6, in that exact order.
-6. Otherwise: `CollectionAuthorityGenerator` → `CollectionUsageIndexGenerator`.
+6. Otherwise: `CollectionAuthorityGenerator` → `CollectionUsageIndexGenerator`. The authority reads
+   `CACHE_DIR`, default `.cache/volume-sources`, a folder only the root checkout holds: gitignored,
+   unversioned, and so an input of the bundled file that no commit records (630 files, none newer
+   than 2026-09-10, on 2026-11-26). From a worktree, name it by its full path; it is read, not
+   written.
+
+*Phase B rehearsed 2026-11-26 (L28), keyless:* the volume sources reproduced the bundled file byte
+for byte in 25 s; the authority took 112 s and the usage index on it 215 s, and both moved by
+L26's measured changes alone (§10a).
 
 **Phase C — corpus analytics** (independent of each other; any order)
-7. `ExternalCitationIndexGenerator`, `ProvenanceFlowIndexGenerator`, `ResolvedEdgeIndexGenerator`,
-   `SourceProvenanceIndexGenerator`, `AdministrationProfilesIndexGenerator`. Give the edge run
-   `INDEX_DIR=<dir>`, then run `VolumeAnnotationsIndexGenerator` with `INDEX_DB=<dir>/frus.db` and
-   `CORPUS_COMMIT=<sha>`, so the two share one full index.
+7. `ExternalCitationIndexGenerator` and `ProvenanceFlowIndexGenerator`, both on the authority step 6
+   wrote (`COLLECTION_AUTHORITY`); `ResolvedEdgeIndexGenerator`, which writes `cited-page-map.json`
+   beside the edge index (`PAGE_MAP_OUTPUT`); `SourceProvenanceIndexGenerator`;
+   `AdministrationProfilesIndexGenerator`. Give the edge run `INDEX_DIR=<dir>`, then run
+   `VolumeAnnotationsIndexGenerator` with `INDEX_DB=<dir>/frus.db` and `CORPUS_COMMIT=<sha>`, so the
+   two share one full index (2.9 GB at version 76, built in 228 s on the M5 on 2026-11-26).
+   `CORPUS_COMMIT` is written into the file as given: name the clone's head, and a run that is to
+   reproduce the bundled file names the commit that file names.
 8. `CrossRefValidationGenerator`, then copy **only** `broken-refs-index.json` into `Resources/`.
 9. `CloudVectorsGenerator` (about 21 min on the M5 MacBook, ~50–60 on the Mac of August 2026; writes four files since #1608).
+   Set `VERIFY_PRINTED_WALK=1` after a change to the tokenizers or an OS update, as its entry
+   says; on 2026-11-26 the run with it took 37.6 min on the M5 (2,258 s), and wrote the four files
+   byte for byte.
 
 **Phase D — semantic** (§4; the long pole)
 10. **[owner]** The Air: `llama-server` at `a0e6dc73` with the pinned EmbeddingGemma 2 GGUF (§4's
     note; LM Studio and the 300m through build 50); snapshot `run-manifest.json`; run the
     harvester as B2 ran it, into `~/frus-semantic-raw-embeddinggemma-2`; diff the manifest;
     `shasum -c SHA256SUMS`.
-11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`.
+11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`: §4.5's three
+    commands as written there, every path named, since the two scripts' defaults are the 300m's
+    store and pool and nothing downstream refuses them. Check the layout's `sourceMatrixSHA256`
+    before the pack.
 12. Verify the provenance digest is unchanged. Review the new cluster labels properly.
     **The language analysis is checked before step 11 writes anything** (#1439, closed by lane
     HYG, PR #1558, 2026-10-02): the map pass refuses without a lemmatiser, and that refusal, with
@@ -641,20 +724,113 @@ exists and has no force option, so a correction is invisible to it until its sto
 **Phase F — code, tests, release**
 16. §7's copy fixes; §7.2 only if a 1993+ volume is in the release.
 17. `swift test` and the `xcodebuild test` runs in §8; re-measure every failing pin.
-18. Bump `CURRENT_PROJECT_VERSION` (48 today; it was 44 → 45 when this was written) **by editing
-    `project.yml` and `project.pbxproj` directly — do not run `xcodegen generate`**, and move
-    `README.md`'s "Current build:" line with it (`CodingStandardsAuditTests.readmeStatesCurrentBuild`
-    fails otherwise). No new bundled resource names, so no enrollment is needed; if that ever
-    changes, `xcodegen generate` must be followed by
-    `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`. `CLAUDE.md`'s build-bump
-    section has the whole list, including the TestFlight notes and `Scripts/fetch-llama-dsyms.sh`.
-19. Update `Planning/Store-Listing-Draft.md`: the volume count in its subtitle alternate, promo
-    text, description and §6 script, and every row of its §5 figures table, each re-measured from
-    the regenerated artifact (done for 553 volumes on 2026-10-01; the indexed-document count there
-    still waits on a device census).
+18. Bump `CURRENT_PROJECT_VERSION` (1861 at 1.0; it was 44 → 45 when this was written), and
+    `MARKETING_VERSION` when the release is a new version, as 1.1 is, **by editing `project.yml`
+    and `project.pbxproj` directly — do not run `xcodegen generate`**, and move the "Current
+    build:" line of `README.md` and of its mirror, `Docs/EditableContent/03-Repository-README.md`,
+    with it (`CodingStandardsAuditTests.readmeStatesCurrentBuild` fails otherwise). No new bundled
+    resource names, so no enrollment is needed; if that ever changes, `xcodegen generate` must be
+    followed by `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`. `CLAUDE.md`'s
+    build-bump section has the whole list: the two TestFlight notes, `Scripts/fetch-llama-dsyms.sh`,
+    and `Scripts/check_cloudkit_schema.py`, whose stamp every archive needs since #1531.
+19. Update `Planning/Store-Listing-Draft.md`, the copy of record for every App Store text field:
+    the volume count in its subtitle alternate, promo text, description and §6 script, and every
+    row of its §5 figures table, each re-measured from the regenerated artifact (done for 553
+    volumes on 2026-10-01; the indexed-document count there still waits on a device census).
+    Then `python3 Planning/app-store-connect/build_paste.py` writes the entry sheet's field table
+    and `Planning/app-store-connect/paste/` from it, and `--check` says when they part; a file in
+    `paste/` is never edited by hand.
 20. **[owner]** TestFlight, then `TEAM_ID=… ./Scripts/notarize.sh` for the Mac build.
+20a. **[owner] App Store Connect, the update's version page** (added 2026-11-26 by L28, from the
+    plan of record from 2026-11-25, §2: 1.0 was a first version, and this runbook stopped at
+    TestFlight). *What's New in This Version*, which a first version does not have, written in the
+    listing draft's §3 (`paste/whats-new.txt` reads "First release." for 1.0; 4,000 characters at
+    most); the description's volume count, where it states one (it says "across 553 volumes");
+    a screenshot only where its screen was retaken; the privacy label and the age rating, which
+    stand unless the update changes what they answer; the review notes, read against what the
+    update adds (App Store Connect counts them, and the keywords, in bytes); a manual release, as
+    for 1.0.
+20b. **After approval, the website** (the same section). `Planning/website-drafts/build_site.py`
+    recounts its figures from `FRUSExplorer/Resources` on every run, and its `site/review.html`
+    sets each figure a page states beside its recount. Bring each page's figure to its recount,
+    then paste Home and the tour again (`build_paste.py` there, and its `paste/`), as on release
+    day, 2026-11-21. **R10's files move one with no new volume at all**: L26's note extractor takes
+    the source notes paired with a document from 264,598 to 264,736 (the tour's figures row, in
+    `Tour-draft.md`, `paste/tour-block-1.txt` and `tour/tour.html`); the other seven figures the
+    site reads from the bundle stay where they are (§12 has the rehearsal's recount).
+20c. **The documents that state a bundle figure as a literal**, which no code re-derives as §7.1's
+    strings now do: the two manuals' authority (`Docs/iOS-User-Manual.md`,
+    `Docs/macOS-User-Manual.md`: "the 3,977 archival collections"), the Agentic Analysis Guide's
+    table of artifacts (`Docs/Agentic-Analysis-Guide.md`: 3,977 collections, 264,598 notes), and
+    the launch kit's figures (`Planning/Launch-Marketing-Kit-2026-10-13.md`). R10's authority
+    holds 3,978 records, L26's `lot:56D676` added, and its usage index 264,736 notes.
 21. Update `Planning/DEVELOPMENT-PLAN.md` with what actually happened, including anything this
     plan got wrong.
+
+---
+
+## 10a. The rehearsal of 2026-11-26 (L28)
+
+Row L28 of the plan of record from 2026-11-25 (decision 182) ran Phase A, Phase B's keyless path,
+Phase C and step 11's pack from the last harvest, with no new harvest, before the Office's next
+release: on the M5 MacBook Air under macOS 27.2.1, the generators built in a detached checkout of
+`v2` at `bbe6686c` (L26's merge, index version 76), over the corpus as shipped
+(`~/Development/frus` at `216cdb764`, whose `volumes/` are `6170e4b32`'s), each output in a scratch
+folder, each phase one `Scripts/heavy.sh` job, and each run at its bundled file's own stamp, so that a
+byte-for-byte comparison reads content alone. Nothing it wrote was committed. Each file is
+accounted for below: equal to the bundled file, moved by what L26 measured, or a finding.
+
+| Step | File | Against the bundled file | Accounted for |
+|---|---|---|---|
+| 2 | `manifest.json` | First run: 547 of 553 volumes, six header fetches answered HTTP 503, written anyway, exit 0. Second run: 553, byte for byte | A finding (step 2) |
+| 3 | `volume-tag-taxonomy.json` | Byte for byte | — |
+| 4 | `volume-sources-index.json` | Byte for byte | — |
+| 6 | `collection-authority.json` | One record added, `lot:56D676` (*Lot 56 D 676*, "CA Files", RG 59, Department of State, from `frus1951v07p2`), and `frus1951v03p1` added to `lot:63D351`'s volumes: 3,977 → 3,978 records, every other the same | L26 (#1854), as measured |
+| 6 | `collection-authority-report.txt` (the repository root's) | 14 lines, each one of those two: notes parsed 264,598 → 264,736, records and lot-keyed records +1, aliases 5,187 → 5,189, three eras' landings | L26 |
+| 6 | `collection-usage-index.json` | On the regenerated authority, as R10 runs it: notes 264,598 → 264,736 in 47 volumes; 83 more in a collection in 29 records, and one in `lot:56D676` (76,140 → 76,224); 47 more with a class in 32 class records, two of them new keys (`601.7111`, `851T.00-TA`; 11,041 → 11,043); records reached 1,834 → 1,835. On the shipped authority, the same less `lot:56D676`'s note, which is L26's measurement exactly. No Subject-Numeric key moves | L26, and its new record |
+| 7 | `provenance-flow-index.json` | Collections 49,724 → 49,743 joined, 4,913 → 4,918 pairs, 28,572 → 28,581 same-unit, 1,115 → 1,116 units (`lot:56D581`); classes 16,879 → 16,891 joined, 4,357 → 4,360 pairs, 11,487 → 11,493 same-unit. The same file byte for byte on either authority | L26 |
+| 7 | `external-citation-index.json` | On the shipped authority, byte for byte: L26 regenerated it for decision 191 with #1854's notes. On the regenerated one, `coverage.authorityCollectionCount` 3,977 → 3,978 alone; no reference joins `lot:56D676` | L26's record |
+| 7 | `resolved-edge-index.json`, `cited-page-map.json` | Both byte for byte, from a full index at 76 built in 228 s (2.9 GB): 38,600 edges into 20,273 documents from 513 volumes; the map's 16,364 pages in 380 volumes naming 18,832 documents | — |
+| 7 | `volume-annotations-index.json` | Byte for byte (`INDEX_DB` on that index, `CORPUS_COMMIT=6170e4b32`, the commit the bundled file names) | — |
+| 7 | `source-provenance-index.json` | Byte for byte: it reads every `type="source"` element itself, so #1854 does not reach it | — |
+| 7 | `administration-profiles-index.json` | Byte for byte | — |
+| 8 | `broken-refs-index.json`, and `Planning/cross-ref-validation/`'s report CSV and JSON | All three byte for byte, the index against the bundled copy too: 2,714,299 refs over 744 files, 300 broken in 142 keys, 1,269 more into 57 volumes outside the manifest | — |
+| 9 | `cloud-vectors-core.json`, `cloud-vectors-volumes.json`, `keyness-baseline.json`, `keyness-baseline-printed.json` | All four byte for byte, from one run with `VERIFY_PRINTED_WALK=1` (its tokenizers moved into WordCloudKit with #1979, and the OS is 27.2.1 where the files were written under 27.0): in all 553 volumes, 314,616 documents, the printed forms the lemma pass counted are what a walk with no lemma scheme counts, in every lens, under both taggers. 2,258 s, single-threaded, at a 980 MB peak | — |
+| 10 | EmbeddingGemma 2's store, read only | `shasum -c SHA256SUMS`: 2,212 of 2,212; `run-manifest.json` the shipped contract (`embeddinggemma-2-Q8_0`, GGUF `2188ac1d…`, 768 dimensions, 3,200 and 480 characters, the prefix with its trailing space, 314,616 documents) | — |
+| 11 | the pool, the layout | `pool_docs.py` (11 s): the four matrices byte for byte B2's pool, `doc_f32_768.npy` `d1e05355…`, the committed `sourceMatrixSHA256`. `build_layout.py` (240 s, 5.9 GB peak): `layout.bin` `46799d5a…`, the shipped layout, and `layout-meta.json` the committed one but for its date and timings | — |
+| 11 | `semantic-vectors-index.json`, `semantic-vectors-binary.bin`, `semantic-shards-manifest.json`, `semantic-map.bin`, `semantic-map-index.json`, the 553 shards | All five byte for byte, the map's 140 labels among them (counted through WordCloudKit's tokenizer and macOS 27.2.1's lemmatiser), and all 553 shards equal in length and SHA-256 to the bundled manifest; `EXPECT_DIGEST` held (187 s, 5.6 GB peak) | — |
+
+So the moves since 1.0 changed nothing a generator writes: every file is the bundled one, or moves
+by the changes L26 made and measured, and by nothing else.
+
+**What it found.** L28 commits nothing but this runbook and its records, so each code defect below
+was offered, not taken (decision 183); the owner had both filed that evening, each to be fixed
+before R10 runs.
+- **The manifest generator writes a catalogue with volumes missing, and exits 0** (step 2;
+  #2022). A header fetch that fails is logged and its volume left out; six of 553 answered HTTP
+  503 at the default eight fetches at a time, and a second run had none. The fix: write nothing
+  and exit 1 when `Errors` is not 0, and retry a 429 or a 5xx before counting it.
+- **The map's commands read the 300m's store and pool by default** (§4.5; #2023), corrected here,
+  and the packer's preflight takes a layout made from either. The fix: the preflight refuses a
+  layout made from another store's vectors, before anything is written. The root checkout's
+  stale `layout.bin` was replaced with the shipped one on the owner's word.
+- **`GITHUB_TOKEN` is not needed** (step 2), though the plan of record's §2 lists it among this
+  row's and R10's needs.
+- **The authority reads a folder no commit records** (step 6): the root checkout's
+  `.cache/volume-sources`.
+- **R10's files move figures that documents state as literals** (steps 20b and 20c): the website's
+  264,598 notes, and the manuals' and the guide's 3,977 collections.
+- **The Subject-Numeric label table owes R10 nothing**: no Subject-Numeric key moves in the usage
+  index, and `ShippedLabelTableTests` recounts only those.
+- **The brief's figures held**, L26's to the record, with one correction: the bundled external
+  citations already carry #1854's notes, since L26 regenerated the file for decision 191, so they
+  do not differ by them; on the regenerated authority they differ by its record count alone.
+
+**What R10 takes from it.** Expect L26's moves in the authority, the usage index and the flow index
+(above) besides what the corpus brings, and nothing else from code. A control separates the two
+only at R10's own base and on the corpus before the release: a row after L26 can change a
+generator (L31, merged since, moved a rule into SourceNoteKit and touched two generator cores), so these outputs, made at
+`bbe6686c`, are no control for R10, and they were not kept. The measured cost is in §12.
 
 ---
 
@@ -664,7 +840,7 @@ All five decided in one sitting, and they simplify the plan:
 
 | # | Decision | Consequence |
 |---|---|---|
-| **D-1** | **Leave the gap silent.** The runbook will be prioritised so the publication-to-release gap is minimal. | R-4 is struck: `newlyAvailable` stays unconsumed. Its doc comment should stop claiming a badge (§13's unfiled defect stands). |
+| **D-1** | **Leave the gap silent.** The runbook will be prioritised so the publication-to-release gap is minimal. | R-4 is struck: `newlyAvailable` stays unconsumed. Its doc comment stopped claiming a badge on 2026-09-04 (#1191; `ManifestDiffResult.newlyAvailable`, in `FRUSCoreKit/Models/Manifest/ManifestLiveDiff.swift` since 2026-11-08). **For 1.1, decision 148** of the plan of record from 2026-11-25 sets the second half aside: the first half stands, and the gap stays silent; but the volume waits for the Collections overhaul, so the gap is not kept short. From the day the Office publishes until 1.1 ships, the volume is not in the app, and a reader of 1.0 can side-load its file with nothing derived (§1). |
 | **D-2** | **Rebuild the map** every release. | §4.5's relayout is a fixed step of Phase D, and the cluster-label review is budgeted, not optional. |
 | **D-3** | **Harvest guard before** the release. | Done — PR #1177 (R-2), which shipped three guards. |
 | **D-4** | **Ship without the downstream enrichment data** when the upstream drops lag. | Phase E is deferrable per release; subject tags and the person crosswalk degrade per volume. |
@@ -691,15 +867,26 @@ measured them; the human times are estimates.
 
 | Phase | Compute | Human |
 |---|---|---|
-| A — manifest, taxonomy | minutes | ~30 min (diff review) |
-| B — archival chain | minutes; hours if §6's full chain runs | 1–3 h |
-| C — corpus analytics | ~1.5 h, mostly `CloudVectorsGenerator` | ~1 h (artifact diff review) |
-| D — semantic | ~1 min harvest + ~15 min layout + ~14 s pack | 2–3 h **[owner-gated]** — machine setup, transfer, digest verification, cluster-label review |
+| A — manifest, taxonomy | ~1 min: 54 s for the manifest, 39 s for a run with no failed fetch; the taxonomy under a second (measured 2026-11-26) | ~30 min (diff review) |
+| B — archival chain | 6 min keyless: volume sources 25 s, authority 112 s, usage 215 s (2026-11-26); hours if §6's full chain runs | 1–3 h |
+| C — corpus analytics | ~45 min on the M5, one run of each, and ~60 with `VERIFY_PRINTED_WALK=1` (2026-11-26): flow 223 s, external citations 465 s, the edge index with its full index 298 s, annotations 127 s, source provenance 87 s, administrations 118 s, validation 56 s; `CloudVectorsGenerator` 21 min, 38 with the walk | ~1 h (artifact diff review) |
+| D — semantic | ~1 min harvest + ~4 min layout + ~3 min pack (2026-11-26: pool 11 s, layout 244 s at 5.9 GB, pack with the map 187 s at 5.6 GB) | 2–3 h **[owner-gated]** — machine setup, transfer, digest verification, cluster-label review |
 | E — gated extras | minutes | ~1 h |
 | F — code, tests, release | ~1 h of test runs | 3–5 h (test re-measurement is the bulk) |
 
 **Call it a full working day of attention for a single-volume release, most of it review rather
 than compute, plus an owner session on a second machine.** D-5 is where the leverage is.
+
+**Measured by the rehearsal of 2026-11-26 (§10a).** The fourteen generators of Phases A to D built
+from empty in 135 s. One pass of Phases A to D, one run of each and no harvest, is about 75 minutes
+of the M5 with CloudVectorsGenerator's walk and about 60 without it, the build included. The
+rehearsal held the lock for 93 minutes in all, with its controls (each of the authority's readers on
+both authorities, the manifest twice), over three hours and a quarter of an evening that two other
+rows' jobs shared, against the brief's estimate of about an hour and a half. **The website's figures from R10's files** (step 20b), recounted
+as `build_site.py` reads them: 553 volumes, 3.34 GB, 264,736 source notes paired with a document
+(264,598 in 1.0), 502 volumes with notes, 8,637 cross-references between volumes, 314,616 documents
+on the map in 140 regions, and 288 volumes whose editors tagged people. Only the notes move, and
+only by L26's extractor.
 
 ### Minimum viable release, if the calendar collapses
 
@@ -784,8 +971,9 @@ dark for everyone).
   volume" is the runbook for the publishing half.
 - **A volume that will not parse.** `LocalVolumeCatalog.entry` returns `nil` rather than inventing
   a title, and the volume goes unlisted. Fine for side-load; unexamined for the catalogue path.
-- **The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed. It should be an
-  issue whichever way D-1 goes: either the code grows a consumer or the comment stops claiming one.
+- ~~**The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed.~~ **Fixed
+  2026-09-04** (#1191): the comment says the bucket is computed and rendered nowhere, by D-1, and
+  that surfacing it means growing a consumer. Struck on 2026-11-26 (L28), a refresh late.
 - ~~**Whether any persisted user state names a semantic cluster id.**~~ **ANSWERED 2026-09-07 (R-1b),
   and it found a live defect rather than a clean negative.**
 
@@ -828,3 +1016,5 @@ dark for everyone).
 
 *Document history*
 *1.0 — 2026-09-01: written against `6d6aeb5`, ahead of OH's end-of-year release.*
+*1.1 — 2026-11-26: rehearsed at `v2` `bbe6686c` and refreshed from the run (L28; §10a). The
+refreshes of 2026-10-01 and 2026-10-10 are recorded in the head and carry no number here.*
