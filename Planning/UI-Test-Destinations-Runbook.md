@@ -455,12 +455,12 @@ This row moved because #1835's test holds under 27.0:
 - **The one failure is `testDismissBarRendersInTheYearRangePopover`,** at its last assertion,
   "Tapping the popover's Done left the keyboard up". It failed the same way in every suite run of
   2026-11-01, where the app's log showed the popover's own keyboard going down about 8 s after Done,
-  against the test's 5-s wait.
+  against the test's 5-s wait (#2024).
 - **The control.** The same branch, that test alone on the iPad mini under **26.5** (`0093684B`):
   passed, 1 of 1. So it follows the 27.0 runtime, and it is not the tab shell's banner.
 - **What the run's log showed.** The app logs its banner's room (category `TabShellBanner`, L27), and
   it logged no mismatch through the run's keyboard cycles: 11 first measurements, every band 0.0 pt.
-- **Until the popover's keyboard is placed,** read that one test on 26.5 too.
+- **Until #2024 is placed,** read that one test on 26.5 too. #2024 is the popover's late keyboard, filed on the owner's word.
 
 **Until L27: run them on `OS=26.5`. #1620 no longer holds them there; `KeyboardDismissBarReachTests` does.**
 Measured on 2026-11-01 on this Mac, now Xcode 27.2 (27B52) and macOS 27.2 with the same iOS 27.0
