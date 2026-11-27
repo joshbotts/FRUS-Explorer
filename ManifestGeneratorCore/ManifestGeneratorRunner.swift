@@ -16,7 +16,8 @@ import TEIHeaderKit
 /// 2. For each volume, stream-fetch its `<teiHeader>` (`TEIHeaderFetcher`)
 /// 3. Parse the header (`TEIHeaderParser`)
 /// 4. Assemble a `VolumeManifestEntry` from parsed header + GitHub metadata
-/// 5. Write all entries to `manifest.json` (`ManifestWriter`)
+/// 5. Write all entries to `manifest.json` (`ManifestWriter`), only when every volume of the
+///    listing has one (#2022): otherwise write nothing, name each volume that has none, and exit 1
 ///
 /// Fetching runs concurrently with a configurable concurrency limit to respect
 /// GitHub API rate limits (default: 8 concurrent requests).
@@ -52,6 +53,10 @@ import TEIHeaderKit
 ///         symlinks recorded each link's own 51–65 bytes (552 volumes in the run that found it)
 ///         while reporting 0 parse errors. The summary's "Date-updated" count, which counts ANY
 ///         changed entry, is relabelled "Changed".
+///   1.4 — #2022 (row L61): the online run writes nothing and exits 1, naming each volume, when
+///         any volume of the listing did not reach the manifest, where it wrote the rest and
+///         exited 0; a 429 or a 5xx is tried again after 2, 4 and 8 seconds first. The pass is
+///         `runOnline`, its listing, header fetch and pause handed in, so a test drives it
 public struct ManifestGeneratorRunner {
 
     /// The publication date to record: the printed year if the volume states one, else the date
@@ -129,12 +134,60 @@ public struct ManifestGeneratorRunner {
     /// Default number of concurrent volume fetches.
     public static let defaultConcurrencyLimit = 8
 
+    /// The pauses before a header fetch that answered a 429 or a 5xx is tried again: 2, 4 and 8
+    /// seconds, so four tries in all before its volume counts as failed (#2022, the owner's "retry
+    /// a 429 or a 5xx a few times, with a pause"). L28's six 503s came from raw.githubusercontent.com
+    /// at eight fetches at a time, and a run a few minutes later had none.
+    static let retryPauses: [Duration] = [.seconds(2), .seconds(4), .seconds(8)]
+
+    /// A volume of the listing that did not reach the manifest, and why.
+    public struct VolumeFailure: Error, Sendable, Equatable, CustomStringConvertible {
+        /// The volume's file name in the listing, `frus1961-63v20.xml`.
+        public let filename: String
+        /// What stopped it: the fetch's or the parse's error, or the listing entry's defect.
+        public let reason: String
+
+        /// The file name and the reason, as the refusal lists them.
+        public var description: String { "\(filename): \(reason)" }
+    }
+
+    /// Everything that stops an online run, each before `manifest.json` is written.
+    public enum RunError: Error, CustomStringConvertible {
+        /// The GitHub listing of `volumes/` could not be read.
+        case listingFailed(String)
+        /// Volumes of the listing did not reach the manifest, so it was not written (#2022): how
+        /// many the listing named, how many reached it, and each that did not, by file name.
+        case incompleteListing(listed: Int, reached: Int, failures: [VolumeFailure], outputPath: String)
+        /// The manifest could not be written.
+        case writeFailed(String)
+
+        /// What the run prints before it exits 1.
+        public var description: String {
+            switch self {
+            case .listingFailed(let error):
+                return "Failed to fetch GitHub listing: \(error)"
+            case .incompleteListing(let listed, let reached, let failures, let outputPath):
+                return "\(listed - reached) of the listing's \(listed) volumes did not reach the "
+                    + "manifest, so nothing was written to \(outputPath) and the file there is as it "
+                    + "was. Every generator after this one takes the manifest as the set of volumes "
+                    + "that ship, and a file without these would take them out of the catalogue "
+                    + "(#2022). A 429 or a 5xx was tried \(retryPauses.count + 1) times before it "
+                    + "counted; run again."
+                    + failures.map { "\n  \($0)" }.joined()
+            case .writeFailed(let error):
+                return "Failed to write manifest: \(error)"
+            }
+        }
+    }
+
     private init() {}
 
     /// Runs the manifest generation pipeline.
     ///
     /// When `localVolumesDirectory` is non-nil, runs the offline **local overlay mode**
-    /// (see the type doc-comment); otherwise runs the full GitHub fetch pipeline.
+    /// (see the type doc-comment); otherwise runs the GitHub pipeline,
+    /// ``runOnline(outputPath:concurrencyLimit:listing:fetchHeader:pause:)``, over the live
+    /// listing and headers, and exits 1 when it throws.
     ///
     /// - Parameters:
     ///   - outputPath: Where to write `manifest.json`. In overlay mode this is also read as
@@ -152,45 +205,84 @@ public struct ManifestGeneratorRunner {
             runLocalOverlay(outputPath: outputPath, volumesDirectory: localDir)
             return
         }
+        do {
+            try await runOnline(
+                outputPath: outputPath,
+                concurrencyLimit: concurrencyLimit,
+                listing: { try await GitHubClient().fetchVolumeEntries() },
+                fetchHeader: { url in try await TEIHeaderFetcher.fetch(from: url) },
+                pause: { duration in try? await Task.sleep(for: duration) })
+        } catch {
+            print("[ManifestGenerator] ✗ \(error)")
+            exit(1)
+        }
+    }
 
+    /// The GitHub pipeline, with its two network reads and its pause handed in, so a test can drive
+    /// the whole run over a listing and a host of its own.
+    ///
+    /// **It writes the manifest only when every volume of the listing reached it (#2022).** Until
+    /// row L61 a volume whose header fetch failed was logged, counted under `Errors:` and left out,
+    /// and the run wrote the rest, said so and exited 0: L28's rehearsal of the release runbook
+    /// (2026-11-26) lost six of 553 volumes that way, to HTTP 503, and every generator after this one
+    /// takes the manifest as the set of volumes that ship. A fetch that answers a 429 or a 5xx is
+    /// tried again after each of ``retryPauses`` first; a volume that still has no entry — its
+    /// fetch, its parse or its listing entry failed — throws ``RunError/incompleteListing(listed:reached:failures:outputPath:)``,
+    /// naming each, before anything is written.
+    ///
+    /// - Parameters:
+    ///   - outputPath: Where to write `manifest.json`.
+    ///   - concurrencyLimit: Maximum simultaneous volume fetches.
+    ///   - listing: Reads the listing of `volumes/` (`GitHubClient.fetchVolumeEntries()`).
+    ///   - fetchHeader: Reads one volume's `<teiHeader>` from its download URL
+    ///     (`TEIHeaderFetcher.fetch(from:session:)`).
+    ///   - pause: Waits before a fetch is tried again (`Task.sleep(for:)`).
+    /// - Throws: ``RunError``.
+    static func runOnline(
+        outputPath: String,
+        concurrencyLimit: Int,
+        listing: () async throws -> [GitHubVolumeEntry],
+        fetchHeader: @escaping @Sendable (URL) async throws -> Data,
+        pause: @escaping @Sendable (Duration) async -> Void
+    ) async throws {
         print("[ManifestGenerator] Starting manifest generation…")
-
-        let client = GitHubClient()
 
         // 1. Fetch GitHub directory listing.
         let githubEntries: [GitHubVolumeEntry]
         do {
-            githubEntries = try await client.fetchVolumeEntries()
+            githubEntries = try await listing()
         } catch {
-            print("[ManifestGenerator] ✗ Failed to fetch GitHub listing: \(error)")
-            exit(1)
+            throw RunError.listingFailed(String(describing: error))
         }
 
         print("[ManifestGenerator] \(githubEntries.count) volumes to process.")
 
         // 2-4. Concurrently fetch + parse each volume's teiHeader.
         var manifestEntries: [VolumeManifestEntry] = []
-        var errorCount = 0
+        var failures: [VolumeFailure] = []
 
-        await withTaskGroup(of: VolumeManifestEntry?.self) { group in
+        await withTaskGroup(of: Result<VolumeManifestEntry, VolumeFailure>.self) { group in
             var inFlight = 0
             var iterator = githubEntries.makeIterator()
 
             // Seed the group with up to `concurrencyLimit` tasks.
             while inFlight < concurrencyLimit, let entry = iterator.next() {
-                group.addTask { await process(githubEntry: entry) }
+                group.addTask {
+                    await process(githubEntry: entry, fetchHeader: fetchHeader, pause: pause)
+                }
                 inFlight += 1
             }
 
             // As tasks complete, collect results and add more work.
             for await result in group {
-                if let entry = result {
-                    manifestEntries.append(entry)
-                } else {
-                    errorCount += 1
+                switch result {
+                case .success(let entry): manifestEntries.append(entry)
+                case .failure(let failure): failures.append(failure)
                 }
                 if let next = iterator.next() {
-                    group.addTask { await process(githubEntry: next) }
+                    group.addTask {
+                        await process(githubEntry: next, fetchHeader: fetchHeader, pause: pause)
+                    }
                 }
             }
         }
@@ -204,16 +296,24 @@ public struct ManifestGeneratorRunner {
           Processed:    \(manifestEntries.count)
           With tags:    \(withTags)
           Without tags: \(withoutTags) (valid — volumes may predate the tagging system)
-          Errors:       \(errorCount)
+          Errors:       \(failures.count)
         """)
+
+        // A run that lost a volume writes nothing, rather than a catalogue without it (#2022). The
+        // count is checked as well as the failures, so a volume left out by any other road refuses
+        // too.
+        guard failures.isEmpty, manifestEntries.count == githubEntries.count else {
+            throw RunError.incompleteListing(
+                listed: githubEntries.count, reached: manifestEntries.count,
+                failures: failures.sorted { $0.filename < $1.filename }, outputPath: outputPath)
+        }
 
         do {
             try ManifestWriter.write(entries: manifestEntries, to: outputPath)
-            print("[ManifestGenerator] ✓ manifest.json written to \(outputPath)")
         } catch {
-            print("[ManifestGenerator] ✗ Failed to write manifest: \(error)")
-            exit(1)
+            throw RunError.writeFailed(String(describing: error))
         }
+        print("[ManifestGenerator] ✓ manifest.json written to \(outputPath)")
     }
 
     // MARK: - Local Overlay Mode
@@ -353,26 +453,72 @@ public struct ManifestGeneratorRunner {
 
     // MARK: - Per-Volume Processing
 
-    /// Fetches and parses a single volume's teiHeader. Returns nil on failure (logged).
-    private static func process(githubEntry: GitHubVolumeEntry) async -> VolumeManifestEntry? {
+    /// Reads one volume's header, trying it again after each of ``retryPauses`` while it answers a
+    /// 429 or a 5xx (`TEIHeaderFetcher.isWorthRetrying(_:)`, #2022). Any other failure counts at
+    /// once: a 404 or a header that is not there answers the same way every time.
+    ///
+    /// - Parameters:
+    ///   - url: The volume's download URL.
+    ///   - name: The volume's file name, for the log and the failure.
+    ///   - fetch: Reads a `<teiHeader>` from a download URL.
+    ///   - pause: Waits before a fetch is tried again.
+    /// - Returns: The header's bytes, or the failure naming the last attempt's error.
+    private static func readHeader(
+        from url: URL,
+        name: String,
+        fetch: @Sendable (URL) async throws -> Data,
+        pause: @Sendable (Duration) async -> Void
+    ) async -> Result<Data, VolumeFailure> {
+        var attempt = 1
+        while true {
+            do {
+                return .success(try await fetch(url))
+            } catch {
+                guard TEIHeaderFetcher.isWorthRetrying(error), attempt <= retryPauses.count else {
+                    let tries = attempt == 1 ? "" : " on all \(attempt) attempts"
+                    print("[ManifestGenerator] ✗ Fetch failed for \(name)\(tries): \(error)")
+                    return .failure(VolumeFailure(filename: name, reason: "fetch failed\(tries): \(error)"))
+                }
+                let wait = retryPauses[attempt - 1]
+                print("[ManifestGenerator] ⚠︎ \(name): \(error) on attempt \(attempt) of "
+                    + "\(retryPauses.count + 1); trying again in \(wait)")
+                await pause(wait)
+                attempt += 1
+            }
+        }
+    }
+
+    /// Fetches and parses a single volume's teiHeader: its manifest entry, or why it has none
+    /// (logged as well).
+    ///
+    /// - Parameters:
+    ///   - githubEntry: The volume's entry in the listing.
+    ///   - fetchHeader: Reads a `<teiHeader>` from a download URL.
+    ///   - pause: Waits before a fetch is tried again.
+    /// - Returns: The entry, or the failure the refusal names.
+    private static func process(
+        githubEntry: GitHubVolumeEntry,
+        fetchHeader: @Sendable (URL) async throws -> Data,
+        pause: @Sendable (Duration) async -> Void
+    ) async -> Result<VolumeManifestEntry, VolumeFailure> {
         guard let url = URL(string: githubEntry.downloadUrl) else {
             print("[ManifestGenerator] ✗ Invalid download URL for \(githubEntry.name)")
-            return nil
+            return .failure(VolumeFailure(
+                filename: githubEntry.name, reason: "invalid download URL \(githubEntry.downloadUrl)"))
         }
 
         // Parse filename → volumeId + subseries.
         guard let parsed = VolumeIDParser.parse(filename: githubEntry.name) else {
             print("[ManifestGenerator] ✗ Unrecognised filename pattern: \(githubEntry.name)")
-            return nil
+            return .failure(VolumeFailure(
+                filename: githubEntry.name, reason: "unrecognised filename pattern"))
         }
 
-        // Fetch the teiHeader bytes.
+        // Fetch the teiHeader bytes, a 429 or a 5xx tried again (#2022).
         let headerData: Data
-        do {
-            headerData = try await TEIHeaderFetcher.fetch(from: url)
-        } catch {
-            print("[ManifestGenerator] ✗ Fetch failed for \(githubEntry.name): \(error)")
-            return nil
+        switch await readHeader(from: url, name: githubEntry.name, fetch: fetchHeader, pause: pause) {
+        case .success(let data): headerData = data
+        case .failure(let failure): return .failure(failure)
         }
 
         // Parse the header.
@@ -381,14 +527,14 @@ public struct ManifestGeneratorRunner {
             header = try TEIHeaderParser.parse(headerData)
         } catch {
             print("[ManifestGenerator] ✗ Parse failed for \(githubEntry.name): \(error)")
-            return nil
+            return .failure(VolumeFailure(filename: githubEntry.name, reason: "parse failed: \(error)"))
         }
 
         #if DEBUG
         print("[ManifestGenerator] ✓ \(parsed.volumeId) — \"\(header.title.prefix(60))…\" tags=\(header.tags.count)")
         #endif
 
-        return VolumeManifestEntry(
+        return .success(VolumeManifestEntry(
             volumeId: parsed.volumeId,
             filename: githubEntry.name,
             subseries: parsed.subseries,
@@ -403,6 +549,6 @@ public struct ManifestGeneratorRunner {
             generalEditor: header.generalEditor,
             sizeBytes: githubEntry.size,
             tags: header.tags
-        )
+        ))
     }
 }

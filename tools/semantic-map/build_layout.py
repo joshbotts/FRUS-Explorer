@@ -9,8 +9,9 @@ as V-4's critical path — the renderer was never the problem, and PCA-2D is a f
     .cache/semantic-map-venv/bin/python tools/semantic-map/build_layout.py
 
 Environment:
-  POOL_DIR    directory holding doc_f32_768.npy + doc_keys.jsonl, as written by
-              tools/semantic-harvest/corpus-gates/pool_docs.py   (default ~/frus-semantic-gates/pool)
+  POOL_DIR    directory holding doc_f32_768.npy + doc_keys.jsonl + pool_source.json, as written by
+              tools/semantic-harvest/corpus-gates/pool_docs.py   (default ~/frus-semantic-gates/pool,
+              the 300m's pool of 2026-10-10, which names no store and is refused: name it)
   OUT_DIR     where to write layout.bin + layout-meta.json       (default Planning/semantic-map)
   DIMS        width of the vectors to project                    (default 256: the width the shipped
               map was projected from, recorded as projectedFromDims. NOT the vectors' shipping width,
@@ -27,6 +28,16 @@ implemented twice — once in `pool_docs.py` and once in `SemanticVectorsGenerat
 pinned against each other by measurement. A third implementation here would be a third thing that can
 drift. The matrix's SHA-256 is recorded in provenance so the layout can always be traced to the
 vectors it describes.
+
+Which store those vectors came from is recorded too (#2023), because the matrix's SHA-256 cannot
+say it: EmbeddingGemma 300m's store and EmbeddingGemma 2's both hold 314,616 documents of 768
+dimensions, and nothing downstream told their layouts apart. The pool's pool_source.json names its
+store and binds it to the matrix by SHA-256; this script refuses a pool without one, or one whose
+matrix is not the one it names, and copies the store into layout-meta.json as `store`, beside
+`layoutSHA256`, the SHA-256 of the layout.bin written with it. SemanticVectorsGenerator refuses,
+before it writes anything, a layout whose `store` is not the STORE it packs, a layout.bin that is
+not the file its metadata describes (a gitignored layout.bin can outlive the metadata committed
+beside it), and a layout with neither field, which is one written before #2023.
 
 What this deliberately does NOT do: cluster *labels*. The design asks for c-TF-IDF labels "through
 the WordCloudKit tokenizer and stopword stack, so labels speak the same vocabulary as every cloud
@@ -71,12 +82,27 @@ def sha256_file(path):
 def main():
     matrix_path = os.path.join(POOL_DIR, "doc_f32_768.npy")
     keys_path = os.path.join(POOL_DIR, "doc_keys.jsonl")
+    source_path = os.path.join(POOL_DIR, "pool_source.json")
     for path in (matrix_path, keys_path):
         if not os.path.exists(path):
             sys.exit("missing input: %s (run tools/semantic-harvest/corpus-gates/pool_docs.py)" % path)
+    if not os.path.exists(source_path):
+        sys.exit("missing input: %s — this pool names no store, so its layout could not say which "
+                 "vectors it was laid out over (#2023). Run tools/semantic-harvest/corpus-gates/"
+                 "pool_docs.py with STORE set to the store the map is packed from, into an "
+                 "ASSESS_DIR of its own, and pass that pool as POOL_DIR" % source_path)
+    with open(source_path) as handle:
+        source = json.load(handle)
 
-    log("hashing input matrix (traceability, not integrity)")
+    log("hashing input matrix (traceability, and the pool's own record of it)")
     matrix_digest = sha256_file(matrix_path)
+    if source.get("doc_f32_768_sha256") != matrix_digest:
+        sys.exit("%s is not the matrix pool_source.json describes (SHA-256 %s..., recorded %s...): the "
+                 "pool was rewritten by a run that did not finish, or by hand. Run pool_docs.py again"
+                 % (matrix_path, matrix_digest[:12], str(source.get("doc_f32_768_sha256"))[:12]))
+    log("pool made from %s | model %s | GGUF %s..."
+        % (source["store"], source["run_manifest"]["model"],
+           source["run_manifest"]["model_file_sha256"][:12]))
 
     vectors = np.load(matrix_path, mmap_mode="r")
     count = vectors.shape[0]
@@ -165,6 +191,10 @@ def main():
         "firstKey": first_key,
         "sourceMatrix": os.path.basename(matrix_path),
         "sourceMatrixSHA256": matrix_digest,
+        # #2023: the store the pool came from, in its run-manifest's own field names, which
+        # SemanticVectorsGenerator compares with the STORE it packs, and the file this describes.
+        "store": dict(source["run_manifest"], path=source["store"]),
+        "layoutSHA256": sha256_file(layout_path),
         "projectedFromDims": DIMS,
         "seed": SEED,
         "pca": {"components": 50, "explainedVariancePercent": round(variance, 2)},
