@@ -1511,22 +1511,9 @@ final class MacSearchViewModel {
         filterVM.selectedSubseriesIds = scope.subseries
         filterVM.selectedVolumeIds    = scope.volumes
 
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd"
-        fmt.locale = Locale(identifier: "en_US_POSIX")
-
         filterVM.facetYearKeys = parameters.yearKeys
-        if let range = parameters.dateRange {
-            filterVM.dateRangeEnabled = true
-            if let earliest = range.earliest, let d = fmt.date(from: earliest) {
-                filterVM.dateRangeStart = d
-            }
-            if let latest = range.latest, let d = fmt.date(from: latest) {
-                filterVM.dateRangeEnd = d
-            }
-        } else {
-            filterVM.dateRangeEnabled = false
-        }
+        // Read by the filter view model, which the unit target can reach (#2033).
+        filterVM.applyDateRange(parameters.dateRange)
 
         filterVM.phrase             = parameters.phrase ?? ""
         filterVM.prefixWildcard     = parameters.prefixWildcard ?? ""

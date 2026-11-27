@@ -807,6 +807,60 @@ struct SearchDateFilterZoneTests {
         #expect(vm.searchParameters.dateRange == DateRange(earliest: "1861-01-01", latest: "1992-12-31"))
         #expect(dateChip(vm) == "1861-01-01 to 1992-12-31")
     }
+
+    // MARK: A day whose midnight a change of clocks skips (#2033, L62)
+
+    /// The Mac's Search window mirrors a hand-off's or a recalled search's days into Filters' view model
+    /// (`MacSearchViewModel.mirrorParameters(into:)`, which calls `applyDateRange(_:)`), and the unit target runs on iOS,
+    /// so it reads the Mac's read here.
+    @Test("The Mac's Filters read a day whose midnight a change of clocks skips as that day",
+          arguments: SkippedMidnightDay.all)
+    func theMacsFiltersReadASkippedMidnight(_ skipped: SkippedMidnightDay) throws {
+        let zone = try skipped.zone()
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // The dates the popover held before: a day of another year, so a date kept is a date seen.
+        vm.dateRangeStart = try Self.date(1990, 6, 15, in: zone)
+        vm.dateRangeEnd = try Self.date(1990, 6, 15, in: zone)
+        vm.applyDateRange(DateRange(earliest: skipped.day, latest: skipped.day))
+        #expect(vm.dateRangeEnabled)
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == skipped.day,
+                "From kept \(Self.shownDay(vm.dateRangeStart, in: zone)) for \(skipped.testDescription)")
+        #expect(Self.shownDay(vm.dateRangeEnd, in: zone) == skipped.day,
+                "To kept \(Self.shownDay(vm.dateRangeEnd, in: zone)) for \(skipped.testDescription)")
+        #expect(vm.searchParameters.dateRange == DateRange(earliest: skipped.day, latest: skipped.day))
+    }
+
+    /// iPhone and iPad read a hand-off's and a saved search's days with `filterDate(ofDay:in:)` since #2013, which takes
+    /// the day's noon back to its start: L62's check that they do not meet #2033.
+    @Test("On iPhone and iPad a hand-off's or a saved search's day whose midnight is skipped is that day",
+          arguments: SkippedMidnightDay.all)
+    func aHandOffOrASavedSearchOnASkippedMidnight(_ skipped: SkippedMidnightDay) throws {
+        let zone = try skipped.zone()
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let range = DateRange(earliest: skipped.day, latest: skipped.day)
+        vm.applyParameters(SearchParameters(dateRange: range))
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == skipped.day, "a hand-off's From shows another day")
+        #expect(Self.shownDay(vm.dateRangeEnd, in: zone) == skipped.day, "a hand-off's To shows another day")
+        #expect(vm.searchParameters.dateRange == range)
+        let saved = SavedSearch(name: "Skipped", parameters: SearchParameters(keywords: "treaty", dateRange: range))
+        vm.applyParameters(saved.searchParameters)
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == skipped.day, "a saved search's From shows another day")
+        #expect(vm.searchParameters.dateRange == range)
+    }
+
+    /// 1 January 1914 began at 00:06:28 in São Paulo, when the zone left its local mean time: a facet's year starts on it.
+    @Test("On iPhone and iPad a facet's year whose first midnight is skipped starts on its first day")
+    func aFacetsYearWhoseFirstMidnightIsSkipped() throws {
+        let zone = try #require(TimeZone(identifier: "America/Sao_Paulo"))
+        let (dir, vm) = try makeViewModel(in: zone)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.applyFacetNarrowing(.year("1914"))
+        #expect(Self.shownDay(vm.dateRangeStart, in: zone) == "1914-01-01")
+        #expect(vm.searchParameters.dateRange == DateRange(earliest: "1914-01-01", latest: "1914-12-31"))
+        #expect(vm.dateRangeYears?.start == 1914)
+    }
 }
 
 // MARK: - EmptyLibraryNoticeTests (#1918, HCD-4 and A11Y-2)

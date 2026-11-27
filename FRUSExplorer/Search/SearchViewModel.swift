@@ -2878,6 +2878,31 @@ final class SearchViewModel {
 
     // MARK: - The Date Filter's Days (#2013)
 
+    /// Sets the date filter to the days `range` names, as a hand-off or a recalled search carries them, or turns it off
+    /// for `nil`. A day that reads as no date leaves its picker's date as it was.
+    ///
+    /// The Mac's Search window mirrors its parameters into Filters' view model through this
+    /// (`MacSearchViewModel.mirrorParameters(into:)`), so the unit target, which runs on iOS, reads what the Mac reads.
+    ///
+    /// - Parameter range: The filter's two days, or `nil` for no date filter.
+    func applyDateRange(_ range: DateRange?) {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone = dateRangeTimeZone
+        if let range {
+            dateRangeEnabled = true
+            if let earliest = range.earliest, let d = fmt.date(from: earliest) {
+                dateRangeStart = d
+            }
+            if let latest = range.latest, let d = fmt.date(from: latest) {
+                dateRangeEnd = d
+            }
+        } else {
+            dateRangeEnabled = false
+        }
+    }
+
     /// The `yyyy-MM-dd` day `date` falls on in `timeZone`: the day a date picker in that zone shows it on.
     ///
     /// The date filter writes its two days with this, in ``dateRangeTimeZone`` (``searchParameters``, the *Narrowed by*

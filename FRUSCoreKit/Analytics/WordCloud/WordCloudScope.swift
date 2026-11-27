@@ -164,32 +164,33 @@ public enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
     /// localized display formatters). A UTC formatter here shifted the bounds by
     /// one day for any non-UTC user and walked the range a day earlier on each
     /// Cloud → Chronology round trip.
-    private static func isoFormatter() -> DateFormatter {
+    private static func isoFormatter(in timeZone: TimeZone) -> DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
+        f.timeZone = timeZone
         return f
     }
 
     /// The `yyyy-MM-dd` day string (in the user's local calendar) for a date, for
     /// building a `.dateRange` scope.
-    public static func isoDay(from date: Date) -> String {
-        isoFormatter().string(from: date)
+    public static func isoDay(from date: Date, in timeZone: TimeZone = .current) -> String {
+        isoFormatter(in: timeZone).string(from: date)
     }
 
     /// Parses a `yyyy-MM-dd` day string back to a `Date` (local start of that day).
-    public static func day(fromISO iso: String) -> Date? {
-        isoFormatter().date(from: iso)
+    public static func day(fromISO iso: String, in timeZone: TimeZone = .current) -> Date? {
+        isoFormatter(in: timeZone).date(from: iso)
     }
 
     /// A readable title for a date-range scope, e.g. "Feb 1969 – Dec 1969".
-    public static func dateRangeTitle(startISO: String, endISO: String) -> String {
+    public static func dateRangeTitle(startISO: String, endISO: String, in timeZone: TimeZone = .current) -> String {
         let display = DateFormatter()
         display.locale = .autoupdatingCurrent
+        display.timeZone = timeZone
         display.setLocalizedDateFormatFromTemplate("MMM d, yyyy")
-        let start = day(fromISO: startISO).map(display.string(from:)) ?? startISO
-        let end = day(fromISO: endISO).map(display.string(from:)) ?? endISO
+        let start = day(fromISO: startISO, in: timeZone).map(display.string(from:)) ?? startISO
+        let end = day(fromISO: endISO, in: timeZone).map(display.string(from:)) ?? endISO
         return String(format: String(localized: "wordcloud.scope.dateRange.title %@ %@",
                                       defaultValue: "%@ – %@"), start, end)
     }
