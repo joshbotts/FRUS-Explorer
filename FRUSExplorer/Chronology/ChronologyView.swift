@@ -46,6 +46,10 @@ import Charts
 ///          screen loaded (`ChronologyViewModel.loadedRange`), and neither is offered while a load runs.
 ///          Search in this range wrote a local midnight in UTC, a day early at both ends east of UTC,
 ///          and both read the pickers. A UI test's range opens the screen (`UITestBrowseSeams.chronologyRange`)
+///   1.8 — L56: Save as Working Corpus… saves every document whose dates overlap the range the screen
+///          shows, after a question that says what it holds, and a toast says what it did. It and the two
+///          hand-offs are the toolbar's This Range menu, which takes Word Cloud for this range's place, so
+///          the bar keeps its five items and Done
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -79,6 +83,20 @@ struct ChronologyView: View {
     /// Active legend filter: a volume ID (or `chronologyOtherSeriesKey`) restricting the
     /// list to documents from that volume. `nil` = show all.
     @State private var selectedSeries: String? = nil
+
+    /// The range's save as a working corpus while its question is asked (L56).
+    @State private var corpusSaveRequest: WorkingCorpusSaveRequest? = nil
+    /// What the save did, or why there was nothing to ask, for the toast.
+    @State private var saveOutcome: String? = nil
+    /// Whether the save is reading the range, during which it is not offered again.
+    @State private var isPreparingSave = false
+
+    /// Whether the two hand-offs, Search in this range and Word Cloud for this range, are offered:
+    /// once a load holds a document dated inside the range, as the summary line's link is drawn. The
+    /// save asks only that the range hold a document of any kind (L56).
+    private var rangeHandOffsAvailable: Bool {
+        vm.hasLoaded && !vm.isLoading && !vm.groups.isEmpty
+    }
 
     /// Global default colored-series count, mirrored from Display settings.
     @AppStorage(ChartSeriesPalette.storageKey) private var defaultSeriesCount = ChartSeriesPalette.defaultCount
@@ -156,6 +174,10 @@ struct ChronologyView: View {
             guard let params = appState.consumeHandoff(\.pendingChronology, for: .macChronology) else { return }
             apply(params)
         }
+        // L56: the question before the range is saved as a working corpus, and the toast that says
+        // what the save did, as the cross-reference graph asks and says (#1990).
+        .workingCorpusSave($corpusSaveRequest, outcome: $saveOutcome)
+        .transientToast($saveOutcome)
     }
 
     // MARK: - Defaults & handoff
@@ -1117,19 +1139,47 @@ struct ChronologyView: View {
             .help(String(localized: "chronology.colors.help.v2",
                          defaultValue: "How many colors the chart uses; with more volumes, the last is a gray “Other volumes”"))
         }
+        // L56: the range's three actions, in one menu. Measured on an iPhone 17 under iOS 27.0
+        // (2026-11-27), a sixth item in this bar moved Done and About Chronology into its overflow
+        // menu at the default text size, so the save and the word cloud, once an item of its own,
+        // are items here, with Search in this range, which the summary line also offers. A named
+        // `Label`, so a bar too narrow for it lists the menu by name in its overflow (R-8).
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                openWordCloudForRange()
-            } label: {
-                Label {
-                    Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
-                } icon: {
-                    Image(systemName: WordCloudGlyph.symbol)
+            Menu {
+                Button {
+                    searchInRange()
+                } label: {
+                    Label(String(localized: "chronology.searchRange", defaultValue: "Search in this range"),
+                          systemImage: "magnifyingglass")
                 }
+                .disabled(!rangeHandOffsAvailable)
+                Button {
+                    openWordCloudForRange()
+                } label: {
+                    Label {
+                        Text(String(localized: "chronology.wordcloud", defaultValue: "Word Cloud for this range"))
+                    } icon: {
+                        Image(systemName: WordCloudGlyph.symbol)
+                    }
+                }
+                .disabled(!rangeHandOffsAvailable)
+                .help(String(localized: "chronology.wordcloud.help",
+                             defaultValue: "Build a word cloud from the documents in the displayed date range"))
+                Button {
+                    saveRangeAsWorkingCorpus()
+                } label: {
+                    Label(String(localized: "chronology.saveCorpus", defaultValue: "Save as Working Corpus…"),
+                          systemImage: "tray.and.arrow.down")
+                }
+                .disabled(isPreparingSave)
+                .help(String(localized: "chronology.saveCorpus.help",
+                             defaultValue: "Save every document of the displayed date range as a working corpus"))
+            } label: {
+                Label(String(localized: "chronology.rangeMenu", defaultValue: "This Range"), systemImage: "calendar")
             }
-            .disabled(!vm.hasLoaded || vm.isLoading || vm.totalShown == 0)
-            .help(String(localized: "chronology.wordcloud.help",
-                         defaultValue: "Build a word cloud from the documents in the displayed date range"))
+            .disabled(!vm.hasLoaded || vm.isLoading || !vm.loadedRangeHoldsDocuments)
+            .help(String(localized: "chronology.rangeMenu.help",
+                         defaultValue: "Search in the displayed date range, build a word cloud from it, or save it as a working corpus"))
         }
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton(
@@ -1243,6 +1293,33 @@ struct ChronologyView: View {
         appState.openTab(.search, from: target)
         closeWindow(frontingHandOffTo: target)
         #endif
+    }
+
+    /// Asks to save every document of the range the screen shows as a working corpus (decisions 184
+    /// and 185, L56): those dated inside it, those whose dates extend beyond it and those that span
+    /// more than a year, cut at the last whole day that fits when the range holds more than a corpus
+    /// keeps. The question says what the save holds and the toast what it did, through the
+    /// cross-reference graph's helper (`View.workingCorpusSave(_:outcome:)`). The legend's filter does
+    /// not narrow it, and the question says so while one is on.
+    private func saveRangeAsWorkingCorpus() {
+        let legendFiltered = selectedSeries != nil
+        isPreparingSave = true
+        Task {
+            let plan = await vm.rangeSavePlan()
+            isPreparingSave = false
+            switch plan {
+            case .saves(let save)?:
+                corpusSaveRequest = WorkingCorpusSaveRequest(
+                    capture: save.workingCorpus(stamp: WorkingCorpusCapture.stamp(for: Date())),
+                    notes: save.notes(legendFiltered: legendFiltered))
+            case .firstDayOverLimit(let day, let count)?:
+                saveOutcome = ChronologyRangeSave.firstDayOverLimitSentence(day: day, count: count)
+            case .empty?:
+                saveOutcome = ChronologyRangeSave.nothingToSave
+            case nil:
+                saveOutcome = WorkingCorpusCapture.outcome(savedName: nil)
+            }
+        }
     }
 }
 

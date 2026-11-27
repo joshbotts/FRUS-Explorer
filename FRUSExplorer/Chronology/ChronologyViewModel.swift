@@ -52,6 +52,8 @@ import Observation
 ///   1.11 — 2026-11-26 (#1971): the magnifier's two forwarders name the kit's calls as they now read, each
 ///          with a `locale` the app leaves at the reader's own, which names a year's months; the calls are unchanged
 ///   1.12 — 2026-11-27 (#2012, L56): `loadedRange`, the two days the screen loaded, which both hand-offs pass on
+///   1.13 — 2026-11-27 (L56): `rangeSavePlan()`, what a save of the loaded range as a working corpus does, and
+///          `loadedRangeHoldsDocuments`, when it is offered
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -102,6 +104,12 @@ final class ChronologyViewModel {
     var loadedRange: DateRange? {
         guard !loadedStartISO.isEmpty, !loadedEndISO.isEmpty else { return nil }
         return DateRange(earliest: loadedStartISO, latest: loadedEndISO)
+    }
+
+    /// Whether the loaded range holds a document of any of the three kinds, which is when its save as
+    /// a working corpus is offered (L56). The hand-offs need one dated inside it.
+    var loadedRangeHoldsDocuments: Bool {
+        !groups.isEmpty || !overflowRows.isEmpty || !spanningRows.isEmpty
     }
 
     /// Per-bucket, per-volume counts backing the distribution chart (placed docs only).
@@ -268,6 +276,30 @@ final class ChronologyViewModel {
             chartShowsFullDistribution = false
             aggregatedMagnifierBars = [:]
             hasLoaded = true
+        }
+    }
+
+    /// What a save of the loaded range as a working corpus does (decisions 184 and 185, L56): every
+    /// document whose dates overlap it, read by `IndexingPipeline.documentDatesInDateRange(_:)`,
+    /// which the list's limit does not cut, through the kit's rule
+    /// (`ChronologyRangeSave.plan(entries:startISO:endISO:limit:)`), which cuts a range over the
+    /// record's budget at the last whole day that fits. The rule runs off the main actor, since a
+    /// range of the whole series reads every dated document. `nil` before a load, or when the read
+    /// fails.
+    func rangeSavePlan() async -> ChronologyRangeSave.Plan? {
+        guard let pipeline, loadedRange != nil else { return nil }
+        let startISO = loadedStartISO
+        let endISO = loadedEndISO
+        do {
+            let entries = try await pipeline.documentDatesInDateRange(DateRange(earliest: startISO, latest: endISO))
+            return await Task.detached(priority: .userInitiated) {
+                ChronologyRangeSave.plan(entries: entries, startISO: startISO, endISO: endISO)
+            }.value
+        } catch {
+            #if DEBUG
+            print("[ChronologyViewModel] The range's documents could not be read for its save: \(error)")
+            #endif
+            return nil
         }
     }
 

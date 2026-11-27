@@ -50,7 +50,26 @@ enum ChronologyRangeFixture {
         if let zone { app.launchEnvironment["TZ"] = zone }
         app.launchArguments = UITestLaunch.arguments(contentSizeCategory: contentSizeCategory)
         app.launch()
+        closeTheIndexingGuideIfItOpens(in: app)
         return app
+    }
+
+    /// Closes the while-indexing guide when it opens: a queue of volumes indexing opens it over the screen, which a
+    /// fresh install's first launch is (measured on a simulator made for this row, iPhone 17, iOS 27.0: it came up over
+    /// Browse as Analysis Tools opened, and the menu went with it). It pages with Next and closes with Start exploring.
+    /// It opens within moments of the launch or not at all, so the wait for it is short.
+    static func closeTheIndexingGuideIfItOpens(in app: XCUIApplication) {
+        let next = app.buttons["Next"].firstMatch
+        guard next.waitForExistence(timeout: 8) else { return }
+        let start = app.buttons["Start exploring"].firstMatch
+        var pages = 0
+        while !start.exists, next.exists, pages < 40 {
+            next.tap()
+            pages += 1
+        }
+        if start.waitForExistence(timeout: 5) { start.tap() }
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: start)
+        _ = XCTWaiter.wait(for: [gone], timeout: patience)
     }
 
     /// Opens Chronology from Browse's Analysis Tools and waits for the range to load: a sheet on an iPhone, a window on
@@ -200,5 +219,206 @@ final class ChronologyRangeHandOffTests: XCTestCase {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: month)
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: ChronologyRangeFixture.patience), .completed,
                        "From's calendar did not close", file: file, line: line)
+    }
+}
+
+// MARK: - ChronologyRangeSaveTests (L56)
+
+/// Chronology's **Save as Working Corpus…** asks what it holds, saves the range the screen shows, says what it did, and
+/// writes the record Browse ▸ Working Corpora lists (decisions 184 and 185, L56).
+///
+/// ## What it reads
+/// The question's message (the corpus's description, the coverage line every corpus shows, and the save's count of each
+/// kind), the toast the save shows after it, matched and never read since it goes by itself, and the corpus's row in
+/// Browse ▸ Working Corpora, a button named for the range and the count of documents the question said. The counts are read from the screen and checked against each other rather than pinned,
+/// since a simulator may hold real volumes of 1962 beside the fixture; on a simulator that holds the fixture alone they
+/// are six, all dated inside the range.
+///
+/// ## The bar's fit
+/// The save is an item of the toolbar's This Range menu, with the two hand-offs. Measured on an iPhone 17 under iOS 27.0
+/// at the default text size, a sixth item of its own moved Done and About Chronology into the bar's overflow menu, so the
+/// save's test requires Done in the bar, where a reader looks for it. Another test opens the screen at the largest
+/// accessibility size, where the bar folds even its five items into the overflow, keeps a screenshot, and reaches the
+/// save where the bar puts the menu.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`; nothing skips. The runbook's entry has the measurements.
+///
+/// Version history:
+///   1.0 — L56: initial implementation
+@MainActor
+final class ChronologyRangeSaveTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// The toolbar's menu of the range's actions.
+    private static let rangeMenuLabel = "This Range"
+    /// The save's item in that menu.
+    private static let saveLabel = "Save as Working Corpus…"
+    /// The question's title (`workingCorpus.capture.confirm.title`).
+    private static let questionTitle = "Save as Working Corpus?"
+    /// The toast's words before the corpus's name (`workingCorpus.capture.saved %@`).
+    private static let savedPrefix = "Saved as the working corpus “"
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    // MARK: Tests
+
+    /// The question says what the save holds, Save writes it, the toast names it, and Working Corpora lists it with its
+    /// documents.
+    func testTheRangeTheScreenShowsIsSavedAsAWorkingCorpus() throws {
+        app = ChronologyRangeFixture.launch(zone: nil)
+        try ChronologyRangeFixture.openChronology(in: app, through: navigator)
+        XCTAssertTrue(app.navigationBars.buttons["Done"].firstMatch.isHittable, """
+            Chronology's Done is not in its bar at the default text size, where the toolbar folded it into its overflow \
+            menu. Buttons on screen: \(ChronologyRangeFixture.buttonLabels(in: app))
+            """)
+        try tapSave()
+
+        let question = app.alerts[Self.questionTitle]
+        XCTAssertTrue(question.waitForExistence(timeout: ChronologyRangeFixture.patience), """
+            Save as Working Corpus… asked nothing. Buttons on screen: \(ChronologyRangeFixture.buttonLabels(in: app))
+            """)
+        let message = question.staticTexts.allElementsBoundByIndex.map(\.label).joined(separator: "\n")
+        XCTAssertTrue(message.contains("Chronology, Jan 1"), "The question names no range: \(message)")
+        XCTAssertTrue(message.contains("31, 1962: every document whose dates overlap the range."),
+                      "The question does not say what the save takes: \(message)")
+        let coverage = try XCTUnwrap(Self.coverage(in: message), "The question has no coverage line: \(message)")
+        XCTAssertEqual(coverage.indexed, coverage.total, "Chronology reads indexed documents alone: \(message)")
+        XCTAssertGreaterThanOrEqual(coverage.total, 6, "The range holds the fixture's six documents: \(message)")
+        XCTAssertEqual(Self.kindsCounted(in: message), coverage.total,
+                       "The save's kinds do not add up to what it holds: \(message)")
+        question.buttons["Save"].tap()
+
+        // The toast names the corpus for its range. It goes by itself after 2.6 s, so it is matched, never read: on an
+        // iPad it had gone by the time its label was asked for.
+        let named = "Chronology, Jan 1"
+        let toast = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", Self.savedPrefix + named))
+            .firstMatch
+        XCTAssertTrue(toast.waitForExistence(timeout: ChronologyRangeFixture.patience), """
+            The save said nothing after it, or named the corpus for another range. Texts on screen: \(texts())
+            """)
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: toast)
+        _ = XCTWaiter.wait(for: [gone], timeout: ChronologyRangeFixture.patience)
+
+        closeChronology()
+        openWorkingCorpora()
+        // A row of Browse's Working Corpora is a button named for the corpus and its count of documents.
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@",
+                                                   named, ", \(coverage.total) documents")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: ChronologyRangeFixture.patience), """
+            Working Corpora lists no corpus named for the range with \(coverage.total) documents. Buttons on screen: \
+            \(ChronologyRangeFixture.buttonLabels(in: app))
+            """)
+    }
+
+    /// At the largest accessibility text size the save is reached where the toolbar puts it, and asks its question.
+    func testTheSaveIsReachableAtTheLargestTextSize() throws {
+        app = ChronologyRangeFixture.launch(zone: nil,
+                                            contentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL")
+        try ChronologyRangeFixture.openChronology(in: app, through: navigator)
+        keepScreenshot(named: "Chronology at AX5")
+        try tapSave()
+        XCTAssertTrue(app.alerts[Self.questionTitle].waitForExistence(timeout: ChronologyRangeFixture.patience), """
+            At the largest text size Save as Working Corpus… asked nothing. Buttons on screen: \
+            \(ChronologyRangeFixture.buttonLabels(in: app))
+            """)
+        keepScreenshot(named: "The question at AX5")
+        app.alerts[Self.questionTitle].buttons["Cancel"].tap()
+    }
+
+    // MARK: Steps
+
+    /// Opens the toolbar's This Range menu, in the bar or in its overflow menu, whose control UIKit labels More, and taps
+    /// the save in it.
+    private func tapSave(file: StaticString = #filePath, line: UInt = #line) throws {
+        let inBar = app.buttons[Self.rangeMenuLabel].firstMatch
+        if inBar.waitForExistence(timeout: 10), inBar.isHittable {
+            inBar.tap()
+        } else {
+            let overflow = ["More", "Show More", "More Actions"].lazy
+                .map { self.app.navigationBars.buttons[$0].firstMatch }
+                .first { $0.exists }
+            let more = try XCTUnwrap(overflow, """
+                The toolbar shows no \(Self.rangeMenuLabel) and no overflow control. Buttons on screen: \
+                \(ChronologyRangeFixture.buttonLabels(in: app))
+                """, file: file, line: line)
+            keepScreenshot(named: "The toolbar, folded")
+            more.tap()
+            let inOverflow = app.buttons[Self.rangeMenuLabel].firstMatch
+            XCTAssertTrue(inOverflow.waitForExistence(timeout: 10), """
+                The toolbar's overflow holds no \(Self.rangeMenuLabel). Buttons on screen: \
+                \(ChronologyRangeFixture.buttonLabels(in: app))
+                """, file: file, line: line)
+            inOverflow.tap()
+        }
+        let item = app.buttons[Self.saveLabel].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 10), """
+            \(Self.rangeMenuLabel) holds no \(Self.saveLabel). Buttons on screen: \
+            \(ChronologyRangeFixture.buttonLabels(in: app))
+            """, file: file, line: line)
+        keepScreenshot(named: "The range's menu")
+        item.tap()
+    }
+
+    /// Closes Chronology with its Done: the sheet on an iPhone, the window on an iPad, which brings the main window
+    /// forward (#1368).
+    private func closeChronology(file: StaticString = #filePath, line: UInt = #line) {
+        let done = app.navigationBars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: ChronologyRangeFixture.patience), "Chronology has no Done",
+                      file: file, line: line)
+        done.tap()
+    }
+
+    /// Opens Browse ▸ Working Corpora, the list Browse's root names *Your sets*.
+    private func openWorkingCorpora(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15, file: file, line: line).tapped,
+                      "Could not open the Browse tab", file: file, line: line)
+        let corpora = app.buttons["browse.root.corporaRow"].firstMatch
+        XCTAssertTrue(corpora.waitForExistence(timeout: ChronologyRangeFixture.patience), """
+            Browse's root has no Working Corpora row. Buttons on screen: \(ChronologyRangeFixture.buttonLabels(in: app))
+            """, file: file, line: line)
+        corpora.tap()
+    }
+
+    /// The question's coverage line, "6 of 6 documents indexed on this device", as its two counts.
+    private static func coverage(in message: String) -> (indexed: Int, total: Int)? {
+        guard let match = message.firstMatch(of: /([\d,]+) of ([\d,]+) documents? indexed on this device/),
+              let indexed = Int(match.1.replacing(",", with: "")),
+              let total = Int(match.2.replacing(",", with: "")) else { return nil }
+        return (indexed, total)
+    }
+
+    /// The sum of the counts in the question's sentence of kinds, "6 are dated inside the range, …".
+    private static func kindsCounted(in message: String) -> Int? {
+        guard let sentence = message.split(separator: "\n").first(where: {
+            $0.contains("inside the range") || $0.contains("beyond the range") || $0.contains("more than a year")
+        }) else { return nil }
+        return sentence.matches(of: /([\d,]+) (?:is|are|extends?|spans?)\b/)
+            .compactMap { Int($0.1.replacing(",", with: "")) }
+            .reduce(0, +)
+    }
+
+    /// The labels of the first texts on screen, for a failure's message.
+    private func texts() -> String {
+        app.staticTexts.allElementsBoundByIndex.prefix(40).map(\.label).filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+
+    /// Keeps a screenshot of the screen in the result bundle.
+    private func keepScreenshot(named name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 }
