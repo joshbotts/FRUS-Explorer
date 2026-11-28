@@ -5384,12 +5384,53 @@ Row L56 of the plan of record from 2026-11-25 (decisions 184 to 186; #2012), on 
   - under iOS 27.0, closing that window after a save aborted the iPad simulator's render server, which 27.2 did not: **a memory note** (`env_ipad_sim_backboardd_analytics`);
   - `documentKeysInDateRange`'s doc comment said Search calls it: **corrected in this row**, in a commit of its own.
 
+## Session 2026-11-28 — R8, the early build: version 1.1 (1862), both TestFlight notes for a build that grew to Wave 3, L34, L35, L36, L62 and L56, and the release checklist's first run for 1.1, with no UI suite and the owner's own archive
+
+Row R8 of the plan of record from 2026-11-25 (decision 151), started ahead on the owner's "standby" and held by the orchestrator until its word. The owner's answers are decisions 224 to 230.
+
+**#2051's merge**
+- L56 merged as `414df1b0`, a squash onto `433d1494` (L36, #2050), at 05:03:54 UTC on 2026-11-28, from its head `1e0ebcf6`. Its tree, `de3df890`, is the head's. It closed #2012; auto-merge was off. This entry records it, and the plan's L56 entry has the line.
+- The merge of `v2` at `414df1b0` into R8 (`a5a6daa4`) conflicted in the three records files alone, since the squash brings L56's changes again beside R8's; R8's side holds both. So `git diff 72227a86 HEAD` is the records alone, and the checks at `72227a86` stand for the merged tree.
+
+**What changed**
+- **The bump** (`6443b740`): version 1.0 → 1.1 (decision 150) and build 1861 → 1862 (decision 224). `project.yml`'s three targets and the nine occurrences of each in `project.pbxproj` are edited by `CLAUDE.md`'s procedure, with no `xcodegen generate`, so the schemes are untouched. README's *Current build* line and its EditableContent mirror read 1862 (version 1.1), and an Amendment-Log bullet records it.
+- **Both TestFlight notes** (`75ce0605`, then `e4acf79a` once the build grew; decisions 226 and 227): iOS 3,810 characters and Mac 3,833, by Python's `len()`.
+  - They say a library re-indexes once at first launch, about 15 minutes for the whole series by L26's census, and that the build brings the first part of the Collections overhaul.
+  - They give a sentence each to what is new since 1.0 (1861): the three export formats in one order and Export… from the lists; the graph's and Chronology's Save As; the Mac's document windows titled by volume and number; the post-1963 central files; and Zotero's waits.
+  - Every fix is in the one line (decision 225). The orchestrator's "one line for each fix" was its own wording, and the owner chose "All in one line".
+- **The owner's answers** (`72227a86`): decisions 224 to 230 in the plan's §0.
+- **The merges:** `v2` at `7524f53d` (`9afc3cf0`) and at `433d1494` (`eabd273a`), and L56's head `1e0ebcf6` (`ada91ed4`). Each met R8 only in the Amendment-Log, where the rows' bullets go first.
+
+**The checks** (decision 229: no UI suite; R11 runs them on the frozen tree)
+- At `9afc3cf0`:
+  - a clean `build-for-testing` from an empty build folder, with the two known residues alone (7 warning lines);
+  - the unit target on the iPhone 17 under iOS 27.2: 8,441 tests in 1,019 suites, 8,423 passed, none failed, 17 skipped, and the one test with the six known issues.
+- At `72227a86` (tree `b28f8c9d`), in one `Scripts/heavy.sh` call from 04:24 to 04:45 UTC:
+  - the clean `build-for-testing` in 176 s, with the residues alone;
+  - the unit target under iOS 27.0, with the TEI mirror and the app removed first: 8,489 tests in 1,033 suites in 753 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues;
+  - the `FRUSExplorerMac` build, with the residues alone;
+  - `swift build --target FRUSCoreKit`, with no warning;
+  - `swift test`: 5,349 tests in 620 suites over 39 runs, none failed.
+- Then, on the same products with the records' first form in the tree (`80cf69db`): the unit target under iOS 27.2, 8,489 tests in 1,033 suites in 789 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- The window-fronting audit: 83 / 2 / 34 / 0, 20 scenes and 23 `openAuxWindow` sites, R5's figures.
+- The link check in report mode: 20 OK, 3 owner-asserted, 0 dead.
+- `./Scripts/check_cloudkit_schema.py`: PASS, 268 of 272 identifiers required, Production 310. No change.
+
+**After the merge** (decision 230)
+- R8's worktree is put at the merge commit, detached, and the CloudKit check and the llama dSYM cache are verified there.
+- The owner archives both apps in Xcode from that worktree. R8 holds the build lock for the archive on the owner's word.
+- A local `build-55` tag goes on the merge commit, pushed only on the owner's word.
+- L43 lands once this merges, and does not wait for the archive.
+
+**Not done here:** the UI suites (R11's, decision 229); the archive, the upload, What to Test and the testing groups, which are the owner's; R9's device pass.
+
 ## Session 2026-11-27 — L43, a collection's new facts: its citation style, its opening, its own words and See also, a document's date line, a section's headnote default and each headnote's writer; Chicago and Turabian as the note the *Chicago Manual of Style* gives, which Citation Lookup reads back; the research export's version 8, which carries headnote drafts whatever the AI-summaries switch says
 
 Row L43 of the plan of record from 2026-11-25 (the Collections design's lane 3 and §7, with lane 7's candidate 6; the third review's J16, J20, J24, J39, J41 and J45), started by "Development session orchestration" on `claude/l43-collection-new-facts-837863`, from `v2` at `d9b86ae2` (L62's merge), and developed beside R8. Kit and app code: package input, so `swift build --target FRUSCoreKit` and `swift test`; seven stored properties, so seven CloudKit identifiers awaiting R11's deploy; no index version. Commits: `8a42e0d0` (the facts, the notes, Citation Lookup's reading, the export's version 8, the gate and the tests) and a records commit.
 
 **Merges since the last entry**
-- L56 merged as `414df1b0` (#2051), a squash onto `433d1494` at 05:03:54 UTC on 2026-11-28, from its head `1e0ebcf6`, whose tree, `de3df890`, it keeps. It closed #2012. This branch took `v2` in at `414df1b0` by a merge, not a rebase, since L58 builds on its tip.
+- L56's (#2051, `414df1b0`) is recorded in R8's entry, the one before this. This branch took `v2` in at `414df1b0`, and R8's head `a8936c0c`, by merges, not a rebase, since L58 builds on its tip `2ded5f30`.
 - R8: MERGE-R8
 
 **Before it**

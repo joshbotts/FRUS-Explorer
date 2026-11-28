@@ -7,7 +7,7 @@
 
 No bundled data file has changed since the tag. Index **v75**, person rollup **v15**, EmbeddingGemma 2 vectors under digest `89481b18`, 553 volumes, 41 bundled data files. Forty-two issues are open: 33 filed since the 2026-11-15 plan was written, and nine that plan had placed. §1a places all 42. A forty-third and a forty-fourth, #2012 and #2013, were filed the same day from this plan's own reading, on the owner's word (decisions 186 and 187), and §1a places them too.
 
-**Status: LIVE — the plan of record from 2026-11-25.** The owner answered its questions the same day, one at a time, and the answers are decisions 147 to 183 (§0). Later that day the owner asked for one more row, which is L56 (decision 184), took its four proposals (185), and had two findings of its reading filed, as #2012 (186) and #2013 (187). #2013 has a row of its own, L57. On 2026-11-26 CR's review asked four things more of index version 76, which the owner added to it (188 to 191), and C2's answers followed (192 to 202), then L31's four (203 to 206). That evening L28's rehearsal found two generators' defects, which the owner had filed as #2022 and #2023, to be fixed before R10 in a row of their own, L61, and had the root checkout's stale map layout replaced (207 to 209). On 2026-11-27 L33's and L32's answers followed (210 to 212), and L57's finding about days whose midnight a change of clocks skips was filed, as #2033 (213), then L30's answer (214) and L34's three (215 to 217), and the owner gave #2033 a short row of its own, L62, built before the early build (218); then L43's four (231 to 234). §4 lists what is still the owner's. It supersedes `Completed/Plan-Of-Record-2026-11-15.md`, whose Track A ran from L15 to R3: 1.0 (1823) on TestFlight, the device pass, and 1.0 (1861) submitted and released. Its §3 left the order of the release after 1.0 to "the next plan". This is that plan.
+**Status: LIVE — the plan of record from 2026-11-25.** The owner answered its questions the same day, one at a time, and the answers are decisions 147 to 183 (§0). Later that day the owner asked for one more row, which is L56 (decision 184), took its four proposals (185), and had two findings of its reading filed, as #2012 (186) and #2013 (187). #2013 has a row of its own, L57. On 2026-11-26 CR's review asked four things more of index version 76, which the owner added to it (188 to 191), and C2's answers followed (192 to 202), then L31's four (203 to 206). That evening L28's rehearsal found two generators' defects, which the owner had filed as #2022 and #2023, to be fixed before R10 in a row of their own, L61, and had the root checkout's stale map layout replaced (207 to 209). On 2026-11-27 L33's and L32's answers followed (210 to 212), and L57's finding about days whose midnight a change of clocks skips was filed, as #2033 (213), then L30's answer (214) and L34's three (215 to 217), and the owner gave #2033 a short row of its own, L62, built before the early build (218); then L38's two (219 and 220), L35's (221), L56's two (222 and 223), R8's seven (224 to 230) and L43's four (231 to 234). §4 lists what is still the owner's. It supersedes `Completed/Plan-Of-Record-2026-11-15.md`, whose Track A ran from L15 to R3: 1.0 (1823) on TestFlight, the device pass, and 1.0 (1861) submitted and released. Its §3 left the order of the release after 1.0 to "the next plan". This is that plan.
 
 It is written from six sources:
 - the owner's instruction of 2026-11-25 (decision 145), the owner's word on the draft (146), the answers (147 to 183), and the row the owner asked for afterwards, with what the owner then said of it (184 to 187), and the owner's answers to CR's four questions on index version 76 (188 to 191), with the owner's two answers to L26's questions on the last;
@@ -256,6 +256,18 @@ It is written from six sources:
     - Filed by L56 as #2047, from its §5 entry, read from the code. The other three are #2043 to #2046's.
 223. **L56's two small notes: `documentKeysInDateRange`'s stale doc comment is corrected in L56, and the iOS 27.0 iPad simulator's abort stays a memory note.** The owner's choice: "Fold into a later row (Recommended)", over filing them and leaving them in §5, for the day's three smaller notes; L35's go to L43 and L44.
     - L56 edits the comment's file, so it is corrected there, in a commit of its own. The abort is in the memory note on #1620's returns, beside L40's.
+
+*For R8, the early build, asked in R8's session and in the orchestrator's, 2026-11-27 and 2026-11-28:*
+
+224. **The early build is 1.1 (1862).** The owner's answer, typed: "1862", asked in R8's session on 2026-11-27 which number the early build carries, above 1861, with the release candidate's to come above it. The session had offered 1867, 1898 and 1917.
+225. **The TestFlight notes keep every fix in one line.** The owner's choice: "All in one line", over "A line per fix", asked in R8's session on 2026-11-27. The orchestrator's hold message had asked for "one line for each fix", wording its transcript shows was its own, so the owner's rule of 2026-09-26 stands.
+226. **The early build waits for the rows in flight.** The owner's words, in the orchestrator's session on 2026-11-27: "let's wait on R8 until the other sessions are all done so the test flight build includes more fixes." The rows then in flight were L57, L30, L39, L42, L40, L38 and L56.
+227. **And for L34 and L36.** The owner's choice: "Yes, include L34 and L36", asked in the orchestrator's session on 2026-11-27 whether the early build should also wait for Wave 4's L34 and L36, with L35 joining it either way. With decision 218's L62, the build carries Wave 3, L34, L35, L36, L62 and L56, and its notes say it brings the first part of the Collections overhaul.
+228. **R8 keeps its slot after L56.** The owner's words, in the orchestrator's session at 00:23 UTC on 2026-11-28: "disregard what i said about R8. i want to get the plan finished as quickly as feasible. if that means R8 shipping on the previous schedule, that's fine", withdrawing an earlier word about R8's date.
+229. **R8 runs no UI suite; R11 runs them on the frozen tree.** The owner's choice: "Skip; R11 runs them (Recommended)", asked in the orchestrator's session at 00:39 UTC on 2026-11-28 how R8 should run its UI suites, which R8 had estimated at about 120 jobs and 12–15 hours of the one build lock, with every Collections row's builds behind them. R8's checklist is the clean `build-for-testing`, the unit target on iOS 27.0 and 27.2, `swift test` and the Mac build.
+230. **The owner archives the early build in Xcode.** The owner's choice: "No, I'll archive", over "Yes, R8 archives (Recommended)", asked in the same question set whether R8 may run both archives itself from its merge commit through `Scripts/heavy.sh`.
+    - R8's worktree is put at the merge commit, detached, with both archive-only phases' caches verified there: the CloudKit schema stamp and the llama dSYMs.
+    - L43 lands once R8's bump merges, and does not wait for the archive. An archive made in Xcode's window does not take the build lock, so R8 offers to hold the lock for it.
 
 *From L43, 2026-11-27, asked in its session:*
 
@@ -853,6 +865,35 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The bump** by `CLAUDE.md`'s procedure, never `xcodegen generate`: version 1.1 (decision 150) and the build number the owner names, the README line and its mirror, both TestFlight notes within 4,000 characters, `fetch-llama-dsyms.sh` and `check_cloudkit_schema.py`, which should read no change, since no row before it adds a stored property.
   - **Both notes say** that a library re-indexes once at the first launch, and about how long, by L26's census; and that the Collections overhaul comes in a later build.
   - **No sitting.** T3 is R11's, when every screen that will change has changed.
+  - **Built on 2026-11-27 and 2026-11-28** on `claude/r8-early-build-3cb2bf`, by a session the orchestrator started ahead on the owner's "standby" and held until its word. From `v2` at `ebacf85a` (L37's merge): the bump (`6443b740`), both TestFlight notes (`75ce0605`) and the notes rewritten when the build grew (`e4acf79a`); `v2` taken in at `7524f53d` (`9afc3cf0`) and at `433d1494` (`eabd273a`), and L56's pull request head `1e0ebcf6` (`ada91ed4`); the owner's answers (`72227a86`); then the records.
+    - **The build grew while R8 waited** (decisions 226 to 228): from Waves 1 and 2 to Wave 3, L34, L35, L36, L62 and L56. Its number is the owner's, 1862 (decision 224).
+    - **The bump**, by `CLAUDE.md`'s procedure, with no `xcodegen generate`:
+      - `MARKETING_VERSION` 1.0 → 1.1 and `CURRENT_PROJECT_VERSION` 1861 → 1862, in `project.yml`'s three targets and the nine occurrences of each in `project.pbxproj`;
+      - the README's *Current build* line and its mirror, which still holds `README.md` whole;
+      - an Amendment-Log bullet.
+      Each merge of `v2` met the bump only in that log, whose rows' bullets go first.
+    - **Both TestFlight notes:** iOS 3,810 characters and Mac 3,833, by Python's `len()`, with no ⚙, ✕ or ⓘ.
+      - **The re-index:** a library re-indexes once at first launch, about 15 minutes for the whole series by L26's census (867 s on the iPad Pro 13-inch simulator; L27's run took 992 s).
+      - **The overhaul:** the build brings its first part (decision 227).
+      - **New since 1.0 (1861), a sentence each:**
+        - the three export formats in one order, and Export… from the lists (L34, L35);
+        - the graph's and Chronology's Save As (L42, L56);
+        - on the Mac, a document window titled by its volume and number (L38, decision 219);
+        - the post-1963 central files read (L26, decision 191);
+        - Zotero's waits said (L41).
+      - **Fixes:** every one in the one line (decision 225).
+      - **What to test:** taken from the rows' own checks.
+    - **The checklist,** with no UI suite (decision 229):
+      - **A clean `build-for-testing`** at `9afc3cf0` (`v2` at `7524f53d` and the bump), from an empty build folder, the iPhone 17 destination: succeeded, 1,238 compile lines. Its 7 warning lines are the two known residues alone: `GeneratedSummary`'s redundant conformance (4) and the AppIntents note (3).
+      - **The unit target on the iPhone 17 under iOS 27.2** there, with the TEI mirror and the app removed first: 8,441 tests in 1,019 suites in 810 s. 8,423 passed, none failed, 17 skipped (the semantic encoder's 15 and two render tools), and the one test with the six known issues.
+      - **At `72227a86`** (tree `b28f8c9d`: `v2` at `433d1494`, L56's head `1e0ebcf6` and the bump), in one `Scripts/heavy.sh` call: the clean `build-for-testing`, from an empty build folder, in 176 s, with the two known residues alone (7 warning lines); the unit target on the iPhone 17 under iOS 27.0, with the TEI mirror and the app removed first: 8,489 tests in 1,033 suites in 753 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues; the `FRUSExplorerMac` build, Debug and unsigned, with the residues alone (5 lines); `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,349 tests in 620 suites over 39 runs, none failed, its 12 warning lines six package test files' own, each printed twice, as at R5.
+      - **The unit target on the iPhone 17 under iOS 27.2 on the same products**, with the records' first form in the tree (`80cf69db`): 8,489 tests in 1,033 suites in 789 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues.
+      - **Light checks:**
+        - `Scripts/check_repo_hygiene.py`: its six checks passed.
+        - The window-fronting audit on the merged tree, R5's figures: 83 `fronting(id:)` sites in 27 files, 2 `fronting(id:value:)`, 34 `openWindow(value:)` in 20 files and 0 bare `openWindow(id:)`; 20 scenes, each with a literal opener; 23 `openAuxWindow` sites in 10 files.
+        - The link check in report mode, on 2026-11-27: 20 OK, 3 owner-asserted, 0 dead, and the 3 published-source links OK.
+        - `./Scripts/check_cloudkit_schema.py`: PASS, 268 of 272 identifiers required, Production 310, as R5 read it. No row before R8 adds a stored property, and L35's change to `Collection.swift` adds none.
+    - **The archive is the owner's** (decision 230). After the merge, R8's worktree is put at the merge commit, detached, and both archive-only phases' caches are verified there: `./Scripts/check_cloudkit_schema.py` is run again and `fetch-llama-dsyms.sh` verifies the llama dSYMs. The owner archives `FRUSExplorer` and `FRUSExplorerMac` in Xcode from that worktree, in the `AppStore` configuration their schemes name; R8 holds the build lock for the archive on the owner's word. The upload, What to Test and the testing groups are the owner's; no export-compliance question comes, since both apps declare no non-exempt encryption.
 
 - **R9, the device pass of the early build,** on an iPhone, an iPad and the Mac. The owner's.
   - **The one re-index, 75 → 76,** at each device's first launch. On the iPad, Browse two-pane and the reader open while it runs: F1's band, or L27's log line.
@@ -1089,6 +1130,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
     - **Offered, not taken:**
       - The headline's two counts (§5, L56's candidate).
       - Three findings, in §5 under *Found by L56*, settled by the owner's answers of 2026-11-28: the iPad window's 1969 filed as #2047, the simulator's abort kept as a memory note, and `documentKeysInDateRange`'s doc comment corrected in this row.
+    - **Merged** as #2051, `414df1b0`, a squash onto `433d1494` (L36, #2050) at 05:03:54 UTC on 2026-11-28, from its head `1e0ebcf6`, whose tree, `de3df890`, it keeps. It closed #2012. Recorded by R8, the next row.
 
 - **CR, the review of the Collections design** (decision 149). Planning only, so a cloud session can run it. It merges through the same queue, alongside Waves 1 and 2.
   - **First, the design's own text is brought to the owner's answers,** in a commit of its own, so that the review reads what will be built. What moves:
