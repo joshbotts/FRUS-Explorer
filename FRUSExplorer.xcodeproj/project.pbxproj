@@ -1044,6 +1044,7 @@
 		8C08772D6FD76F7914A407BC /* AnnotationsAxis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85DFF684CE6BFA143C0F64F3 /* AnnotationsAxis.swift */; };
 		8C0925D7D84B7B3782B4A4EC /* NativeCollectionFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609D0C5273D4F10AF21D293F /* NativeCollectionFormat.swift */; };
 		8C28524B660B7D2BF76970E9 /* ProjectHomePlanVisitGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85A9A42539FFEEC82DD7E33 /* ProjectHomePlanVisitGateTests.swift */; };
+		8C2C91F0E0E3D2A69FF932C6 /* CollectionExportFromListsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9F36B4F6DC12B710144AFE /* CollectionExportFromListsTests.swift */; };
 		8C3690B5ABBD4C44AA9ACB3C /* RollScansIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 434C01971666F8E4C805CBA7 /* RollScansIndex.swift */; };
 		8C47420FFC33679A8FC77255 /* ProjectFocusSubjectsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85918CBC65CFE5DAFB117542 /* ProjectFocusSubjectsEditor.swift */; };
 		8C7485682362B982A3D9BC51 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
@@ -3254,6 +3255,7 @@
 		FAF4873912C42312BC17997B /* CentralFilesIndexStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralFilesIndexStore.swift; sourceTree = "<group>"; };
 		FB5D89EA1B4FE55376D3FA3B /* MacWindowRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWindowRoutingTests.swift; sourceTree = "<group>"; };
 		FB725EDDC681D1CB3EB6DF72 /* VolumeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeListView.swift; sourceTree = "<group>"; };
+		FB9F36B4F6DC12B710144AFE /* CollectionExportFromListsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionExportFromListsTests.swift; sourceTree = "<group>"; };
 		FBE0716B4B3C7052EC58ACEB /* OnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingTests.swift; sourceTree = "<group>"; };
 		FC0040B3BD8BC38F863A88F9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		FC52ABEC2468EE7421C829DD /* SemanticShardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticShardStore.swift; sourceTree = "<group>"; };
@@ -4129,6 +4131,7 @@
 				64A77D5BA13AE64BC008855D /* CodingStandardsAuditTests.swift */,
 				50EA1CB80EADF80287830721 /* CodingStandardsAuditTests+CopyScans.swift */,
 				47F1FF5E64536D628EE9CE96 /* CollectionCopyAndAppendTests.swift */,
+				FB9F36B4F6DC12B710144AFE /* CollectionExportFromListsTests.swift */,
 				7B82A4FB7B48C42B617FF73D /* CollectionExportToggleParityTests.swift */,
 				666D3710B56D33F30B5CBD98 /* CollectionsReaderRouteTests.swift */,
 				4F9D6FBBEFE159C7D0FD2562 /* CollectionTests.swift */,
@@ -7114,6 +7117,7 @@
 				0693330E976DCE1587240172 /* CollectionAuthorityStoreTests.swift in Sources */,
 				F3F7193079CA62A8C6D484CB /* CollectionCopyAndAppendTests.swift in Sources */,
 				D6F068D35CA668B6454CE337 /* CollectionDocumentPlanTests.swift in Sources */,
+				8C2C91F0E0E3D2A69FF932C6 /* CollectionExportFromListsTests.swift in Sources */,
 				AD47F74493B6B405A311963A /* CollectionExportToggleParityTests.swift in Sources */,
 				CEE59AC8F4E9A307DC92681C /* CollectionRelationsTests.swift in Sources */,
 				9BC2F3F4046CD4AA360C5C23 /* CollectionRenderingTests.swift in Sources */,

@@ -195,12 +195,20 @@ enum UITestScopeSeeder {
 /// Project Home was reopened. The collection holds one document entry, because an empty collection
 /// engages nothing and would leave the button disabled for the right reason.
 ///
+/// ## The export collection
+/// With the value ``exportValue`` the seed also writes ``exportCollectionName``, whose export sheet says the most a
+/// realistic collection's sentence says, for `CollectionExportSheetFitTests` (L35): six documents of the fixture volume,
+/// two printed in full, two as summaries and two as citations; headnotes on, with a summary stored for four of them; one
+/// summary not stored; a research note and a highlight that print; and the word cloud on. Launched with
+/// `FRUS_UI_TEST_APPLE_INTELLIGENCE=notEnabled`, the sheet also says what this device lacks.
+///
 /// ## Contract — the other seeders' own
-/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_PROJECT` is `1`. Runs at the top of the boot path,
+/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_PROJECT` is `1` or ``exportValue``. Runs at the top of the boot path,
 /// beside ``UITestScopeSeeder``, for the reason given at that call site.
 ///
 /// Version history:
 ///   1.0 — #1457: initial implementation
+///   1.1 — L35: ``exportValue`` and the export collection
 enum UITestProjectSeeder {
 
     /// The launch-environment key a UI test sets to request the seed.
@@ -216,10 +224,17 @@ enum UITestProjectSeeder {
     /// The seeded collection's name, which its row in Manage shows.
     static let collectionName = "UI Test Unattached Collection"
 
-    /// Seeds the project and the collection if requested, once per store.
+    /// The value that also asks for the export collection.
+    static let exportValue = "export"
+
+    /// The export collection's name.
+    static let exportCollectionName = "UI Test Export Collection"
+
+    /// Seeds the project and the collection if requested, once per store, and the export collection when asked.
     @MainActor
     static func seedIfRequested(context: ModelContext) {
-        guard ProcessInfo.processInfo.environment[environmentKey] == "1",
+        let value = ProcessInfo.processInfo.environment[environmentKey]
+        guard value == "1" || value == exportValue,
               let projectId = UUID(uuidString: projectIdString) else { return }
         let existing = (try? context.fetchCount(FetchDescriptor<Project>(
             predicate: #Predicate { $0.id == projectId }))) ?? 0
@@ -233,8 +248,41 @@ enum UITestProjectSeeder {
                                     volumeId: "frus1961-63v06", sortOrder: 0)
         entry.collection = collection
         context.insert(entry)
+        if value == exportValue { seedExportCollection(context: context) }
         try? context.save()
-        print("[UITestProjectSeeder] Seeded project \(projectIdString) and one unattached collection")
+        print("[UITestProjectSeeder] Seeded project \(projectIdString) and one unattached collection"
+              + (value == exportValue ? ", and \"\(exportCollectionName)\"" : ""))
+    }
+
+    /// Writes the export collection (the type's doc says what it holds and why).
+    @MainActor
+    private static func seedExportCollection(context: ModelContext) {
+        let volumeId = "frus1961-63v06"
+        let promptId = UUID()
+        let collection = Collection(name: exportCollectionName)
+        collection.defaultIncludeHeadnote = true
+        collection.includeNotes = true
+        collection.applyHighlights = true
+        collection.includeWordCloud = true
+        collection.summaryPromptId = promptId
+        context.insert(collection)
+        let depths: [CollectionBodyDepth?] = [nil, nil, .summaryOnly, .summaryOnly, .index, .index]
+        for (position, depth) in depths.enumerated() {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: "d\(position + 1)",
+                                        volumeId: volumeId, sortOrder: position)
+            entry.bodyDepthOverride = depth?.rawValue
+            entry.collection = collection
+            context.insert(entry)
+        }
+        // Under the collection's prompt: d1's, d5's and d6's print as their headnotes, d3's as its headnote and its
+        // summary; d2 and d4 have none, so d4's summary is the one to write.
+        for documentId in ["d1", "d3", "d5", "d6"] {
+            context.insert(GeneratedSummary(documentId: documentId, volumeId: volumeId, promptId: promptId,
+                                            responseText: "A stored summary of \(documentId)."))
+        }
+        context.insert(ResearchNote(documentId: "d1", volumeId: volumeId, bodyText: "A note that prints with d1."))
+        context.insert(DocumentHighlight(volumeId: volumeId, documentId: "d1", startOffset: 0, endOffset: 12,
+                                         renderingVersion: "uitest"))
     }
 }
 

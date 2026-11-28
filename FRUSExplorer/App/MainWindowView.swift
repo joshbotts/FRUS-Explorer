@@ -69,6 +69,8 @@ import AppKit
 ///   1.8 — L21 (UI review MAC-1, #1921): the window is titled with the open document's head
 ///          (`MacDocumentTitle.windowTitle`), and its centre is the standalone window's
 ///          `MacDocumentPrincipalTitle` in place of the raw `volumeId/documentId`
+///   1.9 — L38 (F2, decision 219): the window is titled with the volume's tag and the document's
+///          number (`MacDocumentTitle.windowTitle(for:volume:)`), and its centre is the head
 @MainActor
 struct MainWindowView: View {
 
@@ -123,16 +125,19 @@ struct MainWindowView: View {
         navigationPath.last
     }
 
-    /// The window's title (L21, UI review MAC-1): the open document's printed head, by the rule
-    /// the standalone document window has always used, so the Window menu and Mission Control tell
-    /// two ⌘N windows apart. With no document open it is the app's name, as macOS titled the
-    /// window before: the HIG's "Don't title windows with your app name" is about a window that
-    /// shows something, and an empty window shows nothing.
+    /// The window's title (L21, UI review MAC-1): where the open document is, its volume's tag and
+    /// its number ("1946 v6 · Doc 475") since L38 (F2), by the rule the standalone document window
+    /// uses, so the Window menu and Mission Control tell two ⌘N windows apart. It was the printed
+    /// head, which the title bar cut in almost every window; the head is the centre's now. With no
+    /// document open it is the app's name, as macOS titled the window before: the HIG's "Don't
+    /// title windows with your app name" is about a window that shows something, and an empty
+    /// window shows nothing.
     private var windowTitle: String {
         guard let entry = currentEntry else {
             return String(localized: "mainwindow.title.empty", defaultValue: "FRUS Explorer")
         }
-        return MacDocumentTitle.windowTitle(header: entry.header, documentId: entry.documentId)
+        return MacDocumentTitle.windowTitle(for: entry,
+                                            volume: appState.manifestStore.entry(forVolumeId: entry.volumeId))
     }
 
     // MARK: - Body
@@ -262,10 +267,10 @@ struct MainWindowView: View {
     private var documentTitle: some View {
         Group {
             if let entry = currentEntry, pillBudget >= 60 {
-                // The document's volume, in its short form, and its number ("… · 1946 v6 · Doc
-                // 475"), drawn by the standalone document window's own view (L21, MAC-1), where this
-                // showed the raw "frus1946v06/d475" in monospace. The head is the window's title,
-                // so the centre says what the title does not (`MacDocumentTitle`).
+                // The document's head, drawn by the standalone document window's own view (L21,
+                // MAC-1), where this showed the raw "frus1946v06/d475" in monospace. Since L38 (F2)
+                // the volume and number are the window's title, so the centre says what the title
+                // does not (`MacDocumentTitle`).
                 //
                 // As the centred .principal item it must YIELD before the trailing tools under
                 // width pressure (handoff: "the identity pill yields first"). `pillBudget` caps its

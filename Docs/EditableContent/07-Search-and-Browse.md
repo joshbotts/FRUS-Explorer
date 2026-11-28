@@ -3102,7 +3102,7 @@ The subject index did not load, so subjects cannot be browsed. Everything else i
 
 #### Footer — The first three figures describe the whole series…
 <!-- The app shows the subject data's caption (`subjects.caption`, §16.4) after this sentence, where the old account stood (#1905). -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 622–623 | key: subjects.detail.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 624–625 | key: subjects.detail.footer -->
 
 The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return.
 

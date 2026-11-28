@@ -29,9 +29,11 @@ import UniformTypeIdentifiers
 /// Tapping a row navigates to `CollectionEditorView` for that collection.
 /// The "+" toolbar button creates a new collection and navigates to its editor.
 ///
-/// ## Rename, duplicate and delete (#1823)
-/// A row's menu (touch and hold) offers Rename, Duplicate, Word Cloud and, on a smart collection,
-/// Create Static Snapshot, then Delete. Rename asks for the name in an alert
+/// ## Export, rename, duplicate and delete (#1823, L35)
+/// A row's menu (touch and hold) offers Export…, Rename, Duplicate, Word Cloud and, on a smart collection,
+/// Create Static Snapshot, then Delete, and VoiceOver offers the same items as the row's actions, Delete as
+/// its swipe (#2006). Export… opens the export sheet for that collection (`CollectionListExportSheet`), the
+/// quick export of decision 156. Rename asks for the name in an alert
 /// (`collectionRenameAlert`); an empty name keeps the old one. Delete is reached three ways — a
 /// row's swipe, which no longer completes on a full swipe; its menu; and Edit, which chooses several
 /// rows for the toolbar's Delete — and every route asks first (`collectionDeleteConfirmation`),
@@ -67,6 +69,9 @@ import UniformTypeIdentifiers
 ///          ask first; Edit chooses several collections to delete at once
 ///   1.13 — 2026-11-19: R6a (F10) — the swipe's Delete is red by tint with no role, so its question stays up
 ///          until answered (`CollectionListSwipeDeleteTests`)
+///   1.14 — L35: a row's menu opens with Export…; VoiceOver offers the menu's items as the row's actions (#2006),
+///          from the menu's own builder; and a row opens anywhere along its width, where on an iPad it opened only
+///          where its text was (R4's finding)
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -99,6 +104,8 @@ struct CollectionListView: View {
     /// The collection whose row is asking whether to delete it — its swipe or its menu's Delete asked (#1823). The
     /// dialog hangs from that row.
     @State private var pendingDeletionId: UUID? = nil
+    /// The collection a row's Export… is exporting; `nil` while the export sheet is closed (L35).
+    @State private var exporting: Collection? = nil
     #if os(iOS)
     /// Whether the list is in Edit, where rows are chosen to delete several collections at once (#1823).
     @State private var isEditing = false
@@ -238,6 +245,11 @@ struct CollectionListView: View {
                 Text(snapshotError ?? "")
             }
             .collectionRenameAlert($renaming, name: $renameText)
+            // L35: a row's Export… opens the export sheet for its collection, as the collection's own Export… does.
+            .sheet(item: $exporting) { collection in
+                CollectionListExportSheet(collection: collection)
+                    .environment(appState)
+            }
             #if os(iOS)
             // #1823: Edit ends when the last collection goes, so the list never sits in Edit with nothing to choose.
             .onChange(of: filteredCollections.isEmpty) { _, isEmpty in
@@ -326,11 +338,16 @@ struct CollectionListView: View {
         #endif
     }
 
-    /// One collection's row: a tap opens its editor (in Edit the List chooses the row instead), a swipe or the menu's
-    /// Delete asks before deleting it, and the menu renames, duplicates, opens a word cloud and snapshots a smart one.
+    /// One collection's row: a tap anywhere along it opens its editor (in Edit the List chooses the row instead), a swipe
+    /// or the menu's Delete asks before deleting it, and the menu exports, renames, duplicates, opens a word cloud and
+    /// snapshots a smart one. VoiceOver offers the menu's items as the row's actions.
     @ViewBuilder
     private func row(_ collection: Collection) -> some View {
         CollectionRow(collection: collection)
+            // As wide as the row, so that a tap past its text opens it too: a content shape reshapes the hit area
+            // inside the view's frame and does not widen it, and on an iPad the row opened only where its text was
+            // (R4's finding, L35).
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             // Off in Edit (`.subviews` turns this gesture off and leaves the List's own row selection), where a tap on
             // the row's text would otherwise open the editor rather than choose the row.
@@ -347,44 +364,10 @@ struct CollectionListView: View {
                 }
                 .tint(.red)
             }
-            .contextMenu {
-                Button {
-                    renameText = collection.name
-                    renaming = collection
-                } label: {
-                    Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
-                }
-                Button {
-                    _ = collection.duplicate(in: modelContext)
-                    try? modelContext.save()
-                } label: {
-                    Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
-                          systemImage: "plus.square.on.square")
-                }
-                Divider()
-                Button {
-                    appState.openWordCloud(.collection(id: collection.id), from: sceneID)
-                } label: {
-                    Label { Text(String(localized: "collection.wordCloud",
-                                        defaultValue: "Word Cloud")) }
-                        icon: { Image(systemName: WordCloudGlyph.symbol) }
-                }
-                if collection.savedSearchId != nil {
-                    Button {
-                        Task { await snapshotSmartCollection(collection) }
-                    } label: {
-                        Label(String(localized: "collection.snapshot.action",
-                                     defaultValue: "Create Static Snapshot"),
-                              systemImage: "camera")
-                    }
-                }
-                Divider()
-                Button(role: .destructive) {
-                    pendingDeletionId = collection.id
-                } label: {
-                    Label(CollectionDeletion.action, systemImage: "trash")
-                }
-            }
+            .contextMenu { rowActions(for: collection, forVoiceOver: false) }
+            // A context menu alone is not offered to VoiceOver (#2006; the editor's rows' rule, `CollectionEntryRows`).
+            // The row's actions are the menu's own items, from the one builder, so the two cannot drift.
+            .accessibilityActions { rowActions(for: collection, forVoiceOver: true) }
             // On the row, so an iPad's popover points at the row that asked (#1357's rule); the swipe button cannot be
             // the source, since the swipe closes when it is tapped.
             .collectionDeleteConfirmation(
@@ -394,6 +377,64 @@ struct CollectionListView: View {
             ) { doomed in
                 delete(doomed)
             }
+    }
+
+    /// A row's menu, and its VoiceOver actions: Export… first, the quick export (L35, decision 156), then Rename and
+    /// Duplicate, Word Cloud and a smart collection's Create Static Snapshot, and Delete, which asks first.
+    ///
+    /// - Parameters:
+    ///   - collection: The row's collection.
+    ///   - forVoiceOver: Whether these are VoiceOver's actions rather than the menu: then with no dividers, and without
+    ///     Delete, which VoiceOver already offers as the row's swipe action (of the menu's items, the only one it read on
+    ///     1.0's rows).
+    @ViewBuilder
+    private func rowActions(for collection: Collection, forVoiceOver: Bool) -> some View {
+        let separated = !forVoiceOver
+        Button {
+            exporting = collection
+        } label: {
+            Label(String(localized: "collection.editor.actions.export", defaultValue: "Export…"),
+                  systemImage: "square.and.arrow.up")
+        }
+        if separated { Divider() }
+        Button {
+            renameText = collection.name
+            renaming = collection
+        } label: {
+            Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
+        }
+        Button {
+            _ = collection.duplicate(in: modelContext)
+            try? modelContext.save()
+        } label: {
+            Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
+                  systemImage: "plus.square.on.square")
+        }
+        if separated { Divider() }
+        Button {
+            appState.openWordCloud(.collection(id: collection.id), from: sceneID)
+        } label: {
+            Label { Text(String(localized: "collection.wordCloud",
+                                defaultValue: "Word Cloud")) }
+                icon: { Image(systemName: WordCloudGlyph.symbol) }
+        }
+        if collection.savedSearchId != nil {
+            Button {
+                Task { await snapshotSmartCollection(collection) }
+            } label: {
+                Label(String(localized: "collection.snapshot.action",
+                             defaultValue: "Create Static Snapshot"),
+                      systemImage: "camera")
+            }
+        }
+        if !forVoiceOver {
+            Divider()
+            Button(role: .destructive) {
+                pendingDeletionId = collection.id
+            } label: {
+                Label(CollectionDeletion.action, systemImage: "trash")
+            }
+        }
     }
 
     /// Whether the list is in Edit — always `false` where Edit does not exist.
