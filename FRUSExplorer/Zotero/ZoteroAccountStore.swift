@@ -20,6 +20,8 @@ import Security
 ///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
+///   1.1 — L64 of the plan of record from 2026-11-25 (#1923): `disconnect()` drops this device's stopped
+///          sends (`ZoteroSendProgressStore`)
 @MainActor
 public final class ZoteroAccountStore {
 
@@ -107,11 +109,13 @@ public final class ZoteroAccountStore {
         setAccount(userID: info.userID, username: info.username)
     }
 
-    /// Clears all stored Zotero credentials.
+    /// Clears all stored Zotero credentials, and this device's stopped sends, which only the account they
+    /// went to could finish (#1923).
     public func disconnect() {
         deleteKey()
         UserDefaults.standard.removeObject(forKey: userIDKey)
         UserDefaults.standard.removeObject(forKey: usernameKey)
+        ZoteroSendProgressStore.removeAll()
     }
 
     // MARK: - Private

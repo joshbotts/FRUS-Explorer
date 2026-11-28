@@ -5608,6 +5608,7 @@ Each one `Scripts/heavy.sh` job through the orchestrator's side-row loop, this w
   - `swift build --target FRUSCoreKit`;
   - `swift test`: 39 runs, 5,387 tests, all passed;
   - the `FRUSExplorerMac` build, with the two known residues.
+- **Merged** as `6c8db012` (#2055), a squash onto `322c98e2` at 08:02:59 UTC on 2026-11-28, from its head `2b7f4051`, whose tree, `ede2ca9e`, it keeps. It closed #1999 and #2005. L64 records it here, at its own head.
 
 **The rest**
 - The Guide (1.52): §15.1a's table and example, limit 1 (headnotes can now be supplied, named by their writer), §15.2's checker and §15.3's account of versions.
@@ -5615,6 +5616,84 @@ Each one `Scripts/heavy.sh` job through the orchestrator's side-row loop, this w
 - EditableContent: 41 blocks added (the Note's section, the four lines under a headnote, the statement's sentence, the settings' line), one block's text changed with the app's (`export.native.hint`), 35 ranges re-pointed (`Amendment-Log.md`).
 - The owner's words: `L58-words-for-the-owner.md` in the orchestrator's notes.
 - FRUS Explorer Light: the kit's public API gains `CollectionNoteOnTheText`, `CollectionHeadnoteWriter`, `CollectionGeneratedBlockType.noteOnTheText` and `listsMembership`, `CollectionExportDocument.headnoteWriter`, `CollectionContentAssembly.noteOnTheText(over:collection:options:headnote:)`, `ProvenanceStatement`'s `printsCompilersLines` and `compilersLinesSentence`, `FRUSCollectionFile.Headnote` with the file's new keys, `NativeCollectionImport.headnoteDrafts` and `makeFile`'s `resolveHeadnote`; `CollectionAIAttribution.headnoteLabel(authorship:)` gives way to `headnoteLabel(writer:label:)`. A host's data source should pass each summary's `writerName`, as the app's now does.
+
+## Session 2026-11-28 — L64, a stopped Zotero send can be finished: the stop carries how far it got, a finish writes nothing twice and settles a lost answer by Zotero's 412, and the app keeps the progress on the device for 12 hours and offers Finish Sending
+
+Row L64 of the plan of record from 2026-11-25 (#1923; decision 236), a short row the owner chose on 2026-11-28 ("A, as a short row in 1.1", the owner's answer in the orchestration session, asked there). Option A of L41's proposal (the group's notes, `L41-1923-resume-proposal.md`). Started by "Development session orchestration" on `claude/l64-zotero-resume-d59e18`, from `v2` at `d9b86ae2` (L62's merge, #2041). Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change, and no index version. Commits: `f1f84fc5` (the defect shown first), `28c42c22` (the fix, its tests and its EditableContent blocks), `85797d87` and `55388ee4` (the records), then the merges at the head.
+
+**Shown first** (decision 183)
+- **The stand-in.** A new kit suite, `ZoteroSendResumeTests` (compiled twice), runs every send through a Zotero stand-in. It keeps one library per test, under a user id of the test's own, and keeps what each write made. It honours a write token as Zotero's Web API v3 documents it (*Write Requests*, read 2026-11-28): the token of a request that succeeded is cached for 12 hours, a second request under it is refused with a 412, and the token of one that failed is not stored. A test names the writes it wants refused, answered with the answer lost, or dropped before they arrive. Its reads list a collection's items, the library's newest, and the account's collections.
+- **Three tests ran against `v2`'s client,** with the kit untouched. Each finished a stopped send the only way a caller then could, by sending again. 3 tests, 7 issues (`swift test --filter ZoteroSendResumeTests`, through `Scripts/heavy.sh`, the package built from empty, 00:25 to 00:28 UTC):
+  - a collection's send that Zotero refused with a 503 at its second batch left 2 Zotero collections and 110 items, 50 of them twice;
+  - a batch whose answer was lost left 2 collections and 100 items, 50 of them twice;
+  - a document's send whose notes Zotero refused left the document in Zotero twice.
+
+**The kit** (`FRUSCoreKit/Zotero/`, shared code)
+- **`ZoteroSendProgress`** (new file `ZoteroSendProgress.swift`, public, `Codable`) is how far a send got.
+  - It holds the Zotero collection's key, and each item Zotero took with its key and the SHA-256 of each note written under it.
+  - An item is known by its URL, or its title where it has none, and its place among the send's items of that URL. So a document entered twice in a collection is two items.
+  - It also holds the write in flight, with its `Zotero-Write-Token` and when it was first sent. `expiresAt` is 12 hours after that send, or after the progress's last change when none is in flight. Zotero's memory of a token runs from the request's success, which comes later.
+- **`ZoteroSendStopped`** (public) carries a stop's `cause`, the `ZoteroAPIError` or `CancellationError`, and its `progress`, and says the cause's sentence. The send throws it once Zotero may have taken part of the send. A stop before that, such as the first write refused, throws its error alone, as it did. `ZoteroAPIError` gains no case, so FRUS Explorer Light's exhaustive switch over it compiles as before.
+- **What is in flight.** A write is recorded, and handed to the host, before its request first leaves.
+  - A 4xx answer, `invalidKey` and `rateLimited` among them, wrote nothing, so a refused write is no write in flight.
+  - A lost connection, a 5xx, an answer the client could not read, or a cancelled request may each follow a write Zotero took. The write stays in flight.
+- **A finish** (`send(…, resuming:)`) settles the write in flight before it writes anything else, so a progress holds one at most.
+  - The write is sent again under its own token. After Zotero's 412 the client reads what the write made: the Zotero collection's items by URL; the library's 100 newest by date added, for a send with no collection; or, for the collection's own write, the account's collections by name, the newest with no items yet. The collection is made anew when none is.
+  - A notes write's notes are counted as written, with no read: no later write needs a note's key.
+  - Then the items not taken, fifty at a time and numbered among the send's (*Uploading items 51–60…*), and the notes not written under the items taken, by their text, so a note added since is sent.
+  - A collection edited since sends what was added and leaves what was removed, which `ZoteroSendResult.itemsLeftInLibrary` counts.
+  - A progress for another account is not resumed: the send starts afresh there.
+- **`progress:`** hands the host the progress before each write leaves, after each answer is read, and at the stop. So a send the app did not live to see end can be finished from the last one kept.
+- **One request loop, `exchange`,** now sends the reads with the writes, with #1916's and L41's waits unchanged. A new status, *Checking what reached Zotero…* (`zotero.status.check`).
+- **Found by reading, before the fix's first run** (and not run against it): a first draft settled the write in flight inside its own step, so a finish of a send stopped at its notes, of a collection that had gained a document since, wrote that document first. That write would have recorded no write in flight of its own, and a refusal of it would have cleared the notes write's record. The finish now settles the write in flight before anything else; `theWriteInFlightIsSettledFirst` holds it.
+- `Planning/FRUSCoreKit-Runbook.md` records the new public API (*L64 (#1923)*).
+
+**The app**
+- **`FRUSExplorer/Zotero/ZoteroSendProgressStore.swift`** (new) keeps a `StoppedZoteroSend` (the progress, its reason, and how many of its documents the export history counts).
+  - It is one JSON file per stopped send under `{Application Support}/FRUSExplorer/ZoteroSends/`, named by the collection's id or the document's, and the Zotero account.
+  - A file is read only before its `expiresAt`, removed when the send finishes, and every file is removed by `ZoteroAccountStore.disconnect()`. Nothing reaches iCloud (decision 236).
+  - Each send writes its file as it goes, from the client's `progress`.
+- **The collection's export sheet** (`CollectionExportSheet.swift`):
+  - A stop records the documents that reached Zotero in the export history at once (`zotero-api`, the count no row holds yet). It shows the cause, and offers no RIS file, which would bring the documents already sent into Zotero twice.
+  - The send row then reads *Finish Sending to Zotero Library*, saying how many documents reached Zotero, when, and why.
+  - A finish records the rest, so the rows add up to the whole send, a send the app did not live to see end included (`StoppedZoteroSend.afterStop`, `historyCount(finishing:with:)`). Its result says how many documents removed since the stop stay in Zotero.
+- **The Share tiles** (`DocumentView.swift`'s menu on iPhone and iPad, `SupportingViews.swift`'s popover on the Mac):
+  - The stop's alert says how far the send got, and offers *Finish Sending*.
+  - The row reads *Finish Sending to Zotero Library…* until the send is finished. On the Mac the line under the row says what stopped.
+  - A finish that added notes alone says *Added 2 notes to Zotero.*, where the tile's sentence would read *Added 0 document and 2 notes*. They record no history, as before.
+- **Details the proposal left open,** as built and proposed in the ready message: the group's notes, `L64-open-details.md`.
+
+**Tests**
+- **`ZoteroSendResumeTests`** (the kit's), 21 tests over the stand-in: the defect's three, now each finished from the stop's progress; what a stop carries; a refusal at 403, 400 and 429 (no write in flight, a new token); a stop before Zotero took anything (its error alone); the host's progress as the send goes; a changed collection; a note gained since; the lost collection, notes and document writes; a deleted collection made anew; a finish whose read fails, and a second that ends it; the write in flight settled first; a document entered twice; another account's progress; a cancelled send; the value's JSON and its 12 hours; a note's digest; an item's identity.
+- **`ZoteroSendProgressStoreTests`** (the app's), 8: the file kept, read and dropped; an empty progress not kept; the 12 hours; Disconnect and the file names; the history's rows adding up, a send the app did not see end included; the two stop sentences, the notes-alone sentence and the collection row's caption.
+- No test waits: the client's sleep returns at once, and the suites' limits are for a hang alone.
+
+**Docs**
+- Both manuals: the Share tile's send (11.2) and the collection's (12.10 on iOS, 12.9 on the Mac).
+- EditableContent: 15 blocks for the new strings in `08-Reading-Research-Collections.md`, *Finishing a Zotero send that stopped part-way (#1923)*, and 13 ranges re-pointed (from `v2` at `322c98e2` with L58's #2055), with a bullet in the Amendment-Log.
+- The plan of record: decision 236, the row in §1's two tables, §1a, the counts, the brief and its record.
+
+**Checked on the branch,** through `Scripts/heavy.sh`
+- `swift build --target FRUSCoreKit`, no warning; `swift test --filter Zotero`, 77 tests in 9 suites passed (00:53 to 00:55 UTC).
+- `build-for-testing` on the iPhone 17 under iOS 27.0, from empty: the two known residues alone (3 min 9 s).
+- 54 suites of the unit target there: 434 tests passed (208 s). They are this row's two suites, the Zotero and history suites, and source and copy scans chosen by name, `EditableContentKeyTests`, `CodingStandardsAuditTests` and both boundary scans among them. They were not every scan that reads the changed files: `ExcerptVerificationWiringTests`, which reads the export sheet from `ExcerptVerifierTests.swift`, was not among them, and the landing run found it failing.
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- A script mirroring `EditableContentKeyTests`' rule read all 1,385 ranged blocks: each holds its key.
+- **The symbol diff,** since the kit's public API grows: unsigned Debug `FRUSExplorerMac` of `v2` at `d9b86ae2` (a `git archive`, built from empty into its own build folders) beside the branch's, `nm -j` of each `FRUS Explorer.debug.dylib`, demangled, with private discriminators, closure numbers and local symbols' numbered suffixes dropped: 258,464 names on `v2` and 260,196 here, 286 removed and 2,018 added. Removed: the old `send(items:collectionName:apiKey:userID:username:status:)` with its async parts, the client's private `createCollection` and `writeObjects`, `ZoteroSendResult`'s old initialiser, the array slices the old batches made, and the three changed views' old body types. Added: `ZoteroSendProgress` and `ZoteroSendStopped` with their parts and conformances, the new `send` with its steps, reads and request loop, `ZoteroSendResult`'s new initialiser and `itemsLeftInLibrary`, `StoppedZoteroSend` and `ZoteroSendProgressStore`, and the views' new members and body types. No other type's name moved.
+
+**Before the head** (the orchestrator's "L64: your turn is coming", while L58's #2055 was in CI)
+- **Merged:** `origin/v2` at `322c98e2`, L63's #2054, as `5ead4f61`, which took in #2042 and the merges of L38 (#2048), L35 (#2049), L36 (#2050), L56 (#2051), R8 (#2052), L43 (#2053) and L63 (#2054); then L58's head `2b7f4051` (#2055) as `c35c799f`.
+  - The export sheet's three conflicts take L35's in: its version 1.7 stays and L64's is 1.8; the sheet runs both tasks, the stopped send's read before the quotation check, and L35's count of what will print; and `resolvedZoteroDocuments()` keeps L35's doc comment.
+  - The records' conflicts (the plan, this log, the Amendment-Log, and three ranges in `08-Reading-Research-Collections.md`) are resolved with v2's side first, and L58's records come before L64's.
+  - L64's decision is renumbered 219 → 236, after L63's 235, in L64's own lines: the plan, this entry, the Amendment-Log, the area file's subsection, the kit's runbook and `ZoteroSendProgressStore.swift`'s comment. The plan counts thirty-nine rows, and Wave 3 nine.
+  - 13 ranges re-pointed from `v2` with #2055: the eleven this row moved before, and two of L35's in the export sheet that L64's lines above them moved, `export.format.menu` and the sentence's block. All 1,458 ranged blocks hold their keys.
+- **The landing runs,** each one `Scripts/heavy.sh` call on the iPhone 17 under iOS 27.0 (`80CF0F18`), the TEI mirror set, the app's uninstall first, which found the device shut down, so nothing was removed.
+  - **On `733664cb`** (tree `c8d1e5b5`, 07:36 to 07:57 UTC): `build-for-testing`, the known residues alone (2 min 31 s); `swift build --target FRUSCoreKit`, no warning (9 s); `swift test`, 39 runs, 5,408 tests in 628 suites, all passed (L58's 5,387 and this row's 21), with the two older warnings at `ProvenanceFlowMeasurement.swift:154` (213 s); the `FRUSExplorerMac` build, the residues alone (41 s); `Scripts/check_repo_hygiene.py`, its six checks.
+  - The unit target there (`-only-testing:FRUSExplorerTests`) ran 8,562 tests in 1,044 suites, L58's 8,533 in 1,042 and this row's 29 in 2: 8,543 passed, 17 skipped, the one test with its six known issues, and **one failed, `ExcerptVerificationWiringTests.mountedOnce()`** (765 s). The scan reads the export sheet's `body` for `.task { await verifyExcerpts() }`, mounted above both platform bodies; this row's fix (`28c42c22`) had folded the stopped send's read into that task, and the branch's 54 suites had not held the scan.
+  - **The fix** (`9740af60`): the read is a task of its own, beside L35's two, the file's length kept, so no range moves.
+  - **On `21f3f097`** (tree `b7ed172b`, 07:59 to 08:16 UTC), the whole set again, on the orchestrator's word: `build-for-testing`, the known residues alone (18 s); the unit target, 8,562 tests in 1,044 suites, 8,544 passed, 17 skipped and the one test with its six known issues, none failed (760 s); `swift build --target FRUSCoreKit`, no warning; `swift test`, 39 runs, 5,408 tests in 628 suites, all passed (165 s); the `FRUSExplorerMac` build, the residues alone (17 s); the hygiene script's six checks. These are the landing's runs.
+- **At the head** (the orchestrator's "L64: you're at the head", after #2055 merged as `6c8db012`): `v2` taken in at `6c8db012` (`ad015870`). L58's squash keeps its head's tree, which the pre-run's merge had taken in, so the merge changed no file: its two conflicts were this log's and the Amendment-Log's appended entries against an empty side, and its tree is `21f3f097`'s, `b7ed172b`. The tree differs from the runs' in these records alone. `Scripts/check_repo_hygiene.py` on it: its six checks passed.
 
 ## Session 2026-11-28 — L49, a short citation form: *FRUS*, 1946, vol. VI, doc. 475, with what each volume's own title names it by where the years and the number do not, so that it names one volume for each of the manifest's 553; printed wherever a collection names one of its documents again
 
