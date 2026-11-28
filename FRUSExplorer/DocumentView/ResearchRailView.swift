@@ -112,8 +112,8 @@ struct ResearchRailView: View {
     @Environment(\.documentHostID) private var documentHostID
     #endif
     #if os(iOS)
-    /// Gates the rail-header "Open in New Window" icon to iPad Stage Manager (D8).
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// Gates the rail-header "Open in New Window" icon to an iPad with windows (D8; ``AuxWindowGate``).
+    @AuxWindowGate private var opensAuxWindows
     #endif
 
     // MARK: Accordion expansion (shared keys — survive navigation, stay in sync with any callers)
@@ -270,8 +270,8 @@ struct ResearchRailView: View {
                 .foregroundStyle(.secondary)
             #if os(iOS)
             // D8: the rail header is the iPad "Open in New Window" home (Stage Manager). Hidden on
-            // iPhone (single window) — `supportsMultipleWindows` is false there.
-            if supportsMultipleWindows {
+            // every phone, the iPhone Duo included — ``AuxWindowGate`` answers false there (D1).
+            if opensAuxWindows {
                 Button {
                     appState.openAuxWindow(DocumentWindowID(
                         volumeId: entry.volumeId,

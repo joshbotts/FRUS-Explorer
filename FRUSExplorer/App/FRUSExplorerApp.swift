@@ -70,8 +70,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// F-18, iPadOS 26.5 simulator): in Full Screen Apps mode the flag reports true — and it is
 /// TRUTHFUL.** `openWindow` opened a real second fullscreen window (the standalone document
 /// scene, reached via the app switcher), so the feared silent no-op does not occur there; the
-/// mode changes how windows are ARRANGED, not whether scenes can open. `openWindow` remains a
-/// no-op where the flag is false (iPhone), so every caller keeps a sheet/inline fallback.
+/// mode changes how windows are ARRANGED, not whether scenes can open. Every caller keeps a sheet
+/// fallback, and ``AuxWindowGate`` takes it on every phone, though the iPhone Duo's flag is true.
 ///
 /// **Closing one (#1368).** Each of the twelve publishes an `AuxWindowClosing` through
 /// `AuxWindowOriginModifier` — the six analytics scenes through `.auxWindowCloseOnly`, which records
@@ -1080,7 +1080,7 @@ struct FRUSExplorerApp: App {
         //
         // The word cloud was the ONLY Research-rail tool with no scene of its own. Its four
         // siblings — graph, Source Explorer, semantic map, related documents — all resolve
-        // `supportsMultipleWindows ? openAuxWindow : sheet` locally in `DocumentView`, so they open
+        // `opensAuxWindows ? openAuxWindow : sheet` locally in `DocumentView`, so they open
         // where they were launched from. The cloud instead rode the app-level `pendingWordCloud`
         // hand-off, presented by `MainTabView` — a view a STANDALONE DOCUMENT WINDOW does not host.
         // From such a window the tile addressed the launcher's `sceneID` and the cloud appeared in
@@ -1763,8 +1763,8 @@ struct FRUSExplorerApp: App {
     ///
     /// Declared once and referenced from **both** platform regions of `body` (rather than
     /// hoisted above them) so the macOS Window-menu ordering is unchanged. Callers gate on
-    /// `supportsMultipleWindows` and fall back to the sheet where windows are unavailable
-    /// (iPhone, iPads without Stage Manager).
+    /// ``AuxWindowGate`` and fall back to the sheet where it answers false (every phone, the
+    /// iPhone Duo included).
     private var archivalNeighborsScene: some Scene {
         WindowGroup(for: ArchivalNeighborsRequest.self) { $request in
             Group {
@@ -1794,8 +1794,8 @@ struct FRUSExplorerApp: App {
     /// so the window reconstructs the fetch from the value alone and SwiftUI restores it — with its
     /// exact tuning — across relaunches. Declared once and referenced from both platform regions of
     /// `body` (like `archivalNeighborsScene`) so the macOS Window-menu ordering is unchanged. Callers
-    /// gate on `supportsMultipleWindows` and fall back to `RelatedDocumentsSheet` where windows are
-    /// unavailable (iPhone, iPads without Stage Manager).
+    /// gate on ``AuxWindowGate`` and fall back to `RelatedDocumentsSheet` where it answers false
+    /// (every phone, the iPhone Duo included).
     private var relatedDocumentsScene: some Scene {
         WindowGroup(for: RelatedDocumentsRequest.self) { $request in
             Group {

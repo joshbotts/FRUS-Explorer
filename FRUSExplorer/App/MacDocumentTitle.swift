@@ -43,42 +43,93 @@ import Foundation
 /// `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins the tag half over
 /// the whole bundled manifest.
 ///
-/// **A window too narrow for the whole label can still cut the tag.** `principalLabel` puts
-/// `" · Doc N"` after it, so the tag sits in the middle of "Topic · tag · Doc N", and
-/// `MacDocumentPrincipalTitle` renders the centre item with `.truncationMode(.middle)`, which elides
-/// the middle of the string. Nothing has measured how often a real window is that narrow.
+/// **Until L38 a window too narrow for the whole label could still cut the tag**, which sat in the
+/// middle of "Topic · tag · Doc N" in a centre item that elided the middle of the string. Since L38
+/// the title takes the tag alone with the number, and the topic is not shown in the window's chrome.
 ///
 /// ## Both document windows, since L21
 /// Until L21 (UI review MAC-1, #1921) only the standalone window used this type. The main window
 /// set no title, so the Window menu listed every main window as "FRUS Explorer", and its centre
 /// showed the raw id this type was written to replace. Both windows now take their title from
-/// ``windowTitle(header:documentId:)`` and draw their centre through `MacDocumentPrincipalTitle`,
-/// so the two cannot drift apart again.
+/// ``windowTitle(for:volume:)`` and draw their centre through `MacDocumentPrincipalTitle`, so the
+/// two cannot drift apart again.
+///
+/// ## The title is the volume and number, the centre the head, since L38 (F2, decision 219)
+/// L21 titled the windows with the document's head and put the volume and number in the centre.
+/// The title bar's room is what the toolbar leaves, and AppKit cut the head in almost every window
+/// (R6's F2). Measured in the check copy with `frus1946v06` d475 open: at the main window's default
+/// 1,200 pt the title read "The Chargé in the Soviet Union (Kenn…", and at its least width, 640 pt,
+/// "The Chargé in the…", with every tool folded into ». The owner chose, from captures of three
+/// layouts, the one that swaps the two: the title is the volume's tag and the number, "1946 v6 · Doc
+/// 475", which fits whole where the head did not, and the centre is the head, cut at its tail where
+/// its own room runs out, with the whole head and the id one hover away. The Window menu and Mission
+/// Control list the windows by where their documents are, and two ⌘N windows on different
+/// documents still read apart, by their numbers. The head stays whole at the top of the page.
 ///
 /// Version history:
 ///   1.0 — CW-10 (UI review M-8)
 ///   1.1 — #1491 review round 1: a document the volume prints without a number reads "… ·
 ///          Unnumbered (d710a-1)", where it read "… · Doc [Unnumbered document following …]"
-///   1.2 — L21 (MAC-1): ``windowTitle(header:documentId:)``, the title both document windows set,
-///          and ``principalNumber(stored:documentId:)``, the number the centre names
+///   1.2 — L21 (MAC-1): the title both document windows set, the head, and
+///          ``principalNumber(stored:documentId:)``, the number the centre names
+///   1.3 — L38 (F2, decision 219): the title is the volume's tag and the number
+///          (``windowTitle(for:volume:)``), and the centre the head (``headTitle(header:documentId:)``)
 enum MacDocumentTitle {
 
-    /// A document window's title: the document's printed head, or its id when it has none.
+    /// A document window's title: the volume's tag and the document's number, "1946 v6 · Doc 475"
+    /// (L38, F2).
     ///
-    /// The title is what the Window menu, Mission Control and the window's own title bar show,
-    /// so it names the document as the volume prints it. The volume and the document's number
-    /// are the centre's (``principalLabel(volumeLabel:documentNumber:documentId:)``).
+    /// The title is what the Window menu, Mission Control and the window's own title bar show. The
+    /// tag tells every bundled volume apart (above), and with the number it fits whole in the room a
+    /// toolbar leaves the title, where the head did not. A document with no number of its own, a
+    /// volume's list of persons for one, adds its id, so two such windows on one volume still read
+    /// apart; a volume the manifest does not hold leaves the id alone, as the centre did before.
+    ///
+    /// - Parameters:
+    ///   - entry: The document the window shows.
+    ///   - volume: Its volume's manifest entry, or `nil` when the manifest holds none.
+    /// - Returns: The window's title.
+    static func windowTitle(for entry: DocumentBrowserEntry, volume: VolumeManifestEntry?) -> String {
+        let tag = volume.map {
+            ChronologyViewModel.distilledVolumeLabelParts(volumeId: $0.volumeId, subseries: $0.subseries,
+                                                          title: $0.title).tag
+        }
+        return windowTitle(volumeTag: tag,
+                           documentNumber: principalNumber(stored: entry.documentNumber, documentId: entry.documentId),
+                           documentId: entry.documentId)
+    }
+
+    /// ``windowTitle(for:volume:)``'s rule over its values.
+    ///
+    /// - Parameters:
+    ///   - volumeTag: The volume's tag ("1946 v6"), or `nil` when the manifest holds no entry.
+    ///   - documentNumber: The number to name (``principalNumber(stored:documentId:)``), or `nil`.
+    ///   - documentId: The document's id.
+    /// - Returns: "1946 v6 · Doc 475"; "1946 v6 · Unnumbered (d710a-1)"; "1946 v6 · persons" for a
+    ///   document with no number; the id alone for a volume the manifest does not hold.
+    static func windowTitle(volumeTag: String?, documentNumber: String?, documentId: String) -> String {
+        guard let volumeTag, !volumeTag.isEmpty else { return documentId }
+        guard let documentNumber, !documentNumber.isEmpty else {
+            return String(format: String(localized: "macDocument.title.noNumber %@ %@",
+                                         defaultValue: "%1$@ · %2$@"),
+                          volumeTag, documentId)
+        }
+        return principalLabel(volumeLabel: volumeTag, documentNumber: documentNumber, documentId: documentId)
+    }
+
+    /// What a document window's centre says since L38 (F2): the document's printed head, or its id
+    /// when it has none.
     ///
     /// - Parameters:
     ///   - header: The entry's head, as the producer that opened the document passed it.
-    ///   - documentId: The document's id, the title when the head is empty.
-    /// - Returns: The window's title.
-    static func windowTitle(header: String, documentId: String) -> String {
+    ///   - documentId: The document's id, the centre when the head is empty.
+    /// - Returns: The head, or the id.
+    static func headTitle(header: String, documentId: String) -> String {
         header.isEmpty ? documentId : header
     }
 
-    /// The number the centre names: the one the entry carries, or, when the producer that opened
-    /// the document passed none, the one its id spells (`d475` → `475`).
+    /// The number the title names (the centre's until L38): the one the entry carries, or, when the
+    /// producer that opened the document passed none, the one its id spells (`d475` → `475`).
     ///
     /// About half of the app's `DocumentBrowserEntry` constructions pass no number: Research's
     /// rows and the Corpus Browser's among them. Without the id's number, the main window's centre
@@ -96,7 +147,8 @@ enum MacDocumentTitle {
         return CitableDocumentNumber.fromDocumentId(documentId)
     }
 
-    /// The toolbar centre's text.
+    /// A document's place: its volume and its number. The toolbar centre's text until L38, and since
+    /// then the window's title, with the volume's tag alone (``windowTitle(volumeTag:documentNumber:documentId:)``).
     ///
     /// Falls back to the document id when the volume is not in the manifest — a window restored
     /// for a volume that has since been removed still has to say something, and the id is what
@@ -126,15 +178,14 @@ enum MacDocumentTitle {
                       volumeLabel, documentNumber)
     }
 
-    /// Whether the label is the raw-id fallback rather than a resolved location.
+    /// Whether the centre shows the raw id rather than a head (since L38, F2).
     ///
     /// The view uses this to keep the monospaced face for an id and drop it for prose: a
-    /// monospaced "Soviet Union · 1969-76 v20 · Doc 475" reads as machine output, which is half
-    /// of what M-8 is actually complaining about.
+    /// monospaced head reads as machine output, which is half of what M-8 complained about.
     ///
-    /// - Parameter volumeLabel: The short volume form, or `nil`.
-    /// - Returns: `true` when the label will be the bare document id.
-    static func isFallback(volumeLabel: String?) -> Bool {
-        volumeLabel?.isEmpty ?? true
+    /// - Parameter header: The entry's head.
+    /// - Returns: `true` when the centre will be the bare document id.
+    static func isFallback(header: String) -> Bool {
+        header.isEmpty
     }
 }

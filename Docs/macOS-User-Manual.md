@@ -119,7 +119,7 @@ The Mac app is built around one **main window** (the document reader) surrounded
 
 ### 4.1 The Toolbar
 
-**Title and center.** The window is titled with the open document's heading, so the Window menu and Mission Control tell two windows opened with ⌘N apart. The center of the toolbar says where the document is: its volume in short form and its number (*… · 1969-76 v1 · Doc 42*), updating as you navigate; hover it for the volume and document identifier (`frus1969-76v01/d42`). A standalone document window (File ▸ Open Document in New Window) shows the same two. With no document open the window is titled *FRUS Explorer*, and on a narrow window the center drops out before the tools do.
+**Title and center.** The window is titled with where the open document is: its volume's short tag and its number (*1969-76 v1 · Doc 42*), which fits in the title bar whole, so the Window menu and Mission Control tell two windows opened with ⌘N apart. A document without a number of its own adds its identifier (*1969-76 v1 · persons*). The center of the toolbar holds the document's heading, cut short where the toolbar has no room for all of it; hover it for the whole heading and the volume and document identifier (`frus1969-76v01/d42`). Both update as you navigate. A standalone document window (File ▸ Open Document in New Window) shows the same two. With no document open the window is titled *FRUS Explorer*, and on a narrow window the center drops out before the tools do.
 
 **Trailing edge — five controls.** The two ▾ entries are menus grouping the specialized windows:
 
@@ -352,11 +352,11 @@ Each row shows the subject, its `Category · Sub-category`, and its reach in doc
 
 **Those figures describe the whole series, not your library.** A subject can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. A subject's page shows both, labeled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device* — and if that last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a subject your library may be full of.
 
-The subject's page also lists its **Covering volumes** — complete membership across the series, including volumes you have not downloaded. Long lists preview the first few, with **Show all N volumes** to disclose the rest; click any volume to open it in the Corpus Browser.
-
 **Find documents on this subject** opens Search filtered to that one subject — finer than the subject-area rows in the Facets panel (Section 7.5), where an area holds about five subjects. Both filters can be active at once, and each carries its own token you can remove independently.
 
 **All «area» subjects** (for example *All Cold War subjects*) returns to the index narrowed to the subject's own area, so a reader who found one Cold War subject can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Subject area: Cold War — 6 subjects* — with a ✕ to restore the full index. Taking the door clears any search you had typed, so the whole area is listed; search within the area afterwards and the chip says how many of its subjects are showing — *Subject area: Cold War — 1 of 6 subjects*.
+
+Below the two, the subject's page lists its **Covering volumes** — complete membership across the series, including volumes you have not downloaded. Long lists preview the first few, with **Show all N volumes** to disclose the rest; click any volume to open it in the Corpus Browser.
 
 It opens as its own window, so the index stays available beside whatever you are reading. Reach it from the Window menu, from a subject in the **Subjects** section of a document's Research rail (Section 4.2), from **Browse this subject in the index** on any subject chip's pivot sheet, from **Browse all subjects** in a search's Subjects facet, or from **Browse all subjects…** in the scope menu of any analytics dashboard or *About the Series* page, which brings this window forward without closing the one you were in.
 
