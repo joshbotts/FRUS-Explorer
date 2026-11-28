@@ -1141,3 +1141,435 @@ struct CollectionFactsResolutionTests {
         }
     }
 }
+
+// MARK: - L58: the defects, shown first
+
+/// The three defects L58 ends, each held to what fixes it, written against what the format and the statement had before
+/// L58 so that the same suite fails on L43's tip and passes on L58's (decision 183: a row shows its defect first).
+///
+/// - **J6** (the third review): the writer left a document's Off out, and the reader took the missing key for Default,
+///   which a collection with headnotes on turns On.
+/// - **#1999's file half**: the file named a headnote by its draft's id, an id of the sender's library, and carried
+///   none of its words, so a headnote never reached a colleague.
+/// - **#2005's rest**: a collection's statement of sources said nothing of the lines its compiler wrote, a title and its
+///   date line or a headnote of theirs, beside the volumes' text.
+@Suite("L58: the collection file's headnote and the statement of sources, shown first")
+struct CollectionFileDefectTests {
+
+    /// A collection of one document, d1, whose headnote is set as `includeHeadnote` says, under a collection whose
+    /// headnotes are on.
+    private func collection(includeHeadnote: Bool?, headnoteSummaryId: UUID? = nil) -> CollectionExport {
+        let entry = CollectionEntryExport(id: UUID(), documentId: "d1", volumeId: "frus1961-63v11", sortOrder: 0,
+                                          selectedNoteIds: [], kind: CollectionEntryKind.document.rawValue,
+                                          includeHeadnote: includeHeadnote, headnoteSummaryId: headnoteSummaryId)
+        return CollectionExport(id: UUID(), name: "Headnotes", projectIds: [], entries: [entry],
+                                defaultIncludeHeadnote: true)
+    }
+
+    /// A file written from `collection` and read back, as a recipient's import reads it.
+    private func roundTrip(_ collection: CollectionExport) throws -> (json: String, imported: NativeCollectionImport) {
+        let file = NativeCollectionSerializer.makeFile(from: collection, includeNotes: false, resolveNoteTexts: { _ in [] })
+        let data = try NativeCollectionSerializer.encode(file)
+        return (String(decoding: data, as: UTF8.self),
+                NativeCollectionSerializer.importedValues(from: try NativeCollectionSerializer.decode(data)))
+    }
+
+    @Test("J6: a document switched Off, in a collection with headnotes on, arrives Off")
+    func offArrivesOff() throws {
+        let (json, imported) = try roundTrip(collection(includeHeadnote: false))
+        let entry = try #require(imported.collection.entries.first)
+        #expect(entry.includeHeadnote == false,
+                "Off arrived as \(String(describing: entry.includeHeadnote)), which the collection's On turns on: \(json)")
+    }
+
+    @Test("#1999: a headnote is never named in the file by an id of the sender's library")
+    func headnoteIsNoDraftId() throws {
+        let draft = UUID()
+        let (json, _) = try roundTrip(collection(includeHeadnote: true, headnoteSummaryId: draft))
+        #expect(!json.contains(draft.uuidString), "the file names the sender's draft by its id: \(json)")
+    }
+
+    @Test("#2005: a collection's statement of sources names the lines its compiler wrote")
+    func statementNamesTheCompilersLines() {
+        let titled = CollectionExportDocument(documentId: "d1", volumeId: "frus1961-63v11", sortOrder: 0,
+                                              title: "Volume — d1", titleOverride: "The Long Telegram",
+                                              bodyText: "Text.", citation: "A citation.")
+        let lines = CollectionColophon.sourceLines(for: [.document(titled)], embedsWordCloud: false)
+        #expect(lines.contains { $0.contains("compiler") },
+                "the statement says nothing of the title the compiler wrote: \(lines)")
+        // A document with no line of the compiler's prints no such sentence.
+        let plain = CollectionExportDocument(documentId: "d1", volumeId: "frus1961-63v11", sortOrder: 0,
+                                             title: "Volume — d1", bodyText: "Text.", citation: "A citation.")
+        #expect(!CollectionColophon.sourceLines(for: [.document(plain)], embedsWordCloud: false)
+            .contains { $0.contains("compiler") })
+    }
+}
+
+// MARK: - L58: the Note on the Text
+
+/// The Note on the Text (L58; the Collections design's §3.6): its rule over the documents' readings, and its place in a
+/// resolve, outside the block seam (the third review's J18). The sentences are the row's proposal for the owner's
+/// words, so a test that reads one is a reminder (decision 9 of the 2026-10-11 plan of record): an edit to the words
+/// moves it, with the reason here.
+@Suite("L58: the Note on the Text")
+@MainActor
+struct NoteOnTheTextTests {
+
+    typealias Fixtures = CollectionResolutionFixtures
+    typealias Note = CollectionNoteOnTheText
+
+    @Test("Documents are named by their contents numbers, a run of three or more as a range")
+    func documentsPhrase() {
+        #expect(Note.documentsPhrase([3]) == "document 3")
+        #expect(Note.documentsPhrase([5, 2]) == "documents 2 and 5")
+        #expect(Note.documentsPhrase([1, 2, 3, 4, 7]) == "documents 1–4 and 7")
+        #expect(Note.documentsPhrase([1, 2, 5, 6, 7, 9]) == "documents 1, 2, 5–7 and 9")
+    }
+
+    @Test("A collection that prints its documents whole, as the volumes do, has nothing to say, and prints no Note")
+    func nothingToSay() {
+        let note = Note(documents: [Note.Document(number: 1), Note.Document(number: 2)])
+        #expect(note.paragraphs.isEmpty)
+        #expect(!note.hasSomethingToSay)
+        #expect(note.block() == nil, "not even a title, and never Nothing to list")
+        // A source note switched off still prints among a full text's footnotes (#1991), so nothing is left out.
+        #expect(Note(documents: [Note.Document(number: 1, includesSourceNote: false)]).paragraphs.isEmpty)
+    }
+
+    @Test("Titles and date lines: said for every document, or with the documents named")
+    func titles() throws {
+        let some = Note(documents: [Note.Document(number: 1, hasTitle: true, hasDateLine: true),
+                                    Note.Document(number: 2),
+                                    Note.Document(number: 3, hasTitle: true)])
+        let paragraph = try #require(some.paragraphs.first)
+        #expect(paragraph.hasPrefix("The titles of documents 1 and 3 are the compiler’s;"), "\(paragraph)")
+        #expect(paragraph.contains("_As published:_"))
+        #expect(paragraph.hasSuffix("So is the date line under the title of document 1."), "\(paragraph)")
+
+        let every = Note(documents: [Note.Document(number: 1, hasTitle: true, hasDateLine: true),
+                                     Note.Document(number: 2, hasTitle: true, hasDateLine: true)])
+        #expect(every.paragraphs.first?.hasPrefix("Every document’s title is the compiler’s;") == true)
+        #expect(every.paragraphs.first?.hasSuffix("So is the date line under each title.") == true)
+        // A date line with no title prints nowhere (J41), so the Note says nothing of it.
+        #expect(Note(documents: [Note.Document(number: 1, hasDateLine: true)]).paragraphs.isEmpty)
+    }
+
+    @Test("What is left out: summaries, citations, footnotes and source notes, each for the whole collection or named")
+    func leftOut() throws {
+        let note = Note(documents: [
+            Note.Document(number: 1, includesFootnotes: false),
+            Note.Document(number: 2, bodyDepth: .summaryOnly),
+            Note.Document(number: 3, bodyDepth: .index, includesSourceNote: false),
+            Note.Document(number: 4, includesFootnotes: false, includesSourceNote: false),
+        ])
+        let paragraph = try #require(note.paragraphs.first)
+        #expect(paragraph == "Document 2 is given as a summary written by Apple Intelligence, in place of its text. "
+                + "Document 3 is given by its citation alone. "
+                + "Footnotes are left out of documents 1 and 4; their numbers remain in the text. "
+                + "The archival source notes of documents 3 and 4 are left out.", "\(paragraph)")
+
+        let all = Note(documents: [Note.Document(number: 1, includesFootnotes: false, includesSourceNote: false),
+                                   Note.Document(number: 2, includesFootnotes: false, includesSourceNote: false)])
+        #expect(all.paragraphs == ["Footnotes are left out; their numbers remain in the text. "
+                                   + "The archival source notes are left out."])
+        let summaries = Note(documents: [Note.Document(number: 1, bodyDepth: .summaryOnly),
+                                         Note.Document(number: 2, bodyDepth: .summaryOnly)])
+        #expect(summaries.paragraphs == ["Every document is given as a summary written by Apple Intelligence, in place of its text."])
+    }
+
+    @Test("Headnotes: one sentence for each writer, by name, and one for all where one writer wrote them all")
+    func headnotes() throws {
+        let note = Note(documents: [
+            Note.Document(number: 1, headnote: .appleIntelligence),
+            Note.Document(number: 2, headnote: .person(name: "Jane Doe")),
+            Note.Document(number: 3, headnote: .appleIntelligence),
+            Note.Document(number: 4, headnote: .personFromDraft(name: "Jane Doe")),
+            Note.Document(number: 5, headnote: .person(name: nil)),
+            Note.Document(number: 6),
+        ])
+        #expect(note.paragraphs == ["The headnotes to documents 1 and 3 were written by Apple Intelligence. "
+                                    + "The headnote to document 2 was written by Jane Doe. "
+                                    + "The headnote to document 4 was drafted by Apple Intelligence and edited by Jane Doe. "
+                                    + "The headnote to document 5 was written by hand, not by Apple Intelligence."])
+        let one = Note(documents: [Note.Document(number: 1, headnote: .person(name: "Jane Doe")),
+                                   Note.Document(number: 2, headnote: .person(name: "Jane Doe"))])
+        #expect(one.paragraphs == ["The headnotes were written by Jane Doe."])
+    }
+
+    @Test("Quoted passages and the labels the compiler reworded")
+    func passagesAndLabels() throws {
+        let wording = CollectionWording(json: #"{"bibliography":"Works Cited","researchNote":"Commentary","later":"x"}"#)
+        let note = Note(documents: [Note.Document(number: 1)], quotedPassageCount: 2, wording: wording)
+        #expect(note.paragraphs.count == 2)
+        #expect(note.paragraphs.first?.hasPrefix("The 2 passages quoted in this collection are excerpts") == true)
+        #expect(note.paragraphs.last == "The compiler’s own words stand for the app’s in these labels: "
+                + "_Commentary_ for Research Note and _Works Cited_ for Bibliography.", "\(note.paragraphs)")
+    }
+
+    /// J18: the Note is read from the resolved entries, outside the block seam, over the whole collection: its row
+    /// prints it where its row is, a capped preview's Note is the export's, and a collection with nothing to say prints
+    /// no item at all for the row, where a block prints *Nothing to list*.
+    @Test("The assembly prints the Note at its row, read over every entry, and nothing where it has nothing to say")
+    func throughTheAssembly() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            var collection = Fixtures.staticCollection()
+            collection.entries.append(Fixtures.entry(20, kind: .generated) {
+                $0.generatedBlockType = CollectionGeneratedBlockType.noteOnTheText.rawValue
+            })
+            let assembly = CollectionContentAssembly(collection: collection, notes: Fixtures.notes, source: store,
+                                                     locale: Locale(identifier: "en_US"))
+            func note(_ items: [CollectionExportItem]) -> CollectionGeneratedBlock? {
+                items.compactMap { item -> CollectionGeneratedBlock? in
+                    if case .generated(let block) = item, block.type == .noteOnTheText { return block }
+                    return nil
+                }.first
+            }
+            let items = try await assembly.resolve(entries: Fixtures.entries(of: collection), introduction: nil,
+                                                   purpose: .preview)
+            let block = try #require(note(items), "the Note prints at its row")
+            #expect(block.title == "Note on the Text")
+            let text = block.rows.map(\.text).joined(separator: "\n")
+            // d8 has a title of the compiler's; d9 is in an index-depth section; one passage is quoted.
+            #expect(text.contains("The title of document 2 is the compiler’s"), "\(text)")
+            #expect(text.contains("Document 3 is given by its citation alone."), "\(text)")
+            #expect(text.contains("The passage quoted in this collection"), "\(text)")
+            #expect(!text.contains(CollectionGeneratedBlocks.emptyRowText))
+            if case .generated(let last)? = items.last {
+                #expect(last.type == .noteOnTheText, "the Note prints where its row is, last")
+            } else {
+                Issue.record("the last item is not the Note: \(String(describing: items.last))")
+            }
+
+            // A capped preview passes a prefix of the entries; the Note is read over all of them.
+            let capped = try await assembly.resolve(entries: Array(Fixtures.entries(of: collection).prefix(2)),
+                                                    introduction: nil, purpose: .preview)
+            #expect(capped.isEmpty || note(capped) == nil, "the capped prefix holds no Note row")
+            let item = await assembly.resolveItem(CollectionContentAssembly.Entry(
+                collection.entries.last!, proseParagraphs: nil))
+            if case .generated(let single)? = item {
+                #expect(single.rows.map(\.text) == block.rows.map(\.text), "the row's own resolve reads the whole collection")
+            } else {
+                Issue.record("the Note's row resolved to \(String(describing: item))")
+            }
+
+            // Nothing to say: the row prints nothing, not a title over Nothing to list.
+            let plain = CollectionExport(id: UUID(), name: "Plain", projectIds: [], entries: [
+                Fixtures.entry(0, kind: .document, document: "d7"),
+                Fixtures.entry(1, kind: .generated) { $0.generatedBlockType = CollectionGeneratedBlockType.noteOnTheText.rawValue },
+            ], defaultBodyDepth: "full", footnoteStyle: "all")
+            let plainItems = try await CollectionContentAssembly(collection: plain, notes: [], source: store)
+                .resolve(entries: Fixtures.entries(of: plain), introduction: nil, purpose: .export)
+            #expect(note(plainItems) == nil)
+            #expect(plainItems.count == 1, "the document alone: \(plainItems.count) items")
+        }
+    }
+
+    /// Decision 194: a headnote's caption names its writer, in the collection's word for a headnote, and the Note counts
+    /// it the same way. A person's headnote never stamped is named by the collection's author line.
+    @Test("A headnote's caption names its writer, by the name it carries, else the author line")
+    func headnoteCaption() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            let volume = Fixtures.volume
+            let stamped = GeneratedSummaryExport(id: UUID(), documentId: "d7", volumeId: volume,
+                                                 promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                                 responseText: "Jane's headnote.", responseFormat: .general,
+                                                 wasChunked: false, authorship: .userWritten, isHeadnoteDraft: true,
+                                                 writerName: "Jane Doe")
+            let unstamped = GeneratedSummaryExport(id: UUID(), documentId: "d8", volumeId: volume,
+                                                   promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                                   responseText: "An edited draft.", responseFormat: .general,
+                                                   wasChunked: false, authorship: .aiEdited, isHeadnoteDraft: true)
+            store.summaries += [stamped, unstamped]
+            let collection = CollectionExport(id: UUID(), name: "Captions", projectIds: [], entries: [
+                Fixtures.entry(0, kind: .document, document: "d7") { $0.includeHeadnote = true; $0.headnoteSummaryId = stamped.id },
+                Fixtures.entry(1, kind: .document, document: "d8") { $0.includeHeadnote = true; $0.headnoteSummaryId = unstamped.id },
+            ], authorLine: "The Compiler", labelsJSON: #"{"headnote":"Editor’s Note"}"#)
+            let docs = try await CollectionContentAssembly(collection: collection, notes: [], source: store)
+                .resolveDocuments(entries: Fixtures.entries(of: collection), purpose: .preview)
+            #expect(docs.map(\.headnoteWriter) == [.person(name: "Jane Doe"), .personFromDraft(name: "The Compiler")])
+            let options = CollectionExportOptions(composing: collection)
+            let captions = docs.map { doc in
+                CollectionDocumentPlan(document: doc, options: options).lines.first { $0.role == .headnote }?.attribution
+            }
+            #expect(captions == ["Editor’s Note by Jane Doe",
+                                 "Editor’s Note by The Compiler, from a draft by Apple Intelligence"], "\(captions)")
+            #expect(CollectionAIAttribution.headnoteLabel(writer: .appleIntelligence, label: "Headnote")
+                    == "Headnote by Apple Intelligence (on-device)")
+            #expect(CollectionAIAttribution.headnoteLabel(writer: .person(name: nil), label: "Headnote") == nil)
+            // The stored name of nobody takes no author line after it (an import's mark).
+            #expect(CollectionHeadnoteWriter(authorship: .userWritten, storedName: CollectionHeadnoteWriter.unnamed,
+                                             authorLine: "The Recipient") == .person(name: nil))
+        }
+    }
+}
+
+// MARK: - L58: the collection file's new keys
+
+/// The collection file's new keys (L58; the Collections design's §7.4; decisions 166, 193 and 194): each written only
+/// where it is set, read back by the importer, and none a key 1.0 reads with a new type. The file run of 2026-11-27
+/// opened a hand-made file with these keys in 1.0 (1861) by all four ways in: 1.0 dropped every new key and kept
+/// `includeHeadnote: false` and an unknown block type (`L43-prep-file-run.md`).
+@Suite("L58: the collection file's new keys")
+struct CollectionFileKeysTests {
+
+    /// A collection with every new fact set: Chicago, the volume's heading leading, two words and a later build's name,
+    /// See also; a heading with its headnote default Off; d475 titled with a date line and its headnote On; d473 Off
+    /// with a draft of its own; d470 at Default.
+    private func collection() -> CollectionExport {
+        func entry(_ order: Int, _ kind: CollectionEntryKind, _ document: String = "",
+                   configure: (inout CollectionEntryExport) -> Void = { _ in }) -> CollectionEntryExport {
+            var entry = CollectionEntryExport(id: UUID(), documentId: document,
+                                              volumeId: document.isEmpty ? "" : "frus1946v06", sortOrder: order,
+                                              selectedNoteIds: [], kind: kind.rawValue, level: 1,
+                                              text: kind == .heading ? "Moscow, February 1946" : nil)
+            configure(&entry)
+            return entry
+        }
+        return CollectionExport(
+            id: UUID(), name: "The new keys", projectIds: [], entries: [
+                entry(0, .generated) { $0.generatedBlockType = CollectionGeneratedBlockType.noteOnTheText.rawValue },
+                entry(1, .heading) { $0.headnoteDefault = false },
+                entry(2, .document, "d475") {
+                    $0.titleOverride = "The Long Telegram"
+                    $0.dateLine = "Moscow, 22 February 1946"
+                    $0.includeHeadnote = true
+                    $0.headnoteSummaryId = UUID()
+                },
+                entry(3, .document, "d473") { $0.includeHeadnote = false; $0.headnoteSummaryId = UUID() },
+                entry(4, .document, "d470"),
+            ],
+            authorLine: "Jane Doe", defaultIncludeHeadnote: true,
+            citationStyle: "chicago", opening: "volumeHeading",
+            labelsJSON: #"{"bibliography":"Works Cited","later":"A later build's word"}"#,
+            defaultIncludeRelatedDocuments: true)
+    }
+
+    /// The headnote d475 prints, Jane Doe's, as the app's store answers it.
+    private let jane = FRUSCollectionFile.Headnote(text: "Kennan's answer to telegram 284.", format: "general",
+                                                   authorship: "userWritten", writerName: "Jane Doe")
+
+    @Test("Each new key is written where it is set, and a headnote travels as its text where it prints")
+    func writtenWhereSet() throws {
+        var asked: [String] = []
+        let file = NativeCollectionSerializer.makeFile(from: collection(), includeNotes: false,
+                                                       resolveNoteTexts: { _ in [] }) { entry, _ in
+            asked.append(entry.documentId)
+            return jane
+        }
+        #expect(file.formatVersion == 2 && file.minimumReaderVersion == 1, "no change of version or floor")
+        #expect(file.citationStyle == "chicago" && file.opening == "volumeHeading")
+        #expect(file.labels == ["bibliography": "Works Cited", "later": "A later build's word"])
+        #expect(file.includeRelatedDocuments == true)
+        #expect(file.authorLine == "Jane Doe", "the author line serves as the compiler's name (decision 234)")
+        let entries = file.entries
+        #expect(entries.map(\.generatedBlockType) == ["noteOnTheText", nil, nil, nil, nil])
+        #expect(entries[1].headnoteDefault == false && entries[1].includeHeadnote == nil, "J24: a heading's own field")
+        #expect(entries[2].dateLine == "Moscow, 22 February 1946" && entries[2].includeHeadnote == true)
+        #expect(entries[2].headnote == jane)
+        #expect(entries[3].includeHeadnote == false && entries[3].headnote == nil, "Off travels as Off, and no draft (193)")
+        #expect(entries[4].includeHeadnote == nil && entries[4].headnote == nil,
+                "d470 is Default in a section whose default is Off: no headnote prints, so none travels")
+        #expect(entries.allSatisfy { $0.headnoteSummaryId == nil }, "no id of the sender's library (166)")
+        #expect(asked == ["d475"], "only a headnote that prints is asked for")
+
+        // 1.0 keeps reading what it read: no key it knows has a new type (the file run's finding 4).
+        let json = String(decoding: try NativeCollectionSerializer.encode(file), as: UTF8.self)
+        #expect(json.contains("\"includeHeadnote\" : false"))
+        #expect(!json.contains("headnoteSummaryId"))
+    }
+
+    @Test("A collection that sets nothing new and has no headnote writes the bytes it wrote before L58")
+    func writeMinimumStays() throws {
+        let plain = CollectionExport(id: UUID(), name: "Plain", projectIds: [], entries: [
+            CollectionEntryExport(id: UUID(), documentId: "d1", volumeId: "frus1961-63v11", sortOrder: 0,
+                                  selectedNoteIds: [], kind: "document")])
+        let file = NativeCollectionSerializer.makeFile(from: plain, includeNotes: false, resolveNoteTexts: { _ in [] })
+        #expect(file.formatVersion == 1)
+        // The keys 1.0's writer wrote, and no other (read as keys, so the check holds wherever the kit runs).
+        let data = try NativeCollectionSerializer.encode(file)
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(Set(object.keys) == ["composition", "entries", "format", "formatVersion", "name"])
+        let composition = try #require(object["composition"] as? [String: Any])
+        #expect(Set(composition.keys) == ["applyHighlights", "defaultBodyDepth", "footnoteStyle", "includeNotes",
+                                          "includeWordCloud", "tocStyle"])
+        let entry = try #require((object["entries"] as? [[String: Any]])?.first)
+        #expect(Set(entry.keys) == ["documentId", "kind", "volumeId"])
+    }
+
+    @Test("An import reads every new key back, and makes a headnote draft of its own")
+    func importReadsThemBack() throws {
+        var ids = (1...40).map { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))! }.makeIterator()
+        let file = NativeCollectionSerializer.makeFile(from: collection(), includeNotes: false,
+                                                       resolveNoteTexts: { _ in [] }) { _, _ in jane }
+        let data = try NativeCollectionSerializer.encode(file)
+        let imported = NativeCollectionSerializer.importedValues(from: try NativeCollectionSerializer.decode(data),
+                                                                 makeId: { ids.next()! })
+        let values = imported.collection
+        #expect(values.citationStyle == "chicago" && values.opening == "volumeHeading")
+        #expect(CollectionWording(json: values.labelsJSON).storedWords
+                == ["bibliography": "Works Cited", "later": "A later build's word"], "a later build's word survives")
+        #expect(values.defaultIncludeRelatedDocuments == true && values.defaultIncludeHeadnote == true)
+        let entries = values.entries
+        #expect(entries[1].headnoteDefault == false)
+        #expect(entries[2].dateLine == "Moscow, 22 February 1946")
+        #expect(entries[3].includeHeadnote == false, "Off arrives Off (J6)")
+        let draft = try #require(imported.headnoteDrafts.first)
+        #expect(imported.headnoteDrafts.count == 1)
+        #expect(entries[2].headnoteSummaryId == draft.id, "the entry names the import's own draft")
+        #expect(draft.responseText == jane.text && draft.authorship == .userWritten && draft.writerName == "Jane Doe")
+        #expect(draft.isHeadnoteDraft == true && draft.promptId == GeneratedSummaryExport.headnoteDraftPromptId)
+        #expect(draft.documentId == "d475" && draft.volumeId == "frus1946v06")
+        // Ids in file order: the collection's, then each entry's own and its draft's.
+        #expect(values.id.uuidString.hasSuffix("000000000001") && entries[2].id.uuidString.hasSuffix("000000000004"))
+        #expect(draft.id.uuidString.hasSuffix("000000000005"))
+    }
+
+    @Test("A person's headnote with no writer's name takes the file's author line, else nobody's; a guess is never made")
+    func writerNames() throws {
+        func importing(_ headnote: FRUSCollectionFile.Headnote, authorLine: String?) throws -> GeneratedSummaryExport? {
+            let file = FRUSCollectionFile(
+                format: "fruscollection", formatVersion: 2, minimumReaderVersion: 1, name: "Names",
+                authorLine: authorLine,
+                composition: .init(defaultBodyDepth: "full", footnoteStyle: "all", tocStyle: "citation",
+                                   applyHighlights: false, includeNotes: true, includeWordCloud: false),
+                entries: [.init(kind: "document", documentId: "d1", volumeId: "v1", includeHeadnote: true,
+                                headnote: headnote)])
+            return NativeCollectionSerializer.importedValues(from: file).headnoteDrafts.first
+        }
+        let person = FRUSCollectionFile.Headnote(text: "Mine.", authorship: "userWritten")
+        #expect(try importing(person, authorLine: "The Sender")?.writerName == "The Sender", "decision 234")
+        #expect(try importing(person, authorLine: nil)?.writerName == CollectionHeadnoteWriter.unnamed,
+                "named by nobody, so the recipient's author line never claims it")
+        let ai = FRUSCollectionFile.Headnote(text: "The model's.", authorship: "aiGenerated", writerName: "Ignored")
+        #expect(try importing(ai, authorLine: "The Sender")?.writerName == nil, "Apple Intelligence's has no person")
+        #expect(try importing(FRUSCollectionFile.Headnote(text: "Whose?"), authorLine: nil) == nil,
+                "no authorship: the import leaves it out rather than guess")
+        #expect(try importing(FRUSCollectionFile.Headnote(text: "  ", authorship: "userWritten"), authorLine: nil) == nil)
+        #expect(try importing(FRUSCollectionFile.Headnote(text: "x", authorship: "agentWritten"), authorLine: nil) == nil)
+    }
+
+    @Test("A structured headnote travels with its fields' names and imports as structured")
+    func structuredHeadnote() throws {
+        let schema = StructuredSummarySchema(fields: [.init(name: "KeyParticipants", description: "Who"),
+                                                      .init(name: "Background", description: "Why")])
+        let summary = GeneratedSummaryExport(id: UUID(), documentId: "d1", volumeId: "v1", promptId: UUID(),
+                                             responseText: #"{"Background":"b","KeyParticipants":"k"}"#,
+                                             responseFormat: .structured(schema: schema), wasChunked: false,
+                                             authorship: .aiGenerated)
+        let headnote = try #require(FRUSCollectionFile.Headnote(summary: summary, authorLine: "Jane Doe"))
+        #expect(headnote.format == "structured" && headnote.fields == ["KeyParticipants", "Background"])
+        #expect(headnote.writerName == nil, "Apple Intelligence's")
+        guard case .structured(let back) = headnote.responseFormat else {
+            Issue.record("a structured headnote read back as \(headnote.responseFormat)")
+            return
+        }
+        #expect(back.fields.map(\.name) == ["KeyParticipants", "Background"])
+        // A person's headnote never stamped carries the author line, the name its export prints.
+        let edited = GeneratedSummaryExport(id: UUID(), documentId: "d1", volumeId: "v1", promptId: UUID(),
+                                            responseText: "Edited.", responseFormat: .general, wasChunked: false,
+                                            authorship: .aiEdited)
+        #expect(FRUSCollectionFile.Headnote(summary: edited, authorLine: " Jane Doe ")?.writerName == "Jane Doe")
+    }
+}

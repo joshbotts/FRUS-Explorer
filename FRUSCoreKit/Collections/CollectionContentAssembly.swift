@@ -238,6 +238,10 @@ extension CollectionEntryExport {
 ///          without its calls (#1992) and through an editorial note's wrapper (#2003), and its record's
 ///          title and date line with them (decisions 165 and 198); a headnote with no summary chosen prints
 ///          the newest stored summary (`SummaryRecency`), where it printed the first the store returned
+///   1.3 — L58: the Note on the Text, a rule over the resolved entries outside the block seam (J18): a batch reads it
+///          once over the whole collection (`noteOnTheText(over:options:)`), through the cascade the per-entry loop
+///          reads (`sectionOverrides`), and its row prints it, or nothing where it has nothing to say; a headnote
+///          names its writer (`CollectionExportDocument.headnoteWriter`, decision 194)
 @MainActor
 public struct CollectionContentAssembly {
 
@@ -535,8 +539,9 @@ public struct CollectionContentAssembly {
         let entries = refs.map(Entry.init)
         // Membership-wide computations (generated blocks, A10 universe) see the FULL
         // result set even when per-document resolution was capped by the preview.
-        let membership = Self.documentRefs(in: (fullRefs ?? refs).map(Entry.init))
-        let batch = await loadBatchContext(for: entries, collectionDocuments: membership)
+        let fullEntries = (fullRefs ?? refs).map(Entry.init)
+        let membership = Self.documentRefs(in: fullEntries)
+        let batch = await loadBatchContext(for: entries, collectionDocuments: membership, noteEntries: fullEntries)
         // A smart collection's entries are search results, never headings, so there is nothing to drop.
         let items = await resolveItems(from: entries, batch: batch, dropsUntitledHeadings: false)
         let (front, back) = await generatedItems(batch: batch)
@@ -560,10 +565,18 @@ public struct CollectionContentAssembly {
             if Task.isCancelled { break }
             guard let raw = entry.generatedBlockType,
                   let blockType = CollectionGeneratedBlockType(rawValue: raw) else { continue }
-            let block = await Self.worded(CollectionGeneratedBlocks.resolve(
-                type: blockType, documents: batch.collectionDocuments,
-                dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale),
-                options: batch.options)
+            let block: CollectionGeneratedBlock
+            if blockType.listsMembership {
+                block = await Self.worded(CollectionGeneratedBlocks.resolve(
+                    type: blockType, documents: batch.collectionDocuments,
+                    dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale),
+                    options: batch.options)
+            } else if let note = batch.noteOnTheText {
+                // The Note on the Text, read over the whole result set (L58); nothing where it has nothing to say.
+                block = note
+            } else {
+                continue
+            }
             switch blockType.defaultPosition {
             case .frontMatter: front.append(.generated(block))
             case .backMatter:  back.append(.generated(block))
@@ -598,7 +611,6 @@ public struct CollectionContentAssembly {
                                             level: $0.level,
                                             bodyDepthOverride: $0.bodyDepthOverride)
         }
-        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(structuralRefs)
         // #1465: the levels the items carry — an untitled heading's is nil in an export, which leaves it out.
         let emittedLevels: [Int?] = dropsUntitledHeadings
             ? CollectionOutline.exportLevels(structuralRefs, untitled: ordered.map {
@@ -606,8 +618,32 @@ public struct CollectionContentAssembly {
                     && ($0.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             })
             : CollectionOutline.resolvedDepths(structuralRefs).map(Optional.init)
-        // Phase 5 override cascades: one generic outline walk per field, heading values
-        // only (a document's own override never leaks into the section defaults).
+        let sections = Self.sectionOverrides(ordered: ordered, structuralRefs: structuralRefs)
+        var items: [CollectionExportItem] = []
+        for (i, ref) in ordered.enumerated() {
+            if Task.isCancelled { break }
+            // A heading the export leaves out (#1465): its Section defaults are already in the cascades above.
+            guard let level = emittedLevels[i] else { continue }
+            if let item = await resolveEntry(ref, section: sections[i],
+                                             headingLevel: max(level, 1),
+                                             batch: batch) {
+                items.append(item)
+            }
+        }
+        return items
+    }
+
+    /// The section defaults in effect at each position of `ordered` (Phase 5): one generic outline walk per field,
+    /// heading values only, so a document's own override never leaks into the section defaults. The per-entry loop
+    /// and the Note on the Text (L58) read the same cascade.
+    ///
+    /// - Parameters:
+    ///   - ordered: The entries, in `sortOrder`.
+    ///   - structuralRefs: Their outline references, in the same order.
+    /// - Returns: One `SectionOverrides` per entry.
+    private nonisolated static func sectionOverrides(ordered: [Entry],
+                                                     structuralRefs: [CollectionOutline.StructuralRef]) -> [SectionOverrides] {
+        let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(structuralRefs)
         func headingValues<Value>(_ value: (Entry) -> Value?) -> [Value?] {
             ordered.map { $0.kind == .heading ? value($0) : nil }
         }
@@ -626,12 +662,8 @@ public struct CollectionContentAssembly {
         // A section's headnote default (L43; J24): its own field, read on headings only.
         let secHeadnote = CollectionOutline.sectionOverrideValues(
             structuralRefs, headingValues: headingValues { $0.headnoteDefault })
-        var items: [CollectionExportItem] = []
-        for (i, ref) in ordered.enumerated() {
-            if Task.isCancelled { break }
-            // A heading the export leaves out (#1465): its Section defaults are already in the cascades above.
-            guard let level = emittedLevels[i] else { continue }
-            let section = SectionOverrides(
+        return ordered.indices.map { i in
+            SectionOverrides(
                 bodyDepth: sectionDepths[i],
                 applyHighlights: secHighlights[i],
                 includeNotes: secNotes[i],
@@ -640,13 +672,94 @@ public struct CollectionContentAssembly {
                 summaryPromptId: secPrompt[i],
                 includeRelatedDocuments: secRelated[i],
                 includeHeadnote: secHeadnote[i])
-            if let item = await resolveEntry(ref, section: section,
-                                             headingLevel: max(level, 1),
-                                             batch: batch) {
-                items.append(item)
+        }
+    }
+
+    // MARK: - The Note on the Text (L58)
+
+    /// Whether the collection has a Note on the Text's row, so that a batch reads the Note at all.
+    private var hasNoteOnTheText: Bool {
+        collection.entries.contains {
+            $0.entryKind == .generated
+                && $0.generatedBlockType == CollectionGeneratedBlockType.noteOnTheText.rawValue
+        }
+    }
+
+    /// The Note on the Text's reading of `entries` (L58; the third review's J18), with this assembly's store answering
+    /// who wrote each headnote that prints (`headnoteText`): see ``noteOnTheText(over:collection:options:headnote:)``.
+    func noteOnTheText(over entries: [Entry], options: CollectionExportOptions) -> CollectionNoteOnTheText {
+        Self.noteOnTheText(over: entries, collection: collection, options: options) { ref, promptId in
+            headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
+                         summaryId: ref.headnoteSummaryId, preferredPromptId: promptId)
+                .map { headnoteWriter($0.authorship, storedName: $0.writerName) }
+        }
+    }
+
+    /// The Note on the Text's reading of `entries` (L58; the third review's J18): each document as the cascade resolves
+    /// it — its title and date line, its depth, its footnotes and source note, and who wrote the headnote it prints —
+    /// numbered as the contents list numbers it, with the quoted passages and the collection's wording. The per-entry
+    /// loop and this read the same cascade (`sectionOverrides`), so what the Note says is what the documents print; the
+    /// assembly answers `headnote` from its store as a document's headnote is resolved, and the collection's settings
+    /// from the app's, for their line.
+    ///
+    /// - Parameters:
+    ///   - entries: Every entry of the collection, in any order: a static collection's own, a smart one's results.
+    ///   - collection: The collection's values, for its default body depth.
+    ///   - options: The collection's options.
+    ///   - headnote: Who wrote the headnote a document entry prints, under the prompt preferred for it (its own, its
+    ///     section's, else the collection's); `nil` where none is stored. Asked only for a document whose headnote is on.
+    /// - Returns: The Note's reading.
+    public static func noteOnTheText(
+        over entries: [Entry], collection: CollectionExport, options: CollectionExportOptions,
+        headnote: (_ entry: Entry, _ preferredPromptId: UUID?) -> CollectionHeadnoteWriter?
+    ) -> CollectionNoteOnTheText {
+        let ordered = entries.sorted { $0.sortOrder < $1.sortOrder }
+        let structuralRefs = ordered.map {
+            CollectionOutline.StructuralRef(isHeading: $0.kind == .heading, level: $0.level,
+                                            bodyDepthOverride: $0.bodyDepthOverride)
+        }
+        let sections = sectionOverrides(ordered: ordered, structuralRefs: structuralRefs)
+        let defaultDepth = collection.defaultBodyDepth ?? CollectionBodyDepth.full.rawValue
+        var documents: [CollectionNoteOnTheText.Document] = []
+        var quotedPassages = 0
+        for (i, ref) in ordered.enumerated() {
+            switch ref.kind {
+            case .excerpt:
+                // An excerpt with no passage prints nothing (`excerptItem`), so it is not counted.
+                if !(ref.text ?? "").isEmpty { quotedPassages += 1 }
+            case .document:
+                // A document entry with no ids prints nothing and takes no number (`resolveEntry`).
+                guard !ref.volumeId.isEmpty, !ref.documentId.isEmpty else { continue }
+                let section = sections[i]
+                let title = ref.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let dateLine = ref.dateLine?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let headnoteOn = ref.includeHeadnote ?? section.includeHeadnote ?? options.includeHeadnoteDefault
+                let promptId = ref.summaryPromptIdOverride ?? section.summaryPromptId ?? options.summaryPromptId
+                let writer = headnoteOn ? headnote(ref, promptId) : nil
+                documents.append(CollectionNoteOnTheText.Document(
+                    number: documents.count + 1,
+                    hasTitle: !title.isEmpty,
+                    hasDateLine: !dateLine.isEmpty,
+                    bodyDepth: CollectionBodyDepth.resolve(entryOverride: ref.bodyDepthOverride,
+                                                           sectionOverride: section.bodyDepth,
+                                                           collectionDefault: defaultDepth),
+                    includesFootnotes: ref.includeFootnotesOverride ?? section.includeFootnotes
+                        ?? options.includeFootnotes,
+                    includesSourceNote: ref.includeSourceNoteOverride ?? section.includeSourceNote
+                        ?? options.includeSourceNote,
+                    headnote: writer))
+            case .heading, .prose, .generated, .unrecognized:
+                break
             }
         }
-        return items
+        return CollectionNoteOnTheText(documents: documents, quotedPassageCount: quotedPassages,
+                                       wording: options.wording)
+    }
+
+    /// Who wrote a headnote, by name (L58; decision 194): the name it was stamped with, else the collection's author
+    /// line, which serves as the compiler's name (decision 234).
+    private func headnoteWriter(_ authorship: SummaryAuthorship, storedName: String?) -> CollectionHeadnoteWriter {
+        CollectionHeadnoteWriter(authorship: authorship, storedName: storedName, authorLine: collection.authorLine)
     }
 
     // MARK: - Entry
@@ -849,6 +962,9 @@ public struct CollectionContentAssembly {
         /// and excerpt entries and the whole membership (#1406). Read through
         /// `CitableDocumentNumber.resolve`, never directly.
         let documentNumbers: [String: String]
+        /// The Note on the Text every row of that type prints (L58), read over the whole collection, never a capped
+        /// preview's prefix; `nil` when the collection has no such row or the Note has nothing to say.
+        let noteOnTheText: CollectionGeneratedBlock?
     }
 
     /// The ordered, deduplicated `(volumeId, documentId)` list of a batch's document
@@ -894,9 +1010,13 @@ public struct CollectionContentAssembly {
     /// volume, so the exporters find them. Nothing is fetched here; an export that
     /// prints images asks for the ones it lacks once its items are resolved
     /// (`fetchAbsentFigureImages(printedBy:)`).
+    ///
+    /// - Parameter noteEntries: The entries the Note on the Text reads (L58): `nil`, a static collection's, reads every
+    ///   entry the collection has; a smart collection passes its whole result set.
     private func loadBatchContext(
         for refs: [Entry],
-        collectionDocuments: [(volumeId: String, documentId: String)]
+        collectionDocuments: [(volumeId: String, documentId: String)],
+        noteEntries: [Entry]? = nil
     ) async -> BatchContext {
         let manifest = source.manifestEntries
         let manifestMap = Dictionary(manifest.map { ($0.volumeId, $0) },
@@ -955,6 +1075,13 @@ public struct CollectionContentAssembly {
         let citationHeadings = options.citationStyle == .historyAtState ? [:]
             : ((try? await source.indexingPipeline?.documentHeadingsByKey(citable)) ?? [:])
 
+        // L58: the Note on the Text, read once for the batch over the whole collection, where it has a row.
+        let note = hasNoteOnTheText
+            ? noteOnTheText(over: noteEntries ?? collection.entries.map { Entry($0, proseParagraphs: nil) },
+                            options: options)
+                .block(title: CollectionGeneratedBlockType.noteOnTheText.displayName)
+            : nil
+
         return BatchContext(
             options: options,
             manifestMap: manifestMap,
@@ -966,7 +1093,8 @@ public struct CollectionContentAssembly {
             editorialNoteFlags: editorialNoteFlags,
             collectionDefaultBodyDepth: collection.defaultBodyDepth ?? CollectionBodyDepth.full.rawValue,
             collectionDocuments: collectionDocuments,
-            documentNumbers: documentNumbers
+            documentNumbers: documentNumbers,
+            noteOnTheText: note
         )
     }
 
@@ -1009,6 +1137,9 @@ public struct CollectionContentAssembly {
             // the `.unrecognized` kind guard: degraded, never corrupted.
             guard let raw = ref.generatedBlockType,
                   let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
+            // The Note on the Text is no list of the documents (L58; J18): the batch read it from the resolved
+            // entries, and where it has nothing to say its row prints nothing.
+            guard blockType.listsMembership else { return batch.noteOnTheText.map(CollectionExportItem.generated) }
             return await .generated(Self.worded(CollectionGeneratedBlocks.resolve(
                 type: blockType, documents: batch.collectionDocuments,
                 dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale),
@@ -1151,6 +1282,8 @@ public struct CollectionContentAssembly {
         // The headnote's provenance drives its export attribution (a user-edited/-written headnote
         // is not labeled AI). Absent a stored summary, .aiGenerated is inert (no attribution shows).
         let resolvedHeadnoteAuthorship = resolvedHeadnotePair?.authorship ?? .aiGenerated
+        // Who wrote it, by name (L58; decision 194): the name it was stamped with, else the collection's author line.
+        let resolvedHeadnoteWriter = resolvedHeadnotePair.map { headnoteWriter($0.authorship, storedName: $0.writerName) }
 
         // Related documents (A10): outbound cross-reference targets that are also in
         // this collection, rendered as a "See also:" citation line. The entry's setting, else its section's, else the
@@ -1213,6 +1346,7 @@ public struct CollectionContentAssembly {
             headnoteText: resolvedHeadnote,
             headnoteFormat: resolvedHeadnoteFormat,
             headnoteAuthorship: resolvedHeadnoteAuthorship,
+            headnoteWriter: resolvedHeadnoteWriter,
             applyHighlightsOverride: highlightsOverride,
             includeNotesOverride: notesOverride,
             includeFootnotesOverride: footnotesOverride,
@@ -1437,11 +1571,11 @@ public struct CollectionContentAssembly {
         documentId: String,
         summaryId: UUID?,
         preferredPromptId: UUID?
-    ) -> (text: String, authorship: SummaryAuthorship, format: ResponseFormat)? {
-        /// The three a headnote prints.
+    ) -> (text: String, authorship: SummaryAuthorship, format: ResponseFormat, writerName: String?)? {
+        /// What a headnote prints, with the name its writer was stamped with (L58).
         func printed(_ summary: GeneratedSummaryExport) -> (text: String, authorship: SummaryAuthorship,
-                                                            format: ResponseFormat) {
-            (summary.responseText, summary.authorship ?? .aiGenerated, summary.responseFormat)
+                                                            format: ResponseFormat, writerName: String?) {
+            (summary.responseText, summary.authorship ?? .aiGenerated, summary.responseFormat, summary.writerName)
         }
         if let sid = summaryId {
             if let chosen = source.summary(id: sid), !chosen.responseText.isEmpty {

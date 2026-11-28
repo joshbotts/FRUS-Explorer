@@ -88,6 +88,7 @@ import SwiftData
 ///   1.13 — L20 (#1920, HCD-5): Regenerate's unavailable error says why (`AppleIntelligenceAvailability`)
 ///   1.14 — L34 (R2b's finding): the headnote card falls back to the newest stored summary, through the rule the
 ///          export's headnote reads (`SummaryRecency.headnoteFallback`), where both took the oldest
+///   1.15 — L58: `onAddNoteOnTheText`, passed on to the collection's settings for the Note on the Text's line
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -164,6 +165,10 @@ struct CollectionEntryInspector: View {
     /// through its entry-list management. Passed on to `CollectionCompositionRows`; when `nil` the
     /// embedded composition shows no Presets section.
     var onApplyPreset: ((CollectionPreset) -> Void)?
+
+    /// Adds a Note on the Text to the collection's outline (L58), threaded from the host as `onApplyPreset` is and
+    /// passed on to `CollectionCompositionRows`, whose line offers it; when `nil` the line is not shown.
+    var onAddNoteOnTheText: (() -> Void)?
 
     /// Whether this is presented as a **drill-in push** onto an existing navigation stack (iPhone,
     /// Composer redesign 4). When `true` the inspector omits its own `NavigationStack` and Done
@@ -252,7 +257,8 @@ struct CollectionEntryInspector: View {
             }
             // `CollectionCompositionRows` owns its three labeled Composer sections, so it is placed
             // directly here rather than wrapped in a single "Export composition" section.
-            CollectionCompositionRows(collection: collection, onApplyPreset: onApplyPreset)
+            CollectionCompositionRows(collection: collection, onApplyPreset: onApplyPreset,
+                                      onAddNoteOnTheText: onAddNoteOnTheText)
         }
     }
 

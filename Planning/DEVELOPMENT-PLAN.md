@@ -5562,6 +5562,60 @@ Row L63 of the plan of record from 2026-11-25 (decision 235), a row the owner ad
 - **FRUS Explorer Light:** shared code changes behaviour, by the four rules. `ExternalCitation.anchorsOutsideThePacket` holds one anchor where it held two, `referenceKey(for:)` keys a class, and `TripPacketModel.Target` gains two public functions; no signature changes. The web mirrors the editor's two captions (`web/src/copy.ts`, pinned by its `ArchiveVisitMirrorParityTests`), so its pin move owes them the new text: a hand-over note, posted after the merge.
 - The plan editor, the packet sheet and the views read the rule through the kit, so no view's code changes but the editor's two captions.
 
+## Session 2026-11-28 — L58, the Note on the Text, the statement of sources' sentence for a collection's own lines, and the collection file's new keys: a headnote travels as its text with its writer's name, Off as Off, and each import makes a draft of its own; an export names a headnote's writer
+
+Row L58 of the plan of record from 2026-11-25 (the Collections design's §3.6, §3.7 and §7.4; L43's second half, split at C2, decision 199; the third review's J6 to J8, J18 and J36), started by "Development session orchestration" with "L58: go" on `claude/l58-note-sources-file-keys-60469d`, developed on L43's tip `2ded5f30` while L43 waited for R8's merge, and replayed onto `v2` at `e4318079` (L43's merge, #2053; R8's `ed2c1231` before it). Kit and app code: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed with the unit target and the Mac build. No stored property, so no CloudKit change; no index version; no change of the collection file's version or floor.
+
+**Before it**
+- **The file run** (`L43-prep-file-run.md`, the owner's 1.0 (1861) on the Mac and the iPhone, every way in): 1.0 drops every new key, keeps an unknown block type inert and `includeHeadnote: false` as Off, prints another stored summary for a headnote that is on, and refuses a whole file whose known key has another type.
+
+**Shown first** (decision 183)
+- `CollectionFileDefectTests`, three tests written against L43's API and run under `swift test` in a detached worktree at `2ded5f30`, all three failed: J6 ("Off arrived as nil, which the collection's On turns on"), #1999's file half ("the file names the sender's draft by its id") and #2005's rest ("the statement says nothing of the title the compiler wrote"). On L58's code they pass, with `NoteOnTheTextTests` and `CollectionFileKeysTests`: 16 tests in 3 suites.
+
+**What it built**
+- **The Note on the Text** (`CollectionGeneratedBlockType.noteOnTheText`, `listsMembership`; `CollectionNoteOnTheText` in `CollectionGeneratedBlocks.swift`): a rule over the resolved entries, outside the block seam (J18), read once a batch over the whole collection (`CollectionContentAssembly.noteOnTheText(over:collection:options:headnote:)`, through the per-entry loop's cascade, now `sectionOverrides`), printed at its row or not at all. Its sentences name documents by their contents numbers, each fact for the whole collection or with the documents named.
+- **Its line in the collection's settings** (`CollectionCompositionRows.wantsNoteOnTheText`, *Add Note on the Text*), on the iPhone, in the iPad's sheet and a document's settings, and in the Mac's ⚙ popover; the outline row's own caption.
+- **A headnote's writer by name** (decision 194; `CollectionHeadnoteWriter`, `CollectionAIAttribution.headnoteLabel(writer:label:)`, `CollectionExportDocument.headnoteWriter`), in the collection's word for a headnote; the app's data source now passes each summary's `writerName`, which it had dropped.
+- **The statement of sources' sentence** (`ProvenanceStatement.compilersLinesSentence`, `printsCompilersLines`).
+- **The collection file's new keys** (`FRUSCollectionFile` 2.7; `NativeCollectionSerializer` 1.13): the collection's `citationStyle`, `opening`, `labels` and `includeRelatedDocuments`, a document's `dateLine`, `includeHeadnote` as set and `headnote`, a heading's `headnoteDefault`; no `headnoteSummaryId` written; each import's own draft (`NativeCollectionImport.headnoteDrafts`), its writer's name from the file, else its author line, else `CollectionHeadnoteWriter.unnamed`.
+
+**What did not hold, and what was offered** (decision 183)
+- J7: the brief's first form, stated as it is (1.0 prints a stored summary of its own, or its sentence asking for one); the other form offered to the owner.
+- A sentence on the volumes' own conventions for the Note: needs a per-volume measurement; offered, not built.
+
+**Tests**
+- Kit (compiled twice): `CollectionFileDefectTests`, `NoteOnTheTextTests`, `CollectionFileKeysTests`.
+- App: `CollectionImportHeadnoteDraftTests` 1.1 (the id path on a file as 1.0 wrote it; `headnoteTravelsAsItsText`), `NoteOnTheTextSettingsLineTests`, the Guide's §15.1a example, J36's two tests and the vocabulary pin, and the Phase 5 file tests brought to Off as Off and no id.
+
+**Replayed onto `v2`** at `e4318079`, #2053's merge (`git rebase --onto origin/v2 2ded5f30`), rehearsed first on L43's PR head `57c2dcb3`, whose tree the squash's is:
+- The code commit's one conflict, `CollectionContentResolver.swift`: L35's history line 1.19 and its `fileprivate` `values(_:)` (its `TallySource` reads summaries through it), kept with L58's line, now 1.20, and its `writerName`.
+- The records': `08-Reading-Research-Collections.md`'s 12 ranges in files both sides changed (v2's side taken, then every range set from its key's line by script, which moves the same 35 and adds the same 41 blocks as on the branch), the Amendment-Log (L35's, L36's, L56's, R8's and L43's bullets, then L58's), the README (v2's 332 blocks and L58's 41: 373), and the iOS manual's summaries paragraph (L35's sentences, L58's on a headnote's line).
+- L43's decisions 219 to 222 landed as 231 to 234, so L58's citations of 222 (the author line serves as the compiler's name) read 234: five code comments, two test messages and the plan's record.
+
+**Checked on the branch**
+Each one `Scripts/heavy.sh` job through the orchestrator's side-row loop, this worktree's own DerivedData, the iPhone 17 under iOS 27.0:
+- `swift build --target FRUSCoreKit`, and the full `swift test`: 39 runs and 5,369 tests; `FRUSCoreKitTests` failed at two pins, the everything collection's page (+205 bytes) and package (+316), measured byte for byte as the two Apple Intelligence headnotes' lines (12 bytes shorter each), the edited one's (14 longer) and the statement's paragraph, and re-taken (`CollectionRenderingPinTests` 1.8); then 39 runs, 5,369 tests, all passed.
+- Build-for-testing from an empty build folder: both test targets, the two known residues, no source warning.
+- The unit target (`-only-testing:FRUSExplorerTests`, the TEI mirror set, the app removed first): 8,483 tests in 1,028 suites, 8,464 passed, 17 skipped, the one test with its six known issues, and one failure, `countsGoThroughCountCopy`: the Note's count of quoted passages went around `CountCopy`; it goes through it now. Then 8,483 tests in 1,028 suites, 8,465 passed, 17 skipped, the one test with its six known issues, and none failed.
+- The `FRUSExplorerMac` build: succeeded, with the two known residues.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**At the head** (the orchestrator's "L58: you're at the head")
+- **Merged:** L63's head `15e10d8a` as a merge commit on `dc3c7512` (`2a2a5d26`, its two conflicts the Amendment-Log's and this log's appended entries, L63's first), then `origin/v2` at `322c98e2`, #2054's merge, whose tree is L63's head's. The merge left `2a2a5d26`'s tree as it was, so its runs are the landing's.
+- **The landing runs on `2a2a5d26`**, one `Scripts/heavy.sh` call (06:40 to 07:01 UTC), on the iPhone 17 under iOS 27.0, the TEI mirror set, the app removed first:
+  - build-for-testing, with the known residue only;
+  - the unit target (`-only-testing:FRUSExplorerTests`): 8,533 tests in 1,042 suites, 8,515 passed, 17 skipped, the one test with its six known issues, none failed;
+  - `swift build --target FRUSCoreKit`;
+  - `swift test`: 39 runs, 5,387 tests, all passed;
+  - the `FRUSExplorerMac` build, with the two known residues.
+
+**The rest**
+- The Guide (1.52): §15.1a's table and example, limit 1 (headnotes can now be supplied, named by their writer), §15.2's checker and §15.3's account of versions.
+- Manuals: chapter 12's apparatus (the Note), the inspector's headnote lines, the front matter's statement of sources, and the collection file's two bullets; the Mac's 12.3, 12.5 and 12.9 alike.
+- EditableContent: 41 blocks added (the Note's section, the four lines under a headnote, the statement's sentence, the settings' line), one block's text changed with the app's (`export.native.hint`), 35 ranges re-pointed (`Amendment-Log.md`).
+- The owner's words: `L58-words-for-the-owner.md` in the orchestrator's notes.
+- FRUS Explorer Light: the kit's public API gains `CollectionNoteOnTheText`, `CollectionHeadnoteWriter`, `CollectionGeneratedBlockType.noteOnTheText` and `listsMembership`, `CollectionExportDocument.headnoteWriter`, `CollectionContentAssembly.noteOnTheText(over:collection:options:headnote:)`, `ProvenanceStatement`'s `printsCompilersLines` and `compilersLinesSentence`, `FRUSCollectionFile.Headnote` with the file's new keys, `NativeCollectionImport.headnoteDrafts` and `makeFile`'s `resolveHeadnote`; `CollectionAIAttribution.headnoteLabel(authorship:)` gives way to `headnoteLabel(writer:label:)`. A host's data source should pass each summary's `writerName`, as the app's now does.
+
 ## Session 2026-11-28 — L64, a stopped Zotero send can be finished: the stop carries how far it got, a finish writes nothing twice and settles a lost answer by Zotero's 412, and the app keeps the progress on the device for 12 hours and offers Finish Sending
 
 Row L64 of the plan of record from 2026-11-25 (#1923; decision 236), a short row the owner chose on 2026-11-28 ("A, as a short row in 1.1", the owner's answer in the orchestration session, asked there). Option A of L41's proposal (the group's notes, `L41-1923-resume-proposal.md`). Started by "Development session orchestration" on `claude/l64-zotero-resume-d59e18`, from `v2` at `d9b86ae2` (L62's merge, #2041). Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change, and no index version. Commits: `f1f84fc5` (the defect shown first), `28c42c22` (the fix, its tests and its EditableContent blocks) and a records commit.

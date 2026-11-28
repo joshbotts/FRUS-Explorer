@@ -896,7 +896,7 @@ One quotation cites a document that is no longer in its volume.
 #### Native-format export explanation
 <!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 797–798 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
-Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
+Shares an editable copy of this collection: its documents, settings, sections, prose and headnotes, each headnote named by who wrote it. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
 <!-- END SOURCE: export.native.hint -->
 
@@ -930,7 +930,7 @@ Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim fro
 
 #### What this device lacks for an export of summaries (#2018, L35)
 <!-- L35 (#2018, decision 198): the line under the export sheet's sentence, and the message an export stops with, where documents print a summary that is not stored and Apple Intelligence cannot write one on this device. The count comes first; the reason after it is the app's own sentence for why Apple Intelligence cannot summarize here (`ai.availability.notEnabled`, `.notEnabled.mac` and `.modelNotReady`, in 09-Settings-and-App.md), or, on a device that cannot run it, the sentence below. Until L35 such an export ended "The export could not be rendered.", even with every summary stored. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionSummaryExportError.errorDescription | lines: 972–983 | keys: export.summaries.missing.one %@, export.summaries.missing.many %@, export.summaries.notEligible | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionSummaryExportError.errorDescription | lines: 975–986 | keys: export.summaries.missing.one %@, export.summaries.missing.many %@, export.summaries.notEligible | shared: iOS+macOS (single edit point) -->
 
 **One document / several:** %@ document has no stored summary. / %@ documents have no stored summary.
 
@@ -959,14 +959,14 @@ Web page
 <!-- L34 (2026-11-27), decision 154: the owner's words, fixed. They stand before the volume's heading wherever a
      title of the author's leads a document, in every export, and open a titled contents row's second line. An
      author cannot change or empty them. -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.asPublishedLabel | lines: 242–242 | key: collection.document.asPublished | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.asPublishedLabel | lines: 244–244 | key: collection.document.asPublished | shared: iOS+macOS (single edit point) -->
 
 As published:
 
 <!-- END SOURCE: collection.document.asPublished -->
 
 #### The label over a document's headnote in an export
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.headnoteLabel | lines: 487–487 | key: collection.headnote.label | same text also in: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.headnoteLabel | lines: 491–491 | key: collection.headnote.label | same text also in: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Headnote
@@ -975,7 +975,7 @@ Headnote
 
 #### The label over a summary printed in a document's place
 <!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.summaryLabel | lines: 492–492 | key: collection.summary.label | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.summaryLabel | lines: 496–496 | key: collection.summary.label | shared: iOS+macOS (single edit point) -->
 
 Summary
 
@@ -983,14 +983,14 @@ Summary
 
 #### The label before a document's source note in an export
 <!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.sourceLabel | lines: 497–497 | key: collection.source.label | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.sourceLabel | lines: 501–501 | key: collection.source.label | shared: iOS+macOS (single edit point) -->
 
 Source:
 
 <!-- END SOURCE: collection.source.label -->
 
 #### The label before the documents a document names in the collection
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.seeAlsoLabel | lines: 502–502 | key: collection.related.label | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.seeAlsoLabel | lines: 506–506 | key: collection.related.label | shared: iOS+macOS (single edit point) -->
 
 See also:
 
@@ -998,11 +998,290 @@ See also:
 
 #### The label over a research note in an export
 <!-- L34: a key of its own from L34; the three exporters each printed the words as written in their code. -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.researchNoteLabel | lines: 507–507 | key: collection.researchNote.label | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.researchNoteLabel | lines: 511–511 | key: collection.researchNote.label | shared: iOS+macOS (single edit point) -->
 
 Research Note
 
 <!-- END SOURCE: collection.researchNote.label -->
+
+#### Under a headnote in an export — Apple Intelligence wrote it (L58)
+<!-- L58 (2026-11-28; decision 194): the line under a headnote names its writer, `\(label)` being the word the collection labels a headnote with (Headnote, or the compiler's own). Until L58 it read "AI-generated summary · Apple Intelligence (on-device)", and an edited one "AI-generated summary, edited by you", which a recipient's export printed under the sender's headnote (the third review's J8). -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1336–1337 | key: export.headnote.by.appleIntelligence | shared: iOS+macOS (single edit point) -->
+
+\(label) by Apple Intelligence (on-device)
+
+<!-- END SOURCE: export.headnote.by.appleIntelligence -->
+
+#### Under a headnote in an export — a person wrote it, by name (L58)
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1339–1340 | key: export.headnote.by.person | shared: iOS+macOS (single edit point) -->
+
+\(label) by \(name)
+
+<!-- END SOURCE: export.headnote.by.person -->
+
+#### Under a headnote in an export — a person edited Apple Intelligence's draft (L58)
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1344–1345 | key: export.headnote.by.personFromDraft | shared: iOS+macOS (single edit point) -->
+
+\(label) by \(name), from a draft by Apple Intelligence
+
+<!-- END SOURCE: export.headnote.by.personFromDraft -->
+
+#### Under a headnote in an export — an edit of Apple Intelligence's draft that names no one (L58)
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1347–1348 | key: export.headnote.by.unnamedFromDraft | shared: iOS+macOS (single edit point) -->
+
+\(label) drafted by Apple Intelligence and edited
+
+<!-- END SOURCE: export.headnote.by.unnamedFromDraft -->
+
+
+### The Note on the Text (L58)
+
+*L58 (2026-11-28; the Collections design's §3.6): the Note on the Text, a block of the collection's that says what its documents print beside the volumes' text. Each paragraph prints only where it has something to say, and the Note prints nothing at all where none has. **These are the row's proposal, and the words are yours to choose** (the plan of record's L58): edit any of them here. A document is named by its number in the contents list, `\(Self.documentsPhrase(…))` giving "document 3", "documents 2 and 5" or "documents 1–4 and 7", and a sentence is said for the whole collection where it holds for every document. `_…_` prints in italics.*
+
+#### The Note's row in the outline — the line under its name
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionGeneratedEntryRow.caption | lines: 864–865 | key: collection.entry.generated.noteOnTheText.caption | shared: iOS+macOS (single edit point) -->
+
+Written from what this collection’s documents print: your titles, dates and headnotes, and what is left out. Prints nothing where there is nothing to say.
+
+<!-- END SOURCE: collection.entry.generated.noteOnTheText.caption -->
+
+#### Titles — every document titled
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 857–858 | key: collection.note.titles.all | shared: iOS+macOS (single edit point) -->
+
+Every document’s title is the compiler’s; under each, the words _As published:_ introduce the document’s heading as its volume prints it.
+
+<!-- END SOURCE: collection.note.titles.all -->
+
+#### Titles — one document titled
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 860–861 | key: collection.note.titles.one | shared: iOS+macOS (single edit point) -->
+
+The title of \(Self.documentsPhrase(titled)) is the compiler’s; under it, the words _As published:_ introduce the document’s heading as its volume prints it.
+
+<!-- END SOURCE: collection.note.titles.one -->
+
+#### Titles — some documents titled
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 863–864 | key: collection.note.titles.some | shared: iOS+macOS (single edit point) -->
+
+The titles of \(Self.documentsPhrase(titled)) are the compiler’s; under each, the words _As published:_ introduce the document’s heading as its volume prints it.
+
+<!-- END SOURCE: collection.note.titles.some -->
+
+#### Date lines — the one titled document has one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 870–871 | key: collection.note.dateLines.underIt | shared: iOS+macOS (single edit point) -->
+
+So is the date line under it.
+
+<!-- END SOURCE: collection.note.dateLines.underIt -->
+
+#### Date lines — every titled document has one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 872–873 | key: collection.note.dateLines.underEach | shared: iOS+macOS (single edit point) -->
+
+So is the date line under each title.
+
+<!-- END SOURCE: collection.note.dateLines.underEach -->
+
+#### Date lines — one of the titled documents has one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 875–876 | key: collection.note.dateLines.one | shared: iOS+macOS (single edit point) -->
+
+So is the date line under the title of \(Self.documentsPhrase(dated)).
+
+<!-- END SOURCE: collection.note.dateLines.one -->
+
+#### Date lines — some of the titled documents have one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.titlesParagraph | lines: 878–879 | key: collection.note.dateLines.some | shared: iOS+macOS (single edit point) -->
+
+So are the date lines under the titles of \(Self.documentsPhrase(dated)).
+
+<!-- END SOURCE: collection.note.dateLines.some -->
+
+#### Left out — every document a summary
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 893–894 | key: collection.note.summaries.all | shared: iOS+macOS (single edit point) -->
+
+Every document is given as a summary written by Apple Intelligence, in place of its text.
+
+<!-- END SOURCE: collection.note.summaries.all -->
+
+#### Left out — one document a summary
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 896–897 | key: collection.note.summaries.one | shared: iOS+macOS (single edit point) -->
+
+\(Self.capitalized(Self.documentsPhrase(summaries))) is given as a summary written by Apple Intelligence, in place of its text.
+
+<!-- END SOURCE: collection.note.summaries.one -->
+
+#### Left out — some documents summaries
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 899–900 | key: collection.note.summaries.some | shared: iOS+macOS (single edit point) -->
+
+\(Self.capitalized(Self.documentsPhrase(summaries))) are given as summaries written by Apple Intelligence, in place of their text.
+
+<!-- END SOURCE: collection.note.summaries.some -->
+
+#### Left out — every document by its citation
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 906–907 | key: collection.note.citations.all | shared: iOS+macOS (single edit point) -->
+
+Every document is given by its citation alone.
+
+<!-- END SOURCE: collection.note.citations.all -->
+
+#### Left out — one document by its citation
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 909–910 | key: collection.note.citations.one | shared: iOS+macOS (single edit point) -->
+
+\(Self.capitalized(Self.documentsPhrase(citations))) is given by its citation alone.
+
+<!-- END SOURCE: collection.note.citations.one -->
+
+#### Left out — some documents by their citations
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 912–913 | key: collection.note.citations.some | shared: iOS+macOS (single edit point) -->
+
+\(Self.capitalized(Self.documentsPhrase(citations))) are given by their citations alone.
+
+<!-- END SOURCE: collection.note.citations.some -->
+
+#### Left out — every document's footnotes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 919–920 | key: collection.note.footnotes.all | shared: iOS+macOS (single edit point) -->
+
+Footnotes are left out; their numbers remain in the text.
+
+<!-- END SOURCE: collection.note.footnotes.all -->
+
+#### Left out — some documents' footnotes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 921–922 | key: collection.note.footnotes.some | shared: iOS+macOS (single edit point) -->
+
+Footnotes are left out of \(Self.documentsPhrase(footnotes)); their numbers remain in the text.
+
+<!-- END SOURCE: collection.note.footnotes.some -->
+
+#### Left out — every archival source note
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 927–928 | key: collection.note.sourceNotes.all | shared: iOS+macOS (single edit point) -->
+
+The archival source notes are left out.
+
+<!-- END SOURCE: collection.note.sourceNotes.all -->
+
+#### Left out — one archival source note
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 930–931 | key: collection.note.sourceNotes.one | shared: iOS+macOS (single edit point) -->
+
+The archival source note of \(Self.documentsPhrase(sourceNotes)) is left out.
+
+<!-- END SOURCE: collection.note.sourceNotes.one -->
+
+#### Left out — some archival source notes
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.leftOutParagraph | lines: 933–934 | key: collection.note.sourceNotes.some | shared: iOS+macOS (single edit point) -->
+
+The archival source notes of \(Self.documentsPhrase(sourceNotes)) are left out.
+
+<!-- END SOURCE: collection.note.sourceNotes.some -->
+
+#### Headnotes — one writer wrote them all
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.headnotesParagraph | lines: 956–957 | key: collection.note.headnotes.all | shared: iOS+macOS (single edit point) -->
+
+The headnotes were \(wrote).
+
+<!-- END SOURCE: collection.note.headnotes.all -->
+
+#### Headnotes — one document's
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.headnotesParagraph | lines: 960–961 | key: collection.note.headnotes.one | shared: iOS+macOS (single edit point) -->
+
+The headnote to \(Self.documentsPhrase(group.numbers)) was \(wrote).
+
+<!-- END SOURCE: collection.note.headnotes.one -->
+
+#### Headnotes — some documents'
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.headnotesParagraph | lines: 962–963 | key: collection.note.headnotes.some | shared: iOS+macOS (single edit point) -->
+
+The headnotes to \(Self.documentsPhrase(group.numbers)) were \(wrote).
+
+<!-- END SOURCE: collection.note.headnotes.some -->
+
+#### Headnotes — who wrote them: Apple Intelligence
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.wrote(_:) | lines: 971–972 | key: collection.note.headnotes.byAppleIntelligence | shared: iOS+macOS (single edit point) -->
+
+written by Apple Intelligence
+
+<!-- END SOURCE: collection.note.headnotes.byAppleIntelligence -->
+
+#### Headnotes — who wrote them: a person, by name
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.wrote(_:) | lines: 974–975 | key: collection.note.headnotes.byPerson | shared: iOS+macOS (single edit point) -->
+
+written by \(name)
+
+<!-- END SOURCE: collection.note.headnotes.byPerson -->
+
+#### Headnotes — who wrote them: a person who names no one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.wrote(_:) | lines: 977–978 | key: collection.note.headnotes.byHand | shared: iOS+macOS (single edit point) -->
+
+written by hand, not by Apple Intelligence
+
+<!-- END SOURCE: collection.note.headnotes.byHand -->
+
+#### Headnotes — who wrote them: a person editing Apple Intelligence's draft
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.wrote(_:) | lines: 980–981 | key: collection.note.headnotes.fromDraftByPerson | shared: iOS+macOS (single edit point) -->
+
+drafted by Apple Intelligence and edited by \(name)
+
+<!-- END SOURCE: collection.note.headnotes.fromDraftByPerson -->
+
+#### Headnotes — who wrote them: an edit of Apple Intelligence's draft that names no one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.wrote(_:) | lines: 983–984 | key: collection.note.headnotes.fromDraftByHand | shared: iOS+macOS (single edit point) -->
+
+drafted by Apple Intelligence and edited by hand
+
+<!-- END SOURCE: collection.note.headnotes.fromDraftByHand -->
+
+#### Quoted passages — one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.quotedPassagesParagraph | lines: 994–995 | key: collection.note.excerpts.one | shared: iOS+macOS (single edit point) -->
+
+The passage quoted in this collection is an excerpt from the document cited under it, with any omission marked. FRUS Explorer looks for it in that document’s text, allowing for differences of spacing, quotation marks, dashes and capitals, and for the omissions marked, but not for any difference of wording.
+
+<!-- END SOURCE: collection.note.excerpts.one -->
+
+#### Quoted passages — more than one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.quotedPassagesParagraph | lines: 996–997 | key: collection.note.excerpts.many | shared: iOS+macOS (single edit point) -->
+
+The %@ passages quoted in this collection are excerpts from the documents cited under them, with any omission marked. FRUS Explorer looks for each in its document’s text, allowing for differences of spacing, quotation marks, dashes and capitals, and for the omissions marked, but not for any difference of wording.
+
+<!-- END SOURCE: collection.note.excerpts.many -->
+
+#### Reworded labels — one word and the app's it stands for
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.labelsParagraph | lines: 1004–1005 | key: collection.note.labels.pair | shared: iOS+macOS (single edit point) -->
+
+_\(word)_ for \(label.appWord)
+
+<!-- END SOURCE: collection.note.labels.pair -->
+
+#### Reworded labels — one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.labelsParagraph | lines: 1010–1011 | key: collection.note.labels.one | shared: iOS+macOS (single edit point) -->
+
+The compiler’s own word stands for the app’s in one label: \(list).
+
+<!-- END SOURCE: collection.note.labels.one -->
+
+#### Reworded labels — more than one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.labelsParagraph | lines: 1012–1013 | key: collection.note.labels.some | shared: iOS+macOS (single edit point) -->
+
+The compiler’s own words stand for the app’s in these labels: \(list).
+
+<!-- END SOURCE: collection.note.labels.some -->
+
+#### Naming documents — one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.documentsPhrase(_:) | lines: 1036–1036 | key: collection.note.document | shared: iOS+macOS (single edit point) -->
+
+document \(list)
+
+<!-- END SOURCE: collection.note.document -->
+
+#### Naming documents — more than one
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.documentsPhrase(_:) | lines: 1037–1037 | key: collection.note.documents | shared: iOS+macOS (single edit point) -->
+
+documents \(list)
+
+<!-- END SOURCE: collection.note.documents -->
+
+#### Naming documents — the word before the last of a list
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionGeneratedBlocks.swift | CollectionNoteOnTheText.joined(_:) | lines: 1044–1044 | key: collection.note.and | shared: iOS+macOS (single edit point) -->
+
+and
+
+<!-- END SOURCE: collection.note.and -->
 
 ### Collections — the six templates (L25, decision 139)
 
@@ -1978,11 +2257,19 @@ Archival units are read from the volumes' own source notes by a parser, which le
 Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,465 of 267,663 notes since #1514, 5,469 after #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
 
 #### provenance.block.heading
-<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceStatement.swift | lines: 37–37 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceStatement.swift | lines: 39–39 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
 
 Where this came from
 
 <!-- END SOURCE: provenance.block.heading -->
+
+#### provenance.collection.compilersLines — a collection's own sentence for its compiler's lines (L58)
+<!-- L58 (2026-11-28; #2005; the Collections design's §3.7): printed last in a collection export's "Where this came from", wherever a document prints a title, a date line or a headnote the compiler wrote. The shared sentences above are left as the other exports print them. -->
+<!-- SOURCE: FRUSCoreKit/Provenance/ProvenanceStatement.swift | ProvenanceStatement.compilersLinesSentence | lines: 95–96 | key: provenance.collection.compilersLines | shared: iOS+macOS (single edit point) -->
+
+Titles, date lines and headnotes of the compiler’s own stand apart from the volumes’ text: a title and the date line under it stand above the words “As published:”, and a headnote names its writer.
+
+<!-- END SOURCE: provenance.collection.compilersLines -->
 
 ### What VoiceOver reads from a provenance chip
 
@@ -2974,25 +3261,33 @@ Each line is resolved against the FRUS manifest and your local index — footnot
 <!-- END SOURCE: collection.addDocs.citations.hint -->
 
 #### Summaries are generated on demand for documents that don’t…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 181–182 | key: composition.summaryPrompt.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 187–188 | key: composition.summaryPrompt.hint -->
 
 Summaries are generated on demand for documents that don’t already have one for this prompt. Requires Apple Intelligence.
 
 <!-- END SOURCE: composition.summaryPrompt.hint -->
 
 #### See also — Under each document, the documents it cites that are also…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 202–203 | key: composition.seeAlso.subtitle -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 208–209 | key: composition.seeAlso.subtitle -->
 
 Under each document, the documents it cites that are also in this collection.
 
 <!-- END SOURCE: composition.seeAlso.subtitle -->
 
 #### Wording — Your own words for the labels an export prints…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 278–279 | key: composition.wording.subtitle -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 290–291 | key: composition.wording.subtitle -->
 
 Your own words for the labels an export prints. A word left empty prints the app’s.
 
 <!-- END SOURCE: composition.wording.subtitle -->
+
+#### Analysis & apparatus — the Note on the Text would say something (L58)
+<!-- L58 (2026-11-28; the design's §3.6): shown where the collection has no Note on the Text and one would say something, above the button **Add Note on the Text** (`composition.noteOnTheText.add`). -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.noteOnTheTextLine(onAdd:) | lines: 312–313 | key: composition.noteOnTheText.line | shared: iOS+macOS (single edit point) -->
+
+This collection’s export changes what its volumes print: it adds your titles or headnotes, or leaves something out. A Note on the Text would say so.
+
+<!-- END SOURCE: composition.noteOnTheText.line -->
 
 #### Choose a summarization prompt in the collection’s…
 <!-- SOURCE: FRUSCoreKit/Collections/CollectionContentAssembly.swift | CollectionResolveError.errorDescription | lines: 41–42 | key: export.summaryNoPrompt -->
@@ -3002,7 +3297,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1119–1120 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1123–1124 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -3093,7 +3388,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2446–2446 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2453–2453 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -3102,7 +3397,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2457–2458 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2464–2465 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -3111,7 +3406,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2488–2489 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2495–2496 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -3120,7 +3415,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2502–2503 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2509–2510 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -3129,7 +3424,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2497–2498 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2504–2505 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -3138,7 +3433,7 @@ Save a search from the Search window to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches.mac -->
 
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 374–374 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 377–377 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -3242,84 +3537,84 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1414–1415 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1419–1420 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1824–1825 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1829–1830 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 400–401 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 407–408 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Field caption — Prints under your title, above the words As published…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.dateLineField | lines: 429–430 | key: collection.inspector.dateLine.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.dateLineField | lines: 435–436 | key: collection.inspector.dateLine.caption -->
 
 Prints under your title, above the words As published: and the volume’s own heading and dateline.
 
 <!-- END SOURCE: collection.inspector.dateLine.caption -->
 
 #### Field caption — Not printed: a date line prints only under a title of yours…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.dateLineField | lines: 431–432 | key: collection.inspector.dateLine.withoutTitle -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.dateLineField | lines: 437–438 | key: collection.inspector.dateLine.withoutTitle -->
 
 Not printed: a date line prints only under a title of yours. Give the document a title to print it.
 
 <!-- END SOURCE: collection.inspector.dateLine.withoutTitle -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 502–503 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 508–509 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 587–588 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 593–594 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 771–772 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 777–778 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Default follows the section, else the collection’s See also.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 823–824 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 829–830 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 841–842 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 847–848 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 957–958 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 963–964 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1060–1061 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1066–1067 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -3342,7 +3637,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1795–1796 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1914–1915 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -3362,7 +3657,7 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1210–1211 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1222–1223 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
@@ -3520,28 +3815,28 @@ Its settings in this collection go with it, on your other devices too once they 
 <!-- END SOURCE: collection.entry.delete.confirm.message.settings -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1347–1348 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1350–1351 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1807–1808 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1810–1811 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2107–2108 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2110–2111 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 
 <!-- END SOURCE: collection.entry.inspect.help -->
 
 #### Error message — This collection was made with a newer version of FRUS…
-<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 331–332 | key: collection.import.error.version -->
+<!-- SOURCE: FRUSCoreKit/Collections/NativeCollectionFormat.swift | NativeCollectionError.errorDescription | lines: 462–463 | key: collection.import.error.version -->
 
 This collection was made with a newer version of FRUS Explorer (format \(version)). Update the app to open it.
 

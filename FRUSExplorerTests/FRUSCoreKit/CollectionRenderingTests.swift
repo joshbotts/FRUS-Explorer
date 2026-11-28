@@ -360,6 +360,14 @@ enum CollectionRenderingFixtures {
 ///          prints, without the note. The page and the package read no Zotero item, so their pins hold
 ///   1.7 — L34: all seven pins re-taken, for the one plan the exporters draw, and the records built through
 ///          `ZoteroJSONExporter.makeItem` (`record(…)`), where they were written by hand
+///   1.8 — L58: the everything collection's page and package re-pinned, for two changes of wording and nothing
+///          else, measured byte for byte: a headnote's line names its writer (decision 194), so d7's and d11's
+///          Apple Intelligence headnotes read "Headnote by Apple Intelligence (on-device)" (12 bytes shorter each)
+///          and d8's edited one "Headnote drafted by Apple Intelligence and edited" (14 longer), where they read
+///          "AI-generated summary · …" and "…, edited by you"; and, d10 having a title of the compiler's, the
+///          statement of sources ends with the collection's own sentence (#2005), a 215-byte paragraph in the page
+///          (+205 in all, 49,089 to 49,294) and a 326-byte one in the stored package (+316, 42,856 to 43,172). The
+///          other five pins hold
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -367,8 +375,8 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("3c3bc44d083af902246db2fb1714b9a591589723ed5962e0f383e4e707454a54", 49_089),
-        "everything.docx": ("a7208e3bf6eee6cc86d38289e6efd14e7dde85cb0cac84e2ba79ca02cae3299c", 42_856),
+        "everything.html": ("4cc0afadd76fb7b7e80fdd8dca73feb35a971c148923fe227dd9eec5680c3210", 49_294),
+        "everything.docx": ("c42729d1c769f15ab31a5bc1501bc6b0d5a4eecba84cd057f67850224f7b74b6", 43_172),
         "everything.bib": ("89e6a475b67d7f9c3bce812c6dea70b17c0a03e911d93239eeb009932b255fd9", 1_603),
         "everything.ris": ("7f1ea461453a301c8238c2cdaecbccc72fbfee73af058bb8215048dd110cacb5", 1_248),
         "plain.html": ("f45391c865a2dd79b24add68257de40ee04b90933accd537f5d9bb24729ca8ac", 33_044),

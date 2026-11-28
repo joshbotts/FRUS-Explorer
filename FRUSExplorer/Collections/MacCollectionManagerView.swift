@@ -152,6 +152,8 @@ import UniformTypeIdentifiers
 ///   1.28 — 2026-11-01: #1823 — the Collection menu gains Manage Collections…, Rename Collection…, Duplicate
 ///          Collection and Delete Collection…; Manage Collections' rows gain Rename and Delete in their right-click
 ///          menu, a Duplicate there selects the copy, every delete asks first, and a row's rename is trimmed and saved
+///   1.29 — L58: the ⚙ popover's collection settings offer the Note on the Text where it would say something, its Add
+///          putting the row at the end of the outline; the Apparatus menu lists it with the five blocks
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -1277,6 +1279,7 @@ private struct CollectionDetailPane: View {
 
             CollectionCompositionRows(collection: collection,
                                       onApplyPreset: { applyPreset($0) },
+                                      onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
                                       presetsCompact: false)
 
             // #1619 review: a smart collection takes no hand-added entry, so the window that refuses them offers the

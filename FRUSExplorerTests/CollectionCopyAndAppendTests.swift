@@ -21,8 +21,13 @@ import Testing
 /// each such entry a draft of its own, as Duplicate does; a document's own summary stays shared, and an id
 /// this account does not hold is kept as the file wrote it.
 ///
+/// **Since L58 the file carries a headnote as its text** (decision 166) and no longer names its draft, so a file the
+/// app writes now makes its own draft from the text on every import. A file 1.0 wrote still names a draft by its id,
+/// and the import still copies it where it resolves: the id path is tested on such a file (`asOneZeroWrote`).
+///
 /// Version history:
 ///   1.0 — L29 (#1999, the import's half): initial implementation
+///   1.1 — L58: the file carries the headnote as its text; the id path is held on a file as 1.0 wrote it
 @Suite("A collection file opened on its author's account makes its own headnote drafts (#1999)", .serialized)
 @MainActor
 struct CollectionImportHeadnoteDraftTests {
@@ -44,9 +49,19 @@ struct CollectionImportHeadnoteDraftTests {
         return (collection, entry)
     }
 
-    /// `collection` written to a shared file and opened again through the import every path calls.
-    static func reimported(_ collection: Collection, in context: ModelContext) throws -> Collection {
-        let file = NativeCollectionSerializer.makeFile(from: collection, includeNotes: false) { _ in [] }
+    /// `collection` written to a shared file and opened again through the import every path calls: the file this
+    /// build writes, or, with `asOneZeroWrote`, the file 1.0 wrote, which names each headnote by its summary's id and
+    /// carries none of its text (`NativeCollectionFormat.swift` before L58).
+    static func reimported(_ collection: Collection, in context: ModelContext,
+                           asOneZeroWrote: Bool = false) throws -> Collection {
+        var file = NativeCollectionSerializer.makeFile(from: collection, includeNotes: false) { _ in [] }
+        if asOneZeroWrote {
+            let entries = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+            for index in file.entries.indices where index < entries.count {
+                file.entries[index].headnote = nil
+                file.entries[index].headnoteSummaryId = entries[index].headnoteSummaryId
+            }
+        }
         let decoded = try NativeCollectionSerializer.decode(try NativeCollectionSerializer.encode(file))
         let copy = NativeCollectionSerializer.apply(decoded, into: context)
         try context.save()
@@ -57,8 +72,9 @@ struct CollectionImportHeadnoteDraftTests {
         try context.fetch(FetchDescriptor<GeneratedSummary>(predicate: #Predicate { $0.id == id })).first
     }
 
-    @Test("An imported entry whose headnote names a draft on this account gets a draft of its own")
-    func importCopiesTheDraft() throws {
+    @Test("An imported entry whose headnote names a draft on this account gets a draft of its own",
+          arguments: [false, true])
+    func importCopiesTheDraft(asOneZeroWrote: Bool) throws {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
         let draft = GeneratedSummary(documentId: "d1", volumeId: Self.volume, promptId: UUID(),
@@ -66,7 +82,8 @@ struct CollectionImportHeadnoteDraftTests {
                                      authorship: .userWritten, isHeadnoteDraft: true)
         let (original, entry) = try Self.authorsCollection(in: context, headnote: draft)
 
-        let copy = try Self.reimported(original, in: context)
+        // This build's file carries the text, and 1.0's the id: either way the copy's draft is its own.
+        let copy = try Self.reimported(original, in: context, asOneZeroWrote: asOneZeroWrote)
         let copied = try #require(copy.documentEntries?.first)
         let copiedId = try #require(copied.headnoteSummaryId, "the import dropped the headnote")
         #expect(copiedId != draft.id, "the imported entry names the original's draft, which its edits delete")
@@ -86,7 +103,7 @@ struct CollectionImportHeadnoteDraftTests {
         withExtendedLifetime(container) {}
     }
 
-    @Test("A headnote that names the document's own summary stays shared, and an id this account lacks stays as written")
+    @Test("In a file 1.0 wrote, a headnote that names the document's own summary stays shared, and an id this account lacks stays as written")
     func importKeepsSummariesAndUnknownIds() throws {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
@@ -94,7 +111,7 @@ struct CollectionImportHeadnoteDraftTests {
         let documentSummary = GeneratedSummary(documentId: "d1", volumeId: Self.volume, promptId: UUID(),
                                                responseText: "A summary of the document.")
         let (original, _) = try Self.authorsCollection(in: context, headnote: documentSummary)
-        let copy = try Self.reimported(original, in: context)
+        let copy = try Self.reimported(original, in: context, asOneZeroWrote: true)
         #expect(copy.documentEntries?.first?.headnoteSummaryId == documentSummary.id)
 
         // A colleague's file names a draft of theirs, which this store lacks: kept, so the resolver falls back
@@ -103,9 +120,72 @@ struct CollectionImportHeadnoteDraftTests {
         original.documentEntries?.first?.headnoteSummaryId = elsewhere
         try context.save()
         let before = try context.fetchCount(FetchDescriptor<GeneratedSummary>())
-        let colleagues = try Self.reimported(original, in: context)
+        let colleagues = try Self.reimported(original, in: context, asOneZeroWrote: true)
         #expect(colleagues.documentEntries?.first?.headnoteSummaryId == elsewhere)
         #expect(try context.fetchCount(FetchDescriptor<GeneratedSummary>()) == before)
+
+        // The file this build writes carries the headnote the document prints as its text, the document's own
+        // summary here, and the import makes a draft of its own from it (L58; decision 166).
+        let current = try Self.reimported(original, in: context)
+        let currentId = try #require(current.documentEntries?.first?.headnoteSummaryId)
+        #expect(currentId != documentSummary.id && currentId != elsewhere)
+        let made = try #require(try Self.summary(currentId, in: context))
+        #expect(made.isHeadnoteDraft && made.responseText == "A summary of the document." && made.authorship == .aiGenerated)
+        #expect(made.writerName == nil, "Apple Intelligence's headnote names no person")
+        withExtendedLifetime(container) {}
+    }
+
+    /// L58 (decisions 166, 193 and 194): a headnote travels as its text with its writer's name, Off as Off, and every
+    /// import makes a draft of its own, so a recipient's export names the sender, and two imports of one file share
+    /// nothing with each other or with the original.
+    @Test("A file carries a headnote as its text and its writer, Off as Off; each import makes its own draft")
+    func headnoteTravelsAsItsText() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let draft = GeneratedSummary(documentId: "d1", volumeId: Self.volume,
+                                     promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                     responseText: "Jane's headnote.", authorship: .aiEdited,
+                                     isHeadnoteDraft: true, writerName: "Jane Doe")
+        let (original, _) = try Self.authorsCollection(in: context, headnote: draft)
+        original.defaultIncludeHeadnote = true
+        original.authorLine = "Jane Doe"
+        // A second document switched Off, with a draft of its own that must not travel (decision 193).
+        let off = CollectionEntry(collectionId: original.id, documentId: "d2", volumeId: Self.volume, sortOrder: 1)
+        off.collection = original
+        off.includeHeadnote = false
+        context.insert(off)
+        let abandoned = GeneratedSummary(documentId: "d2", volumeId: Self.volume,
+                                         promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                         responseText: "An abandoned draft.", authorship: .userWritten,
+                                         isHeadnoteDraft: true)
+        context.insert(abandoned)
+        off.headnoteSummaryId = abandoned.id
+        try context.save()
+
+        let file = NativeCollectionSerializer.makeFile(from: original, includeNotes: false) { _ in [] }
+        #expect(file.entries[0].headnote == FRUSCollectionFile.Headnote(text: "Jane's headnote.", format: "general",
+                                                                        authorship: "aiEdited", writerName: "Jane Doe"))
+        #expect(file.entries[1].includeHeadnote == false && file.entries[1].headnote == nil)
+        let json = String(decoding: try NativeCollectionSerializer.encode(file), as: UTF8.self)
+        #expect(!json.contains("An abandoned draft.") && !json.contains(draft.id.uuidString))
+
+        let first = try Self.reimported(original, in: context)
+        let second = try Self.reimported(original, in: context)
+        let firstEntries = (first.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        let secondEntries = (second.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        let firstId = try #require(firstEntries.first?.headnoteSummaryId)
+        let secondId = try #require(secondEntries.first?.headnoteSummaryId)
+        #expect(Set([firstId, secondId, draft.id]).count == 3, "each import's draft is its own")
+        let made = try #require(try Self.summary(firstId, in: context))
+        #expect(made.responseText == "Jane's headnote." && made.authorship == .aiEdited && made.isHeadnoteDraft)
+        #expect(made.writerName == "Jane Doe", "the sender's name stays on the sender's headnote")
+        #expect(firstEntries.last?.includeHeadnote == false, "Off arrives Off (J6)")
+        #expect(firstEntries.last?.headnoteSummaryId == nil)
+
+        // The recipient renames the copy's author line: the sender's headnote keeps the sender's name.
+        first.authorLine = "The Recipient"
+        #expect(CollectionHeadnoteWriter(authorship: made.authorship ?? .aiGenerated, storedName: made.writerName,
+                                         authorLine: first.authorLine) == .personFromDraft(name: "Jane Doe"))
         withExtendedLifetime(container) {}
     }
 }
@@ -567,6 +647,59 @@ struct CollectionFactsCopyTests {
         #expect(off.summaries.first?.writerName == "Jane Doe")
         let on = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: true)
         #expect(Set(on.summaries.map(\.id)) == [draft.id, summary.id])
+        withExtendedLifetime(container) {}
+    }
+}
+
+// MARK: - NoteOnTheTextSettingsLineTests (L58)
+
+/// The Note on the Text's line in the collection's settings (L58; the design's §3.6): shown where the collection has no
+/// Note and one would have something to say, by the rule its export reads, the headnotes looked up in the store only
+/// where nothing else would be said.
+///
+/// Version history:
+///   1.0 — L58: initial implementation
+@Suite("The collection settings offer a Note on the Text where it would say something (L58)", .serialized)
+@MainActor
+struct NoteOnTheTextSettingsLineTests {
+
+    @Test("Offered where the Note would say something and the collection has none; never for a smart collection")
+    func offeredWhereItWouldSpeak() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Line")
+        context.insert(collection)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "frus1946v06", sortOrder: 0)
+        entry.collection = collection
+        context.insert(entry)
+        try context.save()
+        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a document printed whole: nothing to say")
+
+        // A headnote of Apple Intelligence's, found in the store: the Note would name its writer.
+        entry.includeHeadnote = true
+        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a headnote with nothing stored prints none")
+        let summary = GeneratedSummary(documentId: "d1", volumeId: "frus1946v06", promptId: UUID(),
+                                       responseText: "The model's summary.")
+        context.insert(summary)
+        try context.save()
+        #expect(CollectionCompositionRows.wantsNoteOnTheText(collection))
+        entry.includeHeadnote = nil
+
+        entry.titleOverride = "The Long Telegram"
+        #expect(CollectionCompositionRows.wantsNoteOnTheText(collection), "a title of the compiler's")
+
+        let note = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: 1)
+        note.entryKind = .generated
+        note.generatedBlockType = CollectionGeneratedBlockType.noteOnTheText.rawValue
+        note.collection = collection
+        context.insert(note)
+        try context.save()
+        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "the collection has its Note")
+
+        context.delete(note)
+        collection.savedSearchId = UUID()
+        try context.save()
+        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a smart collection's settings run no search")
         withExtendedLifetime(container) {}
     }
 }
