@@ -468,3 +468,86 @@ struct CollectionDocumentPlanTests {
         #expect(!doc.header.contains("["))
     }
 }
+
+// MARK: - CollectionDocumentCopyAnchorTests
+
+/// A document entered twice is two places on the web page (L36, #2004): each copy has its own section,
+/// contents row and note ids, and a document entered once keeps the anchor it has always had.
+@Suite("L36: a document entered twice is two places on the web page (#2004)")
+struct CollectionDocumentCopyAnchorTests {
+
+    private typealias F = PlanFixtures
+
+    /// The values of every `attribute="…"` in `html`, in order.
+    static func values(of attribute: String, in html: String) -> [String] {
+        var values: [String] = []
+        var rest = html[...]
+        while let start = rest.range(of: " \(attribute)=\"") {
+            let tail = rest[start.upperBound...]
+            guard let end = tail.firstIndex(of: "\"") else { break }
+            values.append(String(tail[..<end]))
+            rest = tail[end...]
+        }
+        return values
+    }
+
+    /// The page's contents list, from `<nav>` to `</nav>`.
+    static func contents(_ html: String) throws -> String {
+        let start = try #require(html.range(of: "<nav>"))
+        let end = try #require(html.range(of: "</nav>", range: start.upperBound..<html.endIndex))
+        return String(html[start.lowerBound..<end.upperBound])
+    }
+
+    @Test("Each id is written once, each contents row leads to its own copy, and the second copy's calls open its own notes")
+    func aDocumentEnteredTwiceIsTwoPlaces() async throws {
+        let doc = try await F.document(F.modern, id: "d1", sourceNote: F.modernSource)
+        let items: [CollectionExportItem] = [.document(doc), .heading("Part Two", level: 1), .document(doc)]
+        for preview in [false, true] {
+            let page = preview ? "the preview" : "the export"
+            let html = F.page(items, options: CollectionExportOptions(), preview: preview)
+            let ids = Self.values(of: "id", in: html)
+            let repeated = Set(ids.filter { id in ids.filter { $0 == id }.count > 1 }).sorted()
+            #expect(repeated.isEmpty, "\(page) writes these ids more than once: \(repeated)")
+            let rows = Self.values(of: "href", in: try Self.contents(html))
+                .filter { $0.hasPrefix("#") }.map { String($0.dropFirst()) }
+            #expect(rows == ["doc-frus1977-80v06-d1", "doc-frus1977-80v06-d1_2"],
+                    "\(page)'s contents rows lead to \(rows)")
+            for row in rows {
+                #expect(html.contains("<section id=\"\(row)\""), "\(page) has no section for its row \(row)")
+            }
+            guard rows.count == 2, rows[0] != rows[1] else { continue }
+            let second = try F.section(html, anchor: rows[1])
+            let calls = Self.values(of: "popovertarget", in: second)
+            #expect(!calls.isEmpty, "\(page)'s second copy has no note call to follow")
+            let own = Set(Self.values(of: "id", in: second))
+            for call in calls {
+                #expect(own.contains(call), "in \(page) a call in the second copy opens \(call), outside it")
+            }
+        }
+    }
+
+    @Test("A document entered once keeps the anchor it has always had, and so do its notes")
+    func aDocumentEnteredOnceKeepsItsAnchor() async throws {
+        let doc = try await F.document(F.modern, id: "d1", sourceNote: F.modernSource)
+        let other = try await F.document(F.early, id: "d475", volume: "frus1946v06")
+        let html = F.page([.document(doc), .document(other)], options: CollectionExportOptions())
+        #expect(html.contains("<section id=\"doc-frus1977-80v06-d1\""))
+        #expect(html.contains("<section id=\"doc-frus1946v06-d475\""))
+        #expect(!html.contains("d1_") && !html.contains("d475_"), "a document entered once was numbered as a copy")
+        #expect(Self.values(of: "popovertarget", in: html).allSatisfy { $0.hasPrefix("fn-doc-frus1977-80v06-d1-") || $0.hasPrefix("fn-doc-frus1946v06-d475-") },
+                "a note's id is no longer scoped by its document's anchor")
+    }
+
+    @Test("The numbering is by anchor: a third entry is _3, and two ids the sanitiser writes alike are two places too")
+    func theNumberingIsByAnchor() {
+        let keys: [(volumeId: String, documentId: String)] = [
+            ("frus1946v06", "d475"), ("frus1946v06", "d1"), ("frus1946v06", "d475"), ("frus1946v06", "d475"),
+            ("frus1946v06", "a_b"), ("frus1946v06", "a-b"),
+        ]
+        #expect(CollectionItemHTMLRenderer.anchorIds(forKeys: keys) == [
+            "doc-frus1946v06-d475", "doc-frus1946v06-d1", "doc-frus1946v06-d475_2", "doc-frus1946v06-d475_3",
+            "doc-frus1946v06-a-b", "doc-frus1946v06-a-b_2",
+        ])
+        #expect(CollectionItemHTMLRenderer.anchorIds(forKeys: []).isEmpty)
+    }
+}

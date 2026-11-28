@@ -287,6 +287,8 @@ struct CollectionEditorView: View {
     /// The preview's "Render All" cap lift, hoisted here so it survives pane toggles
     /// that recreate `CollectionPreviewView` (one editor session = one lift).
     @State private var previewRenderAll = false
+    /// The preview's place and chosen row (L36), hoisted with `previewRenderAll` so a rebuilt preview keeps them.
+    @State private var previewPlace = CollectionPreviewPlace()
 
     /// Which surface the compact-width (iPhone) editor shows (Authoring Phase 2b).
     private enum EditorPane: String, CaseIterable {
@@ -689,8 +691,9 @@ struct CollectionEditorView: View {
                 drillInInspector(entry)
             }
         }
-        // L19 (IPA-4): a reader opened from one entry's drill-in is not left for the next one's.
-        .onChange(of: inspectedEntryId) { _, _ in inspectorReadingChain = [] }
+        // L19 (IPA-4): a reader opened from one entry's drill-in is not left for the next one's. L36: the entry
+        // whose settings open is the preview's chosen row, whose document it brings into view.
+        .onChange(of: inspectedEntryId) { _, id in inspectorReadingChain = []; previewPlace.choose(id) }
         // Inline note-create (Collections Manager M2, D5): the entry inspector's
         // "New Note…" affordance links the created note to its document entry.
         .sheet(item: $noteCreateContext) { ctx in
@@ -741,7 +744,7 @@ struct CollectionEditorView: View {
                 CollectionPreviewView(collection: collection,
                                       entries: sortedEntries,
                                       allNotes: allNotes,
-                                      renderAll: $previewRenderAll)
+                                      renderAll: $previewRenderAll, place: previewPlace)
             }
         }
     }
@@ -850,7 +853,7 @@ struct CollectionEditorView: View {
             CollectionPreviewView(collection: collection,
                                   entries: sortedEntries,
                                   allNotes: allNotes,
-                                  renderAll: $previewRenderAll)
+                                  renderAll: $previewRenderAll, place: previewPlace)
                 .frame(maxWidth: .infinity)
         }
         // Collection-wide settings — from the ⚙ Collection toolbar button.
