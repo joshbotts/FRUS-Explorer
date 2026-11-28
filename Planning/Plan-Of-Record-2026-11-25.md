@@ -894,6 +894,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
         - The link check in report mode, on 2026-11-27: 20 OK, 3 owner-asserted, 0 dead, and the 3 published-source links OK.
         - `./Scripts/check_cloudkit_schema.py`: PASS, 268 of 272 identifiers required, Production 310, as R5 read it. No row before R8 adds a stored property, and L35's change to `Collection.swift` adds none.
     - **The archive is the owner's** (decision 230). After the merge, R8's worktree is put at the merge commit, detached, and both archive-only phases' caches are verified there: `./Scripts/check_cloudkit_schema.py` is run again and `fetch-llama-dsyms.sh` verifies the llama dSYMs. The owner archives `FRUSExplorer` and `FRUSExplorerMac` in Xcode from that worktree, in the `AppStore` configuration their schemes name; R8 holds the build lock for the archive on the owner's word. The upload, What to Test and the testing groups are the owner's; no export-compliance question comes, since both apps declare no non-exempt encryption.
+    - **Merged** as #2052, `ed2c1231`, a squash onto `414df1b0` (L56, #2051) at 05:50:41 UTC on 2026-11-28, from its head `a8936c0c`, whose tree, `f90399bd`, it keeps; auto-merge was off, and it closed no issue. Recorded by L43, the next row.
 
 - **R9, the device pass of the early build,** on an iPhone, an iPad and the Mac. The owner's.
   - **The one re-index, 75 → 76,** at each device's first launch. On the iPad, Browse two-pane and the reader open while it runs: F1's band, or L27's log line.

@@ -5431,7 +5431,7 @@ Row L43 of the plan of record from 2026-11-25 (the Collections design's lane 3 a
 
 **Merges since the last entry**
 - L56's (#2051, `414df1b0`) is recorded in R8's entry, the one before this. This branch took `v2` in at `414df1b0`, and R8's head `a8936c0c`, by merges, not a rebase, since L58 builds on its tip `2ded5f30`.
-- R8: MERGE-R8
+- R8 merged as `ed2c1231` (#2052), a squash onto `414df1b0` at 05:50:41 UTC on 2026-11-28, from its head `a8936c0c`, whose tree, `f90399bd`, it keeps; auto-merge was off, and it closed no issue. This branch had merged that head for its landing checks (`2c29cfc7`) and took the squash in at `95f402e2`, which brought nothing new: `git diff 16ce4087 HEAD` was empty, so the merged tree is the checks' `c9d17ebc` and the records.
 
 **Before it**
 - **Three runs** (§2 of the plan; the orchestrator's notes `L43-prep-two-device.md`, `L43-prep-file-run.md`, `L43-prep-desk-check.md`), recorded in the plan's L43 record as its starting facts: 1.0 keeps a field it does not know; a device updated after only importing fills the new columns from iCloud's re-fetch; and the one risk, a build that knows a field sends it with every save, a blank included, which erases the server's value.
