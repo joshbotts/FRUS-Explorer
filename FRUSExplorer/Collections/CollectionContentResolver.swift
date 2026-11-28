@@ -681,7 +681,7 @@ class CollectionContentResolver {
         let resolver: CollectionContentResolver
         /// The collection being counted, whose saved search a smart collection runs.
         let collection: Collection
-        /// Every stored summary, by `volumeId/documentId`.
+        /// Every stored summary, by `volumeId/documentId`; a prompt's is the newest (`SummaryRecency`), as the export's.
         private let summaries: [String: [GeneratedSummary]]
         /// Every highlight, by `volumeId/documentId`.
         private let highlightsByDocument: [String: [DocumentHighlight]]
@@ -719,8 +719,8 @@ class CollectionContentResolver {
         }
 
         func summary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport? {
-            (summaries["\(volumeId)/\(documentId)"] ?? []).first { $0.promptId == promptId }
-                .map(AppContentSource.values)
+            SummaryRecency.newest((summaries["\(volumeId)/\(documentId)"] ?? []).filter { $0.promptId == promptId },
+                                  recency: { $0.recency }).map(AppContentSource.values)
         }
 
         func zoteroTags(volumeId: String, documentId: String) -> [String] { [] }
