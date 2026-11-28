@@ -2244,6 +2244,7 @@ private struct GraphVisitStub: TripPacketReferenceDataSource {
 ///
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+///   1.1 — 2026-11-28 (L63): the visit's line and preview read every class the graph draws as a target
 @Suite("What the cross-reference graph saves (#1990)")
 @MainActor
 struct CrossReferenceGraphCaptureTests {
@@ -2509,27 +2510,36 @@ struct CrossReferenceGraphCaptureTests {
                 == "The graph’s 1,204 cited pages are not documents and are left out.")
     }
 
-    @Test("The visit's line says where its documents come from, what they give a visit, and what it leaves out")
+    @Test("The visit's line says where its documents come from, what they give a visit, and that the graph's classes are among them")
     func saysWhatAVisitLists() {
         let taken = CrossReferenceGraphCapture(
             documentKeys: ["v/d1", "v/d2", "w/d3"], pageCount: 0, documentsWithArchivalNodes: ["v/d1"],
             unitIds: ["lot:A"], classKeys: ["611.61", "711.5611"], depth: 2, dateWindow: nil)
         let label = "v, Doc. 1"
         let source: String = "from the cross-reference graph of v, Doc. 1, at two hops."
-        let classes: String = " A footnote’s central-file class is a target only where a document’s own source note names it: "
         #expect(taken.visitBasis(documentLabel: label, preview: nil, locale: Self.english) == source)
-        let whole = CrossReferenceGraphVisitPreview(targetCount: 12, classesListed: 1, indexedSeedCount: 3)
+        let whole = CrossReferenceGraphVisitPreview(targetCount: 12, classesListed: 2, indexedSeedCount: 3)
         let wholeLine: String = source + " On this device a visit of these documents lists 12 targets."
-            + classes + "1 of the graph’s 2 classes."
+            + " The graph’s 2 central-file classes are among them."
         #expect(taken.visitBasis(documentLabel: label, preview: whole, locale: Self.english) == wholeLine)
-        let partial = CrossReferenceGraphVisitPreview(targetCount: 1, classesListed: 0, indexedSeedCount: 2)
+        let partial = CrossReferenceGraphVisitPreview(targetCount: 1, classesListed: 1, indexedSeedCount: 2)
         let oneClass = CrossReferenceGraphCapture(
             documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
             classKeys: ["611.61"], depth: 2, dateWindow: nil)
         let partialLine: String = source
             + " On this device a visit of these documents lists 1 target, from the 2 documents indexed here."
-            + classes + "0 of the graph’s 1 class."
+            + " The graph’s 1 central-file class is among them."
         #expect(oneClass.visitBasis(documentLabel: label, preview: partial, locale: Self.english) == partialLine)
+        // Fewer than the graph draws, which only a volume indexed again between the graph's read and the
+        // line's can leave: the line says how many, with no verb to agree with the count.
+        let short = CrossReferenceGraphVisitPreview(targetCount: 12, classesListed: 1, indexedSeedCount: 3)
+        #expect(taken.visitBasis(documentLabel: label, preview: short, locale: Self.english)
+                == source + " On this device a visit of these documents lists 12 targets."
+                    + " Of the graph’s 2 central-file classes, it lists 1.")
+        let none = CrossReferenceGraphVisitPreview(targetCount: 1, classesListed: 0, indexedSeedCount: 2)
+        #expect(oneClass.visitBasis(documentLabel: label, preview: none, locale: Self.english)
+                == source + " On this device a visit of these documents lists 1 target, from the 2 documents indexed here."
+                    + " Of the graph’s 1 central-file class, it lists 0.")
         let noClasses = CrossReferenceGraphCapture(
             documentKeys: taken.documentKeys, pageCount: 0, documentsWithArchivalNodes: [], unitIds: [],
             classKeys: [], depth: 2, dateWindow: nil)
@@ -2543,8 +2553,9 @@ struct CrossReferenceGraphCaptureTests {
         #expect(WorkingCorpusCapture.outcome(savedName: nil) == "The working corpus could not be saved.")
     }
 
-    /// The preview reads the packet the documents derive: a footnote's class is no target, and a class a
-    /// document's own source note names is one (#784's scope, `ExternalCitation.anchorsOutsideThePacket`).
+    /// The preview reads the packet the documents derive: a class a document's own source note names is a
+    /// target, and since L63 so is a class only a footnote cites (`ExternalCitation.anchorsOutsideThePacket`
+    /// no longer names the class), so every class the graph draws is among the targets.
     @Test("The visit's preview counts the packet's targets and the graph's classes among them")
     func previewsTheVisit() async {
         let classCitation = ExternalCitation(
@@ -2571,11 +2582,15 @@ struct CrossReferenceGraphCaptureTests {
             sourceDocuments: taken.seeds, referenceDocuments: taken.seeds, researchQuestion: nil,
             dataSource: stub, indexes: TripPacketIndexes())
         let preview = CrossReferenceGraphVisitPreview(model: model, capture: taken, indexedVolumeIds: ["v"])
-        #expect(Set(model.targets.map(\.key)) == ["class|611.61", "lot|60D627"], """
-            The source note's class and the footnote's lot; neither footnote class: \(model.targets.map(\.key))
+        #expect(Set(model.targets.map(\.key)) == ["class|611.61", "class|711.5611", "lot|60D627"], """
+            The source note's class, which a footnote cites too, the footnote's other class and its lot: \
+            \(model.targets.map(\.key))
             """)
-        #expect(preview.targetCount == 2)
-        #expect(preview.classesListed == 1, "611.61 is a target, from v/d1's own source note; 711.5611 is not")
+        #expect(preview.targetCount == 3)
+        #expect(preview.classesListed == 2, "611.61 from v/d1's own source note and v/d2's footnote; 711.5611 from the footnote")
         #expect(preview.indexedSeedCount == 2, "w is not indexed")
+        let both = model.targets.first { $0.key == "class|611.61" }
+        #expect(both?.drawnFrom.map(\.documentId) == ["d1"])
+        #expect(both?.pointedAt.map(\.documentId) == ["d2"], "one target with both claims")
     }
 }

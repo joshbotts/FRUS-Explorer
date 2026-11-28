@@ -407,11 +407,12 @@ struct TripPacketBuilderTests {
 
     // MARK: - The refs channel
 
-    /// The pointed-at channel: class citations are filtered (the anchor #784 defers), lot
-    /// citations merge onto the drawn-from target by the shared norm, and the coverage pair
-    /// counts documents with a RELEVANT reference over documents scanned.
+    /// The pointed-at channel: a class citation is a target of its own, keyed as a source note's
+    /// class is (the anchor #784 deferred, taken in by L63), lot citations merge onto the drawn-from
+    /// target by the shared norm, and the coverage pair counts documents with a RELEVANT reference
+    /// over documents scanned.
     @MainActor
-    @Test("The refs channel filters class anchors and merges lots by norm")
+    @Test("The refs channel keys a class citation and merges lots by norm")
     func refsChannelFiltersAndMerges() async {
         let lotCitation = ExternalCitation(
             anchor: "lotFile", repository: "Department of State", collection: nil,
@@ -428,31 +429,38 @@ struct TripPacketBuilderTests {
                         "v1/d2": [classCitation]])
         let model = await TripPacketBuilder.build(
             documents: [("v1", "d1"), ("v1", "d2")], researchQuestion: nil, dataSource: stub)
-        // One target: the drawn-from lot, with the footnote merged onto it by norm.
-        #expect(model.targets.count == 1, """
-            The class citation must not mint a target (#784 defers the class anchor), and \
-            the lot citation must merge onto the drawn-from target, not duplicate it.
+        // Two targets: the drawn-from lot, with the footnote merged onto it by norm, and the class.
+        #expect(Set(model.targets.map(\.key)) == ["lot|64D199", "class|740.00119"], """
+            The lot citation must merge onto the drawn-from target, not duplicate it, and the class \
+            citation is a target of its own (L63): \(model.targets.map(\.key))
             """)
-        #expect(model.targets[0].drawnFrom.count == 1)
-        #expect(model.targets[0].pointedAt.count == 1)
-        #expect(model.targets[0].pointedAt[0].rawText == "Not printed. (Lot 64 D 199, CF 1)")
-        #expect(model.targets[0].pointedAt[0].footnoteLabel == "6", """
+        let lot = model.targets.first { $0.key == "lot|64D199" }
+        #expect(lot?.drawnFrom.count == 1)
+        #expect(lot?.pointedAt.count == 1)
+        #expect(lot?.pointedAt.first?.rawText == "Not printed. (Lot 64 D 199, CF 1)")
+        #expect(lot?.pointedAt.first?.footnoteLabel == "6", """
             The packet must cite the number the VOLUME printed, stored beside the ordinal at \
             harvest (#1322). This stub's note sits at ordinal 2 and prints "6", so the old \
             `noteOrdinal + 1` gives 3 and `+ 2` gives 4 — both wrong, and both plausible.
             """)
-        // d2's only reference was a class citation — filtered, so it does NOT count as a
-        // document with references; both documents were scanned.
-        #expect(model.referenceCoverage.documentsWithReferences == 1)
+        let decimalClass = model.targets.first { $0.key == "class|740.00119" }
+        #expect(decimalClass?.form == .decimalClass)
+        #expect(decimalClass?.label == "Central Decimal File 740.00119")
+        #expect(decimalClass?.category == .centralDecimalFile)
+        #expect(decimalClass?.drawnFrom.isEmpty == true)
+        #expect(decimalClass?.pointedAt.map(\.footnoteLabel) == ["7"])
+        // d2's only reference is a class citation, which counts since L63; both were scanned.
+        #expect(model.referenceCoverage.documentsWithReferences == 2)
         #expect(model.referenceCoverage.documentsScanned == 2)
     }
 
-    /// Decision 191 (index version 76) gives the pointed-at table two kinds of row more, and the
-    /// packet still leaves out the central files: a subject-numeric class has the class anchor, and
-    /// a Central Foreign Policy File citation names no collection, so every one would key to a
-    /// single "Department of State" target.
+    /// Decision 191 (index version 76) gives the pointed-at table two kinds of row more. A
+    /// subject-numeric class has the class anchor, and is a target since L63, under the
+    /// Subject-Numeric File's label and category; a Central Foreign Policy File citation names no
+    /// collection, so every one would key to a single "Department of State" target, and the packet
+    /// still leaves it out.
     @MainActor
-    @Test("The refs channel leaves out subject-numeric classes and the Central Foreign Policy File")
+    @Test("The refs channel takes subject-numeric classes and leaves out the Central Foreign Policy File")
     func refsChannelLeavesOutThePostwarCentralFiles() async {
         let subjectNumeric = ExternalCitation(
             anchor: "centralFileClass", repository: "Department of State", collection: nil,
@@ -467,12 +475,22 @@ struct TripPacketBuilderTests {
         let stub = Stub(sources: [], citations: ["v1/d1": [subjectNumeric, foreignPolicyFile]])
         let model = await TripPacketBuilder.build(
             documents: [("v1", "d1")], researchQuestion: nil, dataSource: stub)
-        #expect(model.targets.isEmpty, """
-            A central-file citation minted a target: \(model.targets.map(\.key)). The packet's \
-            pointed-at channel takes lots and libraries only (`ExternalCitation.isInPacketChannel`).
+        #expect(model.targets.map(\.key) == ["class|POL 27 VIET S"], """
+            The class is a target and the Central Foreign Policy File is not: \(model.targets.map(\.key)). \
+            The packet's pointed-at channel takes lots, libraries and classes (`ExternalCitation.isInPacketChannel`).
             """)
-        #expect(model.referenceCoverage.documentsWithReferences == 0)
+        let target = model.targets.first
+        #expect(target?.label == "Subject-Numeric File POL 27 VIET S")
+        #expect(target?.category == .subjectNumericFile)
+        #expect(target?.facility.chapterHeading == ResearchFacilityResolver.collegePark)
+        #expect(model.referenceCoverage.documentsWithReferences == 1)
         #expect(model.referenceCoverage.documentsScanned == 1)
+
+        let onlyTheFile = await TripPacketBuilder.build(
+            documents: [("v1", "d1")], researchQuestion: nil,
+            dataSource: Stub(sources: [], citations: ["v1/d1": [foreignPolicyFile]]))
+        #expect(onlyTheFile.targets.isEmpty, "\(onlyTheFile.targets.map(\.key))")
+        #expect(onlyTheFile.referenceCoverage.documentsWithReferences == 0)
     }
 
     /// `referenceKey` speaks the same vocabulary as `targetKey` — the merge above depends
@@ -496,6 +514,27 @@ struct TripPacketBuilderTests {
         let libraryKey = TripPacketBuilder.referenceKey(for: library)
         #expect(libraryKey.key == "coll|Truman Library|President's Secretary's Files")
         #expect(libraryKey.form == .collection)
+
+        // A class keys and labels as a source note's does (L63), so a class cited both ways is one target.
+        // frus1964-68v01/d5's note for the subject-numeric one, as `otherSubjectNumericOriginsKeyOnTheirClass` has it.
+        for (decimalClass, note, era) in [("611.61", "Source: Department of State, Central Files, 611.61/3–554. Secret.",
+                                           "decimal"),
+                                          ("POL 27 VIET S", "Source: Department of State, Central Files, POL 27 VIET S. Secret.",
+                                           "subject_numeric")] {
+            let citation = ExternalCitation(
+                anchor: "centralFileClass", repository: "Department of State", collection: nil,
+                lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false, rawText: "x", noteOrdinal: 0,
+                decimalClass: decimalClass)
+            let source = record("v1", "d1", era: era, repository: "Department of State", rawText: note)
+            let sourceKey = TripPacketBuilder.targetKey(
+                for: source, category: SourceProvenanceCategory.from(citationEra: era, repository: source.repository))
+            let classKey = TripPacketBuilder.referenceKey(for: citation)
+            #expect(classKey.key == "class|\(decimalClass)")
+            #expect(classKey.key == sourceKey.key, "the two channels key \(decimalClass) apart")
+            #expect(classKey.label == sourceKey.label)
+            #expect(classKey.form == .decimalClass)
+            #expect(classKey.lotAsPrinted == nil)
+        }
     }
 
     // MARK: - A footnote's central-file class (L63)

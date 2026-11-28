@@ -80,6 +80,8 @@ import SwiftData
 ///         read by its rule (`ArchiveVisitPlanWrites.name(fromDraft:)`); nothing the editor does changes.
 ///   1.12 — 2026-11-26 (L26, decision 191): a seed's reference count reads the packet's channel through
 ///         `ExternalCitation.isInPacketChannel`, which leaves out the Central Foreign Policy File as well.
+///   1.13 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): a seed's reference count takes a footnote's central-file class, as
+///         the packet does, and the corpus-wide sparsity caption is measured again (35,749 of 321,749).
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -666,14 +668,14 @@ struct ArchiveVisitEditorView: View {
                             defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the document seeds each time, so it always reflects the current app index."))
                     .font(.callout)
                 Text(String(localized: "archiveVisit.info.sparsity",
-                            defaultValue: "Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan."))
+                            defaultValue: "Footnote references to unprinted material exist on only about 11% of documents corpus-wide (measured over the full index: 35,749 of 321,749), so a thin pointed-at list is expected — sparse data, not a failed scan."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 if let sparsity, sparsity.indexed > 0 {
                     // Phase 4: the measured local fact, in the both-numbers grammar —
                     // beside the corpus claim, never replacing it (the two describe
                     // different populations). Grouped digits, matching the static
-                    // sentence directly above ("13,750 of 316,839").
+                    // sentence directly above ("35,749 of 321,749").
                     Text(measuredSparsityLine(sparsity))
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -1305,7 +1307,7 @@ struct ArchiveVisitEditorView: View {
                     // line; the WrappingFooterSection draws it as a row there, where it wraps (#1475).
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "archiveVisit.documents.footer",
-                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control acts as a caption instead of a dead switch."))
+                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 11% of documents — where a half is absent, the control acts as a caption instead of a dead switch."))
                             .fixedSize(horizontal: false, vertical: true)
                         if let sparsity, sparsity.indexed > 0 {
                             Text(measuredSparsityLine(sparsity))

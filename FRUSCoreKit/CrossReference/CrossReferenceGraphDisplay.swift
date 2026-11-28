@@ -1363,6 +1363,8 @@ public enum CrossReferenceGraphDisplay {
 ///
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+///   1.1 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): the visit's line says the graph's central-file classes are among
+///          the visit's targets, since its footnote channel takes the class
 public struct CrossReferenceGraphCapture: Equatable, Sendable {
 
     /// Every document the graph holds as drawn, as `"volumeId/documentId"` keys, each once, in the
@@ -1521,15 +1523,17 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
     // MARK: The visit's line
 
     /// The picker's line for *Add to Archives Visit*: where the documents come from, how many targets
-    /// they give a visit on this device, and what of the graph's archival nodes a visit does not list.
+    /// they give a visit on this device, and that the graph's central-file classes are among them.
     ///
-    /// **A visit lists more than the graph draws, in one way, and less in another.** More: it keys every
-    /// lot and library a seed's footnotes cite, joined to the collection authority or not, where the graph
-    /// draws a unit only for a citation that joins (``CrossReferenceGraphDisplay/unitNodes(rowsByDocument:authority:)``);
-    /// and with the source half on it lists the file each seed's own source note names. Less: the packet's
-    /// footnote channel leaves the central-file class out (`ExternalCitation.anchorsOutsideThePacket`,
-    /// #784's scope), so a class the graph draws for a footnote is a target only where a seed's own source
-    /// note names it. The line says how many of the graph's classes that is.
+    /// **A visit lists more than the graph draws.** It keys every lot and library a seed's footnotes cite,
+    /// joined to the collection authority or not, where the graph draws a unit only for a citation that
+    /// joins (``CrossReferenceGraphDisplay/unitNodes(rowsByDocument:authority:)``); with the source half on
+    /// it lists the file each seed's own source note names; and it lists every central-file class a seed's
+    /// footnotes cite, as the graph draws a class node for each (L63, decision ⟪L63-DECISION⟫). Until L63 the packet's
+    /// footnote channel left the class out, and this line said how many of the graph's classes a seed's
+    /// own source note named: 5 of 8 for `frus1952-54v02p1` d16 at three hops. It now says the graph's
+    /// classes are among the targets, as the packet it read lists them, and how many where it lists fewer,
+    /// which only a volume indexed again between the graph's read and the line's could leave.
     ///
     /// The picker shows the line after its own words, "Adding 143 documents: archival sources +
     /// unprinted references — ", so it begins in lower case, as the other surfaces' lines do ("from the
@@ -1562,15 +1566,23 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
                     localized: "graph.save.visit.whole %@",
                     defaultValue: "On this device a visit of these documents lists %@"), targets))
             }
-            if !classKeys.isEmpty {
-                // The form follows the graph's classes, and the listed count is a noun phrase's, so
+            if !classKeys.isEmpty, preview.classesListed >= classKeys.count {
+                sentences.append(CountCopy.phrase(
+                    classKeys.count,
+                    one: String(localized: "graph.save.visit.classes.listed.one %@",
+                                defaultValue: "The graph’s %@ central-file class is among them"),
+                    many: String(localized: "graph.save.visit.classes.listed.many %@",
+                                 defaultValue: "The graph’s %@ central-file classes are among them"),
+                    locale: locale))
+            } else if !classKeys.isEmpty {
+                // The form follows the graph's classes, and the listed count is the verb's object, so
                 // no verb has to agree with it.
                 sentences.append(CountCopy.phrase(
                     classKeys.count,
-                    one: String(localized: "graph.save.visit.classes.one %@ %@",
-                                defaultValue: "A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ class"),
-                    many: String(localized: "graph.save.visit.classes.many %@ %@",
-                                 defaultValue: "A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ classes"),
+                    one: String(localized: "graph.save.visit.classes.partial.one %@ %@",
+                                defaultValue: "Of the graph’s %1$@ central-file class, it lists %2$@"),
+                    many: String(localized: "graph.save.visit.classes.partial.many %@ %@",
+                                 defaultValue: "Of the graph’s %1$@ central-file classes, it lists %2$@"),
                     then: [preview.classesListed.formatted(.number.locale(locale))],
                     locale: locale))
             }
@@ -1614,12 +1626,15 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
+///   1.1 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): documentation only — a footnote's class is a target, so
+///          `classesListed` counts every class the graph draws
 public struct CrossReferenceGraphVisitPreview: Equatable, Sendable {
 
     /// How many targets the documents give: what a new visit of them lists.
     public let targetCount: Int
-    /// How many of the graph's central-file classes are among those targets, which a document's own
-    /// source note names (`class|<key>`, the drawn-from channel's key).
+    /// How many of the graph's central-file classes are among those targets (`class|<key>`, the key both
+    /// channels give a class since L63): all of them, unless a volume was indexed again between the
+    /// graph's read and the preview's.
     public let classesListed: Int
     /// How many of the documents are in volumes indexed on this device, the only ones the packet reads.
     public let indexedSeedCount: Int
