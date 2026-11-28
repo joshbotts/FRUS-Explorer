@@ -36,6 +36,9 @@ import SwiftData
 ///          rows of two, and the compact chip row shows all six (it scrolls; `compactPresets`, which
 ///          left Scholarly edition out, is gone). The grid is rows of two held to their taller card's
 ///          height, and a card's subtitle takes up to three lines, which the Mac's popover needs
+///   1.5 — L43: the collection's own facts, each a plain control that L44 then trims: *Opening* and *See also* in
+///          Document content, and a fourth section, Citations & wording, with *Citation style* and the ten labels'
+///          words (`CollectionWording`)
 struct CollectionCompositionRows: View {
 
     /// The collection whose persisted composition is being edited.
@@ -100,6 +103,38 @@ struct CollectionCompositionRows: View {
                 set: { collection.tocStyle = $0.rawValue })
     }
 
+    /// The collection's citation style (L43): its stored raw value, which reads as History at State where it is unset
+    /// or unknown. Writes the chosen style's raw value, never `nil`.
+    private var citationStyle: Binding<CitationStyle> {
+        Binding(get: { collection.citationStyle.flatMap(CitationStyle.init(rawValue:)) ?? .historyAtState },
+                set: { collection.citationStyle = $0.rawValue })
+    }
+
+    /// Which line leads a document with no title of the author's (L43): the citation, which an unset collection's
+    /// reads as, or the volume's heading.
+    private var opening: Binding<CollectionDocumentPlan.Opening> {
+        Binding(get: { collection.opening == CollectionDocumentPlan.Opening.volumeHeading.rawValue
+                        ? .volumeHeading : .citation },
+                set: { collection.opening = $0.rawValue })
+    }
+
+    /// One label's word in the collection's wording (L43): the collection's own, or empty, which the field shows as
+    /// the app's word. Writing the stored map keeps every other pair, a later build's among them.
+    private func wording(_ label: CollectionWording.Label) -> Binding<String> {
+        Binding(get: { CollectionWording(json: collection.labelsJSON).ownWord(for: label) ?? "" },
+                set: { collection.labelsJSON = CollectionWording.updating(collection.labelsJSON, label: label, with: $0) })
+    }
+
+    /// The two openings a collection offers, with the words its picker shows.
+    static func openingName(_ opening: CollectionDocumentPlan.Opening) -> String {
+        switch opening {
+        case .volumeHeading:
+            return String(localized: "composition.opening.volumeHeading", defaultValue: "The volume’s heading leads")
+        case .citation, .title:
+            return String(localized: "composition.opening.citation", defaultValue: "The citation leads")
+        }
+    }
+
     var body: some View {
         // Composer v2: the three content-source sections carry colored icon-tile headers (blue
         // document / green annotations / orange analysis) with a one-line caption, and presets
@@ -122,6 +157,14 @@ struct CollectionCompositionRows: View {
 
         // MARK: Document content — how each document's text is carried into the export.
         Section {
+            // L43: which line leads a document with no title of the author's (the design's §3.3).
+            Picker(String(localized: "composition.opening", defaultValue: "Opening"), selection: opening) {
+                ForEach([CollectionDocumentPlan.Opening.volumeHeading, .citation], id: \.self) {
+                    Text(Self.openingName($0)).tag($0)
+                }
+            }
+            .accessibilityIdentifier("composition.opening.picker")
+
             Picker(String(localized: "composition.bodyDepth", defaultValue: "Body depth"),
                    selection: bodyDepth) {
                 ForEach(bodyDepthOptions) { Text($0.displayName).tag($0) }
@@ -150,6 +193,19 @@ struct CollectionCompositionRows: View {
             Toggle(String(localized: "composition.includeSourceNote",
                           defaultValue: "Archival source note"),
                    isOn: includeSourceNote)
+
+            // L43: See also for the collection (decision 164's sixth candidate), which a section or a document may set
+            // for itself.
+            Toggle(isOn: $collection.defaultIncludeRelatedDocuments) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "composition.seeAlso", defaultValue: "See also"))
+                    Text(String(localized: "composition.seeAlso.subtitle",
+                                defaultValue: "Under each document, the documents it cites that are also in this collection."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityIdentifier("composition.seeAlso.toggle")
         } header: {
             groupHeader(icon: "doc.text", tint: .blue,
                         title: String(localized: "composition.group.documentContent",
@@ -201,6 +257,57 @@ struct CollectionCompositionRows: View {
                                       defaultValue: "Analysis & apparatus"),
                         caption: String(localized: "composition.group.analysis.help",
                                         defaultValue: "Generated overviews and the contents-list style."))
+        }
+
+        // MARK: Citations & wording (L43) — the style every citation prints in, and the collection's own words for
+        // the labels its exports print.
+        Section {
+            Picker(String(localized: "composition.citationStyle", defaultValue: "Citation style"),
+                   selection: citationStyle) {
+                ForEach(CitationStyle.allCases) { Text($0.displayName).tag($0) }
+            }
+            .accessibilityIdentifier("composition.citationStyle.picker")
+
+            DisclosureGroup {
+                ForEach(CollectionWording.Label.allCases, id: \.self) { label in
+                    wordingRow(label)
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "composition.wording", defaultValue: "Wording"))
+                    Text(String(localized: "composition.wording.subtitle",
+                                defaultValue: "Your own words for the labels an export prints. A word left empty prints the app’s."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                // On the header alone: on the group, SwiftUI gives it to the fields inside, in place of their own.
+                .accessibilityIdentifier("composition.wording.group")
+            }
+        } header: {
+            groupHeader(icon: "quote.opening", tint: .purple,
+                        title: String(localized: "composition.group.citations",
+                                      defaultValue: "Citations & wording"),
+                        caption: String(localized: "composition.group.citations.help",
+                                        defaultValue: "The style every citation prints in, and the export’s labels."))
+        }
+    }
+
+    /// One label's row in Wording (L43): the app's word, and a field for the collection's own, which shows the app's
+    /// word until one is typed. VoiceOver reads the label's name and the word the export prints.
+    @ViewBuilder
+    private func wordingRow(_ label: CollectionWording.Label) -> some View {
+        HStack {
+            Text(label.appWord)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(text: wording(label), prompt: Text(label.appWord)) {
+                Text(label.appWord)
+            }
+            .multilineTextAlignment(.trailing)
+            .accessibilityLabel(String(format: String(localized: "composition.wording.field.accessibility %@",
+                                                      defaultValue: "%@, printed as"), label.appWord))
+            .accessibilityValue(CollectionWording(json: collection.labelsJSON).text(for: label))
+            .accessibilityIdentifier("composition.wording.field.\(label.rawValue)")
         }
     }
 

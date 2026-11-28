@@ -43,18 +43,43 @@ import UIKit
 ///   1.6 — L29 (#2000): Send to Zotero Library posts the RIS file's records
 ///          (`ZoteroCollectionExporter.records(for:options:)`), each document's research notes only where
 ///          they print, where it posted every item as resolved and read no setting
-///   1.7 — L64 (#1923): a send that stops part-way is kept on this device (`ZoteroSendProgressStore`) and
+///   1.7 — L35 (the plan of record's lane 1; J9, J11, decisions 192, 198 and 221): the sentence says what
+///          the export will print, counted as the export reads the collection (`CollectionExportSentence`), where it
+///          read the collection's defaults; before Export the sheet says what this device lacks for it; it opens on the
+///          format the collection last exported as on this device (`CollectionExportFormatMemory`); on iPhone and iPad
+///          Export is pinned at the foot, with the format a menu there at the accessibility sizes and the sentence no
+///          larger than AX1, so it opens on its sentence, format and Export at any size; BibTeX resolves no summary,
+///          which it never prints. The Collections list and Manage Collections open it (`CollectionListExportSheet`)
+///   1.8 — L64 (#1923): a send that stops part-way is kept on this device (`ZoteroSendProgressStore`) and
 ///          recorded in the export history with the documents it sent; the row then reads Finish Sending to
 ///          Zotero Library, which sends the rest into the same Zotero collection and nothing twice
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
+    /// The reader's text size: at an accessibility size the iOS sheet chooses its format from a menu (`usesFormatMenu`).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let collection: Collection
     let entries: [CollectionEntry]
     let allNotes: [ResearchNote]
     let appState: AppState
+
+    /// Opens the sheet for `collection` on the format it last exported as on this device (L35).
+    ///
+    /// - Parameters:
+    ///   - collection: The collection to export.
+    ///   - entries: Its entries, in their order.
+    ///   - allNotes: Every research note, one copy of each.
+    ///   - appState: The app's state, whose services the export resolves through.
+    init(collection: Collection, entries: [CollectionEntry], allNotes: [ResearchNote], appState: AppState) {
+        self.collection = collection
+        self.entries = entries
+        self.allNotes = allNotes
+        self.appState = appState
+        _selectedFormat = State(initialValue: CollectionExportFormatMemory.format(
+            for: collection.id, offered: ExportFormat.gridFormats(smartCollection: collection.savedSearchId != nil)))
+    }
 
     /// All projects, to resolve the active project for export provenance (#377 Phase 4) — mirrors
     /// the `authorLine` placeholder lookup in the collection editors.
@@ -63,7 +88,14 @@ struct ExportSheetView: View {
     /// The active project (the source of export provenance), or `nil` in Global Context.
     private var activeProject: Project? { allProjects.first { $0.id == appState.activeProjectId } }
 
-    @State private var selectedFormat: ExportFormat = .pdf
+    /// The format chosen: the one this collection last exported as on this device as the sheet opens, else PDF.
+    @State private var selectedFormat: ExportFormat
+    /// What the export will print, counted as the sheet opens (`CollectionContentResolver.exportTally`); `nil` until
+    /// then, and when it could not be counted.
+    @State private var tally: CollectionExportTally?
+    /// Why the export could not be counted, which its export would meet too: a smart collection's search not ready, or
+    /// its saved search gone.
+    @State private var tallyFailure: String?
     @State private var isExporting = false
     @State private var exportedURL: URL? = nil
     @State private var exportError: String? = nil
@@ -94,6 +126,51 @@ struct ExportSheetView: View {
     private var exportButtonTitle: String {
         String(format: String(localized: "export.button.format %@", defaultValue: "Export %@"),
                selectedFormat.gridLabel)
+    }
+
+    /// What the export will print, in a sentence written from what it counts (L35, decision 192), or why it could not
+    /// be counted; `nil` while it is counted.
+    private var sentence: String? {
+        if let tallyFailure { return tallyFailure }
+        return tally.map {
+            CollectionExportSentence.text(for: $0, format: selectedFormat,
+                                          drawsWordCloud: selectedFormat.exportOptions(for: collection).includeWordCloud)
+        }
+    }
+
+    /// What this device lacks for the export, said before Export (J11, #2018); `nil` when it lacks nothing.
+    private var deviceLacks: String? {
+        tally.flatMap { CollectionExportSentence.deviceLacks($0, format: selectedFormat, availability: .forExport) }
+    }
+
+    /// The sentence, then what this device lacks: the first thing the sheet says on every platform (decision 192).
+    /// Until the export is counted, a spinner holds the sentence's place.
+    @ViewBuilder
+    private var whatWillPrint: some View {
+        if let sentence {
+            Text(sentence)
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("collection.export.sentence")
+        } else {
+            ProgressView()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("collection.export.sentence.counting")
+        }
+        if let deviceLacks {
+            Label {
+                Text(deviceLacks)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                // The icon carries the colour; the words keep the text's, which orange on white would not keep legible.
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+            // One element, the icon's and the words' frame: the identifier fell to the icon alone without it.
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("collection.export.lacks")
+        }
     }
 
     /// The footer note under the export options (Composer v2 §Export).
@@ -133,10 +210,43 @@ struct ExportSheetView: View {
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                // The format an export runs in stays chosen until it ends: it is the one remembered (L35).
+                .disabled(isExporting)
                 .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
                 .accessibilityLabel(Text("\(fmt.gridLabel), \(fmt.gridCaption)"))
+                .accessibilityIdentifier("collection.export.format.\(fmt.rawValue)")
             }
         }
+    }
+
+    /// Whether the iOS sheet chooses its format from a menu at its foot (`formatMenu`) rather than the grid: at the
+    /// accessibility text sizes, where the grid's six cards are taller than an iPhone, and a card cut short in a
+    /// column of two. The Mac's sheet keeps the grid.
+    private var usesFormatMenu: Bool {
+        #if os(iOS)
+        dynamicTypeSize.isAccessibilitySize
+        #else
+        false
+        #endif
+    }
+
+    /// The format as a menu, for the accessibility text sizes (`usesFormatMenu`): the grid's formats, each with its
+    /// line, the chosen one ticked.
+    private var formatMenu: some View {
+        Picker(selection: $selectedFormat) {
+            ForEach(exportGridFormats) { fmt in
+                VStack(alignment: .leading) {
+                    Text(fmt.gridLabel)
+                    Text(fmt.gridCaption)
+                }
+                .tag(fmt)
+            }
+        } label: {
+            Text(String(localized: "export.format.menu", defaultValue: "Format"))
+        }
+        .pickerStyle(.menu)
+        .disabled(isExporting)
+        .accessibilityIdentifier("collection.export.format.menu")
     }
 
     /// The separated "Send to Zotero Library" row (Composer v2 §Export): the annotation-preserving
@@ -208,6 +318,19 @@ struct ExportSheetView: View {
             loadStoppedZoteroSend()
             await verifyExcerpts()
         }
+        .task { await countWhatWillPrint() }
+    }
+
+    /// Counts what the export will print, for the sentence (L35): the export's own reading of the collection, which
+    /// parses, downloads and asks nothing (`CollectionContentResolver.exportTally`).
+    private func countWhatWillPrint() async {
+        do {
+            tally = try await makeResolver().exportTally(collection: collection, entries: entries, allNotes: allNotes)
+        } catch is CancellationError {
+            return
+        } catch {
+            tallyFailure = error.localizedDescription
+        }
     }
 
     // MARK: - macOS body
@@ -238,14 +361,11 @@ struct ExportSheetView: View {
 
             Divider()
 
-            // Options — the plain-language composition summary (what actually renders, set in the
-            // collection's Composition section), the selectable format grid, the native-file
-            // notes-privacy opt-in when `.fruscollection` is chosen, and the separated "Send to a
-            // Reference Manager" Zotero row (Composer v2 §Export).
+            // Options — what the export will print and what this Mac lacks for it (L35), the selectable
+            // format grid, the native-file notes-privacy opt-in when `.fruscollection` is chosen, and the
+            // separated "Send to a Reference Manager" Zotero row (Composer v2 §Export).
             VStack(alignment: .leading, spacing: 16) {
-                Text(collection.compositionSummarySentence)
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 8) { whatWillPrint }
 
                 exportFormatGrid
 
@@ -361,90 +481,82 @@ struct ExportSheetView: View {
     /// Retains `NavigationStack { Form }` which is the correct pattern on iOS:
     /// the navigation bar provides title and Cancel/Close button placement,
     /// and the Form renders correctly as an inset-grouped table.
+    ///
+    /// Since L35 Export is pinned at the foot (`iOSExportBar`), with the format's menu there at the accessibility text
+    /// sizes, so that the sheet opens on its sentence with the format and Export in view at any text size (J9); an
+    /// export's error follows the sentence, and the form scrolls to it. 1.0 put Export in the form below the Zotero row,
+    /// and below the screen from AX3 on an iPhone 17. The sentence and the line under it grow no further than
+    /// `textSizeLimit` (decision 221): at the reader's AX5 a long one ran under the bar on an iPhone SE.
     #if os(iOS)
     private var iOSExportBody: some View {
         NavigationStack {
-            Form {
-                // Plain-language summary of what will actually render (set in Composition).
-                Section {
-                    Text(collection.compositionSummarySentence)
-                        .font(.callout)
-                }
-
-                // Selectable format grid (Composer v2 §Export) — headerless, matching the canvas (the
-                // grid sits directly under the composition summary with no "Format" label) and the
-                // macOS body.
-                Section {
-                    exportFormatGrid
-                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-                        .listRowBackground(Color.clear)
-                }
-
-                // Native `.fruscollection` file: research-notes privacy opt-in.
-                if selectedFormat == .fruscollection {
-                    Section { nativeShareOptions }
-                }
-
-                // Separated "Send to a Reference Manager" Zotero row.
-                Section {
-                    zoteroSendRow
-                } header: {
-                    Text(String(localized: "export.zotero.section",
-                                defaultValue: "Send to a Reference Manager"))
-                } footer: {
-                    Text(exportFooterNote)
-                }
-
-                // Progress feedback, or the Export {Format} primary button.
-                Section {
-                    if let msg = preparingMessage ?? summaryGeneratingMessage {
-                        HStack {
-                            ProgressView().padding(.trailing, 8)
-                            Text(msg).foregroundStyle(.secondary)
-                        }
-                    } else if isExporting {
-                        HStack {
-                            ProgressView().padding(.trailing, 8)
-                            Text(String(localized: "export.progress.label",
-                                        defaultValue: "Exporting…"))
-                                .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        Button {
-                            Task { await runExport() }
-                        } label: {
-                            Text(exportButtonTitle)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(entries.isEmpty && collection.savedSearchId == nil)
-                    }
-                }
-
-                if let summary = verification?.summary {
+            ScrollViewReader { proxy in
+                Form {
+                    // What the export will print, and what this device lacks for it (decision 192): the form opens on
+                    // it, drawn no larger than AX1 (decision 221), so that an iPhone shows the sentence whole
+                    // above the bar at every text size, with the format and Export in view there.
                     Section {
-                        verificationLabel(summary)
+                        whatWillPrint.dynamicTypeSize(...Self.textSizeLimit)
                     }
-                }
 
-                if let error = exportError {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
-                            .font(.callout)
-                    // #358: a failed send is not a dead end — the file route is unaffected by
-                    // whatever broke the API call.
-                    if zoteroFileRecoveryOffered {
-                        Button {
-                            zoteroFileRecoveryOffered = false
-                            Task { await exportZoteroRIS() }
-                        } label: {
-                            Label(String(localized: "export.zotero.recover",
-                                         defaultValue: "Save a Zotero file instead"),
-                                  systemImage: "doc.badge.arrow.up")
+                    // An export's failure, first, where its sentence is: below the form's fold it went unseen.
+                    if let error = exportError {
+                        Section {
+                            Label(error, systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(.red)
+                                .font(.callout)
+                                .id(Self.errorRowId)
+                            // #358: a failed send is not a dead end — the file route is unaffected by
+                            // whatever broke the API call.
+                            if zoteroFileRecoveryOffered {
+                                Button {
+                                    zoteroFileRecoveryOffered = false
+                                    Task { await exportZoteroRIS() }
+                                } label: {
+                                    Label(String(localized: "export.zotero.recover",
+                                                 defaultValue: "Save a Zotero file instead"),
+                                          systemImage: "doc.badge.arrow.up")
+                                }
+                            }
                         }
                     }
+
+                    // Selectable format grid (Composer v2 §Export) — headerless, matching the canvas (the
+                    // grid sits directly under the composition summary with no "Format" label) and the
+                    // macOS body. At the accessibility sizes the format is the menu at the foot.
+                    if !usesFormatMenu {
+                        Section {
+                            exportFormatGrid
+                                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                .listRowBackground(Color.clear)
+                        }
                     }
+
+                    // Native `.fruscollection` file: research-notes privacy opt-in.
+                    if selectedFormat == .fruscollection {
+                        Section { nativeShareOptions }
+                    }
+
+                    // Separated "Send to a Reference Manager" Zotero row.
+                    Section {
+                        zoteroSendRow
+                    } header: {
+                        Text(String(localized: "export.zotero.section",
+                                    defaultValue: "Send to a Reference Manager"))
+                    } footer: {
+                        Text(exportFooterNote)
+                    }
+
+                    if let summary = verification?.summary {
+                        Section {
+                            verificationLabel(summary)
+                        }
+                    }
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) { iOSExportBar }
+                .onChange(of: exportError) { _, error in
+                    guard error != nil else { return }
+                    withAnimation { proxy.scrollTo(Self.errorRowId, anchor: .top) }
                 }
             }
             .navigationTitle(String(localized: "export.nav.title", defaultValue: "Export collection"))
@@ -463,29 +575,110 @@ struct ExportSheetView: View {
             .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
         }
     }
+
+    /// The foot of the iOS sheet, pinned under the form so that it is in view however long the sheet (L35, J9): what an
+    /// export is doing while it runs, else Export, which names the format; at the accessibility text sizes the format's
+    /// menu above it (`usesFormatMenu`).
+    ///
+    /// Its text grows no further than `textSizeLimit`, as a bar's does, and a long press shows it large (the Large
+    /// Content Viewer): at AX5 an iPhone SE has no room for the bar at full size and the sentence above it.
+    private var iOSExportBar: some View {
+        VStack(spacing: 10) {
+            if usesFormatMenu {
+                // A menu picker outside a form shows its choice alone, so the row names it.
+                HStack {
+                    Text(String(localized: "export.format.menu", defaultValue: "Format"))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Spacer(minLength: 8)
+                    formatMenu
+                        .labelsHidden()
+                        .accessibilityShowsLargeContentViewer()
+                }
+            }
+            if let msg = preparingMessage ?? summaryGeneratingMessage {
+                exportProgress(msg)
+            } else if isExporting {
+                exportProgress(String(localized: "export.progress.label", defaultValue: "Exporting…"))
+            } else {
+                Button {
+                    Task { await runExport() }
+                } label: {
+                    Text(exportButtonTitle)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(entries.isEmpty && collection.savedSearchId == nil)
+                .accessibilityShowsLargeContentViewer()
+                .accessibilityIdentifier("collection.export.run")
+            }
+        }
+        .dynamicTypeSize(...Self.textSizeLimit)
+        .padding(.horizontal, 16)
+        .padding(.vertical, Self.barVerticalPadding)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("collection.export.bar")
+    }
+
+    /// What an export is doing, in the bar where Export stands.
+    private func exportProgress(_ message: String) -> some View {
+        HStack {
+            ProgressView().padding(.trailing, 8)
+            Text(message).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The largest text size the sheet's sentence and the bar at its foot are drawn at (decision 221).
+    static let textSizeLimit: DynamicTypeSize = .accessibility1
+
+    /// The space above and below the bar's controls.
+    static let barVerticalPadding: CGFloat = 12
+
+    /// The id of the error's row, which the form scrolls to when an export fails.
+    private static let errorRowId = "collection.export.error"
     #endif // os(iOS)
 
     /// Runs the selected export: native `.fruscollection` files serialize the collection's
     /// source directly; every rendered format resolves content through
     /// `CollectionContentResolver` (one path for smart and static collections) and hands
-    /// the resolved items to the format's exporter.
+    /// the resolved items to the format's exporter. An export that succeeds is the format the
+    /// sheet opens on next for this collection on this device (L35, `CollectionExportFormatMemory`);
+    /// the Zotero send, which runs from its own row, never is.
     private func runExport() async {
         exportError = nil
         zoteroFileRecoveryOffered = false
 
-        // Native shareable-collection file (D9): serialize the collection's source directly.
-        if selectedFormat == .fruscollection {
+        switch selectedFormat {
+        case .fruscollection:
+            // Native shareable-collection file (D9): serialize the collection's source directly.
             runNativeExport()
-            return
-        }
-
-        // The RIS card resolves citations only (no body/summaries/volume downloads), so route it
-        // through the Zotero RIS path rather than the generic render pipeline (Composer v2 §Export).
-        if selectedFormat == .zoteroJSON {
+        case .zoteroJSON:
+            // The RIS card resolves citations only (no body/summaries/volume downloads), so route it
+            // through the Zotero RIS path rather than the generic render pipeline (Composer v2 §Export).
             await exportZoteroRIS()
-            return
+        case .pdf, .html, .docx, .bibtex:
+            await runRenderedExport()
         }
+        // A file was made: each path sets `exportedURL` when it makes one and `exportError` when it cannot, and no file
+        // is in hand as Export is tapped, since the sheet that hands it over covers this one. The format cannot change
+        // while an export runs (the grid and the menu are disabled then), so it is the one exported.
+        if exportError == nil, exportedURL != nil {
+            CollectionExportFormatMemory.remember(selectedFormat, for: collection.id)
+        }
+    }
 
+    /// Exports a rendered format, or BibTeX, through the resolver and the format's exporter.
+    ///
+    /// BibTeX prints each document's citation and notes and nothing of its body, so it resolves the documents alone, as
+    /// the RIS card and the Zotero send do (`resolvedZoteroDocuments()`): on the full path a *Summaries* collection had
+    /// its summaries written for a file that prints none, and where Apple Intelligence could not write them the BibTeX
+    /// export failed (L35, beside #2018).
+    private func runRenderedExport() async {
         isExporting = true
         defer {
             isExporting = false
@@ -493,11 +686,15 @@ struct ExportSheetView: View {
             summaryGeneratingMessage = nil
         }
         do {
-            // #1516: PDF, Word and HTML print a figure's image, so only those fetch the ones
-            // that are not on the device; BibTeX, on this same path, prints citations.
-            let items = try await makeResolver().resolve(
-                collection: collection, entries: entries, allNotes: allNotes, purpose: .export,
-                printsFigureImages: selectedFormat.printsFigureImages)
+            let items: [CollectionExportItem]
+            if selectedFormat == .bibtex {
+                items = try await resolvedZoteroDocuments().map(CollectionExportItem.document)
+            } else {
+                // #1516: PDF, Word and HTML print a figure's image, so they fetch the ones that are not on the device.
+                items = try await makeResolver().resolve(
+                    collection: collection, entries: entries, allNotes: allNotes, purpose: .export,
+                    printsFigureImages: selectedFormat.printsFigureImages)
+            }
             let metadata = CollectionExportMetadata.forExport(
                 of: collection, activeProject: activeProject, modelContext: modelContext)
             guard let exporter = selectedFormat.makeExporter() else { return }
@@ -866,9 +1063,9 @@ struct ExportSheetView: View {
         return sentences.joined(separator: " ")
     }
 
-    /// Resolves the collection's export documents for the Zotero send, handling both
-    /// the smart (saved-search) and static collection paths via the shared resolver.
-    /// The Zotero formats render citations and notes — never body content — so this
+    /// Resolves the collection's export documents for the Zotero send, the RIS card and, since L35, BibTeX, handling
+    /// both the smart (saved-search) and static collection paths via the shared resolver.
+    /// The three render citations and notes — never body content — so this
     /// deliberately uses `resolveDocuments`, which skips the summary phase.
     private func resolvedZoteroDocuments() async throws -> [CollectionExportDocument] {
         try await makeResolver().resolveDocuments(
@@ -1064,5 +1261,215 @@ extension CollectionExportMetadata {
             projectName: provenance.name, projectResearchQuestion: provenance.question,
             includeColophon: collection.includeColophon,
             methodAppendixLines: appendixLines)
+    }
+}
+
+// MARK: - CollectionExportSentence (L35)
+
+/// The export sheet's sentence: what an export will print, written from what the export counts
+/// (`CollectionContentResolver.exportTally`; L35, the third review's J9, decision 192).
+///
+/// It took the place of `Collection.compositionSummarySentence` in the sheet, which reads the collection's defaults:
+/// it said "with headnotes" over documents with none to print, and said what the collection's default prints of a
+/// document set to print otherwise. The sentence follows the format chosen, since BibTeX and RIS print citations and the
+/// collection file the collection itself.
+///
+/// Version history:
+///   1.0 — L35 (J9, decision 192): initial implementation
+enum CollectionExportSentence {
+
+    /// What an export in `format` prints of a collection that counts `tally`.
+    ///
+    /// - Parameters:
+    ///   - tally: What the export resolves the collection's documents to.
+    ///   - format: The format chosen.
+    ///   - drawsWordCloud: Whether the export draws the collection's word-cloud overview: asked for, in a format that
+    ///     draws one (`ExportFormat.exportOptions(for:)`).
+    /// - Returns: One sentence: the documents and how each prints, then what prints with them.
+    static func text(for tally: CollectionExportTally, format: ExportFormat, drawsWordCloud: Bool) -> String {
+        let count = tally.documents
+        guard count > 0 else {
+            return String(localized: "export.sentence.noDocuments", defaultValue: "This collection has no documents.")
+        }
+        switch format {
+        case .fruscollection:
+            return CountCopy.phrase(
+                count,
+                one: String(localized: "export.sentence.native.one %@",
+                            defaultValue: "An editable copy of this collection and its %@ document."),
+                many: String(localized: "export.sentence.native.many %@",
+                             defaultValue: "An editable copy of this collection and its %@ documents."))
+        case .bibtex, .zoteroJSON:
+            return sentence(lead: citationsLead(count), with: tally.printsNotes ? [yourNotes] : [])
+        case .pdf, .html, .docx:
+            var parts: [String] = []
+            if tally.headnotesAsked > 0 { parts.append(headnotes(printed: tally.headnotesPrinted, of: count)) }
+            if tally.printsNotes { parts.append(yourNotes) }
+            if tally.printsHighlights {
+                parts.append(String(localized: "export.sentence.highlights", defaultValue: "your highlights"))
+            }
+            if drawsWordCloud {
+                parts.append(String(localized: "collection.export.summary.wordCloud",
+                                    defaultValue: "a word-cloud overview"))
+            }
+            return sentence(lead: renderedLead(tally), with: parts)
+        }
+    }
+
+    /// What this device lacks for the export, said before Export (J11, #2018): the summaries the export must write,
+    /// where Apple Intelligence cannot write one here, in the words the export stops with
+    /// (`CollectionSummaryExportError`). `nil` when it lacks nothing: every summary the export prints is stored, or
+    /// Apple Intelligence can write the rest, or the format prints none.
+    static func deviceLacks(_ tally: CollectionExportTally, format: ExportFormat,
+                            availability: AppleIntelligenceAvailability) -> String? {
+        guard format.printsSummaries, tally.summariesToWrite > 0, !availability.isAvailable else { return nil }
+        return CollectionSummaryExportError.summariesNeedAppleIntelligence(
+            missing: tally.summariesToWrite, availability: availability).errorDescription
+    }
+
+    // MARK: The sentence's parts
+
+    /// "your notes": a document's research notes print with it.
+    private static var yourNotes: String {
+        String(localized: "export.sentence.notes", defaultValue: "your notes")
+    }
+
+    /// `lead`, then ", with" and `parts` as a list, and a full stop.
+    private static func sentence(lead: String, with parts: [String]) -> String {
+        guard !parts.isEmpty else { return lead + "." }
+        return String(format: String(localized: "export.sentence.with %1$@ %2$@", defaultValue: "%1$@, with %2$@."),
+                      lead, ListFormatter.localizedString(byJoining: parts))
+    }
+
+    /// The documents of a citations-only export: "A citation for each of 6 documents".
+    private static func citationsLead(_ count: Int) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "export.sentence.citations.one %@",
+                                     defaultValue: "A citation for %@ document"),
+                         many: String(localized: "export.sentence.citations.many %@",
+                                      defaultValue: "A citation for each of %@ documents"))
+    }
+
+    /// The documents of a rendered export and how each prints: "The full text of 6 documents", or, where they print
+    /// differently, "6 documents: 2 in full, 2 as summaries and 2 as citations".
+    private static func renderedLead(_ tally: CollectionExportTally) -> String {
+        let count = tally.documents
+        if tally.inFull == count {
+            return CountCopy.phrase(count,
+                                    one: String(localized: "export.sentence.full.one %@",
+                                                defaultValue: "The full text of %@ document"),
+                                    many: String(localized: "export.sentence.full.many %@",
+                                                 defaultValue: "The full text of %@ documents"))
+        }
+        if tally.asSummaries == count {
+            return CountCopy.phrase(count,
+                                    one: String(localized: "export.sentence.summaries.one %@",
+                                                defaultValue: "A summary of %@ document"),
+                                    many: String(localized: "export.sentence.summaries.many %@",
+                                                 defaultValue: "A summary of each of %@ documents"))
+        }
+        if tally.asCitations == count { return citationsLead(count) }
+        var ways: [String] = []
+        if tally.inFull > 0 {
+            ways.append(String(format: String(localized: "export.sentence.mixed.full %@", defaultValue: "%@ in full"),
+                               tally.inFull.formatted()))
+        }
+        if tally.asSummaries > 0 {
+            ways.append(CountCopy.phrase(tally.asSummaries,
+                                         one: String(localized: "export.sentence.mixed.summaries.one %@",
+                                                     defaultValue: "%@ as a summary"),
+                                         many: String(localized: "export.sentence.mixed.summaries.many %@",
+                                                      defaultValue: "%@ as summaries")))
+        }
+        if tally.asCitations > 0 {
+            ways.append(CountCopy.phrase(tally.asCitations,
+                                         one: String(localized: "export.sentence.mixed.citations.one %@",
+                                                     defaultValue: "%@ as a citation"),
+                                         many: String(localized: "export.sentence.mixed.citations.many %@",
+                                                      defaultValue: "%@ as citations")))
+        }
+        return String(format: String(localized: "export.sentence.mixed %1$@ %2$@", defaultValue: "%1$@ documents: %2$@"),
+                      count.formatted(), ListFormatter.localizedString(byJoining: ways))
+    }
+
+    /// How many of the documents print a headnote (decision 192): "headnotes for 4 of 6", or of a collection of one,
+    /// "its headnote" or "no stored headnote". A headnote prints where one is asked for and a summary is stored for it.
+    private static func headnotes(printed: Int, of count: Int) -> String {
+        if count == 1 {
+            return printed == 1
+                ? String(localized: "export.sentence.headnote.one", defaultValue: "its headnote")
+                : String(localized: "export.sentence.headnote.none", defaultValue: "no stored headnote")
+        }
+        return String(format: String(localized: "export.sentence.headnotes %1$@ %2$@",
+                                     defaultValue: "headnotes for %1$@ of %2$@"),
+                      printed.formatted(), count.formatted())
+    }
+}
+
+extension ExportFormat {
+    /// Whether an export in this format prints a summary: PDF, HTML and Word do, and ask Apple Intelligence for one not
+    /// stored. BibTeX and RIS print citations, and the collection file the collection itself.
+    fileprivate var printsSummaries: Bool {
+        switch self {
+        case .pdf, .html, .docx: return true
+        case .zoteroJSON, .bibtex, .fruscollection: return false
+        }
+    }
+}
+
+// MARK: - CollectionExportFormatMemory (L35)
+
+/// The format each collection last exported as on this device, which its export sheet opens on (L35; the design's
+/// §5.1: "It opens on the format this collection last exported as on this device"). So *Export…* and then Export
+/// repeat the last export, from the lists as from the editor.
+///
+/// It is the device's, in `UserDefaults`, and not a synced preference. Only an export made with the sheet's Export is
+/// kept: the Zotero send runs from its own row and is not a format the sheet opens on (the third review). A format the
+/// sheet does not offer the collection now — the collection file, after a link to a saved search — opens on PDF, as
+/// every sheet did until then.
+///
+/// Version history:
+///   1.0 — L35: initial implementation
+enum CollectionExportFormatMemory {
+
+    /// The defaults key: a map from a collection's id to the raw value of the format it last exported as.
+    static let defaultsKey = "frus.collections.exportFormatById"
+
+    /// The format `collectionId` last exported as here, if the sheet offers it among `offered`; else PDF.
+    static func format(for collectionId: UUID, offered: [ExportFormat],
+                       in defaults: UserDefaults = .standard) -> ExportFormat {
+        let stored = (defaults.dictionary(forKey: defaultsKey) as? [String: String])?[collectionId.uuidString]
+        guard let format = stored.flatMap(ExportFormat.init(rawValue:)), offered.contains(format) else { return .pdf }
+        return format
+    }
+
+    /// Keeps `format` as the one `collectionId` last exported as here.
+    static func remember(_ format: ExportFormat, for collectionId: UUID, in defaults: UserDefaults = .standard) {
+        var formats = (defaults.dictionary(forKey: defaultsKey) as? [String: String]) ?? [:]
+        formats[collectionId.uuidString] = format.rawValue
+        defaults.set(formats, forKey: defaultsKey)
+    }
+}
+
+// MARK: - CollectionListExportSheet (L35)
+
+/// The export sheet opened from a list rather than from the collection's editor (L35, lane 1): a row of the Collections
+/// list on iPhone and iPad, and a row of Manage Collections on the Mac. It reads for itself what the editor hands the
+/// sheet: the collection's entries in their order, and every research note, one copy of each.
+///
+/// Version history:
+///   1.0 — L35: initial implementation
+struct CollectionListExportSheet: View {
+    /// The collection to export.
+    let collection: Collection
+
+    @Environment(AppState.self) private var appState
+    @Query(sort: \ResearchNote.lastModified, order: .reverse) private var allNoteCopies: [ResearchNote]
+
+    var body: some View {
+        ExportSheetView(collection: collection,
+                        entries: CollectionEntryOrdering.modelOrder(of: collection),
+                        allNotes: ResearchNote.oneCopyEach(allNoteCopies),
+                        appState: appState)
     }
 }

@@ -47,6 +47,8 @@ import SQLite3
 ///   1.7 — #1915 (L24): every other type maps to its record through an initialiser of its own
 ///          ("The records the models map to"), which Import from JSON reads a library's copy
 ///          through too; the records written are unchanged
+///   1.8 — L43: format version 8, the collections' own facts, an entry's date line, a section's headnote default and
+///          a headnote's writer; a collection's headnote drafts written whatever `includeGeneratedSummaries` says (J45)
 @MainActor
 enum ResearchDataExporter {
 
@@ -60,7 +62,7 @@ enum ResearchDataExporter {
     /// - Parameters:
     ///   - modelContext: The SwiftData context to read from.
     ///   - includeGeneratedSummaries: When `true`, populates `summaries` from
-    ///     all `GeneratedSummary` records.
+    ///     all `GeneratedSummary` records; when `false`, from the collections' headnote drafts alone (L43, J45).
     ///   - activeProjectId: The active project (#377 Phase 4), recorded in the envelope header as
     ///     the project this backup was generated under. `nil` (Global Context) → no header project.
     static func makeEnvelope(
@@ -93,10 +95,13 @@ enum ResearchDataExporter {
             lastModified: \.lastModified)
         let projects = DuplicateCopies.oneEach(try modelContext.fetch(FetchDescriptor<Project>()),
                                                id: \.id, lastModified: \.lastModified)
-        let summaries = includeGeneratedSummaries
-            ? DuplicateCopies.oneEach(try modelContext.fetch(FetchDescriptor<GeneratedSummary>()),
-                                      id: \.id, lastModified: \.lastModified)
-            : []
+        // A collection's headnote drafts travel whatever the switch says (format version 8; the third review's J45):
+        // a draft is the author's own headnote, and a restore from a file made with the switch off lost every one.
+        // The switch governs the AI's summaries of documents alone.
+        let storedSummaries = try modelContext.fetch(FetchDescriptor<GeneratedSummary>())
+        let summaries = DuplicateCopies.oneEach(
+            includeGeneratedSummaries ? storedSummaries : storedSummaries.filter(\.isHeadnoteDraft),
+            id: \.id, lastModified: \.lastModified)
 
         // The research trail (Wave R-5). Unconditional — see `ResearchDataEnvelope`'s note on D5.
         // Sorted oldest-first in the fetch rather than after the fact: an appendix is read forward
@@ -585,7 +590,8 @@ extension GeneratedSummaryExport {
             // unknown when the app treats it as known. Never write an ambiguity the reader
             // has to resolve with a rule they do not have.
             authorship: summary.authorship ?? .aiGenerated,
-            isHeadnoteDraft: summary.isHeadnoteDraft
+            isHeadnoteDraft: summary.isHeadnoteDraft,
+            writerName: summary.writerName
         )
     }
 }

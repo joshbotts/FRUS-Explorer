@@ -534,6 +534,8 @@ final class HighlightPaintTracker {
 ///          (`CollectionExport`), the same eight fields, each absent one at the model's default, which the
 ///          content assembly reads and a host outside the app builds its options with
 ///   1.7 — L34: `volumeHeadingLeads`, the third opening of a document's plan, which nothing sets until L43
+///   1.8 — L43: `citationStyle`, `wording` and `includeRelatedDocumentsDefault`, and `volumeHeadingLeads` read from the
+///          collection's opening, each from its own stored fact in `init(composing:)`
 public struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     public var tocStyle: CollectionToCStyle = .citation
@@ -572,6 +574,15 @@ public struct CollectionExportOptions: Sendable {
     /// by default. L34 builds the opening into the plan and nothing sets it: L43 makes it the collection's
     /// *Opening* setting (decision 158).
     public var volumeHeadingLeads: Bool = false
+    /// The style every citation the export prints is in (L43; the design's §6): at a document's head, in a contents
+    /// row, in a passage's source line, on the *See also* line and in the apparatus blocks. History at State, 1.0's,
+    /// by default.
+    public var citationStyle: CitationStyle = .historyAtState
+    /// The collection's own words for the labels the export prints (L43; the design's §5.2): the app's by default.
+    public var wording: CollectionWording = CollectionWording()
+    /// The collection-level default a document's related-documents setting resolves to where neither it nor its
+    /// section sets one (L43; *See also* for the collection). `false`, 1.0's, by default.
+    public var includeRelatedDocumentsDefault: Bool = false
 
     /// Creates options; every one defaults to the standard export, so `CollectionExportOptions()`
     /// is the look an untouched collection exports with.
@@ -579,7 +590,8 @@ public struct CollectionExportOptions: Sendable {
                 includeSourceNote: Bool = false, applyHighlights: Bool = false,
                 includeNotes: Bool = true, summaryPromptId: UUID? = nil,
                 includeWordCloud: Bool = false, includeHeadnoteDefault: Bool = false,
-                volumeHeadingLeads: Bool = false) {
+                volumeHeadingLeads: Bool = false, citationStyle: CitationStyle = .historyAtState,
+                wording: CollectionWording = CollectionWording(), includeRelatedDocumentsDefault: Bool = false) {
         self.tocStyle = tocStyle
         self.includeFootnotes = includeFootnotes
         self.includeSourceNote = includeSourceNote
@@ -589,6 +601,9 @@ public struct CollectionExportOptions: Sendable {
         self.includeWordCloud = includeWordCloud
         self.includeHeadnoteDefault = includeHeadnoteDefault
         self.volumeHeadingLeads = volumeHeadingLeads
+        self.citationStyle = citationStyle
+        self.wording = wording
+        self.includeRelatedDocumentsDefault = includeRelatedDocumentsDefault
     }
 
     /// The options a collection's own composition gives, read from its values: what the app's
@@ -607,8 +622,138 @@ public struct CollectionExportOptions: Sendable {
             includeNotes:      collection.includeNotes ?? true,
             summaryPromptId:   collection.summaryPromptId,
             includeWordCloud:  collection.includeWordCloud ?? false,
-            includeHeadnoteDefault: collection.defaultIncludeHeadnote ?? false
+            includeHeadnoteDefault: collection.defaultIncludeHeadnote ?? false,
+            // L43: the collection's own facts, each absent one read as 1.0 prints.
+            volumeHeadingLeads: collection.opening == CollectionDocumentPlan.Opening.volumeHeading.rawValue,
+            citationStyle: collection.citationStyle.flatMap(CitationStyle.init(rawValue:)) ?? .historyAtState,
+            wording: CollectionWording(json: collection.labelsJSON),
+            includeRelatedDocumentsDefault: collection.defaultIncludeRelatedDocuments ?? false
         )
+    }
+}
+
+// MARK: - CollectionWording
+
+/// A collection's own words for the labels its exports print over the author's material and over the apparatus
+/// (L43; the Collections design's §5.2 and §7.3): *Contents*, *Headnote*, *Summary*, *Research Note*, *See also*, and
+/// the five blocks' titles. A course reader's *Research Note* becomes *Commentary*, and a Bibliography *Works Cited*.
+///
+/// - **Not among them:** *As published:*, which is the mark and fixed (decision 154); *Source:*, which the volumes
+///   print themselves; and *Footnotes*, which heads the volume's notes.
+/// - **A label cannot be emptied.** A word that is empty, or the app's own, is no word of the collection's: the label
+///   prints the app's, and the field shows it as its placeholder.
+/// - **It is stored as one JSON object** from a label's name to its text (`Collection.labelsJSON`), read and written
+///   as a plain map. A build that does not know a label's name, a later build's, carries it through an edit of
+///   another (``updating(_:with:)``); the first review's first finding was that a build which decodes the keys it
+///   knows and writes the value back erases the rest.
+///
+/// Version history:
+///   1.0 — L43: initial implementation
+public struct CollectionWording: Sendable, Equatable {
+
+    /// A label the author may reword, named as the stored map names it. The five blocks' names are their
+    /// `CollectionGeneratedBlockType` raw values.
+    public enum Label: String, CaseIterable, Sendable {
+        /// The contents list's heading.
+        case contents
+        /// The label over a headnote.
+        case headnote
+        /// The label over a summary.
+        case summary
+        /// The label over a research note.
+        case researchNote
+        /// The label before the *See also* line.
+        case seeAlso
+        /// The Bibliography's title.
+        case bibliography
+        /// The Chronology's title.
+        case chronology
+        /// The Sources & Archives title.
+        case archivalSources
+        /// The Persons Index's title.
+        case personsIndex
+        /// The Thematic Index's title.
+        case thematicIndex
+
+        /// The app's own word for the label, which prints where the collection has none of its own.
+        public var appWord: String {
+            switch self {
+            case .contents:
+                return String(localized: "collection.contents.heading", defaultValue: "Contents")
+            case .headnote: return CollectionDocumentPlan.headnoteLabel
+            case .summary: return CollectionDocumentPlan.summaryLabel
+            case .researchNote: return CollectionDocumentPlan.researchNoteLabel
+            case .seeAlso: return CollectionDocumentPlan.seeAlsoLabel
+            case .bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex:
+                return blockType?.displayName ?? rawValue
+            }
+        }
+
+        /// The block whose title the label is, for the five blocks' labels.
+        public var blockType: CollectionGeneratedBlockType? {
+            CollectionGeneratedBlockType(rawValue: rawValue)
+        }
+    }
+
+    /// Every pair the stored map holds, the names this build does not know among them.
+    public let storedWords: [String: String]
+
+    /// The app's words for every label.
+    public init() {
+        storedWords = [:]
+    }
+
+    /// The words a stored map gives. Anything that is not a JSON object of strings reads as no words.
+    ///
+    /// - Parameter json: `Collection.labelsJSON`, or `nil`.
+    public init(json: String?) {
+        guard let data = json?.data(using: .utf8),
+              let map = try? JSONDecoder().decode([String: String].self, from: data) else {
+            storedWords = [:]
+            return
+        }
+        storedWords = map
+    }
+
+    /// The word the export prints for `label`: the collection's own, else the app's.
+    public func text(for label: Label) -> String {
+        ownWord(for: label) ?? label.appWord
+    }
+
+    /// The collection's own word for `label`, or `nil` where it has none: an empty word, or the app's own, is none.
+    public func ownWord(for label: Label) -> String? {
+        guard let word = storedWords[label.rawValue]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !word.isEmpty, word != label.appWord else { return nil }
+        return word
+    }
+
+    /// The labels the collection has reworded, in the table's order: what the Note on the Text names (L58).
+    public var rewordedLabels: [Label] {
+        Label.allCases.filter { ownWord(for: $0) != nil }
+    }
+
+    /// The stored map after `label` is given `text`, with every other pair kept as it was, a name this build does not
+    /// know among them. An empty text, or the app's own word, removes the label's word, so the label cannot be emptied.
+    /// `nil` when no pair is left.
+    ///
+    /// - Parameters:
+    ///   - json: The stored map, `Collection.labelsJSON`.
+    ///   - label: The label to reword.
+    ///   - text: Its new text.
+    /// - Returns: The map to store.
+    public static func updating(_ json: String?, label: Label, with text: String) -> String? {
+        var map = CollectionWording(json: json).storedWords
+        let word = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if word.isEmpty || word == label.appWord {
+            map[label.rawValue] = nil
+        } else {
+            map[label.rawValue] = word
+        }
+        guard !map.isEmpty else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(map) else { return json }
+        return String(data: data, encoding: .utf8)
     }
 }
 
@@ -663,6 +808,7 @@ public struct CollectionExportOptions: Sendable {
 ///          the volume prints it, its calls left out and through an editorial note's wrapper, and the
 ///          dateline from the top level, an opener or a closer (#1992, #1994, #2003). `tocLabel(style:)`
 ///          gives way to the contents rows of the export's plan (`CollectionContentsRow`)
+///   1.11 — L43: `dateLine`, the author's date line, which the plan prints under the author's title alone
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -682,6 +828,9 @@ public struct CollectionExportDocument: Sendable {
     /// for both styles) and the top-of-document export heading. Defaulted `nil` at every
     /// construction site so untouched exports stay byte-identical.
     public let titleOverride: String?
+    /// The author's date line for the document (L43; decision 163), as the entry stores it. The plan prints it under
+    /// the author's title, and only there (J41): a date line with no title prints nothing. `nil` by default.
+    public let dateLine: String?
     /// ISO 8601 date string, if known.
     public let date: String?
     /// Plain-text body of the document. Preserved as fallback when `renderModel` is nil.
@@ -803,6 +952,7 @@ public struct CollectionExportDocument: Sendable {
         bodyDepth: CollectionBodyDepth = .full,
         title: String,
         titleOverride: String? = nil,
+        dateLine: String? = nil,
         date: String? = nil,
         bodyText: String,
         noteText: String? = nil,
@@ -833,6 +983,7 @@ public struct CollectionExportDocument: Sendable {
         self.bodyDepth = bodyDepth
         self.title = title
         self.titleOverride = titleOverride
+        self.dateLine = dateLine
         self.date = date
         self.bodyText = bodyText
         if let noteTexts {
@@ -869,7 +1020,7 @@ public struct CollectionExportDocument: Sendable {
     public func withSummary(_ text: String, format: ResponseFormat = .general) -> CollectionExportDocument {
         CollectionExportDocument(
             documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
-            bodyDepth: bodyDepth, title: title, titleOverride: titleOverride,
+            bodyDepth: bodyDepth, title: title, titleOverride: titleOverride, dateLine: dateLine,
             date: date, bodyText: bodyText,
             noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,

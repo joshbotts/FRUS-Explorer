@@ -21,11 +21,28 @@ import WebKit
 /// in a `WKWebView`.
 ///
 /// ## Debounce
-/// Re-resolution is keyed on a `Hashable` fingerprint of the entries (ids, kind, text,
-/// rich text, overrides, note selections, sort order) plus the collection's composition
-/// fields, via `.task(id:)`. Edits settle for ~1 second before a re-resolve runs; the
-/// first render and explicit user actions (Render All, download completion) skip the
-/// debounce. A superseded resolve is cancelled by SwiftUI and discards its result.
+/// Re-resolution is keyed on a `Hashable` fingerprint of every stored property of the collection and
+/// its entries that the page is drawn from (`CollectionPreviewRefresh`), with the active project when
+/// the page names it, via `.task(id:)`. Edits settle for ~1 second before a re-resolve runs; the
+/// first render and explicit user actions (Render All, a row chosen past the cap, download completion)
+/// skip the debounce. A superseded resolve is cancelled by SwiftUI and discards its result.
+///
+/// ## The fingerprint's list (L36, #1997)
+/// Until L36 the fingerprint was a list kept by hand, and it had fallen behind the page: an entry's
+/// title override, the collection's Headnotes default, its project stamp and its query log were drawn
+/// and not hashed, so switching one alone left the page as it was. `CollectionPreviewRefresh` names
+/// each stored property the page does not draw, with why, and `CollectionPreviewRefreshListTests`
+/// walks both models' stored properties: each that is not named moves the fingerprint, and each that
+/// is named does not. A property added to either model fails it until it is hashed or named.
+///
+/// ## The reader's place and the chosen row (L36)
+/// The page keeps the reader's place when it loads again: it reports where the reader stopped
+/// scrolling (the document at the top of the view and how far into it), and a new page lands there,
+/// in the document the reader was in, wherever the text above it has grown or shrunk. Choosing a row in
+/// the outline brings its document into view, rendering through it first when it is past the cap. Both
+/// live in `CollectionPreviewPlace`, which the editor holds, so they outlive a preview the iPhone's
+/// Outline | Preview control builds again. A document entered twice is two places on the page (#2004),
+/// so a chosen row brings its own copy into view.
 ///
 /// ## Stored rows no entry holds (#1765)
 /// The page also draws rows the entries only point at — a document's summaries (its headnote,
@@ -61,10 +78,11 @@ import WebKit
 /// `FRUSDocumentWebView`/`FRUSWebViewConfiguration` stack deliberately: the preview page
 /// is the export HTML, which carries no `frusexplorer://` interactive links and needs no
 /// offset-engine/highlight/selection JS — only external-link routing to the system
-/// browser (same navigation-delegate posture as `FRUSDocumentWebView`).
+/// browser (same navigation-delegate posture as `FRUSDocumentWebView`), and, since L36, the
+/// small script that reports and restores the reader's place, which the web view adds at load.
 ///
-/// Scroll-sync and per-item incremental DOM patching are explicitly out of scope here
-/// (optional Phase 2c); full-page debounced regeneration is the contract of this PR.
+/// Per-item incremental DOM patching is out of scope here: each refresh loads the whole page,
+/// and the reader's place is what survives it (L36).
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 2b: initial implementation (debounced full-page regeneration,
@@ -107,6 +125,12 @@ import WebKit
 ///          app's figure store, which was its default
 ///   1.8 — #1765: the page re-resolves when a summary, highlight, note or tag assignment of one of its
 ///          documents is stored, from any window (`CollectionPreviewUserDataObserver`)
+///   1.9 — L36 (#1997, #2004; the Collections design's §5.3): the fingerprint hashes every stored property
+///          the page draws (`CollectionPreviewRefresh`), an entry's title override, the Headnotes default,
+///          the project stamp and the query log among them, with the active project when the page names
+///          it; the page keeps the reader's place when it loads again, and a chosen row brings its own
+///          document into view, past the cap too (`CollectionPreviewPlace`); the export options are the
+///          export sheet's (`ExportFormat.exportOptions(for:)`), without the word cloud
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -123,6 +147,10 @@ struct CollectionPreviewView: View {
     /// Lifts the initial document cap when `true`. Owned by the presenting editor so
     /// the "session" survives Outline/Preview pane toggles that recreate this view.
     @Binding var renderAll: Bool
+
+    /// The reader's place on the page and the row last chosen in the outline (L36). Owned by the
+    /// presenting editor, like `renderAll`, so a preview built again lands where the last one was.
+    let place: CollectionPreviewPlace
 
     // MARK: - Environment
 
@@ -203,66 +231,52 @@ struct CollectionPreviewView: View {
 
     // MARK: - Fingerprint
 
-    /// Hash of everything the rendered page depends on: per-entry identity and content
-    /// (id, kind, document/volume ids, sort order, text, rich text, body-depth override,
-    /// note selections) plus the collection's composition fields. Reading these
-    /// observable properties during body evaluation also registers the SwiftUI
-    /// dependencies that re-run the `.task` when they change.
+    /// How many documents the page is rendered through: `initialDocumentCap`, raised to a chosen row
+    /// past it (L36), or every one, `nil`, once Render All is pressed.
+    private var documentCap: Int? {
+        renderAll ? nil : max(Self.initialDocumentCap, place.revealedCap)
+    }
+
+    /// Hash of everything the rendered page depends on (`CollectionPreviewRefresh.fingerprint`): every
+    /// stored property of the collection and its entries that the page draws, what it names of the
+    /// active project, and the cap. Reading these observable properties during body evaluation also
+    /// registers the SwiftUI dependencies that re-run the `.task` when they change.
     private var contentFingerprint: Int {
-        var hasher = Hasher()
-        hasher.combine(collection.name)
-        hasher.combine(collection.note)
-        hasher.combine(collection.savedSearchId)
-        hasher.combine(collection.defaultBodyDepth)
-        hasher.combine(collection.footnoteStyle)
-        // Phase 5 footnote pair — the effective values also cover legacy derivation.
-        hasher.combine(collection.includeFootnotes)
-        hasher.combine(collection.includeSourceNote)
-        hasher.combine(collection.tocStyle)
-        hasher.combine(collection.applyHighlights)
-        hasher.combine(collection.includeNotes)
-        hasher.combine(collection.summaryPromptId)
-        // Phase 4 publication frame: title page, introduction, colophon, heading levels.
-        hasher.combine(collection.subtitle)
-        hasher.combine(collection.authorLine)
-        hasher.combine(collection.introductionText)
-        hasher.combine(collection.introductionRichText)
-        hasher.combine(collection.includeColophon)
-        for entry in entries {
-            hasher.combine(entry.id)
-            hasher.combine(entry.kind)
-            hasher.combine(entry.documentId)
-            hasher.combine(entry.volumeId)
-            hasher.combine(entry.sortOrder)
-            hasher.combine(entry.text)
-            hasher.combine(entry.richText)
-            hasher.combine(entry.level)
-            hasher.combine(entry.bodyDepthOverride)
-            hasher.combine(entry.selectedNoteIds)
-            hasher.combine(entry.researchNoteId)
-            // Phase 5 headnote fields — toggling them live-refreshes the preview.
-            hasher.combine(entry.includeHeadnote)
-            hasher.combine(entry.headnoteSummaryId)
-            // Phase 5 excerpt anchors — a re-anchored or re-coloured excerpt refreshes
-            // (the passage itself is `text`, already hashed above).
-            hasher.combine(entry.excerptStart)
-            hasher.combine(entry.excerptEnd)
-            hasher.combine(entry.excerptRenderingVersion)
-            hasher.combine(entry.excerptColorTag)
-            // Phase 5 per-entry overrides — toggling any inspector override refreshes.
-            hasher.combine(entry.applyHighlightsOverride)
-            hasher.combine(entry.includeNotesOverride)
-            hasher.combine(entry.includeSourceNoteOverride)
-            hasher.combine(entry.includeFootnotesOverride)
-            hasher.combine(entry.summaryPromptIdOverride)
-            hasher.combine(entry.selectedHighlightIds)
-            hasher.combine(entry.includeRelatedDocuments)
-            // Phase 6 generated blocks — adding/retyping an apparatus block refreshes.
-            hasher.combine(entry.generatedBlockType)
+        CollectionPreviewRefresh.fingerprint(
+            collection: collection, entries: entries,
+            project: CollectionPreviewRefresh.ProjectKey(collection: collection, activeProject: activeProject),
+            documentCap: documentCap, refreshToken: refreshToken)
+    }
+
+    /// The chosen row's document, to bring into view: its anchor on the page and the choice that asked,
+    /// or `nil` when no row is chosen or the chosen row is not a document's (L36).
+    private var reveal: CollectionPreviewReveal? {
+        guard collection.savedSearchId == nil, let chosen = place.chosen,
+              let target = Self.revealTarget(of: chosen.entryId, in: entries) else { return nil }
+        return CollectionPreviewReveal(anchor: target.anchor, serial: chosen.serial)
+    }
+
+    /// The anchor of `entryId`'s document on the page, and its place among the collection's document
+    /// entries, counted as `capEntries(_:cap:)` counts them; `nil` when the entry is not a document's.
+    ///
+    /// The anchor is the renderer's own numbering (`CollectionItemHTMLRenderer.anchorIds(forKeys:)`),
+    /// read over the entries in the order the resolver gives the page, so a document entered twice
+    /// brings the copy that was chosen into view (#2004). An entry with no volume or document id is
+    /// left out of the page by the resolver, and of the numbering here.
+    ///
+    /// Internal (not private) so tests can hold it to the page without a WebKit view.
+    static func revealTarget(of entryId: UUID, in entries: [CollectionEntry]) -> (anchor: String, ordinal: Int)? {
+        var ordinal = 0
+        var keys: [(volumeId: String, documentId: String)] = []
+        for entry in entries.sorted(by: { $0.sortOrder < $1.sortOrder }) where entry.entryKind == .document {
+            ordinal += 1
+            let printed = !entry.volumeId.isEmpty && !entry.documentId.isEmpty
+            if printed { keys.append((volumeId: entry.volumeId, documentId: entry.documentId)) }
+            guard entry.id == entryId else { continue }
+            guard printed, let anchor = CollectionItemHTMLRenderer.anchorIds(forKeys: keys).last else { return nil }
+            return (anchor, ordinal)
         }
-        hasher.combine(renderAll)
-        hasher.combine(refreshToken)
-        return hasher.finalize()
+        return nil
     }
 
     // MARK: - Body
@@ -273,8 +287,8 @@ struct CollectionPreviewView: View {
                 missingVolumesBar
                 Divider()
             }
-            if !renderAll && totalDocumentCount > Self.initialDocumentCap {
-                capBar
+            if let cap = documentCap, totalDocumentCount > cap {
+                capBar(cap)
                 Divider()
             }
             previewSurface
@@ -286,6 +300,15 @@ struct CollectionPreviewView: View {
         // result is discarded via the cancellation check before state assignment).
         .task(id: contentFingerprint) {
             await refresh()
+        }
+        // L36: a row chosen past the cap is rendered through, so its document can be brought into view.
+        // `initial`: a preview the iPhone builds again reads the row chosen while it was away.
+        .onChange(of: place.chosen, initial: true) { _, chosen in
+            guard collection.savedSearchId == nil, let chosen, chosen.serial != place.revealedSerial,
+                  let cap = documentCap, let target = Self.revealTarget(of: chosen.entryId, in: entries),
+                  target.ordinal > cap else { return }
+            skipDebounceOnce = true
+            place.revealedCap = target.ordinal
         }
         // Whenever volumes are missing, poll until they arrive — via the preview's own
         // Download button OR any other path (the editor's Export, the Browser) — then
@@ -323,7 +346,7 @@ struct CollectionPreviewView: View {
                     Text(error)
                 }
             } else if let html {
-                CollectionPreviewWebView(html: html)
+                CollectionPreviewWebView(html: html, collectionId: collection.id, reveal: reveal, place: place)
             } else {
                 ProgressView(String(localized: "collection.preview.loading",
                                     defaultValue: "Building preview…"))
@@ -391,14 +414,15 @@ struct CollectionPreviewView: View {
         .background(.bar)
     }
 
-    /// Bar shown when the collection exceeds the initial document cap, with the
+    /// Bar shown when the collection exceeds the document cap, with the
     /// Render All button that lifts it for the editor session. The "of M" total is the
     /// true document count — for smart collections, the full search-result count, even
-    /// though only the capped prefix was resolved.
-    private var capBar: some View {
+    /// though only the capped prefix was resolved. The cap is the initial one, or the
+    /// chosen row's place when a row past it was chosen (L36).
+    private func capBar(_ cap: Int) -> some View {
         HStack(spacing: 12) {
             Text(String(localized: "collection.preview.capNotice",
-                        defaultValue: "Showing first \(Self.initialDocumentCap) of \(totalDocumentCount) documents"))
+                        defaultValue: "Showing first \(cap) of \(totalDocumentCount) documents"))
                 .font(.callout)
             Spacer()
             Button(String(localized: "collection.preview.renderAll",
@@ -457,6 +481,7 @@ struct CollectionPreviewView: View {
         let unavailable = missing.filter { !manifestVolumeIds.contains($0) }
 
         let resolver = CollectionContentResolver(appState: appState, modelContext: modelContext)
+        let cap = documentCap
         do {
             let items: [CollectionExportItem]
             if isSmart {
@@ -465,9 +490,7 @@ struct CollectionPreviewView: View {
                 // cap is ever parsed, and keep the true total for the cap bar.
                 let refs = try await resolver.smartRefs(for: collection)
                 let docCount = refs.count
-                let cappedRefs = (renderAll || docCount <= Self.initialDocumentCap)
-                    ? refs
-                    : Array(refs.prefix(Self.initialDocumentCap))
+                let cappedRefs = cap.map { docCount <= $0 ? refs : Array(refs.prefix($0)) } ?? refs
                 let resolved = try await resolver.resolve(
                     smartRefs: cappedRefs, collection: collection, allNotes: allNotes,
                     purpose: .preview, fullRefs: refs)
@@ -479,9 +502,7 @@ struct CollectionPreviewView: View {
                 // Static path: cap the entries *before* resolution so the parse cost of
                 // documents past the cap is never paid.
                 let docCount = entries.filter { $0.entryKind == .document }.count
-                let cappedEntries = (renderAll || docCount <= Self.initialDocumentCap)
-                    ? entries
-                    : Self.capEntries(entries, cap: Self.initialDocumentCap)
+                let cappedEntries = cap.map { docCount <= $0 ? entries : Self.capEntries(entries, cap: $0) } ?? entries
                 let resolved = try await resolver.resolve(
                     collection: collection, entries: cappedEntries, allNotes: allNotes,
                     purpose: .preview)
@@ -516,18 +537,13 @@ struct CollectionPreviewView: View {
         }
     }
 
-    /// Preview rendering options mirroring the ones the export sheet takes from
-    /// `ExportFormat.exportOptions(for:)`, minus the word cloud (export-only decoration).
+    /// The export sheet's options for a web page (`ExportFormat.exportOptions(for:)`), minus the word
+    /// cloud (export-only decoration). Until L36 the preview built them by hand, seven of the eight
+    /// fields `init(composing:)` reads, so a field the options gain reached the export and not the preview.
     private func previewOptions() -> CollectionExportOptions {
-        CollectionExportOptions(
-            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            includeFootnotes:  collection.effectiveIncludeFootnotes,
-            includeSourceNote: collection.effectiveIncludeSourceNote,
-            applyHighlights:   collection.applyHighlights,
-            includeNotes:      collection.includeNotes,
-            summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud: false
-        )
+        var options = ExportFormat.html.exportOptions(for: collection)
+        options.includeWordCloud = false
+        return options
     }
 
     /// Returns the entry prefix (in `sortOrder` order) containing at most `cap`
@@ -608,6 +624,241 @@ struct CollectionPreviewView: View {
             }
         }
         downloadsInFlight = false
+    }
+}
+
+// MARK: - The reader's place and the chosen row (L36)
+
+/// Where the reader is on a collection's preview, and the row last chosen in its outline (L36; the
+/// Collections design's §5.3).
+///
+/// Held by the editor that shows the preview, as its Render All is, so that a preview built again (the
+/// iPhone's Outline | Preview control builds one each time it shows the page) lands where the last one
+/// was, and reads a row chosen while it was away. A row is chosen by its selection on the Mac and by
+/// opening its settings on iPad and iPhone: `choose(_:)`.
+@MainActor @Observable
+final class CollectionPreviewPlace {
+
+    /// A place on the page: the document whose section holds the top of the view, and how far into it
+    /// the view begins, or, above every document, how far down the page.
+    struct Mark: Codable, Equatable, Sendable {
+        /// The section's anchor; `nil` above the first document (the title page and the contents).
+        var anchor: String?
+        /// How far the top of the view is below the section's top, in CSS pixels.
+        var offset: Double
+        /// How far the page is scrolled, in CSS pixels: the place when there is no section.
+        var y: Double
+
+        /// The place a page reported, from its message body; `nil` for a body of another shape.
+        init?(messageBody body: Any) {
+            guard let fields = body as? [String: Any],
+                  let offset = (fields["offset"] as? NSNumber)?.doubleValue,
+                  let y = (fields["y"] as? NSNumber)?.doubleValue else { return nil }
+            self.init(anchor: fields["anchor"] as? String, offset: offset, y: y)
+        }
+
+        /// A place of these values.
+        init(anchor: String?, offset: Double, y: Double) {
+            self.anchor = anchor
+            self.offset = offset
+            self.y = y
+        }
+    }
+
+    /// A row chosen in the outline, numbered so that choosing it again brings it back into view.
+    struct Choice: Equatable, Sendable {
+        /// The chosen entry.
+        let entryId: UUID
+        /// One more than the choice before it.
+        let serial: Int
+    }
+
+    /// The row last chosen, whose document the preview brings into view. Observed, so a choice
+    /// re-renders the preview.
+    private(set) var chosen: Choice?
+
+    /// How many documents a chosen row past the cap had the page rendered through (`0` before any).
+    /// Observed: the fingerprint reads it, so raising it renders the page again.
+    var revealedCap = 0
+
+    /// The choice whose document was brought into view, so a preview built again does not bring it
+    /// again over the place the reader has since scrolled to.
+    @ObservationIgnored var revealedSerial: Int?
+
+    /// The last place the page reported, and the collection it is a place in. Not observed: the page
+    /// reports one each time the reader stops scrolling, and nothing on screen is drawn from it.
+    @ObservationIgnored private var lastMark: Mark?
+    @ObservationIgnored private var lastMarkCollectionId: UUID?
+
+    /// An empty place: the top of the page, no row chosen.
+    init() {}
+
+    /// Chooses `entryId`'s row, whose document the preview brings into view; `nil` chooses nothing.
+    func choose(_ entryId: UUID?) {
+        guard let entryId else { return }
+        chosen = Choice(entryId: entryId, serial: (chosen?.serial ?? 0) + 1)
+    }
+
+    /// Records `mark` as the reader's place on `collectionId`'s page.
+    func record(_ mark: Mark, in collectionId: UUID) {
+        lastMark = mark
+        lastMarkCollectionId = collectionId
+    }
+
+    /// The reader's place on `collectionId`'s page, or `nil` when the last place was on another's.
+    func mark(in collectionId: UUID) -> Mark? {
+        lastMarkCollectionId == collectionId ? lastMark : nil
+    }
+}
+
+/// A chosen row's document to bring into view: its anchor on the page, and the choice that asked.
+struct CollectionPreviewReveal: Equatable, Sendable {
+    /// The document's section, its entry's own (`CollectionItemHTMLRenderer.anchorIds(forKeys:)`).
+    let anchor: String
+    /// `CollectionPreviewPlace.Choice.serial`.
+    let serial: Int
+}
+
+// MARK: - The fingerprint's list (L36, #1997)
+
+/// What a collection's preview re-resolves on: every stored property of the collection and its entries
+/// that the page is drawn from, and what the page names of the active project (L36, #1997).
+///
+/// **The list is checked, not only kept by hand** (J20). `CollectionPreviewRefreshListTests` walks the
+/// stored properties of `Collection` and `CollectionEntry`: each one that ``collectionPropertiesNotDrawn``
+/// and ``entryPropertiesNotDrawn`` do not name must move the fingerprint when it alone is changed, and
+/// each one they name must not. A property added to either model fails the suite until it is hashed
+/// here or named there, with why. Until L36 no test read the list, and four properties the page draws
+/// had fallen out of it: an entry's title override, the Headnotes default, the project stamp's switch
+/// and the query log's.
+enum CollectionPreviewRefresh {
+
+    /// What the page names of the active project, which no stored property of the collection holds.
+    struct ProjectKey: Hashable, Sendable {
+        /// The stamped project's name, when the collection stamps the title page with it.
+        let stampName: String?
+        /// The stamped project's research question, when the collection stamps the title page with it.
+        let stampQuestion: String?
+        /// The project whose queries the method appendix lists, when the collection prints it.
+        let appendixProjectId: UUID?
+
+        /// What `collection`'s page names of `activeProject`, as `CollectionExportMetadata.forExport` reads it.
+        @MainActor
+        init(collection: Collection, activeProject: Project?) {
+            stampName = collection.includeProjectProvenance ? activeProject?.name : nil
+            stampQuestion = collection.includeProjectProvenance ? activeProject?.researchQuestion : nil
+            appendixProjectId = collection.includeMethodAppendix ? activeProject?.id : nil
+        }
+
+        /// Nothing of a project: no stamp, no appendix.
+        static let noProject = ProjectKey(stampName: nil, stampQuestion: nil, appendixProjectId: nil)
+
+        /// A key of these values.
+        init(stampName: String?, stampQuestion: String?, appendixProjectId: UUID?) {
+            self.stampName = stampName
+            self.stampQuestion = stampQuestion
+            self.appendixProjectId = appendixProjectId
+        }
+    }
+
+    /// The stored properties of `Collection` the page does not draw, by name, each with why.
+    static let collectionPropertiesNotDrawn: [String: String] = [
+        "documentEntries": "The entries are hashed one by one, from the list the editor passes in the outline's order.",
+        "projectIds": "The projects that list the collection; the page names none of them. The project the stamp names is the active one, hashed as the project key.",
+        "includeWordCloud": "The preview draws no word cloud: it is the export's alone (previewOptions()).",
+        "createdAt": "Drawn nowhere.",
+        "lastModified": "Stamped at a save, not at an edit, and drawn nowhere: every field it would stand for is hashed itself.",
+    ]
+
+    /// The stored properties of `CollectionEntry` the page does not draw, by name, each with why.
+    static let entryPropertiesNotDrawn: [String: String] = [
+        "collection": "The entry's collection, whose own fields are hashed as the collection's.",
+        "collectionId": "The entry's collection's id; the editor passes that collection's entries alone.",
+        "createdAt": "Drawn nowhere.",
+        "lastModified": "Stamped at a save, not at an edit, and drawn nowhere: every field it would stand for is hashed itself.",
+    ]
+
+    /// One number for everything the page is drawn from, which moves when any of it does.
+    ///
+    /// - Parameters:
+    ///   - collection: The collection, whose every stored property but those ``collectionPropertiesNotDrawn``
+    ///     names is hashed.
+    ///   - entries: Its entries, in the outline's order, each hashed in the same way.
+    ///   - project: What the page names of the active project.
+    ///   - documentCap: How many documents the page is rendered through; `nil` for every one.
+    ///   - refreshToken: The preview's count of the changes it was told of (a download, a stored row).
+    /// - Returns: The fingerprint, for `.task(id:)`.
+    @MainActor
+    static func fingerprint(collection: Collection, entries: [CollectionEntry], project: ProjectKey,
+                            documentCap: Int?, refreshToken: Int) -> Int {
+        var hasher = Hasher()
+        // Which collection the page is, its title page, introduction, note and colophon (Phase 4).
+        hasher.combine(collection.id)
+        hasher.combine(collection.name)
+        hasher.combine(collection.note)
+        hasher.combine(collection.subtitle)
+        hasher.combine(collection.authorLine)
+        hasher.combine(collection.introductionText)
+        hasher.combine(collection.introductionRichText)
+        hasher.combine(collection.includeColophon)
+        // The project stamp and the query log (#1997): their switches, and what they name.
+        hasher.combine(collection.includeProjectProvenance)
+        hasher.combine(collection.includeMethodAppendix)
+        hasher.combine(project)
+        hasher.combine(collection.savedSearchId)
+        // The composition. The footnote pair is hashed as stored, with the legacy style it derives from.
+        hasher.combine(collection.defaultBodyDepth)
+        hasher.combine(collection.footnoteStyle)
+        hasher.combine(collection.includeFootnotes)
+        hasher.combine(collection.includeSourceNote)
+        hasher.combine(collection.tocStyle)
+        hasher.combine(collection.applyHighlights)
+        hasher.combine(collection.includeNotes)
+        hasher.combine(collection.defaultIncludeHeadnote)
+        hasher.combine(collection.summaryPromptId)
+        // The collection's own facts (L43): every citation's style, which line leads a document, the labels'
+        // words, and the See also every document takes by default.
+        hasher.combine(collection.citationStyle)
+        hasher.combine(collection.opening)
+        hasher.combine(collection.labelsJSON)
+        hasher.combine(collection.defaultIncludeRelatedDocuments)
+        for entry in entries {
+            hasher.combine(entry.id)
+            hasher.combine(entry.kind)
+            hasher.combine(entry.documentId)
+            hasher.combine(entry.volumeId)
+            hasher.combine(entry.sortOrder)
+            hasher.combine(entry.level)
+            hasher.combine(entry.text)
+            hasher.combine(entry.richText)
+            // A document's heading and its contents row (#1997).
+            hasher.combine(entry.titleOverride)
+            hasher.combine(entry.bodyDepthOverride)
+            hasher.combine(entry.selectedNoteIds)
+            hasher.combine(entry.researchNoteId)
+            hasher.combine(entry.includeHeadnote)
+            hasher.combine(entry.headnoteSummaryId)
+            // An excerpt prints its frozen passage (`text`); its anchors are hashed as they were since
+            // Phase 5, so a rendering that reads them (A9) needs nothing here.
+            hasher.combine(entry.excerptStart)
+            hasher.combine(entry.excerptEnd)
+            hasher.combine(entry.excerptRenderingVersion)
+            hasher.combine(entry.excerptColorTag)
+            hasher.combine(entry.applyHighlightsOverride)
+            hasher.combine(entry.includeNotesOverride)
+            hasher.combine(entry.includeSourceNoteOverride)
+            hasher.combine(entry.includeFootnotesOverride)
+            hasher.combine(entry.summaryPromptIdOverride)
+            hasher.combine(entry.selectedHighlightIds)
+            hasher.combine(entry.includeRelatedDocuments)
+            hasher.combine(entry.generatedBlockType)
+            // A document's date line under its title, and a section heading's Headnotes default (L43).
+            hasher.combine(entry.dateLine)
+            hasher.combine(entry.headnoteDefault)
+        }
+        hasher.combine(documentCap)
+        hasher.combine(refreshToken)
+        return hasher.finalize()
     }
 }
 
@@ -809,7 +1060,8 @@ private struct CollectionPreviewUserDataObserver: View {
 // MARK: - CollectionPreviewWebView
 
 /// Minimal per-platform `WKWebView` representable that displays a self-contained HTML
-/// string (the shared renderer's `pageHTML` output).
+/// string (the shared renderer's `pageHTML` output), keeps the reader's place when a new page loads,
+/// and brings a chosen row's document into view (L36).
 ///
 /// Deliberately *not* built on `WKWebViewConfiguration.frusExplorerConfiguration`: that
 /// factory exists to inject the offset-engine/highlight/selection scripts and the
@@ -818,21 +1070,219 @@ private struct CollectionPreviewUserDataObserver: View {
 /// navigation posture: the in-memory HTML load is allowed, in-page anchor jumps (the
 /// ToC) are allowed, and activated external links open in the system browser instead of
 /// navigating the preview away.
-private struct CollectionPreviewWebView {
+///
+/// **What it adds of its own** (L36) is one script and one message handler. The script
+/// (`placeScript`) reports where the reader stopped scrolling, and each page the web view
+/// loads carries it at the end of its body with its landing: the chosen row's document when
+/// the page holds it, else the reader's last place. The page itself is the export's, byte
+/// for byte; the script is added at load, and an export never carries it.
+struct CollectionPreviewWebView {
 
     /// The complete HTML page to display.
     let html: String
 
-    /// Shared navigation/UI delegate for both platform representables.
+    /// The collection the page is, whose place `place` keeps.
+    let collectionId: UUID
+
+    /// The chosen row's document to bring into view, if any.
+    let reveal: CollectionPreviewReveal?
+
+    /// The editor's keeper of the reader's place.
+    let place: CollectionPreviewPlace
+
+    /// The message handler the page posts the reader's place to.
+    static let placeMessage = "frusPreviewPlace"
+
+    /// The page's place script: `FRUSPreviewPlace.read()` gives the reader's place (the document
+    /// section holding the top of the view and how far into it the view begins, or the page's
+    /// scroll above every document), `FRUSPreviewPlace.land(anchor, mark)` scrolls to `anchor`'s
+    /// section and answers `true`, or, when the page has no such section, to `mark` and answers
+    /// `false`; and 150 ms after the reader stops scrolling it posts the place to `placeMessage`.
+    /// Its scrolls are instant, as the page sets no `scroll-behavior`.
+    static let placeScript = """
+    (function () {
+      if (window.FRUSPreviewPlace) { return; }
+      var place = {};
+      place.top = function (element) { return element.getBoundingClientRect().top + window.scrollY; };
+      place.read = function () {
+        var sections = document.querySelectorAll('section[id^="doc-"]');
+        var anchor = null, offset = 0;
+        for (var i = 0; i < sections.length; i++) {
+          var top = sections[i].getBoundingClientRect().top;
+          if (top > 0.5) { break; }
+          anchor = sections[i].id;
+          offset = -top;
+        }
+        return { anchor: anchor, offset: offset, y: window.scrollY };
+      };
+      place.land = function (anchor, mark) {
+        var target = anchor ? document.getElementById(anchor) : null;
+        if (target) { window.scrollTo(0, Math.max(0, place.top(target))); return true; }
+        if (mark) {
+          var section = mark.anchor ? document.getElementById(mark.anchor) : null;
+          window.scrollTo(0, Math.max(0, section ? place.top(section) + mark.offset : mark.y));
+        }
+        return false;
+      };
+      var timer = null;
+      window.addEventListener('scroll', function () {
+        if (timer !== null) { clearTimeout(timer); }
+        timer = setTimeout(function () {
+          timer = null;
+          var handlers = window.webkit && window.webkit.messageHandlers;
+          if (handlers && handlers.\(CollectionPreviewWebView.placeMessage)) { handlers.\(CollectionPreviewWebView.placeMessage).postMessage(place.read()); }
+        }, 150);
+      }, { passive: true });
+      window.FRUSPreviewPlace = place;
+    })();
+    """
+
+    /// A web view as the preview builds one, on either platform and in a test: a configuration of its
+    /// own with `coordinator` as its place handler, and `coordinator` as its navigation and UI delegate.
+    @MainActor
+    static func makeWebView(coordinator: Coordinator) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController.add(coordinator, name: placeMessage)
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = coordinator
+        webView.uiDelegate = coordinator
+        return webView
+    }
+
+    /// Shared navigation/UI delegate and place handler for both platform representables.
     ///
     /// Tracks the hash of the last-loaded HTML so SwiftUI update passes that didn't
     /// change the page never reload it, and routes external links (including
     /// `target="_blank"` ones, via the `createWebViewWith` UI-delegate hook) to the
-    /// system browser.
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, @unchecked Sendable {
+    /// system browser. Since L36 it lands each page it loads (`show(_:collectionId:reveal:in:)`),
+    /// records the place the page reports, and brings a chosen row's document into view, now when
+    /// the page holds it and at the next load when it does not yet.
+    @MainActor
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+
+        /// The editor's keeper of the reader's place, which the page reports to and each load lands on.
+        let place: CollectionPreviewPlace
+
+        /// The collection the page shown is.
+        private var collectionId: UUID?
 
         /// Hash of the most recently loaded HTML string; suppresses no-op reloads.
-        var lastHTMLHash: Int?
+        private var lastHTMLHash: Int?
+
+        /// The load under way, which alone ends `isLoading` and lands: a load the next one cancels does not.
+        private var navigation: WKNavigation?
+
+        /// `true` from a load's start to its end.
+        private var isLoading = false
+
+        /// Where the page being loaded lands: a chosen row's document, or the reader's place as it was
+        /// when the load began.
+        private var landing: (anchor: String?, mark: CollectionPreviewPlace.Mark?)?
+
+        /// A chosen row's document not yet brought into view.
+        private var pendingReveal: CollectionPreviewReveal?
+
+        /// The choice looked for on the page shown, which did not hold its document: looked for again
+        /// at the next load, not at every update.
+        private var revealMissedOnPage: Int?
+
+        /// How many landings have run, each at a load's end or for a choice: what a test waits on.
+        private(set) var landings = 0
+
+        /// A coordinator that keeps the reader's place in `place`.
+        init(place: CollectionPreviewPlace) {
+            self.place = place
+            super.init()
+        }
+
+        /// Shows `html`, `collectionId`'s page: loads it when it is not the page shown, landing on the
+        /// chosen row's document or the reader's place, and otherwise brings a new choice's document
+        /// into view. A choice whose document the page shown lacks waits for the next load.
+        func show(_ html: String, collectionId: UUID, reveal: CollectionPreviewReveal?, in webView: WKWebView) {
+            self.collectionId = collectionId
+            pendingReveal = reveal.flatMap { $0.serial == place.revealedSerial ? nil : $0 }
+            let hash = html.hashValue
+            if hash != lastHTMLHash {
+                lastHTMLHash = hash
+                let landing = (anchor: pendingReveal?.anchor, mark: place.mark(in: collectionId))
+                self.landing = landing
+                isLoading = true
+                revealMissedOnPage = nil
+                navigation = webView.loadHTMLString(Self.page(html, landing: landing), baseURL: nil)
+            } else if !isLoading, let pending = pendingReveal, pending.serial != revealMissedOnPage {
+                land(anchor: pending.anchor, mark: nil, in: webView)
+            }
+        }
+
+        /// `html` with the place script and its landing at the end of its body, where they run once the
+        /// page is parsed, before it is first drawn, so a page lands without showing its top first.
+        static func page(_ html: String, landing: (anchor: String?, mark: CollectionPreviewPlace.Mark?)) -> String {
+            let script = "<script>\n\(CollectionPreviewWebView.placeScript)\n"
+                + "\(landingCall(anchor: landing.anchor, mark: landing.mark));\n</script>\n"
+            guard let end = html.range(of: "</body>", options: .backwards) else { return html + script }
+            var page = html
+            page.insert(contentsOf: script, at: end.lowerBound)
+            return page
+        }
+
+        /// The script that lands the page on `anchor`'s section, answering `true`, or on `mark` when the
+        /// page has no such section, answering `false`.
+        static func landingCall(anchor: String?, mark: CollectionPreviewPlace.Mark?) -> String {
+            "FRUSPreviewPlace.land(\(json(anchor)), \(json(mark)))"
+        }
+
+        /// `value` as a JavaScript literal, `null` when absent.
+        private static func json<Value: Encodable>(_ value: Value?) -> String {
+            guard let value, let data = try? JSONEncoder().encode(value) else { return "null" }
+            return String(decoding: data, as: UTF8.self)
+        }
+
+        /// Lands the page shown again on `anchor`, else `mark`, and records whether a pending choice's
+        /// document was brought into view.
+        private func land(anchor: String?, mark: CollectionPreviewPlace.Mark?, in webView: WKWebView) {
+            let serial = pendingReveal?.serial
+            let script = Self.landingCall(anchor: anchor, mark: mark)
+            Task { @MainActor [weak self, weak webView] in
+                guard let webView else { return }
+                let revealed = (try? await webView.evaluateJavaScript(script)) as? Bool
+                guard let self else { return }
+                landings += 1
+                guard let serial else { return }
+                if revealed == true {
+                    place.revealedSerial = serial
+                    if pendingReveal?.serial == serial { pendingReveal = nil }
+                } else {
+                    revealMissedOnPage = serial
+                }
+            }
+        }
+
+        /// Lands the loaded page again, now that it is whole: its images may have moved what the
+        /// landing at the end of its body scrolled to.
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard navigation === self.navigation else { return }
+            isLoading = false
+            land(anchor: pendingReveal?.anchor ?? landing?.anchor, mark: landing?.mark, in: webView)
+        }
+
+        /// Ends the load under way when it fails, so a later choice is brought into view on the page shown.
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
+            if navigation === self.navigation { isLoading = false }
+        }
+
+        /// Ends the load under way when it fails before it commits.
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!,
+                     withError error: any Error) {
+            if navigation === self.navigation { isLoading = false }
+        }
+
+        /// Records the place the page reports as the reader's on the collection shown.
+        func userContentController(_ userContentController: WKUserContentController,
+                                   didReceive message: WKScriptMessage) {
+            guard message.name == CollectionPreviewWebView.placeMessage, let collectionId,
+                  let mark = CollectionPreviewPlace.Mark(messageBody: message.body) else { return }
+            place.record(mark, in: collectionId)
+        }
 
         /// Allows the `loadHTMLString` load and in-page anchor navigation; cancels
         /// activated http(s) link taps and opens them externally instead.
@@ -867,7 +1317,6 @@ private struct CollectionPreviewWebView {
         }
 
         /// Opens a URL in the platform's default browser.
-        @MainActor
         private static func openExternally(_ url: URL) {
             #if os(macOS)
             NSWorkspace.shared.open(url)
@@ -875,15 +1324,6 @@ private struct CollectionPreviewWebView {
             UIApplication.shared.open(url)
             #endif
         }
-    }
-
-    /// Loads `html` into the web view when it differs from the last-loaded page.
-    @MainActor
-    private func loadIfNeeded(into webView: WKWebView, coordinator: Coordinator) {
-        let hash = html.hashValue
-        guard coordinator.lastHTMLHash != hash else { return }
-        coordinator.lastHTMLHash = hash
-        webView.loadHTMLString(html, baseURL: nil)
     }
 }
 
@@ -893,20 +1333,23 @@ extension CollectionPreviewWebView: NSViewRepresentable {
 
     /// Creates the macOS web view with the shared coordinator as its delegates.
     func makeNSView(context: Context) -> WKWebView {
-        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        webView.navigationDelegate = context.coordinator
-        webView.uiDelegate = context.coordinator
+        let webView = Self.makeWebView(coordinator: context.coordinator)
         webView.autoresizingMask = [.width, .height]
         return webView
     }
 
-    /// Reloads the page when the HTML content changed.
+    /// Shows the page, loading it when the HTML content changed.
     func updateNSView(_ webView: WKWebView, context: Context) {
-        loadIfNeeded(into: webView, coordinator: context.coordinator)
+        context.coordinator.show(html, collectionId: collectionId, reveal: reveal, in: webView)
+    }
+
+    /// Lets go of the place handler, which the web view's configuration holds.
+    static func dismantleNSView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: placeMessage)
     }
 
     /// Creates the shared navigation/UI delegate.
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeCoordinator() -> Coordinator { Coordinator(place: place) }
 }
 
 #else
@@ -915,19 +1358,21 @@ extension CollectionPreviewWebView: UIViewRepresentable {
 
     /// Creates the iOS web view with the shared coordinator as its delegates.
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
-        webView.navigationDelegate = context.coordinator
-        webView.uiDelegate = context.coordinator
-        return webView
+        Self.makeWebView(coordinator: context.coordinator)
     }
 
-    /// Reloads the page when the HTML content changed.
+    /// Shows the page, loading it when the HTML content changed.
     func updateUIView(_ webView: WKWebView, context: Context) {
-        loadIfNeeded(into: webView, coordinator: context.coordinator)
+        context.coordinator.show(html, collectionId: collectionId, reveal: reveal, in: webView)
+    }
+
+    /// Lets go of the place handler, which the web view's configuration holds.
+    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: placeMessage)
     }
 
     /// Creates the shared navigation/UI delegate.
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeCoordinator() -> Coordinator { Coordinator(place: place) }
 }
 
 #endif

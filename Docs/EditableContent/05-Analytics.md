@@ -238,7 +238,7 @@ The working corpus could not be saved.
 
 #### `graph.save.subject %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.subject(documentLabel:) | lines: 1460–1460 | key: graph.save.subject %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.subject(documentLabel:) | lines: 1462–1462 | key: graph.save.subject %@ -->
 
 Cross-references of %@
 
@@ -248,7 +248,7 @@ Cross-references of %@
 
 #### `graph.save.source %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.sourceDescription(documentLabel:) | lines: 1470–1471 | key: graph.save.source %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.sourceDescription(documentLabel:) | lines: 1472–1473 | key: graph.save.source %@ %@ -->
 
 Cross-reference graph of %1$@, at %2$@
 
@@ -258,7 +258,7 @@ Cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.source.dated %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.dated(_:) | lines: 1478–1479 | key: graph.save.source.dated %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.dated(_:) | lines: 1480–1481 | key: graph.save.source.dated %@ %@ -->
 
 %1$@, dated %2$@
 
@@ -268,7 +268,7 @@ Cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.depth.one`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1434–1434 | key: graph.save.depth.one -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1436–1436 | key: graph.save.depth.one -->
 
 one hop
 
@@ -278,7 +278,7 @@ one hop
 
 #### `graph.save.depth.two`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1435–1435 | key: graph.save.depth.two -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1437–1437 | key: graph.save.depth.two -->
 
 two hops
 
@@ -288,7 +288,7 @@ two hops
 
 #### `graph.save.depth.three`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1436–1436 | key: graph.save.depth.three -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1438–1438 | key: graph.save.depth.three -->
 
 three hops
 
@@ -298,7 +298,7 @@ three hops
 
 #### `graph.save.depth.n.one`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1437–1437 | key: graph.save.depth.n.one -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1439–1439 | key: graph.save.depth.n.one -->
 
 %@ hop
 
@@ -308,7 +308,7 @@ three hops
 
 #### `graph.save.depth.n.many`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1438–1438 | key: graph.save.depth.n.many -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1440–1440 | key: graph.save.depth.n.many -->
 
 %@ hops
 
@@ -318,7 +318,7 @@ three hops
 
 #### `graph.save.empty`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.nothingToSave | lines: 1501–1502 | key: graph.save.empty -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.nothingToSave | lines: 1503–1504 | key: graph.save.empty -->
 
 The graph holds no document within the brushed dates, so there is nothing to save.
 
@@ -328,7 +328,7 @@ The graph holds no document within the brushed dates, so there is nothing to sav
 
 #### `graph.save.pages.one %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1514–1515 | key: graph.save.pages.one %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1516–1517 | key: graph.save.pages.one %@ -->
 
 The graph’s %@ cited page is not a document and is left out.
 
@@ -338,7 +338,7 @@ The graph’s %@ cited page is not a document and is left out.
 
 #### `graph.save.pages.many %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1516–1517 | key: graph.save.pages.many %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1518–1519 | key: graph.save.pages.many %@ -->
 
 The graph’s %@ cited pages are not documents and are left out.
 
@@ -348,7 +348,7 @@ The graph’s %@ cited pages are not documents and are left out.
 
 #### `graph.save.visit.source %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1546–1547 | key: graph.save.visit.source %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1550–1551 | key: graph.save.visit.source %@ %@ -->
 
 from the cross-reference graph of %1$@, at %2$@
 
@@ -358,7 +358,7 @@ from the cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.visit.whole %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1562–1563 | key: graph.save.visit.whole %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1566–1567 | key: graph.save.visit.whole %@ -->
 
 On this device a visit of these documents lists %@
 
@@ -368,7 +368,7 @@ On this device a visit of these documents lists %@
 
 #### `graph.save.visit.partial %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1557–1558 | key: graph.save.visit.partial %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1561–1562 | key: graph.save.visit.partial %@ %@ -->
 
 On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
@@ -378,7 +378,7 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 #### `graph.save.visit.targets.one %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1552–1552 | key: graph.save.visit.targets.one %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1556–1556 | key: graph.save.visit.targets.one %@ -->
 
 %@ target
 
@@ -388,7 +388,7 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 #### `graph.save.visit.targets.many %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1553–1553 | key: graph.save.visit.targets.many %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1557–1557 | key: graph.save.visit.targets.many %@ -->
 
 %@ targets
 
@@ -396,19 +396,67 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 *As above.*
 
+#### `graph.save.visit.classes.listed.one %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1572–1573 | key: graph.save.visit.classes.listed.one %@ -->
+
+The graph’s %@ central-file class is among them
+
+<!-- END SOURCE: graph.save.visit.classes.listed.one %@ -->
+
+*The line’s last sentence, where the graph draws a central-file class: a visit lists every class a document’s footnotes cite, as the graph draws one for each (L63, decision 235). “Them” is the targets of the sentence before. `%@` is the graph’s classes.*
+
+#### `graph.save.visit.classes.listed.many %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1574–1575 | key: graph.save.visit.classes.listed.many %@ -->
+
+The graph’s %@ central-file classes are among them
+
+<!-- END SOURCE: graph.save.visit.classes.listed.many %@ -->
+
+*As above, for more than one class.*
+
+#### `graph.save.visit.classes.partial.one %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1582–1583 | key: graph.save.visit.classes.partial.one %@ %@ -->
+
+Of the graph’s %1$@ central-file class, it lists %2$@
+
+<!-- END SOURCE: graph.save.visit.classes.partial.one %@ %@ -->
+
+*The last sentence instead, where a visit lists fewer of the graph’s classes than it draws, which only a volume indexed again between the graph’s read and the line’s can leave. “It” is the visit of the sentence before. `%1$@` is the graph’s classes, `%2$@` how many of them a visit lists; the count follows the verb, so nothing has to agree with it.*
+
+#### `graph.save.visit.classes.partial.many %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1584–1585 | key: graph.save.visit.classes.partial.many %@ %@ -->
+
+Of the graph’s %1$@ central-file classes, it lists %2$@
+
+<!-- END SOURCE: graph.save.visit.classes.partial.many %@ %@ -->
+
+*As above, for more than one class.*
+
 #### `graph.save.visit.classes.one %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1570–1571 | key: graph.save.visit.classes.one %@ %@ -->
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision 235) made a footnote’s
+> central-file class a target of a visit, so the line now says the graph’s classes are among the targets
+> (`graph.save.visit.classes.listed.one %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | key: graph.save.visit.classes.one %@ %@ -->
 
 A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ class
 
 <!-- END SOURCE: graph.save.visit.classes.one %@ %@ -->
 
-*The line’s last sentence, where the graph draws a central-file class: a visit’s footnote channel leaves the class out (#784’s scope), so a class is a target only where a document’s own source note names it. `%1$@` is the graph’s classes, `%2$@` how many of them are targets.*
+*L42’s last sentence, until L63: a visit’s footnote channel left the class out (#784’s scope), so a class was a target only where a document’s own source note named it. `%1$@` was the graph’s classes, `%2$@` how many of them were targets.*
 
 #### `graph.save.visit.classes.many %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1572–1573 | key: graph.save.visit.classes.many %@ %@ -->
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision 235) made a footnote’s
+> central-file class a target of a visit, so the line now says the graph’s classes are among the targets
+> (`graph.save.visit.classes.listed.many %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | key: graph.save.visit.classes.many %@ %@ -->
 
 A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ classes
 
@@ -418,7 +466,7 @@ A footnote’s central-file class is a target only where a document’s own sour
 
 #### `graph.save.visit.added.one %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1601–1602 | key: graph.save.visit.added.one %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1613–1614 | key: graph.save.visit.added.one %@ %@ -->
 
 Added %1$@ document to “%2$@”
 
@@ -428,7 +476,7 @@ Added %1$@ document to “%2$@”
 
 #### `graph.save.visit.added.many %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1603–1604 | key: graph.save.visit.added.many %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1615–1616 | key: graph.save.visit.added.many %@ %@ -->
 
 Added %1$@ documents to “%2$@”
 
@@ -583,7 +631,7 @@ What you’re seeing
 
 <!-- END SOURCE: chronology.info.shows.title -->
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1124–1125 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1190–1191 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within your selected range, grouped into date segments that become less precise (days → months → years) as the range widens.
 
@@ -597,7 +645,7 @@ How dates work
 
 <!-- END SOURCE: chronology.info.dates.title -->
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1128–1129 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1194–1195 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the editor’s annotated precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
@@ -611,7 +659,7 @@ The distribution chart
 
 <!-- END SOURCE: chronology.info.chart.title -->
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1132–1133 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1198–1199 | key: chronology.info.chart.detail -->
 
 The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
@@ -625,11 +673,175 @@ Wide ranges
 
 <!-- END SOURCE: chronology.info.cap.title -->
 
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1136–1137 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1202–1203 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
 <!-- END SOURCE: chronology.info.cap.detail -->
+
+### Chronology — Save as Working Corpus (L56)
+
+*Chronology’s save of a range, added by row L56 of the plan of record from 2026-11-25 (2026-11-27, decisions 184 and 185): **Save as Working Corpus…**, in the **This Range** menu of Chronology’s toolbar, asks before it saves every document whose dates overlap the range the screen shows, and a toast says what it did. The question’s title and the toast are the cross-reference graph’s (`workingCorpus.capture.confirm.title` and `workingCorpus.capture.saved %@`, under *Cross-Reference Graph — Save As (#1990)* above). Its message is the corpus’s description, the coverage line every corpus shows (“1,195 of 1,195 documents indexed on this device”), and the lines below. A corpus’s name and description are stored with it, so a change here reaches the next save, not one already made.*
+
+#### `chronology.rangeMenu`
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.toolbarContent | lines: 1178–1178 | key: chronology.rangeMenu -->
+
+This Range
+
+<!-- END SOURCE: chronology.rangeMenu -->
+
+*The toolbar’s menu of the range’s three actions: Search in this range, Word Cloud for this range and Save as Working Corpus…, the first two in their words of before (`chronology.searchRange`, `chronology.wordcloud`). It takes the place Word Cloud for this range had as an item of its own: a sixth item moved Done and About Chronology into an iPhone’s overflow menu at the default text size. A named `Label`, so VoiceOver reads it and a bar too narrow for it lists it by name in its overflow.*
+
+#### `chronology.rangeMenu.help`
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.toolbarContent | lines: 1181–1182 | key: chronology.rangeMenu.help -->
+
+Search in the displayed date range, build a word cloud from it, or save it as a working corpus
+
+<!-- END SOURCE: chronology.rangeMenu.help -->
+
+*The menu’s tooltip on the Mac.*
+
+#### `chronology.saveCorpus`
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.toolbarContent | lines: 1171–1171 | key: chronology.saveCorpus -->
+
+Save as Working Corpus…
+
+<!-- END SOURCE: chronology.saveCorpus -->
+
+*The last item of the toolbar’s This Range menu, after the two hand-offs. Offered whenever the range the screen shows holds a document of any kind; the hand-offs need one dated inside it.*
+
+#### `chronology.saveCorpus.help`
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.toolbarContent | lines: 1175–1176 | key: chronology.saveCorpus.help -->
+
+Save every document of the displayed date range as a working corpus
+
+<!-- END SOURCE: chronology.saveCorpus.help -->
+
+*The item’s tooltip in the Mac’s menu.*
+
+#### `chronology.save.subject %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.subject(locale:) | lines: 189–189 | key: chronology.save.subject %@ -->
+
+Chronology, %@
+
+<!-- END SOURCE: chronology.save.subject %@ -->
+
+*The corpus’s name, before ` — ` and the capture’s stamp: “Chronology, Oct 1 – 31, 1962 — Nov 27, 2026 at 5:22 PM”. The %@ is the range’s two days in the reader’s own date format; over 7,500 documents it is the shorter range the save names.*
+
+#### `chronology.save.source %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.sourceDescription(locale:) | lines: 199–200 | key: chronology.save.source %@ -->
+
+Chronology, %@: every document whose dates overlap the range
+
+<!-- END SOURCE: chronology.save.source %@ -->
+
+*The corpus’s description, which the corpus lists and the exports print, and the question’s first line, with a full stop after it. It is enough to make the set again: the same two days in Chronology, all three kinds of document.*
+
+#### `chronology.save.kind.inside.one %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 245–245 | key: chronology.save.kind.inside.one %@ -->
+
+%@ is dated inside the range
+
+<!-- END SOURCE: chronology.save.kind.inside.one %@ -->
+
+*The first of the sentence of kinds, singular. The sentence lists the kinds the save holds, joined “, ” and “, and ”, with a full stop: “500 are dated inside the range, 25 extend beyond the range, and 670 span more than a year.” A kind it holds none of is left out.*
+
+#### `chronology.save.kind.inside.many %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 246–246 | key: chronology.save.kind.inside.many %@ -->
+
+%@ are dated inside the range
+
+<!-- END SOURCE: chronology.save.kind.inside.many %@ -->
+
+*The same, plural: the documents the date sections list.*
+
+#### `chronology.save.kind.beyond.one %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 252–252 | key: chronology.save.kind.beyond.one %@ -->
+
+%@ extends beyond the range
+
+<!-- END SOURCE: chronology.save.kind.beyond.one %@ -->
+
+*Singular: a document whose dates begin before the range or end after it, which the screen lists under its “extend beyond this range” chip.*
+
+#### `chronology.save.kind.beyond.many %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 253–253 | key: chronology.save.kind.beyond.many %@ -->
+
+%@ extend beyond the range
+
+<!-- END SOURCE: chronology.save.kind.beyond.many %@ -->
+
+*The same, plural.*
+
+#### `chronology.save.kind.spanning.one %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 259–259 | key: chronology.save.kind.spanning.one %@ -->
+
+%@ spans more than a year
+
+<!-- END SOURCE: chronology.save.kind.spanning.one %@ -->
+
+*Singular: a document whose dates span more than a year, mostly an editorial note, which the screen lists under its “span more than a year” chip.*
+
+#### `chronology.save.kind.spanning.many %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.kindsSentence(locale:) | lines: 260–260 | key: chronology.save.kind.spanning.many %@ -->
+
+%@ span more than a year
+
+<!-- END SOURCE: chronology.save.kind.spanning.many %@ -->
+
+*The same, plural.*
+
+#### `chronology.save.cut %@ %@ %@ %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.cutSentence(locale:) | lines: 274–275 | key: chronology.save.cut %@ %@ %@ %@ %@ -->
+
+%1$@ holds %2$@ documents, more than the %3$@ a working corpus keeps, so the save ends on %4$@, the last whole day that fits. To save the rest, save again from %5$@.
+
+<!-- END SOURCE: chronology.save.cut %@ %@ %@ %@ %@ -->
+
+*Said before a save of a range that holds more than a corpus keeps, after the coverage line: the range the screen shows, its count, the budget, the day the save ends on and the day after it. “Jan 1 – Dec 31, 1945 holds 12,030 documents, more than the 7,500 a working corpus keeps, so the save ends on Aug 14, 1945, …” on a device with the whole series.*
+
+#### `chronology.save.legendFilter`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.legendFilterSentence | lines: 286–287 | key: chronology.save.legendFilter -->
+
+The legend’s filter narrows the list and not the save, which holds every volume’s documents.
+
+<!-- END SOURCE: chronology.save.legendFilter -->
+
+*The question’s last line while a tap on the chart’s legend narrows the list to one volume, or to the volumes folded into Other (decision 185).*
+
+#### `chronology.save.empty`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.nothingToSave | lines: 293–294 | key: chronology.save.empty -->
+
+The range holds no document, so there is nothing to save.
+
+<!-- END SOURCE: chronology.save.empty -->
+
+*The toast in place of the question when the range’s documents have gone since the screen loaded, as a volume removed would leave it: the item is offered only over a range that holds one.*
+
+#### `chronology.save.firstDayOver %@ %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/Chronology/ChronologyRangeSave.swift | ChronologyRangeSave.firstDayOverLimitSentence(day:count:limit:locale:) | lines: 309–310 | key: chronology.save.firstDayOver %@ %@ %@ -->
+
+The range cannot be saved: its first day with documents, %1$@, holds %2$@ of them, more than the %3$@ a working corpus keeps.
+
+<!-- END SOURCE: chronology.save.firstDayOver %@ %@ %@ -->
+
+*The toast in place of the question when no whole day of the range fits, since the documents of its first day with any are already more than a corpus keeps. No range of the series comes near it: no day is overlapped by more than 1,507 documents with the whole series indexed.*
 
 ### Source Explorer
 <!-- Shared static FeatureInfoButton.sourceExplorer in FRUSTheme; consumed by both SourceExplorerView (iOS) and MacSourceExplorerView (macOS). Edit once in FRUSTheme.swift to change both. -->
@@ -2135,7 +2347,7 @@ Each volume takes the category its source notes name most often — a plurality,
 ### Chronology summary line
 
 #### \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1364–1365 | key: chronology.agg.editorial.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1455–1456 | key: chronology.agg.editorial.v2 -->
 
 \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
 

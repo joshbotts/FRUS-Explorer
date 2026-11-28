@@ -360,7 +360,7 @@ enum CollectionEntryDeletion {
         entry.bodyDepthOverride != nil || entry.applyHighlightsOverride != nil
             || entry.includeNotesOverride != nil || entry.includeSourceNoteOverride != nil
             || entry.includeFootnotesOverride != nil || entry.summaryPromptIdOverride != nil
-            || entry.includeRelatedDocuments != nil
+            || entry.includeRelatedDocuments != nil || entry.headnoteDefault != nil
     }
 
     /// Whether a document row carries a choice of the reader's: a title, a depth, an override, a
@@ -368,7 +368,8 @@ enum CollectionEntryDeletion {
     @MainActor
     private static func hasDocumentSettings(_ entry: CollectionEntry) -> Bool {
         let title = entry.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return !title.isEmpty || hasSectionDefaults(entry)
+        let dateLine = entry.dateLine?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !title.isEmpty || !dateLine.isEmpty || hasSectionDefaults(entry)
             || entry.includeHeadnote != nil || entry.headnoteSummaryId != nil
             || !entry.selectedNoteIds.isEmpty || entry.researchNoteId != nil
             || !entry.selectedHighlightIds.isEmpty
@@ -1153,12 +1154,30 @@ struct EntryStatusChip: View {
 }
 
 /// Whether a document entry's headnote is **resolved on** — its own explicit `includeHeadnote`
-/// override if set, else the owning collection's `defaultIncludeHeadnote` (Composer redesign 3).
-/// Mirrors the resolver's two-tier headnote cascade (there is no section-level headnote override),
-/// so the row's Headnote chip reflects what will actually export, including an inherited default.
+/// override if set, else its section's headnote default (L43: the nearest enclosing heading's own
+/// `headnoteDefault`, J24), else the owning collection's `defaultIncludeHeadnote` (Composer redesign 3).
+/// Mirrors the resolver's headnote cascade, so the row's Headnote chip reflects what will actually
+/// export, including an inherited default.
 @MainActor
 func collectionEntryHeadnoteIsResolvedOn(_ entry: CollectionEntry) -> Bool {
-    entry.includeHeadnote ?? entry.collection?.defaultIncludeHeadnote ?? false
+    if let own = entry.includeHeadnote { return own }
+    return collectionEntrySectionHeadnoteDefault(entry) ?? entry.collection?.defaultIncludeHeadnote ?? false
+}
+
+/// The headnote default of the section `entry` sits in (L43): the nearest enclosing heading's
+/// `headnoteDefault`, through `CollectionOutline`'s ancestor cascade, as the resolver reads it; `nil` where no
+/// enclosing heading sets one, or the entry is not in its collection's list.
+@MainActor
+func collectionEntrySectionHeadnoteDefault(_ entry: CollectionEntry) -> Bool? {
+    guard let collection = entry.collection else { return nil }
+    let entries = collection.documentEntries ?? []
+    // Each document row asks, so the common case, where no section sets one, costs no sort.
+    guard entries.contains(where: { $0.headnoteDefault != nil && $0.entryKind == .heading }) else { return nil }
+    let ordered = entries.sorted { $0.sortOrder < $1.sortOrder }
+    guard let index = ordered.firstIndex(where: { $0.id == entry.id }) else { return nil }
+    return CollectionOutline.sectionOverrideValues(
+        ordered.map(CollectionOutline.StructuralRef.init),
+        headingValues: ordered.map { $0.entryKind == .heading ? $0.headnoteDefault : nil })[index]
 }
 
 /// The read-only status chips for one **document** entry — body depth (when overridden),

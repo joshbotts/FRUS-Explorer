@@ -87,7 +87,7 @@ struct StoppedZoteroSend: Codable, Equatable, Sendable {
 /// `{Application Support}/FRUSExplorer/ZoteroSends/`, named by what was sent and the Zotero account it went to.
 ///
 /// It is the device's alone: nothing of it reaches iCloud or the research export, so another device cannot
-/// finish the send, and no CloudKit field is added (the owner's choice, plan of record decision 219). A
+/// finish the send, and no CloudKit field is added (the owner's choice, plan of record decision 236). A
 /// collection's send and a document's from the Share tile each write their record as the send goes, from the
 /// client's `progress` closure, so a send the app did not live to see end can be finished too. A record is
 /// dropped when its send finishes, when it holds nothing to finish, from its progress's `expiresAt` on

@@ -1801,10 +1801,639 @@ final class CollectionInspectorOpenDocumentTests: XCTestCase {
     }
 }
 
+// MARK: - CollectionListExportTests (L35)
+
+/// *Export…* from the Collections list (L35, the plan of record's lane 1), and a list row that opens anywhere along its
+/// width (R4's finding).
+///
+/// ## What it holds
+/// - `testTheRowsMenuExportOpensTheSheet`: a row's menu offers *Export…*, and it opens the export sheet for that
+///   collection, whose sentence counts its one document. 1.0 (1861) exported only from inside a collection.
+/// - `testARowOpensAnywhereAlongItsWidth`: a tap on the row's line, at 85% of the window's width and past its text,
+///   opens the collection. R4 found, on an iPad, that a row opened only where its text was: its content shape had no
+///   greedy frame to fill.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`; neither test skips. The seeded collection is
+/// `UITestProjectSeeder`'s, one document, with the smart collection beside it (`FRUS_UI_TEST_SEED_SAVED_SEARCH`).
+///
+/// Version history:
+///   1.0 — L35: initial implementation
+@MainActor
+final class CollectionListExportTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`, repeated because a UI-test target cannot import the app.
+    private static let unattached = "UI Test Unattached Collection"
+    private static let listTitle = "Collections"
+    /// The export sheet's title, `export.nav.title`.
+    private static let sheetTitle = "Export collection"
+    private static let patience: TimeInterval = 30
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// A row's menu offers *Export…*, which opens the export sheet for that collection.
+    func testTheRowsMenuExportOpensTheSheet() throws {
+        launch()
+        listRow(Self.unattached).press(forDuration: 1.2)
+        let export = app.buttons["Export…"].firstMatch
+        XCTAssertTrue(export.waitForExistence(timeout: Self.patience),
+                      "The row's menu has no Export…. Buttons: \(visibleButtonLabels())")
+        export.tap()
+        XCTAssertTrue(app.navigationBars[Self.sheetTitle].waitForExistence(timeout: Self.patience),
+                      "Export… opened no export sheet. Bars: \(barTitles())")
+        let sentence = app.descendants(matching: .any).matching(identifier: "collection.export.sentence").firstMatch
+        XCTAssertTrue(sentence.waitForExistence(timeout: Self.patience), "The export sheet shows no sentence")
+        XCTAssertTrue(waitUntil { sentence.label.contains("1 document") },
+                      "The sheet's sentence does not count the collection's one document: \"\(sentence.label)\"")
+    }
+
+    /// A tap on the row's line past its text opens the collection, as a tap on its name does.
+    func testARowOpensAnywhereAlongItsWidth() throws {
+        launch()
+        let name = listRow(Self.unattached)
+        let window = app.windows.firstMatch.frame
+        let text = name.frame
+        // On the row's line, at 85% of the window's width: past the name on both idioms, and inside the row, whose
+        // trailing edge is the list's inset from the window's.
+        let x = window.minX + window.width * 0.85
+        XCTAssertGreaterThan(x, text.maxX + 20, "The point is not past the row's text, so the test proves nothing: \(text)")
+        name.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: x - text.minX, dy: text.height / 2)).tap()
+        let editor = app.descendants(matching: .any).matching(NSPredicate(
+            format: "identifier IN %@", ["collection.editor.settings.row", "collection.editor.settings.button"]))
+            .firstMatch
+        XCTAssertTrue(editor.waitForExistence(timeout: Self.patience), """
+            A tap at x \(Int(x)) on the row, past its text (x \(Int(text.minX))–\(Int(text.maxX))), did not open the \
+            collection. Bars: \(barTitles())
+            """)
+    }
+
+    // MARK: - Steps
+
+    private func launch() {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
+                      "Could not open the Collections tab, so this suite would read another screen")
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
+                      "The Collections list is not showing. Bars: \(barTitles())")
+        XCTAssertTrue(listRow(Self.unattached).waitForExistence(timeout: Self.patience),
+                      "The seeded \"\(Self.unattached)\" is not listed")
+    }
+
+    /// The list's row whose name is `name`.
+    private func listRow(_ name: String) -> XCUIElement {
+        app.collectionViews.staticTexts[name].firstMatch
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes, and reports whether it held.
+    private func waitUntil(_ timeout: TimeInterval = CollectionListExportTests.patience,
+                           _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+
+    private func barTitles() -> String {
+        app.navigationBars.allElementsBoundByIndex.map(\.identifier).joined(separator: " | ")
+    }
+
+    private func visibleButtonLabels() -> String {
+        app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+}
+
+// MARK: - CollectionListRowActionsTests (L35, #2006)
+
+/// What VoiceOver offers on a Collections list row: each of the row's menu items as an action (#2006's first item,
+/// L35). 1.0 (1861) put Rename, Duplicate, Word Cloud, Create Static Snapshot and Delete in a context menu alone,
+/// which VoiceOver does not offer.
+///
+/// ## How it reads them
+/// iOS 27's VoiceOver service for UI tests turns VoiceOver on, moves its cursor and returns what it spoke; a flick up
+/// with VoiceOver on moves through the focused element's actions, which VoiceOver speaks, its own *Activate Default*
+/// last (`SearchResultVoiceOverTests` measured the service). It cannot make VoiceOver do an action, so the test reads
+/// each action's name; `CollectionListRowActionWiringTests` holds each action to the menu item's own call.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`: one test, which skips below iOS 27. Under Xcode 27.2 VoiceOver
+/// stays on once its speech has been read, so run it alone, on a simulator shut down before it (the
+/// `SearchResultVoiceOverTests` entry of `Planning/UI-Test-Destinations-Runbook.md`).
+///
+/// Version history:
+///   1.0 — L35 (#2006): initial implementation
+@MainActor
+final class CollectionListRowActionsTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName` and `UITestSavedSearchSeeder.collectionName`.
+    private static let unattached = "UI Test Unattached Collection"
+    private static let smart = "UI Test Smart Collection"
+    private static let listTitle = "Collections"
+    private static let patience: TimeInterval = 30
+    /// VoiceOver's own action, which it reads last.
+    private static let activateDefault = "Activate Default"
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        turnVoiceOverOff()
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// Each row offers its menu's items as VoiceOver actions, in the menu's order; a smart collection's adds Create
+    /// Static Snapshot. Delete is the row's swipe, which VoiceOver offers of itself.
+    func testEachRowOffersItsMenuAsActions() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_SAVED_SEARCH"] = "linked"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
+                      "Could not open the Collections tab, so this suite would read another screen")
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
+                      "The Collections list is not showing")
+        for name in [Self.unattached, Self.smart] {
+            XCTAssertTrue(app.collectionViews.staticTexts[name].firstMatch.waitForExistence(timeout: Self.patience),
+                          "The seeded \"\(name)\" is not listed")
+        }
+
+        // Every tap is done; from here on only VoiceOver moves.
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        var heard: [String: [String]] = [:]
+        var spokenOnTheWay: [String] = []
+        for _ in 1...40 where heard.count < 2 {
+            let spoken = try voiceOver.moveForward().utterance
+            guard let name = [Self.unattached, Self.smart].first(where: { spoken.hasPrefix($0) }),
+                  heard[name] == nil else {
+                spokenOnTheWay.append(spoken)
+                continue
+            }
+            heard[name] = try flickThroughTheActions(of: voiceOver)
+        }
+        try voiceOver.disable()
+
+        print("[L35 VoiceOver] actions: \(heard)")
+        let menu = ["Export…", "Rename", "Duplicate", "Word Cloud"]
+        let unattached = try XCTUnwrap(heard[Self.unattached], "VoiceOver never reached \(Self.unattached): \(spokenOnTheWay)")
+        let smart = try XCTUnwrap(heard[Self.smart], "VoiceOver never reached \(Self.smart): \(spokenOnTheWay)")
+        // Delete is the row's swipe, which VoiceOver offers of itself: on 1.0's rows it read "Delete" twice and nothing
+        // else. The menu's actions leave it out, so it is required and read apart from the menu's order.
+        XCTAssertEqual(unattached.filter { $0 != "Delete" }, menu,
+                       "The actions VoiceOver offers on \(Self.unattached)'s row, in order: \(unattached)")
+        XCTAssertEqual(smart.filter { $0 != "Delete" }, menu + ["Create Static Snapshot"],
+                       "The actions VoiceOver offers on \(Self.smart)'s row, in order: \(smart)")
+        XCTAssertTrue(unattached.contains("Delete"), "VoiceOver offers no Delete on \(Self.unattached)'s row: \(unattached)")
+        XCTAssertTrue(smart.contains("Delete"), "VoiceOver offers no Delete on \(Self.smart)'s row: \(smart)")
+    }
+
+    /// Flicks up through the focused element's actions until VoiceOver reads its own *Activate Default*, which it
+    /// reads last, or has flicked ten times.
+    ///
+    /// - Returns: The actions spoken before *Activate Default*, in order.
+    @available(iOS 27.0, *)
+    private func flickThroughTheActions(of voiceOver: XCUIVoiceOverService) throws -> [String] {
+        var spoken: [String] = []
+        for _ in 1...10 {
+            app.swipeUp()
+            let action = try voiceOver.currentSpeech().utterance
+            if action == Self.activateDefault { break }
+            spoken.append(action)
+        }
+        return spoken
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
+    }
+}
+
+// MARK: - CollectionExportSheetFitTests (L35)
+
+/// The export sheet, opened from the Collections list, at the default text size, AX3 and AX5 on an iPhone 17 and an
+/// iPhone SE (L35; the third review's J9): it opens on its sentence, with its format and Export in view.
+///
+/// ## What it measures
+/// The sheet of `UITestProjectSeeder`'s export collection (`FRUS_UI_TEST_SEED_PROJECT=export`), whose sentence is the
+/// longest a realistic collection's is (its doc says why), launched as a device whose Apple Intelligence is off
+/// (`FRUS_UI_TEST_APPLE_INTELLIGENCE=notEnabled`), so that the sheet also says what it lacks. Once the sentence has been
+/// counted, it reads from one snapshot the window, the navigation bar, the sentence, the line of what the device lacks,
+/// the format, Export and the bar at the sheet's foot, and requires each inside the window's width; the sentence whole
+/// between the navigation bar and the bar at every size, which it is since it is drawn no larger than AX1 (decision
+/// 221); the line of what the device lacks under it, whole above the bar at the default size and at the
+/// accessibility sizes begun at least a line above the bar; at the default size the chosen card above the bar; at the
+/// accessibility sizes the format's menu inside the bar; and Export inside the bar and the window. Each run's
+/// `[L35 fit]` line prints where each ends, and a screenshot is kept. The menu, which the sheet draws only at an
+/// accessibility size, is the proof that the size took effect; the card, which it draws only at a standard size, at
+/// the default.
+///
+/// ## On 1.0 (1861)
+/// The row's menu has no Export…, so each test fails at its first step. 1.0's sheet itself, opened through the editor,
+/// is measured in the suite's runbook entry (`Planning/UI-Test-Destinations-Runbook.md`). L35's sheet drew the sentence
+/// at the reader's size until decision 221, and it ran under the bar at AX3 on the SE and at AX5 on both.
+///
+/// ## Devices
+/// iPhone 17 and iPhone SE (3rd generation), `OS=27.0`; iPhone-only, it self-skips at iPad width, where the sheet is a
+/// form sheet with room to spare.
+///
+/// Version history:
+///   1.0 — L35 (J9, decision 221): initial implementation
+@MainActor
+final class CollectionExportSheetFitTests: XCTestCase {
+
+    /// `UITestProjectSeeder.exportCollectionName`.
+    private static let exportCollection = "UI Test Export Collection"
+    private static let listTitle = "Collections"
+    /// The export sheet's title, `export.nav.title`.
+    private static let sheetTitle = "Export collection"
+    /// The seeded collection's sentence begins so: it counts six documents.
+    private static let sentenceOpening = "6 documents:"
+    private static let patience: TimeInterval = 30
+    private static let phoneOnlyReason =
+        "iPhone-only: at iPad width the export sheet is a form sheet with room to spare, so a pass there is not evidence"
+    /// A line of the sheet's text at AX1, the largest it is drawn at, rounded up: what must show above the bar for the
+    /// line of what the device lacks to be begun.
+    private static let oneLine: CGFloat = 40
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testTheSheetFitsAtTheDefaultSize() throws {
+        try assertSheetFits(at: nil, named: "L")
+    }
+
+    func testTheSheetFitsAtAX3() throws {
+        try assertSheetFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
+    }
+
+    func testTheSheetFitsAtAX5() throws {
+        try assertSheetFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
+    }
+
+    // MARK: - The measurement
+
+    private func assertSheetFits(at category: String?, named size: String) throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
+        launch(at: category)
+        let row = app.collectionViews.staticTexts[Self.exportCollection].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded \"\(Self.exportCollection)\" is not listed")
+        row.press(forDuration: 1.2)
+        let export = app.buttons["Export…"].firstMatch
+        XCTAssertTrue(export.waitForExistence(timeout: Self.patience), "The row's menu has no Export… at \(size)")
+        export.tap()
+        let bar = app.navigationBars[Self.sheetTitle]
+        XCTAssertTrue(bar.waitForExistence(timeout: Self.patience), "Export… opened no export sheet at \(size)")
+        let sentence = element("collection.export.sentence")
+        XCTAssertTrue(sentence.waitForExistence(timeout: Self.patience), "The sheet never counted what it will print")
+        XCTAssertTrue(sentence.label.hasPrefix(Self.sentenceOpening),
+                      "The sheet counts another collection: \"\(sentence.label)\"")
+        // The sentence replaced the spinner: let the form settle before it is read.
+        Thread.sleep(forTimeInterval: 1)
+
+        let accessibility = category?.contains("Accessibility") == true
+        let formatId = accessibility ? "collection.export.format.menu" : "collection.export.format.pdf"
+        let frames = try snapshotFrames(["collection.export.sentence", "collection.export.lacks", formatId,
+                                         "collection.export.run", "collection.export.bar"])
+        let window = app.windows.firstMatch.frame
+        let navFoot = bar.frame.maxY
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "L35 fit \(size)"
+        shot.lifetime = .keepAlways
+        add(shot)
+        print("[L35 fit] \(size) window \(Int(window.width))x\(Int(window.height)) nav foot \(Int(navFoot)): "
+              + frames.sorted { $0.key < $1.key }.map { id, f in
+                  "\(id.replacingOccurrences(of: "collection.export.", with: "")) "
+                  + "x \(Int(f.minX))–\(Int(f.maxX)) y \(Int(f.minY))–\(Int(f.maxY))" }
+                  .joined(separator: ", "))
+
+        let sentenceFrame = try XCTUnwrap(frames["collection.export.sentence"], "no sentence in the snapshot at \(size)")
+        // The line of what the device lacks starts under the sentence, which is drawn no larger than AX1, so the form
+        // has built its row at every size.
+        let lacks = try XCTUnwrap(frames["collection.export.lacks"],
+                                  "The sheet does not say what this device lacks at \(size), or the line is below the screen")
+        let missingFormat = accessibility
+            ? "the menu is drawn only at an accessibility size, so the size did not take effect"
+            : "the cards are drawn only at a standard size"
+        let format = try XCTUnwrap(frames[formatId], "No \(formatId) at \(size): \(missingFormat)")
+        let run = try XCTUnwrap(frames["collection.export.run"], "no Export in the snapshot at \(size)")
+        let foot = try XCTUnwrap(frames["collection.export.bar"], "no bar at the sheet's foot at \(size)")
+
+        for (name, frame) in [("sentence", sentenceFrame), ("lacks", lacks), ("format", format), ("Export", run)] {
+            XCTAssertGreaterThanOrEqual(frame.minX, window.minX - 0.5, "\(name) runs off the leading edge at \(size): \(frame)")
+            XCTAssertLessThanOrEqual(frame.maxX, window.maxX + 0.5, "\(name) runs off the trailing edge at \(size): \(frame)")
+            XCTAssertGreaterThan(frame.height, 0, "\(name) has no height at \(size)")
+        }
+        // The sheet opens on its sentence, whole between the navigation bar and the bar at every size (decision
+        // 221), and the line of what the device lacks follows it.
+        XCTAssertGreaterThanOrEqual(sentenceFrame.minY, navFoot - 0.5,
+                                    "The sentence starts under the navigation bar at \(size): \(sentenceFrame), bar foot \(navFoot)")
+        XCTAssertLessThanOrEqual(sentenceFrame.maxY, foot.minY + 0.5, """
+            The sentence runs under the bar at \(size): it ends at \(sentenceFrame.maxY), the bar starts at \(foot.minY)
+            """)
+        XCTAssertLessThanOrEqual(sentenceFrame.maxY, lacks.minY + 0.5, "The sentence runs into what the device lacks at \(size)")
+        if accessibility {
+            // Under a long sentence at AX1 the line may continue under the bar, where the form scrolls: it is begun above it.
+            XCTAssertLessThanOrEqual(lacks.minY, foot.minY - Self.oneLine, """
+                What this device lacks starts too low to be read at \(size): it starts at \(lacks.minY), the bar at \(foot.minY)
+                """)
+            XCTAssertGreaterThanOrEqual(format.minY, foot.minY - 0.5, "The format menu is not in the bar at \(size)")
+            XCTAssertLessThanOrEqual(format.maxY, run.minY + 0.5, "The format menu runs into Export at \(size)")
+        } else {
+            XCTAssertLessThanOrEqual(lacks.maxY, foot.minY + 0.5, """
+                What this device lacks runs under the bar at \(size): it ends at \(lacks.maxY), the bar starts at \(foot.minY)
+                """)
+            XCTAssertGreaterThanOrEqual(format.minY, lacks.maxY - 0.5, "The chosen card is above what the device lacks at \(size)")
+            XCTAssertLessThanOrEqual(format.maxY, foot.minY + 0.5, """
+                The chosen card, PDF, runs under the bar at \(size): it ends at \(format.maxY), the bar starts at \(foot.minY)
+                """)
+        }
+        XCTAssertGreaterThanOrEqual(run.minY, foot.minY - 0.5, "Export is not in the bar at \(size)")
+        XCTAssertLessThanOrEqual(run.maxY, window.maxY + 0.5, "Export runs off the foot of the screen at \(size): \(run)")
+        XCTAssertTrue(app.buttons["collection.export.run"].isHittable, "Export cannot be tapped at \(size)")
+    }
+
+    // MARK: - Steps and queries
+
+    private func launch(at category: String?) {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "export"
+        app.launchEnvironment["FRUS_UI_TEST_APPLE_INTELLIGENCE"] = "notEnabled"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections, contentSizeCategory: category)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
+                      "Could not open the Collections tab, so this suite would read another screen")
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
+                      "The Collections list is not showing")
+    }
+
+    /// The element whose identifier is `identifier`, of any type.
+    private func element(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// The frames of the elements whose identifiers are `identifiers`, read from one snapshot of the app: a read of
+    /// each is a query of its own, which takes seconds under Xcode 27 (`SearchLayerBaseRowFitTests`).
+    private func snapshotFrames(_ identifiers: [String]) throws -> [String: CGRect] {
+        let wanted = Set(identifiers)
+        var found: [String: CGRect] = [:]
+        var stack = [try app.snapshot()]
+        while let node = stack.popLast() {
+            if wanted.contains(node.identifier), found[node.identifier] == nil { found[node.identifier] = node.frame }
+            stack.append(contentsOf: node.children)
+        }
+        return found
+    }
+}
+
 /// The seeded document's row text in a collection's Contents: the row speaks "Document UI Test Document One", the
 /// document's header from the index after "Document", or "Document d1" while the volume is not yet indexed (L19).
 @MainActor
 func documentRowText(in app: XCUIApplication) -> XCUIElement {
     app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@ OR label ENDSWITH %@",
                                          "UI Test Document One", "Document d1")).firstMatch
+}
+
+// MARK: - CollectionFactsAccessibilityTests (L43)
+
+/// Each control L43 adds speaks its name and its value (the design's §9 accessibility table, lane 3): what VoiceOver reads
+/// for an element is its label and its value, which XCUI reads back.
+///
+/// - **A new collection's settings:** *Opening*, which a new collection sets to the volume's heading leading (decision
+///   159); *Citation style*, in the style Settings ▸ Display holds, History at State in the UI-test store (decision 160);
+///   *See also*, off; and *Wording*'s ten fields, each named "Contents, printed as" and valued with the word it prints.
+/// - **A section's sheet:** *Headnotes*, at Default.
+/// - **A document's settings:** *Date line*, offered once the document has a title, and not before (decision 163).
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`**: the iPhone pushes Collection settings and a
+/// document's settings, the iPad presents both as sheets, and each is different code. The document's fixture is
+/// `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1` of `FRUS_UI_TEST_SEED_VOLUME`'s volume.
+///
+/// Version history:
+///   1.0 — L43: initial implementation
+@MainActor
+final class CollectionFactsAccessibilityTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The settings screen's (iPhone) and sheet's (iPad) navigation title.
+    private static let settingsTitle = "Collection settings"
+    /// The editor's title before a new collection has a name.
+    private static let newTitle = "New Collection"
+    /// See `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+    /// The ten labels of the collection's Wording, by the name the stored map gives each, with the word the app prints.
+    private static let wording: [(key: String, word: String)] = [
+        ("contents", "Contents"), ("headnote", "Headnote"), ("summary", "Summary"), ("researchNote", "Research Note"),
+        ("seeAlso", "See also:"), ("bibliography", "Bibliography"), ("chronology", "Chronology"),
+        ("archivalSources", "Sources & Archives"), ("personsIndex", "Persons Index"), ("thematicIndex", "Thematic Index"),
+    ]
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// A new collection's Opening, Citation style, See also and Wording speak their names and values, and a section's
+    /// Headnotes default does.
+    func testTheCollectionsNewControlsSpeakTheirNameAndValue() throws {
+        launch(seedingProject: false)
+        let create = app.buttons["Create new collection"].firstMatch
+        XCTAssertTrue(create.waitForExistence(timeout: Self.patience), "The Collections tab offers no New Collection")
+        create.tap()
+        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: Self.patience),
+                      "The new collection's editor did not open")
+
+        // A section heading, whose sheet holds the section's Headnotes default.
+        CollectionEditorAddMenu.open(in: app)
+        let heading = app.buttons["Add Section Heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: Self.patience), "The Add menu has no Add Section Heading")
+        heading.tap()
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: Self.patience), "Add Section Heading added no heading row")
+        pill.tap()
+        let headnotes = reveal("collection.inspector.sectionHeadnote.picker", what: "Headnotes", under: nil)
+        assertSpeaks(headnotes, name: "Headnotes", value: "Default", what: "A section's Headnotes default")
+        attachScreenshot("A section's sheet")
+        let done = app.navigationBars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The section's sheet has no Done")
+        done.tap()
+
+        // Collection settings: the ⚙ button's sheet on the iPad, the pushed screen on the iPhone.
+        let button = element("collection.editor.settings.button")
+        let row = element("collection.editor.settings.row")
+        XCTAssertTrue(waitUntil { button.exists || row.exists }, "The editor offers no way into Collection settings")
+        (button.exists ? button : row).tap()
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
+                      "Collection settings did not open")
+
+        let opening = reveal("composition.opening.picker", what: "Opening", under: Self.settingsTitle)
+        assertSpeaks(opening, name: "Opening", value: "The volume’s heading leads",
+                     what: "A new collection's Opening (decision 159)")
+        let seeAlso = reveal("composition.seeAlso.toggle", what: "See also", under: Self.settingsTitle)
+        XCTAssertTrue(seeAlso.label.hasPrefix("See also"), "See also is named \"\(seeAlso.label)\"")
+        XCTAssertEqual(seeAlso.value as? String, "0", "See also does not speak Off for a new collection")
+        attachScreenshot("Document content")
+
+        let style = reveal("composition.citationStyle.picker", what: "Citation style", under: Self.settingsTitle)
+        assertSpeaks(style, name: "Citation style", value: "History at State",
+                     what: "A new collection's Citation style, Settings ▸ Display's (decision 160)")
+        let wording = reveal("composition.wording.group", what: "Wording", under: Self.settingsTitle)
+        XCTAssertTrue(wording.label.contains("Wording"), "Wording is named \"\(wording.label)\"")
+        wording.tap()
+        for (key, word) in Self.wording {
+            // By its identifier, or by the name VoiceOver reads, which is what this test is about.
+            let field = reveal(app.textFields.matching(NSPredicate(format: "identifier == %@ OR label == %@",
+                                                                   "composition.wording.field.\(key)",
+                                                                   "\(word), printed as")).firstMatch,
+                               what: "Wording's \(word)", under: Self.settingsTitle)
+            XCTAssertEqual(field.label, "\(word), printed as", "Wording's \(key) field is named \"\(field.label)\"")
+            XCTAssertEqual(field.value as? String, word, "Wording's \(key) field does not speak the word it prints")
+        }
+        attachScreenshot("Citations & wording")
+    }
+
+    /// A document's Date line is offered once it has a title, and speaks its name and the line typed into it.
+    func testTheDocumentsDateLineSpeaksItsNameAndValue() throws {
+        launch(seedingProject: true)
+        let collection = app.collectionViews.staticTexts[Self.collectionName].firstMatch
+        XCTAssertTrue(collection.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+        collection.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                      "The seeded collection's editor did not open")
+        let row = documentRowText(in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded document's row is not in Contents")
+        row.tap()
+        // By identifier: a form's text field shows no title, and iOS 27 names it by its placeholder alone.
+        let title = element("collection.inspector.titleOverride.field")
+        XCTAssertTrue(title.waitForExistence(timeout: Self.patience), "The document's settings have no Title override")
+        let dateLine = element("collection.inspector.dateLine.field")
+        XCTAssertFalse(dateLine.exists, "A date line is offered before the document has a title (decision 163)")
+
+        title.tap()
+        title.typeText("The first letter")
+        XCTAssertTrue(dateLine.waitForExistence(timeout: Self.patience), "A title did not bring the Date line")
+        XCTAssertEqual(dateLine.label, "Date line", "The date line is named \"\(dateLine.label)\"")
+        dateLine.tap()
+        dateLine.typeText("Washington, 26 January 1961")
+        XCTAssertTrue(waitUntil { (dateLine.value as? String) == "Washington, 26 January 1961" },
+                      "The date line does not speak what was typed: \(dateLine.value ?? "nil")")
+        attachScreenshot("A document's date line")
+    }
+
+    // MARK: - Helpers
+
+    private func launch(seedingProject: Bool) {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        if seedingProject {
+            app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+            app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        }
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+    }
+
+    /// What VoiceOver reads for `element` — its label, then its value — holds `name` and `value`.
+    private func assertSpeaks(_ element: XCUIElement, name: String, value: String, what: String) {
+        let spoken = [element.label, (element.value as? String) ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        XCTAssertTrue(spoken.contains(name) && spoken.contains(value), "\(what) speaks \"\(spoken)\"")
+    }
+
+    /// The element `identifier` names, dragged up into view, under the bar titled `bar` where one is given (so a drag
+    /// on a sheet never lands on the window around it), else at the window's leading edge.
+    private func reveal(_ identifier: String, what: String, under bar: String?) -> XCUIElement {
+        reveal(element(identifier), what: "\(what) (\(identifier))", under: bar)
+    }
+
+    /// `target`, dragged up into view as `reveal(_:what:under:)` drags.
+    private func reveal(_ target: XCUIElement, what: String, under bar: String?) -> XCUIElement {
+        let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+        let top = bar.map { app.navigationBars[$0].frame } ?? app.navigationBars.firstMatch.frame
+        var drags = 0
+        while !(target.exists && target.isHittable) && drags < 14 {
+            let x = top.minX + 24
+            let start = origin.withOffset(CGVector(dx: x, dy: top.maxY + 360))
+            let end = origin.withOffset(CGVector(dx: x, dy: top.maxY + 60))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0.3)
+            drags += 1
+        }
+        XCTAssertTrue(target.exists, "\(what) is not on screen, after \(drags) drag(s)")
+        return target
+    }
+
+    private func element(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any)[identifier].firstMatch
+    }
+
+    private func waitUntil(_ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(Self.patience)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
 }
