@@ -558,9 +558,10 @@ public struct CollectionContentAssembly {
             if Task.isCancelled { break }
             guard let raw = entry.generatedBlockType,
                   let blockType = CollectionGeneratedBlockType(rawValue: raw) else { continue }
-            let block = await CollectionGeneratedBlocks.resolve(
+            let block = await Self.worded(CollectionGeneratedBlocks.resolve(
                 type: blockType, documents: batch.collectionDocuments,
-                dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale)
+                dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale),
+                options: batch.options)
             switch blockType.defaultPosition {
             case .frontMatter: front.append(.generated(block))
             case .backMatter:  back.append(.generated(block))
@@ -620,6 +621,9 @@ public struct CollectionContentAssembly {
             structuralRefs, headingValues: headingValues { $0.summaryPromptIdOverride })
         let secRelated = CollectionOutline.sectionOverrideValues(
             structuralRefs, headingValues: headingValues { $0.includeRelatedDocuments })
+        // A section's headnote default (L43; J24): its own field, read on headings only.
+        let secHeadnote = CollectionOutline.sectionOverrideValues(
+            structuralRefs, headingValues: headingValues { $0.headnoteDefault })
         var items: [CollectionExportItem] = []
         for (i, ref) in ordered.enumerated() {
             if Task.isCancelled { break }
@@ -632,7 +636,8 @@ public struct CollectionContentAssembly {
                 includeSourceNote: secSourceNote[i],
                 includeFootnotes: secFootnotes[i],
                 summaryPromptId: secPrompt[i],
-                includeRelatedDocuments: secRelated[i])
+                includeRelatedDocuments: secRelated[i],
+                includeHeadnote: secHeadnote[i])
             if let item = await resolveEntry(ref, section: section,
                                              headingLevel: max(level, 1),
                                              batch: batch) {
@@ -700,8 +705,13 @@ public struct CollectionContentAssembly {
         public let summaryPromptIdOverride: UUID?
         /// The highlights to include when highlights apply (A8; empty = all).
         public let selectedHighlightIds: [UUID]
-        /// Per-entry related-documents opt-in (A10; `nil` = inherit, ultimately off).
+        /// Per-entry related-documents opt-in (A10; `nil` = inherit, ultimately the collection's See also, L43).
         public let includeRelatedDocuments: Bool?
+        /// The author's date line under the entry's title (L43; decision 163; document entries only).
+        public let dateLine: String?
+        /// A heading's headnote default for its section (L43; J24; `nil` = follow the enclosing section, else the
+        /// collection). Read on headings only.
+        public let headnoteDefault: Bool?
         /// How research-note texts are resolved for this entry.
         let noteResolution: NoteResolution
 
@@ -734,6 +744,8 @@ public struct CollectionContentAssembly {
             summaryPromptIdOverride = entry.summaryPromptIdOverride
             selectedHighlightIds = entry.selectedHighlightIds ?? []
             includeRelatedDocuments = entry.includeRelatedDocuments
+            dateLine = kind == .document ? entry.dateLine : nil
+            headnoteDefault = kind == .heading ? entry.headnoteDefault : nil
             noteResolution = .entrySelection(selectedNoteIds: entry.selectedNoteIds,
                                              legacyNoteId: entry.researchNoteId)
         }
@@ -762,6 +774,8 @@ public struct CollectionContentAssembly {
             summaryPromptIdOverride = nil
             selectedHighlightIds = []
             includeRelatedDocuments = nil
+            dateLine = nil
+            headnoteDefault = nil
             noteResolution = .allDocumentNotes
         }
 
@@ -789,6 +803,8 @@ public struct CollectionContentAssembly {
         var summaryPromptId: UUID? = nil
         /// Section related-documents default (A10, Phase 5).
         var includeRelatedDocuments: Bool? = nil
+        /// Section headnote default (L43; J24), from the heading's own `headnoteDefault`.
+        var includeHeadnote: Bool? = nil
     }
 
     // MARK: - BatchContext
@@ -803,8 +819,14 @@ public struct CollectionContentAssembly {
         let options: CollectionExportOptions
         /// Manifest entries keyed by volume id, for citations and volume titles.
         let manifestMap: [String: VolumeManifestEntry]
-        /// Formats history.state.gov-style citations.
-        let formatter: HistoryAtStateCitationFormatter
+        /// Formats every citation of the batch in the collection's style (L43; the design's §6): History at State
+        /// unless the collection chose Chicago or Turabian.
+        let formatter: any CitationFormatter
+        /// The index's heading and dateline for every document the batch cites, keyed `"volumeId/documentId"`, which
+        /// a Chicago or Turabian note names the document by (L43; `FRUSNoteHead`). Read from the index for every
+        /// citation, so that one document is cited alike wherever it is cited, and a capped preview as its export.
+        /// Empty in History at State, whose citation reads neither.
+        let citationHeadings: [String: (header: String, dateline: String?)]
         /// Pre-loaded plain body texts keyed `"volumeId/documentId"`.
         let bodyTexts: [String: String]
         /// Pre-loaded render models keyed `"volumeId/documentId"`.
@@ -926,10 +948,16 @@ public struct CollectionContentAssembly {
         let documentNumbers = (try? await source.indexingPipeline?
             .documentNumbersByKey(citable)) ?? [:]
 
+        // L43: the collection's style, and for a note the headings the citations name their documents by.
+        let options = CollectionExportOptions(composing: collection)
+        let citationHeadings = options.citationStyle == .historyAtState ? [:]
+            : ((try? await source.indexingPipeline?.documentHeadingsByKey(citable)) ?? [:])
+
         return BatchContext(
-            options: CollectionExportOptions(composing: collection),
+            options: options,
             manifestMap: manifestMap,
-            formatter: HistoryAtStateCitationFormatter(),
+            formatter: options.citationStyle.makeFormatter(),
+            citationHeadings: citationHeadings,
             bodyTexts: bodyTexts,
             renderModels: renderModels,
             readings: readings,
@@ -979,9 +1007,10 @@ public struct CollectionContentAssembly {
             // the `.unrecognized` kind guard: degraded, never corrupted.
             guard let raw = ref.generatedBlockType,
                   let blockType = CollectionGeneratedBlockType(rawValue: raw) else { return nil }
-            return await .generated(CollectionGeneratedBlocks.resolve(
+            return await .generated(Self.worded(CollectionGeneratedBlocks.resolve(
                 type: blockType, documents: batch.collectionDocuments,
-                dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale))
+                dataSource: AssembledBlockDataSource(assembly: self, batch: batch), locale: locale),
+                options: batch.options))
         case .unrecognized:
             // Written by a newer app version — this build cannot render it.
             // Skip rather than emit a junk document item (Authoring Phase 1 guard).
@@ -1013,8 +1042,12 @@ public struct CollectionContentAssembly {
         let docMeta = FRUSDocumentMetadata(
             documentId: ref.documentId, documentNumber: docNum,
             header: header, dateline: dateline)
-        let citation = volMeta.map { batch.formatter.format(document: docMeta, volume: $0) }
-            ?? "\(ref.volumeId)/\(ref.documentId)"
+        // The citation, in the collection's style (L43): a note names the document by the index's heading and
+        // dateline, as every other citation of it in the collection does, else by its parse's.
+        let citation = volMeta.map {
+            citationText(volumeId: ref.volumeId, documentId: ref.documentId, documentNumber: docNum,
+                         volume: $0, batch: batch, parsedHeader: header, parsedDateline: dateline)
+        } ?? "\(ref.volumeId)/\(ref.documentId)"
         let urlString = "https://history.state.gov/historicaldocuments/\(ref.volumeId)/\(ref.documentId)"
         let volumeTitle = manifestEntry?.title ?? ref.volumeId
         let bodyText = batch.bodyTexts[key] ?? ""
@@ -1102,9 +1135,9 @@ public struct CollectionContentAssembly {
         // body. Stored summaries only — never generated, in either purpose; renderers
         // show a placeholder when the entry asked for one and none is stored. The
         // fallback pick prefers the entry's effective prompt.
-        // Headnote resolves through the two-tier cascade (Composer redesign): the entry's own
-        // opt-in, else the collection default. Headings do not carry a headnote section default.
-        let effectiveHeadnote = ref.includeHeadnote ?? batch.options.includeHeadnoteDefault
+        // Headnote resolves through the cascade: the entry's own opt-in, else its section's headnote default (L43;
+        // the heading's own `headnoteDefault`, never its `includeHeadnote`, J24), else the collection default.
+        let effectiveHeadnote = ref.includeHeadnote ?? section.includeHeadnote ?? batch.options.includeHeadnoteDefault
         let resolvedHeadnotePair = effectiveHeadnote
             ? headnoteText(volumeId: ref.volumeId, documentId: ref.documentId,
                            summaryId: ref.headnoteSummaryId,
@@ -1118,10 +1151,11 @@ public struct CollectionContentAssembly {
         let resolvedHeadnoteAuthorship = resolvedHeadnotePair?.authorship ?? .aiGenerated
 
         // Related documents (A10): outbound cross-reference targets that are also in
-        // this collection, rendered as a "See also:" citation line. Off unless the
-        // cascade turns it on; empty when the host keeps no cross-references (e.g. tests).
+        // this collection, rendered as a "See also:" citation line. The entry's setting, else its section's, else the
+        // collection's See also (L43), which is off unless set; empty when the host keeps no cross-references.
         let relatedCitations: [String]
-        if ref.includeRelatedDocuments ?? section.includeRelatedDocuments ?? false,
+        if ref.includeRelatedDocuments ?? section.includeRelatedDocuments
+            ?? batch.options.includeRelatedDocumentsDefault,
            let outbound = await source.crossReferenceTargets(volumeId: ref.volumeId,
                                                              documentId: ref.documentId) {
             let targets = Self.relatedDocumentTargets(
@@ -1162,6 +1196,7 @@ public struct CollectionContentAssembly {
             bodyDepth: effectiveDepth,
             title: "\(volumeTitle) — \(ref.documentId)",
             titleOverride: ref.titleOverride,
+            dateLine: ref.dateLine,
             date: manifestEntry?.dateRange.earliest,
             bodyText: bodyText,
             noteTexts: resolvedNoteTexts,
@@ -1216,7 +1251,7 @@ public struct CollectionContentAssembly {
 
     /// Resolves an `.excerpt` entry into its export item (Authoring Phase 5): the frozen
     /// verbatim passage plus a source citation built through the exact citation path
-    /// document items use (`manifestMap` + `HistoryAtStateCitationFormatter`). No volume
+    /// document items use (`manifestMap` + the batch's formatter, in the collection's style). No volume
     /// XML is touched — the passage was frozen at creation — so an excerpt renders fully
     /// even when its source volume isn't downloaded (in exports and the preview alike).
     ///
@@ -1244,10 +1279,11 @@ public struct CollectionContentAssembly {
             colorTag: ref.excerptColorTag))
     }
 
-    /// The history.state.gov-style citation for a document reference — the same
-    /// manifest + formatter path document items use, without needing the volume XML
-    /// (`HistoryAtStateCitationFormatter` reads only volume metadata and the document
-    /// number, never the document header/dateline, so this IS the full citation).
+    /// The citation for a document reference, in the collection's style — the same
+    /// manifest + formatter path document items use, without needing the volume XML: History at
+    /// State reads only volume metadata and the document number, and a Chicago or Turabian note the
+    /// index's heading and dateline as well (`citationText`, L43), which every citation of a document
+    /// reads alike, so this IS the full citation.
     /// Shared by the excerpt source line, the related-documents "See also:" line, and
     /// the generated-blocks data source; falls back to `"volumeId/documentId"` when
     /// the manifest doesn't know the volume.
@@ -1257,12 +1293,34 @@ public struct CollectionContentAssembly {
     private func shortCitation(volumeId: String, documentId: String, printedNumber: String?,
                                batch: BatchContext) -> String {
         let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
-        let docMeta = FRUSDocumentMetadata(
-            documentId: documentId, documentNumber: docNum,
-            header: "", dateline: nil)
         return batch.manifestMap[volumeId]
-            .map { batch.formatter.format(document: docMeta, volume: FRUSVolumeMetadata($0)) }
+            .map { citationText(volumeId: volumeId, documentId: documentId, documentNumber: docNum,
+                                volume: FRUSVolumeMetadata($0), batch: batch) }
             ?? "\(volumeId)/\(documentId)"
+    }
+
+    /// One citation of the batch, in the collection's style, its italics as the exporters read them (L43): the
+    /// formatter's `*…*` made `_…_` (`CitationItalics`). A Chicago or Turabian note names the document by the
+    /// index's heading and dateline (`BatchContext.citationHeadings`), the same for every citation of it, else by
+    /// `parsedHeader` and `parsedDateline` where the caller has the document's parse and the index holds nothing.
+    /// History at State reads neither.
+    private func citationText(volumeId: String, documentId: String, documentNumber: String?,
+                              volume: FRUSVolumeMetadata, batch: BatchContext,
+                              parsedHeader: String = "", parsedDateline: String? = nil) -> String {
+        let indexed = batch.citationHeadings["\(volumeId)/\(documentId)"]
+        let metadata = FRUSDocumentMetadata(
+            documentId: documentId, documentNumber: documentNumber,
+            header: indexed?.header ?? parsedHeader, dateline: indexed.map { $0.dateline } ?? parsedDateline)
+        return CitationItalics.underscored(batch.formatter.format(document: metadata, volume: volume))
+    }
+
+    /// `block` titled in the collection's own word for it (L43; `CollectionWording`), or as it was where the
+    /// collection has none.
+    nonisolated static func worded(_ block: CollectionGeneratedBlock,
+                                   options: CollectionExportOptions) -> CollectionGeneratedBlock {
+        guard let label = CollectionWording.Label(rawValue: block.type.rawValue),
+              let word = options.wording.ownWord(for: label) else { return block }
+        return CollectionGeneratedBlock(type: block.type, title: word, rows: block.rows)
     }
 
     // MARK: - Assembled generated-block data source (Phase 6)
@@ -1281,9 +1339,9 @@ public struct CollectionContentAssembly {
         let batch: BatchContext
 
         func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
-            // The single citation path: header-independent (the formatter never reads
-            // header/dateline), so block rows match the document items' citations and
-            // capped previews match exports by construction.
+            // The single citation path: what a note names a document by is the index's heading and dateline
+            // for every citation of it (L43), so block rows match the document items' citations and capped
+            // previews match exports by construction.
             assembly.shortCitation(volumeId: volumeId, documentId: documentId,
                                    printedNumber: printedNumber, batch: batch)
         }

@@ -101,6 +101,10 @@ import Foundation
 ///          `Document GT–6` — where only its digits were (`extractDocumentNumber(from:)`,
 ///          `normalizedDocumentNumber(_:)`); a link's `d373a` names its number; and the title
 ///          fragment loses the whole number, not its digits alone
+///   2.0 — L43 (decision 220): a Chicago or Turabian note, as the app's own now prints one, is read
+///          from its volume on, its "vol.", "vols." and "pt." as a title prints them
+///          (`noteReading(of:)`), and an editor statement ends at a volume's number or part and at
+///          an italic title, where it ran to the publication parenthesis
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -123,12 +127,15 @@ public struct CitationParser: Sendable {
 
     /// The fields a citation with no history.state.gov address yields.
     private func parseProse(_ text: String, rawText: String) -> CitationInput {
-        let subseries      = extractSubseries(from: text)
-        let volumeNumber   = extractVolumeNumber(from: text)
-        let partNumber     = extractPartNumber(from: text)
-        let documentNumber = extractDocumentNumber(from: text)
-        let pageNumber     = extractPageNumber(from: text)
-        let titleFragment  = extractTitleFragment(from: text,
+        // A Chicago or Turabian note is read from its volume on, its abbreviations as the volume's
+        // title prints them (L43; `noteReading(of:)`); any other citation as it stands.
+        let read = Self.noteReading(of: text) ?? text
+        let subseries      = extractSubseries(from: read)
+        let volumeNumber   = extractVolumeNumber(from: read)
+        let partNumber     = extractPartNumber(from: read)
+        let documentNumber = extractDocumentNumber(from: read)
+        let pageNumber     = extractPageNumber(from: read)
+        let titleFragment  = extractTitleFragment(from: read,
                                                   subseries: subseries,
                                                   volumeNumber: volumeNumber)
 
@@ -157,6 +164,96 @@ public struct CitationParser: Sendable {
             parserConfidence: confidence
         )
     }
+
+    // MARK: - A Chicago or Turabian Note (L43)
+
+    /// A Chicago or Turabian note read as the volume's own citation reads (L43; decision 220): the
+    /// text its fields and its title fragment are read from. `nil` for any other citation, which
+    /// reads as it stands.
+    ///
+    /// The app's own notes (`FRUSNoteCitation`), as the *Chicago Manual of Style*'s answer on citing
+    /// FRUS does, open with the document and give the volume's number and part in a note's
+    /// abbreviations, in arabic figures: "The Embassy in France to the Department of State,
+    /// telegram, Paris, October 22, 1962, in *Foreign Relations of the United States, 1961–1963*,
+    /// ed. …, vol. 11, *Cuban Missile Crisis and Aftermath*, …". Read as it stands, the head's words
+    /// join the words that choose a volume, and "vol.", "vols." and "pt." are no title's words, so no
+    /// title holds every word of the fragment — which the pre-1908 volumes need, since only their
+    /// titles tell them apart (#216) — and the head's date stands first where a title's transmittal
+    /// date keeps the series' own year from being read (`readSubseries(from:)`). So:
+    /// - **The head is left out**: everything before ", in " and the series' name.
+    /// - **"vols." with its numbers** reads as a title prints it, "Volumes VII, VIII, IX", and
+    ///   **"vol."** as "Volume", so that "vol. E–1" is "Volume E–1"; "vol. 21" keeps its figures,
+    ///   which the volume's number is read from as before.
+    /// - **"pt." with its number** reads as the title prints it: "Part II" in a title that opens
+    ///   "Papers Relating", whose 34 parts are all in Roman numerals, and "Part 1" in one that opens
+    ///   "Foreign Relations", whose 64 are all in figures (the bundled manifest, 2026-11-27). The
+    ///   part's words must stay in the fragment: `frus1864p2` and `p3` are cited by their print year,
+    ///   1865, and `frus1865p4`'s title holds every other word of theirs, so only "Part II" and "Part
+    ///   III" tell them from it.
+    ///
+    /// A note is a text with ", in " before the series' full name, "FRUS" or "Message of the
+    /// President of the United States" (the 1861 volume's title, which names no series), or one
+    /// that opens with the full name and gives a note's ", vol.", ", vols." or ", pt." — as a note
+    /// does whose heading the app did not have. The corpus's own footnotes name the series "Foreign
+    /// Relations", and the app's history.state.gov citation opens with the full name and
+    /// abbreviates nothing, so neither is read this way.
+    static func noteReading(of text: String) -> String? {
+        let whole = NSRange(text.startIndex..., in: text)
+        var container: String
+        if let opening = noteContainerOpening?.firstMatch(in: text, range: whole),
+           let range = Range(opening.range, in: text) {
+            container = String(text[range.upperBound...])
+        } else if noteOpeningSeries?.firstMatch(in: text, range: whole) != nil,
+                  noteAbbreviation?.firstMatch(in: text, range: whole) != nil {
+            container = text
+        } else {
+            return nil
+        }
+        // "vols. 7, 8, 9" as the title prints it: "Volumes VII, VIII, IX".
+        if let several = noteSeveralVolumes {
+            let found = several.matches(in: container, range: NSRange(container.startIndex..., in: container))
+            for match in found.reversed() {
+                guard let span = Range(match.range, in: container),
+                      let list = Range(match.range(at: 1), in: container) else { continue }
+                let numerals = container[list].split(separator: ",").map { item -> String in
+                    let numeral = item.trimmingCharacters(in: .whitespaces)
+                    return Int(numeral).map(CitationNumerals.roman) ?? numeral
+                }
+                container.replaceSubrange(span, with: "Volumes " + numerals.joined(separator: ", "))
+            }
+        }
+        // "pt. 2" as the title prints it: "Part II" under "Papers Relating", "Part 2" under "Foreign Relations".
+        let romanParts = container.range(of: #"^[_*]?Papers\s+Relating"#, options: .regularExpression) != nil
+        if let parts = noteParts {
+            let found = parts.matches(in: container, range: NSRange(container.startIndex..., in: container))
+            for match in found.reversed() {
+                guard let span = Range(match.range, in: container),
+                      let number = Range(match.range(at: 1), in: container),
+                      let value = CitationNumerals.value(of: String(container[number])) else { continue }
+                container.replaceSubrange(span, with: "Part " + (romanParts ? CitationNumerals.roman(value) : String(value)))
+            }
+        }
+        return container.replacingOccurrences(of: #"\bvol\.\s+"#, with: "Volume ", options: .regularExpression)
+    }
+
+    /// ", in " before the series' full name, "FRUS" or the 1861 volume's title, with an italic mark
+    /// between or none: where a note's head ends.
+    private static let noteContainerOpening = try? NSRegularExpression(
+        pattern: #",\s+in\s+(?=[_*]?(?:Papers\s+Relating\s+to\s+(?:the\s+Foreign\s+Relations|Foreign\s+Affairs)|Foreign\s+Relations\s+of\s+the\s+United\s+States|FRUS|Message\s+of\s+the\s+President\s+of\s+the\s+United\s+States)(?![A-Za-z]))"#)
+
+    /// "pt." and its number, in figures or Roman numerals: "pt. 2".
+    private static let noteParts = try? NSRegularExpression(pattern: #"\bpt\.\s+(\d+|[IVXLC]+)\b"#)
+
+    /// The series' full name opening a text, with an italic mark before it or none.
+    private static let noteOpeningSeries = try? NSRegularExpression(
+        pattern: #"^[_*]?(?:Papers\s+Relating\s+to\s+(?:the\s+Foreign\s+Relations|Foreign\s+Affairs)|Foreign\s+Relations\s+of\s+the\s+United\s+States)(?![A-Za-z])"#)
+
+    /// A note's abbreviation for a volume or a part, after a comma: ", vol. ", ", vols. ", ", pt. ".
+    private static let noteAbbreviation = try? NSRegularExpression(pattern: #",\s+(?:vols?|pt)\.\s"#)
+
+    /// "vols." and the numbers it lists: "vols. 7, 8, 9".
+    private static let noteSeveralVolumes = try? NSRegularExpression(
+        pattern: #"\bvols\.\s+((?:\d+|[IVXLC]+)(?:,\s*(?:\d+|[IVXLC]+))*)\b"#)
 
     // MARK: - Subseries Extraction
 
@@ -701,7 +798,15 @@ public struct CitationParser: Sendable {
     /// shared words instead: in `frus1943China`'s Chicago citation the "and" of "Noble and
     /// Perkins" tied the Cairo–Tehran volume's title ("Cairo and Tehran") with China's, and the
     /// manifest order put Cairo–Tehran first.
-    static let editorStatement = #"\b(?:eds?\.|edited\s+by)\s[^()]*?(?=\s*\(|$)"#
+    ///
+    /// A statement also ends where a volume's number or part follows it, or an italic title (L43):
+    /// a Chicago or Turabian note names the series' general editor between the series and the
+    /// volume's number, and the volume's own title before its editors — "*Foreign Relations of the
+    /// United States, 1961–1963*, ed. David S. Patterson, vol. 11, *Cuban Missile Crisis and
+    /// Aftermath*, ed. Edward C. Keefer, …" — and a statement run on to the parenthesis took the
+    /// volume's number and title with it.
+    static let editorStatement =
+        #"\b(?:eds?\.|edited\s+by)\s[^()_*]*?(?=,\s*(?:vols?\.|volumes?|pts?\.|parts?)\s|\s*[(_*]|$)"#
 
     /// The publication statement a Turabian citation prints outside parentheses, `Washington,
     /// D.C.: Government Printing Office, 1864` (#1505). Its words are no title's, so before #1505

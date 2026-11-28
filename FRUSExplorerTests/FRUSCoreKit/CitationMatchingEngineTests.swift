@@ -512,7 +512,7 @@ struct CitationMatchingEngineTests {
         #expect(met.first?.correctionNote == nil)
     }
 
-    @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats, marked and as Copy Citation copies it, by document 1 and by a printed number that is not whole, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505, #1977)")
+    @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats — a Chicago or Turabian note with its document's heading and with none — marked and as Copy Citation copies it, by document 1 and by a printed number that is not whole, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505, #1977, L43)")
     func ownCitationsAreNeverBestGuesses() async throws {
         let entries = try testManifestEntries()
         #expect(entries.count > 500, "the bundled manifest decoded to \(entries.count) volumes")
@@ -536,10 +536,19 @@ struct CitationMatchingEngineTests {
         // it on the clipboard, with them removed (`CitationPlainText.plain`, which both platforms'
         // copies call). Before #1505 the plain form was the one the fragment lost the series' name
         // from.
-        let formats: [(name: String, formatter: any CitationFormatter)] = [
-            ("history.state.gov", HistoryAtStateCitationFormatter()),
-            ("Chicago", ChicagoCitationFormatter()),
-            ("Turabian", TurabianCitationFormatter()),
+        // A Chicago or Turabian note opens with the document it cites (L43, decision 220): each is cited
+        // by a real heading and dateline, whose words and year are no volume's — 1962 stands first in
+        // the text where a pre-1918 title's transmittal date keeps the series' own year from being read
+        // — and by none, as a note opens whose heading the app does not have. History at State reads
+        // neither.
+        let heading = "Telegram From the Embassy in France to the Department of State"
+        let dateline = "Paris, October 22, 1962, 9 p.m."
+        let formats: [(name: String, formatter: any CitationFormatter, header: String, dateline: String?)] = [
+            ("history.state.gov", HistoryAtStateCitationFormatter(), "Header", "Dateline"),
+            ("Chicago", ChicagoCitationFormatter(), heading, dateline),
+            ("Chicago, no heading", ChicagoCitationFormatter(), "", nil),
+            ("Turabian", TurabianCitationFormatter(), heading, dateline),
+            ("Turabian, no heading", TurabianCitationFormatter(), "", nil),
         ]
         // Each volume is cited by document 1, and by each of the four kinds of printed number that is
         // not whole #1977 names: a letter, an appendix's letter, a microfiche supplement's prefix and
@@ -565,17 +574,22 @@ struct CitationMatchingEngineTests {
                     func citation(_ number: String) -> String {
                         let marked = format.formatter.format(
                             document: FRUSDocumentMetadata(documentId: "d1", documentNumber: number,
-                                                           header: "Header", dateline: "Dateline"),
+                                                           header: format.header, dateline: format.dateline),
                             volume: volume)
                         return plain ? CitationPlainText.plain(marked) : marked
                     }
                     let first = citation("1")
-                    // The plain form is the plain form (#1505 review round 1): every format opens with
-                    // the title, so with its marks removed the citation begins with the title itself
-                    // and holds no `_` or `*`. Otherwise this half would silently re-run the marked
-                    // half — and the prefix-stripping the fragment lost the name to could not fire on
-                    // a text beginning with a mark.
-                    if plain, !first.hasPrefix(volume.title) || first.contains(where: { "_*".contains($0) }) {
+                    // The plain form is the plain form (#1505 review round 1): with its marks removed the
+                    // citation holds the title's words unmarked and no `_` or `*`. Otherwise this half would
+                    // silently re-run the marked half — and the prefix-stripping the fragment lost the name
+                    // to could not fire on a text beginning with a mark. History at State opens with the
+                    // title; a Chicago or Turabian note opens with the document, or with the series where it
+                    // has no heading, and holds the series with its years apart from the volume's own title
+                    // (L43, decision 220).
+                    let series = FRUSVolumeTitle(title: volume.title).series
+                    let opens = format.name == "history.state.gov" ? first.hasPrefix(volume.title)
+                        : format.header.isEmpty ? first.hasPrefix(series) : first.contains(", in " + series)
+                    if plain, !opens || first.contains(where: { "_*".contains($0) }) {
                         marksLeft.append("\(entry.volumeId): \(first.prefix(40))")
                     }
                     let parsed = parser.parse(first)
@@ -604,7 +618,7 @@ struct CitationMatchingEngineTests {
                 #expect(misread.isEmpty, "\(name): \(misread.count) misread: \(misread.prefix(3))")
             }
         }
-        #expect(variants == 6)
+        #expect(variants == 10)
     }
 
     @Test("CitationMatchingEngineTest: a title the citation prints whole comes first — the Iran retrospective, 1919's Volume I and Russia — and nothing else moves: not the 1915 supplement, not the 1894 appendix; and a volume printed in the cited year is not offered, a control since review round 1 (#1505)")

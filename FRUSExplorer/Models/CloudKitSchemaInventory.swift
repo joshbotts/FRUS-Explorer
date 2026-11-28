@@ -131,6 +131,11 @@ import SwiftData
 ///          all). The baseline count and digest do not move — they were right about the code and
 ///          wrong only about Production — and for the first time the attestation is checked:
 ///          `deployedThroughBuild` 48 → 49, `deployedOn` → 2026-10-02.
+///   2.1 — L43: the seven fields of 1.1's Collections facts added to the inventory **and** to
+///          ``identifiersAwaitingDeploy``: a collection's citation style, opening, wording and See also default, an
+///          entry's date line and a section's headnote default, and a headnote's writer's name. The baseline count
+///          and digest are unchanged, so `installed − awaiting` still describes Production; the deploy is R11's,
+///          once, with the rest of 1.1's.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -184,9 +189,11 @@ enum CloudKitSchemaInventory {
         "CD_Collection",
         "CD_Collection.CD_applyHighlights",
         "CD_Collection.CD_authorLine",
+        "CD_Collection.CD_citationStyle",
         "CD_Collection.CD_createdAt",
         "CD_Collection.CD_defaultBodyDepth",
         "CD_Collection.CD_defaultIncludeHeadnote",
+        "CD_Collection.CD_defaultIncludeRelatedDocuments",
         "CD_Collection.CD_documentEntries",
         "CD_Collection.CD_footnoteStyle",
         "CD_Collection.CD_id",
@@ -199,9 +206,11 @@ enum CloudKitSchemaInventory {
         "CD_Collection.CD_includeWordCloud",
         "CD_Collection.CD_introductionRichText",
         "CD_Collection.CD_introductionText",
+        "CD_Collection.CD_labelsJSON",
         "CD_Collection.CD_lastModified",
         "CD_Collection.CD_name",
         "CD_Collection.CD_note",
+        "CD_Collection.CD_opening",
         "CD_Collection.CD_projectIds",
         "CD_Collection.CD_savedSearchId",
         "CD_Collection.CD_subtitle",
@@ -213,12 +222,14 @@ enum CloudKitSchemaInventory {
         "CD_CollectionEntry.CD_collection",
         "CD_CollectionEntry.CD_collectionId",
         "CD_CollectionEntry.CD_createdAt",
+        "CD_CollectionEntry.CD_dateLine",
         "CD_CollectionEntry.CD_documentId",
         "CD_CollectionEntry.CD_excerptColorTag",
         "CD_CollectionEntry.CD_excerptEnd",
         "CD_CollectionEntry.CD_excerptRenderingVersion",
         "CD_CollectionEntry.CD_excerptStart",
         "CD_CollectionEntry.CD_generatedBlockType",
+        "CD_CollectionEntry.CD_headnoteDefault",
         "CD_CollectionEntry.CD_headnoteSummaryId",
         "CD_CollectionEntry.CD_id",
         "CD_CollectionEntry.CD_includeFootnotesOverride",
@@ -289,6 +300,7 @@ enum CloudKitSchemaInventory {
         "CD_GeneratedSummary.CD_sourceContentHash",
         "CD_GeneratedSummary.CD_volumeId",
         "CD_GeneratedSummary.CD_wasChunked",
+        "CD_GeneratedSummary.CD_writerName",
         "CD_PersonClusterOverride",
         "CD_PersonClusterOverride.CD_createdAt",
         "CD_PersonClusterOverride.CD_id",
@@ -499,7 +511,17 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty since the TENTH promotion (2026-09-13, build 47), which carried #1275's two
+        // L43 (2026-11-27): the seven fields of version 1.1's Collections facts, each with its control, so the owner's
+        // write on a Development build makes each before R11's promotion. `CD_Collection.CD_citationStyle` and
+        // `CD_CollectionEntry.CD_dateLine` are in Development already, both STRING, from L43's prep run.
+        "CD_Collection.CD_citationStyle",
+        "CD_Collection.CD_defaultIncludeRelatedDocuments",
+        "CD_Collection.CD_labelsJSON",
+        "CD_Collection.CD_opening",
+        "CD_CollectionEntry.CD_dateLine",
+        "CD_CollectionEntry.CD_headnoteDefault",
+        "CD_GeneratedSummary.CD_writerName",
+        // Before L43 this list was empty from the TENTH promotion (2026-09-13, build 47), which carried #1275's two
         // identifiers: `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`.
         // The NINTH (2026-09-03, build 44) was recorded as carrying nine of R-5 P3b-2's ten
         // identifiers and carried eight: `CD_GeneratedSummary.CD_sourceContentHash` reached

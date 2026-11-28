@@ -509,6 +509,28 @@ enum ResearchImportCopy {
         case .summaryAuthorship:
             return String(localized: "settings.import.field.summaryAuthorship",
                           defaultValue: "who wrote a summary")
+        // L43: the fields of format version 8.
+        case .collectionCitationStyle:
+            return String(localized: "settings.import.field.collectionCitationStyle",
+                          defaultValue: "a collection’s citation style")
+        case .collectionOpening:
+            return String(localized: "settings.import.field.collectionOpening",
+                          defaultValue: "which line leads a collection’s documents")
+        case .collectionWording:
+            return String(localized: "settings.import.field.collectionWording",
+                          defaultValue: "a collection’s own words for its labels")
+        case .collectionSeeAlso:
+            return String(localized: "settings.import.field.collectionSeeAlso",
+                          defaultValue: "a collection’s See also setting")
+        case .entryDateLine:
+            return String(localized: "settings.import.field.entryDateLine",
+                          defaultValue: "a document’s date line in a collection")
+        case .sectionHeadnoteDefault:
+            return String(localized: "settings.import.field.sectionHeadnoteDefault",
+                          defaultValue: "a section’s headnote setting")
+        case .headnoteWriter:
+            return String(localized: "settings.import.field.headnoteWriter",
+                          defaultValue: "who wrote a headnote")
         }
     }
 

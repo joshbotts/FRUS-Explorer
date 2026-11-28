@@ -329,6 +329,9 @@ struct CollectionEditorView: View {
             isNewCollection = false
         } else {
             let c = Collection(name: "")
+            // L43 (decisions 159 and 160): a new collection opens on the volume's heading, in the style chosen in
+            // Settings ▸ Display.
+            c.applyNewCollectionDefaults(citationStyle: .current)
             _collection = State(initialValue: c)
             _collectionName = State(initialValue: "")
             _collectionNote = State(initialValue: "")

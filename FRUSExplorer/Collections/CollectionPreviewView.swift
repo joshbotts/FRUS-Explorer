@@ -228,6 +228,11 @@ struct CollectionPreviewView: View {
         hasher.combine(collection.introductionText)
         hasher.combine(collection.introductionRichText)
         hasher.combine(collection.includeColophon)
+        // L43: the collection's own facts, each of which changes what the page prints (J20).
+        hasher.combine(collection.citationStyle)
+        hasher.combine(collection.opening)
+        hasher.combine(collection.labelsJSON)
+        hasher.combine(collection.defaultIncludeRelatedDocuments)
         for entry in entries {
             hasher.combine(entry.id)
             hasher.combine(entry.kind)
@@ -259,6 +264,9 @@ struct CollectionPreviewView: View {
             hasher.combine(entry.includeRelatedDocuments)
             // Phase 6 generated blocks — adding/retyping an apparatus block refreshes.
             hasher.combine(entry.generatedBlockType)
+            // L43: a document's date line and a section's headnote default (J20).
+            hasher.combine(entry.dateLine)
+            hasher.combine(entry.headnoteDefault)
         }
         hasher.combine(renderAll)
         hasher.combine(refreshToken)

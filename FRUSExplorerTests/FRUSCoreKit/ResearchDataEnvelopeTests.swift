@@ -98,9 +98,28 @@ struct ResearchDataEnvelopeTests {
         #expect(envelope.collections.first?.entries.allSatisfy { $0.kind == nil && $0.level == nil } == true)
     }
 
-    @Test("The format is at version 7")
+    @Test("The format is at version 8")
     func currentVersion() {
-        #expect(ResearchDataEnvelope.currentFormatVersion == 7)
+        #expect(ResearchDataEnvelope.currentFormatVersion == 8)
+    }
+
+    /// The file a library holding every type exports at version 8 (L43), read back with every field version 8 added.
+    @Test("A version-8 file decodes, with every field version 8 added")
+    func version8Decodes() throws {
+        let envelope = try decode(ResearchDataFixtures.version8)
+        let id = ResearchDataFixtures.id
+        #expect(envelope.formatVersion == 8)
+        let collection = try #require(envelope.collections.first)
+        #expect(collection.citationStyle == "chicago" && collection.opening == "volumeHeading")
+        #expect(CollectionWording(json: collection.labelsJSON).text(for: .researchNote) == "Commentary")
+        #expect(collection.defaultIncludeRelatedDocuments == true)
+        #expect(collection.entries.first { $0.id == id(8) }?.headnoteDefault == true)
+        #expect(collection.entries.first { $0.id == id(7) }?.dateLine == "Paris, 27 January 1973")
+        #expect(envelope.summaries.map(\.writerName) == [nil, "A. Researcher"])
+        // A version-7 file says none of them.
+        let older = try decode(ResearchDataFixtures.version7)
+        #expect(older.collections.first?.citationStyle == nil && older.collections.first?.labelsJSON == nil)
+        #expect(older.summaries.allSatisfy { $0.writerName == nil })
     }
 
     /// The file a library holding every type exports at version 7, read back whole: each of the
@@ -238,9 +257,11 @@ struct ResearchDataEnvelopeTests {
     }
 
     @Test("An envelope of every type encodes and decodes back to itself, to the byte",
-          arguments: [6, 7])
+          arguments: [6, 7, 8])
     func roundTrip(version: Int) throws {
-        let envelope = try decode(version == 7 ? ResearchDataFixtures.version7 : ResearchDataFixtures.version6)
+        let fixture = [6: ResearchDataFixtures.version6, 7: ResearchDataFixtures.version7,
+                       8: ResearchDataFixtures.version8][version] ?? ""
+        let envelope = try decode(fixture)
         let data = try envelope.jsonData()
         let again = try ResearchDataEnvelope.makeDecoder().decode(ResearchDataEnvelope.self, from: data)
         #expect(again == envelope)

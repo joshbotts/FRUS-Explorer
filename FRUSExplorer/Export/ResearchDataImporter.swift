@@ -667,6 +667,12 @@ extension Collection: ResearchImportable {
         if let value = record.includeWordCloud { includeWordCloud = value }
         if let value = record.defaultIncludeHeadnote { defaultIncludeHeadnote = value }
         summaryPromptId = record.summaryPromptId
+        // The collection's own facts (format version 8, L43). From an older file the plan has already given a
+        // replacement the library's values and a new record the defaults, so nothing here writes a blank over a value.
+        citationStyle = record.citationStyle
+        opening = record.opening
+        labelsJSON = record.labelsJSON
+        if let value = record.defaultIncludeRelatedDocuments { defaultIncludeRelatedDocuments = value }
         // The entries are records of their own (`ResearchImportPlan.collectionEntries`).
         createdAt = record.createdAt
         lastModified = record.lastModified
@@ -711,6 +717,9 @@ extension CollectionEntry: ResearchImportable {
         includeRelatedDocuments = record.includeRelatedDocuments
         includeHeadnote = record.includeHeadnote
         headnoteSummaryId = record.headnoteSummaryId
+        // The entry's own facts (format version 8, L43).
+        dateLine = record.dateLine
+        headnoteDefault = record.headnoteDefault
         createdAt = record.createdAt
         lastModified = record.lastModified
     }
@@ -781,6 +790,7 @@ extension GeneratedSummary: ResearchImportable {
         projectId = record.projectId
         authorship = record.authorship
         if let value = record.isHeadnoteDraft { isHeadnoteDraft = value }
+        writerName = record.writerName
         createdAt = record.createdAt
         lastModified = record.lastModified
     }

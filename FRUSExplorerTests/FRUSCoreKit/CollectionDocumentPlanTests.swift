@@ -468,3 +468,158 @@ struct CollectionDocumentPlanTests {
         #expect(!doc.header.contains("["))
     }
 }
+
+// MARK: - CollectionFactsPlanTests (L43)
+
+/// The new facts a collection's plan reads (L43): the author's date line under a title, the collection's own words
+/// for the export's labels, and the options a collection's values give.
+@Suite("L43: the date line, the collection's words and its facts in the plan")
+struct CollectionFactsPlanTests {
+
+    typealias F = PlanFixtures
+
+    /// `doc` with `dateLine`, as the assembly resolves an entry that stores one.
+    static func withDateLine(_ doc: CollectionExportDocument, _ dateLine: String?) -> CollectionExportDocument {
+        CollectionExportDocument(
+            documentId: doc.documentId, volumeId: doc.volumeId, sortOrder: doc.sortOrder, bodyDepth: doc.bodyDepth,
+            title: doc.title, titleOverride: doc.titleOverride, dateLine: dateLine, bodyText: doc.bodyText,
+            noteTexts: doc.noteTexts, citation: doc.citation, historyStateGovURL: doc.historyStateGovURL,
+            renderModel: doc.renderModel, header: doc.header, dateline: doc.dateline,
+            sourceNoteText: doc.sourceNoteText, includeHeadnote: doc.includeHeadnote, headnoteText: doc.headnoteText,
+            relatedDocumentCitations: doc.relatedDocumentCitations)
+    }
+
+    /// Decision 163, the design's §3.3: the author's date line stands under their title, above the citation and the
+    /// words *As published:*, in the plan, the web page and Word.
+    @Test("The author's date line stands under the title, above the citation, in the plan, the page and Word")
+    func dateLineUnderTitle() async throws {
+        let titled = Self.withDateLine(
+            try await F.document(F.early, id: "d475", volume: "frus1946v06", title: "The Long Telegram"),
+            "  Moscow, 22 February 1946 ")
+        let plan = CollectionDocumentPlan(document: titled, options: CollectionExportOptions())
+        #expect(plan.lines.map(\.role).prefix(4) == [.title, .titleDateLine, .citation, .address])
+        #expect(plan.lines[1].text == "Moscow, 22 February 1946", "trimmed")
+        #expect(plan.lines[1].headingLevel == nil, "the date line is no heading")
+
+        let html = try F.section(F.page([.document(titled)], options: CollectionExportOptions()),
+                                 anchor: "doc-frus1946v06-d475")
+        let title = try #require(html.range(of: "<h2 class=\"doc-lead\">The Long Telegram</h2>"))
+        let line = try #require(html.range(of: "<p class=\"dateline title-date-line\">Moscow, 22 February 1946</p>"))
+        let published = try #require(html.range(of: "As published: </span>"))
+        #expect(title.upperBound <= line.lowerBound && line.upperBound <= published.lowerBound, "out of order")
+
+        let package = F.package([.document(titled)], options: CollectionExportOptions())
+        let paragraphs = F.paragraphs(in: package, holding: "Moscow, 22 February 1946</w:t>")
+        #expect(paragraphs.contains { $0.contains("<w:pStyle w:val=\"Dateline\"/>") }, "\(paragraphs)")
+
+        let row = CollectionContentsRow.rows(for: [.document(titled)], style: .citation)[0]
+        #expect(row.text == "The Long Telegram — Moscow, 22 February 1946", "the row names the title and its date line")
+    }
+
+    /// The third review's J41: a date line is given only under a title, and one stored without a title, as 1.0 leaves
+    /// it when a title is cleared, prints nowhere: not in the plan, the page, Word or the contents row.
+    @Test("A date line with no title prints nowhere (J41)")
+    func dateLineWithoutTitle() async throws {
+        let untitled = Self.withDateLine(try await F.document(F.early, id: "d475", volume: "frus1946v06"),
+                                         "Moscow, 22 February 1946")
+        #expect(untitled.printedDateLine == nil)
+        let plan = CollectionDocumentPlan(document: untitled, options: CollectionExportOptions())
+        #expect(!plan.lines.contains { $0.role == .titleDateLine })
+        #expect(!F.page([.document(untitled)], options: CollectionExportOptions()).contains("22 February 1946"))
+        #expect(!F.package([.document(untitled)], options: CollectionExportOptions()).contains("22 February 1946"))
+        let row = CollectionContentsRow.rows(for: [.document(untitled)], style: .headerAndDateline)[0]
+        #expect(!row.text.contains("22 February"))
+        // An empty date line under a title prints nothing either.
+        let blank = Self.withDateLine(try await F.document(F.early, id: "d475", volume: "frus1946v06",
+                                                           title: "The Long Telegram"), "   ")
+        #expect(blank.printedDateLine == nil)
+    }
+
+    /// The design's §5.2: the collection's own words print where the app's would, in the plan's labels and the
+    /// contents heading of the page and Word; *Source:* and *As published:* are not the author's to change.
+    @Test("The collection's own words print over the headnote, summary, See also, research note and contents")
+    func wordingPrints() async throws {
+        var json: String?
+        for (label, word) in [(CollectionWording.Label.headnote, "Abstract"), (.researchNote, "Commentary"),
+                              (.seeAlso, "Compare"), (.contents, "Documents"), (.bibliography, "Works Cited")] {
+            json = CollectionWording.updating(json, label: label, with: word)
+        }
+        var options = CollectionExportOptions()
+        options.wording = CollectionWording(json: json)
+        let base = try await F.document(F.early, id: "d475", volume: "frus1946v06", sourceNote: F.earlySource,
+                                        notes: ["My note."], includeHeadnote: true, headnote: "Kennan's answer.")
+        let doc = CollectionExportDocument(
+            documentId: base.documentId, volumeId: base.volumeId, sortOrder: 0, title: base.title, bodyText: base.bodyText,
+            noteTexts: base.noteTexts, citation: base.citation, historyStateGovURL: base.historyStateGovURL,
+            renderModel: base.renderModel, header: base.header, dateline: base.dateline,
+            sourceNoteText: base.sourceNoteText, includeHeadnote: true, headnoteText: "Kennan's answer.",
+            relatedDocumentCitations: ["Foreign Relations of the United States, Document 473."])
+        let plan = CollectionDocumentPlan(document: doc, options: options)
+        #expect(plan.lines.first { $0.role == .headnote }?.label == "Abstract")
+        #expect(plan.lines.first { $0.role == .researchNote }?.label == "Commentary")
+        #expect(plan.lines.first { $0.role == .seeAlso }?.label == "Compare")
+        #expect(plan.lines.first { $0.role == .sourceNote }?.label == CollectionDocumentPlan.sourceLabel, "Source: is fixed")
+
+        #expect(F.page([.document(doc)], options: options).contains("<h2>Documents</h2>"))
+        #expect(F.package([.document(doc)], options: options).contains(">Documents</w:t>"))
+        // The app's words where the collection has none.
+        #expect(F.page([.document(doc)], options: CollectionExportOptions()).contains("<h2>Contents</h2>"))
+
+        // A block takes the collection's word for its title, and keeps the app's where there is none.
+        let block = CollectionGeneratedBlock(type: .bibliography, title: CollectionGeneratedBlockType.bibliography.displayName,
+                                             rows: [])
+        #expect(CollectionContentAssembly.worded(block, options: options).title == "Works Cited")
+        let chronology = CollectionGeneratedBlock(type: .chronology, title: "Chronology", rows: [])
+        #expect(CollectionContentAssembly.worded(chronology, options: options).title == "Chronology")
+    }
+
+    /// The design's §7.3, the first review's first finding: the labels are one map, read and written as a plain map,
+    /// so a build that does not know a label's name carries it through an edit of another.
+    @Test("A label this build does not know survives an edit of another")
+    func unknownLabelSurvives() throws {
+        let later = #"{"marginalia":"Margin notes","headnote":"Abstract"}"#
+        let edited = try #require(CollectionWording.updating(later, label: .contents, with: "Documents"))
+        let map = try JSONDecoder().decode([String: String].self, from: Data(edited.utf8))
+        #expect(map == ["marginalia": "Margin notes", "headnote": "Abstract", "contents": "Documents"])
+        // Emptying a label, or giving it the app's own word, returns it to the app's word; the rest stay.
+        let cleared = try #require(CollectionWording.updating(edited, label: .headnote, with: "  "))
+        #expect(CollectionWording(json: cleared).ownWord(for: .headnote) == nil)
+        #expect(CollectionWording(json: cleared).storedWords["marginalia"] == "Margin notes")
+        let appWord = CollectionWording.updating(cleared, label: .contents, with: CollectionWording.Label.contents.appWord)
+        #expect(CollectionWording(json: appWord).ownWord(for: .contents) == nil)
+        #expect(CollectionWording(json: appWord).storedWords == ["marginalia": "Margin notes"])
+        // The last own word gone leaves nothing to store; a value that is not a map reads as the app's words.
+        #expect(CollectionWording.updating(#"{"contents":"Documents"}"#, label: .contents, with: "") == nil)
+        #expect(CollectionWording(json: "not json").text(for: .summary) == CollectionWording.Label.summary.appWord)
+        #expect(CollectionWording(json: later).rewordedLabels == [.headnote])
+    }
+
+    /// J16: where the volume's heading leads, the document's region is named by its citation's number, which a Chicago
+    /// or Turabian note gives as "doc. 475" (L43).
+    @Test("A note's doc. N names the document's region as History at State's Document N does (J16)")
+    func regionNameFromANote() {
+        #expect(CollectionDocumentPlan.citationNumber("…(Government Printing Office, 1969), Document 475.") == "Document 475")
+        #expect(CollectionDocumentPlan.citationNumber("…, in _Foreign Relations_, vol. 6 (Government Printing Office, 1969), doc. 475.")
+                == "Document 475")
+        #expect(CollectionDocumentPlan.citationNumber("Memorandum, Washington, May 5, 1962, in _FRUS_ (GPO, 1960).") == nil)
+    }
+
+    /// The options a collection's values give (L43): each fact read as 1.0 prints where it is absent or unknown.
+    @Test("A collection's values give its style, opening, words and See also; absent ones read as 1.0's")
+    func optionsReadTheFacts() {
+        let untouched = CollectionExportOptions(composing: CollectionExport(id: UUID(), name: "1.0's", projectIds: [],
+                                                                            entries: []))
+        #expect(untouched.citationStyle == .historyAtState && !untouched.volumeHeadingLeads)
+        #expect(untouched.wording == CollectionWording() && !untouched.includeRelatedDocumentsDefault)
+
+        let set = CollectionExportOptions(composing: CollectionExport(
+            id: UUID(), name: "1.1's", projectIds: [], entries: [], citationStyle: "turabian", opening: "volumeHeading",
+            labelsJSON: #"{"contents":"Documents"}"#, defaultIncludeRelatedDocuments: true))
+        #expect(set.citationStyle == .turabian && set.volumeHeadingLeads && set.includeRelatedDocumentsDefault)
+        #expect(set.wording.text(for: .contents) == "Documents")
+
+        let unknown = CollectionExportOptions(composing: CollectionExport(
+            id: UUID(), name: "A later build's", projectIds: [], entries: [], citationStyle: "mla", opening: "margin"))
+        #expect(unknown.citationStyle == .historyAtState && !unknown.volumeHeadingLeads)
+    }
+}

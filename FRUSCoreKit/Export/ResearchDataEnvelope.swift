@@ -68,6 +68,10 @@ import Foundation
 ///          composition and settings, each entry's kind, level, text, rich text, excerpt anchors,
 ///          block type and overrides, a project's focus tags and lead weights, and a summary's
 ///          headnote flag, each optional on its record, so version-6-and-earlier files still decode
+///   8.0 — L43: a collection's own facts (its citation style, its opening, its wording and its See also default), an
+///          entry's date line and a section's headnote default, and a headnote's writer's name, each optional on its
+///          record, so version-7-and-earlier files still decode; and a collection's headnote drafts in `summaries`
+///          whatever the AI-summaries switch says (the third review's J45), since a draft is the author's writing
 public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     /// Schema version of this export. See `ResearchDataEnvelope.currentFormatVersion`.
@@ -96,8 +100,9 @@ public struct ResearchDataEnvelope: Codable, Equatable, Sendable {
 
     public var projects: [ProjectExport]
 
-    /// Empty unless the caller opts in via `includeGeneratedSummaries` — AI
-    /// output can be large and is excluded by default.
+    /// The AI summaries when the caller opts in via `includeGeneratedSummaries` (AI output can be large and is
+    /// excluded by default), and, from format version 8, every collection's headnote drafts whatever the switch says
+    /// (the third review's J45): a draft is the author's own headnote, and a restore from a default file lost it.
     public var summaries: [GeneratedSummaryExport]
 
     // MARK: - The research trail (Wave R-5)
@@ -443,7 +448,8 @@ public struct DocumentHighlightExport: Codable, Equatable, Sendable {
 /// override. Each of those is optional here so a version-6 file still decodes; a file at version 7
 /// always carries `kind`, `level` and `selectedHighlightIds`, and the others when the entry has
 /// them, so `nil` means what it means on the model ("inherit", "none") and, in an earlier file,
-/// that the file predates the field.
+/// that the file predates the field. Version 8 adds an entry's date line and a section's headnote default (L43), each
+/// carried where it is set.
 public struct CollectionEntryExport: Codable, Equatable, Sendable {
     public var id: UUID
     public var documentId: String
@@ -496,6 +502,14 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
     /// The summary the headnote renders.
     public var headnoteSummaryId: UUID?
 
+    // MARK: - The entry's own facts (format version 8)
+
+    /// The author's date line under a document's title (L43; decision 163).
+    public var dateLine: String?
+    /// A section's headnote default, read on headings only (L43; J24): `nil` follows the enclosing section, else the
+    /// collection.
+    public var headnoteDefault: Bool?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -525,7 +539,9 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
         selectedHighlightIds: [UUID]? = nil,
         includeRelatedDocuments: Bool? = nil,
         includeHeadnote: Bool? = nil,
-        headnoteSummaryId: UUID? = nil
+        headnoteSummaryId: UUID? = nil,
+        dateLine: String? = nil,
+        headnoteDefault: Bool? = nil
     ) {
         self.id = id
         self.documentId = documentId
@@ -555,6 +571,8 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
         self.includeRelatedDocuments = includeRelatedDocuments
         self.includeHeadnote = includeHeadnote
         self.headnoteSummaryId = headnoteSummaryId
+        self.dateLine = dateLine
+        self.headnoteDefault = headnoteDefault
     }
 }
 
@@ -567,7 +585,8 @@ public struct CollectionEntryExport: Codable, Equatable, Sendable {
 /// optional here so a version-6 file still decodes. A file at version 7 always carries the ones
 /// the model stores with a default, and the optional ones when they are set: `includeFootnotes`
 /// and `includeSourceNote` are `nil` on a collection that has not set them, which the app reads
-/// from `footnoteStyle`, as on the model.
+/// from `footnoteStyle`, as on the model. Version 8 adds the collection's own facts (L43): its citation style, its
+/// opening and its wording where they are set, and its See also default always.
 public struct CollectionExport: Codable, Equatable, Sendable {
     public var id: UUID
     public var name: String
@@ -611,6 +630,21 @@ public struct CollectionExport: Codable, Equatable, Sendable {
     /// The prompt whose summaries a summary-only body uses.
     public var summaryPromptId: UUID?
 
+    // MARK: - The collection's own facts (format version 8)
+
+    /// A `CitationStyle` raw value: the style every citation in the collection's exports prints in (L43). `nil` reads
+    /// as History at State.
+    public var citationStyle: String?
+    /// A `CollectionDocumentPlan.Opening` raw value, `citation` or `volumeHeading`: which line leads a document with no
+    /// title of the author's (L43). `nil` reads as the citation leading.
+    public var opening: String?
+    /// The collection's own words for its labels, a JSON object from a label's name to its text (`CollectionWording`).
+    /// `nil` reads as the app's words.
+    public var labelsJSON: String?
+    /// Whether a document's *See also* line prints where neither the document nor its section sets it (L43). Optional
+    /// only so a version-7 file still decodes; a file at version 8 always carries it.
+    public var defaultIncludeRelatedDocuments: Bool?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -637,7 +671,11 @@ public struct CollectionExport: Codable, Equatable, Sendable {
         includeNotes: Bool? = nil,
         includeWordCloud: Bool? = nil,
         defaultIncludeHeadnote: Bool? = nil,
-        summaryPromptId: UUID? = nil
+        summaryPromptId: UUID? = nil,
+        citationStyle: String? = nil,
+        opening: String? = nil,
+        labelsJSON: String? = nil,
+        defaultIncludeRelatedDocuments: Bool? = nil
     ) {
         self.id = id
         self.name = name
@@ -664,6 +702,10 @@ public struct CollectionExport: Codable, Equatable, Sendable {
         self.includeWordCloud = includeWordCloud
         self.defaultIncludeHeadnote = defaultIncludeHeadnote
         self.summaryPromptId = summaryPromptId
+        self.citationStyle = citationStyle
+        self.opening = opening
+        self.labelsJSON = labelsJSON
+        self.defaultIncludeRelatedDocuments = defaultIncludeRelatedDocuments
     }
 }
 
@@ -792,6 +834,11 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
     /// decodes; a file at version 7 always carries it.
     public var isHeadnoteDraft: Bool?
 
+    /// The name of a headnote's writer, stamped from the collection's author line when the reader writes or edits it
+    /// (format version 8; L43, decision 194). `nil` on an AI draft nobody edited, on every other summary, and in a
+    /// file written before version 8.
+    public var writerName: String?
+
     /// The memberwise initialiser, spelled out because a synthesized one is never `public`.
     public init(
         id: UUID,
@@ -805,7 +852,8 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
         createdAt: Date? = nil,
         lastModified: Date? = nil,
         authorship: SummaryAuthorship? = nil,
-        isHeadnoteDraft: Bool? = nil
+        isHeadnoteDraft: Bool? = nil,
+        writerName: String? = nil
     ) {
         self.id = id
         self.documentId = documentId
@@ -819,6 +867,7 @@ public struct GeneratedSummaryExport: Codable, Equatable, Sendable {
         self.lastModified = lastModified
         self.authorship = authorship
         self.isHeadnoteDraft = isHeadnoteDraft
+        self.writerName = writerName
     }
 }
 
@@ -1410,11 +1459,15 @@ extension ResearchDataEnvelope {
     /// carries the eight model types 6 left out and the fields 6 dropped from the types it carried,
     /// by the same argument: an empty v7 `savedSearches` means none were saved, and a `nil`
     /// `richText` on a v7 note means it has no formatting, where on a v6 note it means the format
-    /// could not carry it.)
+    /// could not carry it. The bump to 8 (L43) carries the collections' own facts, a date line, a
+    /// section's headnote default and a headnote's writer: a `nil` `citationStyle` on a v8 collection
+    /// means it prints in History at State, where on a v7 one it means the format could not say, and
+    /// an import from a v7 file keeps the library's value. It is the one version 1.1 adds; a later row
+    /// that stores something adds its fields to it, since no build has shipped a v8 file.)
     ///
     /// Declared here, beside the envelope, since FRUS Explorer Light moved the envelope into
     /// FRUSCoreKit; the app's `ResearchDataExporter.currentFormatVersion` is this value.
-    public static let currentFormatVersion = 7
+    public static let currentFormatVersion = 8
 
     /// The encoder an export is written with: pretty-printed, key-sorted JSON with ISO-8601 dates.
     ///
