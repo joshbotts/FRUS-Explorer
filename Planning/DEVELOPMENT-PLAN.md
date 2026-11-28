@@ -5600,6 +5600,15 @@ Each one `Scripts/heavy.sh` job through the orchestrator's side-row loop, this w
 - The `FRUSExplorerMac` build: succeeded, with the two known residues.
 - `Scripts/check_repo_hygiene.py`: its six checks passed.
 
+**At the head** (the orchestrator's "L58: you're at the head")
+- **Merged:** L63's head `15e10d8a` as a merge commit on `dc3c7512` (`2a2a5d26`, its two conflicts the Amendment-Log's and this log's appended entries, L63's first), then `origin/v2` at `322c98e2`, #2054's merge, whose tree is L63's head's. The merge left `2a2a5d26`'s tree as it was, so its runs are the landing's.
+- **The landing runs on `2a2a5d26`**, one `Scripts/heavy.sh` call (06:40 to 07:01 UTC), on the iPhone 17 under iOS 27.0, the TEI mirror set, the app removed first:
+  - build-for-testing, with the known residue only;
+  - the unit target (`-only-testing:FRUSExplorerTests`): 8,533 tests in 1,042 suites, 8,515 passed, 17 skipped, the one test with its six known issues, none failed;
+  - `swift build --target FRUSCoreKit`;
+  - `swift test`: 39 runs, 5,387 tests, all passed;
+  - the `FRUSExplorerMac` build, with the two known residues.
+
 **The rest**
 - The Guide (1.52): §15.1a's table and example, limit 1 (headnotes can now be supplied, named by their writer), §15.2's checker and §15.3's account of versions.
 - Manuals: chapter 12's apparatus (the Note), the inspector's headnote lines, the front matter's statement of sources, and the collection file's two bullets; the Mac's 12.3, 12.5 and 12.9 alike.
