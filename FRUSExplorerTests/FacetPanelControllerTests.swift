@@ -388,6 +388,8 @@ struct FacetPanelControllerTests {
 ///   1.2 — #1758: a search taken off the screen takes the facet panel's narrowings with it, each while it is as the
 ///          panel made it, and a chip's ✕ with nothing left to search runs nothing
 ///   1.3 — #1758: the scope's narrowing, which a working corpus records, is the filters the rows were found under
+///   1.4 — #2013 (L57): the reader's own range end is a day in the device's zone, as its picker sets it, where it was a
+///          midnight in UTC
 @Suite("iOS facet narrowing")
 @MainActor
 struct IOSFacetNarrowingTests {
@@ -589,9 +591,9 @@ struct IOSFacetNarrowingTests {
 
         vm.applyFacetNarrowing(.year("1948"))
         vm.applyFacetNarrowing(.volume("frus1948v03"))
-        // The sheet moves the date range's end; the volume is left as the panel set it.
-        vm.dateRangeEnd = try #require(Calendar(identifier: .gregorian)
-            .date(from: DateComponents(timeZone: TimeZone(identifier: "UTC"), year: 1950, month: 6, day: 30)))
+        // The sheet moves the date range's end, on a day in the device's zone as its picker sets it (#2013); the volume
+        // is left as the panel set it.
+        vm.dateRangeEnd = try #require(Calendar.current.date(from: DateComponents(year: 1950, month: 6, day: 30)))
         vm.endSearchOnScreen()
         #expect(vm.dateRangeEnabled, "the reader's own range was taken away with the search")
         #expect(vm.selectedVolumeIds.isEmpty)

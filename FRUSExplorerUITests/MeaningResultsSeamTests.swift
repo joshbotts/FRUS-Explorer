@@ -705,6 +705,256 @@ final class FilterSheetDoneTests: XCTestCase {
     }
 }
 
+// MARK: - FilterDateRangeHandOffTests (#2013, L57)
+
+/// Filters ▸ Limit by date shows the two days a hand-off gave Search, and a day picked there is the day the search is
+/// then filtered by.
+///
+/// ## The defect
+/// On iPhone and iPad, Search read a hand-off's two days into its filter's dates at midnight GMT, and wrote the dates
+/// back as days in GMT (#2013), while Filters' two date pickers show and set those dates in the device's zone. West of
+/// UTC midnight GMT is the evening before. On the code before the fix (iPhone 17, iOS 27.0, New York's zone,
+/// 2026-11-27), after a hand-off of 1 to 31 October 1962 the pickers read Sep 30, 1962 and Oct 30, 1962, over a
+/// *Narrowed by* chip, and a search, on the 1st and the 31st. A pick keeps the time of day of the date the picker held:
+/// the 5th was picked at 20:00 EDT, which is the 6th in GMT, and so was written as the 6th.
+///
+/// ## Fixture
+/// The search seam hands Search a keyword search on two days (`FRUS_UI_TEST_SEARCH_ON_SIGNAL`, with
+/// `FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES`) through `AppState.openSearch(_:from:)`, the route Chronology's Search in this
+/// range takes, when the test posts the search signal. The spoken-row volume (`FRUS_UI_TEST_SEED_SPOKEN_VOLUME`) gives
+/// Search an index. The app runs in New York's zone (`TZ`), west of UTC, whatever zone the Mac is in.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`; nothing skips. Measured on 2026-11-27: 2 passed on each, and on the
+/// code before the fix 2 failed (iPhone 17). On the iPad run each test alone on a fresh boot: `backboardd` aborted in
+/// Metal at the second launch of one boot (#1620's frames). On the iPhone leave the app installed: a fresh install's first
+/// launch opens the while-indexing guide over Search. The runbook's entry has the rest.
+///
+/// Version history:
+///   1.0 — #2013 (L57): initial implementation
+@MainActor
+final class FilterDateRangeHandOffTests: XCTestCase {
+
+    /// The words the hand-off searches for: every section of the spoken-row volume holds it
+    /// (`UITestVolumeSeeder.spokenQueryWord`).
+    private static let words = "xylograph"
+    /// The first of the hand-off's two days, as Chronology's Search in this range writes 1 October 1962.
+    private static let firstDay = "1962-10-01"
+    /// The last of them, 31 October 1962.
+    private static let lastDay = "1962-10-31"
+    /// The zone the app runs in: New York's, west of UTC, where the defect showed.
+    private static let zone = "America/New_York"
+    /// `UITestBrowseSeams.Signal.search`'s raw value, repeated because a UI suite cannot reference the app's constants.
+    private static let searchSignal = "bottsywattsy.FRUS-Explorer.uitest.search"
+    /// Long, because a wait that is met returns at once and this Mac is not always quiet.
+    private static let patience: TimeInterval = 30
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// Filters' two date pickers, From above To.
+    private enum Picker: String {
+        case from = "From"
+        case to = "To"
+    }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            if app.state == .runningForeground {
+                UITestPresentation.dismissAnyPresentation(in: app)
+            }
+            app.terminate()
+        }
+        app = nil
+    }
+
+    // MARK: Tests
+
+    /// After the hand-off, From and To show the two days it carried.
+    func testThePickersShowTheDaysAHandOffGave() throws {
+        launch()
+        handOff()
+        openFilters()
+        XCTAssertEqual(shownDay(of: .from), Self.firstDay, """
+            After a hand-off of \(Self.firstDay) to \(Self.lastDay), Filters' From picker shows another day, under a \
+            Narrowed by chip that names \(Self.firstDay). It draws \(drawn(by: .from))
+            """)
+        XCTAssertEqual(shownDay(of: .to), Self.lastDay, """
+            After a hand-off of \(Self.firstDay) to \(Self.lastDay), Filters' To picker shows another day, under a \
+            Narrowed by chip that names \(Self.lastDay). It draws \(drawn(by: .to))
+            """)
+    }
+
+    /// A day picked in From after the hand-off is the day the *Narrowed by* chip then names. A pick keeps the time of day
+    /// of the date the picker held, so on the code before the fix the 5th was picked at 20:00, New York's evening, and
+    /// written as the 6th.
+    func testADayPickedAfterAHandOffIsTheDayTheFilterNames() throws {
+        launch()
+        handOff()
+        openFilters()
+        let before = shownDay(of: .from)
+        pickTheFifth(in: .from)
+        let picked = try XCTUnwrap(shownDay(of: .from), "From shows no day after the pick. It draws \(drawn(by: .from))")
+        XCTAssertNotEqual(picked, before, "Tapping the 5th in From's calendar left From on \(picked)")
+        closeFiltersWithDone()
+        let chip = dateChip()
+        XCTAssertTrue(chip.waitForExistence(timeout: Self.patience), "The Narrowed by row has no date chip after the pick")
+        XCTAssertTrue(chip.label.hasPrefix("Remove the \(picked) to "), """
+            From shows \(picked) after the pick, and the Narrowed by chip, which names the days the search runs on, \
+            reads "\(chip.label)"
+            """)
+    }
+
+    // MARK: Steps
+
+    /// Launches the app in New York's zone on the Search tab, with the search seam armed for the hand-off.
+    private func launch(file: StaticString = #filePath, line: UInt = #line) {
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_SPOKEN_VOLUME"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEARCH_ON_SIGNAL"] = Self.words
+        app.launchEnvironment["FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES"] = "\(Self.firstDay)/\(Self.lastDay)"
+        // The app's zone, whatever the Mac's. L57 measured that it reaches the app: under the same build a run in
+        // Tokyo's zone showed 1 October where this one showed 30 September.
+        app.launchEnvironment["TZ"] = Self.zone
+        app.launchArguments = UITestLaunch.arguments(startingOn: .search)
+        app.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen", file: file, line: line)
+    }
+
+    /// Posts the search signal until the hand-off's date chip is on screen. The app listens for the signal once its boot
+    /// has armed the seam, which can be after the Search tab is up, and it acts on the first signal alone.
+    private func handOff(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout: Self.patience),
+                      "The Search tab shows no search field", file: file, line: line)
+        let chip = app.buttons["Remove the \(Self.firstDay) to \(Self.lastDay) filter"]
+        let deadline = Date().addingTimeInterval(4 * Self.patience)
+        repeat {
+            XCTAssertEqual(notify_post(Self.searchSignal), UInt32(NOTIFY_STATUS_OK),
+                           "The system refused to post \(Self.searchSignal), so no hand-off will arrive",
+                           file: file, line: line)
+        } while !chip.waitForExistence(timeout: 5) && Date() < deadline
+        XCTAssertTrue(chip.exists, "The hand-off of \(Self.firstDay) to \(Self.lastDay) put no date chip on screen",
+                      file: file, line: line)
+    }
+
+    /// The *Narrowed by* row's date chip, by its accessibility label, which names the two days.
+    private func dateChip() -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Remove the 19")).firstMatch
+    }
+
+    /// Opens Filters from the actions bar.
+    private func openFilters(file: StaticString = #filePath, line: UInt = #line) {
+        let filters = app.descendants(matching: .any).matching(identifier: "search.actions.filter").firstMatch
+        XCTAssertTrue(filters.waitForExistence(timeout: Self.patience), "The actions bar has no Filters control",
+                      file: file, line: line)
+        filters.tap()
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: Self.patience), "Filters did not open",
+                      file: file, line: line)
+    }
+
+    /// Closes Filters with its navigation bar's Done, and waits for it to go.
+    private func closeFiltersWithDone(file: StaticString = #filePath, line: UInt = #line) {
+        let panel = app.navigationBars["Filters"]
+        let done = panel.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "Filters has no Done", file: file, line: line)
+        done.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: panel)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed, "Filters did not close",
+                       file: file, line: line)
+    }
+
+    /// Filters' date picker `picker`: From above To. A picker's calendar, while it is open, is a date picker too, and
+    /// the tallest, so only the two compact ones count.
+    private func datePicker(_ picker: Picker) -> XCUIElement? {
+        let compact = app.datePickers.allElementsBoundByIndex
+            .filter { $0.exists && !$0.frame.isEmpty && $0.frame.height < 80 }
+            .sorted { $0.frame.minY < $1.frame.minY }
+        guard compact.count >= 2 else { return nil }
+        return picker == .from ? compact[0] : compact[1]
+    }
+
+    /// What `picker` draws: its labels and values, the date it shows among them ("Date Picker", "Oct 1, 1962").
+    private func drawn(by picker: Picker) -> [String] {
+        guard let element = datePicker(picker) else { return ["no \(picker.rawValue) picker"] }
+        var texts: [String] = []
+        for part in [element] + element.descendants(matching: .any).allElementsBoundByIndex {
+            texts.append(part.label)
+            if let value = part.value as? String { texts.append(value) }
+        }
+        return texts.filter { !$0.isEmpty }
+    }
+
+    /// The day `picker` shows, as `yyyy-MM-dd`; `nil` when nothing it draws reads as a date.
+    private func shownDay(of picker: Picker) -> String? {
+        for text in drawn(by: picker) {
+            if let day = Self.day(fromShown: text) { return day }
+        }
+        return nil
+    }
+
+    /// The `yyyy-MM-dd` day that a date as a compact picker draws it names ("Oct 1, 1962"), or `nil`.
+    private static func day(fromShown text: String) -> String? {
+        let reader = DateFormatter()
+        reader.locale = Locale(identifier: "en_US_POSIX")
+        reader.timeZone = TimeZone(identifier: "UTC")
+        reader.dateFormat = "MMM d, yyyy"
+        guard let date = reader.date(from: text.trimmingCharacters(in: .whitespacesAndNewlines)) else { return nil }
+        let writer = DateFormatter()
+        writer.locale = reader.locale
+        writer.timeZone = reader.timeZone
+        writer.dateFormat = "yyyy-MM-dd"
+        return writer.string(from: date)
+    }
+
+    /// Opens `picker`'s calendar, taps its 5th, and closes the calendar with a tap where the picker is, which lands on
+    /// the calendar's dismiss region. On an iPhone the calendar opens over the sheet's navigation bar, so a tap there
+    /// would pick another day.
+    ///
+    /// The point is fixed on the screen before the calendar opens. `datePicker(_:)`'s element is bound to its place
+    /// among the date pickers, and the open calendar, a date picker too, takes the first place: a coordinate on the
+    /// element then lands in the calendar's middle, and picked the 10th (measured on an iPhone 17, iOS 27.0).
+    private func pickTheFifth(in picker: Picker, file: StaticString = #filePath, line: UInt = #line) {
+        guard let element = datePicker(picker) else {
+            XCTFail("Filters has no \(picker.rawValue) date picker", file: file, line: line)
+            return
+        }
+        let frame = element.frame
+        let window = app.frame
+        let control = app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: frame.midX - window.minX, dy: frame.midY - window.minY))
+        control.tap()
+        let month = app.buttons["DatePicker.NextMonth"].firstMatch
+        XCTAssertTrue(month.waitForExistence(timeout: Self.patience), "\(picker.rawValue)'s calendar did not open",
+                      file: file, line: line)
+        // A day's button reads "Wednesday, September 5": the 5th of whichever month the picker opened on.
+        let fifth = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", " 5")).allElementsBoundByIndex
+            .first { $0.isHittable && Self.namesAMonth($0.label) }
+        guard let fifth else {
+            XCTFail("\(picker.rawValue)'s calendar has no 5th to tap", file: file, line: line)
+            return
+        }
+        fifth.tap()
+        control.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: month)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed,
+                       "\(picker.rawValue)'s calendar did not close", file: file, line: line)
+    }
+
+    /// Whether `label` names a month, as a calendar's day does.
+    private static func namesAMonth(_ label: String) -> Bool {
+        ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+         "November", "December"].contains { label.contains($0) }
+    }
+}
+
 // MARK: - MeaningStripFitTests
 
 /// Search in Meaning mode at five text sizes on the two iPhone widths: the Keywords | Meaning control, the actions bar

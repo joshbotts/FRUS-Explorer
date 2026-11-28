@@ -282,6 +282,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.42 — 2026-11-19: R6a (the Facets check) — the closes SwiftUI writes to the Facets inspector's binding as an
 ///          iPad window narrows or widens apply nothing; a reader's swipe on its compact sheet still applies, as IPH-3
 ///          asks (`closesFacetsByHand`, `FacetsWidthWatch`)
+///   1.43 — 2026-11-27: #2013 (L57) — Visualize in Corpus Analytics reads the date filter's years from the view model
+///          (`SearchViewModel.dateRangeYears`), in the zone the filter's days are read and written in
 
 
 
@@ -294,11 +296,11 @@ struct SearchView: View {
     #endif
 
     @Environment(\.openWindow) private var openWindow
-    /// `true` when the platform can open a second window (Stage Manager on iPad).
-    /// When set, opening a result opens the document in its own window so the
-    /// results list stays visible alongside; otherwise the document is pushed onto
-    /// the search navigation stack as before.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    #if os(iOS)
+    /// Whether Corpus Analytics, a result's Open in New Window and its Archival Neighbors open
+    /// windows here: an iPad with windows, never a phone (``AuxWindowGate``).
+    @AuxWindowGate private var opensAuxWindows
+    #endif
     /// #338 step 2: this scene's identity, injected into the Saved Searches sheet so its Word Cloud
     /// action addresses THIS window (a sheet doesn't reliably inherit `\.sceneID`).
     @Environment(\.sceneID) private var sceneID
@@ -2468,17 +2470,13 @@ struct SearchView: View {
     private func openSearchInAnalytics() {
         let term = vm.keywords.trimmingCharacters(in: .whitespaces)
         guard !term.isEmpty else { return }
-        var startYear: Int? = nil
-        var endYear: Int? = nil
-        if vm.dateRangeEnabled {
-            let cal = Calendar(identifier: .gregorian)
-            startYear = cal.component(.year, from: vm.dateRangeStart)
-            endYear   = cal.component(.year, from: vm.dateRangeEnd)
-        }
+        // The years of the days the search runs on, in the zone they are read and written in (#2013): a chart of 1961
+        // to 1963 followed to Search comes back as 1961 to 1963, where it came back from 1960 west of UTC.
+        let years = vm.dateRangeYears
         let params = AnalyticsParameters(
             term: term,
-            yearRangeStart: startYear,
-            yearRangeEnd: endYear
+            yearRangeStart: years?.start,
+            yearRangeEnd: years?.end
         )
 
         // UI review F-13, fixed by CW-9b's `corpusAnalyticsScene`. Where a window is available the
@@ -2486,7 +2484,7 @@ struct SearchView: View {
         // therefore no tab hop. The teleport below was never a routing bug; it was the only way to
         // reach a sheet another tab owned, which is exactly what F-13 said.
         #if os(iOS)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(params, from: sceneID, using: openWindow)
             return
         }
@@ -2501,7 +2499,7 @@ struct SearchView: View {
         appState.openTab(.browse, from: sceneID)
         #endif
         #if DEBUG
-        print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: startYear))–\(String(describing: endYear))")
+        print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: years?.start))–\(String(describing: years?.end))")
         #endif
     }
 
@@ -2708,7 +2706,7 @@ struct SearchView: View {
                         } label: {
                             Label(ResultSelectionCopy.open, systemImage: "arrow.up.right.square")
                         }
-                        if supportsMultipleWindows {
+                        if opensAuxWindows {
                             Button {
                                 appState.openAuxWindow(DocumentWindowID(
                                     volumeId: result.volumeId,
@@ -2734,7 +2732,7 @@ struct SearchView: View {
                             }
                             Divider()
                         }
-                        if supportsMultipleWindows {
+                        if opensAuxWindows {
                             Button {
                                 appState.openAuxWindow(DocumentWindowID(
                                     volumeId: result.volumeId,
@@ -2754,7 +2752,7 @@ struct SearchView: View {
                             // window, so it survives opening result after result from this list
                             // — the same reason `openResult` prefers a document window above.
                             // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
-                            if supportsMultipleWindows {
+                            if opensAuxWindows {
                                 appState.openAuxWindow(ArchivalNeighborsRequest.document(
                                     volumeId:     result.volumeId,
                                     documentId:   result.documentId,

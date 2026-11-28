@@ -245,6 +245,19 @@ struct IndexingSeamsTests {
             #expect(pipeline.resources.personAuthority() != nil)
         }
     }
+
+    /// The donor reaches Spotlight everywhere but a unit test's host, which is this suite's. There
+    /// every removal through a pipeline the app's initialiser built waited on the simulator's
+    /// Spotlight daemon, which on CI's runner first answered 7 to 86 minutes after the host launched
+    /// (2026-11-27). A UI test's app is launched without `XCTestConfigurationFilePath`, so it donates.
+    @Test("The Spotlight donor reaches Spotlight in the app, and not in a unit test's host")
+    func theSpotlightDonorStaysOffSpotlightInATestHost() {
+        #expect(SpotlightDonor.reachesSpotlight([:]), "the app a reader launches")
+        #expect(SpotlightDonor.reachesSpotlight(["FRUS_UI_TEST_MODE": "1"]), "a UI test's app")
+        #expect(!SpotlightDonor.reachesSpotlight(["XCTestConfigurationFilePath": "/tmp/run.xctestconfiguration"]))
+        #expect(!SpotlightDonor.reachesSpotlight(ProcessInfo.processInfo.environment),
+                "this suite runs in a unit test's host, whose pipelines must not wait on Spotlight")
+    }
     #endif
 }
 

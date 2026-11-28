@@ -28,6 +28,7 @@ import OSLog
 ///          the kit; `IndexingResources.bundled` and `SpotlightDonor`, new with the kit's seams
 ///   1.1 — 2026-10-31: `updateSummary(_:)` writes the summary's `indexedText`, a structured summary's
 ///          fields as plain text, where it wrote the stored JSON
+///   1.2 — 2026-11-27 (CI fix): `SpotlightDonor` reaches Spotlight only outside a unit test's host
 extension IndexingPipeline {
 
     /// Creates a pipeline over the app's bundled resources, its settings and Spotlight.
@@ -186,19 +187,38 @@ extension IndexingPipeline {
 /// Submits each indexed volume's documents to the default Spotlight index, and withdraws a removed
 /// volume's. Errors are silently ignored — Spotlight is best-effort.
 ///
+/// It does neither in a unit test's host (``reachesSpotlight(_:)``), where the figure store is left
+/// unconfigured for the same reason: the tests run inside the app, and every pipeline they build with
+/// the app's initialiser is given this donor, so each removal waited on the simulator's Spotlight
+/// daemon, which `removeVolume` awaits. On CI's runner the daemon first answered between 7 and 86
+/// minutes after the host launched (16 runs), and on 2026-11-27 three runs of the unit target ran a
+/// test past its 20 minutes waiting on it (`DocumentRevisionsTests`' removed-volume tests twice,
+/// `ResultSelectionTests`' launch test once), where the test's own work took a tenth of a second.
+///
 /// Version history:
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): `IndexingPipeline.submitSpotlightItems(for:)`
 ///          and `removeVolume`'s Spotlight delete, as the pipeline's donor
+///   1.1 — 2026-11-27 (CI fix): nothing reaches Spotlight in a unit test's host
 struct SpotlightDonor: IndexedDocumentDonor {
 
-    /// Submits CSSearchableItem records for all of a volume's documents.
+    /// Whether a donor in this process reaches Spotlight: everywhere but a unit test's host
+    /// (`FigureImageStore.isUnitTestHost(_:)`). A UI test's app is not one, so it still donates.
+    ///
+    /// - Parameter environment: `ProcessInfo.processInfo.environment`.
+    static func reachesSpotlight(_ environment: [String: String]) -> Bool {
+        !FigureImageStore.isUnitTestHost(environment)
+    }
+
+    /// Submits CSSearchableItem records for all of a volume's documents, outside a unit test's host.
     func donate(volumeId: String, documents: [DonatedDocument]) {
+        guard Self.reachesSpotlight(ProcessInfo.processInfo.environment) else { return }
         let items = documents.map(IndexingPipeline.makeSearchableItem(for:))
         CSSearchableIndex.default().indexSearchableItems(items) { _ in }
     }
 
-    /// Deletes every item donated for the volume.
+    /// Deletes every item donated for the volume, outside a unit test's host.
     func withdraw(volumeId: String) async {
+        guard Self.reachesSpotlight(ProcessInfo.processInfo.environment) else { return }
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
     }
 }

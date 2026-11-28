@@ -4632,3 +4632,563 @@ The orchestration session started this one for row L37, on `claude/l37-rail-thro
 - **Offered, not taken** (decision 183): a tab's return applies the setting too. Under Read, a reader's rail opened, Search chosen and Browse chosen again 3 s later: the rail is closed (a probe on the fixed code). Pre-existing, since `v2`'s code applied the setting at every run of the per-open task. It is in the plan's §5, under *Found by L37, unfiled*.
 - **The manuals and Settings are not changed:** the iOS manual's §4.4 says the setting chooses how a newly opened document starts, and the Reading footer that the rail toggle inside a document always wins for that document, which F11 broke at a resize and the fix restores.
 - **By hand:** L37's brief names none. The owner's check on the iPad, for R9, is the pull request's *Visual review*.
+
+## Session 2026-11-27 — L41, the Zotero client: a send returns as soon as its last write succeeds, and Zotero's `Backoff` holds the account's next write from any client; each wait is said through the send's status; a date `Retry-After` is read; #1923's resume proposed, not built
+
+The plan of record's session started this one for row L41, on `claude/l41-zotero-client-f9a33d`, held until L29 had merged and then begun on the orchestrator's "go" from `v2` at `2db58c5a`, L29's merge. The row: #1924, #1925 and #1926, and #1923's resume as a proposal (decision 138). Commits: `54bf4f86`, the client and its suite; `8ab12121`, the reader's two Share sends; `c6363fc4`, the docs and records; then, at the head of the queue, `v2` at `ebacf85a` taken in (`ec43ce68`), and the landing's records.
+
+**#2031's merge**
+- L37 merged as `ebacf85a`, a squash onto `5026ead5`, at 11:32:43 UTC on 2026-11-27, from its head `65b55c72`. Its tree, `9919a487`, is the head's. It closed no issue, since F11 has none. This entry records it.
+- L32's #2030 (`5026ead5`, onto `2db58c5a`, at 10:25:34 UTC, from `da8e29fc`, tree `27917818`, closing #1986 and #2010) is recorded in L37's entry above, L29's #2029 in L32's, L33's #2028 in L29's, and L61's #2027 in L33's.
+- This branch took `v2` in at `ebacf85a` (`ec43ce68`). Four files conflicted. Three were records, the session log, the Amendment-Log and the plan's §5, each resolved with `v2`'s side first and this row's after it. The fourth, `08-Reading-Research-Collections.md`, held three ranges in `DocumentView.swift` that L37 and this row had both re-pointed, each set from the merged file (under *Docs*, below). This row takes no decision, so L32's 212 is still the last. On the merged tree a script applying `EditableContentKeyTests`' rule read all 1,334 ranged blocks, with their 1,363 keys: each key is inside its block's range, and each range this row set starts on its key's line.
+
+**Each defect, first** (decision 183)
+- **The control, on `v2`'s client** (`2db58c5a`, the kit untouched), seven new tests written first and run through `Scripts/heavy.sh` with `swift test --filter ZoteroRetryWaitTests`, the package built from empty in 92 s: 20 tests in the suite, the 13 already there passed, and all 7 new ones failed, with 11 issues, each at its defect.
+  - **#1924:** a send of one write answered with `Backoff: 5` waited `[5.0]` after its last write, before it returned. Sent again by a new client, the next send waited `[]`.
+  - **#1925:** a 429 with `Retry-After: 5` told its caller `Uploading items 1–1…` and waited 5 s, saying nothing of the wait. A `Backoff: 3` on the collection's write was waited under *Creating collection…*, unannounced, before *Uploading items 1–1…*.
+  - **#1926:** a `Retry-After` 45 s after the response's `Date` waited `[30, 30, 30]` and threw `rateLimited(30)`; one an hour on did the same over 4 requests, where it should throw at once carrying 3,600; one 45 s after the device's clock, with no `Date`, waited `[30, 30, 30]`.
+- Those seven were then made exact for the fix: a `TestClock` the client's sleep moves, so a deadline and a message are compared whole, and a wall clock a test sets for a date counted with no `Date`.
+
+**#1924, the `Backoff`** (`54bf4f86`)
+- **Before:** `ZoteroAPIClient.writeRequest` waited a `Backoff`, up to a minute, after Zotero's 2xx and before it returned. So a send's last write, or a send of one write, held the send up to a minute after everything was written, and the next send, by a new client, waited nothing.
+- **After:** a 2xx's `Backoff` sets a deadline (`now + min(Backoff, 60)`), and each attempt of each write first waits what is left of it (`holdToBackoff`). A send returns at its last write; the send's next write, or the account's next send, waits the rest.
+- **Where the deadline lives:** `ZoteroBackoffDeadlines`, an actor in the client's file, one per process (`.shared`), keyed by the Zotero user ID that every write names in its path. The app makes a new `ZoteroAPIClient()` for each of its three sends, so a deadline kept in a client would be gone at the next send. A deadline that has passed is dropped when read, and a later one is never shortened by an earlier. No API key is kept. `resolveAccount(key:)`, which reads `/keys/` with no user ID, does not consult it.
+- **Unchanged:** the 60-second cap, #1916's header rules, and a `Backoff` read on a 2xx alone. A `Backoff` of 0 now holds nothing, where it was a sleep of 0.
+
+**#1925, the waits said** (`54bf4f86`, `8ab12121`)
+- **The kit:** before a 429's retry, `retryStatus(seconds:locale:)`, *Zotero is busy: trying again in 30 seconds…*; before a `Backoff`'s wait, `backoffStatus(seconds:locale:)`, *Zotero asked for a pause: continuing in 45 seconds…*. The seconds are whole, rounded up (`wholeSeconds`), and the form is chosen one or many through `CountCopy`, since the count scan refuses a `%lld` before *seconds*. After the wait the step's own message is said again, so the line does not keep the wait while the write runs. A wait of 0 s says nothing.
+- **The app:** the collection export sheet already put `status` in its progress line (`preparingMessage`), so it is unchanged. The Mac's Share popover (`DocumentSharePopover`) reads the send's status in the line under its row while it runs, and the iOS Share menu (`DocumentShareMenu`) its send row, with an hourglass, since a menu closes when chosen.
+
+**#1926, a date `Retry-After`** (`54bf4f86`)
+- `retryAfterSeconds(_:responseDate:localNow:)`: a `Retry-After` of seconds as before; else an IMF-fixdate (`httpDate(_:)`, a POSIX formatter in GMT, not lenient) counted from the response's own `Date`, or from the device's clock (a seam a test sets) when it has none the client can read. A date before that moment gives no seconds, so the 30 s default; past a minute, `rateLimited` at once with the seconds. `Backoff` stays seconds alone. The two obsolete forms of an HTTP date are not read.
+
+**#1923, the resume: proposed, not built**
+- The plan says its design is the owner's. The owner was away overnight, so the orchestrator asked for the proposal in this row's "ready to land" message rather than a question that would hold the session. It is in the group's notes (`L41-1923-resume-proposal.md`), summarised there:
+  - **A (recommended):** the kit throws `ZoteroSendStopped` with a progress value (the Zotero collection's key, each written item's key by its URL, the notes written, the batch in flight with its write token), and `send(…, resuming:)` makes no collection and skips what was written; a batch whose answer was lost is re-sent under its own token, and Zotero's 412 for a token it has seen means it landed. The app records the partial send as `zotero-api` with the count written (no CloudKit field) and offers **Finish Sending**, the progress kept in a device-local file for 12 hours.
+  - **B:** as A, the progress on the history row, so another device can finish it: new stored properties, joining 1.1's promotion.
+  - **C:** record only, and warn before a second send.
+  - **D:** ask Zotero what is in the collection, and skip it.
+- Zotero's documentation, read for it (2026-11-27): a write token is remembered 12 hours after a successful request and a reused one is refused with 412, carrying no keys; a 200 can carry `successful` and `failed` together; a collection's items list 100 a page with their `url`; there is no lookup by URL.
+
+**A claim of the brief that does not hold** (decision 183)
+- The plan has L41 change "how [the collection's send] calls the client" (`CollectionExportSheet.sendToZoteroLibrary()`), and L29 and L41 ordered on it. With the deadline kept per process, the sheet's `ZoteroAPIClient()` holds to it as it is, and the sheet already showed `status`, so `CollectionExportSheet.swift` is unchanged. The order cost nothing.
+
+**Found, and left in §5** (decision 183: offered, not taken)
+- Zotero's *Basics* says a 503 during maintenance carries a `Retry-After`; the client reads one on a 429 alone, so a 503 stops a send as *an unexpected error (HTTP 503)*.
+- The same page says a `Backoff` can come on any response; the client reads it on a 2xx alone.
+
+**Docs**
+- Both manuals: §11.2's Send to Zotero Library, what the send says while it waits and that a pause is waited at the next send; the collection export's Zotero bullet, its progress line. The *AI Generated* notice is kept.
+- EditableContent: four blocks added for the new keys (`zotero.status.retry.one` and `.many`, `zotero.status.backoff.one` and `.many`, `ZoteroAPIClient.swift` 370–384), and four ranges re-pointed, each starting on its key's line with its length kept. In `DocumentView.swift`, `document.toolbar.share` 2343 → 2353, `document.toolbar.share.help` 2344–2345 → 2354–2355 and `summary.block.regenerate.a11y` 2649–2650 → 2663–2664 on this row's base, and at the merge, from the lines L37 left, 2409 → 2419, 2410–2411 → 2420–2421 and 2715–2716 → 2729–2730. In `SupportingViews.swift`, which L37 does not touch, `source.explorer.window.empty.detail` 2145–2146 → 2161–2162 (in `06-Archives.md`). The last two were missed at first: the first scoped run's `EditableContentKeyTests` named them, and a script then read every ranged key, each inside its block's range. A bullet in the Amendment-Log.
+- The plan's L41 record, §4's #1923 line, and two §5 findings.
+
+**Checks**
+- **The scoped runs,** through `Scripts/heavy.sh`. The control and the fix ran in one script under one lock, 09:46 to 09:57 UTC, since waiters on the lock are not served in order; L32's landing job had held it from 08:43 UTC, its UI suites included, and this job took it at 09:46.
+  - `swift build --target FRUSCoreKit` on the fixed client: no warning.
+  - `swift test --filter Zotero`: 56 tests in 8 suites passed. They are the suite's 26 with the NARA and Zotero host suites.
+  - `build-for-testing` from empty on the iPhone 17 under iOS 27.0 (`80CF0F18`): the two known residues and no other warning.
+  - The app's affected suites there, the app removed first (`ZoteroRetryWaitTests` and the file's four other suites, `NARAAndZoteroClientHostTests`, `ZoteroIOSDeadEndTests`, `CollectionZoteroSendNotesTests`, `CollectionExportNamingTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests`, `SharedKitsBoundaryTests`, `AppSourceTreeTests`, `UnconstructedViewAuditTests`, `ResearchGuideCoverageTests`, `DocumentViewTests` and `EnvironmentSelfReferenceTests`): 184 tests in 18 suites, 183 passed. The failure was `EditableContentKeyTests`, on two ranges this row had missed: `source.explorer.window.empty.detail` and `summary.block.regenerate.a11y`. Both were re-pointed.
+  - The `FRUSExplorerMac` build: succeeded, the two known residues only. It compiles the Share popover, whose change is Mac-only code.
+- **The review pass** on the diff, before the docs commit: three doc comments corrected in the client, with no code change. A deadline for an account that never writes again is not dropped. `hold` holds writes. The 429's seconds may come from a date. The status keys moved one line, and their four blocks with them.
+- **The confirm run** after it, 10:23 to 10:26 UTC on `8ab12121` with the docs uncommitted:
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test --filter Zotero`: 56 of 56.
+  - `EditableContentKeyTests`, `ResearchGuideCoverageTests`, `ZoteroRetryWaitTests` and `CodingStandardsAuditTests`: 118 tests, all passed, with the known residues only.
+- **At the head of the queue,** on the merge `ec43ce68` (tree `d8715bbc`), with `v2` at `ebacf85a` taken in, in one `heavy.sh` call from 11:44 to 12:04 UTC, which waited until then behind L40's iPad check:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder: the two known residues alone.
+  - The unit target there (`-only-testing:FRUSExplorerTests`), the app removed first and the TEI mirror set: 8,359 tests in 1,011 suites, of which 8,341 passed, none failed, 17 were skipped as at L37's landing, and 1 was the expected failure, the one test with the six known issues, in 777 s, from 11:47 to 12:01 UTC. L37's landing ran 8,346 in 1,011 on `v2`'s code, and this row adds 13 tests to `ZoteroRetryWaitTests`, which held 13 and now holds 26.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,273 tests in 610 suites over 39 runs, and none failed. Its build printed no warning. L32's landing ran 5,260, L37 changed no package input, and the package compiles this row's 13 too.
+  - The `FRUSExplorerMac` build: succeeded, with the two residues alone.
+  - `Scripts/check_repo_hygiene.py`: six checks passed.
+- **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+
+## Session 2026-11-27 — L57, the days of Search's date filter: on iPhone and iPad they are read and written in the zone its pickers are in; shown first in New York's zone (30 September for 1 October, 1960 for 1961), a pick found to keep its time of day, and a finding filed as #2033
+
+Row L57 of the plan of record from 2026-11-25 (#2013, decision 187), started by "Development session orchestration" with Wave 2's other rows, on `claude/l57-search-date-filter-zone-d90596`. It read and planned while three rows built, and began on "L57: go", from `v2` at `a7d8e017`. App code and its tests: no package input, so no `swift test`; no stored property and no index version. Commits: `a0240672` (the fix, its tests and the nine re-pointed ranges) and a docs commit.
+
+**#2032's merge**
+- L41 merged as `4fa33ba3`, a squash onto `ebacf85a`, at 12:51:53 UTC on 2026-11-27, from its head `7b59ed14`. Its tree, `925c9301`, is the head's. It closed #1924, #1925 and #1926. This entry records it.
+- L37's #2031 (`ebacf85a`) is recorded in L41's entry above, and L28's #2026 (`a7d8e017`), where this row began, in L61's.
+- This branch took `v2` in at `4fa33ba3` (`f77e1f48`). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 210, is 213, after L33's and L32's, and the plan's status line now names 210 to 212 as well.
+
+**Shown first** (decision 183), at `a7d8e017`, on the iPhone 17 simulator under iOS 27.0, in New York's zone with no zone changed. None of Search's files has changed since `1.0-release`, so this is 1.0's code.
+- **The first symptom, in the app.** A UI test handed Search 1 to 31 October 1962 through `AppState.openSearch(_:from:)`, the route Chronology's *Search in this range* takes. Filters' pickers read *Sep 30, 1962* and *Oct 30, 1962*, over the chip *1962-10-01 to 1962-10-31*. In a hosted test the filter held 30 September at 20:00 EDT and 30 October at 19:00 EST, the two midnights in GMT.
+- **The third, in a hosted test.** Corpus Analytics' own hand-off of 1961 to 1963 (`AnalyticsSearchHandoff.parameters`), read back as *Visualize in Corpus Analytics* read it (a Gregorian calendar in the device's zone), gave 1960 to 1963.
+- **What the issue could not settle: a pick keeps the time of day of the date the picker held.** A temporary `Logger` line in Filters' date section, never committed (its diff is kept at `~/Library/Caches/FRUS-Explorer/l57/probe-job1.diff`), logged From at `1962-09-30T20:00-04:00` before a tap on the 5th and `1962-09-05T20:00-04:00` after; in Tokyo's zone 09:00 stayed 09:00. So the issue's first branch held: west of UTC, after a hand-off or a saved search, a pick was written as the day after the one the picker showed. The UI control, below, then saw it: From at Sep 5 under the chip *1962-09-06 to 1962-10-31*.
+- **The same build in Tokyo's zone** (`TZ=Asia/Tokyo`) showed 1 and 31 October, so on this path the defect was west of UTC's, and the UI test's `TZ` reaches the app.
+- **Foundation, measured in the same hosted test.** `TimeZone.current`, `.autoupdatingCurrent`, a new `DateFormatter`'s zone and `Calendar(identifier: .gregorian)`'s zone were all New York's, and a `DateFormatter` is strict by default. A strict `yyyy-MM-dd` formatter in a zone reads no date for a day whose midnight a change of clocks skips: from 1861 to 2000, 27 such days in São Paulo, 42 in Havana, 33 in Beirut, 43 in Santiago, 14 each in Tehran and Cairo, 4 in Tokyo and none in New York, each count equal to the days whose first moment is not 00:00. `Calendar.startOfDay(for:)` of the day's noon gave the right day on all of them.
+
+**The fix** (the issue's: the device's zone at every site, not GMT pickers)
+- `SearchViewModel.filterDay(of:in:)` and `filterDate(ofDay:in:)` convert at the five sites: a hand-off's and a saved search's read (`applyParameters(_:)`), the facet's year, the search's two days, the *Narrowed by* chip, and the chip's record. The zone is `dateRangeTimeZone`, the device's (`.autoupdatingCurrent`), which only the tests set. *Visualize in Corpus Analytics* reads `dateRangeYears`.
+- **Why not GMT pickers:** Filters' pickers are `SearchFilterView`'s, which the Mac's Search window draws over a `SearchViewModel` of its own, so GMT pickers would have moved the Mac's; the app's other pickers and `WordCloudScope.isoFormatter()`'s rule are the device's zone; and a project's range and the filter's first dates are made in it.
+- **No one function for both view models.** The Mac converts with a strict `DateFormatter` in the device's zone, which keeps the filter's previous date on a day whose midnight is skipped; `filterDate(ofDay:in:)` takes the day's noon back to its start, so sharing it would have moved what the Mac does on those days. The Mac's file is unchanged.
+- **The candidate, `applyProjectDefaults(_:)`:** onboarding makes a project's range in the device's zone (`ManifestStore.corpusYearStart(_:)`), so east of UTC its first day was written a day early. The fix writes it as made; no line of its own.
+- **Nothing stored moves.** `SavedSearch` converts its own two dates in GMT both ways and is untouched; no CloudKit field, no index version.
+- **The search seam** (`UITestBrowseSeams`, DEBUG only) can carry two days with its words (`FRUS_UI_TEST_SEARCH_ON_SIGNAL_DATES`), for the UI test's hand-off.
+
+**Tests**
+- **`SearchDateFilterZoneTests`** (in `SearchViewTests.swift`), 10 tests, every one naming its zone: the two conversions over nine zones from UTC−11 (Pago Pago) to UTC+14 (Kiritimati), with the issue's two tables, São Paulo's skipped midnight and thirteen strings that name no day; and the view model with `dateRangeTimeZone` pinned: a hand-off, a saved search, a chart's years, a pick at four times of day, a facet's year and a project's range.
+- **The control:** each site put back in GMT alone, built and run against the suite: the hand-off's read failed 4 tests, the search's two days 6, the facet's year 1, the chip 3, and the years 2.
+- `SearchWithinResultsModelTests`' three tests and `IOSFacetNarrowingTests`' one set their dates on days in the device's zone, where they set GMT midnights. `dateRangeFilterIncludedInParameters` is unchanged: it holds anywhere now, and the new suite is the guard. The seam's two days have a test and a wiring check (`BrowseSeamSignalTests`).
+- **The row's suites and the files' neighbours** on the iPhone 17 under iOS 27.0 (22 suites, `EditableContentKeyTests` and `CodingStandardsAuditTests` among them): 237 tests, 237 passed.
+- **`FilterDateRangeHandOffTests`** (in `MeaningResultsSeamTests.swift`), two tests after a hand-off by the search seam's signal, in New York's zone: the pickers show the handed days, and a day picked in From is the day the chip names. Under iOS 27.0: **iPhone 17, 2 passed; iPad Pro 13-inch (M5), each test alone on a fresh boot, 2 passed.** **The control** (the conversions put back in GMT, iPhone 17): 2 failed, at From's *Sep 30, 1962*, and at From's *Sep 5, 1962* under the chip *1962-09-06 to 1962-10-31*.
+  - **On the iPad,** one run of both on one boot ended when `backboardd` aborted in Metal at the second launch, in #1620's frames ("Test crashed with signal kill"); each alone on a fresh boot passed.
+  - **On the iPhone,** a run with the app removed met the while-indexing guide over Search at the fresh install's first launch ("Filters did not open"); with the app installed both passed.
+  - **Two selectors the first runs taught.** The calendar opens over the sheet's navigation bar on an iPhone, so the test closes it with a tap at From's own place; and that place is fixed on the screen before the calendar opens, since `allElementsBoundByIndex` binds an element to its place among the date pickers and the open calendar takes the first (a coordinate on the bound element picked the 10th). The runbook's entry has both.
+
+**The rest**
+- **The manuals** say only that a hand-off carries its range (the iOS manual's *Limit by date*, the Mac's *Date Range*), not what the pickers show, so neither changes. No string changed, so no EditableContent block is added; nine ranges moved and are re-pointed (`Amendment-Log.md`).
+- **#2033, filed on the owner's word** ("File it (Recommended)", decision 213): on the Mac's Search and in the word cloud, a day whose midnight a change of clocks skips is read as no date. No row takes it yet.
+- **R9's check by hand** stands as the brief wrote it.
+
+**The landing checks,** on the merged tree (`f77e1f48`, tree `11ab5ab3`, with `v2` at `4fa33ba3`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning.
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,370 tests in 1,012 suites passed in 778 s, with the six known issues and 17 skipped.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning.
+- `swift test` was not owed: the diff names no package input.
+
+## Session 2026-11-27 — L30, Citation Lookup: a document number read as the volume prints it, Document 1190b, Document C, Document GT–6, so the app's own citation of 722 documents finds each one, and a number with a letter the volume does not print finds the document of its digits as a best guess
+
+The plan of record's session started this one for row L30, on `claude/l30-citation-printed-number-2e294d` from `v2` at `a17023f9`, L27's merge. The row: #1977, Citation Lookup reading only a citation's digits, so Cite's own citation of a document whose printed number is not whole named another document or none. Commits: `e871df1c` (the failing tests, first), `802b652f` (the fix), `204e915e` (a test the package does not compile), `cbf60d59` (the manuals, EditableContent and the plan) and `89593c96` (the plan's record of the Mac walk), with the landing's.
+
+**#2034's merge**
+- L57 merged as `7ccecacb`, a squash onto `4fa33ba3`, at 13:53:31 UTC on 2026-11-27, from its head `68f863d7`. Its tree, `91edcc8f`, is the head's. It closed #2013. This entry records it.
+- L41's #2032 (`4fa33ba3`) is recorded in L57's entry above, and so back to this row's start: L37's #2031 in L41's, L32's #2030 in L37's, L29's #2029 in L32's, L33's #2028 in L29's, L61's #2027 in L33's, L28's #2026 in L61's, L31's #2025 in L28's, and L27's #2021 (`a17023f9`), where this row began, in L31's.
+
+**The defect, first** (decision 183)
+- **Measured over a full index at version 76** (L31's kept index, 553 volumes): 722 of 314,646 numbered documents print a number that is not whole, as the issue counts them.
+  - 82 with a lower-case letter, in 22 volumes, and `frus1955-57v03mSupp`'s `550A`. Each one's digits' document is in its own volume.
+  - 628 with a capital prefix, an en dash and a number, in 17 series, all in `frus1958-60v05mSupp`, where no document prints a plain number.
+  - 11 single letters, appendices in three 1981–88 volumes.
+  - No volume prints two numbers that differ only in case.
+- **Four tests committed before the fix** (`e871df1c`), run in the package on `v2`'s code: all four failed, with 61 issues.
+  - The app's own citation, made as Copy Citation makes it, in all three formats, marked and plain: `frus1898`'s 1190b and 1190a answered d1190, "Match — document number assigned digitally"; `frus1955-57v03mSupp`'s 550A answered d550 as "Exact match"; `frus1981-88v05`'s appendix C and `frus1958-60v05mSupp`'s GT–6 found nothing.
+  - The round trip of every bundled volume by a printed number that is not whole, one of the four kinds in turn: 71 of the 551 volumes not excused missed their own volume in history.state.gov and Chicago form, and 69 in Turabian form, marked or plain, where none did by document 1. The title fragment kept the number's letter, or the whole of "Document C".
+
+**A claim of the brief that does not hold** (decision 183)
+- The brief gives the digits fallback as "so that *Document 1190* still reaches 1190b". `frus1898` prints a Document 1190, so that citation asks for 1190 and finds d1190, as the issue's own test expects. The fallback answers only a letter the volume does not print: "Document 1190c" finds d1190.
+- The issue's and the plan's `ParsedCitation` is `CitationInput` (`CitationModels.swift:44`).
+
+**The owner's two answers**
+- Decision 214: how that fallback's answer is labelled. The owner chose "Best guess (Recommended)": "Best guess — this volume prints no document 1190c", with a note to check the citation, as the engine's rule since #1474 has every result that fails a cited field.
+- Whether L30 waits for the by-hand Mac walk, the screen being locked overnight: "Wait for the walk (Recommended)".
+
+**The fix** (`802b652f`, `204e915e`)
+- **`CitationInput.documentNumber` is the printed number**, a `String?`, where it was an `Int?` of its digits. `CitationParser.normalizedDocumentNumber(_:)` is the one rule the parse and the Document field read it by: digits lose their leading zeros, a prefix and a single letter are capitals, a prefix's dash is the en dash, and a number's letter keeps its case.
+- **The parser** reads a number with one letter, a capital prefix with a dash and digits, and a single capital letter. The title fragment loses the whole number.
+  - **The guards are the corpus's own.** Over the 43,496 clauses of the index's text that name the series (from `FRUS` or `Foreign Relations` to the next semicolon, at most 300 characters), a letter read after any capital that followed "document" read eleven, each another kind of document: the pronoun in "this document I have", "Executive Document B" and "S. Ex. Doc. B" of the Senate, "U.N. Doc. A /70". So a single letter is read only after "Document" with its capital or "doc.", not after "Executive", "Ex." or "U.N.", and where a citation ends it. A number's letter followed by a decimal point is the file's: `File No. 851R.00` reads 851, as before.
+  - **As written**, two of the 43,496 read a number other than before, an NSC action each (`No. 487a`), which the digits alone misread as documents 487 and 266 too. No clause reads a single letter, and the title fragment of those two alone loses more.
+  - The patterns were checked under ICU with the file's own strings, 22 cases.
+- **The engine** asks for the printed number, which the index's lookup by number (`document(forDocumentNumber:inVolume:)`, one read of `IndexingPipeline.swift`) now matches as written and then ignoring case: `1190B` finds 1190b, and `550a` finds 550A, not its neighbour 550.
+  - A number with a letter that no volume the lookup reads prints falls back to its digits (`letteredNumberFallsBack(_:among:)`), and the document found is a best guess naming the number. Decided once per lookup, "only when the token finds nothing": before 1955 the lookup reads every candidate past a hit, so a fallback volume by volume would have answered a number one volume prints with another's document of its digits as well.
+  - No fallback beside a history.state.gov link (#1474 review round 1), in a volume whose index cannot yet say what it holds (#1522), or for a prefix or a single letter.
+- **The form.** A paste fills the Document no. field with the printed number, and Structured Entry reads the field by the same rule. On iOS the field's number pad, which typed no letter or dash, is the numbers-and-punctuation keyboard. A link to `…/d373a` fills `373a`, where it filled nothing. Batch reads each note through the parser.
+- **Tests:** the four defect-first ones, with exact labels added, and two more in the indexed suite (the once-per-lookup fallback, and none where the index cannot answer); in `CitationParserTests` the three forms, the typed forms, the corpus's own eleven false readings, the title fragment and the field's rule; in `CitationLookupFieldsTests` the Document field. The round trip reads every bundled volume's own citation by each of the four kinds as it reads document 1 (2,212 of 2,212 a format).
+
+**Public API and the symbol diff**
+- `CitationInput.documentNumber`, `String?`; `CitationParser.extractDocumentNumber(from:)`, `String?`; new `CitationParser.normalizedDocumentNumber(_:)`, `ConfidenceLabels.numberNotPrinted(_:)` and `.numberNotPrintedNote`. Nothing the indexer stores changes, so no index version.
+- `FRUS-API.openapi.yaml`: `/citation-lookup`'s `documentNumber` is a string, with the forms and the fallback; `CitationMatch` is unchanged.
+- **The symbol diff** of the Mac debug dylibs (`nm -U -j`, fully demangled, private discriminators and closure numbers dropped), each built unsigned in Debug from empty, `v2` at `a17023f9` from a `git archive`: 253,103 names on `v2` and 253,162 here, 80 removed and 139 added.
+  - Removed: `CitationInput.documentNumber` and its initialiser as `Int?`, `extractDocumentNumber(from:) -> Int?`, the engine's `matchByDocumentNumber` and `qualified` with their async parts and closures, and the Parsed Fields section's SwiftUI types.
+  - Added: the same as `String?`; the rule, the patterns and their initialisers; the two labels; `letteredNumberFallsBack(_:among:)`; the new `matchByDocumentNumber` and `qualified` with the tuple they return; and the Parsed Fields section's types under the Document field's new modifiers.
+  - Nothing of `SearchService` or `IndexingPipeline` moves.
+
+**W2's candidate, offered and left** (decision 183): a pasted citation's result names its document by id alone (`CitationLookupView.swift:779` now). Naming it by its head would take a field on `CitationMatch`, a public type with an OpenAPI schema, or an index read for each row, and the row changes neither. It stays in the plan's §5, which says so.
+
+**The manuals and EditableContent** (`cbf60d59`): both manuals' §11.4 say how a number is read and what the fallback's best guess says, with their *AI Generated* notice kept; `08-Reading-Research-Collections.md` gains the two new strings' blocks, and the twelve ranges the row's lines moved start on their keys again (`Amendment-Log.md`).
+
+**Checks**
+- `swift build --target FRUSCoreKit`: no warning. The package's citation suites, 167 tests in 15 suites, passed, the eleven new tests and the three changed among them.
+- **The unit target, scoped,** on the iPhone 17 under iOS 27.0: the citation suites, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `CitationLookupViewWiringTests`, `IntegrationTests` and both boundary gates, 257 tests, all passed, with no source warning. Its first run found one test the package does not compile, `CollectionTests`' injected matcher keyed on an `Int` (`204e915e`).
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- **By hand, on the Mac,** in the check copy at `cbf60d59`, on 2026-11-27 once the screen was unlocked:
+  - Copy Citation for `frus1898` d1190b copied "Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1898 (Washington, D.C.: Government Printing Office, 1901), Document 1190b."
+  - Pasted into Citation Lookup, it read Subseries 1898 and Document no. 1190b, and found d1190b, one result, "Match — document number assigned digitally".
+  - "FRUS, 1898, Document 1190c" found d1190 as "Best guess — this volume prints no document 1190c", with its note and the digital-number label after it.
+  - A link to `…/frus1898/d1190b` filled the Document no. field with 1190b and found d1190b.
+
+**The landing checks,** on the merged tree (`e2ba6376`, tree `17db5347`, with `v2` at `7ccecacb`), in one `Scripts/heavy.sh` job:
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,381 tests in 1,012 suites passed in 816 s, with the six known issues and 17 skipped. L57's landing ran 8,370, and this row adds 11. Its build printed the two known residues and no other warning.
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,284 tests in 610 suites over 39 runs, and none failed. L41's landing ran 5,273, L57 changed no package input, and the package compiles this row's 11 too. Its build printed one older warning, two unused bindings at `ProvenanceFlowIndexGeneratorCore/ProvenanceFlowMeasurement.swift:154`, unchanged since 2026-10-20.
+- **The Mac build** (`FRUSExplorerMac`, Debug, unsigned): it succeeded, with the two known residues and no other warning.
+- **The symbol diff, re-taken** against `v2` at `7ccecacb`, from a `git archive` built the same way: 253,406 names there and 253,465 here, 80 removed and 139 added, the same names as against `a17023f9`.
+- `Scripts/check_repo_hygiene.py`, on the merged tree: six checks passed.
+
+**For the owner**
+- **The pull request** is opened against `v2` once this is pushed, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
+- **After the merge:** #1977's hand-over note for FRUS Explorer Light, shown to the owner before it is posted.
+
+## Session 2026-11-27 — L39, links that open nothing: a volume's Contents opens its Preface, its lists and its Index, and a page link whose page no document holds opens the division that begins on it
+
+The orchestrator session ("Development session orchestration") started this one for row L39 of the plan of record from 2026-11-25 (F7, decision 178), on `claude/l39-links-that-open-nothing-bddfae` from `v2` at `2db58c5a`, L29's merge. The row: a volume's Contents links its front matter by roman page (`#pg_III`), which the kit's grammar read as nothing, and its Index by the arabic page before it (`#pg_315` of `frus1961-63v06`), which no document holds, so `PageLink` opened nothing; L26 stored the page each division begins on for this tap. Commits: `7bfe9121` (the test, first), `c92b89b3` (the fix), `f239e046` (the docs) and `7bac6605` (the symbol diff's record); at the head of the queue, `v2` at `8d38c5ab` taken in (`97b7dd5b`), the pipeline's version history (`803ce6a8`) and the landing's records.
+
+**#2035's merge**
+- L30 merged as `8d38c5ab`, a squash onto `7ccecacb`, at 15:13:27 UTC on 2026-11-27, from its head `300a08fe`. Its tree, `7af8ee6f`, is the head's. It closed #1977. This entry records it.
+- L57's #2034 (`7ccecacb`) is recorded in L30's entry above, and so back to this row's start: L41's #2032 in L57's, L37's #2031 in L41's, L32's #2030 in L37's, and L29's #2029 (`2db58c5a`), where this row began, in L32's.
+
+**Each defect first** (decision 183). The row's test, committed alone first and run on `v2`'s kit through `Scripts/heavy.sh` (`swift test --filter FRUSCoreKitTests.IndexVersion76Tests`), failed on both counts and on nothing else: the Index line's destination was nil ("the Index line opened nil"), and the grammar read `#pg_III` as `.unresolved`. The suite's other seven tests passed.
+
+**Measured, before changing anything.** A harness (stdlib Python, in the session's scratchpad) read every `<ref target>` whose anchor is a page in the 553 catalogue volumes at corpus `216cdb764`, 2,170,212 of them, most of them an index's page numbers, through the grammar's rules, and answered each from a full index at version 76 of the same files (24,009 `division_start_pages` rows in 552 volumes; its volumes' git blob SHA-1s are the corpus's), taking each target volume as on the device:
+- **Today 5,536 open nothing; with the row's rule, 559.** In a volume's Contents, 2,306 of 19,453 did and 89 do. All 2,472 to a roman page did (1,493 in a Contents, 64 into another volume), and 89 do. Of the 3,056 to an arabic page no document holds, 2,594 open a division. Of the 4,202 links that now open a division, roman or arabic, by its subtype: `index` 1,047 (the Index, and the lists of abbreviations and of persons, which the corpus types alike), a referral 734, a compilation's title page 718, a chapter's 515, a preface or an introduction (`preface`) 384, the Sources 249; 775 more open the section a roman page is printed in.
+- **§5's candidate, the 608** (L6's population at `6170e4b32`: page links into another volume from a document's text and notes): 48,608 such links here, 626 naming no document; the rule opens 432, 200 of them a compilation's title page. The 194 left are pages printed inside the Index or a list, pages whose break does not parse, and pages the cited volume does not print.
+- **Where a division and a section share a roman page,** 12 references name a page where a division begins and another section is printed and no document begins, four of them Contents lines: `frus1921v01`'s line for the President's second message links `#pg_XX`, whose break ends the first. So a division comes before the section the page is printed in.
+- **Found, offered and not taken:** 405 Contents lines name a division that begins part-way down a page another document runs onto, and open that document (`frus1907p1`'s line for the Danish trade-marks agreement, `#pg_305`, opens `d261`). The page index answers first, and its answer is the stored edge's (#1509).
+
+**The fix** (`c92b89b3`)
+- **The grammar** (`FRUSURLScheme.resolveCrossRefTarget`): `CrossRefDestination.romanPage(volumeId:page:)`, for `pg`/`page`, an optional `_`, and letters `PageNumber.parse(_:)` reads as a roman numeral (`FRUSURLScheme.romanPage(ofAnchor:)`); any other page anchor stays `.unresolved`. Nothing the index stores moves: `SettledCrossReferenceTarget` keeps such a row as collected, as it kept `.unresolved`; both page passes filter `GLOB 'pg_[0-9]*'`; the converter's citing hint, `PageReferenceForm` and the generators read `.page` alone. CrossRefKit's twin has the case (`RefDestination.romanPage`, `CrossRefGrammar.romanPage(ofAnchor:)`), `CrossRefGrammarAppParityTests` holds the two to each other over eight cases, and `citedDocument` is nil for it, so neither the edge nor the flow generator's output moves.
+- **`PageLink`:** on the device, the page index first, as before; where it names no document, the outermost division that begins on the page; then the map. `destination(romanPage:volumeId:onDevice:store:)`: a document that begins on the page, else the outermost division that begins on it, else the section the page is printed in (`PageSpanResolver.romanPageDocument(rows:divisions:)`); not on the device, the volume, naming no page, since Browse names an arabic one (`PageLink.volume`'s `page` is `Int?`).
+- **`PageRangeStore.divisions(startingOn:inVolume:)` and `document(forRomanPage:inVolume:)`** read on the reader's own read-only connection, through `PageSpanResolver.divisionsStartingOnPageSQL`, which `IndexingPipeline.divisions(startingOn:inVolume:)` now runs too, and `romanPageRowsSQL`. The plan named the pipeline's read for the tap; a tap would wait on that actor while it indexes, as every library does at 1.1's first launch.
+- **Both readers:** `.romanPage` goes to `resolveRomanPageReference(page:volumeId:)`, which asks `PageLink` as `resolvePageReference` does; a division opens by its id, as Browse opens a front-matter section.
+- **Tests:** `IndexVersion76Tests.contentsLinesOpenWhatTheyName` (the shape of `frus1961-63v06` with `frus1921v01`'s two messages, indexed through the pipeline and read through `PageRangeStore`: every Contents line opens what begins on its page, the page index first, a page the Preface is printed on opens the Preface, a blank page nothing, each division one the parser opens by its id, the store's read the pipeline's); `RomanPageDocumentTests`; `ReaderLinkTests.aRomanPageAnchorIsRead` and `aPageNoDocumentHoldsOpensItsDivision`, with the Contents line's href in the table; `CrossRefResolverTests.pageAnchors` brought to `.romanPage`, the reason written there; the twin's table and the parity suite.
+
+**Docs.** Both manuals' passages on a link to a printed page (the iOS manual's §8.1, the Mac's table of links in §8.2). EditableContent: 13 ranges re-pointed on the two readers (the eight on `DocumentView.swift` again at landing, from the numbers L37 and L41 left), a bullet in the Amendment-Log, no text changed. The plan's L39 record and §5's *Found by L39*.
+
+**Checks.** While developing, in one `Scripts/heavy.sh` call: `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,261 tests in 611 suites over 39 runs, none failed (two older warnings, the unused bindings `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`); a `build-for-testing` from empty on the iPhone 17 under iOS 27.0, the two known residues alone; 16 suites there, the row's and the gates' (`ReaderLinkTests`, `IndexVersion76Tests`, `PageSpanResolverTests`, `RomanPageDocumentTests`, `CitationLookupIndexedTests`, `CrossRefResolverTests`, `CrossReferenceStoreTests`, `AppStateTests`, the reader's and the export's pins, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans and `AppSourceTreeTests`), 270 tests passed, none failed or skipped. The Mac build: succeeded, the two known residues alone.
+
+**At the head of the queue,** on `803ce6a8` (tree `ca63ccfc`; the merge `97b7dd5b` took `v2` at `8d38c5ab` in), in one `Scripts/heavy.sh` call from 15:21 to 15:43 UTC:
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test`: 5,288 tests in 611 suites over 39 runs, none failed, with the same two older warnings.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,385 tests in 1,013 suites, 8,367 passed, none failed, 17 skipped as at L37, and the one test with the six known issues.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**The symbol diff** (the orchestrator's word, since the row changes public API). Unsigned Debug `FRUSExplorerMac` of `v2` at `2db58c5a`, a `git archive` built from empty in a folder of its own (`~/Library/Caches/FRUS-Explorer/l39/symdiff`), beside the branch's Debug `FRUSExplorerMac` from the development run, of `c92b89b3`'s code; neither launched. `nm -j` of each `FRUS Explorer.debug.dylib`, demangled, with private discriminators, closure numbers and local symbols' numbered suffixes dropped: 256,839 names on `v2` and 256,891 here, 2 removed and 54 added (raw, 267,886 and 267,942).
+- **Removed, 2:** `PageLink.destination(page:volumeId:citing:onDevice:deviceDocument:map:)`, back among the added with `deviceDivision:`; and `PageLink.volume`'s `(volumeId: String, page: Int)` payload, now `page: Int?`.
+- **Added, 54, every one the row's own:** the page destination with `deviceDivision:` and two more suspension points of its async read (3); the two roman destinations and their parts (3 and 5); `PageRangeStore`'s two reads with their `defer`s (2 and 2); the two shared queries (6 each) and `romanPageDocument(rows:divisions:)` (2); `FRUSURLScheme.romanPage(ofAnchor:)` (2); the Mac reader's `resolveRomanPageReference(page:volumeId:)` and its task's closures (13); `PageLink.volume`'s new payload (1); the rows' `(documentId:isStart:)` tuple and array (9).
+- `CrossRefDestination.romanPage` adds no symbol (its enum is not resilient), and CrossRefKit's twin is the package's alone.
+
+**Owed after the merge:** a hand-over note for FRUS Explorer Light, shown to the owner first (`CrossRefDestination.romanPage` is a new case its `ReaderLinks.swift` switch must take; `PageLink.destination(romanPage:volumeId:onDevice:store:)` answers it); and the memory hub's record of the row.
+
+## Session 2026-11-27 — L42, the cross-reference graph saved: every document it holds as drawn, as a working corpus after a question that says what the save holds, or as the seeds of an Archives Visit through the picker every add flow presents, with a line that says what a visit of them lists; a footnote's central-file class is a target only where a document's own source note names it (#1990)
+
+Row L42 of the plan of record from 2026-11-25 (decisions 146, 180 and 181), on `claude/l42-graph-saves-a7b657` from `v2` at `24616a57`, L33's merge: a commit for each save, then a docs commit (`f7cf1b7d`, `1aaf06df` and `316c8807`); at the head of the queue, `v2` at `1778feac` taken in (`8cd4233d`) and the landing's records. No stored property, so no CloudKit change; no index version.
+
+**#2036's merge**
+- L39 merged as `1778feac`, a squash onto `8d38c5ab`, at 16:21:45 UTC on 2026-11-27, from its head `4d796de9`. Its tree, `05d5a677`, is the head's. It closed nothing: F7 has no issue. This entry records it.
+- L30's #2035 (`8d38c5ab`) is recorded in L39's entry above, and so back to this row's start: L57's #2034 in L30's, L41's #2032 in L57's, L37's #2031 in L41's, L32's #2030 in L37's, L29's #2029 in L32's, and L33's #2028 (`24616a57`), where this row began, in L29's.
+
+**The rule, the kit's** (`FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift`, display 1.3)
+- `CrossReferenceGraphDisplay.capture(nodes:edges:graph:dateValues:dateWindow:)` → `CrossReferenceGraphCapture`.
+  - It reads the graph as built (the view model's `baseDisplayNodes`), never the timeline's displayed nodes, whose date clusters fold documents.
+  - It takes every document at the depth loaded, in the display build's order, nearest first. A volume cluster's documents come from the loaded graph's own direct references, in the cluster's place by key; a date cluster gives its members; documents in volumes not downloaded are taken too.
+  - Page nodes are left out and counted. The archival nodes are reported by the saved documents they hang off, by the edge that ties them.
+- **A brushed range.** The view model passes `drawnDateWindow`, the brush while the timeline is drawn and `nil` in the network.
+  - A document dated outside the range is left out, and an undated one stays, as the Undated column draws it.
+  - A closed volume cluster's documents are held to the range by their own dates, so the set is the same whichever clusters are open.
+- **Words:** the central document's label (`frus1952-54v02p1, Doc. 16`, the graph's own `graph.node.docNumber %@`), the depth, the range's two days, the name and description, the cited-pages line, the empty case, the picker's line and the toast.
+- **Tests:** `CrossReferenceGraphCaptureTests`, 16, in the file of the graph's suites, compiled in Xcode and in the package.
+
+**Save as Working Corpus** (`f7cf1b7d`)
+- *Save As ▸ Working Corpus…*, in the graph's toolbar (a named `Label`, R-8) and in a bar under the reference list (`ReferenceListPanel` 1.6), the graph an iPhone opens on.
+- A question first (`View.workingCorpusSave(_:outcome:)`): the description, the coverage line, the line for the 7,500 cut when it applies, and the cited pages left out.
+- **Save** writes the record the Clusters index and the lasso write: the keys, no query, the description, the volumes indexed at capture and both truncation fields.
+  - It is named by rule, `Cross-references of <volume>, Doc. <n> — <stamp>`.
+  - A save that fails takes its corpus out of the context again.
+- Then a toast (`transientToast`), which VoiceOver hears.
+- **The helper L56 uses:** `WorkingCorpusCapture` (kit, `Models/WorkingCorpusResolver.swift`), and the modifier with `WorkingCorpusCapture.save(in:indexedVolumeCount:)` (app, `Search/SaveWorkingCorpusSheet.swift`, beside Search's sheet). Neither file is in the row's list; no other row's list names them.
+
+**Add to Archives Visit** (`1aaf06df`)
+- *Save As ▸ Archives Visit…* opens `PlanPickerSheet`, the picker every add flow presents. It takes the same documents as seeds, both halves on, with the subject as the New row's name, and writes through `ArchiveVisitPlan.addSeeds` (`ArchiveVisitPlanWrites.addingSeeds`).
+- **The line, before the write.** The graph builds the packet the editor would derive from these seeds (`TripPacketBuilder.build`, the editor's `TripPacketDataSource`, `TripPacketIndexes.bundled`), and the line says:
+  - how many targets a visit of them lists on this device, and from how many indexed documents where some are not;
+  - how many of the graph's central-file classes are among them.
+- Then *Added 145 documents to “…”* in the graph's toast.
+
+**What did not hold** (decision 183)
+- The brief's "A visit keys every footnote citation, joined or not", and its by-hand line's "every unit and class the graph drew".
+- The packet's footnote channel leaves the class anchor out (`ExternalCitation.anchorsOutsideThePacket`, #784's scope), and `TripPacketBuilderTests.refsChannelFiltersAndMerges` pins it. So a class the graph draws for a footnote is a target only where a seed's own source note names it.
+- Units hold: every joined citation behind a unit is a target, 104 of 104 for d16.
+- The picker's line says how many of the graph's classes are listed. Whether a visit from the graph should list a footnote's class is the owner's to decide, since it would change the packet for every add flow.
+
+**Measured on a full index at version 76** (L31's harness index; a throwaway package test, deleted after its run, through the kit's store, display build, unit nodes, the rule and the builder)
+- **d16 at three hops:** 247 nodes.
+  - The saves take 145 documents and leave out 21 cited pages.
+  - Its 72 unit nodes stand for 17 records and its 9 class nodes for 8 classes, from 57 of the documents.
+  - A visit lists 49 targets: 43 from source notes, 17 from footnotes, overlapping. 5 of the 8 classes are among them.
+- **At one hop:** 15 nodes, 10 documents and 1 page, with 4 unit nodes.
+- **NSC 68 (`frus1950v01` d85) at three hops:** 1,259 nodes in 13 volume clusters and the rest.
+  - The saves take 844 documents and leave out 98 pages.
+  - A visit lists 253 targets, 36 of the 61 classes among them, and 7 packet-channel citations that join no record and draw no node.
+- **Seeds in the hundreds:**
+  - `addingSeeds` minted 844 seeds in 2.3 ms, and took 1.0 ms to find all 844 already there.
+  - The packet behind the line took 0.35 s for 844 seeds, and 0.80 s for the first build, which decodes the bundled indexes.
+  - A collection's record already adds up to 17,613 seeds through the same write. So the action is offered at every size.
+
+**By hand** (a throwaway XCUITest, appended to `AuxWindowCloseTests.swift` for the run and restored after it)
+- The device: an iPad Pro 13-inch (M5) of the session's own, under iOS 27.0, in landscape and in Full Screen Apps, with S1's volumes and L26's index at version 76. `FRUS_UI_TEST_MODE` kept SwiftData in memory and hid the tips.
+- d16 at three hops, *Working Corpus…* from the toolbar. The question read "Cross-reference graph of frus1952-54v02p1, Doc. 16, at three hops. 145 of 145 documents indexed on this device. The graph’s 21 cited pages are not documents and are left out." Save said "Saved as the working corpus “Cross-references of frus1952-54v02p1, Doc. 16 — Nov 27, 2026 at 5:22 AM”".
+- *Archives Visit…* from the list's bar. The picker's line read "… at three hops. On this device a visit of these documents lists 49 targets. A footnote’s central-file class is a target only where a document’s own source note names it: 5 of the graph’s 8 classes." New Archives Visit said "Added 145 documents to “Cross-references of frus1952-54v02p1, Doc. 16”".
+- The counts are the full-index measure's. The records themselves were not read, since the store was in memory.
+- **No spinner.** XCUI's first look after the item found the picker's line, but that look's own snapshot took 7.6 s, so the walk bounds the wait only under 9 s. The packet behind the line built in 0.35–0.80 s on this Mac, and both Save As controls are disabled while it is read.
+- **The first run failed in Windowed Apps,** a fresh iOS 27.0 simulator's default. The rail's Graph opened in a window of its own over the reader, and XCUI's next query timed out after 60 s on a remote element of the reader's web view. The second run chose Full Screen Apps in Settings first, so the graph opened as a sheet, and went through.
+
+**Review:** one pass on the diff. It found two comments to correct, folded into the visit commit:
+- `GraphSaveMenuItems.actions` had no doc comment.
+- The Mac graph window's scene said nothing under `CrossReference/` reads `@Query` or `\.modelContext`, so its container was latent. The corpus save now writes through the context and the visit picker reads `@Query`, so the comment says the container is live since #1990, and Source Explorer's beside it no longer calls the graph's latent.
+
+**Docs** (the third commit)
+- Both manuals: the graph's sections (iOS §8.6, macOS §8.5) gain *Saving the graph*, with two placeholders each for T3. The working-corpus and Archives Visit sections (§6.1f, §7.9, §14.8, §18.3) name the graph, and §18.3's first step now says the plan resolves each source note and every lot and library a footnote cites, where it said every footnote citation.
+- `Docs/screenshots/README.md` names the four placeholders.
+- EditableContent:
+  - 28 blocks added in `05-Analytics.md` (*Cross-Reference Graph — Save As (#1990)*).
+  - 12 ranged blocks on `CrossReferenceGraphView.swift` re-pointed, each to start on its key: nine in `05-Analytics.md`, three in `08-Reading-Research-Collections.md`.
+  - The README's count, and a bullet in `Amendment-Log.md`.
+- The plan's L42 record, and this entry.
+
+**Checks** (through `Scripts/heavy.sh`)
+- `swift build --target FRUSCoreKit`: no warning.
+- The package's suites for the graph, working corpora, the packet and the plan derivation: 82 tests in 7 suites passed, the new suite among them.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- 17 scoped app suites there: 218 tests passed. They include the 16 new tests, `CodingStandardsAuditTests`, `EditableContentKeyTests`, both boundary scans, the toolbar, Mac sheet and unconstructed-view audits, and the working-corpus suites.
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: six checks passed.
+- **At the head of the queue,** on the merge `8cd4233d` (tree `74b470a9`, with `v2` at `1778feac` taken in; three conflicts, each where both sides had appended), in one `Scripts/heavy.sh` call from 16:42 to 17:03 UTC:
+  - The unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,401 tests in 1,014 suites, 8,383 passed, none failed, 17 skipped as at L37, and the one test with the six known issues, in 781 s. L39's landing ran 8,385 in 1,013 suites, and this row adds 16 in one. `RichTextRestingCapTests` passed in the run, so the script's rerun of it was not needed. The build printed the two known residues and no other warning.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,304 tests in 612 suites over 39 runs, none failed, with the same two older warnings (the unused `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`). L39's landing ran 5,288 in 611.
+  - The `FRUSExplorerMac` build: the residues alone.
+  - `Scripts/check_repo_hygiene.py` on the merge: six checks passed. Every ranged EditableContent block still holds its key there (1,364), by a port of `EditableContentKeyTests`' rule run before the unit target, which ran the test itself.
+
+**Offered, not taken**
+- Two layout findings from the walk, in the plan's §5 under *Found by L42*:
+  - The network's three-column layout for a small graph (`standardLayout`) places no archival node: d16 at one hop draws none of its four units there, where the timeline draws all four.
+  - At three hops the timeline parks d16's 81 archival nodes in its Undated column as a grid that covers the axis from about 1955 to its end, over the dated documents there.
+- #1764's toggle: at three hops the iPad opens the list by itself, so the walk did not try it.
+- The three older saves (Search's sheet, the lasso, the Clusters index) could write through `WorkingCorpusCapture`, as Chronology will (L56).
+
+## Session 2026-11-27 — L34, one plan for three formats: FRUSCoreKit resolves each document of a collection into the lines it prints, and the web page, the PDF and Word draw them; the source note once, the contents numbered alike and the PDF's past its first page, a title over *As published:*, the volume's note numbers in Word, a heading and a dateline read once; Word's contents linked rows with no page field; R2b's finding taken
+
+Row L34 of the plan of record from 2026-11-25 (the Collections design's lane 2 and §3.8; #1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003, #2007, and #2005's sentence), started by "Development session orchestration" on `claude/l34-one-plan-three-formats-e90101`, from `v2` at `7ccecacb` (L57's merge). Kit and app code: package input, so `swift build --target FRUSCoreKit` and `swift test`; no stored property, no CloudKit identifier and no index version. Commits: `2e95dc92` (the plan, its formats, the candidate, the tests, the pins and the docs) and a records commit.
+
+**#2037's merge**
+- L42 merged as `9e92080f`, a squash onto `1778feac`, at 17:54:53 UTC on 2026-11-27, from its head `c20b4e4e`. Its tree, `6654cbbd`, is the head's. It closed #1990. This entry records it.
+- L39's #2036 (`1778feac`) is recorded in L42's entry above, L30's #2035 (`8d38c5ab`) in L39's, and L57's #2034 (`7ccecacb`), where this row began, in L30's.
+- This branch took `v2` in at `9e92080f` (`60db0e24`). Three files conflicted, all records: the session log, the Amendment-Log and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decisions are 215 to 217, after L30's 214.
+
+**Shown first** (decision 183)
+- **In 1.0 (1861),** in a Mac check copy the session built at `1.0-release` (`08e8bac8`) under a bundle id of its own, with `frus1961-63v11` and `frus1946v06` seeded, and removed after. One collection (a section, `frus1961-63v11` d1, `frus1946v06` d474 and d475, *Full text as printed*) as a web page, Word and a PDF, and one of 45 documents (d470–d514) as a PDF.
+  - **#1991:** d1's source note three times in the web page: the notes list's one entry, the *Source:* line, and its hidden popover.
+  - **#1993:** the web page numbered *Part One* 1 and the documents 2 to 4, and the two blocks 5 and 6; the PDF and Word's stored rows numbered the documents 1 to 3.
+  - **#2001:** after "Feb 3 [13]" in d475 Word printed 9, its own count; the volume prints 44.
+  - **#1984:** the 45-document PDF listed rows 1 to 11 on its cover and no other.
+  - **Found in passing:** Word's stored contents rows printed the citation's italics as literal underscores. The plain rows print italics.
+- **On the unchanged code** (`v2` at `8d38c5ab`, a detached tree, two throwaway suites never committed): six tests, all failed, eleven issues, each at its defect. Through `v2`'s own assembly, over the resolution fixture's volume with three documents added: an opener's and a closer's dateline read `nil` (#1994); an editorial note's heading `""`, its record "Document 10: d10" (#2003); a heading's numbered call kept, "11. Letter From President Carter to Soviet General Secretary Brezhnev[1]", and its record "Document 11: 11. Letter From…[1]" (#1992, #2002). Through the renderers: with footnotes off, two calls drawn as buttons and no popover for either (#2007); a titled document at summary depth with no word of the volume's heading (#1998); the placeholder printed in an export (J10); a document under a third-level section with its volume's heading an `h2` (J32); an AI headnote's export naming `frusText` alone among its sources (#2005).
+- **The Word and Pages run** (the design's §12): two `.docx` files, A with contents rows linked to bookmarks and a `PAGEREF` field at each row's end, B with a `TOC \f` field over `TC` entries the exporter marks, both with notes marked by the volume's numbers (`w:customMarkFollows`: 44, 45 and a bullet).
+  - **Pages 14.5**, read by the session through Pages' own PDF export: A kept every row's words and link, each landing on its entry, and printed each page field's stored result; B printed the field's stored rows, unlinked and unnumbered. Both printed 44, 45 and the bullet.
+  - **Word, on Windows, by the owner:** A's rows kept their words and links (a Ctrl-click lands on the document); B's did nothing on a click. Neither printed a page number on open, nor after Ctrl+A and F9 with editing enabled, and Word offered no *Update Field* at A's field. A third file, A with `w:updateFields` in its settings, opened with no prompt and no number. The marks were right in both.
+  - **The owner's choices:** *Rows, no prompt (A)*, then *Drop the field* (decisions 215 and 216).
+  - **A claim that does not hold:** the design's §3.8, after 1.0's comment on the field's `w:dirty`, has Word rebuild the contents field "on first open". In this run neither application rebuilt a field so marked.
+- **The candidate's defect,** R2b's finding (below), on `v2` at `7ccecacb`: The new assembly test failed at both of its checks: under the collection's prompt the headnote printed "Older, under A.", and with no prompt "The oldest.", where the newest of each belongs.
+
+**The one reading** (`FRUSCoreKit/TEI/DocumentHeadingReading.swift`)
+- A document's heading and dateline are read once, from its parse: the heading's words through an editorial note's wrapper (#2003, as L26 left the wrapper read), without its calls (#1992); the volume's own number read by its form in every volume (J23: `No. 12`, `12.`), and the dateline from the document's top, its opener or its closer (#1994).
+- The assembly carries the reading (`CollectionExportDocument.header`, `dateline`), and a record takes its title and its *Document date:* line from it (decisions 165 and 198): "Document 7: Telegram From the Embassy in France to the Department of State", the number history.state.gov cites named once (decision 197).
+
+**The plan** (`FRUSCoreKit/Collections/CollectionDocumentPlan.swift`)
+- `CollectionExportPlan` holds the contents rows and each document's lines, each line with its text, role, heading level and label. The web page, the PDF and Word draw it, and none decides a part's presence, place or wording.
+- **Three openings:** a title of the author's leads, the citation a line under it and *As published:* inside the volume's heading (#1998; decisions 154 and 197); otherwise the citation leads, as 1.0 opened every document; *the volume's heading leads* is in the plan, its region named by the citation's number (J16), and nothing sets it before L43.
+- **The source note once** (#1991), by where the volume puts its call: on the heading, from 1955, it prints among the footnotes; leading the document unnumbered, before 1955, as *Source:* after the text, its unlabelled copy and its glyph left out. The era is never read from the number, since 29 volumes number the heading's note `n="0"`.
+- **Notes that do not print** (`FootnotePrinting`): no popover, no entry in the notes, and the call the volume's number as text, or nothing for a note it printed unnumbered (#2007).
+- **One heading rule** (J32): the collection's title is level 1, a section of level *L* is *L* + 1, a document one below its section, the volume's heading under a title one below that, an attachment's one below the volume's, and the notes' one below the document's. Past six the web page writes a paragraph with the heading role and `aria-level`; Word writes each level as its outline level.
+- **No placeholder in an export** (J10): only the live preview tells its author a requested headnote has nothing stored.
+- **The contents rows** (`CollectionContentsRow`): the documents alone numbered, alike in the three (#1993); a *Header & Dateline* row the heading's words and the dateline (#1994, #2002); a titled row with *As published:* and the volume's heading under it, and in *Citation* style the citation after (J46).
+- **Each line its own run with its role** (J19): the PDF's ranges carry `PDFCollectionExporter.planRoleKey`, for L60.
+
+**Each format**
+- **Web page:** the contents an `<ol role="list">` writing its own numbers; the headings at their levels; the calls of notes that do not print as text.
+- **PDF:** the contents list runs on over as many pages as it needs (#1984); the source note follows the text and prints whole; a research note flows under its document; a summary prints under its label, where 1.0's PDF alone printed none (found in the review pass).
+- **Word:** the contents list is the plan's rows, each linked to a bookmark at its entry, with no page field and no tab leader (the run above), where it was one `TOC` field; each note is marked with the volume's number, at its call and its note (#2001); the section styles are one outline level down (J32); the lines above the text keep with it (J16).
+- **The outline** (J38): an entry's row in the collection editor and the Mac's manager reads the title with the volume's heading under it.
+- **#2005's sentence:** a generated headnote names the app's model among the sources. The statement as §3.7 redesigns it stays L58's.
+
+**R2b's finding, taken on the owner's word** ("Take it into L34", decision 217)
+- Where a collection names no summary prompt, an entry's headnote card, and the headnote the export printed, took the first summary the store returned, the oldest, where the document's rail shows the newest. A document at summary depth took its prompt's oldest the same way.
+- `SummaryRecency` (`FRUSCoreKit/Models/SummaryRecency.swift`) is the rail's rule over values, by when each summary was made, then saved, then its id; `GeneratedSummary.ranksAbove(_:_:)` reads its records through it. The assembly's headnote, the inspector's card and the resolver's summary under a prompt take the newest by it.
+
+**Tests**
+- `DocumentHeadingReadingTests` and `CollectionDocumentPlanTests` (`FRUSExplorerTests/FRUSCoreKit/CollectionDocumentPlanTests.swift`), 17 tests: the reading (the number by its form, a heading's call, the opener's and the closer's dateline, an editorial note's wrapper, the index's two strings); the openings, which line is the heading and *As published:* inside the volume's heading in the page and the package; a title at summary depth; the source note in both eras and under each pair of switches; the calls with footnotes off; Word's marks; no placeholder; the levels past six; the contents rows in both styles and under a title; #2005's sentence; a record's title.
+- In `CollectionResolutionTests.swift`: the headnote's fallback through the assembly, and `SummaryRecencyTests` (2). In `CollectionTests.swift`, five new: the parts' order in the three formats; a long source note and a research note longer than a page in the PDF; a contents list longer than a page; a summary's label in the three; the resolver's newest summary. Two renamed for what they now hold.
+- **Pins re-taken, each with its reason in its comment:** `CollectionRenderingPinTests`' seven (the three pages, the two packages, BibTeX and RIS, whose records are now built through `ZoteroJSONExporter.makeItem`, so they hold decisions 165 and 198), and `CollectionResolutionTests`' dump, whose 137 added bytes are the two datelines, their records' date lines and three titles that name the number once. Xcode and SwiftPM gave the same digests.
+- `CollectionExportContrastTests`' list takes the rows' small line and the notes' heading, which names the reader's `--color-secondary`, laid over its ground.
+- **The runs before landing,** through `Scripts/heavy.sh`. **First:** the collections' kit suites (`swift test --filter`), 136 tests in 9 suites with 10 issues, and the app's 23 affected suites on the iPhone 17 under iOS 27.0, 456 tests with 13 issues: the eight pins to re-take, two checks of the new suite's own (one read the page's stylesheet, which names `fn-marker-unnumbered`, and one the contents' row before the heading it names), the M3 test of a title, which held 1.0's opening with no citation printed, and the contrast list's `var(--color-secondary)`, an `rgba` the test now lays over its ground. **Run 2** (17:03 to 17:12 UTC): the control above; `swift build --target FRUSCoreKit`, no warning; `swift test --filter FRUSCoreKitTests`, 3,225 tests in 379 suites with 2 issues, the two Word pins, taken from it; the app's 27 suites (the 23, `SummaryRecencyTests`, `SummaryCarouselOrderTests`, `VolumeUpdateReviewTests` and `SummarizationUITests`) on the iPhone 17 under iOS 27.0 with the TEI mirror, the app removed first, 490 tests, all passed, the Word pins among them; the `FRUSExplorerMac` build, with the two known residues alone. `Scripts/check_repo_hygiene.py`: six checks passed.
+
+**Docs**
+- Both manuals' chapter 12: the rows, a title's opening, the footnotes and the source note, the contents list, the preview's note, the PDF's and Word's rows, what a citation record carries, which summary a headnote and a summary-only body print.
+- `Docs/EditableContent/08-Reading-Research-Collections.md`: six blocks for the plan's labels, the missing headnote's block moved by hand to the preview's function, and eleven ranges re-pointed, eight of them in the inspector for the candidate; a bullet in the Amendment-Log.
+
+**By hand, owed:** the owner's 52-document collection as a PDF, a Word file and a web page; J16's eight telegrams (`frus1946v06` d470, 473–477, 480, 486) under *Full text as printed*, by headings and landmarks with VoiceOver in Safari and in Word's Navigation pane.
+
+**The landing checks,** on the merge `60db0e24` (tree `249a3466`, with `v2` at `9e92080f` taken in), in one `Scripts/heavy.sh` job from 18:01 to 18:25 UTC: `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,324 tests in 615 suites over 39 runs, none failed; the unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set), 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped as at L42, and the one test with the six known issues (L42's 8,401 and this row's 25); no collection pin moved, so none was re-taken; the `FRUSExplorerMac` build, with the two known residues alone; `Scripts/check_repo_hygiene.py`, six checks passed. The merge's kit changes, L30's Citation Lookup, L39's page links and L42's graph capture, print nothing the pins read.
+
+## Session 2026-11-27 — CI fix, a test-only hardening for CI's runner: the selection bridge's wait 5 s to 60 s, the in-app browser's later waits 120 s to 600 s
+
+The orchestrator session ("Development session orchestration") started this one on the owner's "standby" and sent it on 2026-11-27, after C (the unit target on GitHub's runner, the iPhone 17 under iOS 27.0) had failed in four of about fourteen push runs on `v2` that day, each in a different suite and never in A or B, while the Mac's landing runs passed every one of those tests. The question: whether the fourth, run 46022965606 at `8d38c5ab`, was the code, and what the two WebKit suites among the four wait on. On `claude/v2-ci-fix-14b4de` from `v2` at `1778feac`; the fix is `8b515cf4`. It closes no issue.
+
+**#2038's merge**
+- L34 merged as `97c4a8a9`, a squash onto `9e92080f`, at 19:09:41 UTC on 2026-11-27, from its head `a6cb06cb`. Its tree, `5dd23ae7`, is the head's. It closed ten issues (#1984, #1991, #1992, #1993, #1994, #1998, #2001, #2002, #2003, #2007); auto-merge was off. This entry records it.
+- L42's #2037 (`9e92080f`) is recorded in L34's entry above, and L39's #2036 (`1778feac`), where this session began, in L42's.
+
+**Run 46022965606: the runner's**
+- One test failed, `ListLabelSelectionTests/aLabelInAFootnotePopoverStillMapsToNothing()`: "the selection bridge posted nothing" after 5.71 s. `OffsetEngineTestHarness.selectionPayload` allowed 5 s, its clock started before the selection script runs.
+- `7ccecacb..8d38c5ab` (L30's #2035) changes Citation Lookup, one document-number query each in `IndexingPipeline` and `SearchService`, and tests and docs: nothing the reader, its scripts, WebKit or the harness reads.
+- Across 14 push runs on `v2`, read from the `unit-test-log` artifact that green runs keep too: the popover test, the only one in its suite that calls `showPopover()` before it selects, was the slowest of its 13-test suite in 8, and took 4.52 s at `24616a57` (run 45957805430, passed), before `8d38c5ab`.
+- On the Mac, through `Scripts/heavy.sh`: the file's 17 suites five times at `7ccecacb` and five times at `8d38c5ab`, a `build-for-testing` at each, on the iPhone 17 under iOS 27.0 by its UDID. All ten passed, 94 tests each; the popover test 1.59–3.37 s and 1.58–4.18 s. These WebKit tests ran slower per test on the Mac than on the runner (median 1.69 s against 0.72 s), so 5 s was tight here too.
+- The next push run, 46032962047 at `1778feac`, passed C.
+
+**Run 46011019732: a stall past the opening page**
+- `InAppBrowserCoordinatorTests.webKitAsksTheCoordinator()` timed out after 120 s waiting for WebKit's second question about `windowOn`, the main-frame load the coordinator starts for a new-window link on the site. The opening page was in after 12.4 s and the first four links were answered within 0.7 s; the page logged nothing from 14:38:52 until the test tore it down at 14:41:39, and the wait recorded its timeout about 48 s past its deadline.
+- Across 13 runs with the test, the five links took 0.9–4.5 s in 11, 66 s in run 45940058418 (passed) and more than 168 s here; both slow ones began in the host's first minute, 14 s and 49 s after its first log line. The `-999` cancel this run logged is in a green run too (45909799163).
+- `AppIntentsLiveEntityService` traps in `XPCPeerRequirement.hasEntitlement` twice in each of the day's four failed runs, in run 45930491832 both times before the test host had started: the ad-hoc-signed runner's, not a stall's trigger.
+
+**What changed** (`8b515cf4`, `FRUSExplorerTests` only)
+- `OffsetEngineTestHarness.selectionPayload` and `selectionCleared` allow 60 s, where they allowed 5; every caller expects a payload, so a pass costs what the bridge takes.
+- `FigureReaderTests`' `select` takes the harness's wait, where it took 20 s of its own for the same failure.
+- `InAppBrowserCoordinatorTests.waitLimit` is 600 s, the opening page's, where it was 120 s.
+- Each doc comment states the runs.
+
+**Not changed:** run 45930491832's `openSettings()` failure is the same class (the editor host's fixed 5 s `settle(until:)` in `CollectionTests`), left out since raising it means reading every caller; the day's two 1,200 s failures are the job's own slowness.
+
+**Checks.** Before the queue, on `1778feac` with the change: `build-for-testing`, the `GeneratedSummary` residue alone; the six suites that call the changed waits, 42 tests in 6 suites passed; `Scripts/check_repo_hygiene.py`, its six checks passed.
+
+**At the head of the queue,** on `9b83be59` (tree `2bb798db`; the merge `ca1b726f` took `v2` at `97c4a8a9` in), in one `Scripts/heavy.sh` call from 19:18 to 19:36 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,426 tests in 1,017 suites, 8,408 passed, none failed, 17 skipped, and the one test with the six known issues, in 791 s; both real-TEI suites ran and passed.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: no package input changed.
+## Session 2026-11-27 — L40, the iPhone Duo's windows: a phone presents Analytics and the other aux surfaces as sheets, the Duo too, through one gate; and on the iPad a window closed with Done does not come back
+
+Row L40 of the plan of record from 2026-11-25 (D1, decision 179), started on the Mac by the orchestrator's session ("Development session orchestration") on the owner's word. Built from `v2` at `5026ead5` (L32's merge) on `claude/l40-duo-windows-28bd2c`:
+- `daa25859`, the gates;
+- `e1c3134e`, the iPad check's case;
+- the records;
+- then, at the head of the queue, `v2` at `4881c9d5` taken in (`2a8db8ed`), and the landing's records.
+
+**#2039's merge**
+- The CI fix merged as `4881c9d5`, a squash onto `97c4a8a9`, at 20:17:30 UTC on 2026-11-27, from its head `bd4af53d`. Its tree, `1e289586`, is the head's. It closed no issue, and its timeline holds no auto-merge event. This entry records it.
+- L34's #2038 (`97c4a8a9`) is recorded in the CI fix's entry above, and so back to this row's start: L42's #2037 in L34's, L39's #2036 in L42's, L30's #2035 in L39's, L57's #2034 in L30's, L41's #2032 in L57's, L37's #2031 in L41's, and L32's #2030 (`5026ead5`), where this row began, in L37's.
+
+**The files it shares.** The gates are in ten files, and four of them other rows of Wave 3 change too: `DocumentView.swift` (L37, L39, L41), `BrowserView.swift` (L37), `CrossReferenceGraphView.swift` (L42) and `SearchView.swift` (L57). The orchestrator was told before any change, and placed the row after them. Every hunk of theirs in those files sits at least seven lines from L40's.
+
+**What was found, the defect first** (decision 183), on the iPhone Duo simulator (`69E4A90C`, iOS 27.2), folded, with a Debug build of `v2` at `5026ead5` on an empty library:
+- Browse's Analysis Tools menu offered Person Analytics as a submenu, the form for a scene with windows.
+- Cross-Reference Analytics opened as a full-screen window of its own, a second scene (SpringBoard's `SceneCreationRequest`).
+- Done brought Browse back, with SpringBoard's *destroy scenes request*.
+- Quit and launched again, the app read **2 Views Open**; the views switcher drew the closed analytics window beside the main one, and SpringBoard removed it only when it was swiped away there.
+- The app's own `KnownSceneSessions` file is no measure of what comes back: it still named the analytics session at the next launch after that view was gone from the switcher.
+
+**What changed**
+- `AuxWindowGate` (`App/AppState.swift`): a property wrapper over `\.supportsMultipleWindows` and `UIDevice`'s idiom, false on a phone idiom; the 25 gates in ten files read it as `@AuxWindowGate private var opensAuxWindows`.
+- `SearchView`'s declaration moves inside `#if os(iOS)`, where its four gates are.
+- Every gate file keeps its line count, so none of its EditableContent ranges moves. `AppState.swift`'s three ranges follow the 50 lines it gained.
+- Prose that called the flag false on every iPhone: the gates' doc comments, `FRUSExplorerApp`'s scene notes, `AnalysisToolsMenu`'s note.
+- `WindowTargetingTests` §5: the rule, and a scan that `AuxWindowGate` is the flag's one reader and every file that opens an aux window declares it.
+- `AuxWindowCloseTests.testAWindowClosedWithDoneIsNotBackAtTheNextLaunch`, the iPad check, which counts the app's cards in iPadOS's app switcher after Done, a quit and a relaunch.
+- Docs: the plan's L40 record and §5; the UI-test index row and runbook entry; no manual, since both manuals already describe these surfaces as the iPad's windows and the iPhone's sheets.
+
+**Seen with the fix**, on the same Duo: Person Analytics one item; Cross-Reference Analytics a sheet, with no scene created; quit and launched again, one view and no pill. Unfolded, Semantic Analytics is a form sheet over the dimmed main window, of compact width where the window was full-screen.
+
+**The iPad check** (decision 179): a window closed with Done does not come back, so Done is unchanged.
+- On a fresh iPad Pro 13-inch (M5) under iOS 27.2, in Windowed Apps, the relaunch case passed: one switcher card after the relaunch. SpringBoard's log named the closed window's scene in 240 entries from its opening to the quit, and in none after.
+- With Done made to front its launcher and leave its own window open, the case failed on two cards.
+- The scene stays connected in the background from Done until the app quits, 33 s in the run. Nothing shows it, and it is in §5, unfiled.
+- Under iOS 27.0, no fresh iPad Pro simulator could run the case: `backboardd` aborted on its Metal texture assertion, on the 13-inch at the app's first launch and on the 11-inch (M5) as the analytics window opened.
+- The simulator control tool could not drive the new iPads (each needs the owner's grant, and the request went unanswered while the owner was away), so a UI case drove them.
+
+**Checks, on the branch**
+- `build-for-testing` on the iPhone 17 under iOS 27.0, with the two residues alone.
+- 19 app suites that read the changed files: 283 tests, one failure, the three `AppState.swift` ranges, re-pointed since. Then `WindowTargetingTests` and `EditableContentKeyTests`: 75 tests passed.
+- Two mutations, each rebuilt: `v2`'s ten gate files beside the helper failed the scan (35 readers, ten files) and the word cloud's test; the rule without the idiom failed the phone's test alone.
+
+**At the head of the queue,** on the merge `2a8db8ed` (tree `1e2d1b30`; `v2` at `4881c9d5` taken in), in one `Scripts/heavy.sh` call from 20:46 to 21:07 UTC:
+- The merge: every source file without a conflict, `DocumentView.swift`'s three rows (L37, L39, L41) among them. The amendment log, the plan's §5 and this log met, and each is an append, `v2`'s text first.
+- On the merged tree, before the build: `AuxWindowGate` is still the flag's one reader, each of the ten files that opens an aux window declares it, and a mirror of `EditableContentKeyTests`' check reads 1,370 ranged blocks with no drift.
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,429 tests in 1,017 suites, 8,411 passed, none failed, 17 skipped, and the one test with the six known issues, in 989 s. That is the CI fix's 8,426 and L40's three, each of which passed; the real-TEI suites ran and passed.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed. No `swift test`: the row changes no file a package target compiles or reads.
+
+**Afterwards.** The Duo is as found: its library, prefs and saved state were set aside by rename for the run, then put back with build 1842, folded and shut down. The three iPad simulators made for the check were deleted at the orchestrator's word, the disk being under its 40 GB floor.
+
+**Still owed at the push:** nothing by hand. The Duo's check is the row's own, made above.
+
+## Session 2026-11-27 — L62, a day whose midnight a change of clocks skips: the Mac's Search window and the word cloud read it as that day, through the pair of conversions iPhone and iPad already used, now the kit's; shown first in the zones of the issue's 25 days
+
+Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a short row the owner chose on 2026-11-27 to build before R8, so that the early build carries it ("Yes, row L62 now", the owner's answer in the orchestration session, found in its transcript with the question). Started by "Development session orchestration" on `claude/l62-dst-skipped-day-7c5c2c`, from `v2` at `7ccecacb`. Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed; no stored property and no index version. Commits: `169fe473` (the defect shown first), `653ddc9e` (the fix) and a records commit.
+
+**#2040's merge**
+- L40 merged as `b710da3b`, a squash onto `4881c9d5`, at 21:56:32 UTC on 2026-11-27 (GitHub's time; the commit is stamped 21:56:31), from its head `83719cca`. Its tree, `89b5bb9a`, is the head's. It closed no issue: D1 has none. This entry records it.
+- L57's #2034 (`7ccecacb`), where this row began, is recorded in L30's entry above, and #2035 to #2039 each in the entry after its own.
+- This branch took `v2` in at `b710da3b`. Four files conflicted, all records: the session log, the Amendment-Log, the kit's runbook and the plan of record, each resolved with `v2`'s side first and this row's after it. This row's decision, written as 214, is 218, after L30's 214 and L34's 215 to 217.
+
+**Shown first** (decision 183), over the issue's 25 days, each in its own zone (`SkippedMidnightDay`: the first three of each zone in its table, and its four recent days)
+- **The Mac's read.** The unit target runs on iOS, where `MacSearchViewModel` is not compiled, so the first commit moved the popover's read, as it was, into `SearchViewModel.applyDateRange(_:)`, which the Mac calls: a strict `yyyy-MM-dd` `DateFormatter`, its zone made explicit as `dateRangeTimeZone`. On the iPhone 17 under iOS 27.0 it kept the date the popover held in all 25 cases (From kept 15 June 1990 for São Paulo's 1 January 1914).
+- **The word cloud.** `WordCloudScope.day(fromISO:in:)` read each day as no date, and the range's title printed the day's string (`1914-01-01 – 1914-01-01`), in all 25 cases. The same two tests failed in all 25 under `swift test` too, on macOS 27.2.1's Foundation, which the Mac app runs on.
+- **iPhone and iPad, checked:** a hand-off's and a saved search's day held in all 25 cases on the code L57 left, and so did a facet's year whose first midnight is skipped (1914 in São Paulo). They do not meet #2033.
+- The run: 15 tests in the two suites, 12 passed and 3 failed; `swift test --filter WordCloudDateRangeSkippedMidnightTests`, 2 tests failed with 75 issues.
+
+**Foundation, measured on this Mac** (macOS 27.2.1, probe scripts run once and not committed)
+- A sweep of every day from 1861 to 2000 reproduced the issue's whole table: 27 such days in São Paulo, 43 in Santiago, 42 in Havana, 33 in Beirut, 14 each in Tehran and Cairo, 4 in Tokyo and none in New York, each count equal to the days whose first moment is not 00:00. The day's noon taken back to its start read every one of the 51,134 days in each zone as itself, from its first moment.
+- **What did not hold** (decision 183): the issue says the calendar's reads "each gave the day's first hour, 01:00". Five of its 25 days begin minutes past midnight, where a zone left a local mean time: São Paulo's 1 January 1914 at 00:06:28, Santiago's 1 July 1916 at 00:17:15, its 10 September 1918 and 1 September 1927 at 00:42:45, and Tehran's 13 June 1935 at 00:04:16. The fix takes each day's first moment, and the tests require that, not 01:00.
+- **Two edges, both tests now.** Havana's 19 July 1925 has no noon, since the zone left Havana mean time at 12:00: the calendar reads the noon forward within the day, and the day still starts at its midnight. Samoa's 30 December 2011 does not exist, since Apia crossed the date line, and reads as no date.
+
+**The fix**
+- **One pair of conversions, in the kit.** L57's two moved from `SearchViewModel` to `DateRange` (`FRUSCoreKit/Models/Manifest/ManifestModels.swift`): `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, public. `SearchViewModel.filterDay(of:in:)` and `filterDate(ofDay:in:)` forward to them, by `CLAUDE.md`'s rule that a declaration the kit needs moves into it and the app keeps its name as a forwarder.
+- **The Mac's Search window** reads and writes its popover's two days through Filters' view model, as iPhone and iPad do: `applyDateRange(_:)`, which `applyParameters(_:)` now calls, and `dateRangeDays`, which the search's parameters read. Its two `DateFormatter`s are gone.
+- **The word cloud.** `isoDay(from:in:)` and `day(fromISO:in:)` convert through the pair, so the range's pickers no longer fall back to the year 1 and now, its title names the day in words, and *View in Chronology* hands the day over. They and `dateRangeTitle(startISO:endISO:in:)` take a zone, `.current` by default, so callers' source is unchanged. `isoFormatter()` is gone, and its rule, that a day's conversion is in the pickers' zone, stands on `isoDay(from:in:)`.
+- **Nothing stored moves:** `SavedSearch` converts its own dates in GMT, which skips no midnight, and a word cloud's scope keeps its day strings. No CloudKit field, no index version.
+- `Planning/FRUSCoreKit-Runbook.md` has the move (*L62 (#2033): a day's two conversions*).
+
+**Tests**
+- **`SkippedMidnightDayTests.swift`** (new, the kit's, compiled twice): `SkippedMidnightDay`, the issue's 25 days; `DateRangeDayTests`, 6 tests (the 25 days read as their first moments and written back; the four recent ones at 01:00; the skipped noon; the day skipped whole; four zones' midnights; thirteen strings that name no day); `WordCloudDateRangeSkippedMidnightTests`, 2 (the range's read and its title).
+- **`SearchDateFilterZoneTests`** gains three: the Mac's Filters' read (`applyDateRange(_:)`), iPhone and iPad's hand-off and saved search, and a facet's year whose first midnight is skipped.
+- **The control** is the run that showed the defect: the same `-only-testing` scope failed 3 of 15 tests, each in all 25 cases, and passes now.
+- **Checked on the branch,** in one `Scripts/heavy.sh` job: on the iPhone 17 under iOS 27.0, the row's suites, the Search and word-cloud suites that build a `SearchViewModel` or read a `DateRange`, and the EditableContent, coding-standards and boundary gates, 34 types, 354 tests passed; `swift build --target FRUSCoreKit`; `swift test --filter FRUSCoreKitTests`, 3,213 tests in 378 suites passed; the FRUSExplorerMac build succeeded with the two known residues (it compiled all four changed files); `Scripts/check_repo_hygiene.py`, its six checks passed. Comments were edited after the run.
+
+**Offered, not taken** (decision 183; §5, *Found by L62*)
+- **Indexing's legacy dateline read** (`IndexingPipeline.parseDateISO(from:)`, for a document with no machine-readable date) reads a dateline with a strict formatter in the device's zone. On such a day its day forms fail, and its month-and-year form reads "January 1" as January of the year 1: a copy of its loop, on this Mac, read `Washington, January 1, 1914.` as `0001-01-01` in São Paulo's zone and `Tokyo, May 2, 1948.` as `0002-05-01` in Tokyo's, where New York's reads `1914-01-01`. How many documents reach that step was not measured; a fix changes what indexing stores, so it waits for an index version. Not filed: the owner's word decides.
+- **Two volume ranges' labels** (`IndexingSummaryCard`, `MacCorpusBrowserWindow`) print the day's string on such a day.
+
+**The rest**
+- No string changed, so no EditableContent block is added; three ranges moved and are re-pointed (`Amendment-Log.md`). The manuals do not say what the pickers show on such a day, so neither changes.
+- No FRUS Explorer Light hand-over: #2033 carries none. The kit's public API gains `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, and three of `WordCloudScope`'s functions take a defaulted zone, so a caller's source compiles as before.
+
+**The landing checks,** on the merged tree (`d6ad1e68`, tree `c8a652e3`, with `v2` at `b710da3b`), in one `Scripts/heavy.sh` job:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning (140 s).
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
+- `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
+
+## Session 2026-11-27 — CI fix, Spotlight in the unit-test host: the donor reaches Spotlight only outside a unit test's host, so no removal waits on the simulator's daemon
+
+The same CI fix session, on the orchestrator's second case: push run 46054712743 at `97c4a8a9` failed C on `DocumentRevisionsTests.swift:687` and `:770`, each over the 20-minute allowance, in a C of 2 h 41 min, as run 45966752299 at `2db58c5a` had on `:687` and `:751`. The question: whether the removed-volume tests are slow by design or only on the runner, and the smallest change that makes them hold. On `claude/v2-ci-fix-document-revisions` from `v2` at `4881c9d5` (#2039's merge); the orchestrator accepted the change before it landed. It closes no issue.
+
+**#2041's merge**
+- L62 merged as `d9b86ae2`, a squash onto `b710da3b`, at 23:13:43 UTC on 2026-11-27, from its head `17c7860b`. Its tree, `eda40b7c`, is the head's. It closed #2033; auto-merge was off. This entry records it.
+- L40's #2040 (`b710da3b`) is recorded in L62's entry above, and #2039 (`4881c9d5`), where this branch began, in L40's.
+
+**Slow only on the runner, and not in the tests' work**
+- The fixture is three short documents: every index pass logs "complete — 3 docs, total 0.0s".
+- `IndexingPipeline.removeVolume` runs two SQLite deletes, then `await donor?.withdraw(volumeId:)`. In the Xcode build the suites' `IndexingPipeline(fts5Store:databaseURL:volumesDirectory:…)` is the app's initialiser, which passes `SpotlightDonor()`, whose `withdraw` awaits `CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers:)`; the package's suites get the same call with no donor (`IndexingTestSupport.swift`), so `swift test` never waited.
+- In 16 C logs (14 green, the two failed), the first removal returned at the same minute the test host's own Spotlight rebuild was answered (`rebuildSpotlightIndex: resubmitted 0 items`) in 14: 7.3–21.1 min after the host launched in green runs, 82 and 86 min in the failed ones. The test's length was the rest of that wait (7.5–559 s green).
+- Not only the first: in green runs 46032962047 and 46002209676 four or five tests a run had their longest silence ended by a removal's return (the removed-volume test, the storage hubs' routing, the research export's strip, the UI suite's labels, the index dispatch): 21.0 and 17.3 min of each C.
+- Run 45930491832's `ResultSelectionTests.swift:1520` (1,200 s) was the same wait: a removal begun 17 minutes into the host had not returned when the test was killed. So three of the day's failed C runs (45930491832, 45966752299, 46054712743) are this one wait.
+- Run 46054712743's spindump at the second timeout (20:33:36) shows the simulator's `searchd` idle, its main thread last run 570 s before; its own indexing watchdog aborted it at 20:49:21 (`__si_indexingWatchdogInit_block_invoke`). That run's first failure, `CodingStandardsAuditTests/countsGoThroughCountCopy()` ("The test runner timed out while preparing to run tests"), came before any removal, with the host's main thread in XCTest's loop: not this, and left alone.
+- On the Mac the daemon answers at once.
+
+**What changed**
+- `1d419b30`, the test first: `SpotlightDonor.reachesSpotlight(_:)`, which `donate` and `withdraw` consult, answering `true` as the donor behaved, and `IndexingSeamsTests.theSpotlightDonorStaysOffSpotlightInATestHost`. Run on the Mac there: "11 tests in 1 suite failed … with 2 issues", the two for a unit test's host.
+- `15982273`, the fix: `reachesSpotlight` answers `!FigureImageStore.isUnitTestHost(environment)`, the rule that already keeps the figure store and its network pass out of the test host. App code, changing behaviour only in a unit test's host: the app a reader launches and a UI test's app donate and withdraw as before, and the pipeline still carries a `SpotlightDonor`, so #1604's `theAppsPipelineHasTheSpotlightDonor` is unchanged.
+- Not taken: a smaller fixture (the work is a tenth of a second), a CI-only bound (the wait can be endless) or a skip in `ci.yml` (12 suite types remove a volume, and C would stop checking removal).
+
+**Checks.** Before the queue, at `15982273` on the iPhone 17 under iOS 27.0: the twelve suite types that remove a volume, 108 tests in 12 suites passed in 4.5 s (the removed-volume test in 0.054 s); both builds with the two residues alone.
+
+**At the head of the queue,** on `735fd9ca` (tree `f8981c54`; the merge `77b2fdbf` took `v2` at `d9b86ae2` in), in one `Scripts/heavy.sh` call from 23:14 to 23:36 UTC:
+- `build-for-testing` on the iPhone 17 under iOS 27.0: the two known residues alone.
+- The unit target (`-only-testing:FRUSExplorerTests`) there, with the TEI mirror and the app removed first: 8,441 tests in 1,019 suites, 8,423 passed, none failed, 17 skipped, and the one test with the six known issues, in 764 s.
+- The `FRUSExplorerMac` build: succeeded, the two known residues alone.
+- `swift build --target FRUSCoreKit`: no warning. `swift test`: 5,332 tests in 617 suites over 39 runs, none failed, no warning.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.

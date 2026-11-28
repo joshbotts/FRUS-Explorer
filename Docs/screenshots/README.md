@@ -2,7 +2,12 @@
 
 Screenshots embedded in the user manuals (`../iOS-User-Manual.md`, `../macOS-User-Manual.md`).
 A manual carries a `` `[SCREENSHOT: …]` `` placeholder wherever an image has not been captured yet;
-since S5 of the build-51 sweep (2026-10-21, below) neither manual carries one.
+after S5 of the build-51 sweep (2026-10-21, below) neither manual carried one until row L42 of the
+plan of record from 2026-11-25 (2026-11-27, #1990) added the cross-reference graph's two saves, owed
+to sitting T3: `ipad/graph-save-corpus` and `ipad/graph-save-visit` in the iOS manual (§8.6), and
+`macos/graph-save-corpus` and `macos/graph-save-visit` in the macOS manual (§8.5). Each placeholder
+says what its frame shows: `frus1952-54v02p1` d16 at three hops, the question before the working
+corpus is saved, and the Add to Archives Visit picker with its line.
 
 The two quick starts (`../iOS-Quick-Start.md`, `../macOS-Quick-Start.md`, 2026-11-03) embed 20 of
 these files and take no capture of their own: on iOS `ipad/onboarding-volumes`, `browse-root`,
