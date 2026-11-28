@@ -219,7 +219,7 @@ query log now that a section's sheet holds none of the collection's fields:
 and `testANoteSurvivesASwitchInTheApparatusStep`. Each still adds a section heading through the Add menu first, so the
 Air's overflow lookup is exercised as before, and `reveal` drags under the step's own bar where it is showing.
 `testFieldsSetInSettingsSurviveTheCollectionsTab` reads the fields that stay in Collection settings. **Measured on L44's
-code:** TITLE-MEAS.
+code:** to follow, queued on the iPhone 17, the iPad Pro and the iPad Air when L44's pull request opened.
 
 ```bash
 xcodebuild test \
@@ -1041,7 +1041,7 @@ has an `accessibilityLabel`, without which VoiceOver would name it by its placeh
 first control, which does not exist.
 **Since L44 it reads the controls where L44 put them:** *Opening* and *See also* in the Documents step, *Citation style* in
 Collection settings, *Wording*'s ten fields on a screen of their own, and the section's *Headnotes*, whose first choice now
-says what it follows, *Follow the collection: Off*. **Measured on L44's code:** FACTS-MEAS.
+says what it follows, *Follow the collection: Off*. **Measured on L44's code:** to follow, queued on the iPhone 17 and the iPad Pro when L44's pull request opened.
 
 ```bash
 xcodebuild test \
@@ -1070,7 +1070,7 @@ the section's settings and none of the collection's, each first choice saying *F
 at the collection, *1 sets its own*, opens the list whose *Clear* returns the section to following. **A picker is read as
 VoiceOver reads it, its label then its value**: under iOS 27 a form's menu picker carries its choice in its label,
 "Footnotes, Off", with an empty value. The first run waited on the value alone and failed at "Footnotes did not take
-Off" while its screen recording showed the picker at *Off*. **Measured on L44's code, iOS 27.0:** IPHONE-STEPS; IPAD-STEPS.
+Off" while its screen recording showed the picker at *Off*. **Measured on L44's code, iOS 27.0:** on the iPhone 17, on `8dea5088`, 2 passed (149 and 218 s), and the section's sheet passed alone (274 s) once its picker was read as VoiceOver reads it; on the final code, to follow; on the iPad Pro 13-inch (M5), on `687350ab` before the replay onto L49, 3 passed (260, 143 and 223 s), the picker reading "Footnotes, Off" as its label.
 On the code before L44 each test fails at its first step row, which does not exist.
 
 **`CollectionInspectorSwitchNamesTests` (L44, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an
@@ -1078,8 +1078,8 @@ iPad, and nothing skips.** The seeded export collection's `d1` holds the project
 `FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d1`, the research seeder's, so its settings draw two notes' switches. It requires two
 switches with two names, each the note's opening words (*Include the note “…”*), since what VoiceOver reads for a switch is
 its label. **On the code before L44** (in a control worktree at `dc3c7512` holding only this file) it failed on both
-devices: two switches, one name, *Include this research note when notes apply*. **On L44's code:** IPHONE-SWITCH;
-IPAD-SWITCH.
+devices: two switches, one name, *Include this research note when notes apply*. **On L44's code:** on the iPhone 17, on `8dea5088`, 1 passed (78 s);
+on the iPad Pro 13-inch (M5), on `687350ab`, 1 passed (62 s).
 
 **`CollectionTemplateFitTests` (L44, #2006, J17, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad,
 and nothing skips.** At the default size, AX3 and AX5 it adds a section heading and reads the pill (taller than 45 points
@@ -1096,7 +1096,7 @@ points wide at the default size in a sheet about 580 wide, one column, because t
 itself; the editor now passes its own width in (`collectionTemplatesInGrid`). And on the iPhone the pill, beside the
 title, was 124 points wide and 126.3 high at AX3 and 469.3 at AX5, *Section* broken inside the word; at the
 accessibility sizes it now has a line of its own under the title. The cards on the iPhone then: 76.0 points high at the
-default size (370 wide), 155.3 at AX3, 305.0 at AX5. **On L44's code:** IPHONE-FIT; IPAD-FIT.
+default size (370 wide), 155.3 at AX3, 305.0 at AX5. **On L44's code:** on the iPhone 17, the final code's figures to follow; on the iPad Pro 13-inch (M5), on `687350ab`, the card 258 points wide and 105 high at the default size, two to a row, and 548 wide, 116.5 high at AX3 and 196.0 at AX5; the pill on its own line, 312.5 by 48.5 at AX3 and 361.5 by 61.5 at AX5; 4 passed (152, 155, 153 and 170 s).
 
 **`CollectionSectionPillHitAreaTests` (L44, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad,
 and nothing skips.** `minimumHitTarget()` grows the pill's content shape to 44 points, and SwiftUI reports a button's
@@ -1108,7 +1108,7 @@ was the pill as drawn: 24.5 points high on the iPad Pro and 38.7 on the iPhone 1
 edge). There the iPad's tap passed too: the system takes a tap that close to a button by itself, as it took Search's
 Filter and pager taps before #1918 (`SearchHitAreaTests`), so the tap is a check and the frame is the guard. The first
 form skipped where the frame was over 34 points, which on L44's code is every device (the iPhone read 44.0), so the
-frame became the test. **On L44's code:** IPHONE-PILL; IPAD-PILL.
+frame became the test. **On L44's code:** on the iPhone 17, to follow (the first form skipped there, the frame reading 44.0); on the iPad Pro 13-inch (M5), on `687350ab`, the frame 147.5 by 44.0, 1 passed (105 s).
 
 **`CollectionTemplateLineAnnouncementTests` (L44, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad
 under iOS 27, alone, on a simulator shut down before it.** It listens through iOS 27's VoiceOver service, as
@@ -1118,7 +1118,7 @@ requires the line's opening, *Changed Archival source note from Off to On* (the 
 line is 77), then moves on from the card to the line and requires *Undo* as the next element (the design's §9). On the
 iPhone the line follows the card; on the iPad it follows the grid's row of two. It skips below iOS 27. Under Xcode 27.2
 VoiceOver stays on once its speech has been read (`SearchResultVoiceOverTests`' entry), hence alone. **On L44's code:**
-IPHONE-VO; IPAD-VO. On the code before L44 it fails at its first step row.
+on the iPhone 17, to follow; on the iPad Pro 13-inch (M5), on `687350ab`, 1 passed (113 s): VoiceOver said "Changed Archival source note from Off to On and Research notes f", its 64 characters, and on from the card read *Full text with your annotations*, the card beside it, then the line, then *Undo, Button*. On the code before L44 it fails at its first step row.
 
 ```bash
 xcodebuild test \
