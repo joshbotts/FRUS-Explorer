@@ -2367,6 +2367,9 @@ struct DocumentView: View {
 ///   1.0 — Document Share/Export control split out from the citation sheet
 ///   1.1 — L41 (#1925): while a send runs, its row reads what the send last said through its
 ///          `status`, a wait on Zotero's word with its seconds included
+///   1.2 — L64 (#1923): a send that stops part-way is kept on this device; the alert says which part
+///          stopped and offers Finish Sending, and the row reads Finish Sending to Zotero Library… until it
+///          is finished
 struct DocumentShareMenu<LabelContent: View>: View {
     let vm: DocumentViewModel
     /// The `Menu`'s tap target. The default construction (see the extension below) uses the standard
@@ -2389,6 +2392,9 @@ struct DocumentShareMenu<LabelContent: View>: View {
     /// What the send in progress last said through its `status`: its step, or how long Zotero asked
     /// it to wait (#1925). Nil when no send runs.
     @State private var zoteroStatus: String?
+    /// This document's send to the connected Zotero account that stopped part-way, which the row and the
+    /// stop's alert offer to finish (#1923); nil when there is none.
+    @State private var stoppedZoteroSend: StoppedZoteroSend?
 
     var body: some View {
         Menu {
@@ -2399,6 +2405,9 @@ struct DocumentShareMenu<LabelContent: View>: View {
                     // A menu closes when chosen, so the send's row reads its progress while it runs.
                     if zoteroSending, let zoteroStatus {
                         Label(zoteroStatus, systemImage: "hourglass")
+                    } else if stoppedZoteroSend != nil {
+                        Label(String(localized: "document.share.finishZoteroLibrary",
+                                     defaultValue: "Finish Sending to Zotero Library…"), systemImage: "books.vertical")
                     } else {
                         Label(String(localized: "document.share.sendZoteroLibrary",
                                      defaultValue: "Send to Zotero Library…"), systemImage: "books.vertical")
@@ -2463,12 +2472,22 @@ struct DocumentShareMenu<LabelContent: View>: View {
             isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
             presenting: zoteroError
         ) { _ in
+            // #1923: a send that stopped part-way can be finished from here, or later from the row.
+            if stoppedZoteroSend != nil {
+                Button(String(localized: "document.share.zotero.finishButton", defaultValue: "Finish Sending")) {
+                    Task { await sendToZoteroLibrary() }
+                }
+            }
             Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
         } message: { Text($0) }
     }
 
     /// Pushes this single document (with its tags + notes) into the user's Zotero
     /// library via the Web API. No collection is created — it lands in My Library.
+    ///
+    /// #1923: a send of this document that stopped part-way, which this device keeps, is finished rather
+    /// than sent again, so the document is not written twice; the send keeps its record as it goes. A stop
+    /// keeps it, and the alert says which part stopped.
     private func sendToZoteroLibrary() async {
         guard let item = zoteroItem else { return }
         let store = ZoteroAccountStore.shared
@@ -2479,28 +2498,53 @@ struct DocumentShareMenu<LabelContent: View>: View {
         zoteroSending = true
         zoteroStatus = nil
         defer { zoteroSending = false; zoteroStatus = nil }
+        let subject = ZoteroSendProgressStore.Subject.document(volumeId: vm.entry.volumeId,
+                                                               documentId: vm.entry.documentId)
+        let earlier = ZoteroSendProgressStore.load(subject, userID: userID)
         do {
             let result = try await ZoteroAPIClient().send(
                 items: [item], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username
-            ) { message in
-                Task { @MainActor in zoteroStatus = message }
-            }
+                apiKey: apiKey, userID: userID, username: store.username,
+                resuming: earlier?.progress,
+                status: { message in
+                    Task { @MainActor in zoteroStatus = message }
+                },
+                progress: { progress in
+                    ZoteroSendProgressStore.save(
+                        StoppedZoteroSend(progress: progress, reason: nil, recordedItemCount: 0), for: subject)
+                }
+            )
+            ZoteroSendProgressStore.remove(subject, userID: userID)
+            stoppedZoteroSend = nil
             zoteroResult = result
+        } catch let stopped as ZoteroSendStopped {
+            let record = StoppedZoteroSend(progress: stopped.progress, reason: stopped.errorDescription,
+                                           recordedItemCount: 0)
+            ZoteroSendProgressStore.save(record, for: subject)
+            stoppedZoteroSend = record
+            zoteroError = [stopped.errorDescription, record.documentStopSentence]
+                .compactMap { $0 }.joined(separator: " ")
         } catch {
             zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
         }
     }
 
     private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
-        String(format: String(localized: "document.share.zotero.result %lld %lld",
+        // #1923: the finish of a send that stopped at the document's notes adds notes alone.
+        if let notesOnly = StoppedZoteroSend.notesOnlyMessage(result) { return notesOnly }
+        return String(format: String(localized: "document.share.zotero.result %lld %lld",
                               defaultValue: "Added %lld document and %lld notes to Zotero."),
                Int64(result.addedItems), Int64(result.addedNotes))
     }
 
     /// Writes the BibTeX and RIS exports to temporary files for `ShareLink`, and
-    /// resolves the document's Zotero item (carrying tags + notes) for the Web API send.
+    /// resolves the document's Zotero item (carrying tags + notes) for the Web API send,
+    /// and reads the document's stopped send, if this device keeps one (#1923).
     private func prepareExportFiles() {
+        stoppedZoteroSend = ZoteroAccountStore.shared.userID.flatMap { userID in
+            ZoteroSendProgressStore.load(.document(volumeId: vm.entry.volumeId, documentId: vm.entry.documentId),
+                                         userID: userID)
+        }
         if let bibtex = vm.bibtexCitation {
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent("\(vm.entry.volumeId)-\(vm.entry.documentId).bib")

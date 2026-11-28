@@ -50,6 +50,9 @@ import UIKit
 ///          Export is pinned at the foot, with the format a menu there at the accessibility sizes and the sentence no
 ///          larger than AX1, so it opens on its sentence, format and Export at any size; BibTeX resolves no summary,
 ///          which it never prints. The Collections list and Manage Collections open it (`CollectionListExportSheet`)
+///   1.8 — L64 (#1923): a send that stops part-way is kept on this device (`ZoteroSendProgressStore`) and
+///          recorded in the export history with the documents it sent; the row then reads Finish Sending to
+///          Zotero Library, which sends the rest into the same Zotero collection and nothing twice
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -109,6 +112,9 @@ struct ExportSheetView: View {
     @State private var summaryGeneratingMessage: String? = nil
     /// Non-nil after a successful "Send to Zotero Library" run (drives the result alert).
     @State private var zoteroResult: ZoteroSendResult? = nil
+    /// This collection's send to the connected Zotero account that stopped part-way, which the send row
+    /// offers to finish (#1923); nil when there is none.
+    @State private var stoppedZoteroSend: StoppedZoteroSend? = nil
 
     /// The formats shown in the grid, in canvas order — the native `.fruscollection` is dropped for
     /// smart collections (D8/D9b). The web-API Zotero send is the separate `zoteroSendRow`, not a card.
@@ -258,18 +264,31 @@ struct ExportSheetView: View {
                     .background(RoundedRectangle(cornerRadius: 7)
                         .fill(Color(red: 0.80, green: 0.16, blue: 0.21)))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(String(localized: "export.zotero.send", defaultValue: "Send to Zotero Library"))
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                    // #358: the old single caption promised "falls back to an RIS file with no
-                    // account" on both platforms. On iOS that fallback reaches nothing: Zotero's
-                    // iOS app declares no document types for `.ris` and has no File → Import, so
-                    // the file lands nowhere. Saying so is the fix; the file is still worth
-                    // producing, but for a Mac.
-                    Text(zoteroCaption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    // #1923: while a send of this collection to the connected account has stopped
+                    // part-way, the row finishes it rather than sending everything again.
+                    if let stopped = finishableZoteroSend {
+                        Text(String(localized: "export.zotero.finish",
+                                    defaultValue: "Finish Sending to Zotero Library"))
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                        Text(Self.zoteroStoppedCaption(stopped))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text(String(localized: "export.zotero.send", defaultValue: "Send to Zotero Library"))
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                        // #358: the old single caption promised "falls back to an RIS file with no
+                        // account" on both platforms. On iOS that fallback reaches nothing: Zotero's
+                        // iOS app declares no document types for `.ris` and has no File → Import, so
+                        // the file lands nowhere. Saying so is the fix; the file is still worth
+                        // producing, but for a Mac.
+                        Text(zoteroCaption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.forward")
@@ -297,6 +316,9 @@ struct ExportSheetView: View {
         }
         .task { await verifyExcerpts() }
         .task { await countWhatWillPrint() }
+        // #1923: a send of this collection to Zotero that stopped part-way, which this device keeps, makes the
+        // send row Finish Sending. A task of its own, so the quotation check stays mounted as its scan reads it.
+        .task { loadStoppedZoteroSend() }
     }
 
     /// Counts what the export will print, for the sentence (L35): the export's own reading of the collection, which
@@ -921,6 +943,12 @@ struct ExportSheetView: View {
 
     /// Resolves the collection's documents (static or smart) and POSTs them to the
     /// user's Zotero library, then surfaces a result alert.
+    ///
+    /// #1923: a send of this collection that stopped part-way, which this device keeps, is finished rather
+    /// than sent again: no second Zotero collection, and nothing written twice. Its record is read afresh
+    /// here, so one past its 12 hours is dropped and the send starts over. The send keeps its record as it
+    /// goes, so a send the app does not live to see end can be finished too; a send that stops records in
+    /// the export history the documents it sent, and the row then offers to finish it.
     private func sendToZoteroLibrary() async {
         let store = ZoteroAccountStore.shared
         guard let apiKey = store.retrieveKey(), let userID = store.userID else {
@@ -930,6 +958,11 @@ struct ExportSheetView: View {
         }
         isExporting = true
         defer { isExporting = false; preparingMessage = nil }
+        let subject = ZoteroSendProgressStore.Subject.collection(collection.id)
+        let earlier = ZoteroSendProgressStore.load(subject, userID: userID)
+        stoppedZoteroSend = earlier
+        // How many of the documents sent before the history counts already: a finish records the rest.
+        let recorded = earlier?.recordedItemCount ?? 0
         do {
             let docs = try await resolvedZoteroDocuments()
             // The records the RIS file prints, under the options it is written with: each document's research
@@ -947,15 +980,34 @@ struct ExportSheetView: View {
                 collectionName: CollectionExportNaming.zoteroCollectionName(savedName: collection.name),
                 apiKey: apiKey,
                 userID: userID,
-                username: store.username
-            ) { message in
-                Task { @MainActor in preparingMessage = message }
-            }
+                username: store.username,
+                resuming: earlier?.progress,
+                status: { message in
+                    Task { @MainActor in preparingMessage = message }
+                },
+                progress: { progress in
+                    ZoteroSendProgressStore.save(
+                        StoppedZoteroSend(progress: progress, reason: nil, recordedItemCount: recorded), for: subject)
+                }
+            )
+            ZoteroSendProgressStore.remove(subject, userID: userID)
+            stoppedZoteroSend = nil
             // The decisive case for contract D1: this send has a real external side effect —
             // items land in the user's live Zotero library — and this row is the app's only
-            // memory that it happened.
-            recordExport(format: "zotero-api", documentCount: result.addedItems)
+            // memory that it happened. A finish records what the stopped send's rows did not count.
+            recordExport(format: "zotero-api",
+                         documentCount: StoppedZoteroSend.historyCount(finishing: earlier, with: result))
             zoteroResult = result
+        } catch let stopped as ZoteroSendStopped {
+            // #1923: part of the collection is in Zotero. The history records the documents that reached it,
+            // the record keeps how far the send got, and the row offers to finish it.
+            let (count, record) = StoppedZoteroSend.afterStop(stopped, earlier: earlier)
+            if count > 0 { recordExport(format: "zotero-api", documentCount: count) }
+            ZoteroSendProgressStore.save(record, for: subject)
+            stoppedZoteroSend = record
+            exportError = stopped.errorDescription
+            // No RIS file is offered here: importing it would put the documents already sent in Zotero twice.
+            zoteroFileRecoveryOffered = false
         } catch is CancellationError {
             return
         } catch {
@@ -964,6 +1016,51 @@ struct ExportSheetView: View {
             // depend on whatever broke the API call. Offer it rather than ending here.
             zoteroFileRecoveryOffered = true
         }
+    }
+
+    /// Reads this collection's stopped send to the connected Zotero account, if this device keeps one
+    /// (#1923).
+    private func loadStoppedZoteroSend() {
+        guard let userID = ZoteroAccountStore.shared.userID else {
+            stoppedZoteroSend = nil
+            return
+        }
+        stoppedZoteroSend = ZoteroSendProgressStore.load(.collection(collection.id), userID: userID)
+    }
+
+    /// The stopped send the row offers to finish: this collection's, while a Zotero account is connected.
+    private var finishableZoteroSend: StoppedZoteroSend? {
+        isZoteroConnected ? stoppedZoteroSend : nil
+    }
+
+    /// What the send row says while this collection has a stopped send to finish (#1923): how many of its
+    /// documents reached Zotero and when, why the send stopped where that is known, and what Finish Sending
+    /// does.
+    ///
+    /// - Parameters:
+    ///   - stopped: The stopped send.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The caption.
+    static func zoteroStoppedCaption(_ stopped: StoppedZoteroSend, locale: Locale = .autoupdatingCurrent) -> String {
+        let progress = stopped.progress
+        let when = progress.updatedAt.formatted(date: .abbreviated, time: .shortened)
+        var sentences: [String] = []
+        if progress.writtenItemCount == 0 {
+            sentences.append(String(format: String(localized: "export.zotero.stopped.none %@",
+                                                   defaultValue: "A send on %@ stopped before Zotero confirmed any of its documents."),
+                                    when))
+        } else {
+            sentences.append(CountCopy.phrase(progress.writtenItemCount,
+                                              one: String(localized: "export.zotero.stopped.one",
+                                                          defaultValue: "%1$@ document reached Zotero on %2$@, before the send stopped."),
+                                              many: String(localized: "export.zotero.stopped.many",
+                                                           defaultValue: "%1$@ documents reached Zotero on %2$@, before the send stopped."),
+                                              then: [when], locale: locale))
+        }
+        if let reason = stopped.reason, !reason.isEmpty { sentences.append(reason) }
+        sentences.append(String(localized: "export.zotero.finish.caption",
+                                defaultValue: "Finish Sending sends the rest into the same Zotero collection, and nothing twice."))
+        return sentences.joined(separator: " ")
     }
 
     /// Resolves the collection's export documents for the Zotero send, the RIS card and, since L35, BibTeX, handling
@@ -984,6 +1081,16 @@ struct ExportSheetView: View {
             line += " " + String(format: String(localized: "export.zotero.result.failed %lld",
                                                 defaultValue: "%lld failed."),
                                  Int64(result.failedItems))
+        }
+        // #1923: a finish of a collection edited since its send stopped leaves the documents removed from it
+        // in Zotero, and says so.
+        if result.itemsLeftInLibrary > 0 {
+            line += " " + CountCopy.phrase(
+                result.itemsLeftInLibrary,
+                one: String(localized: "export.zotero.result.leftInLibrary.one",
+                            defaultValue: "%@ document removed from this collection since the send stopped stays in your Zotero library."),
+                many: String(localized: "export.zotero.result.leftInLibrary.many",
+                             defaultValue: "%@ documents removed from this collection since the send stopped stay in your Zotero library."))
         }
         return line
     }
