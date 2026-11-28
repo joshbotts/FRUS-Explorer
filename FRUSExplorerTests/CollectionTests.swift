@@ -8340,6 +8340,232 @@ private final class FollowHost {
 // `CollectionEditorTitleTests`' step 2 tests drive; the fields are Collection settings' own, which
 // `CollectionEditorNamingTests` holds to a save with each edit.
 
+// MARK: - CollectionApparatusRowsTests (L44)
+
+/// Step 2's ticks are the outline's rows (L44; the Collections design's §4.3): a tick inserts its block at its usual
+/// place, a Chronology first and the Note on the Text last; a shortcut removes every row of a type it leaves out; and
+/// *Undo* puts each removed row back at its own place, with the contents style and the word cloud. The UI suites drive
+/// the same calls through the editors (`CollectionTemplateStepsTests`); these hold the outline each one leaves.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@Suite("Step 2's ticks are the outline's rows, and Undo puts the outline back (L44)")
+@MainActor
+struct CollectionApparatusRowsTests {
+
+    /// A row of a fixture outline.
+    enum Row {
+        case heading(String, level: Int = 1)
+        case document(String)
+        case block(CollectionGeneratedBlockType)
+    }
+
+    @Test("A tick inserts its block at its usual place: a Chronology first, the Note on the Text last, others before it")
+    func aTickInsertsAtTheBlocksUsualPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection([.document("d1"), .document("d2")], in: context)
+        var outline = start
+        for type in [CollectionGeneratedBlockType.noteOnTheText, .bibliography, .chronology, .personsIndex] {
+            CollectionApparatusRows.insert(type, into: collection, outline: &outline, modelContext: context)
+        }
+        #expect(Self.names(outline) == [Self.name(.chronology), "d1", "d2", Self.name(.bibliography),
+                                        Self.name(.personsIndex), Self.name(.noteOnTheText)])
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("All adds each block the outline lacks at its usual place, and Undo takes out only what it added")
+    func allThenUndo() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection([.heading("Cables"), .document("d1"), .document("d2")], in: context)
+        var outline = start
+        let all = CollectionApparatusSettings(contentsStyle: .citation, wordCloud: true,
+                                              blocks: Set(CollectionGeneratedBlockType.allCases))
+        let undo = CollectionApparatusRows.apply(all, to: collection, outline: &outline, modelContext: context)
+        let middle: [String] = all.orderedBlocks.filter { $0 != .chronology && $0 != .noteOnTheText }.map(Self.name)
+        let expected: [String] = [Self.name(.chronology), "§Cables", "d1", "d2"] + middle + [Self.name(.noteOnTheText)]
+        #expect(Self.names(outline) == expected)
+        #expect(collection.includeWordCloud)
+        #expect(undo.removed.isEmpty)
+        #expect(undo.added.count == CollectionGeneratedBlockType.allCases.count)
+        #expect(Set(undo.change.added) == Set(CollectionGeneratedBlockType.allCases))
+
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == ["§Cables", "d1", "d2"])
+        #expect(!collection.includeWordCloud)
+        withExtendedLifetime(container) {}
+    }
+
+    /// A block can be in a collection twice, and the reader can have moved a row from its usual place: an untick takes
+    /// out every row of its type, and *Undo* puts each back where it stood, not where a new one would go.
+    @Test("None removes every row of each block, and Undo puts each back at its own place, with the style and the cloud")
+    func noneThenUndoPutsEachRowBackAtItsPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection(
+            [.block(.bibliography), .document("d1"), .block(.bibliography), .document("d2"), .block(.noteOnTheText)],
+            in: context)
+        collection.tocStyle = CollectionToCStyle.headerAndDateline.rawValue
+        collection.includeWordCloud = true
+        var outline = start
+        let before = Self.names(outline)
+
+        let none = CollectionApparatusSettings(contentsStyle: .citation, wordCloud: false, blocks: [])
+        let undo = CollectionApparatusRows.apply(none, to: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == ["d1", "d2"])
+        #expect(collection.tocStyle == CollectionToCStyle.citation.rawValue)
+        #expect(!collection.includeWordCloud)
+        #expect(undo.removed.map { $0.index } == [0, 2, 4], "Each removed row keeps its place in the outline before")
+        #expect(Set(undo.change.removed) == [.bibliography, .noteOnTheText])
+
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == before)
+        #expect(collection.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
+        #expect(collection.includeWordCloud)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: Fixtures
+
+    /// A saved collection holding `rows` in order, each in place at its index, and its outline.
+    static func collection(_ rows: [Row], in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let collection = Collection(name: "Apparatus")
+        context.insert(collection)
+        var outline: [CollectionEntry] = []
+        for (index, row) in rows.enumerated() {
+            let entry: CollectionEntry
+            switch row {
+            case let .heading(text, level):
+                entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: index)
+                entry.entryKind = .heading
+                entry.text = text
+                entry.level = level
+            case let .document(id):
+                entry = CollectionEntry(collectionId: collection.id, documentId: id, volumeId: "v1", sortOrder: index)
+            case let .block(type):
+                entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: index)
+                entry.entryKind = .generated
+                entry.generatedBlockType = type.rawValue
+            }
+            entry.collection = collection
+            context.insert(entry)
+            outline.append(entry)
+        }
+        try context.save()
+        return (collection, outline)
+    }
+
+    /// A block's name in `names(_:)`.
+    static func name(_ type: CollectionGeneratedBlockType) -> String { "[\(type.rawValue)]" }
+
+    /// The outline as words: a block as `[type]`, a heading as `§text`, a document as its id.
+    static func names(_ outline: [CollectionEntry]) -> [String] {
+        outline.map { entry in
+            if let type = CollectionApparatusRows.blockType(of: entry) { return name(type) }
+            if entry.entryKind == .heading { return "§" + (entry.text ?? "") }
+            return entry.documentId
+        }
+    }
+}
+
+// MARK: - CollectionOwnSettingsTests (L44)
+
+/// What a choice follows, and the rows that set their own (L44; the Collections design's §4.2): a picker's first
+/// choice names what it follows and its value, *Follow the section: Off* under a section that sets one and *Follow the
+/// collection: On* elsewhere, for a document and for a section, whose own value is never what it follows; the count at
+/// the collection lists the rows that set their own, and *Clear* returns them to following. A heading's headnote is its
+/// default, never its own switch (J24). The UI suite reads the words on a section's sheet
+/// (`CollectionTemplateStepsTests`); a document under a section that sets its own is reached only here.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@Suite("What a choice follows, the rows that set their own, and Clear (L44)")
+@MainActor
+struct CollectionOwnSettingsTests {
+
+    /// Footnotes on at the collection; *Cables* sets them off for its documents and its subsection, *Memoranda* closes
+    /// that section and sets nothing, and `d3` sets them on for itself.
+    private static func fixture(in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let (collection, outline) = try CollectionApparatusRowsTests.collection(
+            [.heading("Cables"), .document("d1"), .heading("Annexes", level: 2), .document("d2"),
+             .heading("Memoranda"), .document("d3")], in: context)
+        collection.effectiveIncludeFootnotes = true
+        outline[0].includeFootnotesOverride = false
+        outline[5].includeFootnotesOverride = true
+        try context.save()
+        return (collection, outline)
+    }
+
+    private static func words(_ entry: CollectionEntry) -> String {
+        CollectionOwnSettings.followedWords(.footnotes, by: entry, promptName: { _ in "" })
+    }
+
+    @Test("A document follows the nearest section that sets a value, else the collection, and says which")
+    func aDocumentSaysWhatItFollows() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        #expect(Self.words(outline[1]) == "Follow the section: Off")
+        #expect(Self.words(outline[3]) == "Follow the section: Off", "A subsection's document follows the section above")
+        #expect(Self.words(outline[5]) == "Follow the collection: On", "Memoranda closed Cables' section")
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("A section follows the sections around it, never its own value")
+    func aSectionSaysWhatItFollows() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        #expect(Self.words(outline[0]) == "Follow the collection: On", "Cables' own Off is not what it follows")
+        #expect(Self.words(outline[2]) == "Follow the section: Off", "Annexes follows Cables, around it")
+        #expect(Self.words(outline[4]) == "Follow the collection: On")
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("The count lists the rows that set their own, in order, and Clear returns the chosen ones to following")
+    func theCountAndClear() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        let own = CollectionOwnSettings.rows(setting: .footnotes, in: outline)
+        #expect(own.map(\.id) == [outline[0].id, outline[5].id])
+        #expect(CollectionOwnSettings.countPhrase(own.count) == "2 set their own")
+        #expect(CollectionOwnSettings.countPhrase(1) == "1 sets its own")
+        #expect(own.map { CollectionOwnSettings.valueName(.footnotes, of: $0, promptName: { _ in "" }) } == ["Off", "On"])
+        #expect(CollectionOwnSettings.rowName(outline[0], headers: [:]) == "Cables")
+
+        CollectionOwnSettings.clear(.footnotes, of: [outline[0]])
+        #expect(outline[0].includeFootnotesOverride == nil)
+        #expect(CollectionOwnSettings.rows(setting: .footnotes, in: outline).map(\.id) == [outline[5].id])
+        #expect(Self.words(outline[1]) == "Follow the collection: On", "Cleared, Cables no longer sets d1's footnotes")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The builds of 2026-07-01 to 07-11 stored an unseen `false` in a heading's `includeHeadnote` (J24), so a heading's
+    /// headnote is read from its own field, `headnoteDefault`, and *Clear* leaves the old field as it was.
+    @Test("A heading's headnote is its default, never its own switch, and Clear leaves the old field alone (J24)")
+    func aHeadingsHeadnoteIsItsDefault() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try CollectionApparatusRowsTests.collection([.heading("Cables"), .document("d1")],
+                                                                      in: container.mainContext)
+        let heading = outline[0], document = outline[1]
+        heading.includeHeadnote = false
+        #expect(CollectionOwnSettings.rows(setting: .headnotes, in: outline).isEmpty)
+        heading.headnoteDefault = true
+        document.includeHeadnote = true
+        #expect(CollectionOwnSettings.rows(setting: .headnotes, in: outline).map(\.id) == [heading.id, document.id])
+
+        CollectionOwnSettings.clear(.headnotes, of: [heading, document])
+        #expect(heading.headnoteDefault == nil)
+        #expect(heading.includeHeadnote == false, "Clear wrote over the heading's old field")
+        #expect(document.includeHeadnote == nil)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("The opening is the collection's alone; every other setting a section or a document can set")
+    func theOpeningIsTheCollectionsAlone() {
+        #expect(CollectionSetting.allCases.filter { !CollectionOwnSettings.cascades($0) } == [.opening])
+    }
+}
+
 // MARK: - CollectionChipStyleTests (#1477)
 
 /// The colours a collection row's accent chips — the Configure / Section defaults pill and the status chips — and the

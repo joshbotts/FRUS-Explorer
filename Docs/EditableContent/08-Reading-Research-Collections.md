@@ -1039,7 +1039,7 @@ Research Note
 *L58 (2026-11-28; the Collections design's §3.6): the Note on the Text, a block of the collection's that says what its documents print beside the volumes' text. Each paragraph prints only where it has something to say, and the Note prints nothing at all where none has. **These are the row's proposal, and the words are yours to choose** (the plan of record's L58): edit any of them here. A document is named by its number in the contents list, `\(Self.documentsPhrase(…))` giving "document 3", "documents 2 and 5" or "documents 1–4 and 7", and a sentence is said for the whole collection where it holds for every document. `_…_` prints in italics.*
 
 #### The Note's row in the outline — the line under its name
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionGeneratedEntryRow.caption | lines: 871–872 | key: collection.entry.generated.noteOnTheText.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionGeneratedEntryRow.caption | lines: 884–885 | key: collection.entry.generated.noteOnTheText.caption | shared: iOS+macOS (single edit point) -->
 
 Written from what this collection’s documents print: your titles, dates and headnotes, and what is left out. Prints nothing where there is nothing to say.
 
@@ -1418,7 +1418,7 @@ Full text · every option
 *Collection settings open on ten controls: the name, a row for each step, the note and the title page, *Citation style*, *Wording* and the linked saved search. *1 · Documents* opens the six templates and the seven settings a template sets; *2 · Apparatus* the three shortcuts, the contents list and the word cloud, a tick for each block, and the colophon, the project stamp and the query log. On iPhone and iPad each step is a screen of its own; on the Mac it opens in place under its row. A choice writes a line where it was made, what changed, with **Undo** beside it. The lines are built from the forms below, each part a block of its own: a name is a setting's or a block's, a value *On*, *Off* or a body depth's.*
 
 #### Choose how each document is presented, then what is added…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionSettingsSteps.body | lines: 134–135 | key: collection.settings.steps.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionSettingsSteps.body | lines: 143–144 | key: collection.settings.steps.footer -->
 
 *Under the two step rows, *1 · Documents* and *2 · Apparatus*.*
 
@@ -1463,7 +1463,7 @@ Like \(template), except \(list).
 <!-- END SOURCE: collection.documents.difference.item -->
 
 #### A template sets the seven settings below and nothing else…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionDocumentsStep.body | lines: 362–363 | key: collection.documents.templates.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionDocumentsStep.body | lines: 373–374 | key: collection.documents.templates.footer -->
 
 *Under step 1's templates.*
 
@@ -1499,7 +1499,7 @@ Nothing changed: this collection’s documents already had these settings.
 <!-- END SOURCE: collection.template.change.none -->
 
 #### Sets the seven settings below. Undo stays offered while…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionTemplateCard.body | lines: 591–592 | key: collection.template.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionTemplateCard.body | lines: 602–603 | key: collection.template.hint -->
 
 *What VoiceOver says after a card's name and line.*
 
@@ -1508,7 +1508,7 @@ Sets the seven settings below. Undo stays offered while this screen is open.
 <!-- END SOURCE: collection.template.hint -->
 
 #### A shortcut sets the contents list, the word cloud and the…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionApparatusStep.body | lines: 716–717 | key: collection.apparatus.shortcuts.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionApparatusStep.body | lines: 728–729 | key: collection.apparatus.shortcuts.footer -->
 
 *Under step 2's three shortcuts, *Suggested for…*, *All* and *None* (decisions 168 and 170).*
 
@@ -1517,7 +1517,7 @@ A shortcut sets the contents list, the word cloud and the blocks below, adding a
 <!-- END SOURCE: collection.apparatus.shortcuts.footer -->
 
 #### A ticked block has its row in the outline, a Chronology…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionApparatusStep.body | lines: 759–760 | key: collection.apparatus.blocks.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionApparatusStep.body | lines: 771–772 | key: collection.apparatus.blocks.footer -->
 
 *Under step 2's ticks, one for each block.*
 
@@ -1589,7 +1589,7 @@ Add \(list)
 <!-- END SOURCE: collection.apparatus.offer.add -->
 
 #### Suggested for %@. Adds and removes nothing else.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionSettingsSteps.body | lines: 126–127 | key: collection.settings.offer.hint %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionSettingsSteps.body | lines: 135–136 | key: collection.settings.offer.hint %@ -->
 
 *What VoiceOver says after that button's label.*
 
@@ -1634,7 +1634,7 @@ Follow the collection: \(value)
 <!-- END SOURCE: collection.setting.ownCount.many -->
 
 #### Lists the sections and documents that set %@ for themselves.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionDocumentsStep.ownCount(_:) | lines: 528–529 | key: collection.setting.ownCount.hint %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionDocumentsStep.ownCount(_:) | lines: 539–540 | key: collection.setting.ownCount.hint %@ -->
 
 *What VoiceOver says after that button's label.*
 
@@ -1643,7 +1643,7 @@ Lists the sections and documents that set %@ for themselves.
 <!-- END SOURCE: collection.setting.ownCount.hint %@ -->
 
 #### The chosen sections and documents follow the collection again.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionOwnSettingsList.body | lines: 651–652 | key: collection.setting.own.clear.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionOwnSettingsList.body | lines: 663–664 | key: collection.setting.own.clear.hint -->
 
 *What VoiceOver says after **Clear**, in that list.*
 
@@ -3409,21 +3409,21 @@ Each line is resolved against the FRUS manifest and your local index — footnot
 <!-- END SOURCE: collection.addDocs.citations.hint -->
 
 #### Summaries are generated on demand for documents that don’t…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 387–388 | key: composition.summaryPrompt.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 398–399 | key: composition.summaryPrompt.hint -->
 
 Summaries are generated on demand for documents that don’t already have one for this prompt. Requires Apple Intelligence.
 
 <!-- END SOURCE: composition.summaryPrompt.hint -->
 
 #### See also — Under each document, the documents it cites that are also…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 408–409 | key: composition.seeAlso.subtitle -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 419–420 | key: composition.seeAlso.subtitle -->
 
 Under each document, the documents it cites that are also in this collection.
 
 <!-- END SOURCE: composition.seeAlso.subtitle -->
 
 #### Wording — Your own words for the labels an export prints…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 890–891 | key: composition.wording.subtitle -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.body | lines: 902–903 | key: composition.wording.subtitle -->
 
 Your own words for the labels an export prints. A word left empty prints the app’s.
 
@@ -3431,7 +3431,7 @@ Your own words for the labels an export prints. A word left empty prints the app
 
 #### Analysis & apparatus — the Note on the Text would say something (L58)
 <!-- L58 (2026-11-28; the design's §3.6): shown where the collection has no Note on the Text and one would say something. Since L44 it is under the Note's tick in step 2, which adds the Note as its button **Add Note on the Text** did. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.noteOnTheTextLine(onAdd:) | lines: 746–747 | key: composition.noteOnTheText.line | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionCompositionRows.swift | CollectionCompositionRows.noteOnTheTextLine(onAdd:) | lines: 758–759 | key: composition.noteOnTheText.line | shared: iOS+macOS (single edit point) -->
 
 This collection’s export changes what its volumes print: it adds your titles or headnotes, or leaves something out. A Note on the Text would say so.
 
@@ -3446,7 +3446,7 @@ Choose a summary prompt in the collection’s settings, under Documents, to expo
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1091–1092 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1093–1094 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -3537,7 +3537,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2436–2436 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2438–2438 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -3546,7 +3546,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2447–2448 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2449–2450 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -3555,7 +3555,7 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
 #### Link to Saved Search…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2478–2479 | key: collection.editor.smart.link -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2480–2481 | key: collection.editor.smart.link -->
 
 *A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. The Mac's New Collection sheet held it too until L44, which made that sheet a name and the two steps. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
 
@@ -3564,7 +3564,7 @@ Link to Saved Search…
 <!-- END SOURCE: collection.editor.smart.link -->
 
 #### Save a search from the Search tab to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2492–2493 | key: collection.editor.smart.noSearches -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2494–2495 | key: collection.editor.smart.noSearches -->
 
 *Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
 
@@ -3573,7 +3573,7 @@ Save a search from the Search tab to enable smart collections.
 <!-- END SOURCE: collection.editor.smart.noSearches -->
 
 #### Save a search from the Search window to enable smart collections.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2487–2488 | key: collection.editor.smart.noSearches.mac -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2489–2490 | key: collection.editor.smart.noSearches.mac -->
 
 *The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
 
@@ -3686,14 +3686,14 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1414–1415 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1824–1825 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1826–1827 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -3904,7 +3904,7 @@ Their section headings, note blocks and headnotes go with them, on your other de
 <!-- END SOURCE: collection.delete.confirm.message.many -->
 
 #### Delete Note Block?
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 385–385 | key: collection.entry.delete.confirm.title.prose -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 398–398 | key: collection.entry.delete.confirm.title.prose -->
 
 *The title of the dialog that asks before a note block with text is deleted from a collection's outline (L19, #1919), in the form of the collection's own delete dialog above: by a swipe or Edit's delete on iPhone and iPad, and by its trash on the Mac. A row that holds nothing of the reader's — an empty note block, a heading with no section defaults, a document at its defaults, a passage, an apparatus block — goes at once. Its button is Delete Note Block, and the first message below follows the title.*
 
@@ -3913,7 +3913,7 @@ Delete Note Block?
 <!-- END SOURCE: collection.entry.delete.confirm.title.prose -->
 
 #### Delete Heading?
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 387–387 | key: collection.entry.delete.confirm.title.heading -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 400–400 | key: collection.entry.delete.confirm.title.heading -->
 
 *The title when the row is a heading that sets defaults for its section's documents, deleted alone: by a swipe or Edit's delete, Delete Heading Only, or the Mac's trash. Its button is Delete Heading.*
 
@@ -3922,7 +3922,7 @@ Delete Heading?
 <!-- END SOURCE: collection.entry.delete.confirm.title.heading -->
 
 #### Remove Document?
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 389–389 | key: collection.entry.delete.confirm.title.document -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.title(for:) | lines: 402–402 | key: collection.entry.delete.confirm.title.document -->
 
 *The title when the row is a document with a headnote, or with settings of its own in the collection: a title, a body depth, an override, a headnote setting, or a choice of its notes or highlights. Its button is Remove Document.*
 
@@ -3931,7 +3931,7 @@ Remove Document?
 <!-- END SOURCE: collection.entry.delete.confirm.title.document -->
 
 #### Its text goes with it, on your other devices too…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 409–410 | key: collection.entry.delete.confirm.message.prose -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 422–423 | key: collection.entry.delete.confirm.message.prose -->
 
 *The message under Delete Note Block?. Nothing undoes a collection row's deletion, and it reaches the reader's other devices, which is why the dialog asks.*
 
@@ -3940,7 +3940,7 @@ Its text goes with it, on your other devices too once they sync.
 <!-- END SOURCE: collection.entry.delete.confirm.message.prose -->
 
 #### Its section defaults go with it, on your other devices…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 412–413 | key: collection.entry.delete.confirm.message.heading -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 425–426 | key: collection.entry.delete.confirm.message.heading -->
 
 *The message under Delete Heading?.*
 
@@ -3949,7 +3949,7 @@ Its section defaults go with it, on your other devices too once they sync. The e
 <!-- END SOURCE: collection.entry.delete.confirm.message.heading -->
 
 #### Its headnote and its settings in this collection go with it…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 415–416 | key: collection.entry.delete.confirm.message.headnote -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 428–429 | key: collection.entry.delete.confirm.message.headnote -->
 
 *The message under Remove Document? when the document has a headnote, which goes with its row.*
 
@@ -3958,7 +3958,7 @@ Its headnote and its settings in this collection go with it, on your other devic
 <!-- END SOURCE: collection.entry.delete.confirm.message.headnote -->
 
 #### Its settings in this collection go with it, on your other…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 418–419 | key: collection.entry.delete.confirm.message.settings -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryRows.swift | CollectionEntryDeletion.message(for:) | lines: 431–432 | key: collection.entry.delete.confirm.message.settings -->
 
 *The message under Remove Document? when the document has settings of its own and no headnote.*
 

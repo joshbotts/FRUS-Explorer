@@ -876,6 +876,8 @@ struct CollectionEditorView: View {
         // Collection-wide settings — from the ⚙ Collection toolbar button.
         .sheet(isPresented: $showCollectionSettings) {
             iPadCollectionSettingsSheet
+                // The sheet is compact on the iPad, the editor regular: the design's grid of templates (§5.4).
+                .environment(\.collectionTemplatesInGrid, isRegularWidth)
         }
         // Per-document settings — from a row's ⚙ Configure. Document-only (composition lives in the
         // ⚙ Collection sheet). iPhone (compact) drills in instead — see the editor's

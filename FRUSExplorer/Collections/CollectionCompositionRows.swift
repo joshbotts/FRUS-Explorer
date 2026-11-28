@@ -31,7 +31,16 @@ import SwiftData
 //          (`CollectionSettingsSteps`); `CollectionAttributesRows`, which put the collection's description, subtitle,
 //          author line and three switches in a section's sheet under other names, is gone with that sheet's copy of
 //          them; the template cards' type follows the reader's text size and goes to one column at the accessibility
-//          sizes (#2006)
+//          sizes (#2006); the cards are a grid of two in the iPad's sheet as on the Mac (`collectionTemplatesInGrid`)
+
+// MARK: - collectionTemplatesInGrid
+
+extension EnvironmentValues {
+    /// Whether step 1 draws its templates as the design's grid of two (§5.4: on the iPad as on the Mac), set by an
+    /// editor of regular width where it shows the settings in a sheet. The sheet's own size class is compact on the
+    /// iPad, so the step cannot read the grid from it (L44).
+    @Entry var collectionTemplatesInGrid: Bool = false
+}
 
 // MARK: - CollectionSettingsPresentation
 
@@ -281,8 +290,9 @@ struct CollectionChangeLine: View {
 /// in view, and a line under the card says what changed, with *Undo*. A setting a section or a document sets for itself
 /// says how many do, and the count opens the list of them, with *Clear*. It ends with *Next: Apparatus*.
 ///
-/// The templates are a grid of two at regular width and rows at compact width, each card with its line (the design's
-/// §5.4), and one column at the accessibility sizes, whose type follows the reader's text size (#2006).
+/// The templates are a grid of two on the iPad and the Mac and rows on the iPhone, each card with its line (the design's
+/// §5.4): a grid where the editor is of regular width (`collectionTemplatesInGrid`, since the iPad's sheet is compact
+/// itself), and one column at the accessibility sizes, whose type follows the reader's text size (#2006).
 ///
 /// Version history:
 ///   1.0 — L44: initial implementation, from `CollectionCompositionRows`' preset grid and its first two sections
@@ -300,6 +310,7 @@ struct CollectionDocumentsStep: View {
 
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.collectionTemplatesInGrid) private var templatesInGrid
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -468,7 +479,7 @@ struct CollectionDocumentsStep: View {
     private var columns: Int {
         if dynamicTypeSize.isAccessibilitySize { return 1 }
         #if os(iOS)
-        return horizontalSizeClass == .compact ? 1 : 2
+        return templatesInGrid || horizontalSizeClass == .regular ? 2 : 1
         #else
         return 2
         #endif
@@ -634,6 +645,7 @@ struct CollectionOwnSettingsList: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(chosen.contains(entry.id) ? [.isButton, .isSelected] : .isButton)
+            .accessibilityIdentifier("collection.setting.own.row")
         }
         HStack {
             Button(chosen.count == rows.count && !rows.isEmpty

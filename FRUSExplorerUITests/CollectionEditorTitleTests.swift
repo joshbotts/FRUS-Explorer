@@ -2588,6 +2588,11 @@ struct CollectionSettingsDriver {
 /// editor's stack, the iPad pushes each step in the settings sheet's own stack, and each is different code. It never
 /// skips. Allow 600 s a test.
 ///
+/// ## Reading a picker
+/// As VoiceOver reads it, its label then its value (`CollectionSettingsDriver.spoken`). Under iOS 27 a form's menu
+/// picker carries its choice in its label, "Footnotes, Off", and no value (measured on the iPhone 17, 2026-11-28), so
+/// a read of its value alone waits for a choice that never comes.
+///
 /// ## On the code before L44
 /// The settings have no step rows, so each test fails at its first step row.
 ///
@@ -2679,6 +2684,7 @@ final class CollectionTemplateStepsTests: XCTestCase {
                        + "and Note on the Text. Word-cloud overview on.")
         XCTAssertTrue(driver.element("collection.apparatus.change.undo").isHittable, "All's Undo is not in view (J17)")
         let bibliography = driver.element("collection.apparatus.block.bibliography")
+        XCTAssertEqual(bibliography.label, "Bibliography", "Bibliography's tick does not speak its block's name (§9)")
         XCTAssertEqual(bibliography.value as? String, "1", "Bibliography's tick does not say the collection has it")
 
         driver.element("collection.apparatus.none").tap()
@@ -2717,7 +2723,11 @@ final class CollectionTemplateStepsTests: XCTestCase {
         let off = app.buttons["Off"].firstMatch
         XCTAssertTrue(off.waitForExistence(timeout: CollectionSettingsDriver.patience), "Footnotes' menu has no Off")
         off.tap()
-        XCTAssertTrue(driver.waitUntil { (footnotes.value as? String) == "Off" }, "Footnotes did not take Off")
+        // Read as VoiceOver reads it, label then value, as the three asserts above do: which half of the picker holds
+        // the choice is iOS's to decide, and the log line says which it was.
+        XCTAssertTrue(driver.waitUntil { CollectionSettingsDriver.spoken(footnotes) == "Footnotes, Off" },
+                      "Footnotes did not take Off: it speaks \"\(CollectionSettingsDriver.spoken(footnotes))\"")
+        print("[L44 picker] label \"\(footnotes.label)\", value \"\((footnotes.value as? String) ?? "nil")\"")
         let done = app.navigationBars.buttons["Done"].firstMatch
         XCTAssertTrue(done.waitForExistence(timeout: CollectionSettingsDriver.patience), "The section's sheet has no Done")
         done.tap()
@@ -2730,8 +2740,10 @@ final class CollectionTemplateStepsTests: XCTestCase {
         count.tap()
         XCTAssertTrue(app.navigationBars["Footnotes"].waitForExistence(timeout: CollectionSettingsDriver.patience),
                       "The count opened no list")
-        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Untitled section")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: CollectionSettingsDriver.patience), "The list does not name the section")
+        // By the list's own identifier: the editor's row for the same section stays in the tree behind the iPad's sheet.
+        let row = app.buttons.matching(identifier: "collection.setting.own.row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: CollectionSettingsDriver.patience), "The list has no row")
+        XCTAssertTrue(row.label.hasPrefix("Untitled section"), "The list does not name the section: \(row.label)")
         row.tap()
         driver.element("collection.setting.own.clear").tap()
         XCTAssertTrue(driver.waitUntil { !row.exists }, "Clear left the section in the list")
@@ -2828,14 +2840,17 @@ final class CollectionInspectorSwitchNamesTests: XCTestCase {
 /// Step 1's template cards and the section pill at the default text size, AX3 and AX5 (#2006's fourth item; the third
 /// review's J17): a card is drawn larger at an accessibility size, which proves the size took effect, the card
 /// stays inside the window, and after a card is chosen, and after step 2's *None*, the line and its *Undo* are in view.
-/// The section pill's label grows with the size too, where its type was fixed at 12 points.
+/// The section pill's label grows with the size too, where its type was fixed at 12 points, on a line of its own under
+/// the title at AX3 and AX5, where its words wrap at the space (the outline's screenshot). At the default size the
+/// templates are the design's grid of two on the iPad and rows on the iPhone (§5.4), and one column at AX3 and AX5.
 ///
 /// ## Devices
 /// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`. Never skips. Allow 900 s a test.
 ///
 /// ## On the code before L44
 /// `testATemplateCardGrowsWithTheTextSize` finds the card among the settings' own templates and fails at its ratio: the
-/// card is as tall at AX3 as at the default size. The other three find no step row and fail at it.
+/// card was as tall at AX3 as at the default size in the control's run, its type fixed in points at every size. The other three fail at their first step row, which does not exist,
+/// and at AX3 and AX5 at the pill before it, drawn 24.5 points high on the iPad and 38.7 on the iPhone at every size.
 ///
 /// Version history:
 ///   1.0 — L44: initial implementation
@@ -2854,15 +2869,17 @@ final class CollectionTemplateFitTests: XCTestCase {
     }
 
     /// #2006's fourth item, on the card's own frame, which the code before L44 draws too: *Full text as printed*'s card
-    /// at the default size and again at AX3, in one test. On the code before L44 its type was fixed in points, so the
-    /// card was as tall at AX3 as at the default; a card whose type follows the reader's size is taller.
+    /// at the default size and again at AX5, in one test. On the code before L44 its type was fixed in points, so the
+    /// card was as tall at AX3 as at the default (the control's run); a card whose type follows the reader's size is
+    /// taller. AX5, not AX3: on the iPad the default size draws the cards two to a row, narrower and so taller, and AX3's
+    /// one column, twice as wide, leaves too little growth to tell a fixed type from a grown one.
     func testATemplateCardGrowsWithTheTextSize() throws {
         let standard = try templateCardFrame(at: nil)
         app.terminate()
-        let large = try templateCardFrame(at: "UICTContentSizeCategoryAccessibilityXL")
-        print("[L44 fit] card at L \(standard), at AX3 \(large)")
+        let large = try templateCardFrame(at: "UICTContentSizeCategoryAccessibilityXXXL")
+        print("[L44 fit] card at L \(standard), at AX5 \(large)")
         XCTAssertGreaterThan(large.height, standard.height * 1.4, """
-            Full text as printed's card is \(Int(large.height)) points high at AX3 and \(Int(standard.height)) at the default \
+            Full text as printed's card is \(Int(large.height)) points high at AX5 and \(Int(standard.height)) at the default \
             size: its type does not follow the reader's text size (#2006)
             """)
     }
@@ -2921,8 +2938,12 @@ final class CollectionTemplateFitTests: XCTestCase {
         let pill = app.buttons["Section defaults"].firstMatch
         XCTAssertTrue(pill.waitForExistence(timeout: CollectionSettingsDriver.patience), "No section heading row")
         print("[L44 fit] \(size) pill \(pill.frame)")
+        attachScreenshot("L44 fit \(size): the outline's section row")
         if accessibility {
-            XCTAssertGreaterThan(pill.frame.height, 34, "The pill's type did not grow at \(size): \(pill.frame)")
+            // The frame is the pill's hit area, never under 44 (`CollectionSectionPillHitAreaTests`), so only a pill drawn
+            // taller than that says its type grew: caption type is 32 points at AX3, about 48 a line with the padding,
+            // where the fixed 12 points drew 24.5 on one line and 38.7 on two.
+            XCTAssertGreaterThan(pill.frame.height, 45, "The pill's type did not grow at \(size): \(pill.frame)")
         }
 
         driver.openSettings()
@@ -2933,6 +2954,16 @@ final class CollectionTemplateFitTests: XCTestCase {
         print("[L44 fit] \(size) window \(Int(window.width))x\(Int(window.height)) card \(card)")
         XCTAssertGreaterThanOrEqual(card.minX, window.minX - 0.5, "The card runs off the leading edge at \(size)")
         XCTAssertLessThanOrEqual(card.maxX, window.maxX + 0.5, "The card runs off the trailing edge at \(size)")
+        if !accessibility {
+            // The design's §5.4: the templates are a grid of two on the iPad, as on the Mac, and rows on the iPhone. The
+            // iPad's settings sheet is compact itself, so a grid there is the editor's width passed in, not the sheet's.
+            let bar = app.navigationBars[CollectionSettingsDriver.documentsTitle].frame
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                XCTAssertLessThan(card.width, bar.width * 0.6, "The iPad's templates are not a grid of two: \(card), bar \(bar)")
+            } else {
+                XCTAssertGreaterThan(card.width, bar.width * 0.7, "The iPhone's templates are not rows: \(card), bar \(bar)")
+            }
+        }
         if accessibility {
             // The card is about 60 points high at the default size, its name a line of subheadline type and its line of
             // caption type; at AX3 those are about 36 and 35 points a line, so the card passes 85 only if the size took
@@ -2976,16 +3007,20 @@ final class CollectionTemplateFitTests: XCTestCase {
 
 // MARK: - CollectionSectionPillHitAreaTests (L44, #2006)
 
-/// The section pill answers a tap inside 44 points of its centre, beyond its own 24 (#2006's third item): a tap above
-/// the pill, outside its frame and inside the hit area `minimumHitTarget()` gives it, opens the section's sheet.
+/// The section pill's hit area is at least 44 points each way (#2006's third item), and a tap inside it, above the pill
+/// as drawn, opens the section's sheet. `minimumHitTarget()` grows the pill's content shape, and SwiftUI reports a
+/// button's frame from its content shape, so the frame XCUI reads is the hit area, while the pill is drawn as before.
 ///
 /// ## Devices
-/// iPad Pro 13-inch (M5), `OS=27.0`, where the pill is one line, about 24 points high. On iPhone 17 it skips: its label
-/// wraps in the narrow outline, and the pill is 38.7 points high, so its 44-point area adds too little to tap. Allow 600 s.
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`. Never skips. On the iPad the pill is one line, about 24.5 points
+/// high as drawn; on the iPhone its label wraps in the narrow outline, *Section* over *defaults*, and it is 38.7. Allow
+/// 600 s.
 ///
 /// ## On the code before L44
-/// Measured in the suite's runbook entry, on the iPad: whether the system takes a tap that close to the pill by itself, as
-/// it took Search's Filter and pager taps before #1918 (`SearchHitAreaTests`).
+/// The frame is the pill as drawn: 24.5 points high on the iPad and 38.7 on the iPhone (the control run's `[L44 pill]`
+/// lines), so the test fails at its first assertion on both. The tap passes there too, on the iPad: the system takes a
+/// tap that close to a button by itself, as it took Search's Filter and pager taps before #1918 (`SearchHitAreaTests`),
+/// so the tap is a check and the frame is the guard.
 ///
 /// Version history:
 ///   1.0 — L44: initial implementation
@@ -3002,7 +3037,7 @@ final class CollectionSectionPillHitAreaTests: XCTestCase {
         try await super.tearDown()
     }
 
-    func testATapAboveThePillOpensTheSectionsSheet() throws {
+    func testThePillsHitAreaIs44PointsEachWay() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
@@ -3021,22 +3056,136 @@ final class CollectionSectionPillHitAreaTests: XCTestCase {
         XCTAssertTrue(pill.waitForExistence(timeout: CollectionSettingsDriver.patience), "No section heading row")
         let frame = pill.frame
         print("[L44 pill] \(frame)")
-        // Measured on the code before L44 (iPhone 17, iOS 27.0): the pill's label wraps in the iPhone's narrow outline,
-        // "Section" over "defaults", so the pill is 38.7 points high there, and its 44-point area adds under 3 points above
-        // it, too few for a tap to tell from the system's own tolerance. One line, as on the iPad, it is about 24.
-        try XCTSkipIf(frame.height > 34, """
-            The pill is \(Int(frame.height)) points high here, its label wrapped, so its 44-point area adds \
-            \(Int((44 - frame.height) / 2)) points above it: too few for a tap to tell. Run it on an iPad, where it is one line.
-            """)
-        // Above the pill, 8 points past its top edge: outside the pill and inside the 44-point square about its centre.
-        // Above, not below: the row's Body depth menu is drawn under the pill and after it, so it takes a tap there.
-        let above = frame.height / 2 + 8
-        XCTAssertLessThan(above, 22, "A tap \(Int(above)) points above the centre is outside the 44-point square")
+        // The frame is the content shape, which `minimumHitTarget()` grows about the pill's centre (the guard).
+        XCTAssertGreaterThanOrEqual(frame.height, 44, "The pill's hit area is \(frame.height) points high, under 44")
+        XCTAssertGreaterThanOrEqual(frame.width, 44, "The pill's hit area is \(frame.width) points wide, under 44")
+        // 20 points above the centre, which the shape keeps where the pill is drawn: inside the 44-point area, and on the
+        // iPad 7.75 points above the pill as drawn (24.5 high). Above, not below: the row's Body depth menu is drawn under
+        // the pill and after it, so it takes a tap there.
         let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
-        origin.withOffset(CGVector(dx: frame.midX, dy: frame.midY - above)).tap()
+        origin.withOffset(CGVector(dx: frame.midX, dy: frame.midY - 20)).tap()
         // By the sheet's section header, which the code before L44 draws too.
         let sheet = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Section Defaults")).firstMatch
         XCTAssertTrue(sheet.waitForExistence(timeout: CollectionSettingsDriver.patience),
-                      "A tap \(Int(above)) points above the pill's centre, 8 past its edge, opened no section sheet")
+                      "A tap 20 points above the pill's centre, inside its hit area, opened no section sheet")
+    }
+}
+
+// MARK: - CollectionTemplateLineAnnouncementTests (L44)
+
+/// What VoiceOver says when a template is chosen (the Collections design's §9, lane 4): the line that says what the
+/// template changed is spoken when it appears, and *Undo* is the element after it, so a VoiceOver reader hears the change
+/// and can take it back without hunting for the control.
+///
+/// ## How it listens
+/// iOS 27's VoiceOver service for UI tests, as `AddToCollectionAnnouncementTests` listens: with VoiceOver on, the test
+/// moves VoiceOver's cursor to *Full text as printed*'s card and double-taps, as a VoiceOver reader activates it (with
+/// VoiceOver on, a single tap only moves the cursor), then reads VoiceOver's speech four times a second for eight
+/// seconds. The service returns 64 characters of speech, and the line is 77, so the test listens for its opening.
+/// It then moves the cursor on from the card to the line and requires *Undo* next.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`: on the iPhone the line follows the card, and on the iPad it follows
+/// the grid's row of two, after the card beside it. It skips below iOS 27. Under Xcode 27.2 VoiceOver stays on once its
+/// speech has been read, so run it alone, on a simulator shut down before it (the `SearchResultVoiceOverTests` entry of
+/// `Planning/UI-Test-Destinations-Runbook.md`). Allow 600 s.
+///
+/// ## On the code before L44
+/// The settings have no Documents step, and no card writes a line, so it fails at its first step row.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionTemplateLineAnnouncementTests: XCTestCase {
+
+    /// The card's name, which VoiceOver speaks first.
+    private static let card = "Full text as printed"
+    /// The opening of the line a new collection's choice of *Full text as printed* writes, inside the service's 64
+    /// characters: "Changed Archival source note from Off to On and Research notes from On to Off."
+    private static let line = "Changed Archival source note from Off to On"
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        turnVoiceOverOff()
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testACardsLineIsSpokenAndUndoIsTheElementAfterIt() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let driver = CollectionSettingsDriver(app: app)
+        driver.createCollection()
+        driver.openSettings()
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        let card = driver.element("collection.template.fullTextAsPrinted")
+        XCTAssertTrue(card.waitForExistence(timeout: CollectionSettingsDriver.patience), "Step 1 has no \(Self.card)")
+
+        // Every tap but VoiceOver's double tap is done; from here on only VoiceOver moves.
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        var passed: [String] = []
+        var onTheCard = false
+        // The cursor stops on the last element and says it again, so a card not met in thirty steps is not on screen.
+        for _ in 1...30 {
+            let spoken = try voiceOver.moveForward().utterance
+            if spoken.hasPrefix(Self.card) { onTheCard = true; break }
+            passed.append(spoken)
+        }
+        guard onTheCard else {
+            try voiceOver.disable()
+            XCTFail("VoiceOver never reached \(Self.card)'s card. It spoke: \(passed)")
+            return
+        }
+        card.doubleTap()
+        var heard: [String] = []
+        for _ in 1...32 where !heard.contains(where: { $0.contains(Self.line) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+        }
+        // On from the card: past the card beside it on the iPad, to the line, and then Undo.
+        var onTheWay: [String] = []
+        var afterTheLine: String?
+        for _ in 1...6 {
+            let spoken = try voiceOver.moveForward().utterance
+            onTheWay.append(spoken)
+            if spoken.hasPrefix(Self.line) {
+                afterTheLine = try voiceOver.moveForward().utterance
+                break
+            }
+        }
+        try voiceOver.disable()
+
+        print("[L44 VoiceOver] heard \(heard); on from the card \(onTheWay); after the line \(afterTheLine ?? "nil")")
+        XCTAssertTrue(heard.contains { $0.contains(Self.line) }, """
+            VoiceOver did not say "\(Self.line)…" within eight seconds of the card's activation. It said: \(heard)
+            """)
+        let next = try XCTUnwrap(afterTheLine, "VoiceOver's cursor never reached the line from the card: \(onTheWay)")
+        XCTAssertTrue(next.hasPrefix("Undo"), "The element after the line is not Undo: VoiceOver said \"\(next)\"")
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
     }
 }
