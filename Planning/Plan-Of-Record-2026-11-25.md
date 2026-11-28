@@ -250,6 +250,13 @@ It is written from six sources:
 
 221. **L35 (J9): the export sheet's sentence, and the line of what the device lacks under it, are drawn no larger than AX1.** The owner's choice: "Cap it at AX1", over the recommendation, "Keep full size", told that at the largest text sizes the sentence kept the reader's size, with Export and the format in view at the sheet's foot and a long sentence scrolling under them, and that keeping the whole sentence on an iPhone SE's screen meant shrinking it to about AX1, half the reader's size. L35 caps the line of what the device lacks with it, in the same type under it, so the two read at one size.
 
+*From the orchestrator's walkthrough of the day's findings, 2026-11-28, as it concerns L56:*
+
+222. **L56's finding is filed: the iPad's Chronology window opens on 1969 and loads it.** The owner's choice: "L56's 1969 Chronology window", one of four findings filed together, with L62's, L37's and L41's, to the question which of the day's unfiled findings to file.
+    - Filed by L56 as #2047, from its §5 entry, read from the code. The other three are #2043 to #2046's.
+223. **L56's two small notes: `documentKeysInDateRange`'s stale doc comment is corrected in L56, and the iOS 27.0 iPad simulator's abort stays a memory note.** The owner's choice: "Fold into a later row (Recommended)", over filing them and leaving them in §5, for the day's three smaller notes; L35's go to L43 and L44.
+    - L56 edits the comment's file, so it is corrected there, in a commit of its own. The abort is in the memory note on #1620's returns, beside L40's.
+
 **Rules carried from the earlier plans and `CLAUDE.md`, and the two of decision 183.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
@@ -1192,6 +1199,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
       - The `FRUSExplorerMac` build: succeeded, with the known residue alone.
       - `Scripts/check_repo_hygiene.py`: six checks passed.
       - No `swift build --target FRUSCoreKit` or `swift test`: L35 changes no shared code.
+    - **Merged** as #2049, `604dd47d`, a squash onto `67a3372c` (L38, #2048) at 03:30:08 UTC on 2026-11-28, from its head `bc92b68c`, whose tree, `299e5dfa`, it keeps. It closed #2018. Recorded by L56: L36, the next row, had been written before it.
 
 - **L36, the preview's four repairs** (lane 6, first half; #1997, #2004). One session, one pull request, after L34.
   - It keeps the author's place when the page reloads; choosing a row brings its document into view, and renders it if it is past the first 20; each document on the page is named by its entry, so that one entered twice is two places (#2004, `CollectionItemHTMLRenderer.swift:784-787`); it refreshes on the title override and the Headnotes default (#1997, `CollectionPreviewView.swift:211-266`).
@@ -1637,9 +1645,9 @@ Both were seen in L42's walk of `frus1952-54v02p1` d16 on an iPad Pro 13-inch (M
 ### Found by L56, unfiled
 
 Each was read in L56's work. The owner's answers of 2026-11-28 settled all three: the first filed, the second a memory note, the third folded into L56.
-- **The iPad's Chronology window opens on 1969 and loads it.** Analysis Tools opens the window with parameters that name no dates (`BrowserView.presentChronology`, `ChronologyParameters()`), which `ChronologyView.seedDefaultsAndApply(_:)` takes as given, so it loads the view model's placeholder year at once. The iPhone's sheet is given none, opens on the manifest's latest year, and waits for Show. Read from the code: the row's UI tests open the screen on a range of their own. **Filed as #2047,** on the owner's word (2026-11-28, "L56's 1969 Chronology window").
-- **Under iOS 27.0, closing Chronology's window after a save aborted the iPad simulator's render server.** Five runs in five, on fresh boots: as Done closed the window after a save, `backboardd` aborted in Metal (`-[MTLTextureDescriptorInternal validateWithDevice:]` under `CA::OGL::FlattenNode::retain_surface`, #1620's frames), whether or not the save's toast was still up. The window closes cleanly with no save, by Done (the AX5 test's teardown) or by a hand-off. Under iOS 27.2 the same test passed, as #1620's frames did not show under 27.2 either. Not tried on a device. **A memory note, not an issue,** on the owner's word (2026-11-28); the runbook routes the iPad's run to 27.2.
-- **`documentKeysInDateRange(_:limitToVolumeIds:)` says Search calls it.** Nothing in the app does; its callers are tests, and Search's date filter is its filter clause's own. **Corrected in L56,** in a commit of its own, on the owner's word (2026-11-28) that such a note goes to the row that edits the file.
+- **The iPad's Chronology window opens on 1969 and loads it.** Analysis Tools opens the window with parameters that name no dates (`BrowserView.presentChronology`, `ChronologyParameters()`), which `ChronologyView.seedDefaultsAndApply(_:)` takes as given, so it loads the view model's placeholder year at once. The iPhone's sheet is given none, opens on the manifest's latest year, and waits for Show. Read from the code: the row's UI tests open the screen on a range of their own. **Filed as #2047,** on the owner's word (decision 222).
+- **Under iOS 27.0, closing Chronology's window after a save aborted the iPad simulator's render server.** Five runs in five, on fresh boots: as Done closed the window after a save, `backboardd` aborted in Metal (`-[MTLTextureDescriptorInternal validateWithDevice:]` under `CA::OGL::FlattenNode::retain_surface`, #1620's frames), whether or not the save's toast was still up. The window closes cleanly with no save, by Done (the AX5 test's teardown) or by a hand-off. Under iOS 27.2 the same test passed, as #1620's frames did not show under 27.2 either. Not tried on a device. **A memory note, not an issue** (decision 223); the runbook routes the iPad's run to 27.2.
+- **`documentKeysInDateRange(_:limitToVolumeIds:)` says Search calls it.** Nothing in the app does; its callers are tests, and Search's date filter is its filter clause's own. **Corrected in L56,** in a commit of its own (decision 223).
 
 ### P2 — later
 

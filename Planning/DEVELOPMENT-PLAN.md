@@ -5320,7 +5320,8 @@ Row L36 of the plan of record from 2026-11-25 (lane 6's first half), from `v2` a
 Row L56 of the plan of record from 2026-11-25 (decisions 184 to 186; #2012), on `claude/l56-chronology-range-corpus-00a5b8` from `v2` at `9e92080f`, L42's merge: a commit for #2012, one for the kit's rule and the index's read, one for the screen, a docs commit, and one correcting `documentKeysInDateRange`'s doc comment, on the owner's word. No stored property, so no CloudKit change; a read is added and nothing stored, so no index version.
 
 **Merges since the last entry**
-MERGES
+- L35 merged as `604dd47d` (#2049), a squash onto `67a3372c` at 03:30:08 UTC on 2026-11-28, from its head `bc92b68c`, whose tree, `299e5dfa`, it keeps. It closed #2018. L36's entry, the one before this, was written before it merged, so this entry records it, as does the plan's L35 record.
+HEADMERGE
 
 **#2012, shown first** (decision 183)
 - A DEBUG seam opens Chronology on a range a test names (`UITestBrowseSeams.chronologyRange`, `FRUS_UI_TEST_CHRONOLOGY_RANGE`). The compact pickers are set a month at a time through their calendars, and the manifest's latest year is 64 years after the browse fixture's 1962.
