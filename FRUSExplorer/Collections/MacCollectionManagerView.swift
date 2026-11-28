@@ -629,9 +629,14 @@ private struct NewCollectionSheet: View {
 /// Word Cloud and Create Static Snapshot here and not its Delete Collection, so the swipe, which asked nothing, was the
 /// window's only delete. The dialog hangs on the sheet: on the Mac it is window-modal, with no source to point at.
 ///
+/// A row's right-click menu opens with Export…, which opens the export sheet for that collection over this one
+/// (`CollectionListExportSheet`, L35), and VoiceOver offers the menu's items as the row's actions (#2006).
+///
 /// Version history:
 ///   1.0 — Composer v2 Phase 3: initial implementation
 ///   1.1 — #1823: Rename, Duplicate and Delete in a row's right-click menu; Duplicate selects the copy; deletes ask first
+///   1.2 — L35: Export… first in a row's menu, the quick export of decision 156; the menu's items are the row's
+///          VoiceOver actions too (#2006)
 private struct MacManageCollectionsSheet: View {
     /// The collections to manage (already project-filtered by the caller).
     let collections: [Collection]
@@ -643,9 +648,13 @@ private struct MacManageCollectionsSheet: View {
     let onSnapshot: (Collection) -> Void
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    /// The app's state, which the export sheet resolves through.
+    @Environment(AppState.self) private var appState
 
     /// The collections the sheet is asking whether to delete; empty while it is not asking (#1823).
     @State private var deleting: [Collection] = []
+    /// The collection a row's Export… is exporting; `nil` while the export sheet is closed (L35).
+    @State private var exporting: Collection? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -669,6 +678,7 @@ private struct MacManageCollectionsSheet: View {
                     ForEach(collections) { c in
                         ManageCollectionRow(
                             collection: c,
+                            onExport: { exporting = c },
                             onDuplicate: { duplicate(c) },
                             onWordCloud: { onWordCloud(c) },
                             onSnapshot: c.savedSearchId != nil ? { onSnapshot(c) } : nil,
@@ -682,6 +692,11 @@ private struct MacManageCollectionsSheet: View {
             }
         }
         .frame(minWidth: 440, minHeight: 420)
+        // L35: a row's Export… opens the export sheet over this one; one sheet presents from here at a time.
+        .sheet(item: $exporting) { collection in
+            CollectionListExportSheet(collection: collection)
+                .environment(appState)
+        }
         .collectionDeleteConfirmation(
             isPresented: Binding(get: { !deleting.isEmpty }, set: { if !$0 { deleting = [] } }),
             deleting: deleting
@@ -705,8 +720,9 @@ private struct MacManageCollectionsSheet: View {
     }
 }
 
-/// One editable row in the Manage Collections sheet: an inline rename field + the document count, with Rename,
-/// Duplicate, Word Cloud, Create Static Snapshot (a smart collection's) and Delete in its right-click menu.
+/// One editable row in the Manage Collections sheet: an inline rename field + the document count, with Export…, Rename,
+/// Duplicate, Word Cloud, Create Static Snapshot (a smart collection's) and Delete in its right-click menu, which are its
+/// VoiceOver actions too (L35, #2006).
 ///
 /// The field commits as the reader types, through the editor's `CollectionEditorCommit.name` — trimmed, and only when
 /// the name changes — and saves (#1823); it was bound to `name` itself, which wrote the field untrimmed and left the
@@ -715,6 +731,8 @@ private struct ManageCollectionRow: View {
     /// The collection the row manages.
     let collection: Collection
     @Environment(\.modelContext) private var modelContext
+    /// Opens the export sheet for this collection (L35).
+    let onExport: () -> Void
     /// Duplicates this collection and selects the copy.
     let onDuplicate: () -> Void
     /// Opens a word cloud for this collection (rehomed from the removed sidebar context menu).
@@ -755,28 +773,46 @@ private struct ManageCollectionRow: View {
         .onChange(of: collection.name) { _, saved in
             if !CollectionEditorNaming.fieldAgrees(draftName, withSavedName: saved) { draftName = saved }
         }
-        .contextMenu {
-            Button {
-                isNameFocused = true
-            } label: {
-                Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
+        .contextMenu { rowActions(forVoiceOver: false) }
+        // The right-click menu is the row's VoiceOver actions too, from the one builder (#2006).
+        .accessibilityActions { rowActions(forVoiceOver: true) }
+    }
+
+    /// The row's menu, and its VoiceOver actions: Export… first, the quick export (L35, decision 156), then Rename and
+    /// Duplicate, Word Cloud and a smart collection's Create Static Snapshot, and Delete, which asks first.
+    ///
+    /// - Parameter forVoiceOver: Whether these are VoiceOver's actions rather than the menu: then with no dividers, and
+    ///   without Delete, which VoiceOver already offers through the list's `.onDelete` (#1823).
+    @ViewBuilder
+    private func rowActions(forVoiceOver: Bool) -> some View {
+        let separated = !forVoiceOver
+        Button(action: onExport) {
+            Label(String(localized: "collection.toolbar.export", defaultValue: "Export…"),
+                  systemImage: "square.and.arrow.up")
+        }
+        if separated { Divider() }
+        Button {
+            isNameFocused = true
+        } label: {
+            Label(String(localized: "common.rename", defaultValue: "Rename"), systemImage: "pencil")
+        }
+        Button(action: onDuplicate) {
+            Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
+                  systemImage: "plus.square.on.square")
+        }
+        if separated { Divider() }
+        Button(action: onWordCloud) {
+            Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
+                icon: { Image(systemName: WordCloudGlyph.symbol) }
+        }
+        if let onSnapshot {
+            Button(action: onSnapshot) {
+                Label(String(localized: "collection.snapshot.action",
+                             defaultValue: "Create Static Snapshot"),
+                      systemImage: "camera")
             }
-            Button(action: onDuplicate) {
-                Label(String(localized: "collection.duplicate.action", defaultValue: "Duplicate"),
-                      systemImage: "plus.square.on.square")
-            }
-            Divider()
-            Button(action: onWordCloud) {
-                Label { Text(String(localized: "collection.wordCloud", defaultValue: "Word Cloud")) }
-                    icon: { Image(systemName: WordCloudGlyph.symbol) }
-            }
-            if let onSnapshot {
-                Button(action: onSnapshot) {
-                    Label(String(localized: "collection.snapshot.action",
-                                 defaultValue: "Create Static Snapshot"),
-                          systemImage: "camera")
-                }
-            }
+        }
+        if !forVoiceOver {
             Divider()
             Button(role: .destructive, action: onDelete) {
                 Label(CollectionDeletion.action, systemImage: "trash")
