@@ -21,7 +21,7 @@ import Foundation
 /// The type is a pure string builder — no file I/O, no SwiftData access, no main-actor
 /// requirement. Responsibilities:
 ///   - `itemHTML(_:)` — one item → one HTML fragment (heading / prose / document section).
-///     Documents keep their stable `anchorId(doc:)` anchors, inline highlight injection
+///     Documents keep their stable `anchorId(doc:)` anchors (a later entry numbered), inline highlight injection
 ///     (via `FRUSRenderNodeHTMLSerializer`), body-depth handling, source-note and
 ///     research-note blocks — exactly as the HTML export has always emitted them.
 ///   - `headerHTML(metadata:)`, `tableOfContentsHTML(for:)` — the page header and ToC nav.
@@ -120,6 +120,9 @@ import Foundation
 ///          in the collection's outline (J32); and a requested headnote with nothing stored prints
 ///          nothing, the preview alone showing its author the placeholder (J10). The contents list
 ///          writes its own numbers, the documents' alone (#1993), from the plan's rows
+///   1.19 — L36 (#2004): a document entered twice is two places. Its second entry's anchor is the first's
+///          with `_2` (`anchorIds(forDocuments:)`), its third's `_3`, and so for its section, its contents
+///          row and its notes' ids, which the anchor scopes; a document entered once keeps its anchor
 public struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -179,18 +182,20 @@ public struct CollectionItemHTMLRenderer {
     /// - `.document` → a full `<section id="doc-…">` with citation heading, external link,
     ///   body (per the document's `bodyDepth`), highlights, source note, and research notes.
     ///
-    /// - Parameter item: The resolved item to render.
+    /// - Parameter item: The resolved item to render; a document takes the anchor of its first entry.
     /// - Returns: An HTML fragment string (may be empty for an empty prose payload).
     public func itemHTML(_ item: CollectionExportItem) -> String {
         itemHTML(CollectionExportPlan(items: [item], options: options, forPreview: isPreviewConfigured).items[0])
     }
 
     /// Renders one item of an export's plan: a document as its plan's lines, at the level its section
-    /// gives it (L34).
+    /// gives it (L34), under `anchor`, its entry's place on the page (L36, #2004).
     ///
-    /// - Parameter planned: The item and its plan.
+    /// - Parameters:
+    ///   - planned: The item and its plan.
+    ///   - anchor: A document's anchor on the page (`anchorIds(forDocuments:)`); `nil` for its first entry's.
     /// - Returns: An HTML fragment string.
-    func itemHTML(_ planned: CollectionExportPlan.Item) -> String {
+    func itemHTML(_ planned: CollectionExportPlan.Item, anchor: String? = nil) -> String {
         switch planned.item {
         case .heading(let heading, let level):
             let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
@@ -204,7 +209,7 @@ public struct CollectionItemHTMLRenderer {
             return generatedBlockHTML(block)
         case .document(let doc):
             guard let plan = planned.document else { return "" }
-            return documentSectionHTML(doc, plan: plan)
+            return documentSectionHTML(doc, plan: plan, anchor: anchor ?? Self.anchorId(doc: doc))
         }
     }
 
@@ -309,10 +314,11 @@ public struct CollectionItemHTMLRenderer {
     /// - Parameters:
     ///   - doc: The pre-resolved document payload.
     ///   - plan: The document's plan.
+    ///   - anchor: The section's id, its entry's own (#2004), which also scopes the ids of its notes.
     /// - Returns: The document's `<section id="doc-…">…</section>` HTML fragment.
-    private func documentSectionHTML(_ doc: CollectionExportDocument, plan: CollectionDocumentPlan) -> String {
+    private func documentSectionHTML(_ doc: CollectionExportDocument, plan: CollectionDocumentPlan,
+                                     anchor: String) -> String {
         var body = ""
-        let anchor = Self.anchorId(doc: doc)
         // Where the volume's heading leads, the region carries the citation's number, which a reader
         // moving by landmarks hears where the headings repeat (J16).
         let region = plan.regionName.map { " aria-label=\"\(escaped($0))\"" } ?? ""
@@ -370,8 +376,8 @@ public struct CollectionItemHTMLRenderer {
                 guard !citationOnly else { break }
                 if let drawing = line.drawing, let model = doc.renderModel {
                     // #985: this page carries many documents, and a footnote DOM key is only unique
-                    // within one, so each document's ids are scoped by its anchor. #1516: a figure's
-                    // image is embedded in the page, from the device's figure store.
+                    // within one, so each document's ids are scoped by its anchor, its entry's own since
+                    // #2004. #1516: a figure's image is embedded in the page, from the device's figure store.
                     let images = figureImages
                     body += FRUSRenderNodeHTMLSerializer(
                         idScope: "\(anchor)-",
@@ -587,14 +593,19 @@ public struct CollectionItemHTMLRenderer {
     /// `<li class="toc-sub"><ol>` wrapper (valid nesting — the sub-list lives inside an
     /// `<li>`), and documents nest inside the list of their owning section.
     ///
+    /// Each document row links to its entry's own section (#2004), so a document entered twice has two rows
+    /// that lead to two places.
+    ///
     /// - Parameter items: The ordered items whose documents and headings populate the ToC.
     /// - Returns: The `<nav>…</nav>` HTML fragment.
     public func tableOfContentsHTML(for items: [CollectionExportItem]) -> String {
-        tableOfContentsHTML(rows: CollectionContentsRow.rows(for: items, style: options.tocStyle))
+        tableOfContentsHTML(rows: CollectionContentsRow.rows(for: items, style: options.tocStyle),
+                            anchors: Self.anchorIds(forDocuments: items.documents))
     }
 
-    /// Renders the table of contents `<nav>` from the plan's rows.
-    func tableOfContentsHTML(rows: [CollectionContentsRow]) -> String {
+    /// Renders the table of contents `<nav>` from the plan's rows, the document numbered *n* linking to
+    /// `anchors[n - 1]`, its entry's anchor.
+    func tableOfContentsHTML(rows: [CollectionContentsRow], anchors: [String]) -> String {
         /// Line indentation for list items at a nesting level (level 1 = the pre-Phase-4
         /// four spaces; each deeper level adds two).
         func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
@@ -606,7 +617,7 @@ public struct CollectionItemHTMLRenderer {
             switch row.kind {
             case .document(let number):
                 guard let doc = row.document else { continue }
-                let anchor = Self.anchorId(doc: doc)
+                let anchor = anchors.indices.contains(number - 1) ? anchors[number - 1] : Self.anchorId(doc: doc)
                 let lines = row.lines.map { "<span class=\"toc-line\">\(markdownItalics(escaped($0)))</span>" }.joined()
                 body += "\(indent(level))<li class=\"toc-document\"><a href=\"#\(anchor)\">"
                     + "<span class=\"toc-number\">\(number).</span> \(markdownItalics(escaped(row.text)))\(lines)</a></li>\n"
@@ -671,13 +682,21 @@ public struct CollectionItemHTMLRenderer {
         // The export's plan (L34): the contents rows and each document's lines, decided once for the
         // three formats.
         let plan = CollectionExportPlan(items: items, options: options, forPreview: isPreviewConfigured)
+        // Each document's entry is a place of its own (#2004): one numbering for its row and its section.
+        let anchors = Self.anchorIds(forDocuments: items.documents)
 
         // Table of contents — label style controlled by options.tocStyle.
-        body += tableOfContentsHTML(rows: plan.contents)
+        body += tableOfContentsHTML(rows: plan.contents, anchors: anchors)
 
         // Body items — documents render as sections; headings and prose interleave in order.
+        var documents = 0
         for planned in plan.items {
-            body += itemHTML(planned)
+            var anchor: String?
+            if case .document = planned.item, anchors.indices.contains(documents) {
+                anchor = anchors[documents]
+                documents += 1
+            }
+            body += itemHTML(planned, anchor: anchor)
         }
 
         // Method appendix (M-2) — the project's query log, opt-in only. Placed before the
@@ -823,15 +842,49 @@ public struct CollectionItemHTMLRenderer {
     // MARK: - Anchors
 
     /// Stable per-document anchor id (`doc-{volumeId}-{documentId}`, non-alphanumerics
-    /// collapsed to `-`) — shared by the ToC links, the exported sections, and the
-    /// preview's scroll-to-row targets.
+    /// collapsed to `-`): the anchor of a document's first entry on the page. A later entry of the
+    /// same document takes ``anchorIds(forDocuments:)``'s numbered form.
     ///
     /// - Parameter doc: The document whose anchor id to compute.
     /// - Returns: A sanitized HTML id string.
     public static func anchorId(doc: CollectionExportDocument) -> String {
-        "doc-\(doc.volumeId)-\(doc.documentId)"
+        anchorId(volumeId: doc.volumeId, documentId: doc.documentId)
+    }
+
+    /// The anchor of a document's first entry, from its volume and its id (see ``anchorId(doc:)``).
+    public static func anchorId(volumeId: String, documentId: String) -> String {
+        "doc-\(volumeId)-\(documentId)"
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .joined(separator: "-")
+    }
+
+    /// The anchor of each of `documents` on the page, in their order (L36, #2004): ``anchorId(doc:)`` for
+    /// the first entry of a document, and that anchor with `_2`, `_3` … for each later entry with the same
+    /// anchor, so that a document entered twice is two places: two sections, two contents rows that lead
+    /// to them, and two sets of note ids, which the anchor scopes.
+    ///
+    /// **A document entered once keeps the anchor it has always had,** so an export of such a collection
+    /// writes the bytes it wrote. `_` is never in a first entry's anchor, whose every character outside
+    /// letters and digits is `-`, so a numbered anchor is no other document's, and the ids its anchor
+    /// scopes are no other document's either. The live preview reads the same numbering over its entries
+    /// to bring a chosen row's own copy into view.
+    ///
+    /// - Parameter documents: The page's documents, in its order.
+    /// - Returns: One anchor per document, in the same order.
+    public static func anchorIds(forDocuments documents: [CollectionExportDocument]) -> [String] {
+        anchorIds(forKeys: documents.map { (volumeId: $0.volumeId, documentId: $0.documentId) })
+    }
+
+    /// The anchor of each document named by its volume and its id, in order, numbered as
+    /// ``anchorIds(forDocuments:)`` numbers them: what the preview reads over its entries.
+    public static func anchorIds(forKeys keys: [(volumeId: String, documentId: String)]) -> [String] {
+        var entered: [String: Int] = [:]
+        return keys.map { document in
+            let anchor = anchorId(volumeId: document.volumeId, documentId: document.documentId)
+            let copy = (entered[anchor] ?? 0) + 1
+            entered[anchor] = copy
+            return copy == 1 ? anchor : "\(anchor)_\(copy)"
+        }
     }
 
     // MARK: - Embedded CSS (Session 146)

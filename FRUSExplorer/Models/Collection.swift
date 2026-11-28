@@ -277,10 +277,10 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
-    /// A plain-language, one-sentence description of what this collection will export, shown in the
-    /// export sheet (Composer redesign 5): the resolved body depth plus the content the composition
-    /// turns on — e.g. "Exports an AI summary of each document, with headnotes, your notes, and
-    /// footnotes." Reads the *collection defaults*; a per-document override can still differ.
+    /// A plain-language sentence of what this collection's settings export (Composer redesign 5), e.g. "Exports an AI
+    /// summary of each document, with headnotes, your notes, and footnotes.": the *collection defaults*, which a document's
+    /// override can differ from. It captions the iPhone editor's Collection settings row where no template matches; until
+    /// L35 the export sheet showed it, whose sentence is now written from what the export prints (`CollectionExportSentence`).
     var compositionSummarySentence: String {
         let lead: String
         switch CollectionBodyDepth(rawValue: defaultBodyDepth) ?? .full {

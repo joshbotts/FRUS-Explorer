@@ -9,6 +9,11 @@
 import Testing
 import Foundation
 import SwiftData
+import SwiftUI
+import SQLite3
+#if os(iOS)
+import UIKit
+#endif
 @testable import FRUSExplorer
 
 // MARK: - ResearchDocumentAggregationTests
@@ -604,5 +609,221 @@ struct ResearchDocumentRowTextTests {
                 "the row does not draw the number's line above the title: \(row.prefix(600))")
         #expect(!row.contains("Text(DocumentDisplayTitle.text(facts, documentId: entry.documentId))"),
                 "the row draws the bare title again, with no number")
+    }
+}
+
+#if os(iOS)
+// MARK: - ResearchRowHeadsTests
+
+/// The Research rows' heads load once the cross-reference store is there, whenever it comes (L38,
+/// #1946).
+///
+/// On the Mac the Research window showed each row's id where its head belongs (*d474*, *d473*, …)
+/// and kept it until the sidebar's selection changed. The heads come from `AppState`'s
+/// cross-reference store, which boot sets after a window that opens first may already be up, and
+/// which `AppState.refreshReadOnlyStores()` replaces after every indexing batch; the load was made
+/// once for each set of documents, and one that found no store kept nothing. (The check copy also
+/// showed rows that kept their ids after a read that found all their heads, which the rows' redraw
+/// answers, `ResearchRowsRedrawSourceTests`, below.)
+///
+/// These host the rows' loader, `View.researchRowHeads(for:from:into:)`, in a real hosting
+/// controller in a window of the test host's scene, since what failed is when SwiftUI runs a task,
+/// which no value-level test can see. The store reads a database of one table, `document_cache`,
+/// with the four columns `CrossReferenceStore.documentTitleFacts(for:)` reads.
+///
+/// Version history:
+///   1.0 — L38 (#1946): initial implementation
+@Suite("Research rows — the heads load once the store is there (#1946)")
+@MainActor
+struct ResearchRowHeadsTests {
+
+    /// What the hosted loader reads and writes: the store it is given, and the heads it loaded.
+    @Observable
+    final class Probe {
+        /// The rows' documents.
+        var documentKeys = ["frus1946v06/d474"]
+        /// The store the loader is given; `nil`, as before boot sets it.
+        var store: CrossReferenceStore?
+        /// The heads the loader wrote.
+        var headers: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
+    }
+
+    /// The loader, hosted as `ResearchView` hosts it.
+    private struct Rows: View {
+        @Bindable var probe: Probe
+
+        var body: some View {
+            Color.white.researchRowHeads(for: probe.documentKeys, from: probe.store, into: $probe.headers)
+        }
+    }
+
+    /// The head `frus1946v06` d474 prints.
+    private static let head = "The Chargé in the Soviet Union (Kennan) to the Secretary of State"
+
+    /// A database holding `document_cache` for `rows` (key → head), in a folder of its own.
+    private struct Database {
+        let folder: URL
+        let url: URL
+
+        init(rows: [String: String]) throws {
+            folder = FileManager.default.temporaryDirectory
+                .appendingPathComponent("ResearchRowHeads-\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            url = folder.appendingPathComponent("frus.db")
+            try execute("""
+                CREATE TABLE document_cache (volume_id TEXT NOT NULL, document_id TEXT NOT NULL,
+                    header TEXT, document_number TEXT, is_editorial_note INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (volume_id, document_id));
+                """)
+            for (key, head) in rows { try add(key, head: head) }
+        }
+
+        /// Adds a document's row, as an index pass writes one, through a connection of its own.
+        func add(_ key: String, head: String) throws {
+            let parts = key.split(separator: "/").map(String.init)
+            let number = parts[1].dropFirst()
+            let quoted = head.replacingOccurrences(of: "'", with: "''")
+            try execute("INSERT INTO document_cache VALUES ('\(parts[0])', '\(parts[1])', '\(quoted)', '\(number)', 0);")
+        }
+
+        private func execute(_ sql: String) throws {
+            var db: OpaquePointer?
+            guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
+                  let db else { throw CrossReferenceError.databaseOpenFailed(message: "fixture") }
+            defer { sqlite3_close_v2(db) }
+            guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
+                throw CrossReferenceError.queryFailed(message: String(cString: sqlite3_errmsg(db)))
+            }
+        }
+
+        /// A store over this database: a new instance each call, as `refreshReadOnlyStores()` makes one.
+        func store() throws -> CrossReferenceStore { try CrossReferenceStore(databaseURL: url) }
+
+        func remove() { try? FileManager.default.removeItem(at: folder) }
+    }
+
+    /// Hosts `root` in a window of the test host's scene, and takes the window down when `body` returns.
+    private func withHost<Root: View>(_ root: Root, body: () async throws -> Void) async throws {
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to lay out in")
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 320, height: 480)
+        window.rootViewController = UIHostingController(rootView: root)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+        try await body()
+    }
+
+    /// Waits up to three seconds for `condition`, letting the main queue run between looks.
+    private func settles(_ condition: () -> Bool) async throws -> Bool {
+        for _ in 0..<150 {
+            if condition() { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return condition()
+    }
+
+    /// The control: with the store there from the start, the head loads. So a failure below is the
+    /// loader's, not the host's.
+    @Test("With the store there from the start, the row's head loads")
+    func headLoadsWithTheStoreThere() async throws {
+        let database = try Database(rows: ["frus1946v06/d474": Self.head])
+        defer { database.remove() }
+        let probe = Probe()
+        probe.store = try database.store()
+        try await withHost(Rows(probe: probe)) {
+            let loaded = try await settles { probe.headers["frus1946v06/d474"]?.header == Self.head }
+            #expect(loaded, "the head did not load with the store there: \(probe.headers)")
+        }
+    }
+
+    /// #1946's first sighting: the window was up before boot set the store.
+    @Test("A row up before the store loads its head when the store arrives")
+    func headLoadsWhenTheStoreArrives() async throws {
+        let database = try Database(rows: ["frus1946v06/d474": Self.head])
+        defer { database.remove() }
+        let probe = Probe()
+        try await withHost(Rows(probe: probe)) {
+            // The load has run with no store, and kept nothing.
+            try await Task.sleep(for: .milliseconds(300))
+            #expect(probe.headers.isEmpty)
+            probe.store = try database.store()
+            let loaded = try await settles { probe.headers["frus1946v06/d474"]?.header == Self.head }
+            #expect(loaded, "the store arrived and the row kept its id: no load was made with it")
+        }
+    }
+
+    /// The stores are reopened after every indexing batch (`AppState.refreshReadOnlyStores()`). A
+    /// load made while the volume's rows were not there, as in the middle of its re-index, is made
+    /// again with the new store.
+    @Test("A row whose head was not in the index loads it when the store is reopened")
+    func headLoadsWhenTheStoreIsReopened() async throws {
+        let before = try Database(rows: [:])
+        defer { before.remove() }
+        let after = try Database(rows: ["frus1946v06/d474": Self.head])
+        defer { after.remove() }
+        let probe = Probe()
+        probe.store = try before.store()
+        try await withHost(Rows(probe: probe)) {
+            // The load has run with the first store, which has no row for the document.
+            try await Task.sleep(for: .milliseconds(300))
+            #expect(probe.headers.isEmpty)
+            probe.store = try after.store()
+            let loaded = try await settles { probe.headers["frus1946v06/d474"]?.header == Self.head }
+            #expect(loaded, "the store was reopened and the row kept its id: no load was made with it")
+        }
+    }
+}
+#endif
+
+// MARK: - ResearchRowsRedrawSourceTests
+
+/// `ResearchView`'s body reads the rows' heads, as the rows do (L38, #1946).
+///
+/// In the Mac check copy, with the Research window opened from the menu after launch, the log said
+/// all nine heads were read from the store and merged while every row still showed its id (*d474*,
+/// *d473*, …) until the sidebar's selection changed. The rows read `documentHeaders` inside the
+/// list's `ForEach`, under the split view's detail column, and the view's own body never read it.
+/// The body now reads it too, so a merge runs the body again and builds the rows anew; the rows still
+/// read the state themselves, so a list pushed on the iPhone's stack sees the heads whether or not
+/// its destination closure runs again. The unit target runs no Mac code; this reads the view's
+/// source, comments removed, and the check copy shows the rows themselves.
+///
+/// Version history:
+///   1.0 — L38 (#1946): initial implementation
+@Suite("Research rows — the view's body reads the heads (#1946)")
+struct ResearchRowsRedrawSourceTests {
+
+    private static func code() throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        return NaturalLanguageReadinessScanTests.code(
+            try String(contentsOf: root.appending(path: "FRUSExplorer/Research/ResearchView.swift"), encoding: .utf8))
+    }
+
+    /// One function's or property's brace body, whitespace collapsed.
+    private static func body(after declaration: String, in code: String) throws -> String {
+        let start = try #require(code.range(of: declaration), "ResearchView has no \(declaration)")
+        let range = try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: start.upperBound))
+        return code[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    @Test("The body reads the heads before it builds any layout")
+    func bodyReadsTheHeads() throws {
+        let container = try Self.body(after: "private var navigationContainerBody: some View", in: try Self.code())
+        #expect(container.hasPrefix("let _ = documentHeaders"),
+                "the body does not read the heads, so a merge may not redraw the Mac's rows: \(container.prefix(200))")
+    }
+
+    @Test("A row still reads its head from the state")
+    func rowsReadTheState() throws {
+        let row = try Self.body(after: "private func documentRow(_ entry: ResearchDocumentEntry) -> some View",
+                                in: try Self.code())
+        #expect(row.contains("let facts = documentHeaders[entry.id]"),
+                "a row no longer reads its head from the state, which a list pushed on the iPhone's stack needs")
     }
 }
