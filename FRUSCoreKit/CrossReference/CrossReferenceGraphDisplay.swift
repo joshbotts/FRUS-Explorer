@@ -1363,7 +1363,7 @@ public enum CrossReferenceGraphDisplay {
 ///
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
-///   1.1 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): the visit's line says the graph's central-file classes are among
+///   1.1 — 2026-11-28 (L63, decision 235): the visit's line says the graph's central-file classes are among
 ///          the visit's targets, since its footnote channel takes the class
 public struct CrossReferenceGraphCapture: Equatable, Sendable {
 
@@ -1529,7 +1529,7 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
     /// joined to the collection authority or not, where the graph draws a unit only for a citation that
     /// joins (``CrossReferenceGraphDisplay/unitNodes(rowsByDocument:authority:)``); with the source half on
     /// it lists the file each seed's own source note names; and it lists every central-file class a seed's
-    /// footnotes cite, as the graph draws a class node for each (L63, decision ⟪L63-DECISION⟫). Until L63 the packet's
+    /// footnotes cite, as the graph draws a class node for each (L63, decision 235). Until L63 the packet's
     /// footnote channel left the class out, and this line said how many of the graph's classes a seed's
     /// own source note named: 5 of 8 for `frus1952-54v02p1` d16 at three hops. It now says the graph's
     /// classes are among the targets, as the packet it read lists them, and how many where it lists fewer,
@@ -1626,7 +1626,7 @@ public struct CrossReferenceGraphCapture: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — 2026-11-27 (#1990, L42): initial implementation
-///   1.1 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): documentation only — a footnote's class is a target, so
+///   1.1 — 2026-11-28 (L63, decision 235): documentation only — a footnote's class is a target, so
 ///          `classesListed` counts every class the graph draws
 public struct CrossReferenceGraphVisitPreview: Equatable, Sendable {
 

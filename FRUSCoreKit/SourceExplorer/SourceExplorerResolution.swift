@@ -56,7 +56,7 @@ import SourceNoteKit
 ///         which leave out the central files as the packet does
 ///   1.2 — 2026-11-26 (#1976, L31): `documentRollsAreIndexDated`, whether the pre-1906 section's own rolls were
 ///         matched to the index's date, which both views say above them
-///   1.3 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): documentation only — `packetPointers` holds a footnote's central-file
+///   1.3 — 2026-11-28 (L63, decision 235): documentation only — `packetPointers` holds a footnote's central-file
 ///         class too, since the packet takes it; it reads the rule it always read
 public struct SourceExplorerResolution: Sendable {
 
@@ -92,7 +92,7 @@ public struct SourceExplorerResolution: Sendable {
     /// Both twins' Add to Archives Visit menus count and offer these, since the packet leaves out the
     /// Central Foreign Policy File's rows (decision 191). Counting the whole list offered "Add
     /// unprinted references (3)" for a document whose three rows the packet left out, an option that
-    /// added nothing; until L63 (decision ⟪L63-DECISION⟫) the class rows were among those left out.
+    /// added nothing; until L63 (decision 235) the class rows were among those left out.
     public var packetPointers: [UnprintedPointer] {
         unprintedPointers.filter { $0.citation.isInPacketChannel }
     }

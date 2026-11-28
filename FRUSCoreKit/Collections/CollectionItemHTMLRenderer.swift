@@ -343,7 +343,7 @@ public struct CollectionItemHTMLRenderer {
 
         for line in plan.lines {
             switch line.role {
-            case .title, .citation, .address, .headnote:
+            case .title, .titleDateLine, .citation, .address, .headnote:
                 break
             default:
                 beginBody()
@@ -352,6 +352,9 @@ public struct CollectionItemHTMLRenderer {
             case .title:
                 body += "  " + Self.headingHTML(level: line.headingLevel ?? plan.documentLevel, cssClass: "doc-lead",
                                                 content: markdownItalics(escaped(line.text))) + "\n"
+            case .titleDateLine:
+                // The author's date line under their title (L43), drawn as a dateline is; its own class names it.
+                body += "  <p class=\"dateline title-date-line\">\(escaped(line.text))</p>\n"
             case .citation:
                 let text = markdownItalics(escaped(line.text))
                 let linked = line.link.map {
@@ -608,7 +611,7 @@ public struct CollectionItemHTMLRenderer {
         func indent(_ level: Int) -> String { String(repeating: "  ", count: level + 1) }
 
         var body = ""
-        body += "<nav>\n  <h2>Contents</h2>\n  <ol role=\"list\">\n"
+        body += "<nav>\n  <h2>\(escaped(options.wording.text(for: .contents)))</h2>\n  <ol role=\"list\">\n"
         var level = 1
         for row in rows {
             switch row.kind {

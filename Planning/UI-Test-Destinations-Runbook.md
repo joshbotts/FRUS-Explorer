@@ -1016,6 +1016,39 @@ at its dialog, which is its guard. The untouched document's test fails there too
 at `.onDelete`'s revealed Delete, which the cell does not hold, so the helper tapped nothing and the row stayed (the
 run's recording).
 
+**`CollectionFactsAccessibilityTests` (L43, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, and
+nothing skips.** Each control L43 adds speaks its name and its value, read back as XCUI reads an element's label and value
+(the Collections design's §9). The first test makes a new collection and adds a section heading: the section's sheet's
+*Headnotes* reads *Default*; then in Collection settings, *Opening* reads *The volume’s heading leads* (decision 159), *See
+also* is off, *Citation style* reads *History at State* (Settings ▸ Display's, decision 160), and *Wording* opens on its ten
+fields, each named "Contents, printed as" (and so on) with the word it prints for its value. The second opens the seeded
+document's settings and requires no *Date line* until *Title override* has text, then the line typed into it as its value.
+The iPhone pushes Collection settings and a document's settings, and the iPad presents both as sheets: different code.
+**Measured on L43's code, iOS 27.0:** 2 of 2 on the iPhone 17 (526 s and 115 s) and on the iPad Pro 13-inch (M5) (531 s and
+121 s), on a Mac running other builds, where each query took 5 to 20 s. **Two findings made the first run fail on both
+devices, each a test's lookup and not the screen** (the screen recording showed every field drawn): an
+`accessibilityIdentifier` on the *Wording* `DisclosureGroup` reached the text fields inside it in place of their own, so it
+now sits on the group's header; and under iOS 27 a form's `TextField` carries no label, its title unshown, so
+`textFields["Title override"]` matched nothing. The test finds the title field by an identifier, and the *Date line* field
+has an `accessibilityLabel`, without which VoiceOver would name it by its placeholder. On the code before L43 it fails at its
+first control, which does not exist.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionFactsAccessibilityTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionFactsAccessibilityTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+```
+
 **`CollectionInspectorOpenDocumentTests` (#1919, IPA-4, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an
 iPad, and nothing skips.** The iPhone's per-entry drill-in and the iPad's Configure sheet are different code. It taps
 the seeded document's row, requires **Open Document** (`collection.inspector.openDocument`) in the settings the tap

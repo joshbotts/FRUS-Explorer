@@ -404,7 +404,7 @@ The graph’s %@ central-file class is among them
 
 <!-- END SOURCE: graph.save.visit.classes.listed.one %@ -->
 
-*The line’s last sentence, where the graph draws a central-file class: a visit lists every class a document’s footnotes cite, as the graph draws one for each (L63, decision ⟪L63-DECISION⟫). “Them” is the targets of the sentence before. `%@` is the graph’s classes.*
+*The line’s last sentence, where the graph draws a central-file class: a visit lists every class a document’s footnotes cite, as the graph draws one for each (L63, decision 235). “Them” is the targets of the sentence before. `%@` is the graph’s classes.*
 
 #### `graph.save.visit.classes.listed.many %@`
 
@@ -438,7 +438,7 @@ Of the graph’s %1$@ central-file classes, it lists %2$@
 
 #### `graph.save.visit.classes.one %@ %@`
 
-> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision ⟪L63-DECISION⟫) made a footnote’s
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision 235) made a footnote’s
 > central-file class a target of a visit, so the line now says the graph’s classes are among the targets
 > (`graph.save.visit.classes.listed.one %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
 
@@ -452,7 +452,7 @@ A footnote’s central-file class is a target only where a document’s own sour
 
 #### `graph.save.visit.classes.many %@ %@`
 
-> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision ⟪L63-DECISION⟫) made a footnote’s
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision 235) made a footnote’s
 > central-file class a target of a visit, so the line now says the graph’s classes are among the targets
 > (`graph.save.visit.classes.listed.many %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
 

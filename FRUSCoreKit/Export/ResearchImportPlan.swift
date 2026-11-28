@@ -33,9 +33,10 @@ import Foundation
 ///   blanks what it could not say. One exception follows the app's own rule for text: a field
 ///   that describes a text does not outlive the text. A note's formatting is the formatting of its
 ///   text, so a file before version 7 that replaces the text leaves the note plain, as the app's
-///   note editor leaves one whose text is replaced wholesale; and a summary's authorship says who
+///   note editor leaves one whose text is replaced wholesale; a summary's authorship says who
 ///   wrote its text, so a file before version 5 that replaces the text leaves the summary
-///   AI-generated, as the app reads a summary that names no author.
+///   AI-generated, as the app reads a summary that names no author; and a headnote's writer's name
+///   (version 8) likewise goes with a text a file before version 8 replaces.
 /// - **Defaults.** A new record takes the app's defaults for what the file's version cannot carry:
 ///   each model property's initial value, which a host gets by writing the whole of ``Item/record``.
 /// - **No deletions.** An export carries none, so a record the library holds and the file lacks is
@@ -292,6 +293,7 @@ extension ResearchImportPlan {
     ///
     /// Version history:
     ///   1.0 — #1915 (L23): initial implementation
+    ///   1.1 — L43: seven cases of version 8, one for each property L43 stores
     public enum Fields: String, CaseIterable, Codable, Sendable {
         /// A note's formatting, `richText` (version 7).
         case noteFormatting
@@ -308,6 +310,20 @@ extension ResearchImportPlan {
         case searchCaptureProvenance
         /// A summary's authorship (version 5).
         case summaryAuthorship
+        /// A collection's citation style, `citationStyle` (version 8; L43).
+        case collectionCitationStyle
+        /// Which line leads a collection's documents, `opening` (version 8; L43).
+        case collectionOpening
+        /// A collection's own words for its labels, `labelsJSON` (version 8; L43).
+        case collectionWording
+        /// A collection's See also default, `defaultIncludeRelatedDocuments` (version 8; L43).
+        case collectionSeeAlso
+        /// A document entry's date line, `dateLine` (version 8; L43).
+        case entryDateLine
+        /// A section's headnote default, `headnoteDefault` (version 8; L43).
+        case sectionHeadnoteDefault
+        /// A headnote's writer's name, `writerName` (version 8; L43).
+        case headnoteWriter
 
         /// The type the fields belong to.
         public var model: ModelType {
@@ -318,6 +334,10 @@ extension ResearchImportPlan {
             case .projectFocus: return .project
             case .searchCaptureProvenance: return .searchHistoryEntry
             case .summaryAuthorship: return .generatedSummary
+            case .collectionCitationStyle, .collectionOpening, .collectionWording, .collectionSeeAlso:
+                return .collection
+            case .entryDateLine, .sectionHeadnoteDefault: return .collectionEntry
+            case .headnoteWriter: return .generatedSummary
             }
         }
 
@@ -330,6 +350,9 @@ extension ResearchImportPlan {
                 return 4
             case .summaryAuthorship:
                 return 5
+            case .collectionCitationStyle, .collectionOpening, .collectionWording, .collectionSeeAlso,
+                 .entryDateLine, .sectionHeadnoteDefault, .headnoteWriter:
+                return 8
             }
         }
     }
@@ -1039,28 +1062,46 @@ extension CollectionExport: ResearchImportRecord {
     public var importStamp: Date? { lastModified ?? createdAt }
 
     /// The collection without its entries, which are items of their own. Its settings from a file
-    /// before version 7 are the app's defaults; from a later file, a setting the model keeps
-    /// without an optional and the file leaves out is its default.
+    /// before version 7, and its own facts from a file before version 8, are the app's defaults; from
+    /// a later file, a setting the model keeps without an optional and the file leaves out is its
+    /// default.
     public func resolvedForImport(fromFormatVersion version: Int) -> Self {
         var collection = self
         collection.entries = []
+        let defaults = CollectionExport(id: id, name: name, projectIds: [], entries: [])
         if version < ResearchImportPlan.Fields.collectionSettings.since {
-            collection.takeSettings(of: CollectionExport(id: id, name: name, projectIds: [],
-                                                         entries: []))
+            collection.takeSettings(of: defaults)
+        }
+        if version < ResearchImportPlan.Fields.collectionCitationStyle.since {
+            collection.takeFacts(of: defaults)
         }
         collection.fillMissingSettings()
         return collection
     }
 
-    /// From a file before version 7, the library's settings. The entries are always the library's:
-    /// writing a collection never writes its entries.
+    /// From a file before version 7, the library's settings, and from one before version 8 the library's own
+    /// facts: its citation style, opening, wording and See also default (L43), which an older file cannot say.
+    /// The entries are always the library's: writing a collection never writes its entries.
     public func writtenForImport(over current: Self, fromFormatVersion version: Int) -> Self {
         var collection = self
         collection.entries = current.entries
         if version < ResearchImportPlan.Fields.collectionSettings.since {
             collection.takeSettings(of: current)
         }
+        if version < ResearchImportPlan.Fields.collectionCitationStyle.since {
+            collection.takeFacts(of: current)
+        }
         return collection
+    }
+
+    /// Takes the collection's own facts of `other`: the fields version 8 added
+    /// (``ResearchImportPlan/Fields/collectionCitationStyle``, ``ResearchImportPlan/Fields/collectionOpening``,
+    /// ``ResearchImportPlan/Fields/collectionWording`` and ``ResearchImportPlan/Fields/collectionSeeAlso``).
+    private mutating func takeFacts(of other: CollectionExport) {
+        citationStyle = other.citationStyle
+        opening = other.opening
+        labelsJSON = other.labelsJSON
+        defaultIncludeRelatedDocuments = other.defaultIncludeRelatedDocuments
     }
 
     /// Takes the front matter, composition and export settings of `other`: the fields version 7
@@ -1100,6 +1141,7 @@ extension CollectionExport: ResearchImportRecord {
         includeNotes = includeNotes ?? true
         includeWordCloud = includeWordCloud ?? false
         defaultIncludeHeadnote = defaultIncludeHeadnote ?? false
+        defaultIncludeRelatedDocuments = defaultIncludeRelatedDocuments ?? false
     }
 }
 
@@ -1123,15 +1165,25 @@ extension CollectionEntryExport: ResearchImportRecord {
                                                         volumeId: volumeId, sortOrder: sortOrder,
                                                         selectedNoteIds: []))
         }
+        if version < ResearchImportPlan.Fields.entryDateLine.since {
+            entry.dateLine = nil
+            entry.headnoteDefault = nil
+        }
         entry.fillMissingContent()
         return entry
     }
 
-    /// From a file before version 7, the library's kind, text and overrides.
+    /// From a file before version 7, the library's kind, text and overrides; from one before version 8, the
+    /// library's date line and section headnote default (L43).
     public func writtenForImport(over current: Self, fromFormatVersion version: Int) -> Self {
-        guard version < ResearchImportPlan.Fields.collectionEntryContent.since else { return self }
         var entry = self
-        entry.takeContent(of: current)
+        if version < ResearchImportPlan.Fields.collectionEntryContent.since {
+            entry.takeContent(of: current)
+        }
+        if version < ResearchImportPlan.Fields.entryDateLine.since {
+            entry.dateLine = current.dateLine
+            entry.headnoteDefault = current.headnoteDefault
+        }
         return entry
     }
 
@@ -1240,16 +1292,25 @@ extension GeneratedSummaryExport: ResearchImportRecord {
             summary.isHeadnoteDraft = nil
         }
         summary.isHeadnoteDraft = summary.isHeadnoteDraft ?? (promptId == Self.headnoteDraftPromptId)
+        if version < ResearchImportPlan.Fields.headnoteWriter.since {
+            summary.writerName = nil
+        }
         return summary
     }
 
     /// From a file before version 5, the library's authorship, while the file's text is the
     /// library's. Authorship says who wrote the text, so with a new text from a file that cannot
     /// name its author, the summary reads as the app reads one that names none: AI-generated.
+    /// A headnote's writer's name says the same, so from a file before version 8 it is the library's
+    /// while the text is, and none with a new text (L43).
     public func writtenForImport(over current: Self, fromFormatVersion version: Int) -> Self {
-        guard version < ResearchImportPlan.Fields.summaryAuthorship.since else { return self }
         var summary = self
-        summary.authorship = responseText == current.responseText ? current.authorship : .aiGenerated
+        if version < ResearchImportPlan.Fields.summaryAuthorship.since {
+            summary.authorship = responseText == current.responseText ? current.authorship : .aiGenerated
+        }
+        if version < ResearchImportPlan.Fields.headnoteWriter.since {
+            summary.writerName = responseText == current.responseText ? current.writerName : nil
+        }
         return summary
     }
 }

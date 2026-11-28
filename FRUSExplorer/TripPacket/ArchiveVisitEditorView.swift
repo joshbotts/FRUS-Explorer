@@ -80,7 +80,7 @@ import SwiftData
 ///         read by its rule (`ArchiveVisitPlanWrites.name(fromDraft:)`); nothing the editor does changes.
 ///   1.12 — 2026-11-26 (L26, decision 191): a seed's reference count reads the packet's channel through
 ///         `ExternalCitation.isInPacketChannel`, which leaves out the Central Foreign Policy File as well.
-///   1.13 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): a seed's reference count takes a footnote's central-file class, as
+///   1.13 — 2026-11-28 (L63, decision 235): a seed's reference count takes a footnote's central-file class, as
 ///         the packet does, and the corpus-wide sparsity caption is measured again (35,749 of 321,749).
 struct ArchiveVisitEditorView: View {
 

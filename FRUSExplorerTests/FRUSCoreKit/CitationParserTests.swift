@@ -697,6 +697,64 @@ struct CitationParserTests {
         let memo = try words(memoText)
         #expect(memo.filter { $0 == "i" }.count == 1 && memo.contains("paris") && memo.contains("should"), "\(memo)")
     }
+
+    // MARK: - A Chicago or Turabian note (L43)
+
+    @Test("CitationParserTest: a Chicago or Turabian note is read from its volume on, not its head's words or date; its editors stop at the volume's number and title; and vol., vols. and pt. read as a title prints them (L43)")
+    func noteIsReadFromItsVolume() throws {
+        func words(_ text: String) throws -> [String] {
+            let fragment = try #require(parser.parse(text).titleFragment, "\(text)")
+            return fragment.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        }
+        // The Chicago Manual of Style's own note on citing FRUS, as the app prints it: the head's words and
+        // its year, 1970, are not the volume's, the general editor goes, and the volume's title stays.
+        let faq = "The President’s Assistant for National Security Affairs (Kissinger) to President Nixon, memorandum, Washington, December 18, 1970, in *Foreign Relations of the United States, 1969–1976*, ed. Adam Howard, vol. 21, *Chile, 1969–1973*, ed. James McElveen and James Siekmeier (Government Printing Office, 2014), doc. 190."
+        let parsed = parser.parse(faq)
+        #expect(parsed.subseries == "1969-76")
+        #expect(parsed.volumeNumber == "XXI")
+        #expect(parsed.documentNumber == "190")
+        let faqWords = try words(faq)
+        #expect(faqWords.contains("chile") && faqWords.contains("1973"), "\(faqWords)")
+        for word in ["kissinger", "nixon", "memorandum", "washington", "december", "1970", "adam", "mcelveen", "vol", "ed"] {
+            #expect(!faqWords.contains(word), "\(word) in \(faqWords)")
+        }
+        // A pre-1918 title prints its transmittal date where the series' year would stand, so its year is the
+        // text's first: the head's, while the head was read. Its part is the title's, "Part II", which alone
+        // tells some of these volumes apart.
+        let transmittal = "Mr. Fish to Mr. Washburne, Washington, January 5, 1872, in *Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 1, 1873*, pt. 2, vol. 3 (Government Printing Office, 1873), doc. 5."
+        let old = parser.parse(transmittal)
+        #expect(old.subseries == "1873")
+        #expect(old.volumeNumber == "III")
+        #expect(old.partNumber == 2)
+        #expect(old.documentNumber == "5")
+        let oldWords = try words(transmittal)
+        for word in ["fish", "washburne", "1872", "pt", "vol"] {
+            #expect(!oldWords.contains(word), "\(word) in \(oldWords)")
+        }
+        #expect(oldWords.contains("part") && oldWords.contains("ii"), "\(oldWords)")
+        // A title that opens "Foreign Relations" prints its part in figures, as the note does.
+        let korea = try words("Memorandum of Conversation, Washington, June 1, 1951, in *Foreign Relations of the United States, 1951*, vol. 7, pt. 1, *Korea and China* (Government Printing Office, 1983), doc. 5.")
+        #expect(korea.contains("part") && korea.contains("1") && !korea.contains("i") && !korea.contains("pt"), "\(korea)")
+        #expect(parser.parse("Memorandum of Conversation, Washington, June 1, 1951, in *Foreign Relations of the United States, 1951*, vol. 7, pt. 1, *Korea and China* (Government Printing Office, 1983), doc. 5.").partNumber == 1)
+        // The 1861 volume's title names no series, and its note's head is left out all the same.
+        let first = parser.parse("Mr. Seward to Mr. Adams, Washington, December 3, 1862, in *Message of the President of the United States to the Two Houses of Congress, at the Commencement of the Second Session of the Thirty-seventh Congress* (Government Printing Office, 1861), doc. 3.")
+        #expect(first.subseries == "1861", "\(first.subseries ?? "none")")
+        // A note with no heading opens with the series. "vols." and its numbers read as the title prints
+        // them, and "vol. E–1" as "Volume E–1".
+        let supplement = try words("*Foreign Relations of the United States, 1961–1963*, ed. Edward C. Keefer, vols. 7, 8, 9, *Arms Control and Disarmament; National Security Policy; Foreign Economic Policy, Microfiche Supplement*, ed. Evans Gerakas (Government Printing Office, 1997), doc. 1.")
+        #expect(supplement.starts(with: ["foreign", "relations", "of", "the", "united", "states", "1961", "1963",
+                                         "volumes", "vii", "viii", "ix", "arms"]), "\(supplement)")
+        let global = try words("*Foreign Relations of the United States, 1969–1976*, ed. Edward C. Keefer, vol. E–1, *Documents on Global Issues, 1969–1972*, ed. Susan K. Holly and William B. McAllister (Government Printing Office, 2005), doc. 1.")
+        #expect(global.starts(with: ["foreign", "relations", "of", "the", "united", "states", "1969", "1976",
+                                     "volume", "e", "1", "documents"]), "\(global)")
+        // No other citation is read as a note: the corpus's footnotes name the series "Foreign Relations", the
+        // app's history.state.gov citation abbreviates nothing, and a short form opens with "FRUS".
+        for text in ["Printed in Foreign Relations, 1950, vol. VII, p. 5.",
+                     "_Foreign Relations of the United States_, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath, eds. Edward C. Keefer (Washington: Government Printing Office, 1996), Document 7.",
+                     "FRUS, 1969–76, I, doc. 15"] {
+            #expect(CitationParser.noteReading(of: text) == nil, "\(text)")
+        }
+    }
 }
 
 // MARK: - CitationLookupFieldsTests

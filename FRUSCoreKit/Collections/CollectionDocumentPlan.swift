@@ -181,6 +181,8 @@ public struct CollectionContentsRow: Sendable, Equatable {
         let reading = DocumentHeadingReading(indexedHeader: doc.header, indexedDateline: doc.dateline)
         let citation = doc.citation.isEmpty ? doc.title : doc.citation
         if let title = doc.trimmedTitleOverride {
+            // The author's date line follows their title on the row's first line (L43; the design's §3.4).
+            let first = doc.printedDateLine.map { "\(title) — \($0)" } ?? title
             var lines: [String] = []
             let published = [reading.printedHeading, style == .headerAndDateline ? reading.dateline : nil]
                 .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " — ")
@@ -188,7 +190,7 @@ public struct CollectionContentsRow: Sendable, Equatable {
                 lines.append("\(CollectionDocumentPlan.asPublishedLabel) \(published)")
             }
             if style == .citation || reading.printedHeading.isEmpty { lines.append(citation) }
-            return (title, lines)
+            return (first, lines)
         }
         switch style {
         case .citation:
@@ -229,6 +231,9 @@ public struct CollectionContentsRow: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — L34 (#1991, #1998, #2007; J10, J16, J19, J32): initial implementation
+///   1.1 — L43: the author's date line under a title (`Role.titleDateLine`, decision 163; only under a title, J41),
+///          and the labels in the collection's own words (`CollectionExportOptions.wording`); the opening that sets
+///          `volumeHeadingLeads` is the collection's own
 public struct CollectionDocumentPlan: Sendable, Equatable {
 
     /// The words that mark where the volume's begin, under a title of the author's (decision 154). They
@@ -251,6 +256,8 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
     public enum Role: String, Sendable, Equatable {
         /// A title of the author's.
         case title
+        /// The author's date line, under their title (L43; decision 163).
+        case titleDateLine
         /// The citation: the document's heading where it leads, a small line otherwise.
         case citation
         /// The document's address on history.state.gov.
@@ -369,6 +376,8 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
         switch opening {
         case .title:
             lines.append(Line(role: .title, text: doc.trimmedTitleOverride ?? "", headingLevel: level))
+            // The author's date line stands under the title, above the citation and *As published:* (decision 163).
+            if let dateLine = doc.printedDateLine { lines.append(Line(role: .titleDateLine, text: dateLine)) }
             lines.append(Line(role: .citation, text: citation, link: link))
         case .citation:
             lines.append(Line(role: .citation, text: citation, headingLevel: level, link: link))
@@ -380,7 +389,8 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
         // The headnote, above the volume's words: it is the author's, or the app's for them.
         let headnote = doc.headnoteText.flatMap { $0.isEmpty ? nil : $0 }
         if doc.includeHeadnote, let headnote {
-            lines.append(Line(role: .headnote, text: headnote, label: Self.headnoteLabel, format: doc.headnoteFormat,
+            lines.append(Line(role: .headnote, text: headnote, label: options.wording.text(for: .headnote),
+                              format: doc.headnoteFormat,
                               attribution: CollectionAIAttribution.headnoteLabel(authorship: doc.headnoteAuthorship)))
         }
 
@@ -409,7 +419,8 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
                 if let dateline = reading.dateline { lines.append(Line(role: .dateline, text: dateline)) }
             }
             if doc.bodyDepth == .summaryOnly, let summary = doc.summaryText, !summary.isEmpty {
-                lines.append(Line(role: .summary, text: summary, label: Self.summaryLabel, format: doc.summaryFormat,
+                lines.append(Line(role: .summary, text: summary, label: options.wording.text(for: .summary),
+                                  format: doc.summaryFormat,
                                   attribution: CollectionAIAttribution.label()))
             }
         }
@@ -423,11 +434,11 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
             // Each citation's own period comes off before the "; " join, and the line ends in one (#1392).
             let joined = doc.relatedDocumentCitations.map(CitationPunctuation.withoutTerminalPeriod)
                 .joined(separator: "; ") + "."
-            lines.append(Line(role: .seeAlso, text: joined, label: Self.seeAlsoLabel))
+            lines.append(Line(role: .seeAlso, text: joined, label: options.wording.text(for: .seeAlso)))
         }
         if doc.includesNotes(options: options) {
             for note in doc.noteTexts where !note.isEmpty {
-                lines.append(Line(role: .researchNote, text: note, label: Self.researchNoteLabel))
+                lines.append(Line(role: .researchNote, text: note, label: options.wording.text(for: .researchNote)))
             }
         }
 
@@ -496,9 +507,11 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
         String(localized: "collection.researchNote.label", defaultValue: "Research Note")
     }
 
-    /// "Document 475" from a citation that ends "…, Document 475.", or `nil`.
+    /// "Document 475" from a citation that ends "…, Document 475." in History at State, or "…, doc. 475." in a Chicago or
+    /// Turabian note (L43), or `nil`.
     static func citationNumber(_ citation: String) -> String? {
-        guard let range = citation.range(of: ", Document ", options: .backwards) else { return nil }
+        let ranges = [", Document ", ", doc. "].compactMap { citation.range(of: $0, options: .backwards) }
+        guard let range = ranges.max(by: { $0.lowerBound < $1.lowerBound }) else { return nil }
         let number = citation[range.upperBound...].trimmingCharacters(in: CharacterSet(charactersIn: ". "))
         return number.isEmpty ? nil : "Document \(number)"
     }
@@ -511,5 +524,14 @@ extension CollectionExportDocument {
     public var trimmedTitleOverride: String? {
         let title = titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return title.isEmpty ? nil : title
+    }
+
+    /// The author's date line as it prints (L43; J41): trimmed, and only under a title of the author's. A date line
+    /// whose title has been cleared is kept on the entry, which the inspector shows, and prints nowhere until a title
+    /// is given again. `nil` where none prints.
+    public var printedDateLine: String? {
+        guard trimmedTitleOverride != nil else { return nil }
+        let line = dateLine?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return line.isEmpty ? nil : line
     }
 }

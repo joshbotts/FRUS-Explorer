@@ -100,7 +100,7 @@ import SourceNoteKit
 ///          File's rows as it leaves out the class anchor's, so the packet lists what it listed before; it
 ///          reads the rule from `ExternalCitation.isInPacketChannel`, as the plan editor and the sparsity
 ///          query do
-///   1.17 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): the pointed-at channel takes a footnote's central-file class,
+///   1.17 — 2026-11-28 (L63, decision 235): the pointed-at channel takes a footnote's central-file class,
 ///          keyed `class|` as a source note's is (`referenceKey(for:)`), so a class cited both ways is one
 ///          target; both channels label a class by `TripPacketModel.Target.classLabel(_:)`
 @MainActor
@@ -290,7 +290,7 @@ public enum TripPacketBuilder {
         // L63 (#784's scope, against a flood of the corpus's commonest footnote idiom). Keyed at
         // the class grain it is no flood: over a full index at version 76 a visit of a whole volume
         // gains a median of 2 targets (4,859 on 44,155 over the 553 volumes), and the owner took it
-        // in (decision ⟪L63-DECISION⟫). The Central Foreign Policy File's anchor (decision 191,
+        // in (decision 235). The Central Foreign Policy File's anchor (decision 191,
         // index version 76) is still left out: its rows name no collection, so every one of them
         // would key to the one "Department of State" target. Keys share the drawn-from vocabulary
         // above, so a unit cited both ways becomes ONE target with both claims itemized inside it.

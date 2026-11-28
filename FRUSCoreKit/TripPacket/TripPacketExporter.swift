@@ -113,7 +113,7 @@ import SourceNoteKit
 ///          a target another stored row is shown on
 ///   2.9 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public, with its memberwise
 ///          initialiser spelt out so a host can make one; nothing it writes changes
-///   2.10 — 2026-11-28 (L63, decision ⟪L63-DECISION⟫): the coverage report's footnote line counts a central-file class
+///   2.10 — 2026-11-28 (L63, decision 235): the coverage report's footnote line counts a central-file class
 ///          reference, and the pre-1946 explainer says earlier footnotes seldom cite a file by its number
 public struct TripPacketExporter {
 

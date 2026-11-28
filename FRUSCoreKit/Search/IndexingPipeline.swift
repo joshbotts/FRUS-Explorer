@@ -601,7 +601,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         dates as its key and its two dates, in date order and with no limit, for Chronology's save of a
 ///         range; its conditions are the Chronology list's, one builder (`chronologyRangeConditions`) for both,
 ///         and the list's statement is unchanged; nothing the indexer stores changes, so no index version
-///  4.72 — 2026-11-28 (plan of record row L63, decision ⟪L63-DECISION⟫): `ExternalCitation.anchorsOutsideThePacket`
+///  4.72 — 2026-11-28 (plan of record row L63, decision 235): `ExternalCitation.anchorsOutsideThePacket`
 ///         names the Central Foreign Policy File alone, so the Archives Visit packet's pointed-at channel,
 ///         its counts and `externalCitationSparsity()` take a footnote's central-file class; nothing the
 ///         indexer stores changes
@@ -14530,6 +14530,47 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// The stored heading and dateline (`document_cache.header` and `dateline`) for a batch of documents, keyed
+    /// `"volumeId/documentId"`: what a Chicago or Turabian note names a document by (L43; `FRUSNoteHead`).
+    ///
+    /// A collection's citations read the index's two strings for every document they cite, its documents, its
+    /// passages' documents, its *See also* targets and its blocks' rows alike, so that one document is cited in one
+    /// form wherever it is cited, and a preview capped at its first documents cites the rest as the export does.
+    /// A document that is not indexed is absent, and its note begins at its volume.
+    ///
+    /// Row-value `IN` over the table's `(volume_id, document_id)` key, 500 keys per statement, as
+    /// ``documentNumbersByKey(_:)``.
+    public func documentHeadingsByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: (header: String, dateline: String?)] {
+        guard !docs.isEmpty else { return [:] }
+        var result: [String: (header: String, dateline: String?)] = [:]
+        for start in stride(from: 0, to: docs.count, by: 500) {
+            let chunk = docs[start..<min(start + 500, docs.count)]
+            let placeholders = Array(repeating: "(?, ?)", count: chunk.count)
+                .joined(separator: ", ")
+            let sql = """
+                SELECT volume_id, document_id, header, dateline
+                FROM document_cache
+                WHERE (volume_id, document_id) IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var position: Int32 = 1
+            for doc in chunk {
+                sqlite3_bind_text(stmt, position, doc.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, position + 1, doc.documentId, -1, SQLITE_TRANSIENT_IP)
+                position += 2
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1) else { continue }
+                result["\(volumeId)/\(documentId)"] = (auxColumnString(stmt, 2) ?? "", auxColumnString(stmt, 3))
+            }
+        }
+        return result
+    }
+
     /// Applies column assignments to a single `document_cache` row, skipping the
     /// write entirely when every assigned column already holds its new value.
     ///
@@ -15346,7 +15387,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// The anchors the Archives Visit packet's pointed-at channel leaves out: from index version 76 the
     /// Central Foreign Policy File (decision 191), whose rows name no collection and would all key to
     /// one "Department of State" target. The central-file class, deferred by #784's own scope, was left
-    /// out too until L63 (decision ⟪L63-DECISION⟫), and is a target now, keyed as a source note's class is.
+    /// out too until L63 (decision 235), and is a target now, keyed as a source note's class is.
     /// `TripPacketBuilder`, the plan editor's per-seed counts, Source Explorer's Add to Archives Visit
     /// (`SourceExplorerResolution.packetPointers`) and `IndexingPipeline.externalCitationSparsity()` read
     /// the channel through this one list, so the packet, its counts and its sparsity caption describe

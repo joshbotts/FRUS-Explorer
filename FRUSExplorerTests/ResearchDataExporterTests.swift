@@ -298,7 +298,8 @@ struct ResearchDataExporterTests {
     /// Seeds, beside `seedFixtures(in:)`, a record of each type version 7 added and a value in
     /// every field it added to the types 6 carried: a formatted note, a composed collection with
     /// an entry of each kind and every override, a project's focus, a headnote draft, and an
-    /// archive visit plan, so an export from this store holds every type the app keeps.
+    /// archive visit plan, so an export from this store holds every type the app keeps; and a
+    /// value in each of the seven fields version 8 added (L43).
     private func seedEveryType(in context: ModelContext) throws -> (project: Project, tag: UserTag) {
         let fixtures = seedFixtures(in: context)
         let project = try #require(try context.fetch(FetchDescriptor<Project>()).first)
@@ -312,7 +313,8 @@ struct ResearchDataExporterTests {
 
         let draft = GeneratedSummary(documentId: "d1", volumeId: "frus1969-76v01", promptId: prompt.id,
                                      responseText: "The turning point, in brief.",
-                                     authorship: .userWritten, isHeadnoteDraft: true)
+                                     authorship: .userWritten, isHeadnoteDraft: true,
+                                     writerName: "A. Researcher")
         context.insert(draft)
 
         let collection = try #require(try context.fetch(FetchDescriptor<Collection>()).first)
@@ -329,6 +331,11 @@ struct ResearchDataExporterTests {
         collection.includeWordCloud = true
         collection.defaultIncludeHeadnote = true
         collection.summaryPromptId = prompt.id
+        // Version 8 (L43): the collection's own facts.
+        collection.citationStyle = "chicago"
+        collection.opening = "volumeHeading"
+        collection.labelsJSON = #"{"researchNote":"Commentary"}"#
+        collection.defaultIncludeRelatedDocuments = true
         let document = try #require(collection.documentEntries?.first)
         document.sortOrder = 1
         document.titleOverride = "The turning point"
@@ -342,6 +349,7 @@ struct ResearchDataExporterTests {
         document.includeRelatedDocuments = true
         document.includeHeadnote = true
         document.headnoteSummaryId = draft.id
+        document.dateLine = "Paris, 27 January 1973"
         func entry(_ kind: CollectionEntryKind, at order: Int, documentId: String = "") -> CollectionEntry {
             let entry = CollectionEntry(collectionId: collection.id, documentId: documentId,
                                         volumeId: documentId.isEmpty ? "" : "frus1969-76v01",
@@ -354,6 +362,7 @@ struct ResearchDataExporterTests {
         let heading = entry(.heading, at: 0)
         heading.text = "Chapter 3"
         heading.level = 2
+        heading.headnoteDefault = true
         let prose = entry(.prose, at: 2)
         prose.text = "What follows."
         prose.richText = Data(#"{\rtf1\ansi What {\ul follows}.}"#.utf8)
@@ -395,7 +404,7 @@ struct ResearchDataExporterTests {
         return (project, tag)
     }
 
-    @Test("An export of every type decodes again, with every field version 7 added")
+    @Test("An export of every type decodes again, with every field versions 7 and 8 added")
     func exportOfEveryTypeDecodesAgain() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -407,7 +416,7 @@ struct ResearchDataExporterTests {
         #expect(data == kitData, "the app's export and FRUSCoreKit's encoder disagree")
         let decoded = try ResearchDataEnvelope.makeDecoder().decode(ResearchDataEnvelope.self, from: data)
 
-        #expect(decoded.formatVersion == 7)
+        #expect(decoded.formatVersion == 8)
         // One record of each type the store holds, the new eight with the fifteen 6 carried.
         #expect(decoded.notes.count == 1 && decoded.tags.count == 1 && decoded.tagAssignments.count == 1)
         #expect(decoded.highlights.count == 1 && decoded.collections.count == 1 && decoded.prompts.count == 1)
@@ -437,6 +446,13 @@ struct ResearchDataExporterTests {
         #expect(collection.applyHighlights == true && collection.includeNotes == true
                     && collection.includeWordCloud == true && collection.defaultIncludeHeadnote == true)
         #expect(collection.summaryPromptId != nil)
+        // What version 8 added (L43): each of the seven, as the store holds it.
+        #expect(collection.citationStyle == "chicago" && collection.opening == "volumeHeading")
+        #expect(collection.labelsJSON == #"{"researchNote":"Commentary"}"#
+                    && collection.defaultIncludeRelatedDocuments == true)
+        #expect(collection.entries.first?.headnoteDefault == true)
+        #expect(collection.entries.dropFirst().first?.dateLine == "Paris, 27 January 1973")
+        #expect(decoded.summaries.first(where: { $0.isHeadnoteDraft == true })?.writerName == "A. Researcher")
         #expect(collection.entries.map(\.kind) == ["heading", "document", "prose", "excerpt", "generated"],
                 "entries are sorted by their order, each with its kind")
         let entries = collection.entries
