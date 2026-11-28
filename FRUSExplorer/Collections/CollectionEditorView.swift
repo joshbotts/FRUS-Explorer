@@ -173,6 +173,9 @@ import UIKit
 ///          id, so an entry's notes, the exports and Link to Saved Search… list each once
 ///   2026-11-18 — L25 (decision 139): the iPhone's Collection settings row names the template in force by its name
 ///          alone, which now says how the documents are presented, where it added the chip's tag
+///   2026-11-28 — L58: the collection's settings, on the iPhone, in the iPad's sheet and in a document's settings, offer
+///          the Note on the Text where it would say something (`CollectionCompositionRows.wantsNoteOnTheText`), its Add
+///          putting the row at the end of the outline as the Apparatus menu does
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -817,7 +820,8 @@ struct CollectionEditorView: View {
             nameSection
             noteSection
             frontMatterSection
-            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) })
+            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
+                                      onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) })
             smartCollectionSection
         }
         .navigationTitle(String(localized: "collection.editor.settings.title",
@@ -1146,6 +1150,7 @@ struct CollectionEditorView: View {
         // form sheet reports a compact size class — force the grid, whose cards give each of the
         // six templates its full name and subtitle (L25), where the chip row gives a short name.
         CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
+                                  onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
                                   presetsCompact: false)
     }
 
@@ -2056,6 +2061,8 @@ struct CollectionEditorView: View {
             showsCollectionSettings: !documentOnly,
             // Presets route apparatus through this host's entry-list management (4a).
             onApplyPreset: { applyPreset($0) },
+            // L58: so does the Note on the Text's line in the collection's settings.
+            onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
             // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
             // its own navigation stack + Done button.
             isPushed: isPushed,

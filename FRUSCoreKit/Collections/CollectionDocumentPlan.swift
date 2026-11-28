@@ -234,6 +234,8 @@ public struct CollectionContentsRow: Sendable, Equatable {
 ///   1.1 — L43: the author's date line under a title (`Role.titleDateLine`, decision 163; only under a title, J41),
 ///          and the labels in the collection's own words (`CollectionExportOptions.wording`); the opening that sets
 ///          `volumeHeadingLeads` is the collection's own
+///   1.2 — L58: a headnote's caption names its writer (`CollectionAIAttribution.headnoteLabel(writer:label:)`,
+///          decision 194), where it was worded for the device's user
 public struct CollectionDocumentPlan: Sendable, Equatable {
 
     /// The words that mark where the volume's begin, under a title of the author's (decision 154). They
@@ -389,9 +391,11 @@ public struct CollectionDocumentPlan: Sendable, Equatable {
         // The headnote, above the volume's words: it is the author's, or the app's for them.
         let headnote = doc.headnoteText.flatMap { $0.isEmpty ? nil : $0 }
         if doc.includeHeadnote, let headnote {
-            lines.append(Line(role: .headnote, text: headnote, label: options.wording.text(for: .headnote),
-                              format: doc.headnoteFormat,
-                              attribution: CollectionAIAttribution.headnoteLabel(authorship: doc.headnoteAuthorship)))
+            // Its caption names who wrote it (L58; decision 194), in the collection's word for a headnote.
+            let word = options.wording.text(for: .headnote)
+            lines.append(Line(role: .headnote, text: headnote, label: word, format: doc.headnoteFormat,
+                              attribution: CollectionAIAttribution.headnoteLabel(writer: doc.headnoteWriter,
+                                                                                 label: word)))
         }
 
         // The text, a summary or nothing, by the document's depth.

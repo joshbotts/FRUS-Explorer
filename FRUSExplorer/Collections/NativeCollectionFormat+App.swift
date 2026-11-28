@@ -57,6 +57,10 @@ extension NativeCollectionSerializer {
     /// AttributedString — so each prose entry is healed here first, in `sortOrder`, before its values
     /// are read, and shared files never propagate the legacy encoding.
     ///
+    /// A document's headnote travels as its text (L58; decision 166): the one its export prints, read from the
+    /// collection's own store by the rule the export reads it by (`headnoteForFile`), with its writer named as the
+    /// export names them.
+    ///
     /// - Parameters:
     ///   - collection: The collection to serialize. Its entries are emitted in `sortOrder`.
     ///   - includeNotes: When `true`, each document entry whose notes print — its own setting, else its
@@ -79,12 +83,49 @@ extension NativeCollectionSerializer {
         // sync left two copies of an entry under one id (#1791) that differ in their selection.
         let values = entries.map(CollectionEntryExport.init)
         var unanswered = Array(zip(values, entries))
+        let context = collection.modelContext
         return makeFile(from: CollectionExport(collection, entries: values),
                         includeNotes: includeNotes,
                         resolveNoteTexts: { value in
                             guard let index = unanswered.firstIndex(where: { $0.0 == value }) else { return [] }
                             return resolveNoteTexts(unanswered.remove(at: index).1)
+                        },
+                        resolveHeadnote: { value, preferredPromptId in
+                            guard let context else { return nil }
+                            return headnoteForFile(volumeId: value.volumeId, documentId: value.documentId,
+                                                   summaryId: value.headnoteSummaryId,
+                                                   preferredPromptId: preferredPromptId,
+                                                   authorLine: collection.authorLine, in: context)
                         })
+    }
+
+    /// The headnote a document entry's export prints, as a collection file carries it (L58): the summary its entry
+    /// chose, where it has words, else the document's newest stored summary under `preferredPromptId`, else its newest
+    /// (`SummaryRecency.headnoteFallback`, which the export, the inspector's card and the rail read), headnote drafts
+    /// left out of the fallback as the export leaves them out. `nil` where nothing is stored, and the file then
+    /// carries no headnote for it. The collection settings' Note on the Text line reads it too.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The document's volume.
+    ///   - documentId: The document.
+    ///   - summaryId: The summary its entry chose for its headnote, if any.
+    ///   - preferredPromptId: The prompt the export prefers for it: its own, its section's, else the collection's.
+    ///   - authorLine: The collection's author line, which names a person's headnote stamped with no name.
+    ///   - context: The collection's store.
+    static func headnoteForFile(volumeId: String, documentId: String, summaryId: UUID?, preferredPromptId: UUID?,
+                                authorLine: String?, in context: ModelContext) -> FRUSCollectionFile.Headnote? {
+        if let sid = summaryId,
+           let chosen = try? context.fetch(FetchDescriptor<GeneratedSummary>(predicate: #Predicate { $0.id == sid })).first,
+           !chosen.responseText.isEmpty {
+            return FRUSCollectionFile.Headnote(summary: GeneratedSummaryExport(chosen), authorLine: authorLine)
+        }
+        let (vid, did) = (volumeId, documentId)
+        let stored = ((try? context.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.volumeId == vid && $0.documentId == did && !$0.isHeadnoteDraft }))) ?? [])
+            .filter { !$0.responseText.isEmpty }
+        return SummaryRecency.headnoteFallback(stored, preferredPromptId: preferredPromptId,
+                                               promptId: { $0.promptId }, recency: { $0.recency })
+            .flatMap { FRUSCollectionFile.Headnote(summary: GeneratedSummaryExport($0), authorLine: authorLine) }
     }
 
     // MARK: - Apply the DTO into a context (import)
@@ -100,11 +141,12 @@ extension NativeCollectionSerializer {
     /// model mints its own id, as before, and every field the values leave out keeps the model's
     /// default.
     ///
-    /// A headnote the file names by a draft this store holds — a file opened on its author's own account —
-    /// gets a draft of its own, as Duplicate gives one (`GeneratedSummary.duplicateHeadnoteDraft(id:to:in:)`,
-    /// #1999). Until then the imported entry named the original's draft: editing the copy's headnote deleted
-    /// the original's, and deleting the copy deleted them all. A document's own summary, and an id this store
-    /// does not hold, are kept as the file names them.
+    /// A headnote the file carries as its text (L58; decision 166) becomes a draft of the import's own
+    /// (`NativeCollectionImport.headnoteDrafts`), with its writer's name. A headnote a file before L58 names by a
+    /// draft this store holds — a file opened on its author's own account — gets a draft of its own, as Duplicate
+    /// gives one (`GeneratedSummary.duplicateHeadnoteDraft(id:to:in:)`, #1999). Until then the imported entry named
+    /// the original's draft: editing the copy's headnote deleted the original's, and deleting the copy deleted them
+    /// all. A document's own summary, and an id this store does not hold, are kept as the file names them.
     ///
     /// - Returns: The newly inserted `Collection` (the caller saves the context).
     @discardableResult
@@ -128,9 +170,17 @@ extension NativeCollectionSerializer {
         collection.includeColophon = values.includeColophon ?? collection.includeColophon
         collection.includeProjectProvenance = values.includeProjectProvenance ?? collection.includeProjectProvenance
         collection.includeMethodAppendix = values.includeMethodAppendix ?? collection.includeMethodAppendix
+        // L58: the collection's own facts, as the file carries them (absent → nil, which reads as 1.0 prints).
+        collection.citationStyle = values.citationStyle
+        collection.opening = values.opening
+        collection.labelsJSON = values.labelsJSON
+        collection.defaultIncludeRelatedDocuments = values.defaultIncludeRelatedDocuments
+            ?? collection.defaultIncludeRelatedDocuments
         context.insert(collection)
 
         let notesById = Dictionary(imported.notes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let draftsById = Dictionary(imported.headnoteDrafts.map { ($0.id, $0) },
+                                    uniquingKeysWith: { first, _ in first })
         for value in values.entries {
             let entry = CollectionEntry(
                 collectionId: collection.id,
@@ -159,6 +209,8 @@ extension NativeCollectionSerializer {
             entry.excerptColorTag = value.excerptColorTag
             entry.generatedBlockType = value.generatedBlockType
             entry.level = value.level ?? entry.level
+            entry.dateLine = value.dateLine
+            entry.headnoteDefault = value.headnoteDefault
             entry.collection = collection
 
             // The notes a document entry brought, recreated in the recipient's store and pinned to it.
@@ -176,7 +228,18 @@ extension NativeCollectionSerializer {
             entry.selectedNoteIds = noteIds
 
             context.insert(entry)
-            GeneratedSummary.duplicateHeadnoteDraft(id: value.headnoteSummaryId, to: entry, in: context)
+            if let draftId = value.headnoteSummaryId, let draft = draftsById[draftId] {
+                // L58: the headnote the file carried as its text, a draft of this import's own, which the entry names.
+                let summary = GeneratedSummary(
+                    documentId: draft.documentId, volumeId: draft.volumeId, promptId: draft.promptId,
+                    responseText: draft.responseText, responseFormat: draft.responseFormat,
+                    wasChunked: draft.wasChunked, authorship: draft.authorship ?? .aiGenerated,
+                    isHeadnoteDraft: true, writerName: draft.writerName)
+                context.insert(summary)
+                entry.headnoteSummaryId = summary.id
+            } else {
+                GeneratedSummary.duplicateHeadnoteDraft(id: value.headnoteSummaryId, to: entry, in: context)
+            }
         }
 
         return collection

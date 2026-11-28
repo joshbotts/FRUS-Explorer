@@ -487,8 +487,9 @@ public struct CollectionItemHTMLRenderer {
         for para in summaryParagraphsHTML(line.text, format: line.format) {
             body += "    <p><em>\(para)</em></p>\n"
         }
-        // Attribution honors the headnote's authorship (Composer redesign): an AI headnote keeps
-        // the AI label, an AI-edited one discloses the edit, a user-written one shows none.
+        // The caption names who wrote the headnote (L58; decision 194): Apple Intelligence, a person by name, or a
+        // person editing Apple Intelligence's draft; a person's headnote that names nobody has none. It keeps the
+        // `ai-attribution` style it had when only Apple Intelligence's headnotes carried one.
         if let attribution = line.attribution {
             body += "    <p class=\"ai-attribution\">\(escaped(attribution))</p>\n"
         }

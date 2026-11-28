@@ -39,6 +39,8 @@ import SwiftData
 ///   1.5 — L43: the collection's own facts, each a plain control that L44 then trims: *Opening* and *See also* in
 ///          Document content, and a fourth section, Citations & wording, with *Citation style* and the ten labels'
 ///          words (`CollectionWording`)
+///   1.6 — L58: the Note on the Text's line in Analysis & apparatus (the design's §3.6): where the collection has no
+///          Note and one would have something to say, a line says so, with *Add* (`onAddNoteOnTheText`)
 struct CollectionCompositionRows: View {
 
     /// The collection whose persisted composition is being edited.
@@ -48,6 +50,10 @@ struct CollectionCompositionRows: View {
     /// apparatus insertion goes through their `sortedEntries` management (never a model-direct write
     /// behind the outline's back). When `nil`, the Presets section is hidden.
     var onApplyPreset: ((CollectionPreset) -> Void)?
+
+    /// Adds a Note on the Text to the collection's outline (L58), threaded from the host as `onApplyPreset` is, so the
+    /// row goes through its entry-list management. When `nil` the Note's line is not shown.
+    var onAddNoteOnTheText: (() -> Void)?
 
     /// Overrides the automatic compact-vs-regular preset layout choice (Composer v2). `nil` = auto
     /// (from the horizontal size class); `false` forces the card grid; `true` forces the short-chip
@@ -251,6 +257,12 @@ struct CollectionCompositionRows: View {
                    selection: tocStyle) {
                 ForEach(CollectionToCStyle.allCases) { Text($0.displayName).tag($0) }
             }
+
+            // L58 (the design's §3.6): the Note on the Text, offered where it would have something to say and the
+            // collection has none, by the rule its export reads.
+            if let onAddNoteOnTheText, Self.wantsNoteOnTheText(collection) {
+                noteOnTheTextLine(onAdd: onAddNoteOnTheText)
+            }
         } header: {
             groupHeader(icon: "chart.bar", tint: .orange,
                         title: String(localized: "composition.group.analysis",
@@ -290,6 +302,54 @@ struct CollectionCompositionRows: View {
                         caption: String(localized: "composition.group.citations.help",
                                         defaultValue: "The style every citation prints in, and the export’s labels."))
         }
+    }
+
+    /// The Note on the Text's line (L58): what the Note would say, and *Add*, which puts its row at the end of the
+    /// outline. VoiceOver reads the sentence, then the button by its full name.
+    @ViewBuilder
+    private func noteOnTheTextLine(onAdd: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(String(localized: "composition.noteOnTheText.line",
+                        defaultValue: "This collection’s export changes what its volumes print: it adds your titles or headnotes, or leaves something out. A Note on the Text would say so."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(String(localized: "composition.noteOnTheText.add", defaultValue: "Add Note on the Text"),
+                   systemImage: CollectionGeneratedBlockType.noteOnTheText.systemImage, action: onAdd)
+                .accessibilityIdentifier("composition.noteOnTheText.add")
+        }
+    }
+
+    /// Whether the collection settings offer the Note on the Text (L58; the design's §3.6): a static collection with
+    /// no Note, whose Note would have something to say by the rule its export reads
+    /// (`CollectionContentAssembly.noteOnTheText(over:collection:options:headnote:)`). The headnotes are looked up only
+    /// where nothing else would be said, so the line costs no store read for most collections. A smart collection's
+    /// documents come from its saved search, which these settings do not run, so it is not offered there; its outline's
+    /// Apparatus menu still adds one.
+    static func wantsNoteOnTheText(_ collection: Collection) -> Bool {
+        guard collection.savedSearchId == nil else { return false }
+        let models = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        guard !models.contains(where: {
+            $0.entryKind == .generated
+                && $0.generatedBlockType == CollectionGeneratedBlockType.noteOnTheText.rawValue
+        }) else { return false }
+        let values = models.map(CollectionEntryExport.init)
+        let export = CollectionExport(collection, entries: values)
+        let options = CollectionExportOptions(composing: export)
+        let entries = values.map { CollectionContentAssembly.Entry($0, proseParagraphs: nil) }
+        if CollectionContentAssembly.noteOnTheText(over: entries, collection: export, options: options,
+                                                   headnote: { _, _ in nil }).hasSomethingToSay {
+            return true
+        }
+        guard let context = collection.modelContext else { return false }
+        return CollectionContentAssembly.noteOnTheText(over: entries, collection: export, options: options) { entry, promptId in
+            NativeCollectionSerializer.headnoteForFile(
+                volumeId: entry.volumeId, documentId: entry.documentId, summaryId: entry.headnoteSummaryId,
+                preferredPromptId: promptId, authorLine: collection.authorLine, in: context)
+                .map { CollectionHeadnoteWriter(authorship: $0.summaryAuthorship ?? .aiGenerated,
+                                                storedName: $0.writerName ?? CollectionHeadnoteWriter.unnamed,
+                                                authorLine: nil) }
+        }.hasSomethingToSay
     }
 
     /// One label's row in Wording (L43): the app's word, and a field for the collection's own, which shows the app's

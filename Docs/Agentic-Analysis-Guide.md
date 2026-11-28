@@ -2886,7 +2886,7 @@ fails.
 
 Each entry needs only `kind`. The kinds are `document`, `heading`, `prose`, `excerpt` and
 `generated`; a candidate list needs only the first two, and §15.1a shows what the other three, a
-document's `notes` and the title page carry when the file is a reading round's deliverable. A
+document's `notes` and `headnote`, and the title page carry when the file is a reading round's deliverable. A
 `heading` carries its title in `text`; a `document` carries `volumeId` and `documentId` — the same
 pair everything else in this guide is keyed by.
 
@@ -2907,8 +2907,11 @@ app does something with each of them (`NativeCollectionFormat.swift`, `ExcerptVe
 | `prose` (`text`; rich text optional) | A prose block between documents, kept through every export | The finding of the section in the reader's register, and a closing block naming the threads the round could not follow |
 | `notes` on a `document` entry | Research notes attached to the document on import: in the Research rail, below the body in exports, indexed for search at once | Why this document is here and what it shows, one short note, opening with an attribution line |
 | `excerpt` (`text` + the document pair) | A block quote with an automatic citation, **checked against the document before every export and again when a corrected volume arrives**: presentation forgiven, wording not, elided fragments in order | Every quotation the overview relies on, as §8's check verified it |
-| `generated` with `generatedBlockType` | Apparatus built from the app's own data at every export: `archivalSources` (Sources & Archives, with NARA links where resolved), `chronology`, `bibliography`, `personsIndex`, `thematicIndex` | `archivalSources` at the end; `chronology` at the top for a question about a crisis |
-| `titleOverride` on a `document` entry | The document's label in the table of contents and export heading | A plain label where the printed header is unreadable |
+| `generated` with `generatedBlockType` | Apparatus built from the app's own data at every export: `archivalSources` (Sources & Archives, with NARA links where resolved), `chronology`, `bibliography`, `personsIndex`, `thematicIndex`; and `noteOnTheText`, the Note on the Text, written from what the documents print (whose titles and headnotes are the compiler's, what is left out, the quoted passages), which prints nothing where it has nothing to say | `archivalSources` at the end; `chronology` at the top for a question about a crisis; `noteOnTheText` last |
+| `titleOverride` and `dateLine` on a `document` entry | The compiler's title, which leads the document in the table of contents and the export, the volume's heading following under the words *As published:*; and the compiler's date line under it, which prints only under a title | A plain label where the printed header is unreadable |
+| `headnote` on a `document` entry: `text`, `authorship`, `writerName` (and `format` and `fields` for a structured one), with `"includeHeadnote": true` | A headnote above the document in every export, named by its writer: *Headnote by Agent run, round 2, 2026-10-14*. Each import makes a draft of its own from it | The document's finding in a sentence or two, as `"authorship": "userWritten"` with the run's name as `writerName` (limit 1) |
+| `includeHeadnote` on a `document` entry, and `headnoteDefault` on a `heading` | Whether a document's headnote prints: `true` or `false`; absent, the section's `headnoteDefault`, then the collection's `composition.defaultIncludeHeadnote` | `true` where you supply a `headnote`, and nothing elsewhere |
+| `citationStyle`, `opening`, `labels`, `includeRelatedDocuments` at the top level | The collection's citation style (`historyAtState`, `chicago`, `turabian`), which line leads a document with no title (`citation`, `volumeHeading`), its own words for the labels its exports print, and its *See also* default | Nothing: they are the historian's to choose |
 
 A note on a document the vectors found says so in the reader's words, after its attribution line:
 *Found by its similarity to* the edition citation of the document it was found from, *by no word
@@ -2941,18 +2944,28 @@ is what the app's excerpt check exists to catch, so write the passage as retriev
     { "kind": "heading", "text": "The channel of 1963", "level": 1 },
     { "kind": "prose", "text": "Why these documents, and what thread they follow, in two or three sentences." },
     { "kind": "document", "volumeId": "frus1961-63v11", "documentId": "d1",
+      "includeHeadnote": true,
+      "headnote": { "text": "What this document shows, in a sentence or two.",
+                    "authorship": "userWritten", "writerName": "Agent run, round 2, 2026-10-14" },
       "notes": ["Agent finding, round 2, 2026-10-14: what this document shows, in one short note."] },
     { "kind": "excerpt", "volumeId": "frus1961-63v11", "documentId": "d1",
       "text": "The passage, verbatim, as retrieved from the document." },
-    { "kind": "generated", "generatedBlockType": "archivalSources" }
+    { "kind": "generated", "generatedBlockType": "archivalSources" },
+    { "kind": "generated", "generatedBlockType": "noteOnTheText" }
   ]
 }
 ```
 
 Three limits:
 
-1. **Headnotes cannot be supplied.** The Key takeaway card is keyed to a summary id that exists
-   only on the author's devices. A per-document finding goes in `notes` or `prose`.
+1. **A headnote names its writer, and the app will not guess one.** `authorship` is one of
+   `aiGenerated`, `aiEdited` and `userWritten`, and the app prints the first as Apple
+   Intelligence's, so an agent's headnote is `userWritten`, with the run's name as `writerName`:
+   every export prints it under the headnote. A headnote with no `text`, or with an `authorship`
+   missing or none of the three, is not imported. A file before version 1.1 of the app named a
+   headnote by a summary id that exists only on its author's devices, and an app before 1.1
+   ignores `headnote`: where `includeHeadnote` is `true` it prints, under *Headnote*, a summary
+   of the document stored on the reader's device, or a sentence asking for one.
 2. **Imported notes carry no author.** They become the historian's own research notes,
    indistinguishable from ones they wrote. Every agent-written note opens with an attribution
    line naming the run and the date, so the notebook keeps its provenance.
@@ -2987,6 +3000,14 @@ if missing: problems.append(f"composition keys missing: {sorted(missing)}")
 docs = [e for e in c.get("entries", []) if e.get("kind") == "document"]
 pairs = [(e.get("volumeId") or "", e.get("documentId") or "") for e in docs]
 if any(not v or not d for v, d in pairs): problems.append("an entry lacks volumeId or documentId")
+for e in c.get("entries", []):
+    h = e.get("headnote")
+    if h is not None and (e.get("kind") != "document" or not isinstance(h, dict)
+            or not str(h.get("text") or "").strip()
+            or h.get("authorship") not in ("aiGenerated", "aiEdited", "userWritten")):
+        problems.append("a headnote with no text, no known authorship, or not on a document (§15.1a)")
+    if "includeHeadnote" in e and type(e["includeHeadnote"]) is not bool:
+        problems.append("includeHeadnote is not true or false, which an older app refuses (§15.3)")
 if len(pairs) != len(set(pairs)): problems.append(f"{len(pairs) - len(set(pairs))} duplicate pairs")
 con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
 known = set(con.execute("SELECT volume_id, document_id FROM document_cache"))
@@ -3009,10 +3030,15 @@ not 1, which is a distinction worth knowing if you are tempted to write a higher
 file declaring `formatVersion: 3` with no floor is *rejected* by a version-2 reader; the same file
 declaring `"minimumReaderVersion": 1` is accepted and its unknown features ignored. Write
 `formatVersion: 1` and no floor unless you have a reason. The reason §15.1a gives is the common
-one: a file carrying an excerpt, a generated block, a document's `notes`, a `titleOverride` or a
-title-page field is a version-2 file, so write `"formatVersion": 2` with
+one: a file carrying an excerpt, a generated block, a document's `notes`, `headnote`,
+`includeHeadnote`, `titleOverride` or `dateLine`, a title-page field or one of the collection's
+own settings is a version-2 file, so write `"formatVersion": 2` with
 `"minimumReaderVersion": 1`, as its example does, since every one of those degrades in a
-version-1 reader rather than corrupting.
+version-1 reader rather than corrupting. Version 1.1 of the app added a headnote's text, the
+date line, a section's `headnoteDefault` and the four collection settings at version 2, with the
+floor kept at 1: an app before 1.1 opens such a file and ignores the keys it does not know. It
+refuses the whole file, though, when a key it knows has another type, so `includeHeadnote` is
+`true` or `false` and nothing else.
 
 **Unknown top-level keys are free.** You may stamp provenance without any format change:
 
@@ -3434,6 +3460,16 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.52 — 2026-11-28: the collection file's new keys (plan of record row L58; the Collections design's
+  §7.4). §15.1a's table gains a document's `headnote` (its text, authorship and writer's name, and a
+  structured one's format and fields), `includeHeadnote` written as it is set, a document's `dateLine`
+  beside `titleOverride`, a heading's `headnoteDefault`, the four collection settings at the top level,
+  and the Note on the Text's block type, `noteOnTheText`; its example carries a headnote and the Note.
+  Limit 1 was "Headnotes cannot be supplied", which stopped being true: a headnote now travels as its
+  text, named by its writer, and the app imports none whose authorship it would have to guess. §15.2's
+  checker checks a headnote and `includeHeadnote`'s type, and §15.3 says what a version of the app
+  before 1.1 does with the new keys: it opens the file and ignores them, and it refuses a whole file
+  whose known key has another type. No change of version or floor.
 - 1.51 — 2026-11-26: index version 76 (plan of record row L26). §4.2's `document_cache` gains
   `document_order`, a document's place in its volume, which every re-index writes, and says to order
   a volume by it, since a re-index keeps a row's `rowid` and a library upgraded in place listed 361

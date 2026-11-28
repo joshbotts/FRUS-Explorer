@@ -795,7 +795,7 @@ struct ExportSheetView: View {
                       defaultValue: "Include my research notes"),
                isOn: $includeNotesInSharedFile)
         Text(String(localized: "export.native.hint",
-                    defaultValue: "Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above."))
+                    defaultValue: "Shares an editable copy of this collection: its documents, settings, sections, prose and headnotes, each headnote named by who wrote it. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)

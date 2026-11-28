@@ -822,6 +822,7 @@ struct CollectionExcerptRow: View {
 ///          document-driven blocks (bibliography/chronology)
 ///   1.2 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
 ///          via the shared `entryMoveControls`
+///   1.3 — L58: the Note on the Text's row says what the Note is written from, where a list's says what it lists
 struct CollectionGeneratedEntryRow: View {
     /// The `.generated` entry being displayed (read-only; blocks have no editable content).
     let entry: CollectionEntry
@@ -857,6 +858,11 @@ struct CollectionGeneratedEntryRow: View {
         guard let type = blockType else {
             return String(localized: "collection.entry.generated.unsupported.detail",
                           defaultValue: "Update FRUS Explorer to resolve this block.")
+        }
+        // L58: the Note on the Text is no list of the documents; it says what they print, or nothing.
+        if type == .noteOnTheText {
+            return String(localized: "collection.entry.generated.noteOnTheText.caption",
+                          defaultValue: "Written from what this collection’s documents print: your titles, dates and headnotes, and what is left out. Prints nothing where there is nothing to say.")
         }
         let base = String(localized: "collection.entry.generated.caption",
                           defaultValue: "Generated from this collection’s documents at export and in the preview.")

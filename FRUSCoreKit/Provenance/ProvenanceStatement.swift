@@ -30,6 +30,8 @@ import Foundation
 ///   1.1 — PV §5 / Q-1: the parse residual, conditional on an archival-sources block
 ///   1.2 — Session 2026-10-25 (FRUS Explorer Light, S17b and S18a): moved into FRUSCoreKit, public, unchanged, for the
 ///          sources blocks of the web edition's method appendix and collection colophon
+///   1.3 — L58 (#2005; the Collections design's §3.7): `compilersLinesSentence`, a collection's own sentence for the
+///          lines its compiler wrote, which follows the sources where a collection export prints one
 public enum ProvenanceStatement {
 
     /// The heading the sources block sits under, in every format that has headings.
@@ -46,11 +48,15 @@ public enum ProvenanceStatement {
     /// - Parameters:
     ///   - sources: What the exported content actually drew on.
     ///   - includesCuratedResolutions: Whether any archival identifier in it was matched by hand.
+    ///   - restsOnSourceNoteParse: Whether it carries a block parsed from the volumes' source notes.
+    ///   - printsCompilersLines: Whether it is a collection that prints a line its compiler wrote: a title, a date line
+    ///     or a headnote of theirs (L58). Only a collection's export passes it.
     /// - Returns: One sentence per source, plus the curated disclosure when it applies. Empty when
     ///   `sources` is empty, so a caller need not guard.
     public static func lines(for sources: Set<ProvenanceSource>,
                              includesCuratedResolutions: Bool = false,
-                             restsOnSourceNoteParse: Bool = false) -> [String] {
+                             restsOnSourceNoteParse: Bool = false,
+                             printsCompilersLines: Bool = false) -> [String] {
         guard !sources.isEmpty else { return [] }
         var out = sources
             .sorted { a, b in
@@ -64,15 +70,29 @@ public enum ProvenanceStatement {
         // the parse has a measured residual. Conditional for the reason `parseResidualDisclosure`
         // gives — it belongs to that block type, not to `.frusText`, which every export carries.
         if restsOnSourceNoteParse { out.append(ProvenanceSource.parseResidualDisclosure) }
+        // L58 (#2005; the design's §3.7): the compiler's own lines are the outermost of all, so they come last. The
+        // two shared sentences stay as the analytics exports, the packet and the method appendix print them.
+        if printsCompilersLines { out.append(compilersLinesSentence) }
         return out
     }
 
     /// The block with its heading, for a format that wants one.
     public static func block(for sources: Set<ProvenanceSource>,
                              includesCuratedResolutions: Bool = false,
-                             restsOnSourceNoteParse: Bool = false) -> [String] {
+                             restsOnSourceNoteParse: Bool = false,
+                             printsCompilersLines: Bool = false) -> [String] {
         let body = lines(for: sources, includesCuratedResolutions: includesCuratedResolutions,
-                         restsOnSourceNoteParse: restsOnSourceNoteParse)
+                         restsOnSourceNoteParse: restsOnSourceNoteParse,
+                         printsCompilersLines: printsCompilersLines)
         return body.isEmpty ? [] : [heading] + body
+    }
+
+    /// A collection's own sentence for the lines its compiler wrote (L58; #2005; the Collections design's §3.7): that
+    /// a title, a date line or a headnote of theirs stands apart from the volumes' text and is named. A collection's
+    /// export prints it after its sources wherever it prints such a line, so the statement no longer reads as though the
+    /// volumes and the app's model had written every word.
+    public static var compilersLinesSentence: String {
+        String(localized: "provenance.collection.compilersLines",
+               defaultValue: "Titles, date lines and headnotes of the compiler’s own stand apart from the volumes’ text: a title and the date line under it stand above the words “As published:”, and a headnote names its writer.")
     }
 }
