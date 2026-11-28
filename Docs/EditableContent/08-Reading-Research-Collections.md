@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave) and your 2026-11-20 review was written back for 1.0 (1861); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 325 blocks · no ⚑ wording issues
+**In this file:** 328 blocks · no ⚑ wording issues
 
 ---
 
@@ -894,13 +894,57 @@ One quotation cites a document that is no longer in its volume.
 ### Collections Export
 
 #### Native-format export explanation
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 600–601 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 797–798 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
 Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
 <!-- END SOURCE: export.native.hint -->
 
 Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim from source.
+
+#### What the export will print — the export sheet's sentence (L35)
+<!-- L35 (2026-11-27; the third review's J9, decision 192): the first thing the export sheet says, on every platform, written from what the export counts of the collection's documents, where 1.0 read the collection's defaults ("Exports the full text of each document, with headnotes, …"). The sentence is put together from the pieces below: a lead that counts the documents and says how they print, then ", with" and a list of what prints with them, joined in the system's list form ("a, b, and c"). Every `%@` is a number the app formats. The reused key `collection.export.summary.wordCloud` is also 1.0's sentence's, in Models/Collection.swift, which the editor still shows; an edit here reaches both. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSentence | lines: 1185–1296 | keys: export.sentence.noDocuments, export.sentence.native.one %@, export.sentence.native.many %@, export.sentence.highlights, collection.export.summary.wordCloud, export.sentence.notes, export.sentence.with %1$@ %2$@, export.sentence.citations.one %@, export.sentence.citations.many %@, export.sentence.full.one %@, export.sentence.full.many %@, export.sentence.summaries.one %@, export.sentence.summaries.many %@, export.sentence.mixed.full %@, export.sentence.mixed.summaries.one %@, export.sentence.mixed.summaries.many %@, export.sentence.mixed.citations.one %@, export.sentence.mixed.citations.many %@, export.sentence.mixed %1$@ %2$@, export.sentence.headnote.one, export.sentence.headnote.none, export.sentence.headnotes %1$@ %2$@ | shared: iOS+macOS (single edit point) | same text also in: FRUSExplorer/Models/Collection.swift (collection.export.summary.wordCloud) -->
+
+**No documents:** This collection has no documents.
+
+**A collection file (one document / several):** An editable copy of this collection and its %@ document. / An editable copy of this collection and its %@ documents.
+
+**BibTeX and RIS (one / several):** A citation for %@ document / A citation for each of %@ documents
+
+**Every document in full (one / several):** The full text of %@ document / The full text of %@ documents
+
+**Every document as a summary (one / several):** A summary of %@ document / A summary of each of %@ documents
+
+**Documents printed differently:** %1$@ documents: %2$@
+
+*(Interpolated with the count, then a list of these parts:)* %@ in full / %@ as a summary / %@ as summaries / %@ as a citation / %@ as citations
+
+**What prints with them:** %1$@, with %2$@.
+
+*(Interpolated with the lead above, then a list of these parts:)* headnotes for %1$@ of %2$@ / its headnote / no stored headnote / your notes / your highlights / a word-cloud overview
+
+*(A collection of one document says "its headnote", or "no stored headnote" where its headnote has no summary stored; a larger one counts the documents that print a headnote against all of them, "headnotes for 4 of 6".)*
+
+<!-- END SOURCE: export.sentence -->
+
+#### What this device lacks for an export of summaries (#2018, L35)
+<!-- L35 (#2018, decision 198): the line under the export sheet's sentence, and the message an export stops with, where documents print a summary that is not stored and Apple Intelligence cannot write one on this device. The count comes first; the reason after it is the app's own sentence for why Apple Intelligence cannot summarize here (`ai.availability.notEnabled`, `.notEnabled.mac` and `.modelNotReady`, in 09-Settings-and-App.md), or, on a device that cannot run it, the sentence below. Until L35 such an export ended "The export could not be rendered.", even with every summary stored. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionSummaryExportError.errorDescription | lines: 972–983 | keys: export.summaries.missing.one %@, export.summaries.missing.many %@, export.summaries.notEligible | shared: iOS+macOS (single edit point) -->
+
+**One document / several:** %@ document has no stored summary. / %@ documents have no stored summary.
+
+**On a device that cannot run Apple Intelligence:** Apple Intelligence, which writes summaries, is not available on this device.
+
+<!-- END SOURCE: export.summaries -->
+
+#### Format — the export sheet's menu at the accessibility text sizes (L35)
+<!-- L35: on iPhone and iPad at the accessibility text sizes the export sheet chooses its format from a menu at its foot, beside this label, in place of the grid of cards. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.formatMenu, ExportSheetView.iOSExportBar | lines: 239–239, 568–568 | key: export.format.menu | shared: iOS only -->
+
+Format
+
+<!-- END SOURCE: export.format.menu -->
 
 #### Export format grid — Web page
 <!-- #1688 (2026-10-19), decision 67: the caption under the HTML card in the export sheet's format grid, where it
@@ -3122,14 +3166,14 @@ No headnote yet. Edit to write a key takeaway, or generate a document summary to
 <!-- END SOURCE: collection.inspector.headnote.empty -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 672–673 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 869–870 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.
 
 <!-- END SOURCE: export.zotero.send.caption.iosNoAccount -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 675–676 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 872–873 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.
 
@@ -3174,7 +3218,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 540–541 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 581–582 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -3182,7 +3226,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 553–554 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 594–595 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
@@ -3190,7 +3234,7 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### Rename Collection
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionRenameAlert.body | lines: 684–684 | key: collection.rename.title -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionRenameAlert.body | lines: 725–725 | key: collection.rename.title -->
 
 *The title of the alert that asks for a collection's new name (#1823): from a row's menu in the Collections list on iPhone and iPad, and from Collection ▸ Rename Collection… on the Mac. Leaving the name empty keeps the old one.*
 
@@ -3316,21 +3360,21 @@ Its settings in this collection go with it, on your other devices too once they 
 <!-- END SOURCE: collection.entry.delete.confirm.message.settings -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1308–1309 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1344–1345 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1768–1769 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1804–1805 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2068–2069 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2104–2105 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

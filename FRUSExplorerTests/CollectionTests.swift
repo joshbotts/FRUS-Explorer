@@ -1739,6 +1739,10 @@ struct CollectionTests {
         try context.save()
 
         let resolver = CollectionContentResolver(appState: appState, modelContext: context)
+        // Apple Intelligence as able to write, so the unstored summary below reaches the missing service. Since #2018
+        // a device that cannot write one says so first (`CollectionSummaryExportTests`), and a simulator's answer is
+        // its Mac's.
+        resolver.appleIntelligence = { .available }
 
         // No prompt configured: preview succeeds with a nil summary…
         let noPrompt = try await resolver.resolve(collection: coll, entries: [entry],
@@ -9672,14 +9676,15 @@ struct FigureImageExportTests {
         let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Collections/CollectionExportSheet.swift"), encoding: .utf8)
-        // The one rendered-format resolve, in `runExport`: PDF, HTML, Word and BibTeX all take it.
+        // The one rendered-format resolve, in `runRenderedExport`: PDF, HTML and Word take it. BibTeX, which prints
+        // citations, resolves documents only since L35, as RIS and the Zotero send do.
         #expect(source.components(separatedBy: "makeResolver().resolve(").count == 2, "the sheet resolves items once")
         let call = try #require(source.range(of: "makeResolver().resolve"))
         let arguments = try #require(WindowTargetingTests.balancedBlock(in: source, from: call.upperBound, open: "(", close: ")"))
         #expect(arguments.contains("purpose: .export"), "\(arguments)")
         #expect(arguments.contains("printsFigureImages: selectedFormat.printsFigureImages"),
                 "the export sheet does not tell the resolver whether its format prints images: \(arguments)")
-        // RIS and the Zotero send resolve documents only, which fetches none.
+        // RIS, BibTeX and the Zotero send resolve documents only, through one call, which fetches none.
         #expect(source.components(separatedBy: "makeResolver().resolveDocuments(").count == 2)
     }
 
@@ -13529,7 +13534,10 @@ struct CollectionDeletionTests {
         #expect(!list.contains(".onDelete"), "the list deletes on a swipe again, with no dialog")
         #expect(row.contains(".swipeActions(edge: .trailing, allowsFullSwipe: false)"),
                 "a full swipe deletes without the reader tapping Delete")
-        let menu = try Self.block(".contextMenu {", in: row)
+        // Since L35 the menu's items are a builder of their own, which the row's VoiceOver actions take too (#2006).
+        #expect(row.contains(".contextMenu { rowActions(for: collection, forVoiceOver: false) }"), "the row has no menu")
+        let menu = try Self.block("private func rowActions(for collection: Collection, forVoiceOver: Bool) -> some View {",
+                                  in: list)
         #expect(menu.contains("\"common.rename\"") && menu.contains("renaming = collection"), "the menu has no Rename")
         #expect(menu.contains("Button(role: .destructive)") && menu.contains("pendingDeletionId = collection.id"),
                 "the menu has no Delete, or its Delete does not ask")
@@ -13547,7 +13555,9 @@ struct CollectionDeletionTests {
         #expect(onDelete.contains("deleting = offsets.map") && !onDelete.contains("CollectionDeletion.delete"),
                 "the swipe deletes without asking")
         let row = try Self.block("private struct ManageCollectionRow: View {", in: mac)
-        let menu = try Self.block(".contextMenu {", in: row)
+        // Since L35 the menu's items are a builder of their own, which the row's VoiceOver actions take too (#2006).
+        #expect(row.contains(".contextMenu { rowActions(forVoiceOver: false) }"), "the row has no right-click menu")
+        let menu = try Self.block("private func rowActions(forVoiceOver: Bool) -> some View {", in: row)
         #expect(menu.contains("Button(role: .destructive, action: onDelete)"), "the right-click menu has no Delete")
         #expect(menu.contains("\"common.rename\""), "the right-click menu has no Rename")
         #expect(!row.contains("$collection.name"), "the rename field writes the name untrimmed again")
