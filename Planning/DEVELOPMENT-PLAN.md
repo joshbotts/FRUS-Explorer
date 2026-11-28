@@ -5229,7 +5229,16 @@ The orchestration session started this one for row L38, on `claude/l38-mac-windo
 - The unit target, scoped, on the iPhone 17 under iOS 27.0: at `7620da16`, 467 tests in 45 suites passed (the Research, Subjects and Mac chrome suites, every suite that reads a changed file, and the audits); at `5ed6bed4`, 198 tests in 15 suites passed (`ResearchRowHeadsTests`, `ResearchRowsRedrawSourceTests`, the Research suites, `EditableContentKeyTests`, `CodingStandardsAuditTests`, `UnconstructedViewAuditTests`, `AppSourceTreeTests` and the count-copy suites), and the same 198 at `c2f84dc7`, the final form. The check copy built at `7620da16`, `5ed6bed4` and `c2f84dc7`, the Mac's compile of the window code. The full unit target, `swift test` (a file under `FRUSExplorerTests/FRUSCoreKit/` changed, inside its `#if !SWIFT_PACKAGE`) and the `FRUSExplorerMac` build are the landing's.
 - `Scripts/check_repo_hygiene.py`: six checks passed.
 
+- **At the head of the queue,** on the merge `c2ce088b` (tree `36edde82`), with `v2` at `7524f53d` taken in, in one `heavy.sh` call from 00:28 to 00:51 UTC on 2026-11-28:
+  - `build-for-testing` on the iPhone 17 under iOS 27.0, from this worktree's build folder: the known residue alone.
+  - The unit target there (`-only-testing:FRUSExplorerTests`), the TEI mirror set: 8,448 tests in 1,022 suites passed, 17 skipped as at the earlier landings, with the six known issues, in 789 s. The app's removal first was refused, the simulator being shut down at that moment, so the run booted it with the app as this row's earlier runs had left it.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,332 tests in 605 suites over 39 runs, none failed. Its build, from empty in this worktree, printed six warnings, all in package code this row does not touch: `VolumeSubjectProfilesGeneratorCore`, `CorpusStructureSweepGeneratorCore` and its tests, `DecimalClassLabelGeneratorTests` and `ProvenanceFlowIndexGeneratorCore`.
+  - The `FRUSExplorerMac` build: succeeded, with the known residue alone.
+  - `Scripts/check_repo_hygiene.py`: six checks passed.
+
 **For the owner**
+- **The pull request,** opened once this row reached the head of the queue, under the owner's rule for 1.1, by which the orchestrator merges on green, with Auto-fix on and GitHub's auto-merge off.
 - **Decisions 219 and 220** are in the plan's §0, and §4's F2 line is answered.
 - **Found, offered and not taken** (decision 183): a Mac list whose rows vary in height stops its first scroll short of its end, and `CrossReferenceStore`'s batch reads return what they read so far at a step that fails. Both are in the plan's §5, under *Found by L38, unfiled*.
 - **Shell traps met:** zsh's `log` is a builtin, so `/usr/bin/log show` reads the unified log; a variable holding `-only-testing` arguments must be an array.
