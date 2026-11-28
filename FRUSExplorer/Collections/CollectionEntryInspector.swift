@@ -1184,7 +1184,7 @@ struct CollectionEntryInspector: View {
         swapHeadnoteDraft(text: trimmed, authorship: authorship)
     }
 
-    /// The name a headnote the reader writes is stamped with (L43; decision 222): the collection's author line, trimmed,
+    /// The name a headnote the reader writes is stamped with (L43; decision 234): the collection's author line, trimmed,
     /// which serves as the compiler's name; `nil` when it is empty.
     nonisolated static func headnoteWriterName(authorLine: String?) -> String? {
         guard let name = authorLine?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
@@ -1211,7 +1211,7 @@ struct CollectionEntryInspector: View {
            existing.isHeadnoteDraft {
             modelContext.delete(existing)
         }
-        // L43 (decisions 194 and 222): a headnote the reader writes or edits carries their name, the collection's author
+        // L43 (decisions 194 and 234): a headnote the reader writes or edits carries their name, the collection's author
         // line as it reads now; one Apple Intelligence drafted carries none, and its export names the model.
         let draft = GeneratedSummary(documentId: entry.documentId, volumeId: entry.volumeId,
                                      promptId: Self.headnoteDraftPromptId, responseText: text,

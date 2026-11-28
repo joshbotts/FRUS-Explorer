@@ -536,7 +536,7 @@ struct CitationMatchingEngineTests {
         // it on the clipboard, with them removed (`CitationPlainText.plain`, which both platforms'
         // copies call). Before #1505 the plain form was the one the fragment lost the series' name
         // from.
-        // A Chicago or Turabian note opens with the document it cites (L43, decision 220): each is cited
+        // A Chicago or Turabian note opens with the document it cites (L43, decision 232): each is cited
         // by a real heading and dateline, whose words and year are no volume's — 1962 stands first in
         // the text where a pre-1918 title's transmittal date keeps the series' own year from being read
         // — and by none, as a note opens whose heading the app does not have. History at State reads
@@ -585,7 +585,7 @@ struct CitationMatchingEngineTests {
                     // to could not fire on a text beginning with a mark. History at State opens with the
                     // title; a Chicago or Turabian note opens with the document, or with the series where it
                     // has no heading, and holds the series with its years apart from the volume's own title
-                    // (L43, decision 220).
+                    // (L43, decision 232).
                     let series = FRUSVolumeTitle(title: volume.title).series
                     let opens = format.name == "history.state.gov" ? first.hasPrefix(volume.title)
                         : format.header.isEmpty ? first.hasPrefix(series) : first.contains(", in " + series)

@@ -101,7 +101,7 @@ import Foundation
 ///          `Document GT–6` — where only its digits were (`extractDocumentNumber(from:)`,
 ///          `normalizedDocumentNumber(_:)`); a link's `d373a` names its number; and the title
 ///          fragment loses the whole number, not its digits alone
-///   2.0 — L43 (decision 220): a Chicago or Turabian note, as the app's own now prints one, is read
+///   2.0 — L43 (decision 232): a Chicago or Turabian note, as the app's own now prints one, is read
 ///          from its volume on, its "vol.", "vols." and "pt." as a title prints them
 ///          (`noteReading(of:)`), and an editor statement ends at a volume's number or part and at
 ///          an italic title, where it ran to the publication parenthesis
@@ -167,7 +167,7 @@ public struct CitationParser: Sendable {
 
     // MARK: - A Chicago or Turabian Note (L43)
 
-    /// A Chicago or Turabian note read as the volume's own citation reads (L43; decision 220): the
+    /// A Chicago or Turabian note read as the volume's own citation reads (L43; decision 232): the
     /// text its fields and its title fragment are read from. `nil` for any other citation, which
     /// reads as it stands.
     ///

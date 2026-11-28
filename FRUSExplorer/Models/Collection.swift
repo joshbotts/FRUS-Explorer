@@ -248,7 +248,7 @@ import SwiftData
     /// A build that knows this field sends it with every save of the record, a `nil` included, and a `nil` erases the
     /// value another device set (L43's prep run, 2026-11-27). A device updated from 1.0 holds `nil` until iCloud
     /// re-sends the record, which it did at the first launch both times it was tried online; R12 tries the update
-    /// opened offline (decision 219).
+    /// opened offline (decision 231).
     var citationStyle: String? {
         didSet { lastModified = .now }
     }

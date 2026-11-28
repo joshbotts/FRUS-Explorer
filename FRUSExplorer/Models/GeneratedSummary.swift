@@ -62,7 +62,7 @@ import SwiftData
 ///   1.9 — L34: `ranksAbove(_:_:)` is FRUSCoreKit's `SummaryRecency` over this record's `recency`, the rule a
 ///          collection's headnote and summary now take as well; no stored property changed
 ///   1.10 — L43: `writerName`, a headnote's writer, stamped from the collection's author line when the reader writes
-///          or edits the headnote (decisions 194 and 222). A NEW mirrored field, in the 1.1 promotion (R11); a draft
+///          or edits the headnote (decisions 194 and 234). A NEW mirrored field, in the 1.1 promotion (R11); a draft
 ///          Duplicate or an import copies keeps it
 @Model final class GeneratedSummary: @unchecked Sendable {
 
@@ -136,7 +136,7 @@ import SwiftData
 
     /// The name of the person who wrote or edited a headnote draft's text, stamped when they write it: the author line
     /// of the collection the headnote is written in, which serves as the compiler's name (L43; decision 194, and the
-    /// owner's answer of 2026-11-27 that the author line serves, decision 222). An export names a headnote's writer by
+    /// owner's answer of 2026-11-27 that the author line serves, decision 234). An export names a headnote's writer by
     /// it ("Headnote by …", with Apple Intelligence named where it drafted; L58 prints it), so that a recipient's own
     /// new headnotes are not printed under a sender's name. `nil` on an AI draft nobody has edited, on every summary
     /// that is not a headnote draft, and where the collection had no author line when the headnote was written.

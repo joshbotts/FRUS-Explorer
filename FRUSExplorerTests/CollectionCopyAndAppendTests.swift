@@ -513,7 +513,7 @@ struct CollectionFactsCopyTests {
         #expect(options.volumeHeadingLeads && options.citationStyle == .turabian)
     }
 
-    /// Decisions 194 and 222: a headnote the reader writes carries the collection's author line, trimmed, as its
+    /// Decisions 194 and 234: a headnote the reader writes carries the collection's author line, trimmed, as its
     /// writer's name, and a copy of the draft keeps it.
     @Test("A headnote carries its writer's name, the author line, and a copy of the draft keeps it")
     func headnoteWriter() throws {
