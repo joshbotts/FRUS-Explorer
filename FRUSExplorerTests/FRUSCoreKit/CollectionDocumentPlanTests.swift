@@ -434,6 +434,30 @@ struct CollectionDocumentPlanTests {
         #expect(html.contains("<span class=\"toc-line\">As published: 1. Letter From President Carter"))
     }
 
+    /// L49 (the owner's "Wherever a document repeats"): a row cites its document by the short form the assembly made,
+    /// under the author's title too, since the export prints the full citation at the document's head; a document
+    /// made with no short form, as a host may make one, keeps the full citation, as every row did before L49.
+    @Test("A row cites its document by the short form, under a title too, and in full where none was made (L49)")
+    func shortFormRows() {
+        let full = "_Foreign Relations of the United States_, 1946, Eastern Europe, The Soviet Union, Volume VI, Document 475."
+        let short = "_FRUS_, 1946, vol. VI, doc. 475."
+        func document(title: String? = nil, shortCitation: String) -> CollectionExportDocument {
+            CollectionExportDocument(documentId: "d475", volumeId: "frus1946v06", sortOrder: 0,
+                                     title: "frus1946v06 — d475", titleOverride: title, bodyText: "",
+                                     citation: full, shortCitation: shortCitation,
+                                     header: "475. The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        }
+        func row(_ doc: CollectionExportDocument) -> CollectionContentsRow {
+            CollectionContentsRow.rows(for: [.document(doc)], style: .citation)[0]
+        }
+        #expect(row(document(shortCitation: short)).text == short)
+        let titled = row(document(title: "The Long Telegram", shortCitation: short))
+        #expect(titled.text == "The Long Telegram")
+        #expect(titled.lines == ["As published: 475. The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+                                 short], "\(titled.lines)")
+        #expect(row(document(shortCitation: "")).text == full)
+    }
+
     // MARK: #2005 and decision 165
 
     @Test("A headnote the app's model wrote names the model among the export's sources (#2005)")
