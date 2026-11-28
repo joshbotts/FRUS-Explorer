@@ -5161,3 +5161,53 @@ Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a 
 - **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
 - `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
+
+## Session 2026-11-27 — L43, a collection's new facts: its citation style, its opening, its own words and See also, a document's date line, a section's headnote default and each headnote's writer; Chicago and Turabian as the note the *Chicago Manual of Style* gives, which Citation Lookup reads back; the research export's version 8, which carries headnote drafts whatever the AI-summaries switch says
+
+Row L43 of the plan of record from 2026-11-25 (the Collections design's lane 3 and §7, with lane 7's candidate 6; the third review's J16, J20, J24, J39, J41 and J45), started by "Development session orchestration" on `claude/l43-collection-new-facts-837863`, from `v2` at `d9b86ae2` (L62's merge), and developed beside R8. Kit and app code: package input, so `swift build --target FRUSCoreKit` and `swift test`; seven stored properties, so seven CloudKit identifiers awaiting R11's deploy; no index version. Commits: `8a42e0d0` (the facts, the notes, Citation Lookup's reading, the export's version 8, the gate and the tests) and a records commit.
+
+**Before it**
+- **Three runs** (§2 of the plan; the orchestrator's notes `L43-prep-two-device.md`, `L43-prep-file-run.md`, `L43-prep-desk-check.md`), recorded in the plan's L43 record as its starting facts: 1.0 keeps a field it does not know; a device updated after only importing fills the new columns from iCloud's re-fetch; and the one risk, a build that knows a field sends it with every save, a blank included, which erases the server's value.
+- **The owner's four answers** (decisions 219 to 222): rely on iCloud's re-fetch and check it at R12 with the update opened offline; the whole note now; the note in a list's row; the author line as the compiler's name, so seven fields.
+
+**What it built** (each fact with its control, in `CollectionCompositionRows` and `CollectionEntryInspector`)
+- **A collection's citation style** (`Collection.citationStyle`, *Citation style*): every citation the collection prints, at a document's head, in a contents row, in a passage's source line, on the *See also* line, in the Bibliography and the Chronology, and the inspector's title placeholder. The batch's formatter is `any CitationFormatter`, and every citation of a document reads the index's heading and dateline (`IndexingPipeline.documentHeadingsByKey(_:)`), so one document is cited alike everywhere and a capped preview as its export. Exporters get `_…_` italics (`CitationItalics`).
+- **Chicago and Turabian are the note** (decision 220; *Chicago Manual of Style Online*, faq0443): `FRUSNoteHead` turns "Telegram From X to Y" into "X to Y, telegram" and takes the place and date from the dateline; `FRUSVolumeTitle` divides the manifest's one title into the series with its years, *vol. N* and the volume's own title (the TEI's own division for 515 of the 553); Turabian adds the place. The reader's Copy Citation in either style prints it too. History at State is unchanged.
+- **Citation Lookup reads the note** (`CitationParser.noteReading(of:)`): the head before ", in" and the series' name (or the 1861 volume's title) is left out; *vols.* and its numbers, *vol.* and *pt.* read as a title prints them, a part in Roman numerals under *Papers Relating* and in figures under *Foreign Relations*; and an editor statement stops at a volume's number or part and at an italic title. A first form dropped the part from the title's words and sent `frus1864p2` and `p3` to `frus1865p4`, whose title holds every other word of theirs, since all three are cited by the 1865 print year.
+- **A collection's opening** (`Collection.opening`, *Opening*), **its words** (`Collection.labelsJSON`, `CollectionWording`, *Wording*'s ten fields), **See also for the collection** (`Collection.defaultIncludeRelatedDocuments`), **a document's date line** (`CollectionEntry.dateLine`, under a title only, J41), **a section's headnote default** (`CollectionEntry.headnoteDefault`, headings only, J24) and **each headnote's writer** (`GeneratedSummary.writerName`, the author line, decision 222). A new collection opens on the volume's heading in Settings ▸ Display's style (decisions 159 and 160).
+- **The research export's version 8**: a `Fields` case for each of the seven, the import screen's words for each, the older-file rules, `ResearchDataFixtures.version8`, and a collection's headnote drafts written whatever the AI-summaries switch says (J45).
+- **Copies:** Duplicate and the smart snapshot carry the new fields, held by a schema walk (J39); the preview's refresh list takes the six that change a page (J20).
+- **The CloudKit gate:** 272 → 279 identifiers, the seven in `identifiersAwaitingDeploy`, the baseline unchanged.
+
+**Shown first** (decision 183)
+- **J45,** by a control: the exporter's summaries hunk put back as `v2` has it, and `CollectionFactsCopyTests` run: with the switch off the export held no headnote draft, so no writer's name either: the J45 test failed at both its checks, and the suite's other three passed (23:07, iPhone 17, iOS 27.0); on L43's code all four pass. The file was restored byte for byte.
+- **The note against `v2`'s parser:** with the formatters changed and the parser not, the round trip of the app's own citations (`ownCitationsAreNeverBestGuesses`) reached the citing volume for 502 of the 553 in Chicago and in Turabian, marked and plain, against 551 in History at State (two excused), and the real-index test of printed numbers failed 12 of its citations.
+- **J24 and J41** by their tests' fixtures: a heading made in July 2026 holding `includeHeadnote == false` switches no headnote off; a date line without a title prints in no format and no contents row.
+
+**What did not hold** (decision 183)
+- The publisher "as on the title page": the formatters' year rule differs from the TEI's `<publisher>` for 34 of the 553 volumes. Offered to L54.
+- The prep run's blank was made with the device's archived record holding the field; a record imported under 1.0 is archived without it. A second unknown, which R12's offline check answers.
+- "Seven fields, or eight": seven (decision 222).
+- `CitationPunctuation`'s comment still named the old Turabian endings; brought to the note's.
+- `Docs/EditableContent/README.md`'s table did not match its files at its last update (325 blocks for `08` where it held 364); this row adds its blocks to the table's own counts.
+
+**Tests**
+- **The kit's, compiled twice:** `CitationFormatterTests.swift`'s Chicago and Turabian suites (the FAQ's own document, a long telegram, an editorial note, a note with no heading, a volume with many editors), `FRUSVolumeTitleTests` (every manifest title), `FRUSNoteHeadTests` and the italics; `CitationParserTests.noteIsReadFromItsVolume`; `ownCitationsAreNeverBestGuesses` in ten forms, each note cited by a real heading and dateline of another year and by none; `CollectionFactsPlanTests` (6) and `CollectionFactsResolutionTests` (4); the envelope's and the import plan's version-8 tests, and a version-8 file added as written.
+- **The app's:** `CollectionFactsCopyTests` (the schema walk, a new collection's defaults, the headnote's writer, J45's export), `ResearchDataExporterTests` (every field of versions 7 and 8), `ResearchDataImporterTests` (the older file's footer names version 8's fields).
+- **The UI's:** `CollectionFactsAccessibilityTests`, 2 tests, run on the iPhone 17 and the iPad Pro 13-inch (`.claude/rules/ui-tests.md`, the runbook).
+
+**Checked on the branch** (this worktree's DerivedData, the iPhone 17 and the iPad Pro 13-inch (M5) under iOS 27.0, each run one `Scripts/heavy.sh` job)
+- **The full check, 20:44 to 21:29:** `swift build --target FRUSCoreKit`; `swift test`, 39 test runs and 5,353 tests, one run failing, `FRUSCoreKitTests`, at the round trip on the parser's first form (12 issues); build-for-testing; the unit target (`-only-testing:FRUSExplorerTests`, the TEI mirror set, the app removed first), 8,465 tests in 1,024 suites, 17 skipped, the one test with the six known issues, and the same round trip; the `FRUSExplorerMac` build, which succeeded with the two known residues and compiled the parser's last form and the inspector's fixes. The VoiceOver suite failed on both devices at two lookups, not at the screen (the recording shows every field drawn): an identifier on *Wording*'s group reached its fields in place of their own, and iOS 27 gives a form's text field no label. Both fixed.
+- **The follow-up, 22:17 to 22:44:** `swift test` of the citation suites, 214 tests in 20 suites passed, the round trip 551 of 553 in all ten forms; build-for-testing; the unit target's citation suites with the EditableContent gate, 199 tests in 11 suites passed; `CollectionFactsAccessibilityTests` 2 of 2 on the iPhone 17 (526 s and 115 s) and on the iPad Pro 13-inch (531 s and 121 s).
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**Offered, not taken** (decision 183; §5, *Found by L43*)
+- The *Title override* field shows and speaks the exporters' `_…_` marks, and has no name of its own under iOS 27.
+- Turabian's place, "Washington, D.C.", where the ninth edition's guide writes "Washington, DC".
+- The publisher's year rule, 34 of 553 volumes: L54's brief.
+
+**The rest**
+- EditableContent: eleven blocks added, one block's text changed with the app's, 113 ranges re-pointed (`Amendment-Log.md`).
+- `.claude/rules/ui-tests.md` and `Planning/UI-Test-Destinations-Runbook.md`: `CollectionFactsAccessibilityTests`.
+- Manuals: chapter 12 (the inspector's date line, related documents and section defaults; the composition's Opening, See also, Citation style and Wording) and the Cite passages (the note).
+- FRUS Explorer Light: the kit's public API gains `FRUSNoteHead`, `FRUSVolumeTitle`, `CitationItalics`, `CollectionWording`, `IndexingPipeline.documentHeadingsByKey(_:)` and `CollectionExportOptions`' three new options; the envelope is at version 8.
