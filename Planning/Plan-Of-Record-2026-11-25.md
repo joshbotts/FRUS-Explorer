@@ -257,6 +257,18 @@ It is written from six sources:
 223. **L56's two small notes: `documentKeysInDateRange`'s stale doc comment is corrected in L56, and the iOS 27.0 iPad simulator's abort stays a memory note.** The owner's choice: "Fold into a later row (Recommended)", over filing them and leaving them in §5, for the day's three smaller notes; L35's go to L43 and L44.
     - L56 edits the comment's file, so it is corrected there, in a commit of its own. The abort is in the memory note on #1620's returns, beside L40's.
 
+*For R8, the early build, asked in R8's session and in the orchestrator's, 2026-11-27 and 2026-11-28:*
+
+224. **The early build is 1.1 (1862).** The owner's answer, typed: "1862", asked in R8's session on 2026-11-27 which number the early build carries, above 1861, with the release candidate's to come above it. The session had offered 1867, 1898 and 1917.
+225. **The TestFlight notes keep every fix in one line.** The owner's choice: "All in one line", over "A line per fix", asked in R8's session on 2026-11-27. The orchestrator's hold message had asked for "one line for each fix", wording its transcript shows was its own, so the owner's rule of 2026-09-26 stands.
+226. **The early build waits for the rows in flight.** The owner's words, in the orchestrator's session on 2026-11-27: "let's wait on R8 until the other sessions are all done so the test flight build includes more fixes." The rows then in flight were L57, L30, L39, L42, L40, L38 and L56.
+227. **And for L34 and L36.** The owner's choice: "Yes, include L34 and L36", asked in the orchestrator's session on 2026-11-27 whether the early build should also wait for Wave 4's L34 and L36, with L35 joining it either way. With decision 218's L62, the build carries Wave 3, L34, L35, L36, L62 and L56, and its notes say it brings the first part of the Collections overhaul.
+228. **R8 keeps its slot after L56.** The owner's words, in the orchestrator's session at 00:23 UTC on 2026-11-28: "disregard what i said about R8. i want to get the plan finished as quickly as feasible. if that means R8 shipping on the previous schedule, that's fine", withdrawing an earlier word about R8's date.
+229. **R8 runs no UI suite; R11 runs them on the frozen tree.** The owner's choice: "Skip; R11 runs them (Recommended)", asked in the orchestrator's session at 00:39 UTC on 2026-11-28 how R8 should run its UI suites, which R8 had estimated at about 120 jobs and 12–15 hours of the one build lock, with every Collections row's builds behind them. R8's checklist is the clean `build-for-testing`, the unit target on iOS 27.0 and 27.2, `swift test` and the Mac build.
+230. **The owner archives the early build in Xcode.** The owner's choice: "No, I'll archive", over "Yes, R8 archives (Recommended)", asked in the same question set whether R8 may run both archives itself from its merge commit through `Scripts/heavy.sh`.
+    - R8's worktree is put at the merge commit, detached, with both archive-only phases' caches verified there: the CloudKit schema stamp and the llama dSYMs.
+    - L43 lands once R8's bump merges, and does not wait for the archive. An archive made in Xcode's window does not take the build lock, so R8 offers to hold the lock for it.
+
 **Rules carried from the earlier plans and `CLAUDE.md`, and the two of decision 183.** Each is the owner's.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
 - **One fresh session per pull request**, started from this plan and the row's issue numbers, and ended at the merge.
