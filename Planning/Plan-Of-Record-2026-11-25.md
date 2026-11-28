@@ -880,7 +880,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
       - **A clean `build-for-testing`** at `9afc3cf0` (`v2` at `7524f53d` and the bump), from an empty build folder, the iPhone 17 destination: succeeded, 1,238 compile lines. Its 7 warning lines are the two known residues alone: `GeneratedSummary`'s redundant conformance (4) and the AppIntents note (3).
       - **The unit target on the iPhone 17 under iOS 27.2** there, with the TEI mirror and the app removed first: 8,441 tests in 1,019 suites in 810 s. 8,423 passed, none failed, 17 skipped (the semantic encoder's 15 and two render tools), and the one test with the six known issues.
       - **At `72227a86`** (tree `b28f8c9d`: `v2` at `433d1494`, L56's head `1e0ebcf6` and the bump), in one `Scripts/heavy.sh` call: the clean `build-for-testing`, from an empty build folder, in 176 s, with the two known residues alone (7 warning lines); the unit target on the iPhone 17 under iOS 27.0, with the TEI mirror and the app removed first: 8,489 tests in 1,033 suites in 753 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues; the `FRUSExplorerMac` build, Debug and unsigned, with the residues alone (5 lines); `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,349 tests in 620 suites over 39 runs, none failed, its 12 warning lines six package test files' own, each printed twice, as at R5.
-      - **The unit target on the iPhone 17 under iOS 27.2 on the same products**, with these records in the tree: RESULT27.
+      - **The unit target on the iPhone 17 under iOS 27.2 on the same products**, with the records' first form in the tree (`80cf69db`): 8,489 tests in 1,033 suites in 789 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues.
       - **Light checks:**
         - `Scripts/check_repo_hygiene.py`: its six checks passed.
         - The window-fronting audit on the merged tree, R5's figures: 83 `fronting(id:)` sites in 27 files, 2 `fronting(id:value:)`, 34 `openWindow(value:)` in 20 files and 0 bare `openWindow(id:)`; 20 scenes, each with a literal opener; 23 `openAuxWindow` sites in 10 files.
@@ -1123,6 +1123,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
     - **Offered, not taken:**
       - The headline's two counts (§5, L56's candidate).
       - Three findings, in §5 under *Found by L56*, settled by the owner's answers of 2026-11-28: the iPad window's 1969 filed as #2047, the simulator's abort kept as a memory note, and `documentKeysInDateRange`'s doc comment corrected in this row.
+    - **Merged** as #2051, `414df1b0`, a squash onto `433d1494` (L36, #2050) at 05:03:54 UTC on 2026-11-28, from its head `1e0ebcf6`, whose tree, `de3df890`, it keeps. It closed #2012. Recorded by R8, the next row.
 
 - **CR, the review of the Collections design** (decision 149). Planning only, so a cloud session can run it. It merges through the same queue, alongside Waves 1 and 2.
   - **First, the design's own text is brought to the owner's answers,** in a commit of its own, so that the review reads what will be built. What moves:

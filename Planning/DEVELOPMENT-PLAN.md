@@ -5389,7 +5389,8 @@ Row L56 of the plan of record from 2026-11-25 (decisions 184 to 186; #2012), on 
 Row R8 of the plan of record from 2026-11-25 (decision 151), started ahead on the owner's "standby" and held by the orchestrator until its word. The owner's answers are decisions 224 to 230.
 
 **#2051's merge**
-- MERGE2051
+- L56 merged as `414df1b0`, a squash onto `433d1494` (L36, #2050), at 05:03:54 UTC on 2026-11-28, from its head `1e0ebcf6`. Its tree, `de3df890`, is the head's. It closed #2012; auto-merge was off. This entry records it, and the plan's L56 entry has the line.
+- The merge of `v2` at `414df1b0` into R8 (`a5a6daa4`) conflicted in the three records files alone, since the squash brings L56's changes again beside R8's; R8's side holds both. So `git diff 72227a86 HEAD` is the records alone, and the checks at `72227a86` stand for the merged tree.
 
 **What changed**
 - **The bump** (`6443b740`): version 1.0 → 1.1 (decision 150) and build 1861 → 1862 (decision 224). `project.yml`'s three targets and the nine occurrences of each in `project.pbxproj` are edited by `CLAUDE.md`'s procedure, with no `xcodegen generate`, so the schemes are untouched. README's *Current build* line and its EditableContent mirror read 1862 (version 1.1), and an Amendment-Log bullet records it.
@@ -5410,7 +5411,7 @@ Row R8 of the plan of record from 2026-11-25 (decision 151), started ahead on th
   - the `FRUSExplorerMac` build, with the residues alone;
   - `swift build --target FRUSCoreKit`, with no warning;
   - `swift test`: 5,349 tests in 620 suites over 39 runs, none failed.
-- Then, on the same products: RESULT27.
+- Then, on the same products with the records' first form in the tree (`80cf69db`): the unit target under iOS 27.2, 8,489 tests in 1,033 suites in 789 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues.
 - `Scripts/check_repo_hygiene.py`: its six checks passed.
 - The window-fronting audit: 83 / 2 / 34 / 0, 20 scenes and 23 `openAuxWindow` sites, R5's figures.
 - The link check in report mode: 20 OK, 3 owner-asserted, 0 dead.
