@@ -55,6 +55,8 @@ import SourceNoteKit
 ///   1.3 — 2026-10-01: #1404 — the parity suite compares the class rows too, keyed as classes and
 ///         read apart from the lot and library rows 1.2 kept, against the class channel the
 ///         generator side now reads (`storedClassKeys`)
+///   1.4 — 2026-11-28 (L63): the packet's channel takes a class row, so the sparsity measure and
+///         Source Explorer's Add to Archives Visit count it, and only the Central Foreign Policy File is out
 @Suite("External citations (#784)")
 struct ExternalCitationTests {
 
@@ -595,7 +597,7 @@ struct ExternalCitationTests {
             #expect(row.collection == nil)
             #expect(!row.inherited)
             #expect(row.noteLabel == "1")
-            #expect(!row.isInPacketChannel, "the packet leaves out the central files")
+            #expect(row.isInPacketChannel, "the packet takes a footnote's central-file class (L63)")
         }
     }
 
@@ -692,12 +694,12 @@ struct ExternalCitationTests {
 
     /// The Phase 4 sparsity measure, driven over a real fixture index: five documents,
     /// where one carries a lot footnote (counts), one carries ONLY a decimal-class
-    /// footnote (must NOT count — the class anchor is outside the packet's channel, and
-    /// counting it would overstate the sparsity the captions caption), one carries no
+    /// footnote (counts since L63, which took the class into the packet's channel; until then
+    /// counting it would have overstated the sparsity the captions caption), one carries no
     /// footnotes at all, and, from index version 76 (decision 191), one cites only a
-    /// subject-numeric file and one only the Central Foreign Policy File, the two kinds of
-    /// row the channel leaves out beside the decimal class.
-    @Test("externalCitationSparsity counts lot/library documents over all indexed documents")
+    /// subject-numeric file (counts since L63, a class) and one only the Central Foreign Policy
+    /// File, the one kind of row the channel leaves out.
+    @Test("externalCitationSparsity counts lot, library and class documents over all indexed documents")
     func sparsityCountsChannelDocumentsOnly() async throws {
         try await withTempDir { dir in
             let xml = """
@@ -730,16 +732,18 @@ struct ExternalCitationTests {
             </body></text></TEI>
             """
             let pipeline = try await index(xml, in: dir)
+            let d2 = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d2")
             let d4 = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d4")
             let d5 = try await pipeline.externalCitations(volumeId: "frus1952-54v01", documentId: "d5")
-            #expect(d4.map(\.anchor) == ["centralFileClass"] && d5.map(\.anchor) == ["centralForeignPolicyFile"],
-                    "fixture guard: d4 and d5 must each hold one row the channel leaves out")
+            #expect(d2.map(\.anchor) == ["centralFileClass"] && d4.map(\.anchor) == ["centralFileClass"]
+                        && d5.map(\.anchor) == ["centralForeignPolicyFile"],
+                    "fixture guard: d2 and d4 must each hold one class row, and d5 the one row the channel leaves out")
             let measured = try await pipeline.externalCitationSparsity()
             #expect(measured.indexedDocuments == 5)
-            #expect(measured.documentsWithReferences == 1, """
-                Only d1's lot citation is in the packet's channel — d2's class citation is \
-                the anchor the channel excludes, and counting it would report a sparsity the \
-                captions do not describe.
+            #expect(measured.documentsWithReferences == 3, """
+                d1's lot citation and the classes d2 and d4 cite are in the packet's channel (L63); d5's \
+                Central Foreign Policy File citation is the anchor it excludes, and counting it would \
+                report a sparsity the captions do not describe.
                 """)
         }
     }
@@ -1774,8 +1778,9 @@ struct UnprintedMaterialRowTests {
     }
 
     /// What both twins' "Add unprinted references (N)" counts and offers (decision 191): the rows
-    /// the packet takes. Counting the whole list offered the option for a document whose rows were
-    /// all central files, and adding it put nothing in the packet. The kit's names, so the package runs it too.
+    /// the packet takes, a central-file class among them since L63. Counting the whole list offered the
+    /// option for a document whose rows the packet left out, and adding it put nothing in the packet.
+    /// The kit's names, so the package runs it too.
     @Test("The Add to Archives Visit menu counts the rows the packet takes")
     func packetPointersAreTheChannelsRows() {
         func pointer(_ anchor: String, _ ordinal: Int) -> SourceExplorerResolution.UnprintedPointer {
@@ -1791,8 +1796,12 @@ struct UnprintedMaterialRowTests {
         resolution.unprintedPointers = [pointer("centralFileClass", 0), pointer("lotFile", 1),
                                         pointer("centralForeignPolicyFile", 2),
                                         pointer("presidentialLibrary", 3)]
-        #expect(resolution.packetPointers.map(\.citation.anchor) == ["lotFile", "presidentialLibrary"])
+        #expect(resolution.packetPointers.map(\.citation.anchor)
+                == ["centralFileClass", "lotFile", "presidentialLibrary"])
         resolution.unprintedPointers = [pointer("centralFileClass", 0), pointer("centralForeignPolicyFile", 1)]
+        #expect(resolution.packetPointers.map(\.citation.anchor) == ["centralFileClass"],
+                "a document whose footnotes cite a class has a reference to add (L63)")
+        resolution.unprintedPointers = [pointer("centralForeignPolicyFile", 0)]
         #expect(resolution.packetPointers.isEmpty, "the menu would offer references that add nothing")
     }
 

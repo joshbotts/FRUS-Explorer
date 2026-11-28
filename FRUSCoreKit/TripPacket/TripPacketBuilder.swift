@@ -100,6 +100,9 @@ import SourceNoteKit
 ///          File's rows as it leaves out the class anchor's, so the packet lists what it listed before; it
 ///          reads the rule from `ExternalCitation.isInPacketChannel`, as the plan editor and the sparsity
 ///          query do
+///   1.17 — 2026-11-28 (L63, decision 235): the pointed-at channel takes a footnote's central-file class,
+///          keyed `class|` as a source note's is (`referenceKey(for:)`), so a class cited both ways is one
+///          target; both channels label a class by `TripPacketModel.Target.classLabel(_:)`
 @MainActor
 public enum TripPacketBuilder {
 
@@ -283,13 +286,14 @@ public enum TripPacketBuilder {
         let unresolvedLots = groups.filter { $0.category == .lotFile && $0.resolution == nil }.count
 
         // ── The pointed-at channel (§2): footnotes citing archival units FRUS did not print
-        // from. Lot and library citations only — the class anchor is deferred by design
-        // (#784's own scope), and admitting it would flood the packet with the corpus's
-        // commonest footnote idiom. The Central Foreign Policy File's anchor (decision 191,
-        // index version 76) is left out for the same reason: its rows name no collection, so
-        // every one of them would key to the one "Department of State" target. Keys share the
-        // drawn-from vocabulary above, so a unit cited both ways becomes ONE target with both
-        // claims itemized inside it.
+        // from. Lot, library and central-file class citations. The class was left out until
+        // L63 (#784's scope, against a flood of the corpus's commonest footnote idiom). Keyed at
+        // the class grain it is no flood: over a full index at version 76 a visit of a whole volume
+        // gains a median of 2 targets (4,859 on 44,155 over the 553 volumes), and the owner took it
+        // in (decision 235). The Central Foreign Policy File's anchor (decision 191,
+        // index version 76) is still left out: its rows name no collection, so every one of them
+        // would key to the one "Department of State" target. Keys share the drawn-from vocabulary
+        // above, so a unit cited both ways becomes ONE target with both claims itemized inside it.
         var refGrouped: [String: (form: TripPacketModel.Target.Form, label: String,
                                   repository: String?, lotAsPrinted: String?,
                                   seedings: [TripPacketModel.RefSeeding])] = [:]
@@ -495,11 +499,9 @@ public enum TripPacketBuilder {
                     parsed: parsed ?? SourceNoteParser().parse(record.rawText),
                     note: record.rawText) {
                 // By the FORM of the designator, not the era field: a letter-led leaf is
-                // subject-numeric whatever year the document carries.
-                let label = cls.first?.isLetter == true
-                    ? "Subject-Numeric File \(cls)"
-                    : "Central Decimal File \(cls)"
-                return ("class|\(cls)", label, nil)
+                // subject-numeric whatever year the document carries. A footnote's class is
+                // labelled by the same rule (`referenceKey(for:)`).
+                return ("class|\(cls)", TripPacketModel.Target.classLabel(cls), nil)
             }
             return ("r|\(record.rawText)",
                     CollectionGeneratedBlocks.tripPacketLabel(for: record), nil)
@@ -524,9 +526,24 @@ public enum TripPacketBuilder {
 
     /// The same key vocabulary for a footnote citation — what makes a unit cited both ways
     /// land on ONE target.
+    ///
+    /// **A central-file class keys as a source note's does** (L63): `class|` and the class the
+    /// row stores, `SourceNoteParser.decimalClassKey`'s spelling, which `document_sources.decimal_class`
+    /// and the drawn-from key share, under the label a source note's class carries. So a class a
+    /// seed's own source note names and its footnotes cite is one target with both claims, and one
+    /// only footnotes cite is a target of its own. Measured over a full index at version 76: of the
+    /// 6,094 classes footnotes cite, 3,524 are classes a source note names somewhere in the corpus,
+    /// and 39 are another spelling of one, a case or a hyphen apart (`740.00119EW`, `740.00119-EW`),
+    /// which stay two targets, as the 247 classes the source notes themselves spell two ways do. The
+    /// class is tested first, as the graph draws a class node for any row that names one
+    /// (`CrossReferenceGraphDisplay.unitNodes(rowsByDocument:authority:)`), so every class the graph
+    /// draws for a seed is a target of the visit.
     public static func referenceKey(
         for citation: ExternalCitation
     ) -> (key: String, form: TripPacketModel.Target.Form, label: String, lotAsPrinted: String?) {
+        if let cls = citation.decimalClass, !cls.isEmpty {
+            return ("class|\(cls)", .decimalClass, TripPacketModel.Target.classLabel(cls), nil)
+        }
         if citation.anchor == "lotFile", let norm = citation.lotFileNorm, !norm.isEmpty {
             let label = citation.lotFile.map { "Lot \($0)" } ?? norm
             return ("lot|\(norm)", .lotFile, label, citation.lotFile)
