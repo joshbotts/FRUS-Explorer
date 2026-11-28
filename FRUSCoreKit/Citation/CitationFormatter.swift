@@ -766,6 +766,8 @@ public enum FRUSNoteHead {
 ///
 /// Version history:
 ///   1.0 — L43 (decision 161): initial implementation
+///   1.1 — L49: the series names, the number's and the years' forms, `match` and `arabicList` internal, for the
+///          short form (``FRUSShortCitation``)
 public struct FRUSVolumeTitle: Sendable, Equatable {
 
     /// The series with its years, the note's first italic title: "Foreign Relations of the United States,
@@ -875,8 +877,11 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
 
     // MARK: The forms read
 
+    // The series names, the number's form, the years' form, `match` and the numerals are the short form's too
+    // (``FRUSShortCitation``), which reads a title's series and number as the note does.
+
     /// The series names a title opens with, longest first, so that "…, Diplomatic Papers" is read whole.
-    private static let seriesNames = [
+    static let seriesNames = [
         "Papers Relating to the Foreign Relations of the United States",
         "Foreign Relations of the United States, Diplomatic Papers",
         "Foreign Relations of the United States",
@@ -884,7 +889,7 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
     ]
 
     /// ", Volume XXI", ", Volumes VII, VIII, IX", ", Volume E–1", before a comma, a colon or the end.
-    private static let volumeNumberPattern = try? NSRegularExpression(
+    static let volumeNumberPattern = try? NSRegularExpression(
         pattern: #",?\s*(Volumes?)\s+((?:[IVXLC]+|[A-Z]–\d+)(?:(?:, ?|/)[IVXLC]+)*)(?=[,:]|$)"#)
 
     /// ", Part I" ending a title with no volume number.
@@ -897,10 +902,10 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
     private static let innerPart = try? NSRegularExpression(pattern: #"(?:^|,\s*)Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
 
     /// ", 1969–1976" or ", 1946" right after the series name.
-    private static let leadingYears = try? NSRegularExpression(pattern: #"^,\s*(\d{4}(?:–\d{4})?)(?=,|$)"#)
+    static let leadingYears = try? NSRegularExpression(pattern: #"^,\s*(\d{4}(?:–\d{4})?)(?=,|$)"#)
 
     /// The first match of `pattern` in `text`: its whole range and its first group's.
-    private static func match(_ pattern: NSRegularExpression?, in text: String)
+    static func match(_ pattern: NSRegularExpression?, in text: String)
         -> (whole: Range<String.Index>, group: Range<String.Index>)? {
         guard let pattern, let found = pattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let whole = Range(found.range, in: text), let group = Range(found.range(at: 1), in: text) else { return nil }
@@ -908,7 +913,7 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
     }
 
     /// Each Roman numeral of a list ("VII, VIII, IX", "X/XI/XII") in arabic figures, separators kept.
-    private static func arabicList(_ list: String) -> String {
+    static func arabicList(_ list: String) -> String {
         var out = ""
         var token = ""
         for character in list {
@@ -932,6 +937,106 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
             if index + 1 < digits.count, value < digits[index + 1] { total -= value } else { total += value }
         }
         return String(total)
+    }
+}
+
+// MARK: - FRUSShortCitation
+
+/// The short form of a citation (L49; the Collections design's candidate 11, which the owner took in decision 164):
+/// "*FRUS*, 1946, vol. VI, doc. 475", in the collection's style, "vol. VI" in History at State and "vol. 6" in
+/// Chicago and Turabian, as their notes write a volume's number.
+///
+/// The design's form: the years the title gives after the series' name, else the volume's subseries, and the
+/// volume's number.
+///
+/// Version history:
+///   1.0 — L49: initial implementation
+public struct FRUSShortCitation: Sendable, Equatable {
+
+    /// A number as the volume prints it and in arabic figures: "VI" and "6"; "E–15" and "E–15".
+    public struct Numeral: Sendable, Equatable {
+        /// As the title prints it.
+        public let printed: String
+        /// In arabic figures, as a Chicago or Turabian note gives it.
+        public let arabic: String
+    }
+
+    /// What names the volume before its number: "1946".
+    public let names: [String]
+    /// The volume's number: "VI", "E–15", "VII, VIII, IX". `nil` where the title names none.
+    public let volumeNumber: Numeral?
+    /// Whether the title names more than one volume ("Volumes VII, VIII, IX"), which the form gives as "vols.".
+    public let isSeveralVolumes: Bool
+
+    /// The short form of `entry`.
+    ///
+    /// - Parameter entry: The volume, as the manifest describes it.
+    public init(_ entry: VolumeManifestEntry) {
+        self.init(volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title)
+    }
+
+    /// The short form of the volume `volumeId`, read from its title.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume's id, `frus1946v06`.
+    ///   - subseries: The manifest's subseries, `1946`, which gives the years where the title gives none.
+    ///   - title: The volume's complete title.
+    public init(volumeId: String, subseries: String, title: String) {
+        let text = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let series = FRUSVolumeTitle.seriesNames.first { text.hasPrefix($0) }
+        let rest = series.map { String(text.dropFirst($0.count)) } ?? ", " + text
+        let years = FRUSVolumeTitle.match(FRUSVolumeTitle.leadingYears, in: rest).map { String(rest[$0.group]) }
+        names = [years ?? Self.years(fromSubseries: subseries)]
+        if let pattern = FRUSVolumeTitle.volumeNumberPattern,
+           let found = pattern.firstMatch(in: rest, range: NSRange(rest.startIndex..., in: rest)),
+           let word = Range(found.range(at: 1), in: rest), let digits = Range(found.range(at: 2), in: rest) {
+            let printed = String(rest[digits])
+            volumeNumber = Numeral(printed: printed, arabic: FRUSVolumeTitle.arabicList(printed))
+            isSeveralVolumes = rest[word] == "Volumes"
+        } else {
+            volumeNumber = nil
+            isSeveralVolumes = false
+        }
+    }
+
+    /// The volume in `style`: "_FRUS_, 1946, vol. VI" in History at State, "*FRUS*, 1946, vol. 6" in Chicago and
+    /// Turabian, each style's italics as its full citation marks them.
+    ///
+    /// - Parameter style: The collection's citation style.
+    public func volume(in style: CitationStyle) -> String {
+        let arabic: Bool
+        let series: String
+        switch style {
+        case .historyAtState: (arabic, series) = (false, "_FRUS_")
+        case .chicago, .turabian: (arabic, series) = (true, "*FRUS*")
+        }
+        var pieces = [series] + names
+        if let volumeNumber {
+            pieces.append((isSeveralVolumes ? "vols. " : "vol. ") + (arabic ? volumeNumber.arabic : volumeNumber.printed))
+        }
+        return pieces.joined(separator: ", ")
+    }
+
+    /// A document of the volume in `style`: "_FRUS_, 1946, vol. VI, doc. 475.", ending in one period as every full
+    /// citation does. A document the volume does not number is named by its volume alone, as its full citation is.
+    ///
+    /// - Parameters:
+    ///   - documentNumber: The number to cite (``CitableDocumentNumber/resolve(printed:documentId:)``), or `nil`.
+    ///   - style: The collection's citation style.
+    public func citation(documentNumber: String?, in style: CitationStyle) -> String {
+        var text = volume(in: style)
+        if let documentNumber { text += ", doc. \(documentNumber)" }
+        return text + "."
+    }
+
+    /// A subseries' years as a title writes them: "1861"; "1914-20" as "1914–1920".
+    static func years(fromSubseries subseries: String) -> String {
+        let pieces = subseries.split(separator: "-")
+        guard pieces.count == 2, pieces[0].count == 4, pieces[1].count == 2,
+              let start = Int(pieces[0]), let end = Int(pieces[1]) else { return subseries }
+        var full = start / 100 * 100 + end
+        if full < start { full += 100 }
+        return "\(start)–\(full)"
     }
 }
 

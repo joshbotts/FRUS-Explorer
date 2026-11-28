@@ -476,6 +476,43 @@ struct FRUSVolumeTitleTests {
     }
 }
 
+// MARK: - FRUSShortCitationTests
+
+/// The short form (L49): *FRUS*, the years and the volume's number, then the document's, written in the collection's
+/// style, and naming one volume for each of the manifest's 553.
+struct FRUSShortCitationTests {
+
+    /// The manifest's entry for `volumeId`.
+    private static func entry(_ volumeId: String, in entries: [VolumeManifestEntry]) throws -> VolumeManifestEntry {
+        try #require(entries.first { $0.volumeId == volumeId }, "\(volumeId) is not in the manifest")
+    }
+
+    /// The owner's example, the Long Telegram: "vol. VI" in History at State, "vol. 6" in Chicago and Turabian, each
+    /// style's italics as its full citation marks them.
+    @Test("frus1946v06 d475: FRUS, 1946, vol. VI, doc. 475, in each style")
+    func ownersExample() throws {
+        let short = FRUSShortCitation(try Self.entry("frus1946v06", in: testManifestEntries()))
+        #expect(short.citation(documentNumber: "475", in: .historyAtState) == "_FRUS_, 1946, vol. VI, doc. 475.")
+        #expect(short.citation(documentNumber: "475", in: .chicago) == "*FRUS*, 1946, vol. 6, doc. 475.")
+        #expect(short.citation(documentNumber: "475", in: .turabian) == "*FRUS*, 1946, vol. 6, doc. 475.")
+    }
+
+    /// The rule's test (the plan's brief for L49): over every volume the manifest carries, in each style, no two
+    /// volumes share a short form. A failure names each form two volumes share, with the volumes.
+    @Test("Every volume of the manifest has a short form of its own, in each style", arguments: CitationStyle.allCases)
+    func namesOneVolumeEach(style: CitationStyle) throws {
+        let entries = try testManifestEntries()
+        let forms = Dictionary(grouping: entries) { FRUSShortCitation($0).volume(in: style) }
+            .mapValues { $0.map { $0.volumeId } }
+        let shared = forms.filter { $0.value.count > 1 }.sorted { $0.key < $1.key }
+        #expect(entries.count == 553)
+        #expect(shared.isEmpty, """
+            \(shared.reduce(0) { $0 + $1.value.count }) volumes in \(shared.count) groups share a form:
+            \(shared.map { "\($0.key): \($0.value.joined(separator: ", "))" }.joined(separator: "\n"))
+            """)
+    }
+}
+
 // MARK: - FRUSNoteHeadTests
 
 /// The note's opening (L43): the document by its correspondents and type, then its place and date, read from what
