@@ -230,6 +230,37 @@ struct CollectionExportSentenceTests {
             .hasPrefix("1 document has no stored summary.") == true)
     }
 
+    /// Where a document has two summaries under the prompt, the tally reads the one the export prints: the newest
+    /// (`SummaryRecency`, the data source's rule since L34), which prints nothing when its text is empty. The older is
+    /// saved first, so it is the first the store returns. Read from the first, the tally said a summary prints where the
+    /// export has to write one, and the reverse.
+    @Test("Two summaries under the prompt: the tally reads the newest, as the export prints it")
+    func tallyReadsTheNewestSummary() async throws {
+        for newestIsEmpty in [true, false] {
+            let context = ModelContext(try ModelContainer.makeTestContainer())
+            let (collection, entries) = try CollectionSummaryExportTests.summariesCollection(
+                in: context, documents: ["d1"], stored: [])
+            let promptId = try #require(collection.summaryPromptId)
+            let volume = CollectionSummaryExportTests.volume
+            let older = GeneratedSummary(documentId: "d1", volumeId: volume, promptId: promptId,
+                                         responseText: newestIsEmpty ? "The older summary." : "")
+            older.createdAt = Date(timeIntervalSince1970: 1_000)
+            context.insert(older)
+            try context.save()
+            let newer = GeneratedSummary(documentId: "d1", volumeId: volume, promptId: promptId,
+                                         responseText: newestIsEmpty ? "" : "The newer summary.")
+            newer.createdAt = Date(timeIntervalSince1970: 2_000)
+            context.insert(newer)
+            try context.save()
+
+            let tally = try await CollectionContentResolver(appState: AppState(), modelContext: context)
+                .exportTally(collection: collection, entries: entries, allNotes: [])
+            #expect(tally.asSummaries == 1)
+            #expect(tally.summariesToWrite == (newestIsEmpty ? 1 : 0),
+                    "the newest summary is \(newestIsEmpty ? "empty" : "written"): \(tally)")
+        }
+    }
+
     /// The sentence's forms, from the tally, in each kind of format.
     @Test("The sentence says how the documents print, and what prints with them")
     func sentenceForms() {
