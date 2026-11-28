@@ -5468,6 +5468,12 @@ Row L43 of the plan of record from 2026-11-25 (the Collections design's lane 3 a
 - **The follow-up, 22:17 to 22:44:** `swift test` of the citation suites, 214 tests in 20 suites passed, the round trip 551 of 553 in all ten forms; build-for-testing; the unit target's citation suites with the EditableContent gate, 199 tests in 11 suites passed; `CollectionFactsAccessibilityTests` 2 of 2 on the iPhone 17 (526 s and 115 s) and on the iPad Pro 13-inch (531 s and 121 s).
 - `Scripts/check_repo_hygiene.py`: its six checks passed.
 
+**The landing checks,** on the merged tree (`c9d17ebc`, tree `222dadb4`, with `v2` at `414df1b0` and R8's head `a8936c0c` merged), in one `Scripts/heavy.sh` job from 05:27 UTC on 2026-11-28:
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning (174 s).
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,514 tests in 1,038 suites passed with the six known issues, 17 skipped and none failed, in 772 s; the real-TEI suites ran and passed, and the round trip read 551 of 553 in all ten forms.
+- `swift build --target FRUSCoreKit` (8 s), and **the full `swift test`**: 39 test runs, one per test target, 5,370 tests, none failed.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the changed files (40 s).
+
 **Offered, not taken** (decision 183; §5, *Found by L43*)
 - The *Title override* field shows and speaks the exporters' `_…_` marks, and has no name of its own under iOS 27.
 - Turabian's place, "Washington, D.C.", where the ninth edition's guide writes "Washington, DC".
