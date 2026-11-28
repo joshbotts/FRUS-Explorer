@@ -3507,11 +3507,12 @@ struct CollectionTests {
         #expect(collectionEntryHeadnoteIsResolvedOn(entry(in: collOff, includeHeadnote: nil)) == false)
     }
 
-    /// One template's recipe as decision 139's table states it (the plan of record from 2026-11-15, row
-    /// L25), the fields in the order `applyFields(to:)` writes them and the apparatus in the order the
-    /// template appends it.
+    /// One template as decision 139's table states it (the plan of record from 2026-11-15, row L25), divided by L44 into
+    /// its two steps (the Collections design's §4.3): the seven settings step 1 writes, decision 158's opening among them,
+    /// and the apparatus suggested for it in step 2, each set with the Note on the Text.
     private struct ExpectedTemplate {
         let preset: CollectionPreset
+        let opening: CollectionDocumentPlan.Opening
         let bodyDepth: CollectionBodyDepth
         let footnotes: Bool
         let sourceNote: Bool
@@ -3520,89 +3521,95 @@ struct CollectionTests {
         let highlights: Bool
         let wordCloud: Bool
         let toc: CollectionToCStyle
-        let apparatus: [CollectionGeneratedBlockType]
+        let apparatus: Set<CollectionGeneratedBlockType>
     }
 
-    /// Decision 139's six templates, in the grid's order.
+    /// Decision 139's six templates, in the grid's order, with decision 158's openings: the volume's heading leads in
+    /// four, the citation in the two *Citations* templates.
     private static let expectedTemplates: [ExpectedTemplate] = [
-        ExpectedTemplate(preset: .fullTextAsPrinted, bodyDepth: .full, footnotes: true, sourceNote: true,
-                         notes: false, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
-                         apparatus: [.bibliography, .archivalSources]),
-        ExpectedTemplate(preset: .fullTextWithAnnotations, bodyDepth: .full, footnotes: false, sourceNote: true,
-                         notes: true, headnotes: true, highlights: true, wordCloud: false, toc: .headerAndDateline,
-                         apparatus: [.chronology, .personsIndex]),
-        ExpectedTemplate(preset: .summariesWithOverview, bodyDepth: .summaryOnly, footnotes: false, sourceNote: false,
-                         notes: true, headnotes: false, highlights: false, wordCloud: true, toc: .headerAndDateline,
-                         apparatus: [.chronology, .thematicIndex]),
-        ExpectedTemplate(preset: .citationsWithNotes, bodyDepth: .index, footnotes: false, sourceNote: false,
-                         notes: true, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
-                         apparatus: [.bibliography, .thematicIndex]),
-        ExpectedTemplate(preset: .citationsWithArchivalSources, bodyDepth: .index, footnotes: false, sourceNote: true,
-                         notes: false, headnotes: false, highlights: false, wordCloud: false, toc: .citation,
-                         apparatus: [.archivalSources, .personsIndex]),
-        ExpectedTemplate(preset: .everythingIncluded, bodyDepth: .full, footnotes: true, sourceNote: true,
-                         notes: true, headnotes: true, highlights: true, wordCloud: true, toc: .citation,
-                         apparatus: [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex])
+        ExpectedTemplate(preset: .fullTextAsPrinted, opening: .volumeHeading, bodyDepth: .full, footnotes: true,
+                         sourceNote: true, notes: false, headnotes: false, highlights: false, wordCloud: false,
+                         toc: .citation, apparatus: [.bibliography, .archivalSources, .noteOnTheText]),
+        ExpectedTemplate(preset: .fullTextWithAnnotations, opening: .volumeHeading, bodyDepth: .full, footnotes: false,
+                         sourceNote: true, notes: true, headnotes: true, highlights: true, wordCloud: false,
+                         toc: .headerAndDateline, apparatus: [.chronology, .personsIndex, .noteOnTheText]),
+        ExpectedTemplate(preset: .summaries, opening: .volumeHeading, bodyDepth: .summaryOnly, footnotes: false,
+                         sourceNote: false, notes: true, headnotes: false, highlights: false, wordCloud: true,
+                         toc: .headerAndDateline, apparatus: [.chronology, .thematicIndex, .noteOnTheText]),
+        ExpectedTemplate(preset: .citationsWithNotes, opening: .citation, bodyDepth: .index, footnotes: false,
+                         sourceNote: false, notes: true, headnotes: false, highlights: false, wordCloud: false,
+                         toc: .citation, apparatus: [.bibliography, .thematicIndex, .noteOnTheText]),
+        ExpectedTemplate(preset: .citationsWithSourceNotes, opening: .citation, bodyDepth: .index, footnotes: false,
+                         sourceNote: true, notes: false, headnotes: false, highlights: false, wordCloud: false,
+                         toc: .citation, apparatus: [.archivalSources, .personsIndex, .noteOnTheText]),
+        ExpectedTemplate(preset: .fullTextWithEverything, opening: .volumeHeading, bodyDepth: .full, footnotes: true,
+                         sourceNote: true, notes: true, headnotes: true, highlights: true, wordCloud: true,
+                         toc: .citation,
+                         apparatus: [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex,
+                                     .noteOnTheText])
     ]
 
-    @Test("Preset composition: each of the six templates writes decision 139's fields and appends its apparatus; apparatusBlocks(notAlreadyIn:) is append-only")
+    @Test("Step 1: each of the six templates writes decision 139's seven settings and nothing of step 2, and its card is in force on the collection it wrote")
     @MainActor
     func presetApply() throws {
         let container = try ModelContainer.makeTestContainer()
         let context = ModelContext(container)
         let coll = Collection(name: "Preset")
         context.insert(coll)
+        // Step 2's two settings, set to what no template's suggestion holds together, so a template that wrote either
+        // would show.
+        coll.tocStyle = CollectionToCStyle.headerAndDateline.rawValue
+        coll.includeWordCloud = true
 
         // The grid's order is the table's (L25).
         #expect(CollectionPreset.allCases == Self.expectedTemplates.map(\.preset))
 
-        // Each template overwrites every field, whatever the one before it wrote: the same collection
-        // takes all six in turn, so a field a template forgot to write would keep the last one's value.
+        // Each template overwrites all seven, whatever the one before it wrote: the same collection takes all six in
+        // turn, so a setting a template forgot to write would keep the last one's value.
         for expected in Self.expectedTemplates {
             let preset = expected.preset
-            preset.applyFields(to: coll)
+            coll.applyDocuments(preset.documents)
+            #expect(coll.opening == expected.opening.rawValue, "\(preset) opening")
             #expect(coll.defaultBodyDepth == expected.bodyDepth.rawValue, "\(preset) body depth")
             #expect(coll.effectiveIncludeFootnotes == expected.footnotes, "\(preset) footnotes")
             #expect(coll.effectiveIncludeSourceNote == expected.sourceNote, "\(preset) source note")
             #expect(coll.includeNotes == expected.notes, "\(preset) notes")
             #expect(coll.defaultIncludeHeadnote == expected.headnotes, "\(preset) headnotes")
             #expect(coll.applyHighlights == expected.highlights, "\(preset) highlights")
-            #expect(coll.includeWordCloud == expected.wordCloud, "\(preset) word cloud")
-            #expect(coll.tocStyle == expected.toc.rawValue, "\(preset) contents list")
-            #expect(preset.apparatusBlocks == expected.apparatus, "\(preset) apparatus")
-            #expect(preset.matches(coll), "\(preset) is not marked active on the collection it just composed")
+            // Choosing in step 1 does not change step 2 (decision 157).
+            #expect(coll.tocStyle == CollectionToCStyle.headerAndDateline.rawValue, "\(preset) wrote the contents list")
+            #expect(coll.includeWordCloud, "\(preset) wrote the word cloud")
+            #expect(preset.suggestedApparatus == CollectionApparatusSettings(
+                contentsStyle: expected.toc, wordCloud: expected.wordCloud, blocks: expected.apparatus),
+                    "\(preset) suggested apparatus")
+            #expect(preset.matches(coll), "\(preset) is not marked in force on the collection it just composed")
         }
 
-        // A summary-only template leaves highlights off: they draw only over a full body, so the
+        // A summary-only or citation-only template leaves highlights off: they draw only over a full body, so the
         // four's Briefing packet turned on a switch that did nothing (decision 139).
-        for preset in CollectionPreset.allCases where preset.recipe.bodyDepth != .full {
-            #expect(preset.recipe.highlights == false, "\(preset) turns on highlights its body cannot draw")
+        for preset in CollectionPreset.allCases where preset.documents.bodyDepth != .full {
+            #expect(preset.documents.highlights == false, "\(preset) turns on highlights its body cannot draw")
         }
 
-        // Every card and chip says something of its own; the tags may repeat ("full text", "citations").
+        // Every card says something of its own.
         let presets = CollectionPreset.allCases
         #expect(Set(presets.map(\.displayName)).count == presets.count)
         #expect(Set(presets.map(\.subtitle)).count == presets.count)
-        #expect(Set(presets.map(\.shortName)).count == presets.count)
-        #expect(presets.allSatisfy { !$0.shortTag.isEmpty })
+        // Decision 167's three names.
+        #expect(CollectionPreset.summaries.displayName == "Summaries")
+        #expect(CollectionPreset.citationsWithSourceNotes.displayName == "Citations with source notes")
+        #expect(CollectionPreset.fullTextWithEverything.displayName == "Full text with everything")
         #if canImport(UIKit)
         for preset in presets {
             #expect(UIImage(systemName: preset.systemImage) != nil, "\(preset)'s symbol \(preset.systemImage) does not exist")
         }
         #endif
-
-        // Append-only, non-destructive: apparatusBlocks(notAlreadyIn:) drops blocks already present.
-        #expect(CollectionPreset.fullTextWithAnnotations.apparatusBlocks(notAlreadyIn: []) == [.chronology, .personsIndex])
-        #expect(CollectionPreset.fullTextWithAnnotations.apparatusBlocks(
-            notAlreadyIn: [CollectionGeneratedBlockType.chronology.rawValue]) == [.personsIndex])
-        let allPresent = Set(CollectionGeneratedBlockType.allCases.map(\.rawValue))
-        #expect(CollectionPreset.everythingIncluded.apparatusBlocks(notAlreadyIn: allPresent).isEmpty)
     }
 
-    /// `matches(_:)` compares a template's fields and not its apparatus, so two templates whose fields
-    /// agree would both be drawn active on every collection either composes. Written over `allCases`
-    /// (no case named) so that it compiles against any set of templates.
-    @Test("No two templates write the same fields: the collection a template composes matches that template alone")
+    /// The card in force is a comparison of the seven, so two templates whose seven agree would both be drawn in force
+    /// on every collection either composes. Written over `allCases` (no case named) so that it compiles against any set
+    /// of templates.
+    @Test("No two templates write the same seven settings: the collection a template composes matches that template alone")
     @MainActor
     func presetsMatchOnlyThemselves() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -3610,33 +3617,37 @@ struct CollectionTests {
         for preset in CollectionPreset.allCases {
             let coll = Collection(name: "Composed by \(preset.rawValue)")
             context.insert(coll)
-            preset.applyFields(to: coll)
+            coll.applyDocuments(preset.documents)
             let active = CollectionPreset.allCases.filter { $0.matches(coll) }
             #expect(active == [preset], "\(preset)'s composition is matched by \(active.map(\.rawValue))")
         }
     }
 
-    /// Decision 139: each of the five apparatus blocks comes with at least two templates besides the
-    /// one that includes everything, so none is reached only with every option on. Written over the
-    /// templates' `allCases`, the template that includes everything found as the one carrying every block, so
-    /// that it compiles against any set of templates (the four before L25 fail it: their Bibliography
-    /// and Thematic Index came only with Scholarly edition).
+    /// Decision 139: each of the five apparatus blocks comes with at least two templates besides the one that includes
+    /// everything, so none is reached only with every option on. Over the suggested sets since L44, which carry the
+    /// blocks decision 139's templates added, and written over `allCases`, the template that includes everything found
+    /// as the one suggesting every block, so that it compiles against any set of templates (the four before L25 fail it:
+    /// their Bibliography and Thematic Index came only with Scholarly edition).
     ///
     /// **Over decision 139's five blocks, named, and not the block types' `allCases`** (L58; the third review's J36):
-    /// the Note on the Text is a block type and no template of decision 139's carries it, so over `allCases` this
-    /// turned red the moment the Note was added, and so will L52 to L54's blocks. Which suggested set carries the Note
-    /// is L44's (the design's §4.3); `generatedBlockTypeVocabulary` pins every type that exists.
-    @Test("Each apparatus block comes with at least two templates besides the one that includes everything")
+    /// the Note on the Text is a block type, and every suggested set has it (the design's §4.3, L44), so it would pass
+    /// this for nothing; L52 to L54's blocks are in no set (decision 173). `generatedBlockTypeVocabulary` pins every type
+    /// that exists.
+    @Test("Each apparatus block is suggested for at least two templates besides the one that includes everything")
     func everyApparatusBlockInTwoTemplates() {
         let everyBlock: Set<CollectionGeneratedBlockType> =
             [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex]
-        let includesEverything = CollectionPreset.allCases.filter { Set($0.apparatusBlocks) == everyBlock }
-        #expect(includesEverything.count == 1, "templates that carry every block: \(includesEverything.map(\.rawValue))")
+        let includesEverything = CollectionPreset.allCases.filter {
+            $0.suggestedApparatus.blocks.isSuperset(of: everyBlock)
+        }
+        #expect(includesEverything.count == 1, "templates that suggest every block: \(includesEverything.map(\.rawValue))")
         let others = CollectionPreset.allCases.filter { !includesEverything.contains($0) }
         for block in everyBlock.sorted(by: { $0.rawValue < $1.rawValue }) {
-            let carriers = others.filter { $0.apparatusBlocks.contains(block) }
+            let carriers = others.filter { $0.suggestedApparatus.blocks.contains(block) }
             #expect(carriers.count >= 2, "\(block.rawValue) comes with \(carriers.map(\.rawValue)) besides everything")
         }
+        // The design's §4.3: each suggested set also has the Note on the Text.
+        #expect(CollectionPreset.allCases.allSatisfy { $0.suggestedApparatus.blocks.contains(.noteOnTheText) })
     }
 
     @Test("Composition summary sentence: leads with the body-depth phrasing and lists the enabled content")
@@ -7158,8 +7169,9 @@ struct CollectionEditorNamingTests {
 
     // MARK: - Edits made in a heading's Section defaults (#1413)
 
-    /// A heading's Section defaults sheet (`CollectionAttributesRows`) writes the collection's description, subtitle
-    /// and author line straight onto the model, untrimmed, as the reader types — and its colophon toggle beside them.
+    /// Another writer — another iPad window or iCloud, and until L44 a heading's Section defaults sheet
+    /// (`CollectionAttributesRows`) — writes the collection's description, subtitle and author line straight onto the
+    /// model, untrimmed — and its colophon toggle beside them.
     /// The editor follows the toggle; before #1413 following it saved EVERY field the editor held, from the copies it
     /// took when it opened, so the three were put back as they were. Following must write nothing — the marker project
     /// stays out of `projectIds` too. The second rename is the positive signal that the pass after the follow, the one
@@ -8318,199 +8330,241 @@ private final class FollowHost {
 }
 #endif
 
-#if os(iOS)
-// MARK: - SectionDefaultsSaveTests (MACCOL)
+// MARK: - SectionDefaultsSaveTests (MACCOL), retired by L44
 
-/// A heading's Section defaults sheet SAVES each edit to the collection's description, subtitle, author line and three
-/// export toggles as it is made, so closing the app at once loses nothing typed there.
-///
-/// Before this, `CollectionAttributesRows` wrote the model and left the save to the app's autosave: the collection
-/// editor saves each of its own edits (#1415), and the one incidental save Section defaults used to get — the editor's
-/// old `saveLive()`, run from its flag follow — went with #1413, so a foreground kill could lose an edit made there.
-/// That was recorded as an open item at #1413's review and folded into the 2026-09-28 plan of record (lane MACCOL).
-///
-/// Each test hosts the REAL rows in a `Form`, in a window of the test host's scene, over an in-memory container whose
-/// autosave is OFF — so nothing but an explicit save can clear `hasChanges` — and drives each control through UIKit:
-/// `insertText` for a field, the switch's own value-changed action for a toggle. Before each edit the context is saved,
-/// so each assertion is about that edit alone. The value landing on the collection is the positive signal that the edit
-/// reached the model; `hasChanges` being false after it is the save.
+// `SectionDefaultsSaveTests` hosted `CollectionAttributesRows`, a heading's Section defaults sheet's copy of the
+// collection's description, subtitle, author line and three export switches, and held each to a save as it was made
+// (MACCOL). L44 took those rows out of the section's sheet with the view (the design's §5.2: a section's sheet holds the
+// section's seven and nothing of the collection's), so nothing is left for it to host. The three switches are step 2's
+// now, bound through the editor's `committing(`, which `everyEditorControlCommitsThroughItsBinding` pins and
+// `CollectionEditorTitleTests`' step 2 tests drive; the fields are Collection settings' own, which
+// `CollectionEditorNamingTests` holds to a save with each edit.
+
+// MARK: - CollectionApparatusRowsTests (L44)
+
+/// Step 2's ticks are the outline's rows (L44; the Collections design's §4.3): a tick inserts its block at its usual
+/// place, a Chronology first and the Note on the Text last; a shortcut removes every row of a type it leaves out; and
+/// *Undo* puts each removed row back at its own place, with the contents style and the word cloud. The UI suites drive
+/// the same calls through the editors (`CollectionTemplateStepsTests`); these hold the outline each one leaves.
 ///
 /// Version history:
-///   1.0 — MACCOL: initial implementation
-@Suite("Section defaults saves each edit as it is made", .serialized)
+///   1.0 — L44: initial implementation
+@Suite("Step 2's ticks are the outline's rows, and Undo puts the outline back (L44)")
 @MainActor
-struct SectionDefaultsSaveTests {
+struct CollectionApparatusRowsTests {
 
-    /// A text field edit lands on the collection and is saved: the subtitle and the author line (`UITextField`s), and
-    /// the description (a vertical `TextField`, drawn by a `UITextView`). One edit per field, each against a saved
-    /// context, so one field that does not save cannot hide behind another that does.
-    @Test("A description, subtitle or author line typed in Section defaults is saved as it is typed")
-    func eachTextFieldSavesItsEdit() async throws {
-        try await Self.withHostedRows { collection, host, context in
-            try context.save()
-            let subtitle = try #require(host.textField(placeholder: "Subtitle"), "Section defaults shows no Subtitle field")
-            try #require(host.type("Draft", into: subtitle), "The Subtitle field would not take focus")
-            #expect(collection.subtitle == "Draft", "the subtitle typed never reached the collection: \(String(describing: collection.subtitle))")
-            #expect(!context.hasChanges, "the subtitle typed in Section defaults was written and not saved")
-
-            try context.save()
-            let author = try #require(host.textField(placeholder: "Author line"), "Section defaults shows no Author line field")
-            try #require(host.type("J. Smith", into: author), "The Author line field would not take focus")
-            #expect(collection.authorLine == "J. Smith", "the author line typed never reached the collection")
-            #expect(!context.hasChanges, "the author line typed in Section defaults was written and not saved")
-
-            try context.save()
-            let description = try #require(host.textView(holding: "A working note"),
-                                           "Section defaults shows no Description field holding the collection's note")
-            try #require(host.type(", revised", into: description), "The Description field would not take focus")
-            #expect(collection.note == "A working note, revised", "the description typed never reached the collection")
-            #expect(!context.hasChanges, "the description typed in Section defaults was written and not saved")
-        }
+    /// A row of a fixture outline.
+    enum Row {
+        case heading(String, level: Int = 1)
+        case document(String)
+        case block(CollectionGeneratedBlockType)
     }
 
-    /// A toggle lands on the collection and is saved — each of the three, against a saved context.
-    @Test("A toggle switched in Section defaults is saved as it is switched")
-    func eachToggleSavesItsEdit() async throws {
-        try await Self.withHostedRows { collection, host, context in
-            let switches = host.switches
-            try #require(switches.count == 3, "Section defaults draws \(switches.count) switches, expected its three toggles")
-            let flags: [(String, () -> Bool)] = [("colophon", { collection.includeColophon }),
-                                                 ("project provenance", { collection.includeProjectProvenance }),
-                                                 ("method appendix", { collection.includeMethodAppendix })]
-            for (toggle, (name, flag)) in zip(switches, flags) {
-                try context.save()
-                let before = flag()
-                toggle.setOn(!toggle.isOn, animated: false)
-                toggle.sendActions(for: .valueChanged)
-                #expect(await Self.settle { flag() != before }, "switching the \(name) toggle never reached the collection")
-                #expect(!context.hasChanges, "the \(name) toggle switched in Section defaults was written and not saved")
-            }
+    @Test("A tick inserts its block at its usual place: a Chronology first, the Note on the Text last, others before it")
+    func aTickInsertsAtTheBlocksUsualPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection([.document("d1"), .document("d2")], in: context)
+        var outline = start
+        for type in [CollectionGeneratedBlockType.noteOnTheText, .bibliography, .chronology, .personsIndex] {
+            CollectionApparatusRows.insert(type, into: collection, outline: &outline, modelContext: context)
         }
+        #expect(Self.names(outline) == [Self.name(.chronology), "d1", "d2", Self.name(.bibliography),
+                                        Self.name(.personsIndex), Self.name(.noteOnTheText)])
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("All adds each block the outline lacks at its usual place, and Undo takes out only what it added")
+    func allThenUndo() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection([.heading("Cables"), .document("d1"), .document("d2")], in: context)
+        var outline = start
+        let all = CollectionApparatusSettings(contentsStyle: .citation, wordCloud: true,
+                                              blocks: Set(CollectionGeneratedBlockType.allCases))
+        let undo = CollectionApparatusRows.apply(all, to: collection, outline: &outline, modelContext: context)
+        let middle: [String] = all.orderedBlocks.filter { $0 != .chronology && $0 != .noteOnTheText }.map(Self.name)
+        let expected: [String] = [Self.name(.chronology), "§Cables", "d1", "d2"] + middle + [Self.name(.noteOnTheText)]
+        #expect(Self.names(outline) == expected)
+        #expect(collection.includeWordCloud)
+        #expect(undo.removed.isEmpty)
+        #expect(undo.added.count == CollectionGeneratedBlockType.allCases.count)
+        #expect(Set(undo.change.added) == Set(CollectionGeneratedBlockType.allCases))
+
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == ["§Cables", "d1", "d2"])
+        #expect(!collection.includeWordCloud)
+        withExtendedLifetime(container) {}
+    }
+
+    /// A block can be in a collection twice, and the reader can have moved a row from its usual place: an untick takes
+    /// out every row of its type, and *Undo* puts each back where it stood, not where a new one would go.
+    @Test("None removes every row of each block, and Undo puts each back at its own place, with the style and the cloud")
+    func noneThenUndoPutsEachRowBackAtItsPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, start) = try Self.collection(
+            [.block(.bibliography), .document("d1"), .block(.bibliography), .document("d2"), .block(.noteOnTheText)],
+            in: context)
+        collection.tocStyle = CollectionToCStyle.headerAndDateline.rawValue
+        collection.includeWordCloud = true
+        var outline = start
+        let before = Self.names(outline)
+
+        let none = CollectionApparatusSettings(contentsStyle: .citation, wordCloud: false, blocks: [])
+        let undo = CollectionApparatusRows.apply(none, to: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == ["d1", "d2"])
+        #expect(collection.tocStyle == CollectionToCStyle.citation.rawValue)
+        #expect(!collection.includeWordCloud)
+        #expect(undo.removed.map { $0.index } == [0, 2, 4], "Each removed row keeps its place in the outline before")
+        #expect(Set(undo.change.removed) == [.bibliography, .noteOnTheText])
+
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &outline, modelContext: context)
+        #expect(Self.names(outline) == before)
+        #expect(collection.tocStyle == CollectionToCStyle.headerAndDateline.rawValue)
+        #expect(collection.includeWordCloud)
+        withExtendedLifetime(container) {}
     }
 
     // MARK: Fixtures
 
-    /// Containers whose host outlived its window, kept so their models stay valid (see `CollectionEditorNamingTests`).
-    private static var parkedContainers: [ModelContainer] = []
-
-    /// Hosts `CollectionAttributesRows` in a `Form` over a saved collection whose note is "A working note", in a context
-    /// with autosave off; runs `body`; then takes the host down before the container goes.
-    private static func withHostedRows(
-        _ body: @MainActor (Collection, AttributesRowsHost, ModelContext) async throws -> Void
-    ) async throws {
-        let container = try ModelContainer.makeTestContainer()
-        let context = container.mainContext
-        context.autosaveEnabled = false
-        let collection = Collection(name: "Berlin Crisis")
-        collection.note = "A working note"
+    /// A saved collection holding `rows` in order, each in place at its index, and its outline.
+    static func collection(_ rows: [Row], in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let collection = Collection(name: "Apparatus")
         context.insert(collection)
+        var outline: [CollectionEntry] = []
+        for (index, row) in rows.enumerated() {
+            let entry: CollectionEntry
+            switch row {
+            case let .heading(text, level):
+                entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: index)
+                entry.entryKind = .heading
+                entry.text = text
+                entry.level = level
+            case let .document(id):
+                entry = CollectionEntry(collectionId: collection.id, documentId: id, volumeId: "v1", sortOrder: index)
+            case let .block(type):
+                entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: index)
+                entry.entryKind = .generated
+                entry.generatedBlockType = type.rawValue
+            }
+            entry.collection = collection
+            context.insert(entry)
+            outline.append(entry)
+        }
         try context.save()
-        let host = try AttributesRowsHost(collection: collection, container: container)
-        var failure: (any Error)?
-        do { try await body(collection, host, context) } catch { failure = error }
-        if !(await host.close()) {
-            parkedContainers.append(container)
-            Issue.record("The hosted rows outlived their window; the container is kept so its models stay valid")
-        } else {
-            // A host a test types into can leave a view behind it (see `CollectionEditorNamingTests.withRealEditor`).
-            parkedContainers.append(container)
-        }
-        withExtendedLifetime(container) {}
-        if let failure { throw failure }
+        return (collection, outline)
     }
 
-    /// Pumps the main run loop until `condition` holds or 5 s pass, and reports whether it held.
-    private static func settle(until condition: () -> Bool) async -> Bool {
-        let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: .seconds(5))
-        while clock.now < deadline {
-            if condition() { return true }
-            try? await Task.sleep(for: .milliseconds(10))
+    /// A block's name in `names(_:)`.
+    static func name(_ type: CollectionGeneratedBlockType) -> String { "[\(type.rawValue)]" }
+
+    /// The outline as words: a block as `[type]`, a heading as `§text`, a document as its id.
+    static func names(_ outline: [CollectionEntry]) -> [String] {
+        outline.map { entry in
+            if let type = CollectionApparatusRows.blockType(of: entry) { return name(type) }
+            if entry.entryKind == .heading { return "§" + (entry.text ?? "") }
+            return entry.documentId
         }
-        return condition()
     }
 }
 
-/// Hosts the real ``CollectionAttributesRows`` in a `Form`, in a window of the test host's scene, and reaches its
-/// controls through UIKit.
+// MARK: - CollectionOwnSettingsTests (L44)
+
+/// What a choice follows, and the rows that set their own (L44; the Collections design's §4.2): a picker's first
+/// choice names what it follows and its value, *Follow the section: Off* under a section that sets one and *Follow the
+/// collection: On* elsewhere, for a document and for a section, whose own value is never what it follows; the count at
+/// the collection lists the rows that set their own, and *Clear* returns them to following. A heading's headnote is its
+/// default, never its own switch (J24). The UI suite reads the words on a section's sheet
+/// (`CollectionTemplateStepsTests`); a document under a section that sets its own is reached only here.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@Suite("What a choice follows, the rows that set their own, and Clear (L44)")
 @MainActor
-private final class AttributesRowsHost {
-    /// The window hosting the rows; `nil` once closed.
-    private var window: UIWindow?
+struct CollectionOwnSettingsTests {
 
-    init(collection: Collection, container: ModelContainer) throws {
-        let scene = try #require(
-            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
-            "The test host has no window scene to host the rows in")
-        let rows = Form { CollectionAttributesRows(collection: collection) }.modelContainer(container)
-        let window = UIWindow(windowScene: scene)
-        window.rootViewController = UIHostingController(rootView: rows)
-        window.isHidden = false
-        window.layoutIfNeeded()
-        self.window = window
+    /// Footnotes on at the collection; *Cables* sets them off for its documents and its subsection, *Memoranda* closes
+    /// that section and sets nothing, and `d3` sets them on for itself.
+    private static func fixture(in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let (collection, outline) = try CollectionApparatusRowsTests.collection(
+            [.heading("Cables"), .document("d1"), .heading("Annexes", level: 2), .document("d2"),
+             .heading("Memoranda"), .document("d3")], in: context)
+        collection.effectiveIncludeFootnotes = true
+        outline[0].includeFootnotesOverride = false
+        outline[5].includeFootnotesOverride = true
+        try context.save()
+        return (collection, outline)
     }
 
-    /// The text field whose placeholder is `placeholder`.
-    func textField(placeholder: String) -> UITextField? {
-        window.flatMap { Self.all(UITextField.self, in: $0).first { $0.placeholder == placeholder } }
+    private static func words(_ entry: CollectionEntry) -> String {
+        CollectionOwnSettings.followedWords(.footnotes, by: entry, promptName: { _ in "" })
     }
 
-    /// The multi-line text view whose text is `text`.
-    func textView(holding text: String) -> UITextView? {
-        window.flatMap { Self.all(UITextView.self, in: $0).first { $0.text == text } }
+    @Test("A document follows the nearest section that sets a value, else the collection, and says which")
+    func aDocumentSaysWhatItFollows() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        #expect(Self.words(outline[1]) == "Follow the section: Off")
+        #expect(Self.words(outline[3]) == "Follow the section: Off", "A subsection's document follows the section above")
+        #expect(Self.words(outline[5]) == "Follow the collection: On", "Memoranda closed Cables' section")
+        withExtendedLifetime(container) {}
     }
 
-    /// Every switch the rows draw, top to bottom.
-    var switches: [UISwitch] {
-        guard let window else { return [] }
-        return Self.all(UISwitch.self, in: window).sorted {
-            $0.convert($0.bounds, to: window).minY < $1.convert($1.bounds, to: window).minY
-        }
+    @Test("A section follows the sections around it, never its own value")
+    func aSectionSaysWhatItFollows() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        #expect(Self.words(outline[0]) == "Follow the collection: On", "Cables' own Off is not what it follows")
+        #expect(Self.words(outline[2]) == "Follow the section: Off", "Annexes follows Cables, around it")
+        #expect(Self.words(outline[4]) == "Follow the collection: On")
+        withExtendedLifetime(container) {}
     }
 
-    /// Types `text` at the end of `field`, as the keyboard does. Returns whether the field took focus.
-    func type(_ text: String, into field: UITextField) -> Bool {
-        window?.makeKey()
-        guard field.becomeFirstResponder() else { return false }
-        field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
-        field.insertText(text)
-        return true
+    @Test("The count lists the rows that set their own, in order, and Clear returns the chosen ones to following")
+    func theCountAndClear() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try Self.fixture(in: container.mainContext)
+        let own = CollectionOwnSettings.rows(setting: .footnotes, in: outline)
+        #expect(own.map(\.id) == [outline[0].id, outline[5].id])
+        #expect(CollectionOwnSettings.countPhrase(own.count) == "2 set their own")
+        #expect(CollectionOwnSettings.countPhrase(1) == "1 sets its own")
+        #expect(own.map { CollectionOwnSettings.valueName(.footnotes, of: $0, promptName: { _ in "" }) } == ["Off", "On"])
+        #expect(CollectionOwnSettings.rowName(outline[0], headers: [:]) == "Cables")
+
+        CollectionOwnSettings.clear(.footnotes, of: [outline[0]])
+        #expect(outline[0].includeFootnotesOverride == nil)
+        #expect(CollectionOwnSettings.rows(setting: .footnotes, in: outline).map(\.id) == [outline[5].id])
+        #expect(Self.words(outline[1]) == "Follow the collection: On", "Cleared, Cables no longer sets d1's footnotes")
+        withExtendedLifetime(container) {}
     }
 
-    /// Types `text` at the end of `textView`, as the keyboard does. Returns whether the view took focus.
-    func type(_ text: String, into textView: UITextView) -> Bool {
-        window?.makeKey()
-        guard textView.becomeFirstResponder() else { return false }
-        textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
-        textView.insertText(text)
-        return true
+    /// The builds of 2026-07-01 to 07-11 stored an unseen `false` in a heading's `includeHeadnote` (J24), so a heading's
+    /// headnote is read from its own field, `headnoteDefault`, and *Clear* leaves the old field as it was.
+    @Test("A heading's headnote is its default, never its own switch, and Clear leaves the old field alone (J24)")
+    func aHeadingsHeadnoteIsItsDefault() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let (_, outline) = try CollectionApparatusRowsTests.collection([.heading("Cables"), .document("d1")],
+                                                                      in: container.mainContext)
+        let heading = outline[0], document = outline[1]
+        heading.includeHeadnote = false
+        #expect(CollectionOwnSettings.rows(setting: .headnotes, in: outline).isEmpty)
+        heading.headnoteDefault = true
+        document.includeHeadnote = true
+        #expect(CollectionOwnSettings.rows(setting: .headnotes, in: outline).map(\.id) == [heading.id, document.id])
+
+        CollectionOwnSettings.clear(.headnotes, of: [heading, document])
+        #expect(heading.headnoteDefault == nil)
+        #expect(heading.includeHeadnote == false, "Clear wrote over the heading's old field")
+        #expect(document.includeHeadnote == nil)
+        withExtendedLifetime(container) {}
     }
 
-    /// Every `View` in `view`'s tree, `view` included, outermost first.
-    private static func all<View: UIView>(_ type: View.Type, in view: UIView) -> [View] {
-        var found: [View] = []
-        if let match = view as? View { found.append(match) }
-        for subview in view.subviews { found += all(type, in: subview) }
-        return found
-    }
-
-    /// Ends any editing, takes the window down, and waits for the hosting controller to deallocate. Returns whether it
-    /// went.
-    func close() async -> Bool {
-        weak let controller = window?.rootViewController
-        window?.endEditing(true)
-        window?.isHidden = true
-        window?.rootViewController = nil
-        window = nil
-        let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: .seconds(2))
-        while controller != nil, clock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(10))
-        }
-        return controller == nil
+    @Test("The opening is the collection's alone; every other setting a section or a document can set")
+    func theOpeningIsTheCollectionsAlone() {
+        #expect(CollectionSetting.allCases.filter { !CollectionOwnSettings.cascades($0) } == [.opening])
     }
 }
-#endif
 
 // MARK: - CollectionChipStyleTests (#1477)
 

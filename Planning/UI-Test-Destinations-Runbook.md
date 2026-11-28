@@ -213,6 +213,13 @@ on the iPhone, 7.6 s on the Air, 8.1 s on the iPad Pro), and 22 to 29 of a run's
 defaults tests took 139 to 348 s on the iPhone, 166 to 266 s on the Air and 191 to 342 s on the iPad Pro; in #1704's
 control with a 30 s wait they took 326 to 430 s on the Air, and in #1704's run of the whole suite the 300 s allowance
 ended `testContentAloneDoesNotNameANewCollection` on the iPad Pro (it passed alone in 191 s, given 600). Hence 600 s.
+**Since L44, #1413's three tests set a switch in the Apparatus step**, which holds the colophon, the project stamp and the
+query log now that a section's sheet holds none of the collection's fields:
+`testASwitchSetInTheApparatusStepIsShownWhenItOpensAgain`, `testASwitchSetInTheApparatusStepSurvivesTheEditorsNextEdit`
+and `testANoteSurvivesASwitchInTheApparatusStep`. Each still adds a section heading through the Add menu first, so the
+Air's overflow lookup is exercised as before, and `reveal` drags under the step's own bar where it is showing.
+`testFieldsSetInSettingsSurviveTheCollectionsTab` reads the fields that stay in Collection settings. **Measured on L44's
+code:** on the iPhone 17, on `cb1b9beb`, 9 tests, 0 skipped, 0 failed, the three Apparatus-step tests in 271, 279 and 243 s; on the iPad Pro 13-inch (M5), 9 tests, 3 skipped (the three tab-tap tests), 0 failed, the three in 245, 268 and 305 s; on the iPad Air 11-inch (M4) under 26.5, 9 tests, 3 skipped, 0 failed, the four heading tests each opening the Add menu from the toolbar's overflow, the three in 262, 282 and 293 s.
 
 ```bash
 xcodebuild test \
@@ -1032,6 +1039,9 @@ now sits on the group's header; and under iOS 27 a form's `TextField` carries no
 `textFields["Title override"]` matched nothing. The test finds the title field by an identifier, and the *Date line* field
 has an `accessibilityLabel`, without which VoiceOver would name it by its placeholder. On the code before L43 it fails at its
 first control, which does not exist.
+**Since L44 it reads the controls where L44 put them:** *Opening* and *See also* in the Documents step, *Citation style* in
+Collection settings, *Wording*'s ten fields on a screen of their own, and the section's *Headnotes*, whose first choice now
+says what it follows, *Follow the collection: Off*. **Measured on L44's code:** on the iPhone 17, on `cb1b9beb`, 2 passed (373 and 106 s); on the iPad Pro 13-inch (M5), 2 passed (381 and 119 s).
 
 ```bash
 xcodebuild test \
@@ -1049,13 +1059,97 @@ xcodebuild test \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
 ```
 
+**`CollectionTemplateStepsTests` (L44, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, and nothing
+skips.** The iPhone pushes Collection settings and each step in the editor's stack; the iPad pushes each step in the
+settings sheet's own stack: different code. Three tests: a new collection's step rows say what it is (*Like Full text as
+printed · 2 differ*, J26, and *Contents by citation*), a card writes its seven with the line and *Undo* under it, in view
+(J17), and *Undo* puts them back; the one tap on step 2's row adds *Bibliography, Sources & Archives and Note on the
+Text*, names each on the row and takes them out again with its *Undo* (J14), and step 2's *All* and *None* add and remove
+with their line and *Undo*, a tick speaking its block's name and whether the collection has it; a section's sheet holds
+the section's settings and none of the collection's, each first choice saying *Follow the collection: On*, and the count
+at the collection, *1 sets its own*, opens the list whose *Clear* returns the section to following. **A picker is read as
+VoiceOver reads it, its label then its value**: under iOS 27 a form's menu picker carries its choice in its label,
+"Footnotes, Off", with an empty value. The first run waited on the value alone and failed at "Footnotes did not take
+Off" while its screen recording showed the picker at *Off*. **Measured on L44's code, iOS 27.0:** on the iPhone 17, on `8dea5088`, 2 passed (149 and 218 s), and the section's sheet passed alone (274 s) once its picker was read as VoiceOver reads it; on the final code, `cb1b9beb`, 3 passed (251, 150 and 223 s); on the iPad Pro 13-inch (M5), on `687350ab` before the replay onto L49, 3 passed (260, 143 and 223 s), the picker reading "Footnotes, Off" as its label.
+On the code before L44 each test fails at its first step row, which does not exist.
+
+**`CollectionInspectorSwitchNamesTests` (L44, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an
+iPad, and nothing skips.** The seeded export collection's `d1` holds the project seeder's note and, with
+`FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d1`, the research seeder's, so its settings draw two notes' switches. It requires two
+switches with two names, each the note's opening words (*Include the note “…”*), since what VoiceOver reads for a switch is
+its label. **On the code before L44** (in a control worktree at `dc3c7512` holding only this file) it failed on both
+devices: two switches, one name, *Include this research note when notes apply*. **On L44's code:** on the iPhone 17, on `cb1b9beb`, 1 passed (79 s);
+on the iPad Pro 13-inch (M5), on `687350ab`, 1 passed (62 s).
+
+**`CollectionTemplateFitTests` (L44, #2006, J17, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad,
+and nothing skips.** At the default size, AX3 and AX5 it adds a section heading and reads the pill (taller than 45 points
+at an accessibility size, which only grown type gives, since the frame is the pill's 44-point hit area), keeps a
+screenshot of the outline's section row, opens step 1 and requires *Full text as printed*'s card inside the window; at
+the default size, the design's grid of two on the iPad (the card narrower than 60 % of the step's bar) and rows on the
+iPhone (wider than 70 %), the design's §5.4; at an accessibility size, the card drawn larger (over 85 points) and one
+column (wider than 70 %); then the line and its *Undo* in view after a card, and after step 2's *None*. A fourth test
+reads the card at the default size and at AX5 in one run and requires it 1.4 times taller: AX5, since on the iPad the
+default size draws two cards to a row, narrower and so taller, and AX3's one column leaves too little growth to tell.
+**On the code before L44** that test failed on the iPhone 17 (read then at AX3): the card was 44.7 points high at both
+sizes, its type fixed in points. **L44's first code showed two defects of its own here.** On the iPad the card was 548
+points wide at the default size in a sheet about 580 wide, one column, because the iPad's settings sheet is compact
+itself; the editor now passes its own width in (`collectionTemplatesInGrid`). And on the iPhone the pill, beside the
+title, was 124 points wide and 126.3 high at AX3 and 469.3 at AX5, *Section* broken inside the word; at the
+accessibility sizes it now has a line of its own under the title. The cards on the iPhone then: 76.0 points high at the
+default size (370 wide), 155.3 at AX3, 305.0 at AX5. **On L44's code:** on the iPhone 17, on `cb1b9beb`, the cards rows at the default size, 370 points wide and 76 high, 155.3 at AX3 and 305.0 at AX5; the pill on its own line, 312.3 by 48.3 at AX3 and 338.0 by 61.3 at AX5, one line where beside the title it had been 126.3 and 469.3 high; 4 passed (150, 140, 142 and 165 s); on the iPad Pro 13-inch (M5), on `687350ab`, the card 258 points wide and 105 high at the default size, two to a row, and 548 wide, 116.5 high at AX3 and 196.0 at AX5; the pill on its own line, 312.5 by 48.5 at AX3 and 361.5 by 61.5 at AX5; 4 passed (152, 155, 153 and 170 s).
+
+**`CollectionSectionPillHitAreaTests` (L44, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad,
+and nothing skips.** `minimumHitTarget()` grows the pill's content shape to 44 points, and SwiftUI reports a button's
+frame from its content shape, so the frame XCUI reads is the hit area while the pill is drawn as before: the test
+requires the frame at least 44 points each way (the guard), then taps 20 points above the centre, inside the area and,
+on the iPad, 7.75 points above the pill as drawn, and requires the section's sheet. **On the code before L44** the frame
+was the pill as drawn: 24.5 points high on the iPad Pro and 38.7 on the iPhone 17, whose outline wraps *Section* over
+*defaults* (the control runs' `[L44 pill]` lines, read by the suite's first form, which tapped 8 points past the drawn
+edge). There the iPad's tap passed too: the system takes a tap that close to a button by itself, as it took Search's
+Filter and pager taps before #1918 (`SearchHitAreaTests`), so the tap is a check and the frame is the guard. The first
+form skipped where the frame was over 34 points, which on L44's code is every device (the iPhone read 44.0), so the
+frame became the test. **On L44's code:** on the iPhone 17, on `cb1b9beb`, the frame 99.3 by 44.0, 1 passed (35 s); on the iPad Pro 13-inch (M5), on `687350ab`, the frame 147.5 by 44.0, 1 passed (105 s).
+
+**`CollectionTemplateLineAnnouncementTests` (L44, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad
+under iOS 27, alone, on a simulator shut down before it.** It listens through iOS 27's VoiceOver service, as
+`AddToCollectionAnnouncementTests` does: with VoiceOver on it moves VoiceOver's cursor to *Full text as printed*'s card,
+double-taps as a VoiceOver reader activates it, reads VoiceOver's speech four times a second for eight seconds and
+requires the line's opening, *Changed Archival source note from Off to On* (the service returns 64 characters and the
+line is 77), then moves on from the card to the line and requires *Undo* as the next element (the design's §9). On the
+iPhone the line follows the card; on the iPad it follows the grid's row of two. It skips below iOS 27. Under Xcode 27.2
+VoiceOver stays on once its speech has been read (`SearchResultVoiceOverTests`' entry), hence alone. **On L44's code:**
+on the iPhone 17, on `cb1b9beb`, 1 passed (132 s), the line the element after the card, then *Undo, Button*; on the iPad Pro 13-inch (M5), on `687350ab`, 1 passed (113 s): VoiceOver said "Changed Archival source note from Off to On and Research notes f", its 64 characters, and on from the card read *Full text with your annotations*, the card beside it, then the line, then *Undo, Button*. On the code before L44 it fails at its first step row.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionTemplateStepsTests \
+  -only-testing FRUSExplorerUITests/CollectionInspectorSwitchNamesTests \
+  -only-testing FRUSExplorerUITests/CollectionTemplateFitTests \
+  -only-testing FRUSExplorerUITests/CollectionSectionPillHitAreaTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 900 -maximum-test-execution-time-allowance 900
+
+# Shut the iPhone 17 down first (Simulator, or `xcrun simctl shutdown <its UDID>`), then run this alone:
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionTemplateLineAnnouncementTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+The same two on `iPad Pro 13-inch (M5),OS=27.0`.
+
 **`CollectionInspectorOpenDocumentTests` (#1919, IPA-4, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an
 iPad, and nothing skips.** The iPhone's per-entry drill-in and the iPad's Configure sheet are different code. It taps
 the seeded document's row, requires **Open Document** (`collection.inspector.openDocument`) in the settings the tap
 opens, opens the reader with it, whose navigation bar the document's header or, before it has loaded, its id titles, and
 goes Back: on the iPhone to the settings it came from, on the iPad to the editor, since the sheet closes before the
 document opens. **Measured on L19's code, iOS 27.0:** 1 of 1 on the iPhone 17 (85 s) and on the iPad Pro 13-inch (M5)
-(57 s). **On the code before L19** (iPhone 17) it fails at its first check: the row's settings offer no Open Document.
+(57 s). **On the code before L19** (iPhone 17) it fails at its first check: the row's settings offer no Open Document. **Run again on L44's code**, which rewrote the settings it opens (`cb1b9beb`): 1 passed on the iPhone 17 (44 s) and
+on the iPad Pro 13-inch (M5) (47 s).
 
 ```bash
 xcodebuild test \

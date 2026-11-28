@@ -36,29 +36,27 @@ public enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - CollectionPreset
 
-/// A one-tap starting composition for a `Collection`, which the app calls a **template** (Composer
-/// redesign 4a). Applying a template **overwrites** the collection's export-composition *fields*
-/// (body depth, footnotes, source note, notes, headnotes, highlights, word cloud, ToC style) and
-/// **appends** the apparatus blocks the template calls for — non-destructively: existing apparatus
-/// and all document entries are left untouched, and everything stays fully editable afterward.
+/// A starting point for a `Collection`'s settings, which the app calls a **template** (Composer redesign 4a), taken in
+/// two steps since L44 (the Collections design's §4.3, on the owner's direction of 2026-11-25): **Documents**, how each
+/// document is presented, then **Apparatus**, what is added around the documents.
 ///
-/// Six templates, each named for how it presents the documents and then for the apparatus that
-/// comes with them (decision 139 of the plan of record from 2026-11-15). Between them they use every
-/// body depth, every footnote and source-note combination but footnotes alone, both contents styles,
-/// and each of the five apparatus blocks in at least two templates besides `everythingIncluded`. No
-/// two recipes write the same fields, since `matches(_:)` compares the fields and not the apparatus:
-/// two such templates would both be marked active. A template is never stored, only the fields it
-/// writes, so renaming or changing one leaves every existing collection's composition as it was.
+/// - **Step 1, `documents`,** sets seven of the collection's settings and nothing else
+///   (``CollectionSetting/templateSettings``). The app writes the seven in view and says what changed, with *Undo*.
+/// - **Step 2, `suggestedApparatus`,** is what decision 139's template added, now only suggested for it: the contents
+///   list's style, the word cloud and the blocks, each set with the Note on the Text (the design's §4.3). Choosing in
+///   step 1 does not change step 2 (decision 157). Step 2's shortcuts (``CollectionApparatusShortcut``) and its row's one
+///   tap (``CollectionApparatusSettings/offer(documents:apparatus:)``) bring a suggested set in.
 ///
-/// Applying a template has two parts with different owners: `applyFields(to:)` overwrites the
-/// collection's composition fields directly (safe — every host reads them live via `@Bindable`),
-/// while the apparatus blocks (`apparatusBlocks`) must be inserted through the **host's** entry
-/// management (which keeps its `sortedEntries` mirror + `sortOrder` consistent), so the host drives
-/// insertion via `apparatusBlocks(notAlreadyIn:)`.
+/// Six templates: decision 139's table divided, each case a document recipe with its suggested apparatus. Three are
+/// renamed for what step 1 now does (decision 167): *Summaries*, *Citations with source notes* and *Full text with
+/// everything*. The volume's heading leads in four and the citation in the two *Citations* templates (decision 158).
+/// No two templates write the same seven settings, since *in force* is a comparison of the seven (``matching(_:)``):
+/// two such templates would both be drawn active. A template is never stored, only what it writes, so renaming or
+/// changing one leaves every existing collection as it was.
 ///
-/// The recipe is FRUSCoreKit's (`recipe`), and so are the names and the apparatus; `applyFields(to:)`
-/// and `matches(_:)`, which read and write a SwiftData `Collection`, are the app's
-/// (`CollectionExporter+App.swift`). A host with collections of its own reads the same `recipe`.
+/// The rules run over values (``CollectionDocumentSettings``, ``CollectionApparatusSettings``) and are FRUSCoreKit's;
+/// the writes to a SwiftData `Collection` and its outline are the app's (`CollectionExporter+App.swift`,
+/// `CollectionOutline+App.swift`). A host with collections of its own reads the same rules.
 ///
 /// Version history:
 ///   1.0 — Composer redesign 4a: the four presets
@@ -67,28 +65,32 @@ public enum CollectionToCStyle: String, CaseIterable, Identifiable, Sendable {
 ///   1.2 — 2026-11-18 (L25, decision 139): six templates named for what they do replace the four
 ///          (`teachingReader`, `briefingPacket`, `sourceDossier`, `scholarlyEdition`), each string
 ///          under a new `collection.preset.*` key; a summary-only template now leaves highlights off
+///   1.3 — L44 (the design's §4.3; decisions 157, 158 and 167): `Recipe` divided into `documents`, step 1's seven
+///          settings with *Opening* among them, and `suggestedApparatus`, step 2's, each set with the Note on the Text;
+///          three cases renamed, with their keys (`summaries`, `citationsWithSourceNotes`, `fullTextWithEverything`);
+///          a card's line says what the documents print and `needs` what the template needs (decision 192); the
+///          chip's `shortName` and `shortTag` are gone, since the iPhone draws step 1's templates as rows; `matching(_:)`,
+///          `nearest(to:)` and `suggestionOrder(for:)`
 public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
-    /// The full text as the volume prints it, with its footnotes and source notes, and a
-    /// Bibliography and Sources & Archives appended.
+    /// The full text as the volume prints it, with its footnotes and source notes.
     case fullTextAsPrinted
-    /// The full text with the researcher's notes, highlights and headnotes and each document's source
-    /// note, under a header-and-dateline contents list, with a Chronology and a Persons Index.
+    /// The full text with each document's source note and the researcher's notes, highlights and headnotes.
     case fullTextWithAnnotations
-    /// AI summaries in place of the text, with the researcher's notes, a word-cloud overview, a
-    /// Chronology and a Thematic Index.
-    case summariesWithOverview
-    /// A citation list, with no body, carrying the researcher's notes, with a Bibliography and a
-    /// Thematic Index.
+    /// A summary of each document in place of its text, with the researcher's notes: decision 139's *Summaries with
+    /// overview*, renamed by decision 167, since the overview is step 2's.
+    case summaries
+    /// Each document's citation alone, with the researcher's notes.
     case citationsWithNotes
-    /// A citation list, with no body, carrying each document's archival source note, with Sources &
-    /// Archives and a Persons Index.
-    case citationsWithArchivalSources
-    /// Everything on: the full text, every option and all five apparatus blocks.
-    case everythingIncluded
+    /// Each document's citation alone, with its archival source note: decision 139's *Citations with archival
+    /// sources*, renamed by decision 167, since the archives are step 2's.
+    case citationsWithSourceNotes
+    /// The full text with every option on: decision 139's *Everything included*, renamed by decision 167, since the
+    /// five blocks are step 2's.
+    case fullTextWithEverything
 
     public var id: String { rawValue }
 
-    /// The template's display name: how it presents the documents, then what comes with them.
+    /// The template's name: how it presents the documents.
     public var displayName: String {
         switch self {
         case .fullTextAsPrinted:
@@ -97,158 +99,603 @@ public enum CollectionPreset: String, CaseIterable, Identifiable, Sendable {
         case .fullTextWithAnnotations:
             return String(localized: "collection.preset.fullTextWithAnnotations",
                           defaultValue: "Full text with your annotations")
-        case .summariesWithOverview:
-            return String(localized: "collection.preset.summariesWithOverview",
-                          defaultValue: "Summaries with overview")
+        case .summaries:
+            return String(localized: "collection.preset.summaries",
+                          defaultValue: "Summaries")
         case .citationsWithNotes:
             return String(localized: "collection.preset.citationsWithNotes",
                           defaultValue: "Citations with your notes")
-        case .citationsWithArchivalSources:
-            return String(localized: "collection.preset.citationsWithArchivalSources",
-                          defaultValue: "Citations with archival sources")
-        case .everythingIncluded:
-            return String(localized: "collection.preset.everythingIncluded",
-                          defaultValue: "Everything included")
+        case .citationsWithSourceNotes:
+            return String(localized: "collection.preset.citationsWithSourceNotes",
+                          defaultValue: "Citations with source notes")
+        case .fullTextWithEverything:
+            return String(localized: "collection.preset.fullTextWithEverything",
+                          defaultValue: "Full text with everything")
         }
     }
 
-    /// A one-line summary of what the template composes, under its name on the card.
+    /// A one-line summary of what each document prints, under the template's name: step 1's settings, never the
+    /// apparatus, which is step 2's.
     public var subtitle: String {
         switch self {
         case .fullTextAsPrinted:
-            return String(localized: "collection.preset.fullTextAsPrinted.subtitle",
-                          defaultValue: "Footnotes · source notes · bibliography · archives")
+            return String(localized: "collection.preset.fullTextAsPrinted.documents",
+                          defaultValue: "Full text · footnotes · source notes")
         case .fullTextWithAnnotations:
-            return String(localized: "collection.preset.fullTextWithAnnotations.subtitle",
-                          defaultValue: "Notes · highlights · headnotes · chronology · persons")
-        case .summariesWithOverview:
-            return String(localized: "collection.preset.summariesWithOverview.subtitle",
-                          defaultValue: "AI summaries · notes · word cloud · chronology · themes")
+            return String(localized: "collection.preset.fullTextWithAnnotations.documents",
+                          defaultValue: "Full text · source notes · notes · highlights · headnotes")
+        case .summaries:
+            return String(localized: "collection.preset.summaries.documents",
+                          defaultValue: "A summary of each · notes")
         case .citationsWithNotes:
-            return String(localized: "collection.preset.citationsWithNotes.subtitle",
-                          defaultValue: "Citation list · notes · bibliography · themes")
-        case .citationsWithArchivalSources:
-            return String(localized: "collection.preset.citationsWithArchivalSources.subtitle",
-                          defaultValue: "Citation list · source notes · archives · persons")
-        case .everythingIncluded:
-            return String(localized: "collection.preset.everythingIncluded.subtitle",
-                          defaultValue: "Full text · all options · all five sections")
+            return String(localized: "collection.preset.citationsWithNotes.documents",
+                          defaultValue: "The citation alone · notes")
+        case .citationsWithSourceNotes:
+            return String(localized: "collection.preset.citationsWithSourceNotes.documents",
+                          defaultValue: "The citation alone · source notes")
+        case .fullTextWithEverything:
+            return String(localized: "collection.preset.fullTextWithEverything.documents",
+                          defaultValue: "Full text · every option")
         }
     }
 
-    /// The row/menu icon (SF Symbol). Each exists from macOS 14 and iOS 17 at the latest, so on every
-    /// system the app runs on (`book.pages` is the newest, from 2023).
+    /// What the template needs to print as its name says, said on its card (decision 192: "L44's cards may also say a
+    /// template's needs"), or `nil` where it needs nothing. A summary prints where one is stored and is written by Apple
+    /// Intelligence where none is (#2018); a headnote prints only where the document has one, written or generated (the
+    /// design's §4.4).
+    public var needs: String? {
+        switch self {
+        case .summaries:
+            return String(localized: "collection.preset.summaries.needs",
+                          defaultValue: "Needs a summary prompt, and Apple Intelligence for a document with no summary yet.")
+        case .fullTextWithAnnotations, .fullTextWithEverything:
+            return String(localized: "collection.preset.headnotes.needs",
+                          defaultValue: "A headnote prints only where the document has one.")
+        case .fullTextAsPrinted, .citationsWithNotes, .citationsWithSourceNotes:
+            return nil
+        }
+    }
+
+    /// The template's symbol, for its menu item and its card. Each exists from macOS 14 and iOS 17 at the latest, so
+    /// on every system the app runs on (`book.pages` is the newest, from 2023).
     public var systemImage: String {
         switch self {
-        case .fullTextAsPrinted:            return "book.pages"
-        case .fullTextWithAnnotations:      return "highlighter"
-        case .summariesWithOverview:        return "sparkles"
-        case .citationsWithNotes:           return "list.bullet.clipboard"
-        case .citationsWithArchivalSources: return "archivebox"
-        case .everythingIncluded:           return "books.vertical"
+        case .fullTextAsPrinted:        return "book.pages"
+        case .fullTextWithAnnotations:  return "highlighter"
+        case .summaries:                return "sparkles"
+        case .citationsWithNotes:       return "list.bullet.clipboard"
+        case .citationsWithSourceNotes: return "archivebox"
+        case .fullTextWithEverything:   return "books.vertical"
         }
     }
 
-    /// A one-word name for the compact (iPhone) template chip, where the full `displayName`
-    /// ("Citations with archival sources") is too wide (Composer v2 §C preset row).
-    public var shortName: String {
+    /// Step 1: the seven settings the template writes, decision 139's table with decision 158's openings.
+    public var documents: CollectionDocumentSettings {
         switch self {
         case .fullTextAsPrinted:
-            return String(localized: "collection.preset.fullTextAsPrinted.short", defaultValue: "Printed")
+            return CollectionDocumentSettings(opening: .volumeHeading, bodyDepth: .full, footnotes: true,
+                                              sourceNote: true, notes: false, highlights: false, headnotes: false)
         case .fullTextWithAnnotations:
-            return String(localized: "collection.preset.fullTextWithAnnotations.short", defaultValue: "Annotated")
-        case .summariesWithOverview:
-            return String(localized: "collection.preset.summariesWithOverview.short", defaultValue: "Summaries")
+            return CollectionDocumentSettings(opening: .volumeHeading, bodyDepth: .full, footnotes: false,
+                                              sourceNote: true, notes: true, highlights: true, headnotes: true)
+        case .summaries:
+            return CollectionDocumentSettings(opening: .volumeHeading, bodyDepth: .summaryOnly, footnotes: false,
+                                              sourceNote: false, notes: true, highlights: false, headnotes: false)
         case .citationsWithNotes:
-            return String(localized: "collection.preset.citationsWithNotes.short", defaultValue: "Noted")
-        case .citationsWithArchivalSources:
-            return String(localized: "collection.preset.citationsWithArchivalSources.short", defaultValue: "Archival")
-        case .everythingIncluded:
-            return String(localized: "collection.preset.everythingIncluded.short", defaultValue: "Everything")
+            return CollectionDocumentSettings(opening: .citation, bodyDepth: .index, footnotes: false,
+                                              sourceNote: false, notes: true, highlights: false, headnotes: false)
+        case .citationsWithSourceNotes:
+            return CollectionDocumentSettings(opening: .citation, bodyDepth: .index, footnotes: false,
+                                              sourceNote: true, notes: false, highlights: false, headnotes: false)
+        case .fullTextWithEverything:
+            return CollectionDocumentSettings(opening: .volumeHeading, bodyDepth: .full, footnotes: true,
+                                              sourceNote: true, notes: true, highlights: true, headnotes: true)
         }
     }
 
-    /// A short descriptor under the compact template chip: how the documents are presented
-    /// ("full text" / "AI" / "citations" / "all on").
-    public var shortTag: String {
+    /// Step 2: the apparatus suggested for the template, decision 139's table, each set with the Note on the Text (the
+    /// design's §4.3). No set gains a block of the design's §8.2 (decision 173).
+    public var suggestedApparatus: CollectionApparatusSettings {
         switch self {
         case .fullTextAsPrinted:
-            return String(localized: "collection.preset.fullTextAsPrinted.tag", defaultValue: "full text")
+            return CollectionApparatusSettings(contentsStyle: .citation, wordCloud: false,
+                                               blocks: [.bibliography, .archivalSources, .noteOnTheText])
         case .fullTextWithAnnotations:
-            return String(localized: "collection.preset.fullTextWithAnnotations.tag", defaultValue: "full text")
-        case .summariesWithOverview:
-            return String(localized: "collection.preset.summariesWithOverview.tag", defaultValue: "AI")
+            return CollectionApparatusSettings(contentsStyle: .headerAndDateline, wordCloud: false,
+                                               blocks: [.chronology, .personsIndex, .noteOnTheText])
+        case .summaries:
+            return CollectionApparatusSettings(contentsStyle: .headerAndDateline, wordCloud: true,
+                                               blocks: [.chronology, .thematicIndex, .noteOnTheText])
         case .citationsWithNotes:
-            return String(localized: "collection.preset.citationsWithNotes.tag", defaultValue: "citations")
-        case .citationsWithArchivalSources:
-            return String(localized: "collection.preset.citationsWithArchivalSources.tag", defaultValue: "citations")
-        case .everythingIncluded:
-            return String(localized: "collection.preset.everythingIncluded.tag", defaultValue: "all on")
+            return CollectionApparatusSettings(contentsStyle: .citation, wordCloud: false,
+                                               blocks: [.bibliography, .thematicIndex, .noteOnTheText])
+        case .citationsWithSourceNotes:
+            return CollectionApparatusSettings(contentsStyle: .citation, wordCloud: false,
+                                               blocks: [.archivalSources, .personsIndex, .noteOnTheText])
+        case .fullTextWithEverything:
+            return CollectionApparatusSettings(contentsStyle: .citation, wordCloud: true,
+                                               blocks: [.bibliography, .chronology, .archivalSources, .personsIndex,
+                                                        .thematicIndex, .noteOnTheText])
         }
     }
 
-    /// The apparatus blocks the preset composes (each placed front/back per its type by the host).
-    public var apparatusBlocks: [CollectionGeneratedBlockType] { recipe.apparatus }
-
-    /// The preset's apparatus blocks that are **not** already present, given the set of
-    /// `generatedBlockType` raw values the collection already carries — the append-only,
-    /// non-destructive filter the host uses to decide which blocks to insert.
-    public func apparatusBlocks(notAlreadyIn presentRawValues: Set<String>) -> [CollectionGeneratedBlockType] {
-        recipe.apparatus.filter { !presentRawValues.contains($0.rawValue) }
+    /// The template whose seven settings are `settings`, if one's are: the template *in force*, whose card is drawn
+    /// chosen. A comparison and not a record, since nothing stores which template was chosen.
+    public static func matching(_ settings: CollectionDocumentSettings) -> CollectionPreset? {
+        allCases.first { $0.documents == settings }
     }
 
-    /// The resolved field set for one preset — one place so `apply` and `apparatusBlocks` agree.
-    public struct Recipe: Sendable {
-        /// The collection's default body depth.
-        public let bodyDepth: CollectionBodyDepth
-        /// Whether footnotes are included.
-        public let footnotes: Bool
-        /// Whether each document's archival source note is included.
-        public let sourceNote: Bool
-        /// Whether research notes are included.
-        public let notes: Bool
-        /// Whether a document's headnote is on by default.
-        public let headnotes: Bool
-        /// Whether highlights are drawn.
-        public let highlights: Bool
-        /// Whether the word-cloud overview is drawn.
-        public let wordCloud: Bool
-        /// The contents' label style.
-        public let toc: CollectionToCStyle
-        /// The apparatus blocks the preset appends, in order.
-        public let apparatus: [CollectionGeneratedBlockType]
+    /// The template nearest `settings`, with the settings that differ from it in step 1's order: the fewest differences,
+    /// and of two templates as near, the one earlier in the grid. A new collection (decision 159) equals none, and ties
+    /// at two between *Full text as printed* and *Summaries* (the third review's J26), so it reads as like the first.
+    public static func nearest(to settings: CollectionDocumentSettings)
+        -> (preset: CollectionPreset, differences: [CollectionSetting]) {
+        var best = (preset: CollectionPreset.fullTextAsPrinted,
+                    differences: settings.differences(from: CollectionPreset.fullTextAsPrinted.documents))
+        for preset in allCases.dropFirst() {
+            let differences = settings.differences(from: preset.documents)
+            if differences.count < best.differences.count { best = (preset, differences) }
+        }
+        return best
     }
 
-    /// The template's recipe: the fields `applyFields(to:)` writes and `matches(_:)` compares, and the
-    /// apparatus `apparatusBlocks` lists. The six are decision 139's table, in the grid's order.
-    public var recipe: Recipe {
+    /// The templates in the order step 2's *Suggested for…* lists them (decision 168): the one for these documents
+    /// first, the template in force or else the nearest, then the rest in the grid's order.
+    public static func suggestionOrder(for settings: CollectionDocumentSettings) -> [CollectionPreset] {
+        let first = nearest(to: settings).preset
+        return [first] + allCases.filter { $0 != first }
+    }
+}
+
+// MARK: - CollectionSetting
+
+/// One of a collection's settings that a template, a section or a document can set (L44): one name for each, wherever
+/// it shows (the design's §5.2), so step 1, a section's sheet, a document's settings and the lines that say what changed
+/// or differs read one word.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public enum CollectionSetting: String, CaseIterable, Sendable {
+    /// Which line leads a document: the collection's alone.
+    case opening
+    /// How much of each document prints.
+    case bodyDepth
+    /// The prompt a summary is written under.
+    case summaryPrompt
+    /// The volume's footnotes.
+    case footnotes
+    /// The document's archival source note.
+    case sourceNote
+    /// The *See also* line under a document.
+    case seeAlso
+    /// The researcher's notes.
+    case notes
+    /// The researcher's highlights, drawn in the text.
+    case highlights
+    /// A headnote above the document.
+    case headnotes
+
+    /// The seven a document template sets, in step 1's order (the design's §4.3): *Opening*, then 1.0's *Document
+    /// content* and *Your annotations*.
+    public static let templateSettings: [CollectionSetting] =
+        [.opening, .bodyDepth, .footnotes, .sourceNote, .notes, .highlights, .headnotes]
+
+    /// The setting's name, as every control that sets it is labelled.
+    public var displayName: String {
         switch self {
-        case .fullTextAsPrinted:
-            return Recipe(bodyDepth: .full, footnotes: true, sourceNote: true, notes: false,
-                          headnotes: false, highlights: false, wordCloud: false,
-                          toc: .citation, apparatus: [.bibliography, .archivalSources])
-        case .fullTextWithAnnotations:
-            return Recipe(bodyDepth: .full, footnotes: false, sourceNote: true, notes: true,
-                          headnotes: true, highlights: true, wordCloud: false,
-                          toc: .headerAndDateline, apparatus: [.chronology, .personsIndex])
-        case .summariesWithOverview:
-            return Recipe(bodyDepth: .summaryOnly, footnotes: false, sourceNote: false, notes: true,
-                          headnotes: false, highlights: false, wordCloud: true,
-                          toc: .headerAndDateline, apparatus: [.chronology, .thematicIndex])
-        case .citationsWithNotes:
-            return Recipe(bodyDepth: .index, footnotes: false, sourceNote: false, notes: true,
-                          headnotes: false, highlights: false, wordCloud: false,
-                          toc: .citation, apparatus: [.bibliography, .thematicIndex])
-        case .citationsWithArchivalSources:
-            return Recipe(bodyDepth: .index, footnotes: false, sourceNote: true, notes: false,
-                          headnotes: false, highlights: false, wordCloud: false,
-                          toc: .citation, apparatus: [.archivalSources, .personsIndex])
-        case .everythingIncluded:
-            return Recipe(bodyDepth: .full, footnotes: true, sourceNote: true, notes: true,
-                          headnotes: true, highlights: true, wordCloud: true,
-                          toc: .citation,
-                          apparatus: [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex])
+        case .opening:
+            return String(localized: "collection.setting.opening", defaultValue: "Opening")
+        case .bodyDepth:
+            return String(localized: "collection.setting.bodyDepth", defaultValue: "Body depth")
+        case .summaryPrompt:
+            return String(localized: "collection.setting.summaryPrompt", defaultValue: "Summary prompt")
+        case .footnotes:
+            return String(localized: "collection.setting.footnotes", defaultValue: "Footnotes")
+        case .sourceNote:
+            return String(localized: "collection.setting.sourceNote", defaultValue: "Archival source note")
+        case .seeAlso:
+            return String(localized: "collection.setting.seeAlso", defaultValue: "See also")
+        case .notes:
+            return String(localized: "collection.setting.notes", defaultValue: "Research notes")
+        case .highlights:
+            return String(localized: "collection.setting.highlights", defaultValue: "Highlights in body")
+        case .headnotes:
+            return String(localized: "collection.setting.headnotes", defaultValue: "Headnotes")
         }
+    }
+
+    /// "On" or "Off", the words a switch's value is said in wherever a line names it.
+    public static func onOff(_ value: Bool) -> String {
+        value
+            ? String(localized: "collection.setting.on", defaultValue: "On")
+            : String(localized: "collection.setting.off", defaultValue: "Off")
+    }
+
+    /// What a choice that follows says it follows (the design's §4.2): *Follow the section: On*, where a section above
+    /// sets the value, else *Follow the collection: Off*. A section's own choice follows the sections around it, and a
+    /// document's the sections it is in; the collection always sets a value, so nothing reads *Not set above*.
+    ///
+    /// - Parameters:
+    ///   - value: The words for the value in force there, such as ``onOff(_:)``'s.
+    ///   - fromSection: Whether a section above sets it, rather than the collection.
+    /// - Returns: The choice's words.
+    public static func follows(_ value: String, fromSection: Bool) -> String {
+        fromSection
+            ? String(localized: "collection.setting.followSection", defaultValue: "Follow the section: \(value)")
+            : String(localized: "collection.setting.followCollection", defaultValue: "Follow the collection: \(value)")
+    }
+}
+
+// MARK: - CollectionDocumentSettings
+
+/// The seven settings a document template sets (step 1; ``CollectionSetting/templateSettings``), as a collection holds
+/// them or a template writes them (L44). The cascade below the collection, a section's or a document's own value, is not
+/// among them: a template never touches it (the design's §4.3).
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public struct CollectionDocumentSettings: Sendable, Equatable {
+    /// Which line leads a document with no title of the author's: the citation or the volume's heading.
+    public var opening: CollectionDocumentPlan.Opening
+    /// How much of each document prints.
+    public var bodyDepth: CollectionBodyDepth
+    /// Whether the volume's footnotes print.
+    public var footnotes: Bool
+    /// Whether each document's archival source note prints.
+    public var sourceNote: Bool
+    /// Whether the researcher's notes print.
+    public var notes: Bool
+    /// Whether the researcher's highlights are drawn in the text.
+    public var highlights: Bool
+    /// Whether a document prints its headnote by default.
+    public var headnotes: Bool
+
+    /// The seven settings, as given.
+    public init(opening: CollectionDocumentPlan.Opening, bodyDepth: CollectionBodyDepth, footnotes: Bool,
+                sourceNote: Bool, notes: Bool, highlights: Bool, headnotes: Bool) {
+        self.opening = opening
+        self.bodyDepth = bodyDepth
+        self.footnotes = footnotes
+        self.sourceNote = sourceNote
+        self.notes = notes
+        self.highlights = highlights
+        self.headnotes = headnotes
+    }
+
+    /// A collection's seven, read from its values as its export reads them (``CollectionExportOptions/init(composing:)``):
+    /// an absent field at the model's default, the footnote pair derived from the legacy `footnoteStyle` where it is
+    /// unset, and an absent opening as the citation leading, 1.0's.
+    ///
+    /// - Parameter collection: The collection's values.
+    public init(composing collection: CollectionExport) {
+        let options = CollectionExportOptions(composing: collection)
+        self.init(opening: options.volumeHeadingLeads ? .volumeHeading : .citation,
+                  bodyDepth: CollectionBodyDepth(rawValue: collection.defaultBodyDepth ?? "full") ?? .full,
+                  footnotes: options.includeFootnotes, sourceNote: options.includeSourceNote,
+                  notes: options.includeNotes, highlights: options.applyHighlights,
+                  headnotes: options.includeHeadnoteDefault)
+    }
+
+    /// The settings of these seven that differ from `other`'s, in step 1's order. An opening of the author's title
+    /// reads as the citation's, as a collection's absent opening does: a collection never sets the title's.
+    public func differences(from other: CollectionDocumentSettings) -> [CollectionSetting] {
+        CollectionSetting.templateSettings.filter { setting in
+            switch setting {
+            case .opening:     return (opening == .volumeHeading) != (other.opening == .volumeHeading)
+            case .bodyDepth:   return bodyDepth != other.bodyDepth
+            case .footnotes:   return footnotes != other.footnotes
+            case .sourceNote:  return sourceNote != other.sourceNote
+            case .notes:       return notes != other.notes
+            case .highlights:  return highlights != other.highlights
+            case .headnotes:   return headnotes != other.headnotes
+            case .summaryPrompt, .seeAlso: return false
+            }
+        }
+    }
+
+    /// The words for one setting's value here: an opening's or a body depth's name, or *On* or *Off*. Empty for a
+    /// setting a template does not set.
+    public func valueName(of setting: CollectionSetting) -> String {
+        switch setting {
+        case .opening:     return Self.openingName(opening)
+        case .bodyDepth:   return bodyDepth.displayName
+        case .footnotes:   return CollectionSetting.onOff(footnotes)
+        case .sourceNote:  return CollectionSetting.onOff(sourceNote)
+        case .notes:       return CollectionSetting.onOff(notes)
+        case .highlights:  return CollectionSetting.onOff(highlights)
+        case .headnotes:   return CollectionSetting.onOff(headnotes)
+        case .summaryPrompt, .seeAlso: return ""
+        }
+    }
+
+    /// The two openings a collection offers, in the words its picker shows.
+    public static func openingName(_ opening: CollectionDocumentPlan.Opening) -> String {
+        switch opening {
+        case .volumeHeading:
+            return String(localized: "composition.opening.volumeHeading", defaultValue: "The volume’s heading leads")
+        case .citation, .title:
+            return String(localized: "composition.opening.citation", defaultValue: "The citation leads")
+        }
+    }
+
+    /// The line step 1 shows after a template is chosen (the design's §4.3): what changed, old to new — "Changed
+    /// Footnotes from On to Off and Research notes from Off to On." — or that nothing did.
+    ///
+    /// - Parameter new: The settings after the choice.
+    /// - Returns: The line.
+    public func changeSentence(to new: CollectionDocumentSettings) -> String {
+        let items = new.differences(from: self).map { setting in
+            let name = setting.displayName, old = valueName(of: setting), now = new.valueName(of: setting)
+            return String(localized: "collection.template.change.item",
+                          defaultValue: "\(name) from \(old) to \(now)")
+        }
+        guard !items.isEmpty else {
+            return String(localized: "collection.template.change.none",
+                          defaultValue: "Nothing changed: this collection’s documents already had these settings.")
+        }
+        let list = CollectionTemplateWords.joined(items)
+        return String(localized: "collection.template.change.sentence", defaultValue: "Changed \(list).")
+    }
+}
+
+// MARK: - CollectionDocumentsState
+
+/// What step 1's row, the Mac's New Collection menu and step 1's line under its templates say of a collection's
+/// documents (L44; the design's §4.3): the template in force, or the nearest one and how many settings differ from it.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public enum CollectionDocumentsState: Equatable, Sendable {
+    /// The documents are this template's.
+    case template(CollectionPreset)
+    /// The documents are no template's: like this one but for `differences`.
+    case like(CollectionPreset, differences: [CollectionSetting])
+
+    /// The state of `settings`: the template that matches, else the nearest.
+    public init(_ settings: CollectionDocumentSettings) {
+        if let preset = CollectionPreset.matching(settings) {
+            self = .template(preset)
+        } else {
+            let nearest = CollectionPreset.nearest(to: settings)
+            self = .like(nearest.preset, differences: nearest.differences)
+        }
+    }
+
+    /// The template named: the one in force or the nearest.
+    public var preset: CollectionPreset {
+        switch self {
+        case .template(let preset), .like(let preset, _): return preset
+        }
+    }
+
+    /// The row's words: *Full text as printed*, or *Like Full text as printed · 2 differ*.
+    public var summary: String {
+        switch self {
+        case .template(let preset):
+            return preset.displayName
+        case .like(let preset, let differences):
+            return CountCopy.phrase(
+                differences.count,
+                one: String(localized: "collection.documents.like.one", defaultValue: "Like %2$@ · %1$@ differs"),
+                many: String(localized: "collection.documents.like.many", defaultValue: "Like %2$@ · %1$@ differ"),
+                then: [preset.displayName])
+        }
+    }
+
+    /// The line under step 1's templates for documents no template's equal, naming each setting that differs and its
+    /// value here: "Like Full text as printed, except Archival source note, Off, and Research notes, On." `nil` where
+    /// a template is in force.
+    ///
+    /// - Parameter settings: The collection's seven, whose values the line names.
+    public func differencesSentence(_ settings: CollectionDocumentSettings) -> String? {
+        guard case .like(let preset, let differences) = self else { return nil }
+        let items = differences.map { setting in
+            let name = setting.displayName, value = settings.valueName(of: setting)
+            return String(localized: "collection.documents.difference.item", defaultValue: "\(name), \(value)")
+        }
+        let list = CollectionTemplateWords.joined(items)
+        let template = preset.displayName
+        return String(localized: "collection.documents.differences",
+                      defaultValue: "Like \(template), except \(list).")
+    }
+}
+
+// MARK: - CollectionApparatusSettings
+
+/// Step 2's state (L44; the design's §4.3): the contents list's style and the word-cloud overview, as 1.0 stores them,
+/// and the blocks the outline has a row of. A block's tick is not a setting: it says the outline has that block's row.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public struct CollectionApparatusSettings: Sendable, Equatable {
+    /// The contents list's style. The list always prints.
+    public var contentsStyle: CollectionToCStyle
+    /// Whether the word-cloud overview prints.
+    public var wordCloud: Bool
+    /// The block types the outline has a row of, whatever their places.
+    public var blocks: Set<CollectionGeneratedBlockType>
+
+    /// The settings, as given.
+    public init(contentsStyle: CollectionToCStyle, wordCloud: Bool, blocks: Set<CollectionGeneratedBlockType>) {
+        self.contentsStyle = contentsStyle
+        self.wordCloud = wordCloud
+        self.blocks = blocks
+    }
+
+    /// The blocks in step 2's order, the block types' own (`allCases`).
+    public var orderedBlocks: [CollectionGeneratedBlockType] {
+        CollectionGeneratedBlockType.allCases.filter { blocks.contains($0) }
+    }
+
+    /// Step 2's row's words, what the collection has: "Contents by citation · Bibliography · Note on the Text".
+    public var summary: String {
+        let contents: String
+        switch contentsStyle {
+        case .citation:
+            contents = String(localized: "collection.apparatus.contents.citation", defaultValue: "Contents by citation")
+        case .headerAndDateline:
+            contents = String(localized: "collection.apparatus.contents.heading",
+                              defaultValue: "Contents by heading and dateline")
+        }
+        var parts = [contents]
+        if wordCloud {
+            parts.append(String(localized: "collection.apparatus.wordCloud", defaultValue: "Word cloud"))
+        }
+        parts += orderedBlocks.map(\.displayName)
+        return parts.joined(separator: " · ")
+    }
+
+    /// What step 2's row offers in one tap (decision 157; the third review's J14): where the collection's documents are
+    /// a template's, that template's suggested set **added** to what the collection has — the blocks it lacks, and the
+    /// word cloud where the set has it — and nothing removed, so the tap takes away nothing the author placed. The
+    /// contents list's style is left as it is, since a style is replaced, never added; *Suggested for…* in step 2 sets
+    /// it. `nil` where the documents are no template's, or the collection already has the whole set.
+    ///
+    /// - Parameters:
+    ///   - documents: The collection's seven.
+    ///   - apparatus: The collection's apparatus now.
+    /// - Returns: The template, and the apparatus after the tap.
+    public static func offer(documents: CollectionDocumentSettings, apparatus: CollectionApparatusSettings)
+        -> (preset: CollectionPreset, adding: CollectionApparatusSettings)? {
+        guard let preset = CollectionPreset.matching(documents) else { return nil }
+        let suggested = preset.suggestedApparatus
+        let after = CollectionApparatusSettings(contentsStyle: apparatus.contentsStyle,
+                                                wordCloud: apparatus.wordCloud || suggested.wordCloud,
+                                                blocks: apparatus.blocks.union(suggested.blocks))
+        return after == apparatus ? nil : (preset, after)
+    }
+}
+
+// MARK: - CollectionApparatusShortcut
+
+/// One of step 2's three shortcuts (decision 168): *Suggested for…* a template, *All* and *None*. A shortcut both adds
+/// and removes, in view, with *Undo* (the design's §4.3): it sets the blocks, and the word cloud and the contents list
+/// where it says them. The colophon, the project stamp and the query log are no shortcut's (decision 170).
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public enum CollectionApparatusShortcut: Hashable, Sendable {
+    /// A template's suggested set: its contents style, its word cloud and its blocks, exactly.
+    case suggested(CollectionPreset)
+    /// Every block and the word cloud; the contents list's style as it is.
+    case all
+    /// No block and no word cloud; the contents list, which always prints, in its style as it is.
+    case none
+
+    /// The apparatus after the shortcut, from `current`.
+    public func applied(to current: CollectionApparatusSettings) -> CollectionApparatusSettings {
+        switch self {
+        case .suggested(let preset):
+            return preset.suggestedApparatus
+        case .all:
+            return CollectionApparatusSettings(contentsStyle: current.contentsStyle, wordCloud: true,
+                                               blocks: Set(CollectionGeneratedBlockType.allCases))
+        case .none:
+            return CollectionApparatusSettings(contentsStyle: current.contentsStyle, wordCloud: false, blocks: [])
+        }
+    }
+
+    /// The shortcut's name: "Suggested for Summaries", "All", "None".
+    public var title: String {
+        switch self {
+        case .suggested(let preset):
+            let template = preset.displayName
+            return String(localized: "collection.apparatus.shortcut.suggested", defaultValue: "Suggested for \(template)")
+        case .all:
+            return String(localized: "collection.apparatus.shortcut.all", defaultValue: "All")
+        case .none:
+            return String(localized: "collection.apparatus.shortcut.none", defaultValue: "None")
+        }
+    }
+}
+
+// MARK: - CollectionApparatusChange
+
+/// What one of step 2's changes did (L44): the blocks added and removed, and the contents style and the word cloud where
+/// they changed. Its sentence is the line step 2 shows where the change was made, with *Undo* (the third review's J17),
+/// and the label of step 2's row's one tap, which lists every change it makes (J14).
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+public struct CollectionApparatusChange: Equatable, Sendable {
+    /// The blocks added, in step 2's order.
+    public let added: [CollectionGeneratedBlockType]
+    /// The blocks removed, in step 2's order.
+    public let removed: [CollectionGeneratedBlockType]
+    /// The contents list's style before and after, where it changed.
+    public let contentsStyle: (from: CollectionToCStyle, to: CollectionToCStyle)?
+    /// The word cloud after, where it changed.
+    public let wordCloud: Bool?
+
+    /// The change from `old` to `new`.
+    public init(from old: CollectionApparatusSettings, to new: CollectionApparatusSettings) {
+        added = new.orderedBlocks.filter { !old.blocks.contains($0) }
+        removed = old.orderedBlocks.filter { !new.blocks.contains($0) }
+        contentsStyle = old.contentsStyle == new.contentsStyle ? nil : (old.contentsStyle, new.contentsStyle)
+        wordCloud = old.wordCloud == new.wordCloud ? nil : new.wordCloud
+    }
+
+    /// Whether nothing changed.
+    public var isEmpty: Bool {
+        added.isEmpty && removed.isEmpty && contentsStyle == nil && wordCloud == nil
+    }
+
+    /// The line: "Added Bibliography and Sources & Archives. Removed Chronology. Contents list from Header & Dateline
+    /// to Citation. Word-cloud overview off." — or that nothing changed.
+    public var sentence: String {
+        guard !isEmpty else {
+            return String(localized: "collection.apparatus.change.none",
+                          defaultValue: "Nothing changed: this collection already had this apparatus.")
+        }
+        var sentences: [String] = []
+        if !added.isEmpty {
+            let list = CollectionTemplateWords.joined(added.map(\.displayName))
+            sentences.append(String(localized: "collection.apparatus.change.added", defaultValue: "Added \(list)."))
+        }
+        if !removed.isEmpty {
+            let list = CollectionTemplateWords.joined(removed.map(\.displayName))
+            sentences.append(String(localized: "collection.apparatus.change.removed", defaultValue: "Removed \(list)."))
+        }
+        if let style = contentsStyle {
+            let old = style.from.displayName, new = style.to.displayName
+            sentences.append(String(localized: "collection.apparatus.change.contents",
+                                    defaultValue: "Contents list from \(old) to \(new)."))
+        }
+        if let cloud = wordCloud {
+            sentences.append(cloud
+                ? String(localized: "collection.apparatus.change.wordCloudOn", defaultValue: "Word-cloud overview on.")
+                : String(localized: "collection.apparatus.change.wordCloudOff", defaultValue: "Word-cloud overview off."))
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// The one tap's label, which says every change it makes (J14): "Add Bibliography, Sources & Archives and the word
+    /// cloud". Only additions, since the one tap only adds (``CollectionApparatusSettings/offer(documents:apparatus:)``).
+    public var addLabel: String {
+        var items = added.map(\.displayName)
+        if wordCloud == true {
+            items.append(String(localized: "collection.apparatus.offer.wordCloud", defaultValue: "the word cloud"))
+        }
+        let list = CollectionTemplateWords.joined(items)
+        return String(localized: "collection.apparatus.offer.add", defaultValue: "Add \(list)")
+    }
+
+    public static func == (lhs: CollectionApparatusChange, rhs: CollectionApparatusChange) -> Bool {
+        lhs.added == rhs.added && lhs.removed == rhs.removed && lhs.wordCloud == rhs.wordCloud
+            && lhs.contentsStyle?.from == rhs.contentsStyle?.from && lhs.contentsStyle?.to == rhs.contentsStyle?.to
+    }
+}
+
+// MARK: - CollectionTemplateWords
+
+/// How the two steps' lines join a list: "a", "a and b", "a, b and c", as the Note on the Text writes one.
+enum CollectionTemplateWords {
+    /// `items` joined into one phrase.
+    static func joined(_ items: [String]) -> String {
+        guard let last = items.last else { return "" }
+        guard items.count > 1 else { return last }
+        let andWord = String(localized: "collection.template.and", defaultValue: "and")
+        return items.dropLast().joined(separator: ", ") + " \(andWord) " + last
     }
 }
 

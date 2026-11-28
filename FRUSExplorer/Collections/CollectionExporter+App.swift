@@ -18,41 +18,90 @@ import UIKit
 // CollectionExporter.swift`); what reads a SwiftData `Collection`, Apple Intelligence, the method
 // appendix or AppKit and UIKit stays here, with the format list the export sheet offers.
 
-// MARK: - CollectionPreset
+// MARK: - The two steps (L44)
+
+extension Collection {
+
+    /// The collection's seven step-1 settings (L44), read as its export reads them
+    /// (`CollectionDocumentSettings(composing:)`, FRUSCoreKit's): what a template's card is compared with, and what
+    /// step 1's line says changed.
+    @MainActor
+    var documentSettings: CollectionDocumentSettings {
+        CollectionDocumentSettings(composing: CollectionExport(self, entries: []))
+    }
+
+    /// Writes step 1's seven settings, which choosing a document template does (the design's §4.3), and nothing else:
+    /// not the apparatus, the summary prompt, a section's or a document's own settings, the citation style, the
+    /// wording or the title page. The footnote pair goes through the model's effective accessors, which keep the legacy
+    /// `footnoteStyle` for 1.0's readers.
+    ///
+    /// Until L44 a template wrote eight fields at once (`CollectionPreset.applyFields(to:)`), two of which, the contents
+    /// list's style and the word cloud, are step 2's now, and it never wrote the opening, which L43 added.
+    ///
+    /// - Parameter settings: The seven, as a template gives them.
+    @MainActor
+    func applyDocuments(_ settings: CollectionDocumentSettings) {
+        opening = (settings.opening == .volumeHeading ? CollectionDocumentPlan.Opening.volumeHeading
+                                                      : CollectionDocumentPlan.Opening.citation).rawValue
+        defaultBodyDepth = settings.bodyDepth.rawValue
+        effectiveIncludeFootnotes = settings.footnotes
+        effectiveIncludeSourceNote = settings.sourceNote
+        includeNotes = settings.notes
+        applyHighlights = settings.highlights
+        defaultIncludeHeadnote = settings.headnotes
+    }
+
+    /// The stored fields step 1's seven are read from, each as it is stored (L44), so that a choice's *Undo* puts back
+    /// exactly what was there: a footnote flag left unset, which reads from the legacy `footnoteStyle`, is unset again,
+    /// where writing the seven back would set it.
+    struct DocumentFields: Equatable {
+        /// `opening`, as stored.
+        var opening: String?
+        /// `defaultBodyDepth`, as stored.
+        var defaultBodyDepth: String
+        /// `footnoteStyle`, as stored.
+        var footnoteStyle: String
+        /// `includeFootnotes`, as stored.
+        var includeFootnotes: Bool?
+        /// `includeSourceNote`, as stored.
+        var includeSourceNote: Bool?
+        /// `includeNotes`, as stored.
+        var includeNotes: Bool
+        /// `applyHighlights`, as stored.
+        var applyHighlights: Bool
+        /// `defaultIncludeHeadnote`, as stored.
+        var defaultIncludeHeadnote: Bool
+    }
+
+    /// The fields step 1's seven are read from, as stored; setting it writes each back as given.
+    @MainActor
+    var documentFields: DocumentFields {
+        get {
+            DocumentFields(opening: opening, defaultBodyDepth: defaultBodyDepth, footnoteStyle: footnoteStyle,
+                           includeFootnotes: includeFootnotes, includeSourceNote: includeSourceNote,
+                           includeNotes: includeNotes, applyHighlights: applyHighlights,
+                           defaultIncludeHeadnote: defaultIncludeHeadnote)
+        }
+        set {
+            opening = newValue.opening
+            defaultBodyDepth = newValue.defaultBodyDepth
+            footnoteStyle = newValue.footnoteStyle
+            includeFootnotes = newValue.includeFootnotes
+            includeSourceNote = newValue.includeSourceNote
+            includeNotes = newValue.includeNotes
+            applyHighlights = newValue.applyHighlights
+            defaultIncludeHeadnote = newValue.defaultIncludeHeadnote
+        }
+    }
+}
 
 extension CollectionPreset {
 
-    /// Overwrites `collection`'s composition **fields** to the preset's recipe. Apparatus is added
-    /// separately by the host (see `apparatusBlocks(notAlreadyIn:)`); this touches only scalar
-    /// fields, which every host reads live via `@Bindable`, so the preview updates immediately.
-    @MainActor
-    func applyFields(to collection: Collection) {
-        let r = recipe
-        collection.defaultBodyDepth = r.bodyDepth.rawValue
-        collection.effectiveIncludeFootnotes = r.footnotes
-        collection.effectiveIncludeSourceNote = r.sourceNote
-        collection.includeNotes = r.notes
-        collection.defaultIncludeHeadnote = r.headnotes
-        collection.applyHighlights = r.highlights
-        collection.includeWordCloud = r.wordCloud
-        collection.tocStyle = r.toc.rawValue
-    }
-
-    /// Whether `collection`'s current composition scalar fields all equal this preset's recipe —
-    /// i.e. this preset is the collection's active starting composition, so the Composer preset
-    /// grid highlights its card (Composer v2). Apparatus is intentionally NOT compared: preset
-    /// apparatus is append-only/non-destructive, so a collection carrying extra blocks still matches.
+    /// Whether this template is the one in force for `collection`: its seven step-1 settings equal the collection's
+    /// (L44). Step 2 is not compared, since a template's apparatus is only suggested (decision 157).
     @MainActor
     func matches(_ collection: Collection) -> Bool {
-        let r = recipe
-        return collection.defaultBodyDepth == r.bodyDepth.rawValue
-            && collection.effectiveIncludeFootnotes == r.footnotes
-            && collection.effectiveIncludeSourceNote == r.sourceNote
-            && collection.includeNotes == r.notes
-            && collection.defaultIncludeHeadnote == r.headnotes
-            && collection.applyHighlights == r.highlights
-            && collection.includeWordCloud == r.wordCloud
-            && collection.tocStyle == r.toc.rawValue
+        documents == collection.documentSettings
     }
 }
 
@@ -73,8 +122,8 @@ extension CollectionBodyDepth {
 
 extension CollectionExportOptions {
 
-    /// The options `collection`'s own composition settings give: what the Composition section
-    /// stores, with nothing decided by the format.
+    /// The options `collection`'s own settings give: what its two steps and its other settings store, with nothing
+    /// decided by the format.
     ///
     /// One builder for the two callers that used to write the same eight lines apart: the export
     /// sheet (through ``ExportFormat/exportOptions(for:)``) and the content resolver's

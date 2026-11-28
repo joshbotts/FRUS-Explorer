@@ -28,6 +28,11 @@ import XCTest
 /// Collection settings straight for the list SKIP on the sheet route: only the pushed screen covers the editor, and
 /// that is the state they need. Expect 9 tests with 0 skipped on an iPhone, and 9 with 3 skipped on an iPad.
 ///
+/// **Since L44 the colophon and the other two export switches are step 2's** (decision 170), a screen pushed in the
+/// settings' own stack, so the tests that turn one on open *Apparatus* first, and the three tests that typed into a
+/// heading's Section defaults sheet, which wrote the collection itself (#1413), drive step 2's switches beside the
+/// settings' fields: the sheet holds the section's own settings now, and nothing of the collection's.
+///
 /// **A narrow iPad is a third layout, and only it reaches the Add menu's overflow (#1450).** On iPad Air 11-inch in
 /// portrait the regular-width toolbar folds ＋ Add into its ⋯ overflow, while ⚙ Collection stays in the bar and
 /// Collection settings is still the sheet. Measured there (M4, iOS 26.5, 2026-10-01): 8 tests, 3 skipped, none failed,
@@ -63,11 +68,11 @@ import XCTest
 /// pre-#1415 editor on iPhone 17 (iOS 26.5). Neither can see an app kill — the UI-test store lives in memory — so the save made with each edit is
 /// pinned by `CollectionEditorNamingTests` instead.
 ///
-/// **A heading's Section defaults sheet writes the collection itself (#1413)** — its description, subtitle, author
-/// line and front-matter toggles (`CollectionAttributesRows`). Before, the editor went on showing the values it opened
-/// with, and its next save wrote every one of them back: a rename, or even the editor following a toggle flipped in
-/// that same sheet. The three Section defaults tests run on both idioms, and all three failed on the pre-#1413 editor
-/// on iPhone 17 and on iPad Pro 13-inch (M5).
+/// **Until L44 a heading's Section defaults sheet wrote the collection itself (#1413)** — its description, subtitle,
+/// author line and front-matter toggles (`CollectionAttributesRows`). Before #1413 the editor went on showing the values
+/// it opened with, and its next save wrote every one of them back: a rename, or even the editor following a toggle
+/// flipped in that same sheet. The three tests run on both idioms, and all three failed on the pre-#1413 editor on
+/// iPhone 17 and on iPad Pro 13-inch (M5); L44 moved them to step 2's switches, the second surface since.
 ///
 /// **The name has spaces in it, but this suite does not guard the whitespace rule.** The editor saves the name
 /// trimmed and follows the saved name back into its field. Measured on iPhone 17 (iOS 26.5), a mutant that compared
@@ -106,6 +111,7 @@ import XCTest
 ///   1.7 — 2026-10-17 (plan of record §6g): every wait is ``patience``, 30 s, where most were 5 s, because one query
 ///         on these screens takes seconds under Xcode 27.1; the three Section defaults tests, which failed on `v2` in a
 ///         5 s wait, pass again, given 600 s a test
+///   1.8 — L44: the three Section defaults tests drive step 2's switches, and the colophon is turned on in step 2
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -267,6 +273,8 @@ final class CollectionEditorTitleTests: XCTestCase {
         type(Self.note, into: "collection.editor.note.field", what: "note")
         type(Self.subtitle, into: "collection.editor.subtitle.field", what: "subtitle")
         dismissKeyboard()
+        // L44 (decision 170): the colophon is step 2's, a screen pushed over the settings, which the tab takes away too.
+        openApparatusStep()
         turnOn("collection.editor.colophon.toggle", what: "Include colophon")
         returnToTheListByTab()
 
@@ -284,77 +292,91 @@ final class CollectionEditorTitleTests: XCTestCase {
                        "The reopened collection's note does not read what was typed in Collection settings")
         XCTAssertEqual(value(of: "collection.editor.subtitle.field"), Self.subtitle,
                        "The reopened collection's subtitle does not read what was typed in Collection settings")
+        openApparatusStep()
         let colophon = reveal("collection.editor.colophon.toggle", what: "Include colophon")
         XCTAssertEqual(colophon.value as? String, "1",
-                       "The reopened collection's colophon is off; it was turned on in Collection settings")
+                       "The reopened collection's colophon is off; it was turned on in step 2")
     }
 
-    // MARK: - What a heading's Section defaults keep (#1413)
+    // MARK: - What step 2's switches keep (#1413's tests, moved by L44)
 
-    /// A subtitle typed in a heading's Section defaults sheet — which writes the collection itself — is what the
-    /// editor's own Subtitle field shows once the sheet closes, not the value the editor opened with (#1413).
-    func testTheEditorShowsASubtitleSetInSectionDefaults() throws {
+    // Until L44 these three tests typed into a heading's Section defaults sheet, which wrote the collection's own
+    // description, subtitle, author line and switches (#1413). L44 took the collection's settings out of that sheet (the
+    // design's §5.2), and the three switches into step 2, a screen of their own beside the settings' fields: the second
+    // surface #1413 guarded, now pushed in the settings' own stack. The hazard is the same, one surface's write lost to
+    // another's, and so are the checks.
+
+    /// A switch turned on in step 2 is what step 2 shows when it is opened again from the settings, after the settings
+    /// have closed and the editor has come back (#1413's first test, moved).
+    func testASwitchSetInTheApparatusStepIsShownWhenItOpensAgain() throws {
         launch()
         createCollection()
         addSectionHeading()
-        openSectionDefaults()
-        type(Self.subtitle, into: "collection.attributes.subtitle.field", what: "Section defaults subtitle")
-        closeSectionDefaults()
+        var route = openSettings()
+        openApparatusStep()
+        turnOn("collection.editor.colophon.toggle", what: "Include colophon")
+        leaveApparatusStep()
+        closeSettings(route)
 
-        let route = openSettings()
-        XCTAssertEqual(value(of: "collection.editor.subtitle.field"), Self.subtitle, """
-            Collection settings' Subtitle does not read the subtitle set in the heading's Section defaults: the editor \
-            still shows the copy it took when it opened, and its next edit would write that copy back.
+        route = openSettings()
+        openApparatusStep()
+        let colophon = reveal("collection.editor.colophon.toggle", what: "Include colophon")
+        XCTAssertEqual(colophon.value as? String, "1", """
+            Step 2's colophon reads off when it opens again: the switch turned on there did not reach the collection, \
+            or the editor showed the copy it took when it opened.
             """)
+        leaveApparatusStep()
         closeSettings(route)
     }
 
-    /// The acceptance case: a subtitle set in Section defaults survives the editor's next edit — here, naming the
-    /// collection in Collection settings (#1413). Before the fix, any edit in the editor wrote EVERY field it held,
-    /// from the copies it took when it opened, so the name's save put the old, empty subtitle back.
-    func testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit() throws {
+    /// The acceptance case: a switch turned on in step 2 survives the editor's next edit, here naming the collection in
+    /// Collection settings (#1413's second test, moved). Before #1413 any edit in the editor wrote every field it held,
+    /// from the copies it took when it opened.
+    func testASwitchSetInTheApparatusStepSurvivesTheEditorsNextEdit() throws {
         launch()
         createCollection()
         addSectionHeading()
-        openSectionDefaults()
-        type(Self.subtitle, into: "collection.attributes.subtitle.field", what: "Section defaults subtitle")
-        closeSectionDefaults()
-
         let route = openSettings()
+        openApparatusStep()
+        turnOn("collection.editor.colophon.toggle", what: "Include colophon")
+        leaveApparatusStep()
         typeName()
+        dismissKeyboard()
+
+        openApparatusStep()
+        let colophon = reveal("collection.editor.colophon.toggle", what: "Include colophon")
+        XCTAssertEqual(colophon.value as? String, "1", """
+            The colophon turned on in step 2 did not survive naming the collection: the editor's save wrote the copy it \
+            opened with back over it.
+            """)
+        leaveApparatusStep()
         closeSettings(route)
         XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "After naming it, the editor is not titled \"\(Self.name)\". Bars: \(barTitles())")
-
-        openSectionDefaults()
-        XCTAssertEqual(value(of: "collection.attributes.subtitle.field"), Self.subtitle, """
-            The subtitle set in Section defaults did not survive naming the collection: the editor's save wrote the \
-            subtitle it opened with back over it.
-            """)
-        closeSectionDefaults()
     }
 
-    /// The same sheet, on its own: a description typed in Section defaults survives a front-matter toggle flipped in
-    /// that sheet (#1413). The editor follows the toggle, and before the fix following it saved every field the
-    /// editor held — the description it opened with among them.
-    func testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet() throws {
+    /// A note typed in Collection settings survives a switch turned on in step 2 (#1413's third test, moved): the editor
+    /// follows the switch, and before #1413 following it saved every field the editor held, the note it opened with
+    /// among them.
+    func testANoteSurvivesASwitchInTheApparatusStep() throws {
         launch()
         createCollection()
         addSectionHeading()
-        openSectionDefaults()
-        type(Self.note, into: "collection.attributes.note.field", what: "Section defaults description")
+        let route = openSettings()
+        let addNote = element("collection.editor.note.add")
+        XCTAssertTrue(revealInSettings("collection.editor.note.add", what: "Add a note").exists)
+        addNote.tap()
+        type(Self.note, into: "collection.editor.note.field", what: "note")
         dismissKeyboard()
-        turnOn("collection.attributes.colophon.toggle", what: "Append colophon page on export")
-        closeSectionDefaults()
+        openApparatusStep()
+        turnOn("collection.editor.colophon.toggle", what: "Include colophon")
+        leaveApparatusStep()
 
-        openSectionDefaults()
-        XCTAssertEqual(value(of: "collection.attributes.note.field"), Self.note, """
-            The description typed in Section defaults did not survive the colophon toggle in the same sheet: the \
-            editor followed the toggle, saved, and wrote the description it opened with back over it.
+        XCTAssertEqual(value(of: "collection.editor.note.field"), Self.note, """
+            The note typed in Collection settings did not survive the colophon turned on in step 2: the editor followed \
+            the switch, saved, and wrote the note it opened with back over it.
             """)
-        let colophon = reveal("collection.attributes.colophon.toggle", what: "Append colophon page on export")
-        XCTAssertEqual(colophon.value as? String, "1", "The colophon toggled on in Section defaults reads off")
-        closeSectionDefaults()
+        closeSettings(route)
     }
 
     // MARK: - Linking from Collection settings (#1704)
@@ -532,16 +554,19 @@ final class CollectionEditorTitleTests: XCTestCase {
         XCTAssertTrue(waitUntil { app.keyboards.count == 0 }, "The keyboard's Done did not put it away")
     }
 
-    /// The toggle `identifier` names, scrolled up into view if it is not hittable. The drag runs at the screen's left
-    /// edge, over row labels, so it scrolls the list without landing on a control.
+    /// The toggle `identifier` names, scrolled up into view if it is not hittable. The drag runs at the leading edge of
+    /// step 2's screen, under its own navigation bar (L44), over row labels, so it scrolls the list without landing on a
+    /// control, and on the iPad's settings sheet never touches the dimmed window around it, where a touch closes it.
     private func reveal(_ identifier: String, what: String) -> XCUIElement {
         let target = element(identifier)
         let window = app.windows.firstMatch
         let origin = window.coordinate(withNormalizedOffset: .zero)
+        let bar = app.navigationBars["Apparatus"]
+        let x = bar.exists ? bar.frame.minX + 24 : 24
         var drags = 0
-        while !(target.exists && target.isHittable) && drags < 4 {
-            let start = origin.withOffset(CGVector(dx: 24, dy: window.frame.height * 0.7))
-            let end = origin.withOffset(CGVector(dx: 24, dy: window.frame.height * 0.4))
+        while !(target.exists && target.isHittable) && drags < 6 {
+            let start = origin.withOffset(CGVector(dx: x, dy: window.frame.height * 0.7))
+            let end = origin.withOffset(CGVector(dx: x, dy: window.frame.height * 0.4))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
             drags += 1
         }
@@ -585,25 +610,19 @@ final class CollectionEditorTitleTests: XCTestCase {
         XCTAssertTrue(waitUntil { (toggle.value as? String) == "1" }, "\"\(what)\" did not turn on")
     }
 
-    /// Opens the heading row's Section defaults sheet, which edits the collection's description, subtitle, author
-    /// line and front-matter toggles on the model itself (`CollectionAttributesRows`).
-    private func openSectionDefaults() {
-        let pill = app.buttons["Section defaults"].firstMatch
-        XCTAssertTrue(pill.waitForExistence(timeout: Self.patience),
-                      "The outline has no heading with a Section defaults pill. Buttons: \(visibleButtonLabels())")
-        pill.tap()
-        XCTAssertTrue(element("collection.attributes.subtitle.field").waitForExistence(timeout: Self.patience),
-                      "Section defaults opened no sheet holding the collection's Subtitle. Bars: \(barTitles())")
+    /// Opens step 2, *Apparatus*, from its row in Collection settings (L44), where the three export switches are.
+    private func openApparatusStep() {
+        let row = revealInSettings("collection.settings.apparatus.row", what: "the Apparatus row")
+        row.tap()
+        XCTAssertTrue(app.navigationBars["Apparatus"].waitForExistence(timeout: Self.patience),
+                      "The Apparatus row opened no step. Bars: \(barTitles())")
     }
 
-    /// Closes the Section defaults sheet with its navigation bar's Done — the only navigation-bar Done on screen, since
-    /// the pushed editor's own bar has none — and waits for it to go.
-    private func closeSectionDefaults() {
-        let done = app.navigationBars.buttons["Done"].firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: Self.patience),
-                      "The Section defaults sheet has no navigation-bar Done")
-        done.tap()
-        waitForAbsence(of: element("collection.attributes.subtitle.field"), "The Section defaults sheet did not close")
+    /// Goes back from step 2 to Collection settings.
+    private func leaveApparatusStep() {
+        backOut(from: "Apparatus")
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
+                      "Back from step 2 did not return to Collection settings. Bars: \(barTitles())")
     }
 
     /// The name field shows no text of its own: its value is empty, or is the field's placeholder.
@@ -2245,9 +2264,10 @@ func documentRowText(in app: XCUIApplication) -> XCUIElement {
 /// for an element is its label and its value, which XCUI reads back.
 ///
 /// - **A new collection's settings:** *Opening*, which a new collection sets to the volume's heading leading (decision
-///   159); *Citation style*, in the style Settings ▸ Display holds, History at State in the UI-test store (decision 160);
-///   *See also*, off; and *Wording*'s ten fields, each named "Contents, printed as" and valued with the word it prints.
-/// - **A section's sheet:** *Headnotes*, at Default.
+///   159), and *See also*, off, in step 1 since L44; *Citation style*, in the style Settings ▸ Display holds, History at
+///   State in the UI-test store (decision 160); and *Wording*'s ten fields, each named "Contents, printed as" and valued
+///   with the word it prints, on Wording's own screen since L44.
+/// - **A section's sheet:** *Headnotes*, following the collection: *Follow the collection: Off* since L44.
 /// - **A document's settings:** *Date line*, offered once the document has a title, and not before (decision 163).
 ///
 /// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`**: the iPhone pushes Collection settings and a
@@ -2256,6 +2276,7 @@ func documentRowText(in app: XCUIApplication) -> XCUIElement {
 ///
 /// Version history:
 ///   1.0 — L43: initial implementation
+///   1.1 — L44: Opening and See also in step 1, Wording a screen of its own, a section's Headnotes saying what it follows
 @MainActor
 final class CollectionFactsAccessibilityTests: XCTestCase {
 
@@ -2304,7 +2325,9 @@ final class CollectionFactsAccessibilityTests: XCTestCase {
         XCTAssertTrue(pill.waitForExistence(timeout: Self.patience), "Add Section Heading added no heading row")
         pill.tap()
         let headnotes = reveal("collection.inspector.sectionHeadnote.picker", what: "Headnotes", under: nil)
-        assertSpeaks(headnotes, name: "Headnotes", value: "Default", what: "A section's Headnotes default")
+        // L44 (the design's §4.2): the first choice says what it follows, where it read Default.
+        assertSpeaks(headnotes, name: "Headnotes", value: "Follow the collection: Off",
+                     what: "A section's Headnotes default")
         attachScreenshot("A section's sheet")
         let done = app.navigationBars.buttons["Done"].firstMatch
         XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The section's sheet has no Done")
@@ -2318,13 +2341,22 @@ final class CollectionFactsAccessibilityTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
                       "Collection settings did not open")
 
-        let opening = reveal("composition.opening.picker", what: "Opening", under: Self.settingsTitle)
+        // L44: Opening and See also are step 1's, a screen of its own.
+        let documents = reveal("collection.settings.documents.row", what: "Documents", under: Self.settingsTitle)
+        documents.tap()
+        XCTAssertTrue(app.navigationBars["Documents"].waitForExistence(timeout: Self.patience), "Documents did not open")
+        let opening = reveal("composition.opening.picker", what: "Opening", under: "Documents")
         assertSpeaks(opening, name: "Opening", value: "The volume’s heading leads",
                      what: "A new collection's Opening (decision 159)")
-        let seeAlso = reveal("composition.seeAlso.toggle", what: "See also", under: Self.settingsTitle)
+        let seeAlso = reveal("composition.seeAlso.toggle", what: "See also", under: "Documents")
         XCTAssertTrue(seeAlso.label.hasPrefix("See also"), "See also is named \"\(seeAlso.label)\"")
         XCTAssertEqual(seeAlso.value as? String, "0", "See also does not speak Off for a new collection")
         attachScreenshot("Document content")
+        let back = app.navigationBars["Documents"].buttons["BackButton"]
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience), "Documents has no Back")
+        back.tap()
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
+                      "Back did not return to Collection settings")
 
         let style = reveal("composition.citationStyle.picker", what: "Citation style", under: Self.settingsTitle)
         assertSpeaks(style, name: "Citation style", value: "History at State",
@@ -2332,12 +2364,14 @@ final class CollectionFactsAccessibilityTests: XCTestCase {
         let wording = reveal("composition.wording.group", what: "Wording", under: Self.settingsTitle)
         XCTAssertTrue(wording.label.contains("Wording"), "Wording is named \"\(wording.label)\"")
         wording.tap()
+        // L44: Wording is a row that opens a screen of the ten fields.
+        XCTAssertTrue(app.navigationBars["Wording"].waitForExistence(timeout: Self.patience), "Wording did not open")
         for (key, word) in Self.wording {
             // By its identifier, or by the name VoiceOver reads, which is what this test is about.
             let field = reveal(app.textFields.matching(NSPredicate(format: "identifier == %@ OR label == %@",
                                                                    "composition.wording.field.\(key)",
                                                                    "\(word), printed as")).firstMatch,
-                               what: "Wording's \(word)", under: Self.settingsTitle)
+                               what: "Wording's \(word)", under: "Wording")
             XCTAssertEqual(field.label, "\(word), printed as", "Wording's \(key) field is named \"\(field.label)\"")
             XCTAssertEqual(field.value as? String, word, "Wording's \(key) field does not speak the word it prints")
         }
@@ -2435,5 +2469,723 @@ final class CollectionFactsAccessibilityTests: XCTestCase {
         shot.name = name
         shot.lifetime = .keepAlways
         add(shot)
+    }
+}
+
+// MARK: - CollectionSettingsDriver (L44)
+
+/// Drives a collection's settings for L44's suites: a new collection, Collection settings by whichever route the layout
+/// draws (the iPad's ⚙ sheet, the iPhone's pushed screen), a step's screen, and the rows on it. Every wait is 30 s, as
+/// `CollectionEditorTitleTests.patience` explains, and frames are read from one snapshot where several are needed.
+@MainActor
+struct CollectionSettingsDriver {
+    /// The app under test.
+    let app: XCUIApplication
+
+    static let patience: TimeInterval = 30
+    static let settingsTitle = "Collection settings"
+    static let documentsTitle = "Documents"
+    static let apparatusTitle = "Apparatus"
+
+    /// The element whose identifier is `identifier`, of any type.
+    func element(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// Opens a new collection's editor from the Collections list.
+    func createCollection() {
+        let create = app.buttons["Create new collection"].firstMatch
+        XCTAssertTrue(create.waitForExistence(timeout: Self.patience), "The Collections tab offers no New Collection")
+        create.tap()
+        XCTAssertTrue(app.navigationBars["New Collection"].waitForExistence(timeout: Self.patience),
+                      "The new collection's editor did not open")
+    }
+
+    /// Opens Collection settings through whichever control the layout drew, and waits for it. Returns whether it is
+    /// the iPad's sheet.
+    @discardableResult
+    func openSettings() -> Bool {
+        let button = element("collection.editor.settings.button")
+        let row = element("collection.editor.settings.row")
+        XCTAssertTrue(waitUntil { button.exists || row.exists }, "The editor offers no way into Collection settings")
+        let isSheet = button.exists
+        (isSheet ? button : row).tap()
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
+                      "Collection settings did not open")
+        return isSheet
+    }
+
+    /// Opens a step from its row in Collection settings, and waits for its screen.
+    func openStep(_ rowIdentifier: String, title: String) {
+        let row = reveal(element(rowIdentifier), what: "the \(title) row", under: Self.settingsTitle)
+        row.tap()
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: Self.patience), "The \(title) step did not open")
+    }
+
+    /// Taps the Back button in the bar titled `title`, and waits for that bar to go.
+    func back(from title: String) {
+        let back = app.navigationBars[title].buttons["BackButton"]
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience), "The \(title) screen has no Back button")
+        back.tap()
+        XCTAssertTrue(waitUntil { !app.navigationBars[title].exists }, "Back did not leave \(title)")
+    }
+
+    /// `target`, dragged up into view under the bar titled `bar`, so a drag on a sheet never lands on the window
+    /// around it.
+    @discardableResult
+    func reveal(_ target: XCUIElement, what: String, under bar: String) -> XCUIElement {
+        let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+        let top = app.navigationBars[bar].frame
+        var drags = 0
+        while !(target.exists && target.isHittable) && drags < 14 {
+            let x = top.minX + 24
+            let start = origin.withOffset(CGVector(dx: x, dy: top.maxY + 360))
+            let end = origin.withOffset(CGVector(dx: x, dy: top.maxY + 60))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0.3)
+            drags += 1
+        }
+        XCTAssertTrue(target.exists && target.isHittable, "\(what) is not on screen, after \(drags) drag(s)")
+        return target
+    }
+
+    /// The frames of the elements whose identifiers are `identifiers`, from one snapshot of the app.
+    func frames(_ identifiers: [String]) throws -> [String: CGRect] {
+        let wanted = Set(identifiers)
+        var found: [String: CGRect] = [:]
+        var stack = [try app.snapshot()]
+        while let node = stack.popLast() {
+            if wanted.contains(node.identifier), found[node.identifier] == nil { found[node.identifier] = node.frame }
+            stack.append(contentsOf: node.children)
+        }
+        return found
+    }
+
+    /// Polls `condition` until it holds or 30 s pass, and reports whether it held.
+    func waitUntil(_ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(Self.patience)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+
+    /// The text VoiceOver reads for `element`: its label, then its value.
+    static func spoken(_ element: XCUIElement) -> String {
+        [element.label, (element.value as? String) ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+}
+
+// MARK: - CollectionTemplateStepsTests (L44)
+
+/// The collection's settings in two steps (L44; the Collections design's §4.3 and §5.2): the rows that say what each
+/// step holds, a template's card that writes step 1's seven and says what changed with *Undo*, step 2's shortcuts and
+/// the one tap on its row, which only adds, and a section's sheet that holds the section's own settings, each saying
+/// what it follows, with the count at the collection that clears them.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`: the iPhone pushes Collection settings and each step in the
+/// editor's stack, the iPad pushes each step in the settings sheet's own stack, and each is different code. It never
+/// skips. Allow 600 s a test.
+///
+/// ## Reading a picker
+/// As VoiceOver reads it, its label then its value (`CollectionSettingsDriver.spoken`). Under iOS 27 a form's menu
+/// picker carries its choice in its label, "Footnotes, Off", and no value (measured on the iPhone 17, 2026-11-28), so
+/// a read of its value alone waits for a choice that never comes.
+///
+/// ## On the code before L44
+/// The settings have no step rows, so each test fails at its first step row.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionTemplateStepsTests: XCTestCase {
+
+    var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+    private var driver: CollectionSettingsDriver { CollectionSettingsDriver(app: app) }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// A new collection's rows say what it is (J26), a card writes its seven with the line and *Undo* under it (J17),
+    /// and *Undo* puts back what was there.
+    func testATemplateSaysWhatChangedAndUndoPutsItBack() throws {
+        launch()
+        driver.createCollection()
+        driver.openSettings()
+
+        let documents = driver.element("collection.settings.documents.row")
+        XCTAssertTrue(documents.waitForExistence(timeout: CollectionSettingsDriver.patience), "No Documents row")
+        XCTAssertEqual(documents.value as? String, "Like Full text as printed · 2 differ",
+                       "A new collection's Documents row does not say which template it is like (J26)")
+        let apparatus = driver.element("collection.settings.apparatus.row")
+        XCTAssertEqual(apparatus.value as? String, "Contents by citation", "A new collection's Apparatus row")
+
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        let differences = driver.element("collection.documents.differences")
+        XCTAssertTrue(differences.waitForExistence(timeout: CollectionSettingsDriver.patience),
+                      "Step 1 does not say how a new collection differs from the template it is like")
+        let card = driver.element("collection.template.fullTextAsPrinted")
+        XCTAssertNotEqual(card.value as? String, "Active", "Full text as printed is drawn in force on a new collection")
+        card.tap()
+
+        let line = driver.element("collection.documents.change")
+        XCTAssertTrue(line.waitForExistence(timeout: CollectionSettingsDriver.patience), "A card's choice wrote no line")
+        XCTAssertEqual(line.label, "Changed Archival source note from Off to On and Research notes from On to Off.")
+        let undo = driver.element("collection.documents.change.undo")
+        XCTAssertTrue(undo.isHittable, "The line's Undo is not in view where the choice was made (J17)")
+        XCTAssertEqual(card.value as? String, "Active", "The chosen card is not drawn in force")
+        attachScreenshot("Step 1 after a card")
+
+        undo.tap()
+        XCTAssertTrue(driver.waitUntil { !line.exists }, "Undo left the line")
+        XCTAssertTrue(driver.waitUntil { (card.value as? String) != "Active" }, "Undo left the template in force")
+        driver.back(from: CollectionSettingsDriver.documentsTitle)
+        XCTAssertEqual(documents.value as? String, "Like Full text as printed · 2 differ",
+                       "Undo did not put the collection's seven back")
+    }
+
+    /// The one tap on step 2's row adds the chosen template's suggested set, names every block it adds, and its Undo
+    /// stands where it stood (J14); step 2's All and None add and remove, with the line and Undo where they were chosen.
+    func testStepTwoAddsTheSuggestedSetAndItsShortcutsAddAndRemove() throws {
+        launch()
+        driver.createCollection()
+        driver.openSettings()
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        driver.element("collection.template.fullTextAsPrinted").tap()
+        XCTAssertTrue(driver.element("collection.documents.change").waitForExistence(timeout: CollectionSettingsDriver.patience))
+        driver.back(from: CollectionSettingsDriver.documentsTitle)
+
+        let offer = driver.element("collection.settings.offer")
+        XCTAssertTrue(offer.waitForExistence(timeout: CollectionSettingsDriver.patience),
+                      "Step 2's row offers no suggested set after a template")
+        XCTAssertEqual(offer.label, "Add Bibliography, Sources & Archives and Note on the Text")
+        offer.tap()
+        let apparatus = driver.element("collection.settings.apparatus.row")
+        XCTAssertTrue(driver.waitUntil {
+            (apparatus.value as? String) == "Contents by citation · Bibliography · Sources & Archives · Note on the Text"
+        }, "The one tap's blocks are not on the Apparatus row: \(apparatus.value ?? "nil")")
+        let offerUndo = driver.element("collection.settings.offer.change.undo")
+        XCTAssertTrue(offerUndo.waitForExistence(timeout: CollectionSettingsDriver.patience), "The one tap left no Undo")
+        offerUndo.tap()
+        XCTAssertTrue(driver.waitUntil { (apparatus.value as? String) == "Contents by citation" },
+                      "Undo did not take the one tap's blocks back out: \(apparatus.value ?? "nil")")
+
+        driver.openStep("collection.settings.apparatus.row", title: CollectionSettingsDriver.apparatusTitle)
+        driver.element("collection.apparatus.all").tap()
+        let line = driver.element("collection.apparatus.change")
+        XCTAssertTrue(line.waitForExistence(timeout: CollectionSettingsDriver.patience), "All wrote no line")
+        XCTAssertEqual(line.label, "Added Bibliography, Chronology, Sources & Archives, Persons Index, Thematic Index "
+                       + "and Note on the Text. Word-cloud overview on.")
+        XCTAssertTrue(driver.element("collection.apparatus.change.undo").isHittable, "All's Undo is not in view (J17)")
+        let bibliography = driver.element("collection.apparatus.block.bibliography")
+        XCTAssertEqual(bibliography.label, "Bibliography", "Bibliography's tick does not speak its block's name (§9)")
+        XCTAssertEqual(bibliography.value as? String, "1", "Bibliography's tick does not say the collection has it")
+
+        driver.element("collection.apparatus.none").tap()
+        XCTAssertTrue(driver.waitUntil { line.label.hasPrefix("Removed Bibliography") },
+                      "None's line does not say what it removed: \(line.label)")
+        XCTAssertTrue(driver.waitUntil { (bibliography.value as? String) == "0" }, "None left Bibliography ticked")
+        attachScreenshot("Step 2 after None")
+        driver.element("collection.apparatus.change.undo").tap()
+        XCTAssertTrue(driver.waitUntil { (bibliography.value as? String) == "1" }, "Undo did not put None's blocks back")
+    }
+
+    /// A section's sheet holds the section's own settings and nothing of the collection's, each choice saying what it
+    /// follows; a setting the section sets for itself is counted at the collection, and *Clear* returns it to following.
+    func testASectionsSheetHoldsItsOwnAndTheCollectionCountsAndClearsThem() throws {
+        launch()
+        driver.createCollection()
+        CollectionEditorAddMenu.open(in: app)
+        let heading = app.buttons["Add Section Heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: CollectionSettingsDriver.patience), "No Add Section Heading")
+        heading.tap()
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: CollectionSettingsDriver.patience), "No section heading row")
+        pill.tap()
+
+        let footnotes = driver.element("collection.inspector.footnotes.picker")
+        XCTAssertTrue(footnotes.waitForExistence(timeout: CollectionSettingsDriver.patience), "The sheet has no Footnotes")
+        XCTAssertFalse(driver.element("collection.attributes.subtitle.field").exists,
+                       "The section's sheet still holds the collection's Subtitle")
+        XCTAssertEqual(CollectionSettingsDriver.spoken(footnotes), "Footnotes, Follow the collection: On")
+        XCTAssertEqual(CollectionSettingsDriver.spoken(driver.element("collection.inspector.highlights.picker")),
+                       "Highlights in body, Follow the collection: Off")
+        XCTAssertEqual(CollectionSettingsDriver.spoken(driver.element("collection.inspector.sectionHeadnote.picker")),
+                       "Headnotes, Follow the collection: Off")
+        attachScreenshot("A section's sheet")
+        footnotes.tap()
+        let off = app.buttons["Off"].firstMatch
+        XCTAssertTrue(off.waitForExistence(timeout: CollectionSettingsDriver.patience), "Footnotes' menu has no Off")
+        off.tap()
+        // Read as VoiceOver reads it, label then value, as the three asserts above do: which half of the picker holds
+        // the choice is iOS's to decide, and the log line says which it was.
+        XCTAssertTrue(driver.waitUntil { CollectionSettingsDriver.spoken(footnotes) == "Footnotes, Off" },
+                      "Footnotes did not take Off: it speaks \"\(CollectionSettingsDriver.spoken(footnotes))\"")
+        print("[L44 picker] label \"\(footnotes.label)\", value \"\((footnotes.value as? String) ?? "nil")\"")
+        let done = app.navigationBars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: CollectionSettingsDriver.patience), "The section's sheet has no Done")
+        done.tap()
+
+        driver.openSettings()
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        let count = driver.reveal(driver.element("collection.setting.footnotes.own"), what: "Footnotes' count",
+                                  under: CollectionSettingsDriver.documentsTitle)
+        XCTAssertEqual(count.label, "1 sets its own", "The count at the collection is not a button with its words")
+        count.tap()
+        XCTAssertTrue(app.navigationBars["Footnotes"].waitForExistence(timeout: CollectionSettingsDriver.patience),
+                      "The count opened no list")
+        // By the list's own identifier: the editor's row for the same section stays in the tree behind the iPad's sheet.
+        let row = app.buttons.matching(identifier: "collection.setting.own.row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: CollectionSettingsDriver.patience), "The list has no row")
+        XCTAssertTrue(row.label.hasPrefix("Untitled section"), "The list does not name the section: \(row.label)")
+        row.tap()
+        driver.element("collection.setting.own.clear").tap()
+        XCTAssertTrue(driver.waitUntil { !row.exists }, "Clear left the section in the list")
+        driver.back(from: "Footnotes")
+        XCTAssertTrue(driver.waitUntil { !driver.element("collection.setting.footnotes.own").exists },
+                      "The count stayed after Clear")
+    }
+
+    private func launch() {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+// MARK: - CollectionInspectorSwitchNamesTests (L44, #2006)
+
+/// Each research note's switch in a document's settings is named by the note's opening words, so two notes are two
+/// switches VoiceOver can tell apart (#2006's second item): what VoiceOver reads for a switch is its label, which XCUI
+/// reads back. The document is `UITestProjectSeeder`'s export collection's `d1`, which holds the seeder's note and,
+/// with `FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d1`, `UITestResearchSeeder`'s.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`: the iPhone's drill-in and the iPad's Configure sheet. Never
+/// skips. Allow 600 s.
+///
+/// ## On the code before L44
+/// Both switches read "Include this research note when notes apply", so the test fails at its count of names.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionInspectorSwitchNamesTests: XCTestCase {
+
+    var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testEachNotesSwitchIsNamedByItsOpeningWords() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "export"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let driver = CollectionSettingsDriver(app: app)
+
+        let collection = app.collectionViews.staticTexts["UI Test Export Collection"].firstMatch
+        XCTAssertTrue(collection.waitForExistence(timeout: CollectionSettingsDriver.patience), "No export collection")
+        collection.tap()
+        let row = documentRowText(in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: CollectionSettingsDriver.patience), "No d1 row in Contents")
+        // On the iPad a row's Configure pill opens its settings; on the iPhone the row does.
+        let configure = app.buttons["Configure"].firstMatch
+        (configure.waitForExistence(timeout: 5) ? configure : row).tap()
+        XCTAssertTrue(driver.element("collection.inspector.titleOverride.field")
+            .waitForExistence(timeout: CollectionSettingsDriver.patience), "The document's settings did not open")
+
+        let switches = app.switches.matching(NSPredicate(format: "label BEGINSWITH %@", "Include"))
+        XCTAssertTrue(driver.waitUntil { switches.count >= 2 }, "The settings list fewer than two note switches")
+        let names = switches.allElementsBoundByIndex.map(\.label)
+        XCTAssertEqual(Set(names).count, names.count, "Two switches speak the same name: \(names)")
+        XCTAssertTrue(names.contains("Include the note “A note that prints with d1.”"), "Names: \(names)")
+        XCTAssertTrue(names.contains("Include the note “UI Test Research Note”"), "Names: \(names)")
+    }
+}
+
+// MARK: - CollectionTemplateFitTests (L44, #2006, J17)
+
+/// Step 1's template cards and the section pill at the default text size, AX3 and AX5 (#2006's fourth item; the third
+/// review's J17): a card is drawn larger at an accessibility size, which proves the size took effect, the card
+/// stays inside the window, and after a card is chosen, and after step 2's *None*, the line and its *Undo* are in view.
+/// The section pill's label grows with the size too, where its type was fixed at 12 points, on a line of its own under
+/// the title at AX3 and AX5, where its words wrap at the space (the outline's screenshot). At the default size the
+/// templates are the design's grid of two on the iPad and rows on the iPhone (§5.4), and one column at AX3 and AX5.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`. Never skips. Allow 900 s a test.
+///
+/// ## On the code before L44
+/// `testATemplateCardGrowsWithTheTextSize` finds the card among the settings' own templates and fails at its ratio: the
+/// card was as tall at AX3 as at the default size in the control's run, its type fixed in points at every size. The other three fail at their first step row, which does not exist,
+/// and at AX3 and AX5 at the pill before it, drawn 24.5 points high on the iPad and 38.7 on the iPhone at every size.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionTemplateFitTests: XCTestCase {
+
+    var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+    private var driver: CollectionSettingsDriver { CollectionSettingsDriver(app: app) }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// #2006's fourth item, on the card's own frame, which the code before L44 draws too: *Full text as printed*'s card
+    /// at the default size and again at AX5, in one test. On the code before L44 its type was fixed in points, so the
+    /// card was as tall at AX3 as at the default (the control's run); a card whose type follows the reader's size is
+    /// taller. AX5, not AX3: on the iPad the default size draws the cards two to a row, narrower and so taller, and AX3's
+    /// one column, twice as wide, leaves too little growth to tell a fixed type from a grown one.
+    func testATemplateCardGrowsWithTheTextSize() throws {
+        let standard = try templateCardFrame(at: nil)
+        app.terminate()
+        let large = try templateCardFrame(at: "UICTContentSizeCategoryAccessibilityXXXL")
+        print("[L44 fit] card at L \(standard), at AX5 \(large)")
+        XCTAssertGreaterThan(large.height, standard.height * 1.4, """
+            Full text as printed's card is \(Int(large.height)) points high at AX5 and \(Int(standard.height)) at the default \
+            size: its type does not follow the reader's text size (#2006)
+            """)
+    }
+
+    func testTheStepsFitAtTheDefaultSize() throws {
+        try assertStepsFit(at: nil, named: "L")
+    }
+
+    func testTheStepsFitAtAX3() throws {
+        try assertStepsFit(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
+    }
+
+    func testTheStepsFitAtAX5() throws {
+        try assertStepsFit(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
+    }
+
+    /// *Full text as printed*'s card, by its label, in a new collection's settings: in step 1 where the settings have
+    /// one (L44), else among the settings' own templates (the code before L44, where the iPhone drew chips).
+    private func templateCardFrame(at category: String?) throws -> CGRect {
+        launch(at: category)
+        driver.createCollection()
+        driver.openSettings()
+        let step = driver.element("collection.settings.documents.row")
+        let bar: String
+        if step.waitForExistence(timeout: 10) {
+            driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+            bar = CollectionSettingsDriver.documentsTitle
+        } else {
+            bar = CollectionSettingsDriver.settingsTitle
+        }
+        let card = driver.reveal(app.buttons["Full text as printed"].firstMatch, what: "Full text as printed's card",
+                                 under: bar)
+        return card.frame
+    }
+
+    private func launch(at category: String?) {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections, contentSizeCategory: category)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+    }
+
+    private func assertStepsFit(at category: String?, named size: String) throws {
+        launch(at: category)
+        let accessibility = category != nil
+
+        driver.createCollection()
+        CollectionEditorAddMenu.open(in: app)
+        let heading = app.buttons["Add Section Heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: CollectionSettingsDriver.patience), "No Add Section Heading")
+        heading.tap()
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: CollectionSettingsDriver.patience), "No section heading row")
+        print("[L44 fit] \(size) pill \(pill.frame)")
+        attachScreenshot("L44 fit \(size): the outline's section row")
+        if accessibility {
+            // The frame is the pill's hit area, never under 44 (`CollectionSectionPillHitAreaTests`), so only a pill drawn
+            // taller than that says its type grew: caption type is 32 points at AX3, about 48 a line with the padding,
+            // where the fixed 12 points drew 24.5 on one line and 38.7 on two.
+            XCTAssertGreaterThan(pill.frame.height, 45, "The pill's type did not grow at \(size): \(pill.frame)")
+        }
+
+        driver.openSettings()
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        let window = app.windows.firstMatch.frame
+        let frames = try driver.frames(["collection.template.fullTextAsPrinted"])
+        let card = try XCTUnwrap(frames["collection.template.fullTextAsPrinted"], "No card at \(size)")
+        print("[L44 fit] \(size) window \(Int(window.width))x\(Int(window.height)) card \(card)")
+        XCTAssertGreaterThanOrEqual(card.minX, window.minX - 0.5, "The card runs off the leading edge at \(size)")
+        XCTAssertLessThanOrEqual(card.maxX, window.maxX + 0.5, "The card runs off the trailing edge at \(size)")
+        if !accessibility {
+            // The design's §5.4: the templates are a grid of two on the iPad, as on the Mac, and rows on the iPhone. The
+            // iPad's settings sheet is compact itself, so a grid there is the editor's width passed in, not the sheet's.
+            let bar = app.navigationBars[CollectionSettingsDriver.documentsTitle].frame
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                XCTAssertLessThan(card.width, bar.width * 0.6, "The iPad's templates are not a grid of two: \(card), bar \(bar)")
+            } else {
+                XCTAssertGreaterThan(card.width, bar.width * 0.7, "The iPhone's templates are not rows: \(card), bar \(bar)")
+            }
+        }
+        if accessibility {
+            // The card is about 60 points high at the default size, its name a line of subheadline type and its line of
+            // caption type; at AX3 those are about 36 and 35 points a line, so the card passes 85 only if the size took
+            // effect. One column is measured against the step's own bar, since on the iPad the settings are a sheet
+            // narrower than the window.
+            let bar = app.navigationBars[CollectionSettingsDriver.documentsTitle].frame
+            XCTAssertGreaterThan(card.height, 85,
+                                 "The card was not drawn larger at \(size), so the size did not take effect: \(card)")
+            XCTAssertGreaterThan(card.width, bar.width * 0.7, "The cards are not one column at \(size): \(card), bar \(bar)")
+        }
+
+        // J17: the line and its Undo in view where the choice was made, after a card.
+        let cardElement = driver.element("collection.template.fullTextAsPrinted")
+        cardElement.tap()
+        let line = driver.element("collection.documents.change")
+        XCTAssertTrue(line.waitForExistence(timeout: CollectionSettingsDriver.patience), "No line after a card at \(size)")
+        let undo = driver.element("collection.documents.change.undo")
+        XCTAssertTrue(driver.waitUntil { line.isHittable && undo.isHittable },
+                      "The line and its Undo are not in view after a card at \(size)")
+        attachScreenshot("L44 fit \(size): after a card")
+
+        driver.back(from: CollectionSettingsDriver.documentsTitle)
+        driver.openStep("collection.settings.apparatus.row", title: CollectionSettingsDriver.apparatusTitle)
+        driver.element("collection.apparatus.none").tap()
+        let apparatusLine = driver.element("collection.apparatus.change")
+        XCTAssertTrue(apparatusLine.waitForExistence(timeout: CollectionSettingsDriver.patience),
+                      "No line after None at \(size)")
+        let apparatusUndo = driver.element("collection.apparatus.change.undo")
+        XCTAssertTrue(driver.waitUntil { apparatusLine.isHittable && apparatusUndo.isHittable },
+                      "The line and its Undo are not in view after None at \(size)")
+        attachScreenshot("L44 fit \(size): after None")
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}
+
+// MARK: - CollectionSectionPillHitAreaTests (L44, #2006)
+
+/// The section pill's hit area is at least 44 points each way (#2006's third item), and a tap inside it, above the pill
+/// as drawn, opens the section's sheet. `minimumHitTarget()` grows the pill's content shape, and SwiftUI reports a
+/// button's frame from its content shape, so the frame XCUI reads is the hit area, while the pill is drawn as before.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`. Never skips. On the iPad the pill is one line, about 24.5 points
+/// high as drawn; on the iPhone its label wraps in the narrow outline, *Section* over *defaults*, and it is 38.7. Allow
+/// 600 s.
+///
+/// ## On the code before L44
+/// The frame is the pill as drawn: 24.5 points high on the iPad and 38.7 on the iPhone (the control run's `[L44 pill]`
+/// lines), so the test fails at its first assertion on both. The tap passes there too, on the iPad: the system takes a
+/// tap that close to a button by itself, as it took Search's Filter and pager taps before #1918 (`SearchHitAreaTests`),
+/// so the tap is a check and the frame is the guard.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionSectionPillHitAreaTests: XCTestCase {
+
+    var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testThePillsHitAreaIs44PointsEachWay() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let driver = CollectionSettingsDriver(app: app)
+        driver.createCollection()
+        CollectionEditorAddMenu.open(in: app)
+        let heading = app.buttons["Add Section Heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: CollectionSettingsDriver.patience), "No Add Section Heading")
+        heading.tap()
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: CollectionSettingsDriver.patience), "No section heading row")
+        let frame = pill.frame
+        print("[L44 pill] \(frame)")
+        // The frame is the content shape, which `minimumHitTarget()` grows about the pill's centre (the guard).
+        XCTAssertGreaterThanOrEqual(frame.height, 44, "The pill's hit area is \(frame.height) points high, under 44")
+        XCTAssertGreaterThanOrEqual(frame.width, 44, "The pill's hit area is \(frame.width) points wide, under 44")
+        // 20 points above the centre, which the shape keeps where the pill is drawn: inside the 44-point area, and on the
+        // iPad 7.75 points above the pill as drawn (24.5 high). Above, not below: the row's Body depth menu is drawn under
+        // the pill and after it, so it takes a tap there.
+        let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+        origin.withOffset(CGVector(dx: frame.midX, dy: frame.midY - 20)).tap()
+        // By the sheet's section header, which the code before L44 draws too.
+        let sheet = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "Section Defaults")).firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: CollectionSettingsDriver.patience),
+                      "A tap 20 points above the pill's centre, inside its hit area, opened no section sheet")
+    }
+}
+
+// MARK: - CollectionTemplateLineAnnouncementTests (L44)
+
+/// What VoiceOver says when a template is chosen (the Collections design's §9, lane 4): the line that says what the
+/// template changed is spoken when it appears, and *Undo* is the element after it, so a VoiceOver reader hears the change
+/// and can take it back without hunting for the control.
+///
+/// ## How it listens
+/// iOS 27's VoiceOver service for UI tests, as `AddToCollectionAnnouncementTests` listens: with VoiceOver on, the test
+/// moves VoiceOver's cursor to *Full text as printed*'s card and double-taps, as a VoiceOver reader activates it (with
+/// VoiceOver on, a single tap only moves the cursor), then reads VoiceOver's speech four times a second for eight
+/// seconds. The service returns 64 characters of speech, and the line is 77, so the test listens for its opening.
+/// It then moves the cursor on from the card to the line and requires *Undo* next.
+///
+/// ## Devices
+/// iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0`: on the iPhone the line follows the card, and on the iPad it follows
+/// the grid's row of two, after the card beside it. It skips below iOS 27. Under Xcode 27.2 VoiceOver stays on once its
+/// speech has been read, so run it alone, on a simulator shut down before it (the `SearchResultVoiceOverTests` entry of
+/// `Planning/UI-Test-Destinations-Runbook.md`). Allow 600 s.
+///
+/// ## On the code before L44
+/// The settings have no Documents step, and no card writes a line, so it fails at its first step row.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@MainActor
+final class CollectionTemplateLineAnnouncementTests: XCTestCase {
+
+    /// The card's name, which VoiceOver speaks first.
+    private static let card = "Full text as printed"
+    /// The opening of the line a new collection's choice of *Full text as printed* writes, inside the service's 64
+    /// characters: "Changed Archival source note from Off to On and Research notes from On to Off."
+    private static let line = "Changed Archival source note from Off to On"
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        turnVoiceOverOff()
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    override func tearDown() async throws {
+        turnVoiceOverOff()
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testACardsLineIsSpokenAndUndoIsTheElementAfterIt() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("Listens through iOS 27's VoiceOver service") }
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+        let driver = CollectionSettingsDriver(app: app)
+        driver.createCollection()
+        driver.openSettings()
+        driver.openStep("collection.settings.documents.row", title: CollectionSettingsDriver.documentsTitle)
+        let card = driver.element("collection.template.fullTextAsPrinted")
+        XCTAssertTrue(card.waitForExistence(timeout: CollectionSettingsDriver.patience), "Step 1 has no \(Self.card)")
+
+        // Every tap but VoiceOver's double tap is done; from here on only VoiceOver moves.
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        try voiceOver.enable()
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        var passed: [String] = []
+        var onTheCard = false
+        // The cursor stops on the last element and says it again, so a card not met in thirty steps is not on screen.
+        for _ in 1...30 {
+            let spoken = try voiceOver.moveForward().utterance
+            if spoken.hasPrefix(Self.card) { onTheCard = true; break }
+            passed.append(spoken)
+        }
+        guard onTheCard else {
+            try voiceOver.disable()
+            XCTFail("VoiceOver never reached \(Self.card)'s card. It spoke: \(passed)")
+            return
+        }
+        card.doubleTap()
+        var heard: [String] = []
+        for _ in 1...32 where !heard.contains(where: { $0.contains(Self.line) }) {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            let spoken = try voiceOver.currentSpeech().utterance
+            if heard.last != spoken { heard.append(spoken) }
+        }
+        // On from the card: past the card beside it on the iPad, to the line, and then Undo.
+        var onTheWay: [String] = []
+        var afterTheLine: String?
+        for _ in 1...6 {
+            let spoken = try voiceOver.moveForward().utterance
+            onTheWay.append(spoken)
+            if spoken.hasPrefix(Self.line) {
+                afterTheLine = try voiceOver.moveForward().utterance
+                break
+            }
+        }
+        try voiceOver.disable()
+
+        print("[L44 VoiceOver] heard \(heard); on from the card \(onTheWay); after the line \(afterTheLine ?? "nil")")
+        XCTAssertTrue(heard.contains { $0.contains(Self.line) }, """
+            VoiceOver did not say "\(Self.line)…" within eight seconds of the card's activation. It said: \(heard)
+            """)
+        let next = try XCTUnwrap(afterTheLine, "VoiceOver's cursor never reached the line from the card: \(onTheWay)")
+        XCTAssertTrue(next.hasPrefix("Undo"), "The element after the line is not Undo: VoiceOver said \"\(next)\"")
+    }
+
+    /// Turns VoiceOver off if a test left it on.
+    private func turnVoiceOverOff() {
+        guard #available(iOS 27.0, *) else { return }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled { try? voiceOver.disable() }
     }
 }

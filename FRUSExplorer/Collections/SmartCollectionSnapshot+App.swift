@@ -11,7 +11,9 @@ import SwiftData
 
 // The app's half of `SmartCollectionSnapshot` (FRUS Explorer Light, S18b): inserting a snapshot into
 // SwiftData. The saved search's run, the result limit and the snapshot's values are FRUSCoreKit's
-// (`FRUSCoreKit/Collections/SmartCollectionSnapshot.swift`).
+// (`FRUSCoreKit/Collections/SmartCollectionSnapshot.swift`). Since L44, the sequence that runs a smart collection's search
+// and makes its snapshot, which the Collections list, the Mac window and a smart collection's editor each run
+// (`createFromLinkedSearch(of:appState:in:)`).
 
 extension SmartCollectionSnapshot {
 
@@ -55,6 +57,36 @@ extension SmartCollectionSnapshot {
             GeneratedSummary.duplicateHeadnoteDraft(id: entryValue.headnoteSummaryId, to: entry, in: context)
         }
 
+        return snapshot
+    }
+
+    /// Runs `smart`'s saved search and inserts its static snapshot (D8) in the active project, then saves: the one
+    /// sequence the Collections list, the Mac's Collections window and, since L44, a smart collection's own editor run
+    /// (the Collections design's §4.5), each of which opens the result. Non-destructive: the smart collection is
+    /// untouched.
+    ///
+    /// - Throws: `CollectionResolveError.searchServiceUnavailable` where Search is not ready, and `.savedSearchMissing`
+    ///   where the linked saved search is gone, each in the words the export says them in; else the search's or the
+    ///   save's own error.
+    /// - Returns: The snapshot.
+    @MainActor
+    static func createFromLinkedSearch(of smart: Collection, appState: AppState,
+                                       in context: ModelContext) async throws -> Collection {
+        guard let searchId = smart.savedSearchId else { throw CollectionResolveError.savedSearchMissing }
+        guard let searchService = appState.searchService else { throw CollectionResolveError.searchServiceUnavailable }
+        let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
+        guard let savedSearch = try? context.fetch(descriptor).first else {
+            throw CollectionResolveError.savedSearchMissing
+        }
+        // The saved search's run is FRUSCoreKit's (FRUS Explorer Light, S18b), at the iOS search's ceiling.
+        let refs = try await documentRefs(parameters: savedSearch.searchParameters, searchService: searchService,
+                                          limit: SearchViewModel.searchHardLimit)
+            .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
+        let snapshot = create(from: smart, results: refs, into: context)
+        if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
+            snapshot.projectIds.append(pid)
+        }
+        try context.save()
         return snapshot
     }
 }

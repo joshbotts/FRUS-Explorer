@@ -50,6 +50,11 @@ import SwiftData
 ///          `structuralDeleteButton`; every row type gained the optional closures
 ///   1.5 — #1477: the title field's "Section heading" prompt is drawn at the row's background
 ///          prominence (`CollectionChipStyle.prompt`), so it reads on a selected Mac row
+///   1.6 — L44 (the design's §4.2 and §5.2): the section's body depth, which stays on its row, is named *Body depth* as
+///          everywhere else (it read *Section body*), and its first choice says what it follows (*Follow the collection:
+///          Full document*), where it read *Default*; the section's sheet holds the section's seven. The pill's type
+///          follows the reader's text size (#2006), so at the accessibility sizes it has a line of its own under the
+///          title, where its words wrap at the space and never inside a word, as they did beside the title on an iPhone
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
@@ -93,6 +98,8 @@ struct CollectionHeadingRow: View {
 
     /// Focus for the title field, so the context menu's Rename can summon the keyboard.
     @FocusState private var titleFocused: Bool
+    /// The reader's text size: at the accessibility sizes the pill has a line of its own (L44).
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// Presents the Delete Section confirmation dialog.
     @State private var confirmDeleteSection = false
     /// Presents the section-defaults inspector (Authoring Phase 5).
@@ -129,6 +136,17 @@ struct CollectionHeadingRow: View {
         }
     }
 
+    /// Section-defaults inspector (Authoring Phase 5): the heading variant of the entry inspector, cascading overrides
+    /// to the section's documents. B8: the macOS manager routes it into its inspector column via onInspect. Composer v2
+    /// §D: a labeled Configure pill, never an info glyph.
+    private var sectionPill: some View {
+        ConfigurePill(label: String(localized: "collection.section.configure", defaultValue: "Section defaults")) {
+            if let onInspect { onInspect() } else { showSectionInspector = true }
+        }
+        .help(String(localized: "collection.section.inspect.help",
+                     defaultValue: "Set export defaults for every document in this section"))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
@@ -161,28 +179,26 @@ struct CollectionHeadingRow: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
-                // Section-defaults inspector (Authoring Phase 5): the heading variant of the entry
-                // inspector, cascading overrides to the section's documents. B8: the macOS manager
-                // routes it into its inspector column via onInspect. Composer v2 §D: a labeled
-                // Configure pill, never an info glyph.
-                ConfigurePill(label: String(localized: "collection.section.configure",
-                                            defaultValue: "Section defaults")) {
-                    if let onInspect { onInspect() } else { showSectionInspector = true }
+                if !dynamicTypeSize.isAccessibilitySize {
+                    sectionPill
                 }
-                .help(String(localized: "collection.section.inspect.help",
-                             defaultValue: "Set export defaults for every document in this section"))
                 structuralDeleteButton(showsInlineDelete ? onDelete : nil, for: .heading)
             }
-            // Section body depth — applied to documents under this heading (Phase 3c).
-            Picker(selection: sectionDepth) {
-                Text(String(localized: "collection.section.bodyDepth.default", defaultValue: "Default"))
+            // At the accessibility sizes the pill takes the row's width under the title, so that its words wrap at the
+            // space: beside the title, on an iPhone, "Section" broke inside the word at AX3 (L44).
+            if dynamicTypeSize.isAccessibilitySize {
+                sectionPill
+            }
+            // Section body depth — applied to documents under this heading (Phase 3c). Its first choice follows the
+            // sections around this one, else the collection (L44), through the rule a section's sheet reads.
+            Picker(CollectionSetting.bodyDepth.displayName, selection: sectionDepth) {
+                Text(CollectionOwnSettings.followedWords(.bodyDepth, by: entry, promptName: { _ in "" }))
                     .tag(String?.none)
                 ForEach(depthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
-            } label: {
-                Text(String(localized: "collection.section.bodyDepth.label", defaultValue: "Section body"))
             }
             .pickerStyle(.menu)
             .font(.caption)
+            .accessibilityIdentifier("collection.section.bodyDepth.picker")
         }
         .padding(.vertical, 4)
         .contextMenu { sectionContextMenu }
@@ -525,6 +541,9 @@ extension View {
 /// Version history:
 ///   1.0 — Composer v2 §D: labeled Configure trigger replaces the info-glyph editor openers
 ///   1.1 — #1477: drawn at the row's background prominence (``CollectionChipStyle``), so it reads on a selected Mac row
+///   1.2 — L44 (#2006): its type is a text style, which follows the reader's text size, where it was fixed at 12 points,
+///          and on iPhone and iPad its hit area is 44 points each way (`minimumHitTarget()`), where it was the pill's own
+///          24, under the 28 Apple gives as the least; the pill is drawn as it was at the default size
 struct ConfigurePill: View {
     /// The pill's label — "Configure" on a document row, "Section defaults" on a heading row.
     var label: String = String(localized: "collection.entry.configure", defaultValue: "Configure")
@@ -537,12 +556,13 @@ struct ConfigurePill: View {
         let colors = CollectionChipStyle.colors(on: backgroundProminence)
         Button(action: action) {
             Label(label, systemImage: "slider.horizontal.3")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .labelStyle(.titleAndIcon)
                 .foregroundStyle(colors.foreground)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(colors.background, in: RoundedRectangle(cornerRadius: 8))
+                .minimumHitTarget()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

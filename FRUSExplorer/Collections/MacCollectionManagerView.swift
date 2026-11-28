@@ -154,6 +154,12 @@ import UniformTypeIdentifiers
 ///          menu, a Duplicate there selects the copy, every delete asks first, and a row's rename is trimmed and saved
 ///   1.29 — L58: the ⚙ popover's collection settings offer the Note on the Text where it would say something, its Add
 ///          putting the row at the end of the outline; the Apparatus menu lists it with the five blocks
+///   1.30 — L44 (the design's §5.2, decision 153): the ⚙ popover opens on Collection settings' ten controls, each step
+///          opening in place under its row (`CollectionSettingsSteps`), the colophon, the project stamp and the query log
+///          step 2's (decision 170); a smart collection's outline offers Create Static Snapshot under its sentence, which
+///          selects the snapshot (the design's §4.5); Snapshot runs the sequence the iOS list and editor run
+///          (`SmartCollectionSnapshot.createFromLinkedSearch`); a block from the Apparatus menu goes where step 2's ticks
+///          put it, the Note on the Text last
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -301,7 +307,8 @@ struct MacCollectionManagerView: View {
             // strip above the detail so the all-projects default and "Scope to project" survive.
             projectFilterBanner
             if let c = selectedCollection {
-                CollectionDetailPane(collection: c, allNotes: allNotes, allTags: allTags)
+                CollectionDetailPane(collection: c, allNotes: allNotes, allTags: allTags,
+                                     onSnapshot: { smart in Task { await snapshotSmartCollection(smart) } })
                     .id(c.id)
             } else {
                 ContentUnavailableView {
@@ -453,30 +460,9 @@ struct MacCollectionManagerView: View {
     /// Resolves a smart collection's saved search now and materializes the results into a new
     /// static collection (D8), then selects it. Non-destructive: the smart collection is untouched.
     private func snapshotSmartCollection(_ collection: Collection) async {
-        guard let searchId = collection.savedSearchId else { return }
-        guard let searchService = appState.searchService else {
-            snapshotError = String(localized: "export.smart.noSearchService.v2",
-                                   defaultValue: "Search is not ready yet. Try again in a moment.")
-            return
-        }
-        let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
-        guard let savedSearch = try? modelContext.fetch(descriptor).first else {
-            snapshotError = String(localized: "export.smart.missingSearch",
-                                   defaultValue: "The linked saved search could not be found. It may have been deleted.")
-            return
-        }
         do {
-            // The saved search's run is FRUSCoreKit's (FRUS Explorer Light, S18b), at the iOS search's ceiling.
-            let refs = try await SmartCollectionSnapshot.documentRefs(
-                parameters: savedSearch.searchParameters, searchService: searchService,
-                limit: SearchViewModel.searchHardLimit)
-                .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
-            let snapshot = SmartCollectionSnapshot.create(from: collection, results: refs, into: modelContext)
-            if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
-                snapshot.projectIds.append(pid)
-            }
-            try modelContext.save()
-            selectedId = snapshot.id
+            selectedId = try await SmartCollectionSnapshot.createFromLinkedSearch(of: collection, appState: appState,
+                                                                                in: modelContext).id
         } catch {
             snapshotError = error.localizedDescription
         }
@@ -931,10 +917,16 @@ private struct CollectionDetailPane: View {
         let entryId: UUID
     }
 
-    init(collection: Collection, allNotes: [ResearchNote], allTags: [UserTag]) {
+    /// Makes a smart collection's static snapshot and selects it (L44; the design's §4.5), as Manage Collections' row
+    /// does, from the sentence that opens a smart collection's outline.
+    let onSnapshot: (Collection) -> Void
+
+    init(collection: Collection, allNotes: [ResearchNote], allTags: [UserTag],
+         onSnapshot: @escaping (Collection) -> Void) {
         self.collection = collection
         self.allNotes = allNotes
         self.allTags = allTags
+        self.onSnapshot = onSnapshot
         _name = State(initialValue: collection.name)
         _note = State(initialValue: collection.note ?? "")
         _subtitle = State(initialValue: collection.subtitle ?? "")
@@ -1110,12 +1102,9 @@ private struct CollectionDetailPane: View {
                                 entryId: entry.id)
                         }
                     } : nil,
-                    isInspectorColumn: true,
-                    // Composer v2 (§B): document-only. The whole-collection settings and
-                    // composition (name / front matter / preset grid) live in the ⚙ Collection
-                    // popover now, so the per-entry Configure inspector omits the collection
-                    // section to avoid rendering — and letting the user edit — the same recipe twice.
-                    showsCollectionSettings: false
+                    // Composer v2 (§B): the row's own settings. The whole collection's are in the ⚙ popover, and
+                    // since L44 the inspector shows nothing of them anywhere.
+                    isInspectorColumn: true
                 )
                 .id(entry.id)
                 .environment(appState)
@@ -1210,11 +1199,11 @@ private struct CollectionDetailPane: View {
 
     // MARK: - Collection settings popover (Composer v2 §B)
 
-    /// The ⚙ Collection settings popover content: the collection's metadata (name / subtitle /
-    /// author / note), title-page front matter (rich-text introduction + colophon), and the presets
-    /// + three grouped composition sections. Replaces the fixed header + inline Composition/Front-
-    /// Matter disclosures (removed in Step 4). `presetsCompact: false` renders the preset grid, three
-    /// rows of two — a popover is wide enough. Each control commits its own field as it is edited (`committing`, `commitNote`).
+    /// The ⚙ Collection settings popover content: Collection settings' ten controls (L44; the design's §5.2) — the
+    /// name, subtitle and author line; the two steps' rows, each step opening in place under them
+    /// (`CollectionSettingsSteps`); the note and the introduction; *Citation style* and *Wording*; and the linked saved
+    /// search. Each control commits its own field as it is edited (`committing`, `commitNote`), step 2's three switches
+    /// among them.
     private var macCollectionSettingsForm: some View {
         Form {
             Section {
@@ -1229,6 +1218,9 @@ private struct CollectionDetailPane: View {
             } header: {
                 Text(String(localized: "collection.editor.settings.name", defaultValue: "Name"))
             }
+
+            // L44 (the design's §5.2): the two steps, each opening in place under its row.
+            CollectionSettingsSteps(collection: collection, host: settingsHost, presentation: .inPlace)
 
             Section {
                 // #1449: rests capped at six lines with an ellipsis, like the Introduction below it — the fixed
@@ -1249,38 +1241,12 @@ private struct CollectionDetailPane: View {
                                restingCap: .introductionInPopover) { rtf, plain in
                     saveIntroduction(rtf: rtf, plain: plain)
                 }
-                Toggle(String(localized: "collection.frontmatter.colophon.toggle",
-                              defaultValue: "Include colophon"),
-                       isOn: committing($includeColophon) { CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection) })
-                Toggle(String(localized: "collection.frontmatter.projectProvenance.toggle",
-                              defaultValue: "Stamp active project on export"),
-                       isOn: committing($includeProjectProvenance) {
-                           CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
-                       })
-                // M-2. Two `Text`s rather than one, because this is the only export toggle that
-                // puts the text of the researcher's own searches into a document they may be
-                // about to publish, and that has to be legible at the moment of the click.
-                Toggle(isOn: committing($includeMethodAppendix) {
-                    CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
-                }) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
-                                    defaultValue: "Append the query log"))
-                        Text(String(localized: "collection.frontmatter.methodAppendix.subtitle",
-                                    defaultValue: "Every search you ran under the active project, with its scope and result count."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             } header: {
                 Text(String(localized: "collection.frontmatter.titlePage",
                             defaultValue: "Title Page & Introduction"))
             }
 
-            CollectionCompositionRows(collection: collection,
-                                      onApplyPreset: { applyPreset($0) },
-                                      onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
-                                      presetsCompact: false)
+            CollectionCitationsRows(collection: collection, presentation: .inPlace)
 
             // #1619 review: a smart collection takes no hand-added entry, so the window that refuses them offers the
             // way back, Unlink, whether or not the saved search can still be found. #1687 (decision 70): and a
@@ -1306,6 +1272,22 @@ private struct CollectionDetailPane: View {
         }
         .formStyle(.grouped)
         .frame(minWidth: 420, idealWidth: 420, minHeight: 480, idealHeight: 560)
+    }
+
+    /// What the collection's settings need of this pane (L44): a row's name, its apparatus edits through its outline, and the
+    /// three export switches, each committed as the popover's other fields are.
+    private var settingsHost: CollectionSettingsHost {
+        CollectionSettingsHost(
+            name: { CollectionOwnSettings.rowName($0, headers: documentHeaders) },
+            applyApparatus: { applyApparatus($0) },
+            undoApparatus: { undoApparatus($0) },
+            colophon: committing($includeColophon) { CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection) },
+            projectStamp: committing($includeProjectProvenance) {
+                CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
+            },
+            queryLog: committing($includeMethodAppendix) {
+                CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
+            })
     }
 
     // MARK: - Documents
@@ -1344,6 +1326,14 @@ private struct CollectionDetailPane: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
+                    // L44 (the design's §4.5): the way to a collection whose documents can be set one by one, where the
+                    // reader meets the sentence, and not only in Manage Collections.
+                    Button(String(localized: "collection.snapshot.action", defaultValue: "Create Static Snapshot"),
+                           systemImage: "camera") {
+                        onSnapshot(collection)
+                    }
+                    .buttonStyle(.link)
+                    .accessibilityIdentifier("collection.editor.snapshot")
                 }
                 if sortedEntries.isEmpty {
                     if takesHandAddedEntries {
@@ -1884,40 +1874,27 @@ private struct CollectionDetailPane: View {
         reindexEntries()
     }
 
-    /// Inserts a generated apparatus entry (Authoring Phase 6) at the block type's
-    /// default position — front-matter types before the first entry, back-matter types
-    /// at the end. The entry stores only the block TYPE; it stays fully movable and
-    /// deletable like a prose block afterwards.
+    /// Inserts a generated apparatus entry (Authoring Phase 6) at the block type's usual place, through the rule step 2
+    /// ticks by (`CollectionApparatusRows.insert`, L44): a Chronology first, the others at the end, and the Note on the
+    /// Text last. The entry stores only the block TYPE; it stays fully movable and deletable like a prose block afterwards.
     private func addGeneratedEntry(type: CollectionGeneratedBlockType) {
-        let entry = CollectionEntry(
-            collectionId: collection.id,
-            documentId: "",
-            volumeId: "",
-            sortOrder: 0
-        )
-        entry.entryKind = .generated
-        entry.generatedBlockType = type.rawValue
-        entry.collection = collection
-        modelContext.insert(entry)
-        switch type.defaultPosition {
-        case .frontMatter: sortedEntries.insert(entry, at: 0)
-        case .backMatter:  sortedEntries.append(entry)
-        }
+        CollectionApparatusRows.insert(type, into: collection, outline: &sortedEntries, modelContext: modelContext)
         reindexEntries()
     }
 
-    /// Applies a one-tap composition preset (Composer redesign 4a): overwrites the collection's
-    /// composition fields, then inserts the preset's not-yet-present apparatus blocks through
-    /// `addGeneratedEntry` so the `sortedEntries` outline mirror and `sortOrder` stay consistent.
-    /// Non-destructive: existing apparatus and document entries are kept.
-    private func applyPreset(_ preset: CollectionPreset) {
-        preset.applyFields(to: collection)
-        let present = Set(sortedEntries.compactMap {
-            $0.entryKind == .generated ? $0.generatedBlockType : nil
-        })
-        for block in preset.apparatusBlocks(notAlreadyIn: present) {
-            addGeneratedEntry(type: block)
-        }
+    /// Applies a whole apparatus from step 2 (L44): its shortcuts, its ticks and the one tap on its row, through
+    /// `CollectionApparatusRows`, so this pane's outline stays in step with its rows; then renumbers and saves.
+    private func applyApparatus(_ target: CollectionApparatusSettings) -> CollectionApparatusRows.Undo {
+        let undo = CollectionApparatusRows.apply(target, to: collection, outline: &sortedEntries,
+                                                 modelContext: modelContext)
+        reindexEntries()
+        return undo
+    }
+
+    /// Puts one of step 2's changes back (L44), then renumbers and saves.
+    private func undoApparatus(_ undo: CollectionApparatusRows.Undo) {
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &sortedEntries, modelContext: modelContext)
+        reindexEntries()
     }
 
     /// Appends document entries at the end of the entry list in the given order.
