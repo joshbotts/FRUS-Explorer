@@ -378,6 +378,7 @@ enum ResolvedItemsDump {
             var lines = ["document \(doc.volumeId)/\(doc.documentId) #\(doc.sortOrder) depth=\(doc.bodyDepth.rawValue)"]
             lines.append("  title=\(doc.title) override=\(doc.titleOverride ?? "-") date=\(doc.date ?? "-")")
             lines.append("  citation=\(doc.citation)")
+            lines.append("  short=\(doc.shortCitation)")
             lines.append("  header=\(doc.header) dateline=\(doc.dateline ?? "-")")
             lines.append("  body=\(doc.bodyText.prefix(60).debugDescription) model=\(doc.renderModel != nil)")
             lines.append("  notes=\(doc.noteTexts)")
@@ -448,7 +449,8 @@ struct CollectionResolutionTests {
             #expect(d7.noteTexts == ["The Ambassador's account matches the French record."])
             #expect(d7.sourceNoteText?.contains("Lot 72 D 316") == true, "\(d7.sourceNoteText ?? "nil")")
             #expect(d7.relatedDocumentCitations.count == 1)
-            #expect(d7.relatedDocumentCitations.first?.contains("Document 8") == true,
+            // By its short form since L49: the collection prints d8 in full.
+            #expect(d7.relatedDocumentCitations == ["_FRUS_, 1961–1963, vol. XI, doc. 8."],
                     "\(d7.relatedDocumentCitations)")
             // The render model is the store's AST, converted; the header is the one reading of its head, the
             // volume's number kept and the source note's call left out, and since L34 (#1994) the dateline is
@@ -739,15 +741,22 @@ struct CollectionResolutionTests {
         }
     }
 
-    /// The dump's SHA-256, 5,661 bytes, taken on macOS 27.2 in Xcode and SwiftPM alike by L34 (2026-11-27).
+    /// The dump's SHA-256, 5,031 bytes, taken on macOS 27.2 in SwiftPM by L49 (2026-11-28).
     ///
-    /// Re-taken by L34, because a document's heading and dateline are read once, from its parse
+    /// Re-taken by L49, because a collection names one of its documents again by the short form ("Wherever a document
+    /// repeats"), and the dump prints each document's new `shortCitation`. The 630 bytes fewer are those lines alone:
+    /// three `short=` lines, 46 bytes each, added (138); and four full citations of 229 bytes become short forms of 37
+    /// (768 fewer): d7's See also line, which names d8, and the Chronology's three rows. The dump of 2026-11-27 was 5,661
+    /// bytes, `2cfd6772…9b76b88`.
+    ///
+    /// Taken by L34 on macOS 27.2 in Xcode and SwiftPM alike (2026-11-27), because a document's heading and dateline are
+    /// read once, from its parse
     /// (`DocumentHeadingReading`), and its record from that reading (decisions 165 and 198). The 137 bytes
     /// added are those lines alone: `d7`'s and `d8`'s datelines, which the opener holds and the old reading
     /// left `-` (#1994), 58 bytes; their records' *Document date:* lines, 88; and three records' titles that
     /// name the document's number once, "Document 7: Telegram From…" for "Document 7: 7. Telegram From…"
     /// (#2002), 9 fewer. The dump of 2026-10-27 was 5,524 bytes, `1f15f3dd…aad04a9`.
-    static let pinnedItemsDigest = "2cfd6772a377f4611e9bded1bf924b30ba495e5567bc898cc458aed149b76b88"
+    static let pinnedItemsDigest = "48e8f9ad99e60dfbb14bf49f76fc9beab09d6e12b7e9e03b996d29439a89687c"
 }
 
 // MARK: - The values' rules
@@ -1018,10 +1027,10 @@ struct CollectionFactsResolutionTests {
     }
 
     /// The design's §6 and decision 161: a collection in Chicago cites each document in the CMOS FAQ's note, named by
-    /// the heading and dateline the index stores, and one document is cited alike wherever it is cited: at its head,
-    /// in a passage's source line, on the See also line and in the Bibliography's rows. The italics the exporters
-    /// read are `_…_`.
-    @Test("A Chicago collection cites each document in the FAQ's note, alike in every place it is cited")
+    /// the heading and dateline the index stores, and one document is cited alike wherever it is cited in full: at its
+    /// head, in a passage's source line and in the Bibliography's rows. Since L49 the See also line names it by its
+    /// short form, in Chicago's arabic figures. The italics the exporters read are `_…_`.
+    @Test("A Chicago collection cites each document in the FAQ's note, alike wherever it is cited in full")
     func chicagoEverywhere() async throws {
         try await withResolutionDirectory { dir in
             let store = try await FixtureContentStore.make(in: dir)
@@ -1046,7 +1055,8 @@ struct CollectionFactsResolutionTests {
                 if case .excerpt(let e) = item { return e } else { return nil }
             }.first
             #expect(excerpt?.citation == d7.citation)
-            #expect(d7.relatedDocumentCitations == [d8.citation])
+            #expect(d7.relatedDocumentCitations == [d8.shortCitation])
+            #expect(d8.shortCitation == "_FRUS_, 1961–1963, vol. 11, doc. 8.", "\(d8.shortCitation)")
             let bibliography = try #require(items.compactMap { item -> CollectionGeneratedBlock? in
                 if case .generated(let b) = item, b.type == .bibliography { return b } else { return nil }
             }.first)
@@ -1138,6 +1148,61 @@ struct CollectionFactsResolutionTests {
                 .resolveDocuments(entries: Fixtures.entries(of: collection), purpose: .preview)
             #expect(docs.map(\.dateLine) == ["Washington, 23 October 1962"])
             #expect(docs.first?.printedDateLine == "Washington, 23 October 1962")
+        }
+    }
+}
+
+// MARK: - L49: the short form wherever a collection names a document again
+
+/// The owner's answer for L49, "Wherever a document repeats": a collection names one of its documents again by its short
+/// form (`FRUSShortCitation`), in a contents row, on the See also line and in the Chronology's rows, and cites it in
+/// full at its head, in a passage's source line and in the Bibliography. Always, with no switch.
+@Suite("L49: the short form wherever a collection names a document again")
+@MainActor
+struct ShortFormPlacesTests {
+
+    typealias Fixtures = CollectionResolutionFixtures
+
+    /// The fixture collection in History at State ("vol. XI") and in Chicago ("vol. 11"), each place read off one
+    /// resolve. Before L49 every one of these places printed the full citation.
+    @Test("A document is named again by its short form, and cited in full at its head, a passage and the Bibliography",
+          arguments: [CitationStyle.historyAtState, .chicago])
+    func shortFormWhereADocumentRepeats(style: CitationStyle) async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            var collection = Fixtures.staticCollection()
+            collection.citationStyle = style.rawValue
+            let items = try await CollectionContentAssembly(collection: collection, notes: Fixtures.notes, source: store,
+                                                            locale: Locale(identifier: "en_US"))
+                .resolve(entries: Fixtures.entries(of: collection), introduction: nil, purpose: .preview)
+            let docs = items.documents
+            let volume = style == .historyAtState ? "XI" : "11"
+            func short(_ number: String) -> String { "_FRUS_, 1961–1963, vol. \(volume), doc. \(number)." }
+            #expect(docs.map(\.shortCitation) == [short("7"), short("8"), short("9")], "\(docs.map(\.shortCitation))")
+
+            // Named again: the contents rows in Citation style, the author's title with the short form under it, the
+            // See also line, and every document in the Chronology, dated or not.
+            let rows = CollectionContentsRow.rows(for: items, style: .citation).filter { $0.number != nil }
+            #expect(rows.map(\.text) == [short("7"), "The proclamation memorandum", short("9")], "\(rows.map(\.text))")
+            #expect(rows.dropFirst().first?.lines.last == short("8"), "\(rows.map(\.lines))")
+            #expect(docs.first?.relatedDocumentCitations == [short("8")])
+            let chronology = try #require(items.compactMap { item -> CollectionGeneratedBlock? in
+                if case .generated(let b) = item, b.type == .chronology { return b } else { return nil }
+            }.first)
+            let named = chronology.rows.compactMap { $0.secondaryText ?? ($0.indentLevel > 0 ? $0.text : nil) }
+            #expect(named.count == 3 && Set(named) == [short("7"), short("8"), short("9")], "\(named)")
+
+            // Cited in full: the head, the passage's source line, the Bibliography's rows.
+            #expect(docs.allSatisfy { $0.citation != $0.shortCitation && $0.citation.contains("Foreign Relations") },
+                    "\(docs.map(\.citation))")
+            let excerpt = items.compactMap { item -> CollectionExportExcerpt? in
+                if case .excerpt(let e) = item { return e } else { return nil }
+            }.first
+            #expect(excerpt?.citation == docs.first?.citation)
+            let bibliography = try #require(items.compactMap { item -> CollectionGeneratedBlock? in
+                if case .generated(let b) = item, b.type == .bibliography { return b } else { return nil }
+            }.first)
+            #expect(Set(bibliography.rows.map(\.text)) == Set(docs.map(\.citation)), "\(bibliography.rows.map(\.text))")
         }
     }
 }

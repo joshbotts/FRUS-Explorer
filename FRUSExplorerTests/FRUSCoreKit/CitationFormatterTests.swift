@@ -1180,11 +1180,12 @@ struct PrintedDocumentNumberExportTests {
         #expect(docs[3].citation.hasSuffix("\(Self.publication)."),
                 "the Potsdam shape stays number-less: \(docs[3].citation)")
 
-        // The "See also:" line — d373 cross-references two members.
+        // The "See also:" line — d373 cross-references two members, each by its short form since L49, which names the
+        // printed number as the full citation does.
         let seeAlso = docs[0].relatedDocumentCitations
         try #require(seeAlso.count == 2, "d373's See also: line cites its two members: \(seeAlso)")
-        #expect(seeAlso.contains { $0.hasSuffix("\(Self.publication), Document 373a.") }, "\(seeAlso)")
-        #expect(seeAlso.contains { $0.hasSuffix("\(Self.publication), Document 331.") }, "\(seeAlso)")
+        #expect(seeAlso.contains("_FRUS_, 1865, pt. I, doc. 373a."), "\(seeAlso)")
+        #expect(seeAlso.contains("_FRUS_, 1865, pt. I, doc. 331."), "\(seeAlso)")
 
         // The excerpts' source lines.
         let quoted = items.compactMap { item -> CollectionExportExcerpt? in

@@ -242,6 +242,10 @@ extension CollectionEntryExport {
 ///          once over the whole collection (`noteOnTheText(over:options:)`), through the cascade the per-entry loop
 ///          reads (`sectionOverrides`), and its row prints it, or nothing where it has nothing to say; a headnote
 ///          names its writer (`CollectionExportDocument.headnoteWriter`, decision 194)
+///   1.4 — L49: wherever the collection names one of its documents again, the short form (`FRUSShortCitation`):
+///          the *See also* line, a contents row (`CollectionExportDocument.shortCitation`) and, through the blocks'
+///          data source, the Chronology's rows. A document's head, an excerpt's source line and the Bibliography keep
+///          the full citation, which `fullCitation` names, where it was `shortCitation` though it made the full one
 @MainActor
 public struct CollectionContentAssembly {
 
@@ -1181,6 +1185,9 @@ public struct CollectionContentAssembly {
             citationText(volumeId: ref.volumeId, documentId: ref.documentId, documentNumber: docNum,
                          volume: $0, batch: batch, parsedHeader: header, parsedDateline: dateline)
         } ?? "\(ref.volumeId)/\(ref.documentId)"
+        // The short form a contents row names the document by (L49), since the export prints the citation above.
+        let shortForm = shortCitation(volumeId: ref.volumeId, documentId: ref.documentId,
+                                      printedNumber: batch.documentNumbers[key], batch: batch)
         let urlString = "https://history.state.gov/historicaldocuments/\(ref.volumeId)/\(ref.documentId)"
         let volumeTitle = manifestEntry?.title ?? ref.volumeId
         let bodyText = batch.bodyTexts[key] ?? ""
@@ -1286,8 +1293,9 @@ public struct CollectionContentAssembly {
         let resolvedHeadnoteWriter = resolvedHeadnotePair.map { headnoteWriter($0.authorship, storedName: $0.writerName) }
 
         // Related documents (A10): outbound cross-reference targets that are also in
-        // this collection, rendered as a "See also:" citation line. The entry's setting, else its section's, else the
-        // collection's See also (L43), which is off unless set; empty when the host keeps no cross-references.
+        // this collection, rendered as a "See also:" citation line, each by its short form (L49), since the collection
+        // prints the document cited. The entry's setting, else its section's, else the collection's See also (L43),
+        // which is off unless set; empty when the host keeps no cross-references.
         let relatedCitations: [String]
         if ref.includeRelatedDocuments ?? section.includeRelatedDocuments
             ?? batch.options.includeRelatedDocumentsDefault,
@@ -1336,6 +1344,7 @@ public struct CollectionContentAssembly {
             bodyText: bodyText,
             noteTexts: resolvedNoteTexts,
             citation: citation,
+            shortCitation: shortForm,
             historyStateGovURL: urlString,
             renderModel: renderModel,
             header: header,
@@ -1398,10 +1407,11 @@ public struct CollectionContentAssembly {
         guard let passage = ref.text, !passage.isEmpty else { return nil }
         let citation: String
         if !ref.volumeId.isEmpty, !ref.documentId.isEmpty {
-            citation = shortCitation(volumeId: ref.volumeId, documentId: ref.documentId,
-                                     printedNumber: batch.documentNumbers[
+            // The full citation (the owner's answer for L49): a passage's source line cites it in full.
+            citation = fullCitation(volumeId: ref.volumeId, documentId: ref.documentId,
+                                    printedNumber: batch.documentNumbers[
                                         "\(ref.volumeId)/\(ref.documentId)"],
-                                     batch: batch)
+                                    batch: batch)
         } else {
             // No provenance (defensive): renderers omit the source line for an
             // empty citation rather than printing a junk reference.
@@ -1415,23 +1425,40 @@ public struct CollectionContentAssembly {
             colorTag: ref.excerptColorTag))
     }
 
-    /// The citation for a document reference, in the collection's style — the same
+    /// The full citation for a document reference, in the collection's style — the same
     /// manifest + formatter path document items use, without needing the volume XML: History at
     /// State reads only volume metadata and the document number, and a Chicago or Turabian note the
     /// index's heading and dateline as well (`citationText`, L43), which every citation of a document
-    /// reads alike, so this IS the full citation.
-    /// Shared by the excerpt source line, the related-documents "See also:" line, and
-    /// the generated-blocks data source; falls back to `"volumeId/documentId"` when
-    /// the manifest doesn't know the volume.
+    /// reads alike, so this IS the citation at the document's head.
+    /// Shared by the excerpt source line and the generated-blocks data source's `citation`, which the Bibliography
+    /// prints; falls back to `"volumeId/documentId"` when the manifest doesn't know the volume. Until L49 it was
+    /// named `shortCitation`, and the "See also:" line read it too.
     ///
     /// `printedNumber` is what the index stores for the document (`batch.documentNumbers`, or the
     /// block's own `documentNumbers(for:)` read), resolved through `CitableDocumentNumber` (#1406).
-    private func shortCitation(volumeId: String, documentId: String, printedNumber: String?,
-                               batch: BatchContext) -> String {
+    private func fullCitation(volumeId: String, documentId: String, printedNumber: String?,
+                              batch: BatchContext) -> String {
         let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
         return batch.manifestMap[volumeId]
             .map { citationText(volumeId: volumeId, documentId: documentId, documentNumber: docNum,
                                 volume: FRUSVolumeMetadata($0), batch: batch) }
+            ?? "\(volumeId)/\(documentId)"
+    }
+
+    /// The short form for a document reference (L49; `FRUSShortCitation`), "_FRUS_, 1946, vol. VI, doc. 475.", in the
+    /// collection's style, its italics as the exporters read them: what the collection prints wherever it names one of
+    /// its documents again, the "See also:" line, a contents row and the Chronology's rows (the owner's answer for
+    /// L49, "Wherever a document repeats"). It reads the manifest's entry and the number alone, so a document's short
+    /// form is the same in every place and in the preview as in an export. Falls back to `"volumeId/documentId"` when
+    /// the manifest doesn't know the volume, as `fullCitation` does.
+    ///
+    /// `printedNumber` as for `fullCitation`.
+    private func shortCitation(volumeId: String, documentId: String, printedNumber: String?,
+                               batch: BatchContext) -> String {
+        let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
+        return batch.manifestMap[volumeId]
+            .map { CitationItalics.underscored(FRUSShortCitation($0).citation(documentNumber: docNum,
+                                                                               in: batch.options.citationStyle)) }
             ?? "\(volumeId)/\(documentId)"
     }
 
@@ -1478,6 +1505,13 @@ public struct CollectionContentAssembly {
             // The single citation path: what a note names a document by is the index's heading and dateline
             // for every citation of it (L43), so block rows match the document items' citations and capped
             // previews match exports by construction.
+            assembly.fullCitation(volumeId: volumeId, documentId: documentId,
+                                  printedNumber: printedNumber, batch: batch)
+        }
+
+        func shortCitation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+            // The short form the "See also:" line and a contents row print too (L49), so a document is named again
+            // alike in every place.
             assembly.shortCitation(volumeId: volumeId, documentId: documentId,
                                    printedNumber: printedNumber, batch: batch)
         }

@@ -26,6 +26,8 @@ import SourceNoteKit
 ///   1.0 — Authoring Phase 6 (blocks): initial implementation
 ///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with the blocks, public, so a host
 ///          outside the app supplies its own index and store
+///   1.2 — L49: ``shortCitation(volumeId:documentId:printedNumber:)``, the short form the Chronology's rows print,
+///          whose default is ``citation(volumeId:documentId:printedNumber:)``
 @MainActor
 public protocol CollectionGeneratedBlockDataSource {
 
@@ -41,6 +43,12 @@ public protocol CollectionGeneratedBlockDataSource {
     /// `resolve` still reads `373a` out of the id (and the Potsdam `d710a-1` is number-less
     /// either way).
     func citation(volumeId: String, documentId: String, printedNumber: String?) -> String
+
+    /// The short form of one document (L49; `FRUSShortCitation`), "_FRUS_, 1946, vol. VI, doc. 475.", which a block
+    /// prints where it names a document the collection prints in full: the Chronology's rows. The Bibliography keeps
+    /// ``citation(volumeId:documentId:printedNumber:)``. `printedNumber` as for that. The default is the full
+    /// citation, for a host that makes no short form; the collection's own data source makes one.
+    func shortCitation(volumeId: String, documentId: String, printedNumber: String?) -> String
 
     /// The printed document numbers the index stores for the documents
     /// (`IndexingPipeline.documentNumbersByKey`), keyed `"volumeId/documentId"` — fetched once
@@ -79,6 +87,15 @@ public protocol CollectionGeneratedBlockDataSource {
     /// (`CollectionGeneratedBlocks.tagDocumentRefs`). The thematic block intersects
     /// each tag's reach with the collection membership itself.
     func tagRecords() async -> [CollectionGeneratedBlocks.TagRecord]
+}
+
+extension CollectionGeneratedBlockDataSource {
+
+    /// The full citation (L49), for a data source that makes no short form: the Archives Visit packet's, which resolves
+    /// no Chronology, and a test's.
+    public func shortCitation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        citation(volumeId: volumeId, documentId: documentId, printedNumber: printedNumber)
+    }
 }
 
 // MARK: - CollectionGeneratedBlocks
@@ -137,6 +154,8 @@ public protocol CollectionGeneratedBlockDataSource {
 ///          a host's Add Documents
 ///   1.7 — L58: the Note on the Text is a block type the seam does not resolve (the third review's J18): the
 ///          assembly writes it from the resolved entries (`CollectionNoteOnTheText`), and asked here it lists nothing
+///   1.8 — L49: the Chronology's rows name each document by its short form (the data source's `shortCitation`),
+///          since the collection prints the document in full; the Bibliography keeps the full citation
 public enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
@@ -342,7 +361,8 @@ public enum CollectionGeneratedBlocks {
     // MARK: - Chronology
 
     /// Chronology rows: dated documents ascending by `date_iso` (membership order
-    /// breaking ties), each as a precision-honest date + the document's citation;
+    /// breaking ties), each as a precision-honest date + the document's short form (L49;
+    /// `shortCitation(volumeId:documentId:printedNumber:)`), since the collection prints the document in full;
     /// undated documents follow in a trailing "Undated" group (a heading row with the
     /// documents indented beneath it).
     @MainActor
@@ -372,16 +392,16 @@ public enum CollectionGeneratedBlocks {
         var rows: [CollectionGeneratedRow] = dated.map { item in
             CollectionGeneratedRow(
                 text: dateLabel(for: item.meta, locale: locale),
-                secondaryText: dataSource.citation(volumeId: item.doc.volumeId,
-                                                   documentId: item.doc.documentId,
-                                                   printedNumber: numbers[documentKey(item.doc)]))
+                secondaryText: dataSource.shortCitation(volumeId: item.doc.volumeId,
+                                                        documentId: item.doc.documentId,
+                                                        printedNumber: numbers[documentKey(item.doc)]))
         }
         if !undated.isEmpty {
             rows.append(CollectionGeneratedRow(
                 text: String(localized: "collection.generated.chronology.undated",
                              defaultValue: "Undated")))
             rows.append(contentsOf: undated.map {
-                CollectionGeneratedRow(text: dataSource.citation(
+                CollectionGeneratedRow(text: dataSource.shortCitation(
                                             volumeId: $0.volumeId, documentId: $0.documentId,
                                             printedNumber: numbers[documentKey($0)]),
                                        indentLevel: 1)

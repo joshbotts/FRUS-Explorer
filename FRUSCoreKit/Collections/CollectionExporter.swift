@@ -811,6 +811,8 @@ public struct CollectionWording: Sendable, Equatable {
 ///   1.11 — L43: `dateLine`, the author's date line, which the plan prints under the author's title alone
 ///   1.12 — L58: `headnoteWriter`, who wrote the headnote by name (decision 194), which its caption names and the Note
 ///          on the Text counts by
+///   1.13 — L49: `shortCitation`, the short form a contents row names the document by (`FRUSShortCitation`), where
+///          the row printed the full citation
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -839,8 +841,12 @@ public struct CollectionExportDocument: Sendable {
     public let bodyText: String
     /// Research note texts linked to this entry (one per linked `ResearchNote`).
     public let noteTexts: [String]
-    /// Formatted citation string (history.state.gov style).
+    /// The document's full citation, in the collection's style (L43), which its head prints.
     public let citation: String
+    /// The document's short form in the collection's style (L49; `FRUSShortCitation`), "_FRUS_, 1946, vol. VI, doc.
+    /// 475.": what a contents row names the document by, as everywhere else the collection names it again. Empty where
+    /// the caller made none, and a row then prints `citation`.
+    public let shortCitation: String
     /// `https://history.state.gov/historicaldocuments/{volumeId}/{documentId}`
     public let historyStateGovURL: String
     /// Fully converted render model for structured export output.
@@ -964,6 +970,7 @@ public struct CollectionExportDocument: Sendable {
         noteText: String? = nil,
         noteTexts: [String]? = nil,
         citation: String = "",
+        shortCitation: String = "",
         historyStateGovURL: String = "",
         renderModel: FRUSDocumentRenderModel? = nil,
         header: String = "",
@@ -1001,6 +1008,7 @@ public struct CollectionExportDocument: Sendable {
             self.noteTexts = []
         }
         self.citation = citation
+        self.shortCitation = shortCitation
         self.historyStateGovURL = historyStateGovURL
         self.renderModel = renderModel
         self.header = header
@@ -1031,7 +1039,8 @@ public struct CollectionExportDocument: Sendable {
             documentId: documentId, volumeId: volumeId, sortOrder: sortOrder,
             bodyDepth: bodyDepth, title: title, titleOverride: titleOverride, dateLine: dateLine,
             date: date, bodyText: bodyText,
-            noteTexts: noteTexts, citation: citation, historyStateGovURL: historyStateGovURL,
+            noteTexts: noteTexts, citation: citation, shortCitation: shortCitation,
+            historyStateGovURL: historyStateGovURL,
             renderModel: renderModel, header: header, dateline: dateline,
             summaryText: text, summaryFormat: format, highlights: highlights, sourceNoteText: sourceNoteText,
             includeHeadnote: includeHeadnote, headnoteText: headnoteText,

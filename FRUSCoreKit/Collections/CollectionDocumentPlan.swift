@@ -91,9 +91,14 @@ public struct CollectionExportPlan: Sendable {
 /// - **A title of the author's never stands alone** (#1998; decisions 154 and 197): under it, in small
 ///   type, *As published:* and the volume's heading as the volume prints it, its own number kept, and in
 ///   *Citation* style the citation after that (J46).
+/// - **A row cites its document by the short form** (L49; `CollectionExportDocument.shortCitation`),
+///   "_FRUS_, 1946, vol. VI, doc. 475.", in the collection's style, since the export prints the document's full
+///   citation at its head: the owner's answer for L49, "Wherever a document repeats". Until L49 a row printed the
+///   full citation (decision 233).
 ///
 /// Version history:
 ///   1.0 — L34 (#1993, #1994, #1998, #2002): initial implementation
+///   1.1 — L49: the short form in place of the full citation, wherever a row cites its document
 public struct CollectionContentsRow: Sendable, Equatable {
 
     /// What a row lists.
@@ -179,7 +184,8 @@ public struct CollectionContentsRow: Sendable, Equatable {
     /// A document row's first line and the lines under it.
     static func documentLines(_ doc: CollectionExportDocument, style: CollectionToCStyle) -> (String, [String]) {
         let reading = DocumentHeadingReading(indexedHeader: doc.header, indexedDateline: doc.dateline)
-        let citation = doc.citation.isEmpty ? doc.title : doc.citation
+        // The short form (L49), else the full citation where the caller made none, else the title.
+        let citation = [doc.shortCitation, doc.citation].first { !$0.isEmpty } ?? doc.title
         if let title = doc.trimmedTitleOverride {
             // The author's date line follows their title on the row's first line (L43; the design's §3.4).
             let first = doc.printedDateLine.map { "\(title) — \($0)" } ?? title
