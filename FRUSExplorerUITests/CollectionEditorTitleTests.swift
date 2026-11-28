@@ -2054,7 +2054,7 @@ final class CollectionListRowActionsTests: XCTestCase {
 /// counted, it reads from one snapshot the window, the navigation bar, the sentence, the line of what the device lacks,
 /// the format, Export and the bar at the sheet's foot, and requires each inside the window's width; the sentence whole
 /// between the navigation bar and the bar at every size, which it is since it is drawn no larger than AX1 (decision
-/// DECISION_AX1); the line of what the device lacks under it, whole above the bar at the default size and at the
+/// 221); the line of what the device lacks under it, whole above the bar at the default size and at the
 /// accessibility sizes begun at least a line above the bar; at the default size the chosen card above the bar; at the
 /// accessibility sizes the format's menu inside the bar; and Export inside the bar and the window. Each run's
 /// `[L35 fit]` line prints where each ends, and a screenshot is kept. The menu, which the sheet draws only at an
@@ -2064,14 +2064,14 @@ final class CollectionListRowActionsTests: XCTestCase {
 /// ## On 1.0 (1861)
 /// The row's menu has no Export…, so each test fails at its first step. 1.0's sheet itself, opened through the editor,
 /// is measured in the suite's runbook entry (`Planning/UI-Test-Destinations-Runbook.md`). L35's sheet drew the sentence
-/// at the reader's size until decision DECISION_AX1, and it ran under the bar at AX3 on the SE and at AX5 on both.
+/// at the reader's size until decision 221, and it ran under the bar at AX3 on the SE and at AX5 on both.
 ///
 /// ## Devices
 /// iPhone 17 and iPhone SE (3rd generation), `OS=27.0`; iPhone-only, it self-skips at iPad width, where the sheet is a
 /// form sheet with room to spare.
 ///
 /// Version history:
-///   1.0 — L35 (J9, decision DECISION_AX1): initial implementation
+///   1.0 — L35 (J9, decision 221): initial implementation
 @MainActor
 final class CollectionExportSheetFitTests: XCTestCase {
 
@@ -2166,7 +2166,7 @@ final class CollectionExportSheetFitTests: XCTestCase {
             XCTAssertGreaterThan(frame.height, 0, "\(name) has no height at \(size)")
         }
         // The sheet opens on its sentence, whole between the navigation bar and the bar at every size (decision
-        // DECISION_AX1), and the line of what the device lacks follows it.
+        // 221), and the line of what the device lacks follows it.
         XCTAssertGreaterThanOrEqual(sentenceFrame.minY, navFoot - 0.5,
                                     "The sentence starts under the navigation bar at \(size): \(sentenceFrame), bar foot \(navFoot)")
         XCTAssertLessThanOrEqual(sentenceFrame.maxY, foot.minY + 0.5, """

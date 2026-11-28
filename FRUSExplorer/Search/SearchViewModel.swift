@@ -120,6 +120,9 @@ import Observation
 ///   2.17 — 2026-11-27: #2013 (L57) — the date filter's two days are read and written in the zone its pickers are in
 ///          (`dateRangeTimeZone`, `filterDay(of:in:)`, `filterDate(ofDay:in:)`), where they were in GMT; Visualize in
 ///          Corpus Analytics reads `dateRangeYears`
+///   2.18 — 2026-11-27: #2033 (L62) — `applyDateRange(_:)` and `dateRangeDays`, the filter's read of a hand-off's days
+///          and its write of the pickers' days, which the Mac's Search window shares; the two conversions forward to
+///          the kit's `DateRange.day(of:in:)` and `firstMoment(ofDay:in:)`, which the word cloud converts through too
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -189,7 +192,8 @@ final class SearchViewModel {
     /// Until #2013 both ran in GMT: west of UTC a hand-off's 1 October 1962 showed as 30 September, and a pick, which keeps
     /// the time of day of the date the picker held (20:00 after that hand-off in New York, measured by L57), was written as
     /// the day after. The tests set it, to read and write in a zone of their own; nothing else does. The Mac's Search
-    /// window converts its own days, in the device's zone too (`MacSearchViewModel`).
+    /// window reads and writes its popover's days through this view model too, so in this zone (``applyDateRange(_:)``,
+    /// ``dateRangeDays``, #2033).
     @ObservationIgnored var dateRangeTimeZone: TimeZone = .autoupdatingCurrent
 
     /// The years the date filter runs from and to, read in ``dateRangeTimeZone``, or `nil` while it is off: what
@@ -2295,12 +2299,7 @@ final class SearchViewModel {
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        let range: DateRange? = dateRangeEnabled
-            ? DateRange(
-                earliest: shownDay(dateRangeStart),
-                latest: shownDay(dateRangeEnd)
-              )
-            : nil
+        let range = dateRangeDays
         let scoped = projectScopedGates
         return SearchParameters(
             keywords: kw.isEmpty ? nil : kw,
@@ -2795,18 +2794,9 @@ final class SearchViewModel {
         // assigns unconditionally rather than guarding on non-nil — a guard would leave a
         // previous search's years in force under a restored search that has none.
         facetYearKeys = params.yearKeys
-        if let range = params.dateRange {
-            dateRangeEnabled = true
-            // Each day becomes its first moment in the pickers' zone, so they show the days handed over (#2013).
-            if let earliest = range.earliest {
-                dateRangeStart = Self.filterDate(ofDay: earliest, in: dateRangeTimeZone) ?? dateRangeStart
-            }
-            if let latest = range.latest {
-                dateRangeEnd = Self.filterDate(ofDay: latest, in: dateRangeTimeZone) ?? dateRangeEnd
-            }
-        } else {
-            dateRangeEnabled = false
-        }
+        // Each day becomes its first moment in the pickers' zone, so they show the days handed over (#2013), by the read
+        // the Mac's Search window shares (#2033).
+        applyDateRange(params.dateRange)
         // params.subjectTagIds is intentionally dropped (inert since Session 09) —
         // restoring it would fake an "active filter" for a constraint that does nothing.
         selectedUserTagIds    = Set(params.userTagIds.compactMap { UUID(uuidString: $0) })
@@ -2878,47 +2868,67 @@ final class SearchViewModel {
 
     // MARK: - The Date Filter's Days (#2013)
 
+    /// Sets the date filter to the days `range` names, as a hand-off or a recalled search carries them, or turns it off
+    /// for `nil`. Each day becomes its first moment in ``dateRangeTimeZone`` (``filterDate(ofDay:in:)``), so the pickers
+    /// show the days handed over, a day whose midnight a change of clocks skips among them (#2033); a string that names
+    /// no day leaves its picker's date as it was.
+    ///
+    /// The read of ``applyParameters(_:)`` on iPhone and iPad, and of the Mac's Search window, which mirrors its
+    /// parameters into Filters' view model through this (`MacSearchViewModel.mirrorParameters(into:)`). Until #2033 the
+    /// Mac read with a strict `DateFormatter`, which reads such a day as no date, so its popover kept the date it held.
+    ///
+    /// - Parameter range: The filter's two days, or `nil` for no date filter.
+    func applyDateRange(_ range: DateRange?) {
+        guard let range else {
+            dateRangeEnabled = false
+            return
+        }
+        dateRangeEnabled = true
+        if let earliest = range.earliest, let start = Self.filterDate(ofDay: earliest, in: dateRangeTimeZone) {
+            dateRangeStart = start
+        }
+        if let latest = range.latest, let end = Self.filterDate(ofDay: latest, in: dateRangeTimeZone) {
+            dateRangeEnd = end
+        }
+    }
+
+    /// The date filter's two days, as its pickers show them, or `nil` while it is off: the days a search runs on
+    /// (``searchParameters``), and the days the Mac's Search window writes back from its popover
+    /// (`MacSearchViewModel.applyAdvancedFilters()`).
+    var dateRangeDays: DateRange? {
+        guard dateRangeEnabled else { return nil }
+        return DateRange(earliest: shownDay(dateRangeStart), latest: shownDay(dateRangeEnd))
+    }
+
     /// The `yyyy-MM-dd` day `date` falls on in `timeZone`: the day a date picker in that zone shows it on.
     ///
-    /// The date filter writes its two days with this, in ``dateRangeTimeZone`` (``searchParameters``, the *Narrowed by*
+    /// The date filter writes its two days with this, in ``dateRangeTimeZone`` (``dateRangeDays``, the *Narrowed by*
     /// chip), so the day written is the day Filters' picker shows at whatever time of day the date stands: a hand-off's
     /// date is the day's first moment, the filter's first dates are the moment the view model was made, and a pick keeps
-    /// the time of day of the date the picker held.
+    /// the time of day of the date the picker held. The kit's `DateRange.day(of:in:)` since #2033, which the word cloud
+    /// writes its days with too.
     ///
     /// - Parameters:
     ///   - date: One of the filter's two dates.
     ///   - timeZone: The zone to read its day in.
     /// - Returns: The day, as `yyyy-MM-dd`.
     nonisolated static func filterDay(of date: Date, in timeZone: TimeZone) -> String {
-        let day = filterCalendar(in: timeZone).dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+        DateRange.day(of: date, in: timeZone)
     }
 
     /// The first moment of the day `day` names in `timeZone`, or `nil` when `day` is not a `yyyy-MM-dd` day there.
     ///
     /// The date a date picker in that zone shows `day` for, and so what the filter holds for a day that a hand-off, a
-    /// saved search or a facet's year gives it. It is the day's noon taken back to the day's start, not a formatter's
-    /// reading: where a change of clocks skips a day's midnight, the day starts at the first hour it has, where a strict
-    /// `DateFormatter` reads no date at all (L57 measured 27 such days from 1861 to 2000 in São Paulo, 42 in Havana and
-    /// 4 in Tokyo).
+    /// saved search or a facet's year gives it: the day's noon taken back to the day's start, which is not its midnight
+    /// where a change of clocks skips that. The kit's `DateRange.firstMoment(ofDay:in:)` since #2033, which has the
+    /// measurements, and which the word cloud reads its days with too.
     ///
     /// - Parameters:
     ///   - day: A day, as `yyyy-MM-dd`.
     ///   - timeZone: The zone the day is in.
     /// - Returns: The day's first moment, or `nil` for a string that names no day (`1962-02-30`, `1962-10-1`).
     nonisolated static func filterDate(ofDay day: String, in timeZone: TimeZone) -> Date? {
-        let fields = day.split(separator: "-", omittingEmptySubsequences: false)
-        guard fields.count == 3, fields[0].count == 4, fields[1].count == 2, fields[2].count == 2,
-              fields.allSatisfy({ field in field.allSatisfy { ("0"..."9").contains($0) } }),
-              let year = Int(fields[0]), let month = Int(fields[1]), let dayOfMonth = Int(fields[2]) else { return nil }
-        let calendar = filterCalendar(in: timeZone)
-        guard let noon = calendar.date(from: DateComponents(year: year, month: month, day: dayOfMonth, hour: 12)) else {
-            return nil
-        }
-        let start = calendar.startOfDay(for: noon)
-        let named = calendar.dateComponents([.year, .month, .day], from: start)
-        guard named.year == year, named.month == month, named.day == dayOfMonth else { return nil }
-        return start
+        DateRange.firstMoment(ofDay: day, in: timeZone)
     }
 
     /// A Gregorian calendar in `timeZone`: the calendar the filter's days are counted in.

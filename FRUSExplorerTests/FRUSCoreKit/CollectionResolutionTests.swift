@@ -258,7 +258,10 @@ final class FixtureContentStore: CollectionContentDataSource {
     }
 
     func summary(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummaryExport? {
-        summaries.first { $0.volumeId == volumeId && $0.documentId == documentId && $0.promptId == promptId }
+        // The protocol's contract since L34: the newest under the prompt, by `SummaryRecency`.
+        SummaryRecency.newest(summaries.filter {
+            $0.volumeId == volumeId && $0.documentId == documentId && $0.promptId == promptId
+        }, recency: { $0.recency })
     }
 
     func zoteroTags(volumeId: String, documentId: String) -> [String] {
@@ -447,9 +450,14 @@ struct CollectionResolutionTests {
             #expect(d7.relatedDocumentCitations.count == 1)
             #expect(d7.relatedDocumentCitations.first?.contains("Document 8") == true,
                     "\(d7.relatedDocumentCitations)")
-            // The render model is the store's AST, converted; the header is its head, and the dateline,
-            // inside an opener, prints with the body rather than in the header.
-            #expect(d7.renderModel != nil && d7.header.hasPrefix("7. Telegram") && d7.dateline == nil)
+            // The render model is the store's AST, converted; the header is the one reading of its head, the
+            // volume's number kept and the source note's call left out, and since L34 (#1994) the dateline is
+            // read inside the opener, where it had been read at the top level alone and so as absent.
+            #expect(d7.renderModel != nil && d7.header == "7. Telegram From the Embassy in France to the Department of State")
+            #expect(d7.dateline == "Paris, October 22, 1962, 5 p.m.")
+            // The record's title names the number once (decision 165), and its date line is the dateline (198).
+            #expect(d7.zoteroItem?.title == "Document 7: Telegram From the Embassy in France to the Department of State")
+            #expect(d7.zoteroItem?.extra == "Document date: Paris, October 22, 1962, 5 p.m.")
             #expect(d7.zoteroItem?.tags?.map(\.tag) == ["Quarantine"])
             #expect(d7.citation.contains("Document 7"), "\(d7.citation)")
 
@@ -687,6 +695,35 @@ struct CollectionResolutionTests {
         }
     }
 
+    /// R2b's finding, taken by L34: a headnote with no summary of its own printed the first summary the
+    /// store returned, which in the app is the oldest, where the document's rail shows the newest.
+    @Test("A headnote whose summary is gone prints the newest stored, under the collection's prompt where it has one (L34)")
+    func headnoteFallsBackToTheNewest() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+            func made(_ text: String, prompt: UUID, day: Double) -> GeneratedSummaryExport {
+                var summary = CollectionResolutionFixtures.summary("d8", prompt: prompt, text)
+                summary.createdAt = start.addingTimeInterval(day * 86_400)
+                return summary
+            }
+            let (a, b) = (CollectionResolutionFixtures.promptA, CollectionResolutionFixtures.promptB)
+            // Stored oldest first, as the app's store returns them. d8's entry chose a summary that is gone.
+            store.summaries = [made("The oldest.", prompt: b, day: 0), made("Older, under A.", prompt: a, day: 1),
+                               made("Newer, under A.", prompt: a, day: 2), made("The newest.", prompt: b, day: 3)]
+            func headnote(_ prompt: UUID?) async throws -> String? {
+                let collection = CollectionResolutionFixtures.staticCollection(summaryPromptId: prompt)
+                let items = try await assembly(collection, store: store).resolve(
+                    entries: CollectionResolutionFixtures.entries(of: collection), introduction: nil, purpose: .preview)
+                return items.documents.first { $0.documentId == "d8" }?.headnoteText
+            }
+            let underTheCollectionsPrompt = try await headnote(a)
+            let withNoPrompt = try await headnote(nil)
+            #expect(underTheCollectionsPrompt == "Newer, under A.")
+            #expect(withNoPrompt == "The newest.")
+        }
+    }
+
     /// The whole static preview as text, pinned: the same values resolve the same items wherever the
     /// kit runs. Re-take the pin from the failure message when a change means to move a line, and say why.
     @Test("The fixture collection resolves to the pinned items")
@@ -702,8 +739,15 @@ struct CollectionResolutionTests {
         }
     }
 
-    /// The dump's SHA-256, 5,524 bytes, taken on macOS 27.2 (SwiftPM) on 2026-10-27.
-    static let pinnedItemsDigest = "1f15f3dd403915a3b84545a8066aa75220a6bcdd9108b52493271d140aad04a9"
+    /// The dump's SHA-256, 5,661 bytes, taken on macOS 27.2 in Xcode and SwiftPM alike by L34 (2026-11-27).
+    ///
+    /// Re-taken by L34, because a document's heading and dateline are read once, from its parse
+    /// (`DocumentHeadingReading`), and its record from that reading (decisions 165 and 198). The 137 bytes
+    /// added are those lines alone: `d7`'s and `d8`'s datelines, which the opener holds and the old reading
+    /// left `-` (#1994), 58 bytes; their records' *Document date:* lines, 88; and three records' titles that
+    /// name the document's number once, "Document 7: Telegram From…" for "Document 7: 7. Telegram From…"
+    /// (#2002), 9 fewer. The dump of 2026-10-27 was 5,524 bytes, `1f15f3dd…aad04a9`.
+    static let pinnedItemsDigest = "2cfd6772a377f4611e9bded1bf924b30ba495e5567bc898cc458aed149b76b88"
 }
 
 // MARK: - The values' rules
@@ -893,5 +937,67 @@ struct CollectionValuesTests {
         #expect(ArchivalResolver.documentResolution(lotFile: "64–D 563", indexes: undivided)?.naId == "7654321")
         #expect(ArchivalResolver.documentResolution(lotFile: "99 D 999", indexes: indexes) == nil)
         #expect(ArchivalResolver.documentResolution(lotFile: "72 D 316", indexes: ArchivalIndexes()) == nil)
+    }
+}
+
+// MARK: - The newest summary
+
+/// The order a document's summaries are shown and printed in (L34): FRUSCoreKit's `SummaryRecency`, the
+/// rule the app's `GeneratedSummary.ranksAbove(_:_:)` reads its records through.
+@Suite("A document's summaries, newest first (SummaryRecency)")
+struct SummaryRecencyTests {
+
+    /// A summary as the tests store one: its words, its prompt and its place in the order.
+    struct Stored {
+        let text: String
+        let prompt: UUID
+        let recency: SummaryRecency
+    }
+
+    @Test("Newest first: by when each was made, then when it was last saved, then by id; no date is the oldest")
+    func order() throws {
+        let early = Date(timeIntervalSinceReferenceDate: 800_000_000), late = early.addingTimeInterval(60)
+        let idA = try #require(UUID(uuidString: "00000000-0000-0000-0000-00000000000A"))
+        let idB = try #require(UUID(uuidString: "00000000-0000-0000-0000-00000000000B"))
+        // When it was made decides, whatever the save stamps say.
+        #expect(SummaryRecency(createdAt: late, lastModified: early, id: idB)
+            .ranksAbove(SummaryRecency(createdAt: early, lastModified: late, id: idA)))
+        // Made together: the later save.
+        #expect(SummaryRecency(createdAt: early, lastModified: late, id: idB)
+            .ranksAbove(SummaryRecency(createdAt: early, lastModified: early, id: idA)))
+        // Alike in both: the id, so that the order is total.
+        #expect(SummaryRecency(createdAt: early, lastModified: early, id: idA)
+            .ranksAbove(SummaryRecency(createdAt: early, lastModified: early, id: idB)))
+        // A summary with no date is the oldest.
+        #expect(SummaryRecency(createdAt: early, lastModified: nil, id: idB)
+            .ranksAbove(SummaryRecency(createdAt: nil, lastModified: late, id: idA)))
+        let same = SummaryRecency(createdAt: early, lastModified: early, id: idA)
+        #expect(!same.ranksAbove(same))
+    }
+
+    @Test("A headnote falls back to the newest under its prompt, else the newest of all, in whatever order they come")
+    func fallback() {
+        let start = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        let (a, b, unused) = (UUID(), UUID(), UUID())
+        func stored(_ text: String, _ prompt: UUID, day: Double) -> Stored {
+            Stored(text: text, prompt: prompt,
+                   recency: SummaryRecency(createdAt: start.addingTimeInterval(day * 86_400), lastModified: nil, id: UUID()))
+        }
+        let oldestFirst = [stored("oldest", b, day: 0), stored("older A", a, day: 1), stored("newer A", a, day: 2),
+                           stored("newest", b, day: 3)]
+        for summaries in [oldestFirst, Array(oldestFirst.reversed()), [oldestFirst[2], oldestFirst[0], oldestFirst[3], oldestFirst[1]]] {
+            func pick(_ prompt: UUID?) -> String? {
+                SummaryRecency.headnoteFallback(summaries, preferredPromptId: prompt,
+                                                promptId: { $0.prompt }, recency: { $0.recency })?.text
+            }
+            #expect(pick(a) == "newer A")
+            #expect(pick(b) == "newest")
+            #expect(pick(nil) == "newest")
+            #expect(pick(unused) == "newest", "a prompt with nothing stored under it falls back to the newest of all")
+            #expect(SummaryRecency.newest(summaries, recency: { $0.recency })?.text == "newest")
+        }
+        let nothing: [Stored] = []
+        #expect(SummaryRecency.headnoteFallback(nothing, preferredPromptId: a, promptId: { $0.prompt },
+                                                recency: { $0.recency }) == nil)
     }
 }

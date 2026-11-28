@@ -359,8 +359,13 @@ struct InAppBrowserCoordinatorTests {
     /// runs stopped answering, and on the Mac the page is in after about 1 s.
     private static let openingLimit: Duration = .seconds(600)
 
-    /// How long any later wait may take, with WebKit started: a bound on a hang, not WebKit's pace.
-    private static let waitLimit: Duration = .seconds(120)
+    /// How long any later wait may take, with WebKit started: a bound on a hang, not WebKit's pace. It was 120 s until
+    /// 2026-11-27. In 11 of 13 runs on CI the five links were answered within 4.5 s of the opening page; in one they took
+    /// 66 s, and in another (run 46011019732) WebKit had still not asked its second question about `windowOn` 168 s
+    /// after the opening page, when the wait, due at 120 s, recorded its timeout about 48 s late. Both stalls began in
+    /// the host's first minute, as the opening page's do, and every opening measured on CI, up to 165 s, falls within
+    /// the 600 s it is allowed.
+    private static let waitLimit: Duration = .seconds(600)
 
     private static func waitFor(_ what: String, within limit: Duration, _ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + limit

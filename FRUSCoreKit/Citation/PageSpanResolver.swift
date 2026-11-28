@@ -89,6 +89,10 @@ import Foundation
 ///          document, which the indexer's two page passes store beside the page cited. Each
 ///          `citedDocument` forwards to its `…Resolution` twin, so every caller's document is the
 ///          one it was.
+///   2.5 — 2026-11-27 (L39, F7): what a page link reads where no document begins on or holds a page:
+///          ``divisionsStartingOnPageSQL``, the query the indexer's read of `division_start_pages` and
+///          the reader's both run, and, for a page of the front matter, ``romanPageRowsSQL`` and
+///          ``romanPageDocument(rows:divisions:)``. No arabic answer changes.
 public enum PageSpanResolver {
 
     // MARK: - DocumentPages
@@ -478,6 +482,53 @@ public enum PageSpanResolver {
         WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
         ORDER BY rowid
         """
+
+    // MARK: - A page no document holds (F7, L39)
+
+    /// The query whose rows are the divisions of one volume that begin on a numbered page, outermost
+    /// first (F7, index version 76): `division_start_pages`, by the page's type as `page_ranges` types
+    /// it (`'arabic'`, `'roman'`) and its number. Bind the volume as parameter 1, the type as 2 and the
+    /// number as 3. The indexer's read (`IndexingPipeline.divisions(startingOn:inVolume:)`) and the
+    /// reader's (`PageRangeStore.divisions(startingOn:inVolume:)`) run this one string.
+    public static let divisionsStartingOnPageSQL = """
+        SELECT division_id FROM division_start_pages
+         WHERE volume_id = ? AND page_number_type = ? AND page_number_int = ?
+         ORDER BY division_order
+        """
+
+    /// The query whose rows are one page of a volume's roman numbering as `page_ranges` holds it
+    /// (L39): each row's document and whether the document begins there (`is_start`), in the order
+    /// the index stored them. Bind the volume as parameter 1 and the page's number as 2.
+    public static let romanPageRowsSQL = """
+        SELECT document_id, is_start FROM page_ranges
+         WHERE volume_id = ? AND page_number_type = 'roman' AND page_number_int = ?
+         ORDER BY rowid
+        """
+
+    /// What a link to a page of a volume's front matter, numbered in Roman numerals, opens (F7, L39),
+    /// or `nil` when the page names nothing: a document that begins on it, the first in source order;
+    /// else the outermost division that begins on it; else the document or section the page is
+    /// printed in, which holds the page's break, the first in source order.
+    ///
+    /// A division that begins on the page comes before a section the page is printed in, because a
+    /// Contents line names what begins there: `frus1921v01`'s line for the President's second message
+    /// links `#pg_XX`, whose break sits at the end of the first message. Over the 553 catalogue
+    /// volumes at corpus `216cdb764`, with a full index at version 76 of the same files, 12 references
+    /// name a page where a division begins, another section is printed and no document begins, four
+    /// of them in a Contents. No stored answer holds the order, as #1509's holds an arabic page's to
+    /// the edge the index stores: the indexer's page passes resolve `pg_` and digits alone, so no
+    /// reference to a roman page is stored against a document.
+    ///
+    /// - Parameters:
+    ///   - rows: The page's `page_ranges` rows (``romanPageRowsSQL``), in source order.
+    ///   - divisions: The divisions that begin on the page, outermost first
+    ///     (``divisionsStartingOnPageSQL``).
+    public static func romanPageDocument(rows: [(documentId: String, isStart: Bool)],
+                                         divisions: [String]) -> String? {
+        if let beginning = rows.first(where: { $0.isStart }) { return beginning.documentId }
+        if let division = divisions.first { return division }
+        return rows.first(where: { !$0.isStart })?.documentId
+    }
 }
 
 // MARK: - PageReferenceForm

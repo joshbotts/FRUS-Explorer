@@ -18,7 +18,7 @@ import Foundation
 ///
 /// ## Document structure
 ///   - Cover page: collection title (Heading1), optional collection note, export
-///     date + document/volume counts, Word field-code TOC
+///     date + document/volume counts, and the contents list: the plan's rows, each linked to its entry
 ///   - One section per document (Heading2): history.state.gov URL, body content
 ///     (rich when `renderModel` is available, flat-text fallback otherwise),
 ///     optional research-note callout
@@ -196,6 +196,16 @@ import Foundation
 ///          its stored JSON; a `.general` summary prints as before
 ///   1.27 — L29 (#2000): a document's research notes print by `CollectionExportDocument.includesNotes(options:)`,
 ///          the rule BibTeX, RIS, the Zotero send and a shared file now carry them by; no change to the package
+///   1.28 — L34: the package draws the export's plan (`CollectionExportPlan`). The contents list is the plan's
+///          rows, each a link to a bookmark at its entry and no page number, where it was one `TOC` field
+///          over the heading styles, whose rows are Word's own from the headings once it is updated (the
+///          design's §3.8 and §12; the Word and Pages run, ``contentsXML(_:)``). A footnote prints the volume's number as a custom mark at its
+///          call and its note, where Word counted its own (#2001). Each heading's outline level is its level in
+///          the collection's outline (J32): a section of level *L* is outline level *L*, so the three section
+///          styles move one level down. A document prints its plan's lines in order: a title of the author's
+///          leads, the citation a line of its own and *As published:* inside the volume's heading (#1998); the
+///          source note once (#1991); the lines above the text kept with it (J16); and nothing for a
+///          requested headnote with nothing stored (J10)
 public final class DocxCollectionExporter: CollectionExporter {
 
     /// Where figure images come from (#1516): the app's store, which `ExportFormat.makeExporter()`
@@ -213,6 +223,13 @@ public final class DocxCollectionExporter: CollectionExporter {
     /// How many footnote bodies deep the render walk is (#1516): above zero, a figure's image and a video's link
     /// print as text, since `word/footnotes.xml` carries no relationships.
     private var footnoteDepth = 0
+
+    /// How the text being written is drawn, from its document's plan (L34): its headings' levels, the label inside
+    /// its first heading, and which notes print. `nil` outside a document's text, which writes as before.
+    private var textDrawing: CollectionDocumentPlan.TextDrawing?
+
+    /// Whether the document's first heading is still to be written, so the plan's label goes inside it and no other.
+    private var headingLabelPending = false
 
     /// Creates an exporter.
     ///
@@ -438,7 +455,7 @@ public final class DocxCollectionExporter: CollectionExporter {
             <w:pPr>
               <w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="999999"/></w:pBdr>
               <w:spacing w:before="480" w:after="160"/>
-              <w:outlineLvl w:val="0"/>
+              <w:outlineLvl w:val="1"/>
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr>
           </w:style>
@@ -447,7 +464,7 @@ public final class DocxCollectionExporter: CollectionExporter {
             <w:basedOn w:val="Normal"/>
             <w:pPr>
               <w:spacing w:before="360" w:after="120"/>
-              <w:outlineLvl w:val="1"/>
+              <w:outlineLvl w:val="2"/>
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr>
           </w:style>
@@ -456,7 +473,7 @@ public final class DocxCollectionExporter: CollectionExporter {
             <w:basedOn w:val="Normal"/>
             <w:pPr>
               <w:spacing w:before="240" w:after="80"/>
-              <w:outlineLvl w:val="2"/>
+              <w:outlineLvl w:val="3"/>
             </w:pPr>
             <w:rPr><w:b/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr>
           </w:style>
@@ -497,6 +514,29 @@ public final class DocxCollectionExporter: CollectionExporter {
             <w:name w:val="Collection Note"/>
             <w:basedOn w:val="Normal"/>
             <w:rPr><w:i/><w:color w:val="555555"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="DocCitation">
+            <w:name w:val="Document Citation"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="60"/></w:pPr>
+            <w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="TOC1">
+            <w:name w:val="toc 1"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:before="120" w:after="40"/></w:pPr>
+            <w:rPr><w:b/></w:rPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="TOC2">
+            <w:name w:val="toc 2"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="20"/><w:ind w:left="240"/></w:pPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="TOC3">
+            <w:name w:val="toc 3"/>
+            <w:basedOn w:val="Normal"/>
+            <w:pPr><w:spacing w:after="60"/><w:ind w:left="480"/></w:pPr>
+            <w:rPr><w:color w:val="555555"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>
           </w:style>
           <w:style w:type="paragraph" w:styleId="DocURL">
             <w:name w:val="Document URL"/>
@@ -609,20 +649,11 @@ public final class DocxCollectionExporter: CollectionExporter {
             + "\(volCount) volume\(volCount == 1 ? "" : "s") · Exported \(df.string(from: exportDate.date))"
         body += styledPara(info, styleId: "Normal")
 
-        // Contents heading + Word TOC field code (updates on first open in Word). The
-        // field's `\o` level range is content-driven: `"1-2"` (the exact pre-Phase-4
-        // field) unless an authored level-3 section exists, so a collection using no
-        // deep nesting keeps today's ToC — in particular, in-document TEI headings and
-        // "Summary" labels (built-in Heading3, outline level 2) stay out of Word's
-        // regenerated contents.
-        let maxHeadingLevel = items.reduce(into: 1) { acc, item in
-            if case .heading(_, let level) = item {
-                acc = max(acc, min(max(level, 1), CollectionOutline.maxLevel))
-            }
-        }
+        // The export's plan (L34): the contents rows and each document's lines, decided once for the three
+        // formats. The contents list is the plan's rows, each linked to a bookmark at its entry.
+        let plan = CollectionExportPlan(items: items, options: options)
         body += styledPara("Contents", styleId: "Heading2")
-        body += tocFieldXML(maxHeadingLevel: maxHeadingLevel,
-                            cachedEntries: Self.tocCachedEntries(for: items))
+        body += contentsXML(plan.contents)
 
         // Word-cloud overview on its own page after the contents — the position the PDF
         // gives it (page 2) and the HTML gives its figure (#960).
@@ -634,25 +665,32 @@ public final class DocxCollectionExporter: CollectionExporter {
         // Page break before the composed body
         body += "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
 
-        // Composed items — documents, section headings, and prose blocks in authored order.
-        for item in items {
-            switch item {
+        // Composed items — documents, section headings, and prose blocks in authored order. Each item the
+        // contents list has a row for carries that row's bookmark, which the row links to and counts the
+        // page of.
+        var row = 0
+        for planned in plan.items {
+            switch planned.item {
             case .heading(let text, let level):
                 // markdownItalicRuns handles _text_ spans; the SectionHeading styles are
-                // bold. Levels map to SectionHeading/SectionHeading2/SectionHeading3
-                // (outlineLvl 0/1/2 — see the v1.6 note for why not built-in Heading2/3),
-                // so Word's regenerated ToC picks up the authored hierarchy.
+                // bold. Levels map to SectionHeading/SectionHeading2/SectionHeading3,
+                // outline levels 1/2/3: a section of level L is the export's level L + 1, below its title.
+                row += 1
                 let styles = ["SectionHeading", "SectionHeading2", "SectionHeading3"]
                 let l = min(max(level, 1), CollectionOutline.maxLevel)
-                body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true)
+                body += markdownItalicRuns(text, styleId: styles[l - 1], bold: true, bookmark: row)
             case .prose(let paragraphs):
                 body += proseDocxXML(paragraphs, ctx: ctx)
             case .excerpt(let excerpt):
                 body += excerptDocxXML(excerpt)
             case .generated(let block):
-                body += generatedDocxXML(block, ctx: ctx)
+                row += 1
+                body += generatedDocxXML(block, ctx: ctx, bookmark: row)
             case .document(let doc):
-                body += documentSectionXML(doc: doc, ctx: ctx, options: options)
+                row += 1
+                if let documentPlan = planned.document {
+                    body += documentSectionXML(doc: doc, plan: documentPlan, ctx: ctx, bookmark: row)
+                }
             }
         }
 
@@ -677,123 +715,127 @@ public final class DocxCollectionExporter: CollectionExporter {
         return body
     }
 
-    /// Renders one document entry as Word paragraphs: citation heading, source URL, body
-    /// (rich when a render model is present, flat-text fallback otherwise), source note, and
-    /// research notes. Body depth and footnote/highlight/notes options are honoured per entry.
-    private func documentSectionXML(
-        doc: CollectionExportDocument,
-        ctx: DocxRenderContext,
-        options: CollectionExportOptions
-    ) -> String {
+    /// Renders one document entry as Word paragraphs: its plan's lines in order (L34). The leading line, a
+    /// title of the author's or the citation, is a heading at the outline level the document's section
+    /// gives it, and carries the contents row's bookmark; the volume's heading follows inside the text, or as
+    /// a paragraph of its own where the text does not print. The lines above the text keep with what follows
+    /// (J16), so that Word leaves no heading or citation at the foot of a page apart from its document.
+    ///
+    /// - Parameters:
+    ///   - doc: The resolved document.
+    ///   - plan: The document's plan.
+    ///   - ctx: The export's render context.
+    ///   - bookmark: The contents row whose bookmark the document's first paragraph carries.
+    private func documentSectionXML(doc: CollectionExportDocument, plan: CollectionDocumentPlan,
+                                    ctx: DocxRenderContext, bookmark: Int?) -> String {
         var body = ""
-
-        // Section heading: the per-entry `titleOverride` when set, else the citation (M3,
-        // centralized via `exportHeading`); markdownItalicRuns handles _text_.
-        let heading = doc.exportHeading
-        body += markdownItalicRuns(heading, styleId: "Heading2", bold: true)
-
-        if !doc.historyStateGovURL.isEmpty {
-            body += styledPara(escaped(doc.historyStateGovURL), styleId: "DocURL")
+        var pendingBookmark = bookmark
+        /// `runs` inside the row's bookmark, for the document's first paragraph alone.
+        func marked(_ runs: String) -> String {
+            defer { pendingBookmark = nil }
+            return Self.bookmarked(runs, row: pendingBookmark)
         }
-
-        // Headnote (Authoring Phase 5) — a labeled italic abstract above the body; a
-        // requested headnote with no stored summary renders the placeholder note
-        // (headnote resolution never generates on demand).
-        if doc.includeHeadnote {
-            body += headnoteXML(doc.headnoteText, format: doc.headnoteFormat, authorship: doc.headnoteAuthorship)
-        }
-
-        // Body — controlled by doc.bodyDepth (per-entry effective depth).
-        switch doc.bodyDepth {
-        case .full:
-            if let model = doc.renderModel {
-                // Highlight offsets are flat-text positions over the render
-                // model's body nodes (see `ExportHighlight`); the plain
-                // `bodyText` paragraph-splitting fallback below uses a
-                // different extraction path, so painting only applies here.
-                // Phase 5: the per-entry/section override when resolved, else the
-                // collection-level option.
-                let applyHighlights = doc.applyHighlightsOverride ?? options.applyHighlights
-                // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
-                // renderer — `false` drops footnote bodies, markers stay as labels.
-                let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
-                let tracker: HighlightPaintTracker? =
-                    (applyHighlights && !doc.highlights.isEmpty)
-                        ? HighlightPaintTracker(doc.highlights)
-                        : nil
-                body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker,
-                                                    includeFootnotes: includeFootnotes)
-            } else {
-                let paras = doc.bodyText
-                    .components(separatedBy: "\n\n")
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                for para in paras {
-                    body += styledPara(
-                        escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)
-                                   .replacingOccurrences(of: "\n", with: " ")),
-                        styleId: "Normal")
+        for line in plan.lines {
+            switch line.role {
+            case .title:
+                body += wParaXML(pPr: Self.paragraphProperties("Heading2", level: line.headingLevel, keepNext: true),
+                                 runs: marked(markdownItalicRunXML(line.text, baseRPr: "<w:b/>")))
+            case .citation:
+                if let level = line.headingLevel {
+                    body += wParaXML(pPr: Self.paragraphProperties("Heading2", level: level, keepNext: true),
+                                     runs: marked(markdownItalicRunXML(line.text, baseRPr: "<w:b/>")))
+                } else {
+                    body += wParaXML(pPr: Self.paragraphProperties("DocCitation", keepNext: true),
+                                     runs: marked(markdownItalicRunXML(line.text)))
                 }
-            }
-        case .summaryOnly:
-            if let summary = doc.summaryText, !summary.isEmpty {
-                body += styledPara("Summary", styleId: "Heading3")
-                if let fields = StructuredSummaryDisplay.fields(responseText: summary, format: doc.summaryFormat) {
+            case .address:
+                body += wParaXML(pPr: Self.paragraphProperties("DocURL", keepNext: true),
+                                 runs: marked("<w:r><w:t xml:space=\"preserve\">\(escaped(line.text))</w:t></w:r>"))
+            case .headnote:
+                body += headnoteXML(line)
+            case .text:
+                if let drawing = line.drawing, let model = doc.renderModel {
+                    // Highlight offsets are flat-text positions over the render model's body nodes
+                    // (see `ExportHighlight`); the plain `bodyText` fallback below uses a different
+                    // extraction path, so painting only applies here.
+                    let tracker: HighlightPaintTracker? = (drawing.appliesHighlights && !doc.highlights.isEmpty)
+                        ? HighlightPaintTracker(doc.highlights) : nil
+                    body += renderModelToDocxParagraphs(model, ctx: ctx, tracker: tracker, drawing: drawing)
+                } else {
+                    let paras = line.text
+                        .components(separatedBy: "\n\n")
+                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    for para in paras {
+                        body += styledPara(
+                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)
+                                       .replacingOccurrences(of: "\n", with: " ")),
+                            styleId: "Normal")
+                    }
+                }
+            case .volumeHeading:
+                var runs = ""
+                if let label = line.label {
+                    runs += "<w:r><w:rPr><w:b w:val=\"0\"/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label)) </w:t></w:r>"
+                }
+                runs += "<w:r><w:t xml:space=\"preserve\">\(escaped(line.text))</w:t></w:r>"
+                body += wParaXML(pPr: Self.paragraphProperties("Heading3", level: line.headingLevel), runs: runs)
+            case .dateline:
+                body += styledPara(escaped(line.text), styleId: "Dateline")
+            case .summary:
+                // The label is not a heading (J32): Heading3's look, at the outline's body-text level.
+                body += wParaXML(pPr: Self.paragraphProperties("Heading3", bodyText: true),
+                                 runs: "<w:r><w:t xml:space=\"preserve\">\(escaped(line.label ?? ""))</w:t></w:r>")
+                if let fields = StructuredSummaryDisplay.fields(responseText: line.text, format: line.format) {
                     for field in fields {
                         body += wPara(runs: fieldRuns(field, italic: false), styleId: "Normal")
                     }
                 } else {
-                    let summaryParas = summary
+                    let summaryParas = line.text
                         .components(separatedBy: "\n\n")
                         .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                     for para in summaryParas {
-                        body += styledPara(
-                            escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
-                            styleId: "Normal")
+                        body += styledPara(escaped(para.trimmingCharacters(in: .whitespacesAndNewlines)),
+                                           styleId: "Normal")
                     }
                 }
-                // AI attribution (v1.14): generated text is always labeled in exports —
-                // a caption paragraph in the existing DocURL apparatus style, so
-                // styles.xml is unchanged.
-                body += styledPara(escaped(CollectionAIAttribution.label()),
-                                   styleId: "DocURL")
-            }
-        case .index:
-            break
-        }
-
-        // Source note (options.includeSourceNote)
-        if let sourceNote = doc.sourceNoteText, !sourceNote.isEmpty {
-            body += styledPara("Source: \(escaped(SourceNoteDisplay.withoutLeadingLabel(sourceNote)))", styleId: "DocURL")
-        }
-
-        // Related documents (A10, Authoring Phase 5): the pre-resolved in-collection
-        // "See also:" citations; empty (every untouched entry) emits nothing. Reuses
-        // the DocURL apparatus style, so styles.xml is unchanged.
-        if !doc.relatedDocumentCitations.isEmpty {
-            let label = String(localized: "collection.related.label", defaultValue: "See also:")
-            // Each citation's own period comes off before the "; " join, and the line ends in
-            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
-            let joined = doc.relatedDocumentCitations
-                .map(CitationPunctuation.withoutTerminalPeriod)
-                .joined(separator: "; ") + "."
-            body += markdownItalicRuns("\(label) \(joined)", styleId: "DocURL")
-        }
-
-        // Research notes — the document's setting, else its section's, else the collection's.
-        guard doc.includesNotes(options: options) else { return body }
-        for note in doc.noteTexts where !note.isEmpty {
-            body += researchNoteHeadingPara()
-            let noteParagraphs = note
-                .components(separatedBy: "\n\n")
-                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            for para in noteParagraphs {
-                let text = para
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .replacingOccurrences(of: "\n", with: " ")
-                body += markdownItalicRuns(text, styleId: "ResearchNote")
+                // AI attribution (v1.14): generated text is always labeled in exports — a caption
+                // paragraph in the existing DocURL apparatus style.
+                if let attribution = line.attribution {
+                    body += styledPara(escaped(attribution), styleId: "DocURL")
+                }
+            case .sourceNote:
+                body += styledPara("\(escaped(line.label ?? "")) \(escaped(line.text))", styleId: "DocURL")
+            case .seeAlso:
+                body += markdownItalicRuns("\(line.label ?? "") \(line.text)", styleId: "DocURL")
+            case .researchNote:
+                body += researchNoteHeadingPara(line.label ?? "")
+                let noteParagraphs = line.text
+                    .components(separatedBy: "\n\n")
+                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                for para in noteParagraphs {
+                    let text = para
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                        .replacingOccurrences(of: "\n", with: " ")
+                    body += markdownItalicRuns(text, styleId: "ResearchNote")
+                }
             }
         }
         return body
+    }
+
+    /// A paragraph's properties (L34): its style; whether it keeps with the next paragraph; and its outline
+    /// level where it is a heading, the export's `level` less one (Word's levels run 0 to 8), or the body
+    /// text's level 9 where its style's look is a heading's and it is not one.
+    static func paragraphProperties(_ style: String, level: Int? = nil, keepNext: Bool = false,
+                                    bodyText: Bool = false) -> String {
+        var properties = "<w:pStyle w:val=\"\(style)\"/>"
+        if keepNext { properties += "<w:keepNext/>" }
+        if let level {
+            properties += "<w:outlineLvl w:val=\"\(min(max(level - 1, 0), 8))\"/>"
+        } else if bodyText {
+            properties += "<w:outlineLvl w:val=\"9\"/>"
+        }
+        return "<w:pPr>\(properties)</w:pPr>"
     }
 
     /// Renders a rich-text prose block (the spans the resolver decoded from its RTF, or from a
@@ -882,13 +924,13 @@ public final class DocxCollectionExporter: CollectionExporter {
     }
 
     /// Renders a generated apparatus block (Authoring Phase 6): the block title as a
-    /// `SectionHeading` paragraph (outline level 0, so Word's field-code ToC lists it
-    /// like an authored section), then one `GeneratedRow` paragraph per row — the row
+    /// `SectionHeading` paragraph (outline level 1, under the collection's title, so Word's
+    /// Navigation pane lists it like an authored section), then one `GeneratedRow` paragraph per row — the row
     /// text (wrapped in a real `<w:hyperlink>` when the row carries a URL), an optional
     /// gray small-run secondary text, and a per-row `<w:ind>` for indent levels.
     private func generatedDocxXML(_ block: CollectionGeneratedBlock,
-                                  ctx: DocxRenderContext) -> String {
-        var xml = markdownItalicRuns(block.title, styleId: "SectionHeading", bold: true)
+                                  ctx: DocxRenderContext, bookmark: Int? = nil) -> String {
+        var xml = markdownItalicRuns(block.title, styleId: "SectionHeading", bold: true, bookmark: bookmark)
         for row in block.rows {
             // Row text and secondary text run through the run-level `_…_` conversion:
             // bibliography/chronology rows carry the citation formatter's italicized
@@ -1052,17 +1094,19 @@ public final class DocxCollectionExporter: CollectionExporter {
     ///     Always passed as `nil` into footnote rendering — footnote bodies fall
     ///     outside the flat-text coordinate space (`appendFlatText` only walks
     ///     `model.bodyNodes`), so highlight offsets never point into them.
-    ///   - includeFootnotes: When `false` (owner decision 2026-07-03), no footnote
-    ///     body is registered with `ctx` and the label map stays empty, so inline
-    ///     markers fall back to plain superscript label runs instead of
-    ///     `<w:footnoteReference>` — matching the shared HTML renderer, which keeps
-    ///     markers while dropping the footnote bodies.
+    ///   - drawing: How the document's plan draws its text (L34): which notes print, the levels of its
+    ///     headings and the label inside its first. A note that does not print is registered with no Word
+    ///     id, so its call falls back to the volume's number as a superscript run, or to nothing for a note
+    ///     the volume printed unnumbered (`FootnotePrinting.call(key:label:)`), as the web page draws it.
     private func renderModelToDocxParagraphs(
         _ model: FRUSDocumentRenderModel,
         ctx: DocxRenderContext,
         tracker: HighlightPaintTracker? = nil,
-        includeFootnotes: Bool = true
+        drawing: CollectionDocumentPlan.TextDrawing
     ) -> String {
+        textDrawing = drawing
+        headingLabelPending = true
+        defer { textDrawing = nil; headingLabelPending = false }
         // Pre-assign Word integer IDs to every footnote in this document. Skipped when
         // footnotes are gated off — an empty map routes every marker to the
         // superscript-label fallback and nothing references word/footnotes.xml.
@@ -1079,12 +1123,10 @@ public final class DocxCollectionExporter: CollectionExporter {
         // (`footnoteXML`'s `nested`).
         let nested = Self.nestedFootnoteKeys(in: model)
         var footnoteIDMap: [String: Int] = [:]
-        if includeFootnotes {
-            for note in model.footnotes {
-                if case .footnoteBody(let id, _, _, let seq, _, _) = note {
-                    let key = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
-                    if !nested.contains(key) { footnoteIDMap[key] = ctx.allocate() }
-                }
+        for note in model.footnotes {
+            if case .footnoteBody(let id, _, _, let seq, _, _) = note {
+                let key = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+                if drawing.footnotes.prints(key), !nested.contains(key) { footnoteIDMap[key] = ctx.allocate() }
             }
         }
 
@@ -1098,9 +1140,9 @@ public final class DocxCollectionExporter: CollectionExporter {
         // Only the notes no Word footnote holds print inside another: one the body cites has its own entry.
         let nestedBodies = Self.footnoteBodiesByKey(model).filter { nested.contains($0.key) }
         for note in model.footnotes {
-            if case .footnoteBody(let id, _, _, let seq, _, let children) = note,
+            if case .footnoteBody(let id, _, _, let seq, let label, let children) = note,
                let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] {
-                ctx.addFootnote(footnoteXML(id: wordId, children: children, nested: nestedBodies))
+                ctx.addFootnote(footnoteXML(id: wordId, label: label, children: children, nested: nestedBodies))
             }
         }
 
@@ -1124,8 +1166,21 @@ public final class DocxCollectionExporter: CollectionExporter {
         // #1371 review: each paragraph-like block prints through `paragraphsDocx`, so a list, table
         // or `<p>` inside it prints — and advances the tracker — instead of vanishing.
         case .heading(let c):
-            return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: story.style("Heading3"))
+            // In the body, the plan's level and, inside the document's first heading, its label (L34: *As
+            // published:* under a title of the author's), a run outside the tracker's walk.
+            guard story == .body, let drawing = textDrawing else {
+                return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                    wPara(runs: $0, styleId: story.style("Heading3"))
+                }
+            }
+            var lead = ""
+            if headingLabelPending, let label = drawing.headingLabel, !label.isEmpty {
+                lead = "<w:r><w:rPr><w:b w:val=\"0\"/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label)) </w:t></w:r>"
+            }
+            headingLabelPending = false
+            return paragraphsDocx(c, props: RunProps(), lead: lead, story: story, footnoteIDMap: footnoteIDMap,
+                                  tracker: tracker) {
+                wParaXML(pPr: Self.paragraphProperties("Heading3", level: drawing.headingLevel), runs: $0)
             }
         case .dateline(let c):
             return paragraphsDocx(c, props: RunProps(italic: true), story: story, footnoteIDMap: footnoteIDMap,
@@ -1145,7 +1200,14 @@ public final class DocxCollectionExporter: CollectionExporter {
             return sep + children(c)
         case .attachmentHeading(let c):
             return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: story.style("AttachmentHeading"))
+                if story == .body, let drawing = self.textDrawing {
+                    // One level below the volume's heading (J32), which under a title is one below the
+                    // document's: no attachment's heading is the volume's peer.
+                    return self.wParaXML(pPr: Self.paragraphProperties("AttachmentHeading",
+                                                                       level: drawing.attachmentHeadingLevel),
+                                         runs: $0)
+                }
+                return self.wPara(runs: $0, styleId: story.style("AttachmentHeading"))
             }
         case .titlePageBlock(let c):
             return children(c)
@@ -1578,13 +1640,19 @@ public final class DocxCollectionExporter: CollectionExporter {
             _ = tracker?.partition("\n")
             return "<w:r><w:br/></w:r>"
         case .footnoteMarker(let id, _, let seq, let label):
-            guard let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] else {
-                // Fallback (footnotes gated off, or a marker inside a note, #1496): render the label as
-                // superscript text, a bullet for a note the volume printed unnumbered.
+            let key = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+            guard let wordId = footnoteIDMap[key] else {
+                // No Word footnote: a note printed inside another (#1496), whose call prints its label as
+                // superscript text, a bullet for one the volume printed unnumbered; or a note that does not
+                // print (L34), whose call is the volume's number as text, and nothing where it printed none.
+                if case .omitted = (textDrawing?.footnotes ?? .all).call(key: key, label: label) { return "" }
                 return superscriptLabelRun(label)
             }
+            // The volume's number is the mark (#2001): Word's own count disagreed with it wherever a volume's
+            // notes run on across documents. A custom mark follows the reference, and its note opens on it.
             return "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr>"
-                + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
+                + "<w:footnoteReference w:customMarkFollows=\"1\" w:id=\"\(wordId)\"/>"
+                + "<w:t xml:space=\"preserve\">\(xmlEscaped(Self.footnoteMark(label)))</w:t></w:r>"
         case .termText(let c), .corrText(let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c):
@@ -1725,9 +1793,12 @@ public final class DocxCollectionExporter: CollectionExporter {
     /// as their superscript labels — the note is printed with no footnote map, the arm's fallback — and each note
     /// only notes cite (`nested`, keyed by DOM key) follows the outer note as paragraphs of its own, opening on its
     /// superscript label, with any note inside IT after that. HTML and PDF are unchanged.
-    private func footnoteXML(id: Int, children: [FRUSRenderNode],
+    private func footnoteXML(id: Int, label: String?, children: [FRUSRenderNode],
                              nested: [String: (label: String?, children: [FRUSRenderNode])]) -> String {
-        let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
+        // The note opens on the volume's number, the custom mark its call carries (#2001, L34), where it
+        // opened on Word's count (`<w:footnoteRef/>`).
+        let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr>"
+            + "<w:t xml:space=\"preserve\">\(xmlEscaped(Self.footnoteMark(label)))</w:t></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
         let paragraph = { (runs: String) in "        <w:p>\(DocxStory.footnotePPr)\(runs)</w:p>\n" }
         // #1516: inside a note, a figure's image and a video's link print as text.
@@ -1756,6 +1827,11 @@ public final class DocxCollectionExporter: CollectionExporter {
         appendNested(citedIn: children)
         return "      <w:footnote w:id=\"\(id)\">\n" + content + "      </w:footnote>\n"
     }
+
+    /// The mark a printed note's call and its note carry in Word (L34): the number the volume printed, or the
+    /// bullet the PDF draws for a note it printed unnumbered. The run of 2026-11-27 opened a note marked this
+    /// way in Pages, which drew 44, 45 and the bullet at the call and at the note and no count of its own.
+    static func footnoteMark(_ label: String?) -> String { label ?? "\u{2022}" }
 
     /// A footnote's label as a superscript run, the way a marker with no Word footnote prints — and, since #1496, the
     /// way a note printed inside another opens: the number the volume printed, or a bullet for a note it printed
@@ -1857,62 +1933,48 @@ public final class DocxCollectionExporter: CollectionExporter {
         return "<w:footnotes xmlns:w=\"\(w)\">\n\(separators)\n\(body)</w:footnotes>"
     }
 
-    /// Word field-code TOC. The `\o` level range bounds what the ToC collects (it caps
-    /// the `\u` outline-level sweep the way Word's Show-levels control does): `"1-2"` —
-    /// the exact pre-Phase-4 field — unless an authored level-3 section exists, in which
-    /// case it widens to `"1-3"` so the three-deep outline is representable. Level-2
-    /// sections need no widening: `SectionHeading2` carries `outlineLvl` 1, inside
-    /// `"1-2"`. The `\u` switch collects the custom
-    /// `SectionHeading`/`SectionHeading2`/`SectionHeading3` styles by their `outlineLvl`.
-    /// `w:dirty="true"` causes Word to rebuild on first open.
+    /// The contents list (L34): the plan's rows, each a paragraph linked to the bookmark at its entry
+    /// (``bookmarked(_:row:)``), a document's opening on its number among the documents (#1993), and a
+    /// row's lines in small type under it, linked to the same entry. A row carries no page number.
     ///
-    /// - Parameter maxHeadingLevel: The deepest clamped authored heading level in the
-    ///   export (1 when the collection has no headings).
-    private func tocFieldXML(maxHeadingLevel: Int, cachedEntries: [String] = []) -> String {
-        let range = maxHeadingLevel >= 3 ? "1-3" : "1-2"
-        var xml = "    <w:p>\n"
-        + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
-        + "      <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r>\n"
-        + "      <w:r><w:instrText xml:space=\"preserve\"> TOC \\o \"\(range)\" \\h \\z \\u </w:instrText></w:r>\n"
-        + "      <w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>\n"
-        if let first = cachedEntries.first {
-            // #960: the field's CACHED RESULT is the real contents, one paragraph per entry,
-            // so Pages, Quick Look, and Word-before-refresh show the list the preview shows.
-            // The old cached result was the sentence "Right-click to update the table of
-            // contents." — an instruction where the preview has content. `w:dirty` stays, so
-            // Word still rebuilds with page numbers on first update.
-            xml += "      <w:r><w:t xml:space=\"preserve\">\(xmlEscaped(first))</w:t></w:r>\n"
-            for entry in cachedEntries.dropFirst() {
-                xml += "    </w:p>\n    <w:p>\n"
-                + "      <w:pPr><w:pStyle w:val=\"Normal\"/></w:pPr>\n"
-                + "      <w:r><w:t xml:space=\"preserve\">\(xmlEscaped(entry))</w:t></w:r>\n"
-            }
-        } else {
-            xml += "      <w:r><w:t>This collection has no entries.</w:t></w:r>\n"
+    /// **Until L34 the list was one `TOC` field** over the heading styles. Updated, such a field takes its
+    /// rows from the headings, so no word of the plan's could stay: a *Header & Dateline* list would come
+    /// back as citations, and a title's *As published:* line could not be in it (the design's §3.8). The
+    /// design, and 1.0's comment on the field's `w:dirty`, had Word rebuild it on first open; in the run
+    /// below neither application rebuilt a field so marked.
+    ///
+    /// **The Word and Pages run of 2026-11-27** (§12) opened two files, Pages by the session and Word, on
+    /// Windows, by the owner. Rows linked to bookmarks kept their words and their links in both, each
+    /// landing on its entry (in Word on a Ctrl-click), where a field over entries the exporter marked
+    /// printed its stored rows, unlinked. A `PAGEREF` field at a row's end gave no page number in either:
+    /// Pages printed its stored result, and Word printed none on open, none after Ctrl+A and F9, and
+    /// offered no Update Field at it. So a row ends at its words, with no tab or leader before a number
+    /// that never came (the owner's choice, *Drop the field*).
+    ///
+    /// - Parameter rows: The plan's rows.
+    /// - Returns: The list's paragraphs.
+    private func contentsXML(_ rows: [CollectionContentsRow]) -> String {
+        guard !rows.isEmpty else {
+            return styledPara("This collection has no entries.", styleId: "Normal")
         }
-        xml += "      <w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n"
-        + "    </w:p>\n"
+        var xml = ""
+        for (index, row) in rows.enumerated() {
+            let name = Self.bookmarkName(row: index + 1)
+            let isDocument = row.number != nil
+            let indent = (row.level - 1) * 360 + (isDocument ? 240 : 0)
+            var runs = ""
+            if let number = row.number {
+                runs += "<w:r><w:t xml:space=\"preserve\">\(number). </w:t></w:r>"
+            }
+            runs += markdownItalicRunXML(row.text)
+            xml += wParaXML(pPr: "<w:pPr><w:pStyle w:val=\"\(isDocument ? "TOC2" : "TOC1")\"/><w:ind w:left=\"\(indent)\"/></w:pPr>",
+                            runs: "<w:hyperlink w:anchor=\"\(name)\" w:history=\"1\">\(runs)</w:hyperlink>")
+            for line in row.lines {
+                xml += wParaXML(pPr: "<w:pPr><w:pStyle w:val=\"TOC3\"/><w:ind w:left=\"\(indent + 240)\"/></w:pPr>",
+                                runs: "<w:hyperlink w:anchor=\"\(name)\" w:history=\"1\">\(markdownItalicRunXML(line))</w:hyperlink>")
+            }
+        }
         return xml
-    }
-
-    /// The cached TOC lines: numbered citations for documents (the citation-style contents
-    /// the cover and the preview both use), authored headings verbatim.
-    static func tocCachedEntries(for items: [CollectionExportItem]) -> [String] {
-        var n = 0
-        var out: [String] = []
-        for item in items {
-            switch item {
-            case .document(let doc):
-                n += 1
-                let cite = doc.citation.isEmpty ? (doc.titleOverride ?? doc.title) : doc.citation
-                out.append("\(n). \(cite)")
-            case .heading(let text, _):
-                out.append(text)
-            default:
-                break
-            }
-        }
-        return out
     }
 
     /// The inline-image paragraph for the word cloud, sized to the content width.
@@ -1961,11 +2023,24 @@ public final class DocxCollectionExporter: CollectionExporter {
     ///   - text: Raw (un-escaped) source text with optional `_span_` markers.
     ///   - styleId: The Word paragraph style to apply.
     ///   - bold: When `true`, the base run properties include `<w:b/>`.
-    private func markdownItalicRuns(_ text: String, styleId: String, bold: Bool = false) -> String {
-        let runs = markdownItalicRunXML(text, baseRPr: bold ? "<w:b/>" : "")
+    private func markdownItalicRuns(_ text: String, styleId: String, bold: Bool = false,
+                                    bookmark: Int? = nil) -> String {
+        let runs = Self.bookmarked(markdownItalicRunXML(text, baseRPr: bold ? "<w:b/>" : ""), row: bookmark)
         return runs.isEmpty
             ? styledPara("", styleId: styleId)
             : wPara(runs: runs, styleId: styleId)
+    }
+
+    /// The name of the bookmark at the entry of the contents list's `row`th row (L34), which the row links to
+    /// and whose page its field prints. Visible bookmark names, since Pages kept the links to them in the
+    /// owner's run of 2026-11-27 (`frus_doc1` in the run's file).
+    static func bookmarkName(row: Int) -> String { "frus_row_\(row)" }
+
+    /// `runs` inside the bookmark of the contents list's `row`th row, or `runs` alone when `row` is `nil`.
+    static func bookmarked(_ runs: String, row: Int?) -> String {
+        guard let row else { return runs }
+        return "<w:bookmarkStart w:id=\"\(row)\" w:name=\"\(bookmarkName(row: row))\"/>" + runs
+            + "<w:bookmarkEnd w:id=\"\(row)\"/>"
     }
 
     /// The run-level core of `markdownItalicRuns` (Authoring Phase 6 review fix): emits
@@ -2048,57 +2123,45 @@ public final class DocxCollectionExporter: CollectionExporter {
         return runs
     }
 
-    /// Emits the headnote block (Authoring Phase 5): a small bold "Headnote" label
-    /// paragraph followed by the abstract in italic runs — or, when `text` is nil/empty
-    /// (a requested headnote with no stored summary), the italic placeholder note.
-    /// Paragraph breaks in the abstract split into separate paragraphs; a structured headnote
-    /// (`format`) prints a paragraph per field, its label bold.
-    private func headnoteXML(_ text: String?, format: ResponseFormat, authorship: SummaryAuthorship) -> String {
-        let label = String(localized: "collection.headnote.label", defaultValue: "Headnote")
+    /// Emits the headnote block (Authoring Phase 5): a small bold "Headnote" label paragraph followed by the
+    /// abstract in italic runs, and the caption saying who wrote it. Paragraph breaks in the abstract split
+    /// into separate paragraphs; a structured headnote (`format`) prints a paragraph per field, its label
+    /// bold. It is written only where a headnote is stored: since L34 a requested headnote with nothing
+    /// stored prints nothing (J10), where 1.0 printed the author an instruction in a file made for a reader.
+    private func headnoteXML(_ line: CollectionDocumentPlan.Line) -> String {
         var xml = wPara(
-            runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>",
+            runs: "<w:r><w:rPr><w:b/></w:rPr><w:t xml:space=\"preserve\">\(escaped(line.label ?? ""))</w:t></w:r>",
             styleId: "Normal")
-        if let text, let fields = StructuredSummaryDisplay.fields(responseText: text, format: format) {
+        if let fields = StructuredSummaryDisplay.fields(responseText: line.text, format: line.format) {
             for field in fields {
                 xml += wPara(runs: fieldRuns(field, italic: true), styleId: "Normal")
             }
-            if let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
-                xml += styledPara(escaped(attribution), styleId: "DocURL")
-            }
-            return xml
-        }
-        let content: String
-        if let text, !text.isEmpty {
-            content = text
         } else {
-            content = String(localized: "collection.headnote.missing",
-                             defaultValue: "No stored summary for this document — generate one in the document view to fill this headnote.")
-        }
-        let paragraphs = content
-            .components(separatedBy: "\n\n")
-            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        for para in paragraphs {
-            let flattened = para
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .replacingOccurrences(of: "\n", with: " ")
-            xml += wPara(
-                runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
-                styleId: "Normal")
+            let paragraphs = line.text
+                .components(separatedBy: "\n\n")
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            for para in paragraphs {
+                let flattened = para
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .replacingOccurrences(of: "\n", with: " ")
+                xml += wPara(
+                    runs: "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">\(escaped(flattened))</w:t></w:r>",
+                    styleId: "Normal")
+            }
         }
         // Attribution honors the headnote's authorship (Composer redesign): AI keeps the caption,
         // an AI-edited headnote discloses the edit, a user-written one shows none.
-        if let text, !text.isEmpty,
-           let attribution = CollectionAIAttribution.headnoteLabel(authorship: authorship) {
+        if let attribution = line.attribution {
             xml += styledPara(escaped(attribution), styleId: "DocURL")
         }
         return xml
     }
 
-    private func researchNoteHeadingPara() -> String {
+    private func researchNoteHeadingPara(_ label: String) -> String {
         "    <w:p>\n"
         + "      <w:pPr><w:pStyle w:val=\"ResearchNote\"/></w:pPr>\n"
         + "      <w:r><w:rPr><w:b/></w:rPr>"
-        + "<w:t xml:space=\"preserve\">Research Note</w:t></w:r>\n"
+        + "<w:t xml:space=\"preserve\">\(escaped(label))</w:t></w:r>\n"
         + "    </w:p>\n"
     }
 

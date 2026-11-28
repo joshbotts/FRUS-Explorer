@@ -200,3 +200,121 @@ struct SaveWorkingCorpusSheet: View {
         dismiss()
     }
 }
+
+// MARK: - Saving a capture (#1990, L42)
+
+/// A capture the reader has asked to save as a working corpus, with what its screen adds about what the
+/// save leaves out — the sentences ``WorkingCorpusCapture/statement(coverage:notes:locale:)`` says after
+/// the coverage. The value ``SwiftUI/View/workingCorpusSave(_:outcome:)`` presents on.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (#1990, L42): initial implementation, for the cross-reference graph's save
+struct WorkingCorpusSaveRequest: Identifiable {
+    /// The request's identity, so a second request for the same set is presented anew.
+    let id = UUID()
+    /// What the save writes.
+    let capture: WorkingCorpusCapture
+    /// What the screen adds, said before the save.
+    var notes: [String] = []
+}
+
+extension WorkingCorpusCapture {
+
+    /// Writes the capture as a working corpus and saves the context: the record the Clusters index and the
+    /// semantic map's lasso write — the kept keys, no query, the description, the volumes indexed at capture
+    /// and both truncation fields.
+    ///
+    /// The one write a screen's capture goes through (#1990): the cross-reference graph's, and Chronology's
+    /// after it (L56). A save that fails takes its corpus out of the context again, so a later save of the
+    /// context cannot write the corpus the reader was told was not saved.
+    ///
+    /// - Parameters:
+    ///   - context: The context to write to.
+    ///   - indexedVolumeCount: How many volumes this device has indexed.
+    /// - Returns: The new corpus.
+    /// - Throws: The context's save error.
+    @discardableResult
+    func save(in context: ModelContext, indexedVolumeCount: Int) throws -> WorkingCorpus {
+        let corpus = WorkingCorpus(
+            name: name,
+            documentKeys: documentKeys,
+            // No query produced the set: `sourceQuery` exists so a corpus can be re-derived by hand from
+            // its words, and the description says how this one can be.
+            sourceQuery: nil,
+            sourceDescription: sourceDescription,
+            indexedVolumeCountAtCapture: indexedVolumeCount,
+            wasTruncatedAtCapture: isTruncated,
+            totalMatchCountAtCapture: total)
+        context.insert(corpus)
+        do {
+            try context.save()
+        } catch {
+            context.delete(corpus)
+            throw error
+        }
+        return corpus
+    }
+}
+
+/// Asks before a capture is saved as a working corpus and says after what the save did (#1990, L42):
+/// what the save holds, before it, as the semantic map's lasso card says it, and what it did, after it,
+/// as Add to Collection says it (L19). See ``SwiftUI/View/workingCorpusSave(_:outcome:)``.
+private struct WorkingCorpusSaveModifier: ViewModifier {
+
+    @Binding var request: WorkingCorpusSaveRequest?
+    @Binding var outcome: String?
+
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
+    func body(content: Content) -> some View {
+        content.alert(
+            String(localized: "workingCorpus.capture.confirm.title", defaultValue: "Save as Working Corpus?"),
+            isPresented: Binding(get: { request != nil }, set: { if !$0 { request = nil } }),
+            presenting: request
+        ) { request in
+            Button(String(localized: "common.save", defaultValue: "Save")) { save(request) }
+            Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
+        } message: { request in
+            Text(verbatim: request.capture.statement(coverage: coverage(of: request.capture), notes: request.notes))
+        }
+    }
+
+    /// How much of the capture this device has indexed, through the resolver that decides what a corpus
+    /// searches when it is applied, so the number said at capture is the number the corpus gives.
+    private func coverage(of capture: WorkingCorpusCapture) -> WorkingCorpusResolution {
+        WorkingCorpusResolver(indexedVolumeIds: appState.indexedVolumeIds).resolve(documentKeys: capture.documentKeys)
+    }
+
+    private func save(_ request: WorkingCorpusSaveRequest) {
+        do {
+            let corpus = try request.capture.save(in: modelContext,
+                                                  indexedVolumeCount: appState.indexedVolumeIds.count)
+            outcome = WorkingCorpusCapture.outcome(savedName: corpus.name)
+        } catch {
+            outcome = WorkingCorpusCapture.outcome(savedName: nil)
+            #if DEBUG
+            print("[WorkingCorpusSave] save failed: \(error)")
+            #endif
+        }
+    }
+}
+
+extension View {
+
+    /// Presents `request` as a question before its capture is saved as a working corpus — what it holds,
+    /// how much of it this device has indexed, and what it leaves out — and on Save writes it
+    /// (``WorkingCorpusCapture/save(in:indexedVolumeCount:)``) and sets `outcome` to what the save did,
+    /// which the screen shows in its toast (`transientToast(_:)`), whose announcement VoiceOver hears.
+    ///
+    /// The one way a screen asks to save a capture (#1990): the cross-reference graph's, and Chronology's
+    /// after it (L56).
+    ///
+    /// - Parameters:
+    ///   - request: The capture to save; the screen sets it, and the question clears it.
+    ///   - outcome: Where the sentence that says what the save did goes.
+    /// - Returns: The view, with the question.
+    func workingCorpusSave(_ request: Binding<WorkingCorpusSaveRequest?>, outcome: Binding<String?>) -> some View {
+        modifier(WorkingCorpusSaveModifier(request: request, outcome: outcome))
+    }
+}

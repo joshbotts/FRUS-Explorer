@@ -143,7 +143,7 @@ This document is no longer in the volume.
 ### Research — Changed by an update (R-5 P2)
 
 #### Sidebar row
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 780–781 | key: research.sidebar.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 796–797 | key: research.sidebar.updated -->
 
 Changed by an update
 
@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1196–1196 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1212–1212 | key: research.action.reviewChanges -->
 
 Review Changes…
 
@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2419–2419 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2454–2454 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2420–2421 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2455–2456 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2729–2730 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2764–2765 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -930,7 +930,7 @@ Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim fro
 
 #### What this device lacks for an export of summaries (#2018, L35)
 <!-- L35 (#2018, decision 198): the line under the export sheet's sentence, and the message an export stops with, where documents print a summary that is not stored and Apple Intelligence cannot write one on this device. The count comes first; the reason after it is the app's own sentence for why Apple Intelligence cannot summarize here (`ai.availability.notEnabled`, `.notEnabled.mac` and `.modelNotReady`, in 09-Settings-and-App.md), or, on a device that cannot run it, the sentence below. Until L35 such an export ended "The export could not be rendered.", even with every summary stored. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionSummaryExportError.errorDescription | lines: 969–980 | keys: export.summaries.missing.one %@, export.summaries.missing.many %@, export.summaries.notEligible | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionContentResolver.swift | CollectionSummaryExportError.errorDescription | lines: 972–983 | keys: export.summaries.missing.one %@, export.summaries.missing.many %@, export.summaries.notEligible | shared: iOS+macOS (single edit point) -->
 
 **One document / several:** %@ document has no stored summary. / %@ documents have no stored summary.
 
@@ -954,6 +954,55 @@ Format
 Web page
 
 <!-- END SOURCE: export.grid.html.caption.v2 -->
+
+#### The words before the volume's heading under a title of the author's (L34)
+<!-- L34 (2026-11-27), decision 154: the owner's words, fixed. They stand before the volume's heading wherever a
+     title of the author's leads a document, in every export, and open a titled contents row's second line. An
+     author cannot change or empty them. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.asPublishedLabel | lines: 237–237 | key: collection.document.asPublished | shared: iOS+macOS (single edit point) -->
+
+As published:
+
+<!-- END SOURCE: collection.document.asPublished -->
+
+#### The label over a document's headnote in an export
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.headnoteLabel | lines: 476–476 | key: collection.headnote.label | same text also in: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift -->
+<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+
+Headnote
+
+<!-- END SOURCE: collection.headnote.label -->
+
+#### The label over a summary printed in a document's place
+<!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.summaryLabel | lines: 481–481 | key: collection.summary.label | shared: iOS+macOS (single edit point) -->
+
+Summary
+
+<!-- END SOURCE: collection.summary.label -->
+
+#### The label before a document's source note in an export
+<!-- L34: a key of its own from L34; the three exporters each printed the word as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.sourceLabel | lines: 486–486 | key: collection.source.label | shared: iOS+macOS (single edit point) -->
+
+Source:
+
+<!-- END SOURCE: collection.source.label -->
+
+#### The label before the documents a document names in the collection
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.seeAlsoLabel | lines: 491–491 | key: collection.related.label | shared: iOS+macOS (single edit point) -->
+
+See also:
+
+<!-- END SOURCE: collection.related.label -->
+
+#### The label over a research note in an export
+<!-- L34: a key of its own from L34; the three exporters each printed the words as written in their code. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionDocumentPlan.swift | CollectionDocumentPlan.researchNoteLabel | lines: 496–496 | key: collection.researchNote.label | shared: iOS+macOS (single edit point) -->
+
+Research Note
+
+<!-- END SOURCE: collection.researchNote.label -->
 
 ### Collections — the six templates (L25, decision 139)
 
@@ -1574,14 +1623,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 349–350 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 352–353 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 339–340 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 342–343 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -2067,7 +2116,7 @@ This is a “%@” link from inside a FRUS document. It works while reading that
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 375–376 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 378–379 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
@@ -2222,14 +2271,14 @@ These documents overlap your range but their dates are imprecise enough to reach
 <!-- END SOURCE: chronology.overflow.chip.a11y.many -->
 
 #### Footer — Paste a chapter’s footnotes. Numbered notes are split on…
-<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.inputSection | lines: 226–227 | key: citation.batch.footer -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.inputSection | lines: 229–230 | key: citation.batch.footer -->
 
 Paste a chapter’s footnotes. Numbered notes are split on their numbers, and a note wrapped across lines is rejoined; an unnumbered list is one citation per line.
 
 <!-- END SOURCE: citation.batch.footer -->
 
 #### Empty state — No FRUS documents matched the provided citation. Check the…
-<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.resultsSection | lines: 406–407 | key: citation.noMatch.detail -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.resultsSection | lines: 413–414 | key: citation.noMatch.detail -->
 
 No FRUS documents matched the provided citation. Check the subseries and volume, then try again.
 
@@ -2254,7 +2303,7 @@ No FRUS documents matched the provided citation. Check the subseries and volume,
      a footnote that opens with its date and gives its volume's years without naming the series —
      "Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84" — was read as the subseries 1962 and drew
      this note under Volume V, though the citation names Volume V; it now reads 1961–1963. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1344–1345 | key: citation.match.unmetFieldsNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1414–1415 | key: citation.match.unmetFieldsNote -->
 
 This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it.
 
@@ -2284,7 +2333,7 @@ This result comes from a volume the citation does not name, so it may not be the
      https://…/frus1961-63v05" draws this note. A single year read that way is a date and is not:
      "FRUS, vol. V, doc. 84, Memorandum, May 5, 1962" and "Senate Committee on Foreign Relations,
      May 5, 1962, vol. V, doc. 84" beside the Volume V link drew it until then, and no longer do. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1357–1358 | key: citation.match.linkProseNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1427–1428 | key: citation.match.linkProseNote -->
 
 The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it.
 
@@ -2298,7 +2347,7 @@ The link names this volume, but the citation’s text names a different one, and
      "part 2", joined as a list: "volume XX and part 2". It may be followed by "and page 50 is
      outside the pages this document may be printed on …" (the next two blocks). Keep it
      lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1338–1339 | key: citation.match.unmetFields -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1408–1409 | key: citation.match.unmetFields -->
 
 this volume does not match the cited \(fields)
 
@@ -2319,7 +2368,7 @@ this volume does not match the cited \(fields)
      for a short document with none, over the pages between the breaks on either side of it. When
      the range is one page, the next block is shown instead. Keep it lower-case: it continues the
      label, and may follow the previous block after "and". -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1377–1378 | key: citation.match.pageOutside -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1462–1463 | key: citation.match.pageOutside -->
 
 page \(page) is outside the pages this document may be printed on (\(first)–\(last))
 
@@ -2333,7 +2382,7 @@ page \(page) is outside the pages this document may be printed on (\(first)–\(
      page-1 floor it is also the form for a document the index records no start for whose only
      arabic page break of its own is page 1, which reads "(1)" (corrected in review round 4, which
      found this note naming only the first case). Keep it lower-case: it continues the label. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1374–1375 | key: citation.match.pageOutsideOnePage -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1459–1460 | key: citation.match.pageOutsideOnePage -->
 
 page \(page) is not the page this document is printed on (\(first))
 
@@ -2343,11 +2392,37 @@ page \(page) is not the page this document is printed on (\(first))
 <!-- The note under that best guess (#1474 review round 1). The document on the cited page, when
      there is one, is listed after it as a second result — since #1503 the document that begins on
      that page, or every one of them when several do, each carrying the next block's note. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1383–1384 | key: citation.match.pageOutsideNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1468–1469 | key: citation.match.pageOutsideNote -->
 
 The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it.
 
 <!-- END SOURCE: citation.match.pageOutsideNote -->
+
+#### Best guess — this volume prints no document \(…)
+<!-- The explanation after "Best guess — " on a Citation Lookup document found by the number of a
+     citation whose letter the volume does not print (#1977, the owner's choice of 2026-11-26):
+     "FRUS, 1898, Document 1190c" finds the 1898 volume's Document 1190, labelled "Best guess — this
+     volume prints no document 1190c". `\(number)` is the cited number as the lookup read it. A
+     number the volume prints with its letter — 1190b, or 550A typed as 550a — finds its own
+     document and never shows this. Nor does a microfiche supplement's prefixed number (GT–6) or an
+     appendix's letter (C), which a volume that does not print them answers with nothing, nor a
+     history.state.gov link, whose volume answers alone. It may follow the explanation "this
+     volume does not match the cited …" and come before "page … is outside the pages …", the three
+     joined as a list. Keep it lower-case: it continues the label. -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.numberNotPrinted | lines: 1436–1437 | key: citation.match.numberNotPrinted -->
+
+this volume prints no document \(number)
+
+<!-- END SOURCE: citation.match.numberNotPrinted -->
+
+#### This volume prints no document with the citation’s number and letter…
+<!-- The note under that best guess (#1977). In a volume before 1955 the line "Match — document
+     number assigned digitally" follows it, as it follows every best guess found by number there. -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.numberNotPrintedNote | lines: 1442–1443 | key: citation.match.numberNotPrintedNote -->
+
+This volume prints no document with the citation’s number and letter, so this is the document with that number alone, which may not be the one cited. Check the citation before relying on it.
+
+<!-- END SOURCE: citation.match.numberNotPrintedNote -->
 
 #### A page alone cannot say which of the documents printed on it…
 <!-- The note under each result of a citation that names a page but no document when that page
@@ -2358,7 +2433,7 @@ The citation’s page is not one this document is printed on, so its document nu
      Batch counts the note as ambiguous, and a collection's Add Documents never adds it as
      resolved. In the E-volumes that number their pages afresh in every document the next block is
      shown instead (#1503 review round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1288–1289 | key: citation.match.sharedPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1358–1359 | key: citation.match.sharedPageNote -->
 
 A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation.
 
@@ -2371,7 +2446,7 @@ A page alone cannot say which of the documents printed on it the citation means.
      a page of that number is listed, up to ten, each labelled "Possible match — one of 12
      documents printed on page 2", or, when one document alone has such a page, "Possible match —
      page 57 is printed only in this document"; even that one is not treated as a match. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1304–1305 | key: citation.match.perDocumentPageNote -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1374–1375 | key: citation.match.perDocumentPageNote -->
 
 This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation.
 
@@ -2387,7 +2462,7 @@ This volume numbers its pages afresh in every document, so a page number alone d
      block's label instead — except for a link to the whole volume with no document or page beside
      it, which names nothing an index could find and shows this label either way (#1522 review
      round 1). -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1391–1392 | key: citation.match.linkVolumeOnly -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1476–1477 | key: citation.match.linkVolumeOnly -->
 
 Volume identified — no document the citation names was found in it
 
@@ -2414,28 +2489,28 @@ Volume identified — no document the citation names was found in it
      reason (review round 1 corrected this note, which said it gave this line). The result shows the
      volume's title and has no button. It says "not yet indexed" rather than "being indexed"
      because a volume whose indexing was cut short is not being indexed until it is indexed again. -->
-<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1406–1407 | key: citation.match.notYetIndexed -->
+<!-- SOURCE: FRUSCoreKit/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1491–1492 | key: citation.match.notYetIndexed -->
 
 Volume identified — downloaded but not yet indexed; look it up again once it is
 
 <!-- END SOURCE: citation.match.notYetIndexed -->
 
 #### Tooltip — Find other FRUS documents drawn from the same archival…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 974–975 | key: graph.contextMenu.archivalNeighbors.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 1091–1092 | key: graph.contextMenu.archivalNeighbors.help -->
 
 Find other FRUS documents drawn from the same archival source — lot file, central file, collection, or library
 
 <!-- END SOURCE: graph.contextMenu.archivalNeighbors.help -->
 
 #### Tooltip — Timeline arranges documents chronologically along a date…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1420–1421 | key: graph.layout.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1537–1538 | key: graph.layout.help -->
 
 Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates.
 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1633–1634 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1754–1755 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 
@@ -2456,14 +2531,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 875–876 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 878–879 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 938–939 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 941–942 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2481,7 +2556,7 @@ You followed a link to page %lld of this volume, which isn’t downloaded.
 *Shown when a link to a printed page of a volume that is not on the device opened the volume's page instead of a document (#1766): the app's map of the series does not list that page — mostly the first page of a compilation cited with "ff.", or one end of a range of pages running across several documents. Where the map lists the page, the link offers the download as a link to a document does, with the alert above. On iPhone and iPad the section this line sits in leads the volume's page on such a visit. `%lld` is the page number as the volume prints it.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1616–1617 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1651–1652 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -2692,21 +2767,21 @@ Your research activity will appear here as you open documents, run searches, and
 <!-- END SOURCE: sessionLog.empty.detail.trail -->
 
 #### Research notes, tags, highlights, and collections you add…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 904–905 | key: research.empty.noDocs.allNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 920–921 | key: research.empty.noDocs.allNotes -->
 
 Research notes, tags, highlights, and collections you add from the document view will appear here.
 
 <!-- END SOURCE: research.empty.noDocs.allNotes -->
 
 #### Notes you write on a document will appear here. A document…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 907–908 | key: research.empty.noDocs.hasNotes -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 923–924 | key: research.empty.noDocs.hasNotes -->
 
 Notes you write on a document will appear here. A document you have only tagged, highlighted, or collected appears under All Research Documents instead.
 
 <!-- END SOURCE: research.empty.noDocs.hasNotes -->
 
 #### No document you have annotated has changed since it was…
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 919–920 | key: research.empty.noDocs.updated -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | ResearchView.documentList | lines: 935–936 | key: research.empty.noDocs.updated -->
 
 No document you have annotated has changed since it was indexed on this device.
 
@@ -3035,56 +3110,56 @@ Search the index, browse volumes, paste citations or history.state.gov links, or
 <!-- END SOURCE: collection.editor.addDocuments.footer -->
 
 #### Field prompt — Overrides the document title in the table of contents and…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 398–399 | key: collection.inspector.titleOverride.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.identitySection | lines: 400–401 | key: collection.inspector.titleOverride.caption -->
 
 Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title.
 
 <!-- END SOURCE: collection.inspector.titleOverride.caption -->
 
 #### Checked notes are included when research notes apply to…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 469–470 | key: collection.inspector.note.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 471–472 | key: collection.inspector.note.selectionCaption -->
 
 Checked notes are included when research notes apply to this document. Unselecting every note turns notes off for it.
 
 <!-- END SOURCE: collection.inspector.note.selectionCaption -->
 
 #### Checked passages are included when highlights apply to this…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 554–555 | key: collection.inspector.highlight.selectionCaption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.annotationsSection | lines: 556–557 | key: collection.inspector.highlight.selectionCaption -->
 
 Checked passages are included when highlights apply to this document. Unselecting every passage turns highlights off for it.
 
 <!-- END SOURCE: collection.inspector.highlight.selectionCaption -->
 
 #### Adds a “See also” line listing cross-referenced documents…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 738–739 | key: collection.inspector.override.related.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overrideControls | lines: 740–741 | key: collection.inspector.override.related.caption -->
 
 Adds a “See also” line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section.
 
 <!-- END SOURCE: collection.inspector.override.related.caption -->
 
 #### Default follows the section’s setting when its heading sets…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 790–791 | key: collection.inspector.overrides.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.overridesSection | lines: 792–793 | key: collection.inspector.overrides.caption -->
 
 Default follows the section’s setting when its heading sets one, else the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.overrides.caption -->
 
 #### Documents in this section use these settings unless they…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 803–804 | key: collection.inspector.sectionDefaults.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.sectionDefaultsSection | lines: 805–806 | key: collection.inspector.sectionDefaults.caption -->
 
 Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition.
 
 <!-- END SOURCE: collection.inspector.sectionDefaults.caption -->
 
 #### Reorder or delete excerpts in the collection list. Insert…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 919–920 | key: collection.inspector.excerpts.caption -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.excerptsSection | lines: 921–922 | key: collection.inspector.excerpts.caption -->
 
 Reorder or delete excerpts in the collection list. Insert new ones from the highlight rows above.
 
 <!-- END SOURCE: collection.inspector.excerpts.caption -->
 
 #### No headnote yet. Edit to write a key takeaway, or generate…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1019–1020 | key: collection.inspector.headnote.empty -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEntryInspector.swift | CollectionEntryInspector.headnoteCard | lines: 1024–1025 | key: collection.inspector.headnote.empty -->
 
 No headnote yet. Edit to write a key takeaway, or generate a document summary to seed one.
 
@@ -3107,7 +3182,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1632–1633 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1644–1645 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -3127,15 +3202,16 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1054–1055 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1059–1060 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 466–467 | key: collection.headnote.missing | same text also in: FRUSCoreKit/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
-<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+<!-- L34 (2026-11-27, J10): the live preview's line alone. An export prints nothing for a requested headnote with
+     nothing stored, where until L34 all three formats printed these words, meant for the author, to the reader. -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteMissingHTML | lines: 494–495 | key: collection.headnote.missing -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.
 
@@ -3298,7 +3374,7 @@ Export this collection as a PDF, HTML page, or Word document — includes docume
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2097–2098 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 2099–2100 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

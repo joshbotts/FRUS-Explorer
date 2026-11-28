@@ -1499,3 +1499,43 @@ struct SubjectDataCaptionTests {
             """)
     }
 }
+
+// MARK: - SubjectSheetDoorOrderTests
+
+/// A subject's sheet puts its two doors above *Covering volumes* (L38, #1931, decision 220).
+///
+/// #1931 read the Mac's sheet as drawing no *All «area» subjects* door. In the check copy of `v2`
+/// the door was built and drawn: its accessibility element was there, enabled, under
+/// `subjects.detail.browseArea`. But the Mac's list measures a row only as it comes on screen, so
+/// its first scroll to the end stopped 51 pt short for *Berlin crisis*, whose six previewed volumes
+/// have one- and two-line titles, and the door sat under the sheet's Done bar until a second
+/// scroll. The owner's choice was to move both doors above the volume list on every platform,
+/// so they show when the sheet opens. The unit target runs no Mac code; this reads the sheet's
+/// source, comments removed, and the check copy shows the sheet itself.
+///
+/// Version history:
+///   1.0 — L38 (#1931): initial implementation
+@Suite("A subject's sheet: the doors above the covering volumes (#1931)")
+struct SubjectSheetDoorOrderTests {
+
+    @Test("Find documents and the area door come before Covering volumes in the sheet's list")
+    func doorsComeBeforeTheVolumes() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appending(path: "FRUSExplorer/Browser/SubjectIndexView.swift"),
+                                encoding: .utf8)
+        let code = NaturalLanguageReadinessScanTests.code(source)
+        let sheet = try #require(code.range(of: "struct SubjectDetailSheet: View"), "no SubjectDetailSheet")
+        let bodyStart = try #require(code.range(of: "var body: some View", range: sheet.upperBound..<code.endIndex),
+                                     "SubjectDetailSheet has no body")
+        let body = code[try #require(NaturalLanguageReadinessScanTests.braceBody(in: code, after: bodyStart.upperBound))]
+        let find = try #require(body.range(of: "findDocuments()"), "the sheet's body has no Find documents door")
+        let area = try #require(body.range(of: "browseTopicArea(key)"), "the sheet's body has no area door")
+        let volumes = try #require(body.range(of: "coveringVolumesSection"), "the sheet's body lists no covering volumes")
+        #expect(find.lowerBound < volumes.lowerBound,
+                "Find documents on this subject comes after Covering volumes, where the Mac's list can hide it")
+        #expect(area.lowerBound < volumes.lowerBound,
+                "All «area» subjects comes after Covering volumes, where the Mac's list can hide it")
+        #expect(body.components(separatedBy: "coveringVolumesSection").count == 2,
+                "the sheet draws its covering volumes more than once")
+    }
+}

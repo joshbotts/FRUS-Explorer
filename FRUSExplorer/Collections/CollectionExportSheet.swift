@@ -43,7 +43,7 @@ import UIKit
 ///   1.6 — L29 (#2000): Send to Zotero Library posts the RIS file's records
 ///          (`ZoteroCollectionExporter.records(for:options:)`), each document's research notes only where
 ///          they print, where it posted every item as resolved and read no setting
-///   1.7 — L35 (the plan of record's lane 1; J9, J11, decisions 192, 198 and DECISION_AX1): the sentence says what
+///   1.7 — L35 (the plan of record's lane 1; J9, J11, decisions 192, 198 and 221): the sentence says what
 ///          the export will print, counted as the export reads the collection (`CollectionExportSentence`), where it
 ///          read the collection's defaults; before Export the sheet says what this device lacks for it; it opens on the
 ///          format the collection last exported as on this device (`CollectionExportFormatMemory`); on iPhone and iPad
@@ -464,14 +464,14 @@ struct ExportSheetView: View {
     /// sizes, so that the sheet opens on its sentence with the format and Export in view at any text size (J9); an
     /// export's error follows the sentence, and the form scrolls to it. 1.0 put Export in the form below the Zotero row,
     /// and below the screen from AX3 on an iPhone 17. The sentence and the line under it grow no further than
-    /// `textSizeLimit` (decision DECISION_AX1): at the reader's AX5 a long one ran under the bar on an iPhone SE.
+    /// `textSizeLimit` (decision 221): at the reader's AX5 a long one ran under the bar on an iPhone SE.
     #if os(iOS)
     private var iOSExportBody: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 Form {
                     // What the export will print, and what this device lacks for it (decision 192): the form opens on
-                    // it, drawn no larger than AX1 (decision DECISION_AX1), so that an iPhone shows the sentence whole
+                    // it, drawn no larger than AX1 (decision 221), so that an iPhone shows the sentence whole
                     // above the bar at every text size, with the format and Export in view there.
                     Section {
                         whatWillPrint.dynamicTypeSize(...Self.textSizeLimit)
@@ -611,7 +611,7 @@ struct ExportSheetView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The largest text size the sheet's sentence and the bar at its foot are drawn at (decision DECISION_AX1).
+    /// The largest text size the sheet's sentence and the bar at its foot are drawn at (decision 221).
     static let textSizeLimit: DynamicTypeSize = .accessibility1
 
     /// The space above and below the bar's controls.

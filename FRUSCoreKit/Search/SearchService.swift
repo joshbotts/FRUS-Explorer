@@ -132,6 +132,8 @@ import FTS5Store
 ///          the filters it builds, and `semanticResultRows(forKeys:)` passes on; `.index`, the app's, unless the
 ///          host passes another. `userTagCounts(parameters:tagIds:documentKeys:)`, the filter sheet's two
 ///          routes to the tag counts, public. NO RESULT MOVES on the index
+///   2.20 — #1977 (plan of record row L30): `document(byNumber:inVolume:)` matches the printed number as
+///          written, then ignoring case, as the pipeline's lookup now does; no search moves
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -360,10 +362,11 @@ public actor SearchService {
     /// Unlike `search(parameters:)`, this is a direct `document_cache` query, not a
     /// ranked full-text search: a bare number as a keyword matches every document that
     /// merely mentions the digits, and the BM25 result cap can starve out the actual
-    /// document row in a realistically-sized volume.
+    /// document row in a realistically-sized volume. The number is matched as written, then
+    /// ignoring case (#1977).
     ///
     /// - Parameters:
-    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`).
+    ///   - documentNumber: The canonical printed number as stored (e.g. `"15"`, `"1190b"`, `"GT–6"`).
     ///   - volumeId: The volume to query.
     /// - Returns: The matching entry, or `nil` when the volume is not indexed or has
     ///   no document with that number.

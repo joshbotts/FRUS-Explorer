@@ -147,7 +147,9 @@ import SwiftData
 ///          generated, so a structured summary's format reaches the exporters, which print its fields
 ///   1.17 — L14 (plan of record decision 124): an export's indexing of the volumes it needs starts through
 ///          `AppState.indexWorkInFlight`, so a run of the iOS background task waits for it
-///   1.18 — L35 (#2018, decision 198): an export of summaries prints each one stored and asks Apple Intelligence, the
+///   1.18 — L34 (R2b's finding): the data source's summary under a prompt is the newest stored
+///          (`SummaryRecency`), where it was the first the store returned, the oldest
+///   1.19 — L35 (#2018, decision 198): an export of summaries prints each one stored and asks Apple Intelligence, the
 ///          summarization service and the prompt only for a document with none, and where Apple Intelligence cannot
 ///          write it says how many and why (`CollectionSummaryExportError`); it checked Apple Intelligence first, and
 ///          ended "The export could not be rendered." with every summary stored. `exportTally` counts what an export
@@ -849,9 +851,10 @@ class CollectionContentResolver {
 
     // MARK: - Summary generation (export only)
 
-    /// The first `GeneratedSummary` stored for a document under `promptId`, a headnote draft included,
-    /// or `nil` when none exists — the record the data source's `summary(volumeId:documentId:promptId:)`
-    /// answers with and `storedSummary` reads.
+    /// The newest `GeneratedSummary` stored for a document under `promptId` (`SummaryRecency`, the order
+    /// the document's rail shows them in), a headnote draft included, or `nil` when none exists — the
+    /// record the data source's `summary(volumeId:documentId:promptId:)` answers with and `storedSummary`
+    /// reads. Until L34 it was the first the store returned, the oldest.
     private func storedSummaryRecord(volumeId: String, documentId: String, promptId: UUID) -> GeneratedSummary? {
         // Capture scalars — #Predicate can't use struct fields.
         let vid = volumeId
@@ -862,7 +865,7 @@ class CollectionContentResolver {
                 s.volumeId == vid && s.documentId == did && s.promptId == pid
             }
         )
-        return try? modelContext.fetch(descriptor).first
+        return SummaryRecency.newest((try? modelContext.fetch(descriptor)) ?? [], recency: { $0.recency })
     }
 
     /// Returns the stored `GeneratedSummary` for a document under `promptId`, or

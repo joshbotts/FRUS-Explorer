@@ -84,6 +84,9 @@ import WebKit
 ///          download), or the volume's page in the Corpus Browser naming the page, where it did nothing
 ///   2.7 — L31 (#1975): `extractYear(from:)` forwards to `CentralFilesClassifier.documentYear(fromDateline:)`,
 ///          the one copy of the dateline's year rule, where it kept its own
+///   2.8 — L39 (F7): a page link whose page names no document opens the division that begins on it
+///          (the Index a Contents line links to), and a page numbered in Roman numerals
+///          (`.romanPage`, the Preface's) opens what `PageLink` finds on it, as the iOS twin's do
 @MainActor
 struct MacDocumentView: View {
 
@@ -1173,6 +1176,9 @@ struct MacDocumentView: View {
                                  volumeId: targetVolumeId ?? entry.volumeId,
                                  citing: citing)
 
+        case .romanPage(let targetVolumeId, let page):
+            resolveRomanPageReference(page: page, volumeId: targetVolumeId ?? entry.volumeId)
+
         case .volume(let targetVolumeId):
             openCrossRefVolume(targetVolumeId)
 
@@ -1266,8 +1272,9 @@ struct MacDocumentView: View {
     /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
     /// reference's edge against. Where it goes is `PageLink`'s (#1766), which the iOS twin asks
-    /// too: a volume on this Mac answers from its page index, as before, and from the bundled page
-    /// map where that names nothing; a volume that is not answers from the map, and the document
+    /// too: a volume on this Mac answers from its page index, as before, then, where that names no
+    /// document, from the division that begins on the page (F7, L39), and from the bundled page map
+    /// where neither names anything; a volume that is not answers from the map, and the document
     /// opens as a link to it does, offering the download; a page of it the map does not list opens
     /// the volume's page in the Corpus Browser, which names it.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
@@ -1287,6 +1294,32 @@ struct MacDocumentView: View {
                 case nil:
                     #if DEBUG
                     print("[MacDocumentView] Page ref: p. \(page) of \(volumeId) names no document in the page index")
+                    #endif
+                }
+            }
+        }
+    }
+
+    /// Opens what a page of a volume's front matter, numbered in Roman numerals, holds (F7, L39): the
+    /// Contents' Preface, Sources and lists (`#pg_III`). Where it goes is `PageLink`'s, which the iOS
+    /// twin asks too and says more of: a document that begins on the page, else the section that
+    /// begins on it, else the section the page is printed in; a volume not on this Mac opens its page
+    /// in the Corpus Browser, which names no page for it.
+    private func resolveRomanPageReference(page: Int, volumeId: String) {
+        let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
+        let store = appState.pageRangeStore
+        Task {
+            let destination = await PageLink.destination(romanPage: page, volumeId: volumeId,
+                                                         onDevice: onDevice, store: store)
+            await MainActor.run {
+                switch destination {
+                case .document(let volumeId, let documentId)?:
+                    navigateToCrossRef(documentId: documentId, volumeId: volumeId)
+                case .volume(let volumeId, let page)?:
+                    openCrossRefVolume(volumeId, followedPage: page)
+                case nil:
+                    #if DEBUG
+                    print("[MacDocumentView] Page ref: roman p. \(page) of \(volumeId) names nothing in the page index")
                     #endif
                 }
             }
@@ -1340,6 +1373,8 @@ private struct TrailingIconLabelStyle: LabelStyle {
 ///          (`pendingNARALookup` hand-off, mirroring `MainWindowView`)
 ///   1.2 — L21 (MAC-1): the title through `MacDocumentTitle.windowTitle(header:documentId:)` and
 ///          the centre through `MacDocumentPrincipalTitle`, both shared with `MainWindowView`
+///   1.3 — L38 (F2, decision 219): the title is the volume's tag and the number
+///          (`MacDocumentTitle.windowTitle(for:volume:)`), and the centre the head
 struct MacDocumentWindowView: View {
 
     /// The document this window opened for.
@@ -1398,10 +1433,10 @@ struct MacDocumentWindowView: View {
 
             StatusBarView()
         }
-        // Window/tab title — the document's heading, falling back to its id. The main window takes
-        // the same rule since L21 (MAC-1).
-        .navigationTitle(MacDocumentTitle.windowTitle(header: currentEntry.header,
-                                                      documentId: currentEntry.documentId))
+        // Window/tab title — the volume's tag and the document's number since L38 (F2), where it was
+        // the heading, which the title bar cut. The main window takes the same rule since L21 (MAC-1).
+        .navigationTitle(MacDocumentTitle.windowTitle(for: currentEntry,
+                                                      volume: appState.manifestStore.entry(forVolumeId: currentEntry.volumeId)))
         // D6: the research strip is retired (C1), so this standalone document window surfaces its
         // identity + the rail toggle in a minimal toolbar. NARA + the selection verbs now live on the
         // floating selection bar (Phase B2) and the rail's Sources tile, so the strip's `onNARALookup`
@@ -1409,10 +1444,10 @@ struct MacDocumentWindowView: View {
         .toolbar {
             // UI review M-8. This carried `Text(currentEntry.documentId)` in monospace — a raw
             // `frus1946v06/d475` repeating identity the window title above already gives in human
-            // form, with a `.help` repeating the title a third time. It now says what the title
-            // does not: which volume, and where in it. See `MacDocumentTitle` for why the
-            // finding's own remedy ("show the title") was the wrong one. The main window draws the
-            // same view since L21 (MAC-1).
+            // form, with a `.help` repeating the title a third time. It says what the title does
+            // not: since L38 (F2) the head, where the title is the volume and number. See
+            // `MacDocumentTitle` for both choices. The main window draws the same view since L21
+            // (MAC-1).
             ToolbarItem(placement: .principal) {
                 MacDocumentPrincipalTitle(entry: currentEntry)
             }
@@ -1485,8 +1520,9 @@ struct MacDocumentWindowView: View {
 
 // MARK: - MacDocumentPrincipalTitle
 
-/// The centre of a document window's toolbar: which volume the document is in, and where in it
-/// (UI review M-8). `MacDocumentTitle` has why the centre names these and not the title.
+/// The centre of a document window's toolbar: the document's head, since L38 (F2, decision 219).
+/// Until L38 it named the volume and the number (UI review M-8), and the head was the title;
+/// `MacDocumentTitle` has why the two swapped.
 ///
 /// Both document windows draw it: `MacDocumentWindowView` since M-8, and `MainWindowView` since
 /// L21 (UI review MAC-1, #1921). Until L21 the main window still drew the raw
@@ -1494,50 +1530,31 @@ struct MacDocumentWindowView: View {
 /// view, so the two centres cannot drift apart again.
 ///
 /// The main window caps its width (`MainWindowView.pillBudget`) so that it yields to the tools
-/// beside it; the standalone window's toolbar holds one tool and does not need the cap.
+/// beside it; the standalone window's toolbar holds one tool and does not need the cap. A head
+/// longer than its room is cut at its tail, and its tooltip holds it whole.
 ///
 /// Version history:
 ///   1.0 — L21 (MAC-1): out of `MacDocumentWindowView`'s toolbar, for both windows; the number
 ///          falls back to the one the id spells (`MacDocumentTitle.principalNumber`), and the
 ///          tooltip is the volume and document id together
+///   1.1 — L38 (F2, decision 219): the head, cut at its tail, where the volume and number were;
+///          the tooltip is the head whole, then the ids
 struct MacDocumentPrincipalTitle: View {
-
-    @Environment(AppState.self) private var appState
 
     /// The document the window shows.
     let entry: DocumentBrowserEntry
 
-    /// The document's volume in the app's short form, or `nil` when the manifest has no entry for
-    /// it (UI review M-8).
-    ///
-    /// `nil` is a real state, not a defensive guard: a window restored from a previous session
-    /// can name a volume that has since been removed from the manifest, which is the same case
-    /// `MacDocumentView`'s restored-window empty state exists for.
-    private var volumeLabel: String? {
-        guard let manifest = appState.manifestStore.entry(forVolumeId: entry.volumeId) else {
-            return nil
-        }
-        return ChronologyViewModel.distilledVolumeLabel(volumeId: manifest.volumeId,
-                                                        subseries: manifest.subseries,
-                                                        title: manifest.title)
-    }
-
     var body: some View {
-        let volumeLabel = volumeLabel
-        Text(MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,
-                                             documentNumber: MacDocumentTitle.principalNumber(
-                                                stored: entry.documentNumber,
-                                                documentId: entry.documentId),
-                                             documentId: entry.documentId))
-            .font(MacDocumentTitle.isFallback(volumeLabel: volumeLabel)
+        let head = MacDocumentTitle.headTitle(header: entry.header, documentId: entry.documentId)
+        Text(head)
+            .font(MacDocumentTitle.isFallback(header: entry.header)
                   ? .system(.body, design: .monospaced)
                   : .body)
             .lineLimit(1)
-            .truncationMode(.middle)
-            // The id is still one hover away for anyone who wants to cite or file a bug against
-            // it: it moved out of the strip, it did not become unavailable. The volume's id and the
-            // document's together, as the main window's centre printed them before L21.
-            .help(entry.id)
+            .truncationMode(.tail)
+            // The head whole, for a centre too narrow to hold it, and the id still one hover away
+            // for anyone who wants to cite or file a bug against it, as before L38.
+            .help(entry.header.isEmpty ? entry.id : "\(head)\n\(entry.id)")
     }
 }
 
