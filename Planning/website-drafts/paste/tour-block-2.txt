@@ -1,4 +1,4 @@
-<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint e40ae6ae -->
+<!-- frusexplorer.app/tour · from Planning/website-drafts/tour/tour.html · fingerprint ad6bf9d2 -->
 <style>
 .frus-tour { --paper: #FFFFFF; --ink: #1B1B1F; --muted: #64646C; --rule: #D9D9DE; --tint: #F4F4F6; --red: #A61C2A; --link: #2B7A6B; --note-bg: #FFF7E6; --note-ink: #6B4A00; --note-line: #E8C88A; --new: #5B4FC4; --night: #0F1217; --night-ink: #E8EAF0; --night-muted: #9AA3B2; --night-caveat: #F0A04B; --night-line: #262B35; --night-red: #E8798A; --night-link: #8FD3C4; --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif; --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
 .frus-tour { font-family: var(--serif); font-size: 18px; line-height: 1.6; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; text-align: left; color: var(--ink); font-optical-sizing: auto; -webkit-font-smoothing: antialiased; }
@@ -246,7 +246,7 @@
             <h3><span class="n">16.</span>Build your own curated document collections</h3>
           </div>
           <div class="ebody">
-            <p>Create your own document collections from the documents you select. Use templates such as <b class="ui">Full text with your annotations</b> and <b class="ui">Summaries with overview</b> to configure what information to include for each document in one step, or customize settings for each document. Add section headings or your own notes to curate your selections and share your interpretive findings. Incorporate document excerpts, a bibliography, a timeline, a list of people, or other apparatus elements that the app can generate directly from the documents.</p>
+            <p>Create your own document collections from the documents you select. Use templates such as <b class="ui">Full text with your annotations</b> and <b class="ui">Summaries</b> to choose how each document is presented, then the apparatus around them, or customize settings for each document. Add section headings or your own notes to curate your selections and share your interpretive findings. Incorporate document excerpts, a bibliography, a timeline, a list of people, or other apparatus elements that the app can generate directly from the documents.</p>
             <p>Export to PDF, Word or HTML. You can also share a native <code>.fruscollection</code> file with other FRUS Explorer users so they can build off your collection. Your research notes stay out of exports unless you add them.</p>
           </div>
         </div>

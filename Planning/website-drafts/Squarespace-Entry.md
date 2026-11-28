@@ -476,7 +476,7 @@ this table:
 | [paste/home-launch.txt](paste/home-launch.txt) | `/`, from release day | 12,119 bytes | `52c56bf9` |
 | [paste/tour-coming-soon-line.txt](paste/tour-coming-soon-line.txt) | `/tour`, section 1, until release day | 1,053 bytes | `1f4f80f1` |
 | [paste/tour-block-1.txt](paste/tour-block-1.txt) | `/tour`, section 2 | 67,765 bytes | `d39128dd` |
-| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,736 bytes | `e40ae6ae` |
+| [paste/tour-block-2.txt](paste/tour-block-2.txt) | `/tour`, section 4 | 37,724 bytes | `ad6bf9d2` |
 | [paste/tour-closing-coming-soon.txt](paste/tour-closing-coming-soon.txt) | `/tour`, section 5, until release day | 4,175 bytes | `d772ef44` |
 | [paste/tour-closing-launch.txt](paste/tour-closing-launch.txt) | `/tour`, section 5, from release day | 4,080 bytes | `5fa9945b` |
 
