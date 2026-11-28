@@ -5365,7 +5365,12 @@ HEADMERGE
 - The UI suites: iPhone 17 under iOS 27.0, 4 passed. iPad Pro 13-inch (M5), each test alone on a fresh boot: under 27.2, 4 passed; under 27.0, 3 passed, and the save test aborted `backboardd` at Done after the save in five runs of five, whether or not the toast was up (§5, *Found by L56*).
 - The `FRUSExplorerMac` build: the residues alone.
 - `Scripts/check_repo_hygiene.py`: six checks passed.
-LANDING
+- **The landing checks,** on the merge `0c3e031f` (tree `201c85e0`) of `v2` at `604dd47d` (L35, #2049) and L36's head `c41532d0`, run while L36's PR was in CI (the orchestrator's word); both merges conflicted in records alone (the session log and the Amendment-Log, each with the other side first), the project file equals `xcodegen`'s, and every ranged EditableContent block holds its key (1,377). In one `Scripts/heavy.sh` call from 03:44 to 04:05 UTC on 2026-11-28:
+  - The unit target on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,489 tests in 1,033 suites, 8,471 passed, 17 skipped as at the earlier landings, the one expected failure, none failed, with the six known issues, in 1,010 s.
+  - `swift build --target FRUSCoreKit`: no warning.
+  - `swift test`: 5,349 tests in 620 suites over 39 runs, none failed, with the two older warnings (the unused `fk` and `tk` at `ProvenanceFlowMeasurement.swift:154`).
+  - The `FRUSExplorerMac` build: succeeded, with the residues alone.
+  - `Scripts/check_repo_hygiene.py`: six checks passed.
 
 **Docs** (the fourth commit)
 - Both manuals: Chronology (§15.7) gains the menu and *Saving the range as a working corpus*, with a placeholder each for T3 (`ipad/chronology-save-corpus`, `macos/chronology-save-corpus`), and the working-corpus sections (iOS §6.1f and §7.9, macOS §7.9) name Chronology. `Docs/screenshots/README.md` names the placeholders.
