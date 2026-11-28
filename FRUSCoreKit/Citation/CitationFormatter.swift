@@ -652,7 +652,9 @@ enum FRUSNoteCitation {
 /// "Sender to Recipient"; 61,445 read as printed otherwise. 295,614 datelines give a place and date, 5,287 give
 /// none (an undated document, "June 1955", a date with no year), and 19,745 documents have no dateline.
 ///
-/// The short form L49 builds reads the same two lines.
+/// The short form (``FRUSShortCitation``, L49) reads neither line. It names the volume and the document's number,
+/// "*FRUS*, 1946, vol. VI, doc. 475", the form the owner chose; the FAQ's later note, by correspondents, place and
+/// date, names no volume and is not unique, and was not put to the owner (Wave 6 prep).
 ///
 /// Version history:
 ///   1.0 — L43 (decision 161): initial implementation
@@ -766,8 +768,8 @@ public enum FRUSNoteHead {
 ///
 /// Version history:
 ///   1.0 — L43 (decision 161): initial implementation
-///   1.1 — L49: the series names, the number's and the years' forms, `match` and `arabicList` internal, for the
-///          short form (``FRUSShortCitation``)
+///   1.1 — L49: the series names, the forms of the number, the years and the parts, `match` and `arabicList`
+///          internal, for the short form (``FRUSShortCitation``)
 public struct FRUSVolumeTitle: Sendable, Equatable {
 
     /// The series with its years, the note's first italic title: "Foreign Relations of the United States,
@@ -877,8 +879,8 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
 
     // MARK: The forms read
 
-    // The series names, the number's form, the years' form, `match` and the numerals are the short form's too
-    // (``FRUSShortCitation``), which reads a title's series and number as the note does.
+    // The series names, the forms of the number, the years and the parts, `match` and the numerals are the short
+    // form's too (``FRUSShortCitation``), which reads a title's series, number and part as the note does.
 
     /// The series names a title opens with, longest first, so that "…, Diplomatic Papers" is read whole.
     static let seriesNames = [
@@ -896,10 +898,10 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
     private static let trailingPart = try? NSRegularExpression(pattern: #",\s*Part\s+([IVXLC]+|\d+)$"#)
 
     /// "Part 1, " opening the words after a volume's number.
-    private static let leadingPart = try? NSRegularExpression(pattern: #"^Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
+    static let leadingPart = try? NSRegularExpression(pattern: #"^Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
 
     /// "Part II" among the words between the series and the number, as the 1870s titles have it.
-    private static let innerPart = try? NSRegularExpression(pattern: #"(?:^|,\s*)Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
+    static let innerPart = try? NSRegularExpression(pattern: #"(?:^|,\s*)Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
 
     /// ", 1969–1976" or ", 1946" right after the series name.
     static let leadingYears = try? NSRegularExpression(pattern: #"^,\s*(\d{4}(?:–\d{4})?)(?=,|$)"#)
@@ -944,10 +946,43 @@ public struct FRUSVolumeTitle: Sendable, Equatable {
 
 /// The short form of a citation (L49; the Collections design's candidate 11, which the owner took in decision 164):
 /// "*FRUS*, 1946, vol. VI, doc. 475", in the collection's style, "vol. VI" in History at State and "vol. 6" in
-/// Chicago and Turabian, as their notes write a volume's number.
+/// Chicago and Turabian, as their notes write a volume's number (the desk check's question 4).
 ///
-/// The design's form: the years the title gives after the series' name, else the volume's subseries, and the
-/// volume's number.
+/// ## The rule
+/// The design's form, the years and the volume's number, names more than one volume for 132 of the manifest's 553,
+/// in 60 groups (measured 2026-11-28): the parts of 1864, the appendices of 1894 and 1902, the conferences of 1943,
+/// the parts of every divided volume since 1948. So the form adds what the volume's own title names it by, in the
+/// title's order, and prints no word the volume does not print:
+/// - **The years** the title gives after the series' name ("1946", "1969–1976"). An annual volume of 1861 to 1917,
+///   whose title describes the President's message in their place, takes its subseries' year ("1864").
+/// - **A topic before the years** is the volume's name, printed whole with its years: "The Paris Peace Conference,
+///   1919", "Japan, 1931–1941", "The Conference of Berlin (The Potsdam Conference), 1945", "The Soviet Union,
+///   1933–1939".
+/// - **A volume with no number** is named by its topic: "1894, Nicaragua (Mosquito Territory)", "1952–1954, Iran,
+///   1951–1954", "1945–1950, Emergence of the Intelligence Establishment". An appendix or a supplement is named by
+///   that word and its number alone: "1894, Appendix I", "1914, Supplement", "1918, Supplement 2".
+/// - **A numbered volume of a run of its own within its years**, which its id names before its number
+///   (`frus1918Russiav01`, `frus1917Supp02v01`), is named by the run: "1918, Russia, vol. I", "1917, Supplement 2,
+///   vol. I". Every other topic before a number is the volume's subtitle, which the number makes unneeded: "1946, vol.
+///   VI", where the title reads "1946, Eastern Europe, The Soviet Union, Volume VI".
+/// - **The locator**: "vol." or "vols." with the number, the part ("pt. 1", or "pt. II, vol. I" where the title names
+///   its part first), and "Microfiche Supplement".
+/// - **The edition** a title ends with: "Second Edition", "Second, Revised Edition". So the two first editions the
+///   manifest holds beside their second (`frus1951-54Iran`, `frus1969-76ve15p2`) are told apart.
+/// - **Three titles say less than their volumes**, and the id says the rest. `frus1877app`'s title is 1877's own, so it
+///   is "1877, Appendix"; `frus1894app2`'s is "Foreign Relations of the United States, 1894" alone, so it is "1894,
+///   Appendix II", as its TEI's volume number reads; and `frus1961-63v07-09mSupp`'s does not say that it is a
+///   microfiche supplement, which its id and its TEI do.
+///
+/// The words are the ones the volumes cite each other by (counted 2026-11-28 in the corpus clone at `216cdb764`):
+/// "*Foreign Relations*, 1918, Russia, vol." 126 times, "…, The Paris Peace Conference, 1919, vol." 145, "…, Japan,
+/// 1931–1941, vol." 1,232, "…, 1917, Supplement 2, vol." 97, "…, 1961–1963, vols. VII, VIII, IX, Microfiche
+/// Supplement" 9. Only the locators are abbreviated, as the owner's form abbreviates them; "Supplement" and "Appendix"
+/// are written out, as the volumes write them, and their numbers are the volume's own in every style.
+///
+/// Over the 553 no two forms are alike in any style (`FRUSShortCitationTests.namesOneVolumeEach`); they run to 72
+/// characters, median 26, in History at State. A side-loaded volume is read the same way, and nothing holds its form
+/// apart from the catalogue's.
 ///
 /// Version history:
 ///   1.0 — L49: initial implementation
@@ -961,12 +996,21 @@ public struct FRUSShortCitation: Sendable, Equatable {
         public let arabic: String
     }
 
-    /// What names the volume before its number: "1946".
+    /// What names the volume before its locator, in the title's order: "1946"; "1918" and "Russia"; "The Paris Peace
+    /// Conference, 1919"; "1894" and "Appendix II".
     public let names: [String]
     /// The volume's number: "VI", "E–15", "VII, VIII, IX". `nil` where the title names none.
     public let volumeNumber: Numeral?
     /// Whether the title names more than one volume ("Volumes VII, VIII, IX"), which the form gives as "vols.".
     public let isSeveralVolumes: Bool
+    /// The part: "1", "II". `nil` where the title names none.
+    public let part: Numeral?
+    /// Whether the title names its part before its volume ("Part II, Volume I"), as the 1870s titles do.
+    public let partComesFirst: Bool
+    /// Whether the volume is a microfiche supplement.
+    public let isMicroficheSupplement: Bool
+    /// The edition the title ends with: "Second Edition", "Second, Revised Edition". `nil` for none.
+    public let edition: String?
 
     /// The short form of `entry`.
     ///
@@ -975,28 +1019,86 @@ public struct FRUSShortCitation: Sendable, Equatable {
         self.init(volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title)
     }
 
-    /// The short form of the volume `volumeId`, read from its title.
+    /// The short form of the volume `volumeId`, read from its title as the type's note says.
     ///
     /// - Parameters:
-    ///   - volumeId: The volume's id, `frus1946v06`.
+    ///   - volumeId: The volume's id, `frus1946v06`, which names a run, an appendix or a microfiche supplement where
+    ///     the title does not.
     ///   - subseries: The manifest's subseries, `1946`, which gives the years where the title gives none.
     ///   - title: The volume's complete title.
     public init(volumeId: String, subseries: String, title: String) {
         let text = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        // The series' name, which the form abbreviates; 1861's title opens with the President's message instead.
         let series = FRUSVolumeTitle.seriesNames.first { text.hasPrefix($0) }
-        let rest = series.map { String(text.dropFirst($0.count)) } ?? ", " + text
-        let years = FRUSVolumeTitle.match(FRUSVolumeTitle.leadingYears, in: rest).map { String(rest[$0.group]) }
-        names = [years ?? Self.years(fromSubseries: subseries)]
+        var rest = series.map { String(text.dropFirst($0.count)) } ?? ", " + text
+        // The edition that ends a title, which the form names last.
+        var edition: String?
+        if let found = FRUSVolumeTitle.match(Self.trailingEdition, in: rest) {
+            edition = String(rest[found.group])
+            rest = String(rest[..<found.whole.lowerBound])
+        }
+        // The years right after the series' name.
+        var years: String?
+        if let found = FRUSVolumeTitle.match(FRUSVolumeTitle.leadingYears, in: rest) {
+            years = String(rest[found.group])
+            rest = String(rest[found.whole.upperBound...])
+        }
+        rest = Self.trimmed(rest)
+        // The words before the volume's number, and after it.
+        var head = rest
+        var tail = ""
+        var number: Numeral?
+        var several = false
         if let pattern = FRUSVolumeTitle.volumeNumberPattern,
            let found = pattern.firstMatch(in: rest, range: NSRange(rest.startIndex..., in: rest)),
-           let word = Range(found.range(at: 1), in: rest), let digits = Range(found.range(at: 2), in: rest) {
+           let whole = Range(found.range, in: rest), let word = Range(found.range(at: 1), in: rest),
+           let digits = Range(found.range(at: 2), in: rest) {
             let printed = String(rest[digits])
-            volumeNumber = Numeral(printed: printed, arabic: FRUSVolumeTitle.arabicList(printed))
-            isSeveralVolumes = rest[word] == "Volumes"
-        } else {
-            volumeNumber = nil
-            isSeveralVolumes = false
+            number = Numeral(printed: printed, arabic: FRUSVolumeTitle.arabicList(printed))
+            several = rest[word] == "Volumes"
+            head = Self.trimmed(String(rest[..<whole.lowerBound]))
+            tail = Self.trimmed(String(rest[whole.upperBound...]))
         }
+        // The part: after the number ("Volume I, Part 2"), before it ("Part II, Volume I"), or in a title with none.
+        var part: Numeral?
+        var partFirst = false
+        if number != nil, let found = FRUSVolumeTitle.match(FRUSVolumeTitle.leadingPart, in: tail) {
+            part = Self.numeral(String(tail[found.group]))
+            tail = Self.trimmed(String(tail[found.whole.upperBound...]))
+        } else if let found = FRUSVolumeTitle.match(FRUSVolumeTitle.innerPart, in: head) {
+            part = Self.numeral(String(head[found.group]))
+            partFirst = number != nil
+            head = Self.trimmed(String(head[..<found.whole.lowerBound]))
+        }
+        // What names the volume before its locator.
+        let isAnnualVolume = series == nil
+            || head.range(of: #"(Message|Address) of the President"#, options: .regularExpression) != nil
+        let firstName = head.components(separatedBy: ", ").first ?? ""
+        var names: [String] = []
+        if isAnnualVolume {
+            names.append(years ?? Self.years(fromSubseries: subseries))
+        } else if let years {
+            names.append(years)
+            if number != nil {
+                if Self.namesRun(volumeId: volumeId), !firstName.isEmpty { names.append(firstName) }
+            } else if firstName.hasPrefix("Appendix") || firstName.hasPrefix("Supplement") {
+                names.append(firstName)
+            } else if !head.isEmpty {
+                names.append(head)
+            }
+        } else {
+            names.append(head.isEmpty ? Self.years(fromSubseries: subseries) : head)
+        }
+        if !names.contains(where: { $0.hasPrefix("Appendix") }), let appendix = Self.appendix(volumeId: volumeId) {
+            names.append(appendix)
+        }
+        self.names = names
+        volumeNumber = number
+        isSeveralVolumes = several
+        self.part = part
+        partComesFirst = partFirst
+        isMicroficheSupplement = tail.hasPrefix("Microfiche Supplement") || (number != nil && volumeId.hasSuffix("mSupp"))
+        self.edition = edition
     }
 
     /// The volume in `style`: "_FRUS_, 1946, vol. VI" in History at State, "*FRUS*, 1946, vol. 6" in Chicago and
@@ -1010,11 +1112,15 @@ public struct FRUSShortCitation: Sendable, Equatable {
         case .historyAtState: (arabic, series) = (false, "_FRUS_")
         case .chicago, .turabian: (arabic, series) = (true, "*FRUS*")
         }
-        var pieces = [series] + names
-        if let volumeNumber {
-            pieces.append((isSeveralVolumes ? "vols. " : "vol. ") + (arabic ? volumeNumber.arabic : volumeNumber.printed))
+        func figures(_ numeral: Numeral) -> String { arabic ? numeral.arabic : numeral.printed }
+        var locator: [String] = []
+        if let volumeNumber { locator.append((isSeveralVolumes ? "vols. " : "vol. ") + figures(volumeNumber)) }
+        if let part {
+            let text = "pt. " + figures(part)
+            if partComesFirst { locator.insert(text, at: 0) } else { locator.append(text) }
         }
-        return pieces.joined(separator: ", ")
+        if isMicroficheSupplement { locator.append("Microfiche Supplement") }
+        return ([series] + names + locator + [edition].compactMap { $0 }).joined(separator: ", ")
     }
 
     /// A document of the volume in `style`: "_FRUS_, 1946, vol. VI, doc. 475.", ending in one period as every full
@@ -1027,6 +1133,53 @@ public struct FRUSShortCitation: Sendable, Equatable {
         var text = volume(in: style)
         if let documentNumber { text += ", doc. \(documentNumber)" }
         return text + "."
+    }
+
+    // MARK: The forms read
+
+    /// ", Second Edition" or ", Second, Revised Edition" ending a title.
+    private static let trailingEdition = try? NSRegularExpression(pattern: #",\s*((?:[A-Z][a-z]+,?\s)+Edition)$"#)
+
+    /// An id that names a run before its volume's number: `frus1918Russiav01`, `frus1917Supp02v01`.
+    private static let runInVolumeId = try? NSRegularExpression(pattern: #"^frus\d{4}(?:-\d{2})?[A-Z][A-Za-z]*\d*v\d"#)
+
+    /// An appendix's id: `frus1877app`, `frus1894app2`.
+    private static let appendixVolumeId = try? NSRegularExpression(pattern: #"^frus\d{4}app(\d*)$"#)
+
+    /// `text` without the spaces, commas and colons around it.
+    private static func trimmed(_ text: String) -> String {
+        text.trimmingCharacters(in: CharacterSet(charactersIn: " ,:"))
+    }
+
+    /// `printed` with its arabic figures.
+    private static func numeral(_ printed: String) -> Numeral {
+        Numeral(printed: printed, arabic: FRUSVolumeTitle.arabic(printed))
+    }
+
+    /// Whether `volumeId` names a run before its volume's number.
+    private static func namesRun(volumeId: String) -> Bool {
+        runInVolumeId?.firstMatch(in: volumeId, range: NSRange(volumeId.startIndex..., in: volumeId)) != nil
+    }
+
+    /// The appendix an appendix's id names, "Appendix" or "Appendix II", or `nil` for another id.
+    private static func appendix(volumeId: String) -> String? {
+        guard let found = FRUSVolumeTitle.match(appendixVolumeId, in: volumeId) else { return nil }
+        guard let number = Int(volumeId[found.group]) else { return "Appendix" }
+        return "Appendix \(roman(number))"
+    }
+
+    /// `number` in Roman numerals, as the volumes number their appendices: 2 as "II".
+    static func roman(_ number: Int) -> String {
+        var rest = number
+        var out = ""
+        for (value, numeral) in [(100, "C"), (90, "XC"), (50, "L"), (40, "XL"), (10, "X"), (9, "IX"), (5, "V"),
+                                 (4, "IV"), (1, "I")] {
+            while rest >= value {
+                out += numeral
+                rest -= value
+            }
+        }
+        return out
     }
 
     /// A subseries' years as a title writes them: "1861"; "1914-20" as "1914–1920".

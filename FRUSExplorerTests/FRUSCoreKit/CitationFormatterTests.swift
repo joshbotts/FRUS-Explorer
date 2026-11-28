@@ -479,7 +479,8 @@ struct FRUSVolumeTitleTests {
 // MARK: - FRUSShortCitationTests
 
 /// The short form (L49): *FRUS*, the years and the volume's number, then the document's, written in the collection's
-/// style, and naming one volume for each of the manifest's 553.
+/// style, with what the volume's own title names it by where those do not tell it apart, so that it names one volume
+/// for each of the manifest's 553.
 struct FRUSShortCitationTests {
 
     /// The manifest's entry for `volumeId`.
@@ -510,6 +511,150 @@ struct FRUSShortCitationTests {
             \(shared.reduce(0) { $0 + $1.value.count }) volumes in \(shared.count) groups share a form:
             \(shared.map { "\($0.key): \($0.value.joined(separator: ", "))" }.joined(separator: "\n"))
             """)
+    }
+
+    /// Each kind of volume the rule names apart, read from the manifest's own entries: the topic before the years, a
+    /// run of its own, a volume with no number, an appendix, a supplement, the annual volumes, parts before and after
+    /// their number, microfiche supplements. History at State keeps the volume's numerals, Chicago gives the volume's
+    /// and the part's in arabic figures, and an appendix's or a supplement's number is the volume's own in both.
+    @Test("Each kind of volume is named as its title and the volumes' own citations name it",
+          arguments: [
+            ("frus1919Parisv03", "_FRUS_, The Paris Peace Conference, 1919, vol. III",
+             "*FRUS*, The Paris Peace Conference, 1919, vol. 3"),
+            ("frus1945Berlinv02", "_FRUS_, The Conference of Berlin (The Potsdam Conference), 1945, vol. II",
+             "*FRUS*, The Conference of Berlin (The Potsdam Conference), 1945, vol. 2"),
+            ("frus1931-41v01", "_FRUS_, Japan, 1931–1941, vol. I", "*FRUS*, Japan, 1931–1941, vol. 1"),
+            ("frus1914-20v02", "_FRUS_, The Lansing Papers, 1914–1920, vol. II",
+             "*FRUS*, The Lansing Papers, 1914–1920, vol. 2"),
+            ("frus1933-39", "_FRUS_, The Soviet Union, 1933–1939", "*FRUS*, The Soviet Union, 1933–1939"),
+            ("frus1941-43", "_FRUS_, The Conferences at Washington, 1941–1942, and Casablanca, 1943",
+             "*FRUS*, The Conferences at Washington, 1941–1942, and Casablanca, 1943"),
+            ("frus1918Russiav01", "_FRUS_, 1918, Russia, vol. I", "*FRUS*, 1918, Russia, vol. 1"),
+            ("frus1917Supp02v01", "_FRUS_, 1917, Supplement 2, vol. I", "*FRUS*, 1917, Supplement 2, vol. 1"),
+            ("frus1918Supp01v02", "_FRUS_, 1918, Supplement 1, vol. II", "*FRUS*, 1918, Supplement 1, vol. 2"),
+            ("frus1917Supp01v01", "_FRUS_, 1917, Supplement 1", "*FRUS*, 1917, Supplement 1"),
+            ("frus1914Supp", "_FRUS_, 1914, Supplement", "*FRUS*, 1914, Supplement"),
+            ("frus1918Supp02", "_FRUS_, 1918, Supplement 2", "*FRUS*, 1918, Supplement 2"),
+            ("frus1918", "_FRUS_, 1918", "*FRUS*, 1918"),
+            ("frus1919Russia", "_FRUS_, 1919, Russia", "*FRUS*, 1919, Russia"),
+            ("frus1894Nicaragua", "_FRUS_, 1894, Nicaragua (Mosquito Territory)",
+             "*FRUS*, 1894, Nicaragua (Mosquito Territory)"),
+            ("frus1945-50Intel", "_FRUS_, 1945–1950, Emergence of the Intelligence Establishment",
+             "*FRUS*, 1945–1950, Emergence of the Intelligence Establishment"),
+            ("frus1917-72PubDip", "_FRUS_, 1917–1972, Public Diplomacy, World War I",
+             "*FRUS*, 1917–1972, Public Diplomacy, World War I"),
+            ("frus1917-72PubDipv06", "_FRUS_, 1917–1972, vol. VI", "*FRUS*, 1917–1972, vol. 6"),
+            ("frus1894app1", "_FRUS_, 1894, Appendix I", "*FRUS*, 1894, Appendix I"),
+            ("frus1894app2", "_FRUS_, 1894, Appendix II", "*FRUS*, 1894, Appendix II"),
+            ("frus1877app", "_FRUS_, 1877, Appendix", "*FRUS*, 1877, Appendix"),
+            ("frus1901China", "_FRUS_, 1901, Appendix", "*FRUS*, 1901, Appendix"),
+            ("frus1861", "_FRUS_, 1861", "*FRUS*, 1861"),
+            ("frus1887", "_FRUS_, 1887", "*FRUS*, 1887"),
+            ("frus1894", "_FRUS_, 1894", "*FRUS*, 1894"),
+            ("frus1863p2", "_FRUS_, 1863, pt. II", "*FRUS*, 1863, pt. 2"),
+            ("frus1865p4", "_FRUS_, 1865, pt. IV", "*FRUS*, 1865, pt. 4"),
+            ("frus1872p2v3", "_FRUS_, 1872, pt. II, vol. III", "*FRUS*, 1872, pt. 2, vol. 3"),
+            ("frus1873p1v1", "_FRUS_, 1873, pt. I, vol. I", "*FRUS*, 1873, pt. 1, vol. 1"),
+            ("frus1875v02", "_FRUS_, 1875, vol. II", "*FRUS*, 1875, vol. 2"),
+            ("frus1955-57v23p2", "_FRUS_, 1955–1957, vol. XXIII, pt. 2", "*FRUS*, 1955–1957, vol. 23, pt. 2"),
+            ("frus1969-76ve05p1", "_FRUS_, 1969–1976, vol. E–5, pt. 1", "*FRUS*, 1969–1976, vol. E–5, pt. 1"),
+            ("frus1958-60v10p1", "_FRUS_, 1958–1960, vol. X, pt. 1", "*FRUS*, 1958–1960, vol. 10, pt. 1"),
+            ("frus1955-57v03mSupp", "_FRUS_, 1955–1957, vol. III, Microfiche Supplement",
+             "*FRUS*, 1955–1957, vol. 3, Microfiche Supplement"),
+            ("frus1961-63v07-09mSupp", "_FRUS_, 1961–1963, vols. VII, VIII, IX, Microfiche Supplement",
+             "*FRUS*, 1961–1963, vols. 7, 8, 9, Microfiche Supplement"),
+            ("frus1961-63v10-12mSupp", "_FRUS_, 1961–1963, vols. X/XI/XII, Microfiche Supplement",
+             "*FRUS*, 1961–1963, vols. 10/11/12, Microfiche Supplement"),
+          ] as [(String, String, String)])
+    func namesEachKind(volumeId: String, historyAtState: String, chicago: String) throws {
+        let short = FRUSShortCitation(try Self.entry(volumeId, in: testManifestEntries()))
+        #expect(short.volume(in: .historyAtState) == historyAtState)
+        #expect(short.volume(in: .chicago) == chicago)
+        #expect(short.volume(in: .turabian) == chicago)
+    }
+
+    /// The manifest holds two first editions beside their second (the plan's third review), and one second edition
+    /// whose first it does not hold: each second edition's form names it, as its title ends.
+    @Test("A second edition is named, so it is told from its first")
+    func namesTheEdition() throws {
+        let entries = try testManifestEntries()
+        func form(_ volumeId: String) throws -> String {
+            FRUSShortCitation(try Self.entry(volumeId, in: entries)).volume(in: .historyAtState)
+        }
+        #expect(try form("frus1951-54Iran") == "_FRUS_, 1952–1954, Iran, 1951–1954")
+        #expect(try form("frus1951-54IranEd2") == "_FRUS_, 1952–1954, Iran, 1951–1954, Second Edition")
+        #expect(try form("frus1969-76ve15p2") == "_FRUS_, 1969–1976, vol. E–15, pt. 2")
+        #expect(try form("frus1969-76ve15p2Ed2") == "_FRUS_, 1969–1976, vol. E–15, pt. 2, Second, Revised Edition")
+        #expect(try form("frus1977-80v09Ed2") == "_FRUS_, 1977–1980, vol. IX, Second, Revised Edition")
+    }
+
+    /// A document the volume does not number (the Potsdam volume's 217) is named by its volume alone, ending in the
+    /// period every citation ends in, and no id stands in for its number.
+    @Test("An unnumbered document is named by its volume alone")
+    func unnumberedDocument() throws {
+        let short = FRUSShortCitation(try Self.entry("frus1945Berlinv02", in: testManifestEntries()))
+        let number = CitableDocumentNumber.resolve(printed: "[Unnumbered document following Document 710 (#1)]",
+                                                   documentId: "d710a-1")
+        #expect(number == nil)
+        #expect(short.citation(documentNumber: number, in: .historyAtState)
+                == "_FRUS_, The Conference of Berlin (The Potsdam Conference), 1945, vol. II.")
+        #expect(short.citation(documentNumber: number, in: .turabian)
+                == "*FRUS*, The Conference of Berlin (The Potsdam Conference), 1945, vol. 2.")
+    }
+
+    /// Every word the form prints is the volume's own: each of its names is in the volume's title, but for the year an
+    /// annual volume of the 1860s takes from its subseries (18 volumes) and the two appendices the id names (one
+    /// each), and "Microfiche Supplement" is in the title but for the one volume whose id alone says so. A sweep that
+    /// counts what it skips, so that a parse that let a stray word through, or read a year from nowhere, fails here.
+    @Test("Every word the form prints is the volume's own")
+    func printsNoWordOfItsOwn() throws {
+        var fromSubseries = 0
+        var fromId: [String] = []
+        var microficheFromId = 0
+        var walked = 0
+        for entry in try testManifestEntries() {
+            let short = FRUSShortCitation(entry)
+            walked += 1
+            for name in short.names where !entry.title.contains(name) {
+                if name == FRUSShortCitation.years(fromSubseries: entry.subseries) {
+                    fromSubseries += 1
+                } else {
+                    fromId.append("\(entry.volumeId): \(name)")
+                }
+            }
+            if short.isMicroficheSupplement, !entry.title.contains("Microfiche Supplement") { microficheFromId += 1 }
+        }
+        #expect(walked == 553)
+        #expect(fromSubseries == 18)
+        #expect(fromId.sorted() == ["frus1877app: Appendix", "frus1894app2: Appendix II"])
+        #expect(microficheFromId == 1)
+    }
+
+    /// The figures the type's note gives, as measured when the rule was written (2026-11-28): the design's form names
+    /// more than one volume for 132 volumes in 60 groups, and the rule's forms run to 72 characters, median 26, in
+    /// History at State (71 and 25 in Chicago and Turabian). A change to the rule or to the manifest moves them, and
+    /// the note should then be measured again.
+    @Test("The note's figures: the design's form shared 132 volumes in 60 groups; the forms run to 72, median 26")
+    func notesFigures() throws {
+        let entries = try testManifestEntries()
+        // The design's form, as the first commit of the row wrote it: the title's years, else the subseries', and the
+        // volume's number.
+        let designs = Dictionary(grouping: entries) { entry -> String in
+            let text = entry.title
+            let rest = FRUSVolumeTitle.seriesNames.first { text.hasPrefix($0) }.map { String(text.dropFirst($0.count)) }
+                ?? ""
+            let years = FRUSVolumeTitle.match(FRUSVolumeTitle.leadingYears, in: rest).map { String(rest[$0.group]) }
+                ?? FRUSShortCitation.years(fromSubseries: entry.subseries)
+            return [years, FRUSShortCitation(entry).volumeNumber?.printed].compactMap { $0 }.joined(separator: ", vol. ")
+        }.filter { $0.value.count > 1 }
+        #expect(designs.reduce(0) { $0 + $1.value.count } == 132)
+        #expect(designs.count == 60)
+        let figures: [(CitationStyle, Int, Int)] = [(.historyAtState, 72, 26), (.chicago, 71, 25)]
+        for (style, longest, median) in figures {
+            let lengths = entries.map { FRUSShortCitation($0).volume(in: style).count }.sorted()
+            #expect(lengths.last == longest, "\(style)")
+            #expect(lengths[lengths.count / 2] == median, "\(style)")
+        }
     }
 }
 
