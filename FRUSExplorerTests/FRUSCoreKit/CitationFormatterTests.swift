@@ -1383,9 +1383,14 @@ struct InAppCitationNumberTests {
                     "\(number): \(navigation)")
         }
         #expect(!navigation.contains("Doc \\("), "\(navigation)")
+        // Since L38 (F2) the place is the window's title and the centre the head, so the number
+        // reaches the title through `MacDocumentTitle.windowTitle(for:volume:)`.
         #expect(try source("FRUSExplorer/App/MacDocumentView.swift").contains(
-            "MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,"),
-                "the toolbar centre goes through MacDocumentTitle, whose rule is tested above")
+            ".navigationTitle(MacDocumentTitle.windowTitle(for: currentEntry,"),
+                "the window's title goes through MacDocumentTitle, whose rule is tested above")
+        #expect(try source("FRUSExplorer/App/MacDocumentTitle.swift").contains(
+            "return principalLabel(volumeLabel: volumeTag, documentNumber: documentNumber, documentId: documentId)"),
+                "the title's number goes through principalLabel, whose rule is tested above")
 
         let row = try body("private struct SearchResultRow: View", "FRUSExplorer/App/SearchSheet.swift")
         #expect(row.contains("CitableDocumentNumber.captionLabel(printed: result.documentNumber, documentId: result.documentId)"),

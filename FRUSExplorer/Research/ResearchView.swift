@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SwiftData
+import os
 
 // MARK: - ResearchSidebarItem
 
@@ -157,9 +158,10 @@ struct ResearchDocumentEntry: Identifiable {
 ///
 /// ## Data
 /// `@Query` for all `ResearchNote` and `UserTag` records. Document headers are loaded
-/// asynchronously from `document_cache` via `CrossReferenceStore.documentHeaders(for:)`
-/// and cached in `documentHeaders` state. The header load fires on `.task` whenever the
-/// selected sidebar item changes.
+/// asynchronously from `document_cache` via `CrossReferenceStore.documentTitleFacts(for:)`
+/// and cached in `documentHeaders` state. The header load (`ResearchRowHeads`) runs whenever the
+/// selected category's documents change, and again when the cross-reference store arrives or is
+/// reopened; the body reads the state as well as the rows, so a merge redraws them (#1946).
 ///
 /// Version history:
 ///   1.0 — Session 130: initial implementation
@@ -185,6 +187,9 @@ struct ResearchDocumentEntry: Identifiable {
 ///   1.9 — #1791: a document's notes are grouped one copy of each, however many are stored
 ///   1.10 — L21 (UI review MAC-5, #1921): each document row prints the document's number above its
 ///          head (`ResearchDocumentRowText`)
+///   1.11 — L38 (#1946): the rows' heads load again when the cross-reference store arrives or is
+///          reopened (`ResearchRowHeads`), and the body reads the heads, so a merge redraws the rows,
+///          where a load made before the store, or a merge the Mac did not redraw, kept each row's id
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -315,7 +320,8 @@ struct ResearchView: View {
             DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
                                       title: DocumentDisplayTitle.text(documentHeaders[entry.id], documentId: entry.documentId))
         }
-            .task(id: selectedItemDocumentIds) { await loadHeaders() }
+            .researchRowHeads(for: selectedItemDocumentIds, from: appState.crossReferenceStore,
+                              into: $documentHeaders)
             // Reload note-sourced headers when any note changes.
             .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
             // #1275: keep the notes list's snapshot in step with the live note query without
@@ -465,6 +471,16 @@ struct ResearchView: View {
 
     @ViewBuilder
     private var navigationContainerBody: some View {
+        // **Read here, in the body, as well as in the rows** (L38, #1946). The rows read the heads
+        // inside the list's `ForEach`, under the split view's detail column, and until L38 this
+        // view's own body never read `documentHeaders`. On the Mac a merge then did not always
+        // redraw the rows: in the check copy the log said all nine heads were read and merged while
+        // every row still showed its id, until the sidebar's selection changed. Read here, a merge
+        // runs this body again, which builds the detail column and its rows anew. The rows still
+        // read the state themselves, as on every platform before, so a list pushed on the iPhone's
+        // stack, which its destination closure builds, sees the heads whether or not that closure
+        // runs again.
+        let _ = documentHeaders
         #if os(macOS)
         NavigationSplitView {
             sidebar
@@ -1260,13 +1276,11 @@ struct ResearchView: View {
         return documents(for: item).map(\.id)
     }
 
+    /// Loads the heads of the selection's documents, as ``ResearchRowHeads`` does: for the note
+    /// observers below `body`, which load again without the documents changing.
     private func loadHeaders() async {
-        guard let store = appState.crossReferenceStore,
-              let item = selectedItem else { return }
-        let pairs = documents(for: item)
-            .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-        guard !pairs.isEmpty else { return }
-        if let headers = try? await store.documentTitleFacts(for: pairs) {
+        if let headers = await ResearchRowHeads.facts(for: selectedItemDocumentIds,
+                                                      from: appState.crossReferenceStore) {
             documentHeaders.merge(headers) { _, new in new }
         }
     }
@@ -1651,8 +1665,8 @@ enum ResearchDocumentRowText {
     /// The number line and the title of one row.
     ///
     /// - Parameters:
-    ///   - facts: What the index holds for the document, or `nil` until `loadHeaders` lands, or
-    ///     when its volume is not indexed.
+    ///   - facts: What the index holds for the document, or `nil` until the rows' heads load
+    ///     (`ResearchRowHeads`), or when its volume is not indexed.
     ///   - documentId: The document's id.
     /// - Returns: The line, which is never empty, and the title, which is never empty.
     static func parts(facts: DocumentDisplayTitle.Facts?, documentId: String) -> (label: String, title: String) {
@@ -1660,5 +1674,105 @@ enum ResearchDocumentRowText {
         let title = DocumentDisplayTitle.text(facts, documentId: documentId)
         let number = CitableDocumentNumber.resolve(printed: facts?.documentNumber, documentId: documentId)
         return (label, DocumentHeaderDisplay.numberedRow(header: title, number: number).title)
+    }
+}
+
+// MARK: - ResearchRowHeads
+
+/// Loads the Research rows' heads from the cross-reference store: ``View/researchRowHeads(for:from:into:)``.
+///
+/// **A load is made for the documents AND the store it reads** (L38, #1946). `ResearchView`'s own
+/// loader until L38 made one each time the documents changed, and a load that found no store kept
+/// nothing. The store comes and goes on its own clock:
+/// - **boot sets it** after a window that opens first may be up already. The Mac's Research window
+///   is a scene of its own; restored at launch, it drew its rows and made its first load with no
+///   store, and boot set the store 0.9 s later (measured in the check copy's log);
+/// - **`AppState.refreshReadOnlyStores()` replaces it** after every indexing batch, and after the
+///   passes a normal launch runs, and the store it replaces may have read nothing for a volume that
+///   was being indexed (#275).
+///
+/// Each of those is a new store, so a load keyed on the store's identity is made again with it.
+///
+/// **That was not the whole of #1946.** Its sightings, rows with their ids until the sidebar's
+/// selection changed, came back in the check copy with the Research window opened from the menu
+/// after launch, and this log showed all nine heads read from the store and merged: the rows were
+/// not redrawn. They read the state only inside the list's `ForEach`; `ResearchView` now reads it in
+/// its own body too (`navigationContainerBody`), so a merge builds the rows anew.
+///
+/// `ResearchRowHeadsTests` starts the loader with no store, and with a store that has no row for
+/// the document; before L38 each kept the row's id.
+///
+/// Version history:
+///   1.0 — L38 (#1946): out of `ResearchView`; loads again when the store arrives or is reopened,
+///          and logs what each read found
+struct ResearchRowHeads: ViewModifier {
+
+    /// The rows' documents, as `"volumeId/documentId"` keys.
+    let documentKeys: [String]
+    /// The store the heads are read from; `nil` until boot sets it.
+    let store: CrossReferenceStore?
+    /// The heads read so far, keyed like ``documentKeys``. A load adds to them and replaces what it
+    /// read again; it never removes one.
+    @Binding var headers: [String: CrossReferenceStore.DocumentTitleFacts]
+
+    /// Says what each read found, so a sighting like #1946's can be told apart in the log: rows that
+    /// keep their ids after a read that found their heads were not redrawn, where rows after a read
+    /// that found none, or none with a store, were not loaded.
+    nonisolated private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "ResearchRowHeads")
+
+    func body(content: Content) -> some View {
+        content.task(id: Load(documentKeys: documentKeys, store: store.map(ObjectIdentifier.init))) {
+            let facts = await Self.facts(for: documentKeys, from: store)
+            Self.log.notice("""
+                Research rows: read \(facts.map { String($0.count) } ?? "none", privacy: .public) \
+                of \(documentKeys.count, privacy: .public) heads, \
+                \(store == nil ? "with no store" : "from the store", privacy: .public)
+                """)
+            if let facts {
+                headers.merge(facts) { _, new in new }
+            }
+        }
+    }
+
+    /// What one load is made for: the rows' documents, and the store it reads, by identity.
+    ///
+    /// The store's identity and not a flag for whether there is one, because a reopened store is
+    /// a store again where there already was one. A new store is made while the one it replaces is
+    /// still held, so the two never share an identity.
+    struct Load: Hashable {
+        /// The rows' documents.
+        let documentKeys: [String]
+        /// The store, or `nil` until boot sets it.
+        let store: ObjectIdentifier?
+    }
+
+    /// What the index holds for each of `documentKeys`, or `nil` when there is no store to read,
+    /// no key to read, or the read fails.
+    ///
+    /// - Parameters:
+    ///   - documentKeys: `"volumeId/documentId"` keys. One without a `/` is passed over.
+    ///   - store: The store to read; `nil` reads nothing.
+    /// - Returns: The facts by key, without the keys the index has no row for.
+    static func facts(for documentKeys: [String],
+                      from store: CrossReferenceStore?) async -> [String: CrossReferenceStore.DocumentTitleFacts]? {
+        guard let store, !documentKeys.isEmpty else { return nil }
+        let pairs = documentKeys.compactMap { key -> (volumeId: String, documentId: String)? in
+            let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
+            return parts.count == 2 ? (volumeId: parts[0], documentId: parts[1]) : nil
+        }
+        return try? await store.documentTitleFacts(for: pairs)
+    }
+}
+
+extension View {
+    /// Loads the heads of the Research rows' documents into `headers` (``ResearchRowHeads``).
+    ///
+    /// - Parameters:
+    ///   - documentKeys: The rows' documents, as `"volumeId/documentId"` keys.
+    ///   - store: The store to read them from; `nil` until boot sets it.
+    ///   - headers: Where the heads go.
+    func researchRowHeads(for documentKeys: [String], from store: CrossReferenceStore?,
+                          into headers: Binding<[String: CrossReferenceStore.DocumentTitleFacts]>) -> some View {
+        modifier(ResearchRowHeads(documentKeys: documentKeys, store: store, headers: headers))
     }
 }
