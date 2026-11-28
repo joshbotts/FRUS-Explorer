@@ -238,7 +238,7 @@ The working corpus could not be saved.
 
 #### `graph.save.subject %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.subject(documentLabel:) | lines: 1460–1460 | key: graph.save.subject %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.subject(documentLabel:) | lines: 1462–1462 | key: graph.save.subject %@ -->
 
 Cross-references of %@
 
@@ -248,7 +248,7 @@ Cross-references of %@
 
 #### `graph.save.source %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.sourceDescription(documentLabel:) | lines: 1470–1471 | key: graph.save.source %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.sourceDescription(documentLabel:) | lines: 1472–1473 | key: graph.save.source %@ %@ -->
 
 Cross-reference graph of %1$@, at %2$@
 
@@ -258,7 +258,7 @@ Cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.source.dated %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.dated(_:) | lines: 1478–1479 | key: graph.save.source.dated %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.dated(_:) | lines: 1480–1481 | key: graph.save.source.dated %@ %@ -->
 
 %1$@, dated %2$@
 
@@ -268,7 +268,7 @@ Cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.depth.one`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1434–1434 | key: graph.save.depth.one -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1436–1436 | key: graph.save.depth.one -->
 
 one hop
 
@@ -278,7 +278,7 @@ one hop
 
 #### `graph.save.depth.two`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1435–1435 | key: graph.save.depth.two -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1437–1437 | key: graph.save.depth.two -->
 
 two hops
 
@@ -288,7 +288,7 @@ two hops
 
 #### `graph.save.depth.three`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1436–1436 | key: graph.save.depth.three -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1438–1438 | key: graph.save.depth.three -->
 
 three hops
 
@@ -298,7 +298,7 @@ three hops
 
 #### `graph.save.depth.n.one`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1437–1437 | key: graph.save.depth.n.one -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1439–1439 | key: graph.save.depth.n.one -->
 
 %@ hop
 
@@ -308,7 +308,7 @@ three hops
 
 #### `graph.save.depth.n.many`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1438–1438 | key: graph.save.depth.n.many -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1440–1440 | key: graph.save.depth.n.many -->
 
 %@ hops
 
@@ -318,7 +318,7 @@ three hops
 
 #### `graph.save.empty`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.nothingToSave | lines: 1501–1502 | key: graph.save.empty -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.nothingToSave | lines: 1503–1504 | key: graph.save.empty -->
 
 The graph holds no document within the brushed dates, so there is nothing to save.
 
@@ -328,7 +328,7 @@ The graph holds no document within the brushed dates, so there is nothing to sav
 
 #### `graph.save.pages.one %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1514–1515 | key: graph.save.pages.one %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1516–1517 | key: graph.save.pages.one %@ -->
 
 The graph’s %@ cited page is not a document and is left out.
 
@@ -338,7 +338,7 @@ The graph’s %@ cited page is not a document and is left out.
 
 #### `graph.save.pages.many %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1516–1517 | key: graph.save.pages.many %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1518–1519 | key: graph.save.pages.many %@ -->
 
 The graph’s %@ cited pages are not documents and are left out.
 
@@ -348,7 +348,7 @@ The graph’s %@ cited pages are not documents and are left out.
 
 #### `graph.save.visit.source %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1546–1547 | key: graph.save.visit.source %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1550–1551 | key: graph.save.visit.source %@ %@ -->
 
 from the cross-reference graph of %1$@, at %2$@
 
@@ -358,7 +358,7 @@ from the cross-reference graph of %1$@, at %2$@
 
 #### `graph.save.visit.whole %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1562–1563 | key: graph.save.visit.whole %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1566–1567 | key: graph.save.visit.whole %@ -->
 
 On this device a visit of these documents lists %@
 
@@ -368,7 +368,7 @@ On this device a visit of these documents lists %@
 
 #### `graph.save.visit.partial %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1557–1558 | key: graph.save.visit.partial %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1561–1562 | key: graph.save.visit.partial %@ %@ -->
 
 On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
@@ -378,7 +378,7 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 #### `graph.save.visit.targets.one %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1552–1552 | key: graph.save.visit.targets.one %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1556–1556 | key: graph.save.visit.targets.one %@ -->
 
 %@ target
 
@@ -388,7 +388,7 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 #### `graph.save.visit.targets.many %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1553–1553 | key: graph.save.visit.targets.many %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1557–1557 | key: graph.save.visit.targets.many %@ -->
 
 %@ targets
 
@@ -396,19 +396,67 @@ On this device a visit of these documents lists %1$@, from the %2$@ indexed here
 
 *As above.*
 
+#### `graph.save.visit.classes.listed.one %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1572–1573 | key: graph.save.visit.classes.listed.one %@ -->
+
+The graph’s %@ central-file class is among them
+
+<!-- END SOURCE: graph.save.visit.classes.listed.one %@ -->
+
+*The line’s last sentence, where the graph draws a central-file class: a visit lists every class a document’s footnotes cite, as the graph draws one for each (L63, decision ⟪L63-DECISION⟫). “Them” is the targets of the sentence before. `%@` is the graph’s classes.*
+
+#### `graph.save.visit.classes.listed.many %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1574–1575 | key: graph.save.visit.classes.listed.many %@ -->
+
+The graph’s %@ central-file classes are among them
+
+<!-- END SOURCE: graph.save.visit.classes.listed.many %@ -->
+
+*As above, for more than one class.*
+
+#### `graph.save.visit.classes.partial.one %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1582–1583 | key: graph.save.visit.classes.partial.one %@ %@ -->
+
+Of the graph’s %1$@ central-file class, it lists %2$@
+
+<!-- END SOURCE: graph.save.visit.classes.partial.one %@ %@ -->
+
+*The last sentence instead, where a visit lists fewer of the graph’s classes than it draws, which only a volume indexed again between the graph’s read and the line’s can leave. “It” is the visit of the sentence before. `%1$@` is the graph’s classes, `%2$@` how many of them a visit lists; the count follows the verb, so nothing has to agree with it.*
+
+#### `graph.save.visit.classes.partial.many %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1584–1585 | key: graph.save.visit.classes.partial.many %@ %@ -->
+
+Of the graph’s %1$@ central-file classes, it lists %2$@
+
+<!-- END SOURCE: graph.save.visit.classes.partial.many %@ %@ -->
+
+*As above, for more than one class.*
+
 #### `graph.save.visit.classes.one %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1570–1571 | key: graph.save.visit.classes.one %@ %@ -->
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision ⟪L63-DECISION⟫) made a footnote’s
+> central-file class a target of a visit, so the line now says the graph’s classes are among the targets
+> (`graph.save.visit.classes.listed.one %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | key: graph.save.visit.classes.one %@ %@ -->
 
 A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ class
 
 <!-- END SOURCE: graph.save.visit.classes.one %@ %@ -->
 
-*The line’s last sentence, where the graph draws a central-file class: a visit’s footnote channel leaves the class out (#784’s scope), so a class is a target only where a document’s own source note names it. `%1$@` is the graph’s classes, `%2$@` how many of them are targets.*
+*L42’s last sentence, until L63: a visit’s footnote channel left the class out (#784’s scope), so a class was a target only where a document’s own source note named it. `%1$@` was the graph’s classes, `%2$@` how many of them were targets.*
 
 #### `graph.save.visit.classes.many %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1572–1573 | key: graph.save.visit.classes.many %@ %@ -->
+> ⚠️ **RETIRED — editing this block has no effect.** No line holds it: L63 (decision ⟪L63-DECISION⟫) made a footnote’s
+> central-file class a target of a visit, so the line now says the graph’s classes are among the targets
+> (`graph.save.visit.classes.listed.many %@`, above). Kept so the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | key: graph.save.visit.classes.many %@ %@ -->
 
 A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ classes
 
@@ -418,7 +466,7 @@ A footnote’s central-file class is a target only where a document’s own sour
 
 #### `graph.save.visit.added.one %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1601–1602 | key: graph.save.visit.added.one %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1613–1614 | key: graph.save.visit.added.one %@ %@ -->
 
 Added %1$@ document to “%2$@”
 
@@ -428,7 +476,7 @@ Added %1$@ document to “%2$@”
 
 #### `graph.save.visit.added.many %@ %@`
 
-<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1603–1604 | key: graph.save.visit.added.many %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1615–1616 | key: graph.save.visit.added.many %@ %@ -->
 
 Added %1$@ documents to “%2$@”
 

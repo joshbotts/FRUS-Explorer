@@ -5161,3 +5161,70 @@ Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a 
 - **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
 - `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
+
+## Session 2026-11-28 — L63, a footnote's central-file class: an Archives Visit lists it as a target from every add flow, keyed as a source note's class is, and the graph's picker says its classes are among the targets
+
+Row L63 of the plan of record from 2026-11-25 (decision ⟪L63-DECISION⟫), a row the owner added on 2026-11-28 by answering L42's question in the orchestration session: "Change it in 1.1", over the recommendation, "File it for after 1.1" (found in that session's transcript with the question, asked at 00:08 UTC and answered at 00:09). Started by "Development session orchestration" on `claude/l63-footnote-class-in-packet-350a72`, from `v2` at `d9b86ae2`, L62's merge. Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed; no stored property and no index version. Commits: `c4e95170` (the defect shown first), `a41c5644` (the change) and ⟪records⟫ (the records).
+
+⟪merge record⟫
+
+**Shown first** (decision 183)
+- **L42's measure, run again as the control.** L42's throwaway package test, rebuilt from its transcript with the three patches it took there, ran unchanged on `v2` at `d9b86ae2` over L31's full index at version 76, the index L42 read. `frus1952-54v02p1` d16 at three hops: 145 documents, 49 targets, 5 of the graph's 8 classes. NSC 68 (`frus1950v01` d85) at three hops: 844 documents, 253 targets, 36 of 61. L42's figures, each.
+- **Which classes, and why.** d16's eight classes hang off nine class nodes in eight documents. The five listed (`840.00R`, `768.5`, `740.5`, `662.001`, `762.0221`) are the classes whose citing document's own source note names them. The three left out, `120.4341`, `862B.49` and `511.00`, are cited by documents whose own notes name another file (`762A.0221`) or a lot (62 D 430, 63 D 351).
+- **The test.** `TripPacketBuilderTests.footnoteClassesOfD16AreTargets`, the kit's and compiled twice, over those eight documents' rows as the index stores them: the graph's own rule draws the eight classes from them, and a visit must list all eight. On `v2`'s code, in a detached worktree at `c4e95170`, the suite's other 31 tests passed and this one failed with 5 issues: "A visit of these documents lists 5 of the graph's 8 classes, not ["120.4341", "511.00", "862B.49"]", and the picker's count read 5 of the 8.
+
+**#784's reason, read again**
+- #784 (2026-08-10) built lots and libraries and deferred the decimal class, "later, guarded": 56% of a footnote's classes were the printed document's own, and the subject-numeric files were 87.2% out of vocabulary. The packet's comment added that the class "would flood the packet with the corpus's commonest footnote idiom".
+- **The guard was built,** for the index (`FootnoteIbidGapWalker.shippedAdmissionVerdict(composes:)`). Since #1009 a decimal class is harvested only where a document serial follows it, it composes under the 1910–49 schedule and the shared class vocabulary holds it, and an absence claim or a publication is refused, #784's own non-negotiables. Since decision 191 (index version 76) a subject-numeric file is harvested only where its clause names the Department's Central Files under a lead the source notes read (40 of 40 such clauses read real). The graph, Archival Analytics and Source Explorer have read the class since; only the packet left it out.
+- **The own class merges.** 14,011 of the 24,450 documents whose footnotes cite a class cite their own, in 20,009 of the 37,633 class rows (53%, where #784 counted 56%). Each lands on the document's own drawn-from target as a second claim, not on a target of its own.
+- **No flood at the class grain:** a whole volume's visit gains a median of 2 targets (below).
+- So the reason does not hold for the packet, and the owner took the class in. The Central Foreign Policy File's reason (decision 191) does hold: its rows name no collection, so every one would key to the one "Department of State" target, and it stays out.
+
+**The change** (`a41c5644`)
+- **The rule** (kit): `ExternalCitation.anchorsOutsideThePacket` names the Central Foreign Policy File alone (`FRUSCoreKit/Search/IndexingPipeline.swift`, 4.71), so `isInPacketChannel` takes a class row, and the rule's three readers follow: the packet's pointed-at channel, `SourceExplorerResolution.packetPointers` (what *Add unprinted references (N)* counts and offers, so a document whose footnotes cite only classes now offers it) and the editor's per-seed counts with `externalCitationSparsity()`.
+- **The key** (`TripPacketBuilder` 1.17): `referenceKey(for:)` keys a row that names a class `class|<class>`, form `.decimalClass`, before its lot and collection rules, as the graph draws a class node for any row that names one. It is the drawn-from key, so a class cited both ways is one target with both claims.
+- **A footnote's own class target** (`TripPacketModel` 2.9): its category is its filing system's, by the designator's form (`Target.classCategory(_:)`: `.subjectNumericFile` for a letter-led one, else `.centralDecimalFile`), where a pointed-at target that was not a lot had taken a library's. So it is served at College Park, carries the no-box line, and counts as a central-file target for the crib. Both channels label a class by one rule (`Target.classLabel(_:)`).
+- **The coverage report** (`TripPacketExporter` 2.10): "…carry at least one reference to a lot file, library collection or central-file class." Its pre-1946 explainer ends "…and earlier footnotes seldom cite a central file by its number", where it said the packet covered those through the documents' own source notes.
+- **The picker's line** (`CrossReferenceGraphCapture` 1.1): below.
+- **The editor's two captions** (app, `ArchiveVisitEditorView` 1.13): the corpus sparsity line reads about 11% (35,749 of 321,749), and the Documents tab's footer about 11%, where both read about 4%.
+
+**What moves on a reader's device,** measured on the same full index through the kit's builder, each visit built twice: with the class rows dropped from the footnotes, the channel before L63, and as it reads them now (a throwaway package test, removed after its run).
+- **The graphs.** d16 at three hops: 49 → 52 targets (`120.4341`, `511.00`, `862B.49`, each at College Park), all 8 classes listed, and 5 targets gain footnote seedings; documents with a reference, 49 → 57 of 145. At one hop nothing moves. NSC 68 at three hops: 253 → 278 targets, all 61 classes listed, and 36 targets gain seedings; documents with a reference, 176 → 242 of 844.
+- **Every volume as a visit.** 341 of the 553 volumes gain a target, 44,155 → 49,014 in all: +4,859 (11%), of them 2,976 decimal classes and 1,883 subject-numeric, every one at College Park. A median of 2 a volume, 27 at the 90th percentile and 142 at most: `frus1964-68v31`, 76 → 218, then `frus1964-68v25` (+81 on 41) and `frus1969-76v24` (+70 on 22), volumes whose footnotes cite subject-numeric files by the dozen. 5,650 existing targets gain footnote seedings. The 553 builds took 147 s, against 155 s before.
+- **Each document alone.** 24,450 of the 320,646 documents carry a class row (37,633 rows). 12,220 of them gain a target, 14,339 in all; the rest cite only their own class.
+- **The sparsity.** 35,749 of 321,749 documents carry a reference the channel takes, against 13,781 at the lot and library scope. Before 1946, 3,680 of the 182,497 dated documents do, against 69.
+
+**Stored rows: none change**
+- No stored property, and nothing in the derivation writes, so the first launch of 1.1 writes no Archives Visit row.
+- Every key a plan derived before still derives: L63 adds class targets and footnote seedings and removes no target. A stored row attached to a target stays attached (`ArchiveVisitTargetKeys.resolve` first matches a key that still derives).
+- An orphaned row can re-attach, which is what the overlay's rules are for: a row keyed `class|X`, minted when a seed's own source note named X and kept after that seed went, applies again where a remaining seed's footnote cites X, and leaves *Stored targets*. A row keyed on a note's text cannot move this way: on the full index no lot or library row keys on its text, and the 1,598 source notes whose text equals a class clause's all store a class, so they key `class|`.
+- A row a reader gives a footnote-only class target on 1.1 is listed under *Stored targets* on a device still on 1.0, kept and unapplied, as the overlay lists any row whose target its seeds do not derive, until that device updates.
+
+**The picker's line**
+- For d16, from the measuring run: "…at three hops. On this device a visit of these documents lists 52 targets. The graph’s 8 central-file classes are among them." For NSC 68: "…lists 278 targets. The graph’s 61 central-file classes are among them."
+- Where a visit lists fewer classes than the graph draws, which only a volume indexed again between the graph's read and the line's can leave: "Of the graph’s 8 central-file classes, it lists 7." The count follows the verb, so nothing has to agree with it.
+- New keys, since the sentence says the opposite of L42's: `graph.save.visit.classes.listed.one/.many %@` and `.partial.one/.many %@ %@`. L42's `graph.save.visit.classes.one/.many %@ %@` are gone.
+
+**Docs**
+- **Both manuals:** the graph's *Archives Visit…* (iOS §8.6, macOS §8.5) says every class the graph draws is a target; Source Explorer's Unprinted Material (§14.4a, and the Mac's) says *Add unprinted references (N)* counts the class rows and lists a Central Foreign Policy File row without adding it; §14.8's surfaces, its coverage report and its sparsity note (about 11%); §18.3's first step names the class.
+- **EditableContent:** four blocks added and two retired in `05-Analytics.md`; two changed in `06-Archives.md`, with the disclosure's note and §15's head note; 52 ranged blocks re-pointed, checked by script against their keys; the README's row and its count of RETIRED blocks, ten, which read six (eight on `v2`); a bullet in `Amendment-Log.md`.
+- **The plan:** L63's row in §1's two tables, the calendar and the arithmetic (thirty-eight rows), the decision, the brief and this record, a pointer from decision 191 and from L42's record, and §5's *Found by L63*.
+
+**Tests**
+- The d16 test (above). In the same suite, the refs channel's two tests now pin a class target, decimal and subject-numeric, with the Central Foreign Policy File still out, and the key vocabulary's test pins a class keyed and labelled as a source note's, both kinds.
+- `ExternalCitationTests`: a subject-numeric row is in the channel; the sparsity counts the decimal and subject-numeric class documents, 3 of 5; Source Explorer's menu counts a class row, and a Central Foreign Policy File row alone offers nothing.
+- `CrossReferenceGraphCaptureTests`: the line's four forms, and the preview over a class a source note and a footnote both name and one only a footnote names. `TripPacketExporterTests`: the report's two sentences.
+
+**Checked, on the branch,** through `Scripts/heavy.sh`
+- `swift build --target FRUSCoreKit`: no warning.
+- `swift test --filter` the packet's builder, model and exporter, the plan derivation's records, the repository counts and facts, the external citations' and Unprinted Material's suites, the decimal channel's and the graph's saves': 175 tests in 10 suites passed, on macOS 27.2.1's Foundation.
+- `build-for-testing` of the `FRUSExplorer` scheme on the iPhone 17 under iOS 27.0 (`80CF0F18`), from an empty build folder: the two known residues and no other warning.
+- On it, 28 types (`-only-testing:FRUSExplorerTests/…`): the EditableContent, coding-standards and both boundary gates, the packet's and the plan's kit suites as Xcode compiles them, and the app's Archives Visit suites with the entry-point parity scan: 425 tests passed, in 203 s.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+
+**Offered, not taken** (decision 183; §5, *Found by L63*)
+- **A class spelled two ways is two targets.** Both channels' class keys keep the case and the hyphen the volume printed (`740.00119-EW` and `740.00119EW`, `891.01A` and `891.01a`). The source notes alone spell 247 classes two ways, and a whole volume's visit split 130 classes in 90 volumes before L63; with the footnotes' classes, 196 in 107 (66 more). A fold would join them, but a stored row keeps the spelling it was minted under, and `ArchiveVisitTargetKeys.sameTarget(stored:derived:)` joins two class keys only where spaces, or a hyphen against a space, separate them. Not filed: the owner's word decides.
+
+**The rest**
+- **FRUS Explorer Light:** shared code changes behaviour, by the four rules. `ExternalCitation.anchorsOutsideThePacket` holds one anchor where it held two, `referenceKey(for:)` keys a class, and `TripPacketModel.Target` gains two public functions; no signature changes. The web mirrors the editor's two captions (`web/src/copy.ts`, pinned by its `ArchiveVisitMirrorParityTests`), so its pin move owes them the new text: a hand-over note, posted after the merge.
+- The plan editor, the packet sheet and the views read the rule through the kit, so no view's code changes but the editor's two captions.
