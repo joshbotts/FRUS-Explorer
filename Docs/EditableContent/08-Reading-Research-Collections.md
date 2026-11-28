@@ -1006,28 +1006,28 @@ Research Note
 
 #### Under a headnote in an export — Apple Intelligence wrote it (L58)
 <!-- L58 (2026-11-28; decision 194): the line under a headnote names its writer, `\(label)` being the word the collection labels a headnote with (Headnote, or the compiler's own). Until L58 it read "AI-generated summary · Apple Intelligence (on-device)", and an edited one "AI-generated summary, edited by you", which a recipient's export printed under the sender's headnote (the third review's J8). -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1783–1784 | key: export.headnote.by.appleIntelligence | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1792–1793 | key: export.headnote.by.appleIntelligence | shared: iOS+macOS (single edit point) -->
 
 \(label) by Apple Intelligence (on-device)
 
 <!-- END SOURCE: export.headnote.by.appleIntelligence -->
 
 #### Under a headnote in an export — a person wrote it, by name (L58)
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1786–1787 | key: export.headnote.by.person | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1795–1796 | key: export.headnote.by.person | shared: iOS+macOS (single edit point) -->
 
 \(label) by \(name)
 
 <!-- END SOURCE: export.headnote.by.person -->
 
 #### Under a headnote in an export — a person edited Apple Intelligence's draft (L58)
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1791–1792 | key: export.headnote.by.personFromDraft | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1800–1801 | key: export.headnote.by.personFromDraft | shared: iOS+macOS (single edit point) -->
 
 \(label) by \(name), from a draft by Apple Intelligence
 
 <!-- END SOURCE: export.headnote.by.personFromDraft -->
 
 #### Under a headnote in an export — an edit of Apple Intelligence's draft that names no one (L58)
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1794–1795 | key: export.headnote.by.unnamedFromDraft | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionAIAttribution.headnoteLabel(writer:label:) | lines: 1803–1804 | key: export.headnote.by.unnamedFromDraft | shared: iOS+macOS (single edit point) -->
 
 \(label) drafted by Apple Intelligence and edited
 
@@ -3789,7 +3789,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 2361–2362 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 2370–2371 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -3809,7 +3809,7 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1669–1670 | key: export.colophon.line -->
+<!-- SOURCE: FRUSCoreKit/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1678–1679 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
