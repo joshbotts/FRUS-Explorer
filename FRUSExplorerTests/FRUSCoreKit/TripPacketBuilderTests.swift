@@ -60,6 +60,8 @@ import SourceNoteKit
 ///          them; and a lot is answered under the record group its note names
 ///   2.8 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit's suites with the packet,
 ///          so the package runs it too
+///   2.9 — 2026-11-28 (L63): every central-file class a seed's footnotes cite is a target, over the
+///          eight documents behind `frus1952-54v02p1` d16's class nodes at three hops
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -494,6 +496,125 @@ struct TripPacketBuilderTests {
         let libraryKey = TripPacketBuilder.referenceKey(for: library)
         #expect(libraryKey.key == "coll|Truman Library|President's Secretary's Files")
         #expect(libraryKey.form == .collection)
+    }
+
+    // MARK: - A footnote's central-file class (L63)
+
+    /// `frus1952-54v02p1` d16's cross-reference graph at three hops, cut to the eight documents its nine
+    /// class nodes hang off: each one's own source note and its footnotes' class rows, as a full index at
+    /// version 76 stores them (`document_sources`, `external_citations`, read 2026-11-28). The eight carry no
+    /// other footnote row. Over the graph's 145 documents a visit listed five of its eight classes before
+    /// L63, the five a citing document's own source note names (L42's measure, reproduced on `v2` at
+    /// `d9b86ae2`), and these eight documents give the same five.
+    private enum D16 {
+        static func source(_ volume: String, _ document: String, era: String, lot: String? = nil,
+                           series: String? = nil, note: String) -> CollectionGeneratedBlocks.SourceRecord {
+            .init(volumeId: volume, documentId: document, repository: "Department of State",
+                  recordGroup: "59", lotFile: lot, seriesName: series, rawText: note, citationEra: era)
+        }
+
+        static func cites(_ decimalClass: String, _ rawText: String, ordinal: Int, label: String,
+                          index: Int = 0) -> ExternalCitation {
+            ExternalCitation(anchor: "centralFileClass", repository: "Department of State", collection: nil,
+                             lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false, rawText: rawText,
+                             noteOrdinal: ordinal, decimalClass: decimalClass, noteLabel: label,
+                             citationIndex: index)
+        }
+
+        static let sources: [CollectionGeneratedBlocks.SourceRecord] = [
+            source("frus1950v03", "d372", era: "decimal", series: "840.00R/12–2150",
+                   note: "840.00R/12–2150: Telegram"),
+            source("frus1950v04", "d816", era: "decimal", series: "768.5/6–1250", note: "768.5/6–1250: Telegram"),
+            source("frus1951v03p1", "d112", era: "decimal", series: "740.5/6–2051", note: "740.5/6–2051"),
+            source("frus1952-54v07p1", "d152", era: "decimal", series: "762A.0221/8–2852",
+                   note: "762A.0221/8–2852: Telegram"),
+            source("frus1952-54v07p1", "d78", era: "decimal", series: "662.001/3–2252",
+                   note: "662.001/3–2252: Telegram"),
+            source("frus1952-54v07p2", "d563", era: "decimal", series: "762.0221/9–1752",
+                   note: "762.0221/9–1752: Telegram"),
+            source("frus1952-54v07p2", "d774", era: "lot_file", lot: "62 D 430",
+                   note: "OCB files, lot 62 D 430, “Germany I”"),
+            source("frus1955-57v09", "d190", era: "lot_file", lot: "63 D 351",
+                   note: "Source: Department of State, S/S – NSC Files: Lot 63 D 351, NSC 5525. Secret. This paper "
+                       + "is a collection of reports prepared by various executive agencies. Part 6, dated August "
+                       + "11, was prepared by USIA."),
+        ]
+
+        static let citations: [String: [ExternalCitation]] = [
+            "frus1950v03/d372": [cites("840.00R", "840.00R/12–2250", ordinal: 3, label: "4")],
+            "frus1950v04/d816": [cites("768.5", "768.5/6–1250", ordinal: 0, label: "1")],
+            "frus1951v03p1/d112": [cites("740.5", "740.5/8–1351", ordinal: 0, label: "1")],
+            "frus1952-54v07p1/d152": [cites("120.4341", "Telegram 855 to Bonn, 120.4341/8–2252",
+                                            ordinal: 0, label: "2")],
+            "frus1952-54v07p1/d78": [cites("662.001", "662.001/3–2252", ordinal: 0, label: "2")],
+            "frus1952-54v07p2/d563": [
+                cites("762.0221", "762.0221/9–552", ordinal: 4, label: "6"),
+                cites("762.0221", "762.0221/9–552", ordinal: 5, label: "7"),
+                cites("662.001", "Telegram 1595 from London, 662.001/9–1952", ordinal: 7, label: "9"),
+                cites("662.001", "Telegram 2008, 662.001/9–1852", ordinal: 7, label: "9", index: 1),
+            ],
+            "frus1952-54v07p2/d774": [cites("862B.49", "862B.49/6–454", ordinal: 0, label: "2")],
+            "frus1955-57v09/d190": [
+                cites("511.00", "Department of State, Central Files, 511.00/6–3055", ordinal: 3, label: "5"),
+                cites("511.00", "Ibid., 511.00/5–2755 and 511.00/6–655", ordinal: 4, label: "6"),
+                cites("511.00", "Department of State, Central Files, 511.00/4–2455", ordinal: 6, label: "8"),
+            ],
+        ]
+
+        static var documents: [(volumeId: String, documentId: String)] {
+            sources.map { ($0.volumeId, $0.documentId) }
+        }
+    }
+
+    /// L63 (the owner's "Change it in 1.1", 2026-11-28): every central-file class a seed's footnotes cite is
+    /// a target, as the cross-reference graph draws a class node for it. A class the document's own source
+    /// note names too is one target with both claims; one only a footnote names is a target of its own, a
+    /// central file served at College Park. The source notes' other files keep their targets.
+    @MainActor
+    @Test("Every class d16's graph draws for a footnote is a target of a visit (L63)")
+    func footnoteClassesOfD16AreTargets() async throws {
+        let authority = try CollectionAuthorityIndex(contentsOf: sourceExplorerShippedFile("collection-authority"))
+        let nodes = CrossReferenceGraphDisplay.unitNodes(rowsByDocument: D16.citations, authority: authority)
+        let graphClasses = Set(nodes.values.joined().compactMap(\.centralFileClassKey))
+        #expect(nodes.values.joined().count == 9, "fixture guard: one class node per document and class")
+        #expect(graphClasses == ["840.00R", "768.5", "740.5", "120.4341", "662.001", "762.0221", "862B.49",
+                                 "511.00"], "fixture guard: the graph's eight classes for d16")
+
+        let stub = Stub(sources: D16.sources, citations: D16.citations)
+        let model = await TripPacketBuilder.build(documents: D16.documents, researchQuestion: nil,
+                                                  dataSource: stub)
+        let keys = Set(model.targets.map(\.key))
+        let unlisted = graphClasses.filter { !keys.contains("class|\($0)") }.sorted()
+        #expect(unlisted.isEmpty, """
+            A visit of these documents lists \(graphClasses.count - unlisted.count) of the graph's \
+            \(graphClasses.count) classes, not \(unlisted): its footnote channel leaves the class out.
+            """)
+        let capture = CrossReferenceGraphCapture(
+            documentKeys: D16.documents.map { "\($0.volumeId)/\($0.documentId)" }, pageCount: 0,
+            documentsWithArchivalNodes: nodes.keys.sorted(), unitIds: [], classKeys: graphClasses.sorted(),
+            depth: 3, dateWindow: nil)
+        let preview = CrossReferenceGraphVisitPreview(model: model, capture: capture,
+                                                      indexedVolumeIds: Set(D16.sources.map(\.volumeId)))
+        #expect(preview.classesListed == 8, "the picker's line counts \(preview.classesListed) of the 8")
+        #expect(keys == ["class|840.00R", "class|768.5", "class|740.5", "class|762A.0221", "class|662.001",
+                         "class|762.0221", "lot|62D430", "lot|63D351",
+                         "class|120.4341", "class|862B.49", "class|511.00"], "got \(keys.sorted())")
+
+        // A class a document's own source note names and a footnote cites: one target, both claims.
+        let both = try #require(model.targets.first { $0.key == "class|662.001" })
+        #expect(both.drawnFrom.map(\.documentId) == ["d78"])
+        #expect(both.pointedAt.map { "\($0.documentId) fn \($0.footnoteLabel ?? "-")" }
+                == ["d78 fn 2", "d563 fn 9", "d563 fn 9"])
+        // A class only a footnote names: a central file of its own, at College Park.
+        let footnoteOnly = try #require(model.targets.first { $0.key == "class|120.4341" })
+        #expect(footnoteOnly.form == .decimalClass)
+        #expect(footnoteOnly.label == "Central Decimal File 120.4341")
+        #expect(footnoteOnly.category == .centralDecimalFile)
+        #expect(footnoteOnly.facility.chapterHeading == ResearchFacilityResolver.collegePark)
+        #expect(footnoteOnly.drawnFrom.isEmpty)
+        #expect(footnoteOnly.pointedAt.map(\.rawText) == ["Telegram 855 to Bonn, 120.4341/8–2252"])
+        #expect(TripPacketExporter.isCentralFileTarget(footnoteOnly), "so its row says central files carry no box")
+        #expect(model.referenceCoverage.documentsWithReferences == 8)
     }
 
     // MARK: - Central-file designations (#1392 review)
