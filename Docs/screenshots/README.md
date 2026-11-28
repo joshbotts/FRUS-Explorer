@@ -7,7 +7,10 @@ plan of record from 2026-11-25 (2026-11-27, #1990) added the cross-reference gra
 to sitting T3: `ipad/graph-save-corpus` and `ipad/graph-save-visit` in the iOS manual (§8.6), and
 `macos/graph-save-corpus` and `macos/graph-save-visit` in the macOS manual (§8.5). Each placeholder
 says what its frame shows: `frus1952-54v02p1` d16 at three hops, the question before the working
-corpus is saved, and the Add to Archives Visit picker with its line.
+corpus is saved, and the Add to Archives Visit picker with its line. Row L56 (2026-11-27, #2012)
+added Chronology's save of a range, owed to the same sitting: `ipad/chronology-save-corpus` in the
+iOS manual and `macos/chronology-save-corpus` in the macOS manual (§15.7 in each), October 1962 with
+`frus1961-63v11` indexed and the question before the corpus is saved.
 
 The two quick starts (`../iOS-Quick-Start.md`, `../macOS-Quick-Start.md`, 2026-11-03) embed 20 of
 these files and take no capture of their own: on iOS `ipad/onboarding-volumes`, `browse-root`,

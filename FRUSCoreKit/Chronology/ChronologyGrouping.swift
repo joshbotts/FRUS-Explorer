@@ -192,6 +192,10 @@ public struct ChronologyOverflowCounts: Equatable, Sendable {
 ///          default is the reader's own, which the labels were written in before, so the app's are unchanged
 ///   1.2 — 2026-11-26 (#1971): the hover magnifier's two calls take the locale a year's months are named in,
 ///          and the month label gives it to its calendar, which named them "M01" to "M12" in its root locale
+///   1.3 — 2026-11-27 (L56): `kind(dateISO:dateISOMax:startISO:endISO:)`, which of a range's three kinds a document
+///          is by `partition` and then `splitOverflow`, for Chronology's save of a range (`ChronologyRangeSave`), and
+///          `overflowDirection(dateISO:dateISOMax:startISO:endISO:)`, the row's rule over two dates, which the row's
+///          form now calls; nothing the screen draws changes
 public enum ChronologyGrouping {
 
     /// Hard cap on rows materialised per load. The date pickers bound the working set;
@@ -304,9 +308,50 @@ public enum ChronologyGrouping {
         startISO: String,
         endISO: String
     ) -> (leading: Bool, trailing: Bool) {
-        let start = String(row.dateISO.prefix(10))
-        let end = String((row.dateISOMax ?? row.dateISO).prefix(10))
+        overflowDirection(dateISO: row.dateISO, dateISOMax: row.dateISOMax, startISO: startISO, endISO: endISO)
+    }
+
+    /// ``overflowDirection(_:startISO:endISO:)`` for any document's two dates, as Chronology's save
+    /// reads them without a row (`ChronologyRangeEntry`, L56).
+    ///
+    /// - Parameters:
+    ///   - dateISO: The first day of the document's dates.
+    ///   - dateISOMax: The last day, or `nil` for a single day.
+    ///   - startISO: The range's first day, `yyyy-MM-dd`.
+    ///   - endISO: Its last day.
+    /// - Returns: Whether the dates begin before the range, and whether they end after it.
+    public nonisolated static func overflowDirection(
+        dateISO: String,
+        dateISOMax: String?,
+        startISO: String,
+        endISO: String
+    ) -> (leading: Bool, trailing: Bool) {
+        let start = String(dateISO.prefix(10))
+        let end = String((dateISOMax ?? dateISO).prefix(10))
         return (leading: start < startISO, trailing: end > endISO)
+    }
+
+    /// Which of a range's three kinds a document of it is (L56), by the screen's own two rules in
+    /// the order `ChronologyViewModel.reload()` runs them: ``partition(_:)`` first, which sets aside a
+    /// document whose dates span more than ``maxSpanDaysForPlacement`` days wherever its ends fall,
+    /// then ``splitOverflow(_:startISO:endISO:)``, which tells one whose dates reach past the range
+    /// from one dated inside it. Chronology's save counts its documents by it
+    /// (`ChronologyRangeSave`), so its counts are the screen's sections and chips.
+    ///
+    /// - Parameters:
+    ///   - dateISO: The first day of the document's dates.
+    ///   - dateISOMax: The last day, or `nil` for a single day.
+    ///   - startISO: The range's first day, `yyyy-MM-dd`.
+    ///   - endISO: Its last day.
+    /// - Returns: The kind.
+    public nonisolated static func kind(dateISO: String, dateISOMax: String?,
+                                        startISO: String, endISO: String) -> ChronologyRangeKind {
+        if ChronologyRow.spanDays(dateISO: dateISO, dateISOMax: dateISOMax) > maxSpanDaysForPlacement {
+            return .spansMoreThanAYear
+        }
+        let direction = overflowDirection(dateISO: dateISO, dateISOMax: dateISOMax,
+                                          startISO: startISO, endISO: endISO)
+        return direction.leading || direction.trailing ? .extendsBeyond : .datedInside
     }
 
     /// Counts `rows` by how each one reaches past the inclusive `startISO`…`endISO` range, for the
