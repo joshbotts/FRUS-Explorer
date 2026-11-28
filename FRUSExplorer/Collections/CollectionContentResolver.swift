@@ -154,6 +154,8 @@ import SwiftData
 ///          write it says how many and why (`CollectionSummaryExportError`); it checked Apple Intelligence first, and
 ///          ended "The export could not be rendered." with every summary stored. `exportTally` counts what an export
 ///          prints, for the export sheet's sentence (decision 192)
+///   1.20 — L58: a summary's values carry its writer's name (L43's `writerName`), which a headnote's caption and
+///          the Note on the Text name its writer by (decision 194)
 @MainActor
 class CollectionContentResolver {
 
@@ -619,15 +621,16 @@ class CollectionContentResolver {
                 .mapValues(Self.values)
         }
 
-        /// A stored summary's values: what the assembly reads of it is its text, its prompt and its
-        /// authorship; the rest is carried as stored. `TallySource` maps its records with it too.
+        /// A stored summary's values: what the assembly reads of it is its text, its prompt, its
+        /// authorship and its writer's name (L58: a headnote's caption and the Note on the Text name its
+        /// writer by it, decision 194); the rest is carried as stored. `TallySource` maps its records with it too.
         fileprivate static func values(_ summary: GeneratedSummary) -> GeneratedSummaryExport {
             GeneratedSummaryExport(id: summary.id, documentId: summary.documentId, volumeId: summary.volumeId,
                                    promptId: summary.promptId, responseText: summary.responseText,
                                    responseFormat: summary.responseFormat, wasChunked: summary.wasChunked,
                                    projectId: summary.projectId, createdAt: summary.createdAt,
                                    lastModified: summary.lastModified, authorship: summary.authorship,
-                                   isHeadnoteDraft: summary.isHeadnoteDraft)
+                                   isHeadnoteDraft: summary.isHeadnoteDraft, writerName: summary.writerName)
         }
 
         /// A highlight's values, as the assembly reads them. `TallySource` maps its records with it too.

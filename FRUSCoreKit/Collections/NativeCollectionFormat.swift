@@ -73,6 +73,15 @@ import Foundation
 ///          floor stays 1
 ///   2.6 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit, public with its initialisers, so a
 ///          host outside the app reads and writes the same files; no schema or format change
+///   2.7 — L58 (still formatVersion 2, floor stays 1; the Collections design's §7.4): a collection's own facts as
+///          optional keys, each written only where it is set — `citationStyle`, `opening`, `labels` and the
+///          collection's `includeRelatedDocuments` (See also); a document's `dateLine` and its `headnote`, the headnote
+///          as its text with its format, its authorship and its writer's name (decisions 166 and 194; #1999); a
+///          heading's `headnoteDefault`. **No key 1.0 reads changes type** (1.0 refuses a whole file whose known key
+///          does, the file run of 2026-11-27); 1.0 drops every new key, and keeps an explicit `includeHeadnote: false`,
+///          which the writer now writes (Off travels as Off, decision 193; the third review's J6), and
+///          `noteOnTheText`, the Note on the Text's block type, as an inert block. `headnoteSummaryId` is read and no
+///          longer written: a headnote travels as its text, not as an id of the author's library
 public struct FRUSCollectionFile: Codable, Sendable, Equatable {
 
     /// Format discriminator; always `NativeCollectionSerializer.formatIdentifier`. Checked on
@@ -112,6 +121,22 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// Whether exports append the M-2 method appendix — the project's query log. Emitted only
     /// when `true`; `nil` means `false`, so a file written before M-2 round-trips to "off".
     public var includeMethodAppendix: Bool?
+    /// The collection's citation style, a `CitationStyle` raw value (`"historyAtState"`, `"chicago"`, `"turabian"`), as
+    /// `Collection.citationStyle` stores it (L58; L43's fact). Written only where it is set; absent reads as History at
+    /// State, as a collection made before L43 does, and so does a value this build does not know.
+    public var citationStyle: String?
+    /// Which line leads a document with no title of the compiler's, a `CollectionDocumentPlan.Opening` raw value
+    /// (`"citation"`, `"volumeHeading"`), as `Collection.opening` stores it (L58). Written only where it is set; absent
+    /// reads as the citation leading.
+    public var opening: String?
+    /// The collection's own words for its labels, a map from a label's name to its text (`CollectionWording`), as
+    /// `Collection.labelsJSON` stores it, with every name it holds, a later build's among them (L58; the design's
+    /// §7.3). Written only where it holds a word.
+    public var labels: [String: String]?
+    /// See also for the collection (L58; L43's `Collection.defaultIncludeRelatedDocuments`): whether a document that does
+    /// not set its *See also* line, in a section that does not, prints it. Emitted only when `true`. A document's and
+    /// a heading's own `includeRelatedDocuments` are 1.0's keys, on entries.
+    public var includeRelatedDocuments: Bool?
     /// The persisted composition settings (what an export of this collection contains).
     public var composition: Composition
     /// The ordered structural entries. Array order *is* the collection order.
@@ -122,7 +147,9 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
                 note: String? = nil, subtitle: String? = nil, authorLine: String? = nil,
                 introductionText: String? = nil, introductionRichText: Data? = nil,
                 includeColophon: Bool? = nil, includeProjectProvenance: Bool? = nil,
-                includeMethodAppendix: Bool? = nil, composition: Composition, entries: [Entry]) {
+                includeMethodAppendix: Bool? = nil, citationStyle: String? = nil, opening: String? = nil,
+                labels: [String: String]? = nil, includeRelatedDocuments: Bool? = nil,
+                composition: Composition, entries: [Entry]) {
         self.format = format
         self.formatVersion = formatVersion
         self.minimumReaderVersion = minimumReaderVersion
@@ -135,8 +162,95 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
         self.includeColophon = includeColophon
         self.includeProjectProvenance = includeProjectProvenance
         self.includeMethodAppendix = includeMethodAppendix
+        self.citationStyle = citationStyle
+        self.opening = opening
+        self.labels = labels
+        self.includeRelatedDocuments = includeRelatedDocuments
         self.composition = composition
         self.entries = entries
+    }
+
+    // MARK: - Headnote
+
+    /// A document's headnote as its text (L58; decision 166; #1999): what an export prints under *Headnote*, with the
+    /// format it was written in and who wrote it, so that a recipient's export prints the sender's headnote, named as
+    /// the sender's (decision 194), and no id of the sender's library is in the file.
+    ///
+    /// **Every key is optional to the decoder**, so a hand-written file is not refused for one it leaves out. An import
+    /// makes a draft of its own from a headnote whose `text` has words and whose `authorship` is one of the three; it
+    /// takes no headnote from one that is not, since it would have to guess whether Apple Intelligence wrote it.
+    public struct Headnote: Codable, Sendable, Equatable {
+        /// The headnote's text, as stored: plain text, or for a structured headnote the JSON object of its fields.
+        public var text: String?
+        /// `"general"` for plain text (absent reads so), `"structured"` for a JSON object of fields.
+        public var format: String?
+        /// A structured headnote's field names, in the order its fields print. Absent on plain text.
+        public var fields: [String]?
+        /// Who wrote it, a `SummaryAuthorship` raw value: `"aiGenerated"` (Apple Intelligence, unedited),
+        /// `"aiEdited"` (Apple Intelligence's draft, edited by a person) or `"userWritten"` (a person's).
+        public var authorship: String?
+        /// The person's name, as the export prints it (``CollectionHeadnoteWriter``): the name the headnote was stamped
+        /// with, else the collection's author line. Absent on Apple Intelligence's headnote, and where neither names
+        /// one; empty where the file it came from named nobody. An import of a person's headnote with no such key takes
+        /// the file's `authorLine`, which serves as the compiler's name (decision 234).
+        public var writerName: String?
+
+        /// The `format` of plain text.
+        public static let generalFormat = "general"
+        /// The `format` of a structured headnote.
+        public static let structuredFormat = "structured"
+
+        /// Creates a headnote; every key defaults to absent.
+        public init(text: String? = nil, format: String? = nil, fields: [String]? = nil, authorship: String? = nil,
+                    writerName: String? = nil) {
+            self.text = text
+            self.format = format
+            self.fields = fields
+            self.authorship = authorship
+            self.writerName = writerName
+        }
+
+        /// A stored headnote as a file carries it: its text, format and authorship, and for a person's headnote the
+        /// name its export prints. `nil` for a summary with no text.
+        ///
+        /// - Parameters:
+        ///   - summary: The summary the headnote prints.
+        ///   - authorLine: The collection's author line, which names a person's headnote stamped with no name.
+        public init?(summary: GeneratedSummaryExport, authorLine: String?) {
+            guard !summary.responseText.isEmpty else { return nil }
+            let authorship = summary.authorship ?? .aiGenerated
+            text = summary.responseText
+            switch summary.responseFormat {
+            case .general:
+                format = Self.generalFormat
+                fields = nil
+            case .structured(let schema):
+                format = Self.structuredFormat
+                fields = schema.fields.map(\.name)
+            }
+            self.authorship = authorship.rawValue
+            switch authorship {
+            case .aiGenerated:
+                writerName = nil
+            case .aiEdited, .userWritten:
+                // A name nobody gave stays nobody's: it travels as such, and takes no author line at the recipient's.
+                writerName = summary.writerName == CollectionHeadnoteWriter.unnamed ? CollectionHeadnoteWriter.unnamed
+                    : CollectionHeadnoteWriter.name(storedName: summary.writerName, authorLine: authorLine)
+            }
+        }
+
+        /// The format the headnote's text was written in: structured, with its field names, where `format` says so;
+        /// plain text otherwise.
+        public var responseFormat: ResponseFormat {
+            guard format == Self.structuredFormat else { return .general }
+            return .structured(schema: StructuredSummarySchema(
+                fields: (fields ?? []).map { StructuredSummarySchema.Field(name: $0, description: "") }))
+        }
+
+        /// The headnote's authorship, or `nil` where the file gives none this build knows.
+        public var summaryAuthorship: SummaryAuthorship? {
+            authorship.flatMap(SummaryAuthorship.init(rawValue:))
+        }
     }
 
     // MARK: - Composition
@@ -194,7 +308,8 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
     /// `heading` uses `text` (+ optional `bodyDepthOverride` as the section depth);
     /// `prose` uses `text` and optional `richText` (RTF); `excerpt` uses `text` (the
     /// frozen passage) + `documentId`/`volumeId` (provenance) + the `excerpt*` anchors;
-    /// `generated` uses only `generatedBlockType`.
+    /// `generated` uses only `generatedBlockType`. L58 adds a document's `dateLine` and `headnote` and a heading's
+    /// `headnoteDefault`.
     public struct Entry: Codable, Sendable, Equatable {
         /// `CollectionEntryKind` raw value (`"document"` / `"heading"` / `"prose"` /
         /// `"excerpt"` / `"generated"`).
@@ -221,16 +336,28 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
         public var text: String?
         /// RTF rich-text prose body (prose entries only); base64 in JSON.
         public var richText: Data?
-        /// Whether this document entry renders a headnote (Phase 5; v2 optional key).
-        /// Emitted only when `true`; `nil`/absent = `false`.
+        /// This document entry's headnote setting (Phase 5; v2 optional key): `true` On, `false` Off, absent Default,
+        /// which follows its section and then the collection. Since L58 Off is written as Off (decision 193; the third
+        /// review's J6): until then the writer left it out, and the reader took Off for Default, which a collection with
+        /// headnotes on turns On. 1.0 reads an explicit `false` on a document as Off.
         public var includeHeadnote: Bool?
-        /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key).
-        /// Summary ids are meaningful across the author's own CloudKit-synced devices;
-        /// on another user's device the id simply won't resolve and the resolver falls
-        /// back to any stored summary (or the placeholder). Where it names a headnote draft on
-        /// the importing account, the app's import gives the new entry a copy of that draft, so
-        /// the file's collection and its original share none (#1999).
+        /// The chosen `GeneratedSummary.id` for the headnote (Phase 5; v2 optional key), as files before L58 carry it.
+        /// **Read, and no longer written** (L58; decision 166): a headnote travels as its text (``headnote``). Summary
+        /// ids are meaningful across the author's own CloudKit-synced devices; on another user's device the id simply
+        /// won't resolve and the resolver falls back to any stored summary (or the placeholder). Where it names a
+        /// headnote draft on the importing account, the app's import gives the new entry a copy of that draft, so the
+        /// file's collection and its original share none (#1999).
         public var headnoteSummaryId: UUID?
+        /// The headnote this document prints, as its text (L58; decision 166; document entries only), written where
+        /// the headnote prints and never where it is off (decision 193). An import makes a draft of its own from it.
+        public var headnote: Headnote?
+        /// The compiler's date line under the document's title (L58; L43's `CollectionEntry.dateLine`; document
+        /// entries only), written where it is set.
+        public var dateLine: String?
+        /// A heading's headnote default for its section (L58; L43's `CollectionEntry.headnoteDefault`, the third
+        /// review's J24; heading entries only): `true` or `false`, written where it is set. A heading's own
+        /// `includeHeadnote` is never written, and never read as its section's default.
+        public var headnoteDefault: Bool?
         /// Excerpt anchor: UTF-16 start offset in the source document's flat
         /// text (excerpt entries only; v2 optional key). Anchors travel so precision
         /// rendering (A9) stays possible on the recipient's device; the frozen `text`
@@ -286,7 +413,8 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
                     applyHighlightsOverride: Bool? = nil, includeNotesOverride: Bool? = nil,
                     includeSourceNoteOverride: Bool? = nil, includeFootnotesOverride: Bool? = nil,
                     summaryPromptIdOverride: UUID? = nil, includeRelatedDocuments: Bool? = nil,
-                    generatedBlockType: String? = nil, notes: [String]? = nil) {
+                    generatedBlockType: String? = nil, notes: [String]? = nil, headnote: Headnote? = nil,
+                    dateLine: String? = nil, headnoteDefault: Bool? = nil) {
             self.kind = kind
             self.documentId = documentId
             self.volumeId = volumeId
@@ -309,6 +437,9 @@ public struct FRUSCollectionFile: Codable, Sendable, Equatable {
             self.includeRelatedDocuments = includeRelatedDocuments
             self.generatedBlockType = generatedBlockType
             self.notes = notes
+            self.headnote = headnote
+            self.dateLine = dateLine
+            self.headnoteDefault = headnoteDefault
         }
     }
 }
@@ -410,6 +541,12 @@ public enum NativeCollectionError: Error, LocalizedError {
 ///          section's, else the collection's, the rule the web page, the PDF and Word print them by — where the
 ///          export sheet's switch alone had decided, so a note turned off for a document or a section went to the
 ///          recipient. No schema or format change
+///   1.13 — L58 (#1999's file half; decisions 166, 193 and 194; the design's §7.4): `makeFile` writes a collection's
+///          own facts (`citationStyle`, `opening`, `labels`, See also), a document's date line, a heading's headnote
+///          default, Off as Off, and the headnote a document prints as its text with its writer
+///          (`resolveHeadnote`), and no longer a headnote's id; `importedValues` reads them, and makes a headnote draft
+///          of the import's own from each headnote a file carries (`NativeCollectionImport.headnoteDrafts`). Still
+///          format version 2 with floor 1: 1.0 opens every file the writer writes
 public enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -469,6 +606,11 @@ public enum NativeCollectionSerializer {
     /// RTF, so a host heals a legacy Phase 3b blob before it builds the values (the app's
     /// `makeFile(from:includeNotes:resolveNoteTexts:)` over a `Collection` does).
     ///
+    /// **A headnote travels as its text, always, where it prints** (L58; decisions 166 and 193): the file carries
+    /// the headnote a document's export prints, the one `resolveHeadnote` answers, whatever the research-notes switch
+    /// says, and nothing for a document whose headnote is off, by its own setting, its section's or the collection's.
+    /// Its draft's id is never written. A document's setting is written as it is set, Off as Off.
+    ///
     /// - Parameters:
     ///   - collection: The collection's values, `entries` every one of its entries; they are emitted
     ///     in `sortOrder`.
@@ -479,10 +621,16 @@ public enum NativeCollectionSerializer {
     ///   - resolveNoteTexts: Supplies the research-note bodies for a document entry (the caller
     ///     resolves `selectedNoteIds`/`researchNoteId` against its store). Only invoked when
     ///     `includeNotes` is `true`, once for each document entry whose notes print, in order.
+    ///   - resolveHeadnote: Supplies the headnote a document entry prints, as the export resolves it: its chosen
+    ///     summary, else its newest stored summary under `preferredPromptId` (its prompt, its section's, else the
+    ///     collection's), else its newest; `nil` where none is stored. Invoked once for each document entry whose
+    ///     headnote is on, in order. The default supplies none, as a host without a store has none.
     public static func makeFile(
         from collection: CollectionExport,
         includeNotes: Bool,
-        resolveNoteTexts: (CollectionEntryExport) -> [String]
+        resolveNoteTexts: (CollectionEntryExport) -> [String],
+        resolveHeadnote: (_ entry: CollectionEntryExport, _ preferredPromptId: UUID?)
+            -> FRUSCollectionFile.Headnote? = { _, _ in nil }
     ) -> FRUSCollectionFile {
         let composition = FRUSCollectionFile.Composition(
             defaultBodyDepth: collection.defaultBodyDepth ?? CollectionBodyDepth.full.rawValue,
@@ -512,6 +660,14 @@ public enum NativeCollectionSerializer {
         let sectionNotes = CollectionOutline.sectionOverrideValues(
             refs, headingValues: sorted.map { $0.entryKind == .heading ? $0.includeNotesOverride : nil })
         let collectionNotes = collection.includeNotes ?? true
+        // L58: a document's headnote travels where it prints, by the cascade the assembly resolves it by — the
+        // document's setting, else its section's default (the heading's own `headnoteDefault`, J24), else the
+        // collection's — and under the prompt the assembly prefers for it.
+        let sectionHeadnotes = CollectionOutline.sectionOverrideValues(
+            refs, headingValues: sorted.map { $0.entryKind == .heading ? $0.headnoteDefault : nil })
+        let sectionPrompts = CollectionOutline.sectionOverrideValues(
+            refs, headingValues: sorted.map { $0.entryKind == .heading ? $0.summaryPromptIdOverride : nil })
+        let collectionHeadnotes = collection.defaultIncludeHeadnote ?? false
         let entries: [FRUSCollectionFile.Entry] = sorted.indices
             .compactMap { index in
                 let entry = sorted[index], depth = depths[index]
@@ -521,6 +677,11 @@ public enum NativeCollectionSerializer {
                     let notes = includeNotes && notesPrint
                         ? resolveNoteTexts(entry).filter { !$0.isEmpty }
                         : []
+                    let headnotePrints = entry.includeHeadnote ?? sectionHeadnotes[index] ?? collectionHeadnotes
+                    let headnote = headnotePrints
+                        ? resolveHeadnote(entry, entry.summaryPromptIdOverride ?? sectionPrompts[index]
+                                            ?? collection.summaryPromptId)
+                        : nil
                     return FRUSCollectionFile.Entry(
                         kind: CollectionEntryKind.document.rawValue,
                         documentId: entry.documentId,
@@ -532,11 +693,10 @@ public enum NativeCollectionSerializer {
                         titleOverride: entry.titleOverride.flatMap { $0.isEmpty ? nil : $0 },
                         text: nil,
                         richText: nil,
-                        // Phase 5 headnote keys — Default (nil) and Off (false) both omit the key,
-                        // so a headnote-free entry stays byte-identical; only an explicit On (true)
-                        // serializes (Composer redesign widened the field to optional).
-                        includeHeadnote: entry.includeHeadnote == true ? true : nil,
-                        headnoteSummaryId: entry.headnoteSummaryId,
+                        // The document's own setting as it is set (L58; decision 193; J6): Default (nil) omits the
+                        // key, so a headnote-free entry stays byte-identical, and Off is written as Off, where it
+                        // was left out and read back as Default. The draft's id is not written (decision 166).
+                        includeHeadnote: entry.includeHeadnote,
                         // Phase 5 override keys — nil (every untouched entry) emits
                         // nothing. selectedHighlightIds NEVER serializes (device-local
                         // highlight UUIDs; the highlights don't travel with the file).
@@ -546,7 +706,11 @@ public enum NativeCollectionSerializer {
                         includeFootnotesOverride: entry.includeFootnotesOverride,
                         summaryPromptIdOverride: entry.summaryPromptIdOverride,
                         includeRelatedDocuments: entry.includeRelatedDocuments,
-                        notes: notes.isEmpty ? nil : notes
+                        notes: notes.isEmpty ? nil : notes,
+                        // L58: the headnote the document prints, as its text with its writer (decision 166).
+                        headnote: headnote,
+                        // L58: the compiler's date line, written where it is set, as the title is.
+                        dateLine: entry.dateLine.flatMap { $0.isEmpty ? nil : $0 }
                     )
                 case .heading:
                     return FRUSCollectionFile.Entry(
@@ -566,7 +730,9 @@ public enum NativeCollectionSerializer {
                         includeFootnotesOverride: entry.includeFootnotesOverride,
                         summaryPromptIdOverride: entry.summaryPromptIdOverride,
                         includeRelatedDocuments: entry.includeRelatedDocuments,
-                        notes: nil
+                        notes: nil,
+                        // L58: the section's headnote default, On or Off as it is set (J24; decision 193).
+                        headnoteDefault: entry.headnoteDefault
                     )
                 case .prose:
                     // The file schema promises RTF; the host healed a pre-RTF (Phase 3b) blob
@@ -624,6 +790,11 @@ public enum NativeCollectionSerializer {
         let introductionText = collection.introductionText.flatMap { $0.isEmpty ? nil : $0 }
         let introductionRichText = collection.introductionRichText
             .flatMap { $0.isEmpty ? nil : $0 }
+        // L58: the collection's own facts, each where it is set; the words as the stored map holds them.
+        let citationStyle = collection.citationStyle.flatMap { $0.isEmpty ? nil : $0 }
+        let opening = collection.opening.flatMap { $0.isEmpty ? nil : $0 }
+        let labels = CollectionWording(json: collection.labelsJSON).storedWords
+        let seeAlso = collection.defaultIncludeRelatedDocuments == true ? true : nil
 
         // Write-minimum: computed from content, never hardcoded. Any front-matter field
         // set, a colophon opt-in, any heading deeper than level 1, any member of the
@@ -641,7 +812,7 @@ public enum NativeCollectionSerializer {
             || composition.includeFootnotes != nil
             || composition.includeSourceNote != nil
             || composition.defaultIncludeHeadnote != nil
-            || entries.contains { $0.includeHeadnote == true || $0.headnoteSummaryId != nil }
+            || entries.contains { $0.includeHeadnote != nil || $0.headnoteSummaryId != nil || $0.headnote != nil }
             || entries.contains { $0.kind == CollectionEntryKind.excerpt.rawValue }
             || entries.contains { $0.kind == CollectionEntryKind.generated.rawValue }
             // M3: any non-empty per-entry title override is a v2 feature (the DTO already
@@ -655,6 +826,12 @@ public enum NativeCollectionSerializer {
                     || $0.summaryPromptIdOverride != nil
                     || $0.includeRelatedDocuments != nil
             }
+            // L58: a collection's own facts, a document's date line and a section's headnote default.
+            || citationStyle != nil
+            || opening != nil
+            || !labels.isEmpty
+            || seeAlso != nil
+            || entries.contains { $0.dateLine != nil || $0.headnoteDefault != nil }
 
         guard usesV2Features else {
             // No v2 feature: a pure v1 file, byte-identical to a pre-Phase-4 export
@@ -684,6 +861,10 @@ public enum NativeCollectionSerializer {
             includeColophon: collection.includeColophon == true ? true : nil,
             includeProjectProvenance: collection.includeProjectProvenance == true ? true : nil,
             includeMethodAppendix: collection.includeMethodAppendix == true ? true : nil,
+            citationStyle: citationStyle,
+            opening: opening,
+            labels: labels.isEmpty ? nil : labels,
+            includeRelatedDocuments: seeAlso,
             composition: composition,
             entries: entries
         )
@@ -695,10 +876,17 @@ public enum NativeCollectionSerializer {
     /// host to insert (the app's `apply(_:into:)`).
     ///
     /// The imported collection gets fresh identity: new ids from `makeId` (the collection's, then for
-    /// each entry its notes' and its own, in file order), no timestamps (the host stamps them), no
-    /// `projectIds` (device-local), no saved search or summary prompt, and entry order normalized to
-    /// the file's positions. Inline notes are recreated as new research notes and linked via
+    /// each entry its notes', its own and its headnote draft's, in file order), no timestamps (the host
+    /// stamps them), no `projectIds` (device-local), no saved search or summary prompt, and entry order
+    /// normalized to the file's positions. Inline notes are recreated as new research notes and linked via
     /// `selectedNoteIds`.
+    ///
+    /// **A headnote the file carries as its text becomes a draft of the import's own** (L58; decision 166; #1999),
+    /// with its text, format and authorship, which the entry's `headnoteSummaryId` names: every import makes its own,
+    /// so two imports of one file, or an import beside its original, share none. A person's headnote keeps the name
+    /// the file gives its writer, else the file's `authorLine`, the sender's compiler name (decision 234), else
+    /// ``CollectionHeadnoteWriter/unnamed``, so the recipient's own author line never names it (decision 194). A file
+    /// before L58 carries an id instead, which is kept, as before, for the host to copy where it resolves.
     ///
     /// Skip-with-warning, never misdecode: an entry kind this build doesn't know (a file from a newer
     /// app version) is omitted rather than imported as a junk document entry (Authoring Phase 1
@@ -713,6 +901,7 @@ public enum NativeCollectionSerializer {
         let collectionId = makeId()
         var entries: [CollectionEntryExport] = []
         var notes: [ResearchNoteExport] = []
+        var headnoteDrafts: [GeneratedSummaryExport] = []
         for (index, dto) in file.entries.enumerated() {
             guard let kind = CollectionEntryKind(rawValue: dto.kind), kind != .unrecognized else {
                 #if DEBUG
@@ -737,8 +926,16 @@ public enum NativeCollectionSerializer {
             // the imported entry keeps the empty set, which means "all of the recipient's highlights"
             // when highlights apply.
             let takesOverrides = kind == .document || kind == .heading
+            let entryId = makeId()
+            // L58: a headnote the file carries as its text is a draft of this import's own, which the entry names.
+            let draft = isDocument
+                ? dto.headnote.flatMap { headnoteDraft($0, volumeId: dto.volumeId ?? "",
+                                                         documentId: dto.documentId ?? "",
+                                                         fileAuthorLine: file.authorLine, makeId: makeId) }
+                : nil
+            if let draft { headnoteDrafts.append(draft) }
             entries.append(CollectionEntryExport(
-                id: makeId(),
+                id: entryId,
                 documentId: dto.documentId ?? "",
                 volumeId: dto.volumeId ?? "",
                 sortOrder: index,
@@ -773,9 +970,13 @@ public enum NativeCollectionSerializer {
                 selectedHighlightIds: [],
                 includeRelatedDocuments: takesOverrides ? dto.includeRelatedDocuments : nil,
                 // Phase 5 headnote keys (absent in older files → nil = Default, which resolves to
-                // the collection default — false for imported collections, so unchanged behavior).
+                // the collection default — false for imported collections, so unchanged behavior). Off is
+                // Off (L58; decision 193). The draft made from the file's text wins over an id it names.
                 includeHeadnote: isDocument ? dto.includeHeadnote : nil,
-                headnoteSummaryId: isDocument ? dto.headnoteSummaryId : nil
+                headnoteSummaryId: isDocument ? (draft?.id ?? dto.headnoteSummaryId) : nil,
+                // L58: the compiler's date line, and a section's headnote default, each on its own kind.
+                dateLine: isDocument ? dto.dateLine : nil,
+                headnoteDefault: kind == .heading ? dto.headnoteDefault : nil
             ))
         }
         let collection = CollectionExport(
@@ -805,30 +1006,78 @@ public enum NativeCollectionSerializer {
             includeNotes: file.composition.includeNotes,
             includeWordCloud: file.composition.includeWordCloud,
             // Absent (older files / no headnote default) → false, unchanged behavior.
-            defaultIncludeHeadnote: file.composition.defaultIncludeHeadnote ?? false
+            defaultIncludeHeadnote: file.composition.defaultIncludeHeadnote ?? false,
+            // L58: the collection's own facts; absent → nil (or See also off), which reads as 1.0 prints.
+            citationStyle: file.citationStyle,
+            opening: file.opening,
+            labelsJSON: labelsJSON(file.labels),
+            defaultIncludeRelatedDocuments: file.includeRelatedDocuments ?? false
         )
-        return NativeCollectionImport(collection: collection, notes: notes)
+        return NativeCollectionImport(collection: collection, notes: notes, headnoteDrafts: headnoteDrafts)
+    }
+
+    /// The draft an import makes of a headnote a file carries (L58): its text, format and authorship, and a person's
+    /// name — the file's, else its author line's, else ``CollectionHeadnoteWriter/unnamed``. `nil` for a headnote with
+    /// no words or with an authorship this build does not know, which the import leaves out rather than guess whether
+    /// Apple Intelligence wrote it.
+    private static func headnoteDraft(_ headnote: FRUSCollectionFile.Headnote, volumeId: String, documentId: String,
+                                      fileAuthorLine: String?, makeId: () -> UUID) -> GeneratedSummaryExport? {
+        guard let text = headnote.text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let authorship = headnote.summaryAuthorship else { return nil }
+        let writerName: String?
+        switch authorship {
+        case .aiGenerated:
+            writerName = nil
+        case .aiEdited, .userWritten:
+            if let given = headnote.writerName {
+                let name = given.trimmingCharacters(in: .whitespacesAndNewlines)
+                writerName = name.isEmpty ? CollectionHeadnoteWriter.unnamed : name
+            } else {
+                writerName = CollectionHeadnoteWriter.name(storedName: nil, authorLine: fileAuthorLine)
+                    ?? CollectionHeadnoteWriter.unnamed
+            }
+        }
+        return GeneratedSummaryExport(
+            id: makeId(), documentId: documentId, volumeId: volumeId,
+            promptId: GeneratedSummaryExport.headnoteDraftPromptId, responseText: text,
+            responseFormat: headnote.responseFormat, wasChunked: false,
+            authorship: authorship, isHeadnoteDraft: true, writerName: writerName)
+    }
+
+    /// A file's `labels` as the collection stores them (`Collection.labelsJSON`): the map as JSON with its keys sorted,
+    /// every name kept; `nil` for none.
+    private static func labelsJSON(_ labels: [String: String]?) -> String? {
+        guard let labels, !labels.isEmpty else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return (try? encoder.encode(labels)).flatMap { String(data: $0, encoding: .utf8) }
     }
 }
 
 // MARK: - NativeCollectionImport
 
 /// What a `.fruscollection` file imports as (`NativeCollectionSerializer.importedValues(from:)`): a new
-/// collection's values and the research notes its document entries carry, for a host to insert.
+/// collection's values, the research notes its document entries carry and the headnote drafts made from their
+/// headnotes, for a host to insert.
 ///
 /// Version history:
 ///   1.0 — 2026-10-27 (FRUS Explorer Light, S18b): initial implementation, the values the app's
 ///          `apply(_:into:)` inserted directly before
+///   1.1 — L58: `headnoteDrafts`, a draft of the import's own for each headnote the file carries as its text
 public struct NativeCollectionImport: Sendable {
     /// The new collection: its composition, front matter and settings, and every entry the file carried
     /// that this build knows, each at the file's position and pinned to the notes it brought.
     public var collection: CollectionExport
     /// The research notes the file's document entries carried, recreated, in file order.
     public var notes: [ResearchNoteExport]
+    /// The headnote drafts made from the headnotes the file's document entries carried as their text (L58), in file
+    /// order, each named by its entry's `headnoteSummaryId` and marked `isHeadnoteDraft`.
+    public var headnoteDrafts: [GeneratedSummaryExport]
 
     /// Creates an import's values.
-    public init(collection: CollectionExport, notes: [ResearchNoteExport]) {
+    public init(collection: CollectionExport, notes: [ResearchNoteExport], headnoteDrafts: [GeneratedSummaryExport] = []) {
         self.collection = collection
         self.notes = notes
+        self.headnoteDrafts = headnoteDrafts
     }
 }

@@ -809,6 +809,8 @@ public struct CollectionWording: Sendable, Equatable {
 ///          dateline from the top level, an opener or a closer (#1992, #1994, #2003). `tocLabel(style:)`
 ///          gives way to the contents rows of the export's plan (`CollectionContentsRow`)
 ///   1.11 — L43: `dateLine`, the author's date line, which the plan prints under the author's title alone
+///   1.12 — L58: `headnoteWriter`, who wrote the headnote by name (decision 194), which its caption names and the Note
+///          on the Text counts by
 public struct CollectionExportDocument: Sendable {
     /// The FRUS document identifier (e.g. `"d1"`).
     public let documentId: String
@@ -880,6 +882,10 @@ public struct CollectionExportDocument: Sendable {
     /// The headnote summary's provenance (Composer redesign) — drives the export attribution so a
     /// user-edited/-written headnote is not labeled "AI-generated". `.aiGenerated` when no headnote.
     public let headnoteAuthorship: SummaryAuthorship
+    /// Who wrote the headnote, by name (L58; decision 194): what its caption says and the Note on the Text counts. The
+    /// assembly names a person by the name the headnote carries, else the collection's author line
+    /// (``CollectionHeadnoteWriter``). Given no writer, a document takes `headnoteAuthorship`'s with no name.
+    public let headnoteWriter: CollectionHeadnoteWriter
     /// The entry/section highlight override resolved by the cascade (Authoring Phase 5).
     /// `nil` = inherit — renderers gate inline highlights on
     /// `applyHighlightsOverride ?? options.applyHighlights`, so the default reproduces
@@ -970,6 +976,7 @@ public struct CollectionExportDocument: Sendable {
         headnoteText: String? = nil,
         headnoteFormat: ResponseFormat = .general,
         headnoteAuthorship: SummaryAuthorship = .aiGenerated,
+        headnoteWriter: CollectionHeadnoteWriter? = nil,
         applyHighlightsOverride: Bool? = nil,
         includeNotesOverride: Bool? = nil,
         includeFootnotesOverride: Bool? = nil,
@@ -1006,6 +1013,8 @@ public struct CollectionExportDocument: Sendable {
         self.headnoteText = headnoteText
         self.headnoteFormat = headnoteFormat
         self.headnoteAuthorship = headnoteAuthorship
+        self.headnoteWriter = headnoteWriter
+            ?? CollectionHeadnoteWriter(authorship: headnoteAuthorship, storedName: nil, authorLine: nil)
         self.applyHighlightsOverride = applyHighlightsOverride
         self.includeNotesOverride = includeNotesOverride
         self.includeFootnotesOverride = includeFootnotesOverride
@@ -1027,6 +1036,7 @@ public struct CollectionExportDocument: Sendable {
             summaryText: text, summaryFormat: format, highlights: highlights, sourceNoteText: sourceNoteText,
             includeHeadnote: includeHeadnote, headnoteText: headnoteText,
             headnoteFormat: headnoteFormat, headnoteAuthorship: headnoteAuthorship,
+            headnoteWriter: headnoteWriter,
             applyHighlightsOverride: applyHighlightsOverride,
             includeNotesOverride: includeNotesOverride,
             includeFootnotesOverride: includeFootnotesOverride,
@@ -1191,6 +1201,8 @@ public struct CollectionExportDate: Sendable {
 ///          the export embeds the collection's word cloud
 ///   1.2 — 2026-10-25 (FRUS Explorer Light, S18a): moved to FRUSCoreKit, public; `text(for:dated:)`
 ///          takes the export's date (`CollectionExportMetadata.exportDate`), `nil` being now, as before
+///   1.3 — L58 (#2005): the sources block ends with the collection's own sentence for its compiler's lines
+///          (`ProvenanceStatement.compilersLinesSentence`) wherever a document prints one
 public enum CollectionColophon {
     /// The colophon line for a resolved item list: app attribution, document/volume
     /// counts, and the compilation date.
@@ -1260,7 +1272,9 @@ public enum CollectionColophon {
             return false
         }
         let sources = items.provenanceSources.union(embedsWordCloud ? [.appWordLists] : [])
-        return ProvenanceStatement.block(for: sources, restsOnSourceNoteParse: restsOnParse)
+        // L58 (#2005): a collection's own sentence for the lines its compiler wrote, derived from what prints.
+        return ProvenanceStatement.block(for: sources, restsOnSourceNoteParse: restsOnParse,
+                                         printsCompilersLines: items.printsCompilersLines)
     }
 }
 
@@ -1299,23 +1313,113 @@ public enum CollectionAIAttribution {
             defaultValue: "AI-generated summary · Apple Intelligence (on-device)")
     }
 
-    /// The attribution caption for an exported **headnote**, honoring its authorship (Composer
-    /// redesign). An AI-written headnote keeps the standard "AI-generated summary" label; an
-    /// AI-seeded headnote the user edited is disclosed as such; a headnote the user wrote from
-    /// scratch carries **no** AI attribution (returns `nil`, so renderers emit no caption). This is
-    /// how a user-authored key takeaway is kept out of the app's "label AI-generated content" policy.
+    /// The caption under an exported **headnote**: who wrote it (L58; decision 194), in the words the collection
+    /// labels a headnote with (``CollectionWording``, *Headnote* unless the compiler chose their own).
     ///
-    /// - Parameter authorship: The headnote summary's provenance.
-    /// - Returns: The localized caption, or `nil` when no AI attribution should appear.
-    public static func headnoteLabel(authorship: SummaryAuthorship) -> String? {
+    /// - Apple Intelligence's, unedited: *Headnote by Apple Intelligence (on-device)*. A headnote the model wrote is
+    ///   always labelled so, which is how the app's policy of labelling AI-generated content holds for headnotes.
+    /// - A person's: *Headnote by Jane Doe*, by the name the headnote carries (``CollectionHeadnoteWriter``). With no
+    ///   name, no caption, as a headnote its author wrote always printed.
+    /// - Apple Intelligence's, edited by a person: *Headnote by Jane Doe, from a draft by Apple Intelligence*, or with no
+    ///   name *Headnote drafted by Apple Intelligence and edited*.
+    ///
+    /// Until L58 the caption was worded for the device's user, "AI-generated summary, edited by you", so a recipient's
+    /// export of a collection file presented the sender's headnote as the recipient's own (the third review's J8).
+    ///
+    /// - Parameters:
+    ///   - writer: Who wrote the headnote.
+    ///   - label: The word the collection labels a headnote with.
+    /// - Returns: The localized caption, or `nil` for a person's headnote that names nobody.
+    public static func headnoteLabel(writer: CollectionHeadnoteWriter, label: String) -> String? {
+        switch writer {
+        case .appleIntelligence:
+            return String(localized: "export.headnote.by.appleIntelligence",
+                          defaultValue: "\(label) by Apple Intelligence (on-device)")
+        case .person(let name?):
+            return String(localized: "export.headnote.by.person",
+                          defaultValue: "\(label) by \(name)")
+        case .person(nil):
+            return nil
+        case .personFromDraft(let name?):
+            return String(localized: "export.headnote.by.personFromDraft",
+                          defaultValue: "\(label) by \(name), from a draft by Apple Intelligence")
+        case .personFromDraft(nil):
+            return String(localized: "export.headnote.by.unnamedFromDraft",
+                          defaultValue: "\(label) drafted by Apple Intelligence and edited")
+        }
+    }
+}
+
+// MARK: - CollectionHeadnoteWriter
+
+/// Who wrote a headnote, as an export, the Note on the Text and a collection file name them (L58; decisions 194 and
+/// 234): Apple Intelligence, a person by the name the headnote carries, or a person editing Apple Intelligence's draft.
+///
+/// **The name is the one the headnote was stamped with when it was written** (`GeneratedSummary.writerName`, L43): the
+/// collection's author line at that moment, which serves as the compiler's name (decision 234). A headnote written
+/// before L43, or in a collection with no author line, carries none, and is named by the collection's author line as it
+/// reads now: it was written on this account, in this collection. **A headnote a collection file brought** carries its
+/// sender's name (`FRUSCollectionFile.Headnote.writerName`), so a recipient's own author line never claims it; where the
+/// file names nobody, the import stamps ``unnamed``, which names nobody and takes no author line after it.
+///
+/// Version history:
+///   1.0 — L58: initial implementation
+public enum CollectionHeadnoteWriter: Sendable, Equatable {
+    /// Apple Intelligence wrote the headnote, and nobody edited it.
+    case appleIntelligence
+    /// A person wrote it: their name, or `nil` where the headnote names nobody.
+    case person(name: String?)
+    /// Apple Intelligence drafted it and a person edited it: their name, or `nil`.
+    case personFromDraft(name: String?)
+
+    /// The stored name of a headnote whose writer is named by no one (L58): what an import stamps on a person's
+    /// headnote that its file names no writer for. It is empty, as no name the app stamps is (a stamp is trimmed and an
+    /// empty author line stamps none), and unlike a missing name it takes no author line after it.
+    public static let unnamed = ""
+
+    /// The writer of a headnote with `authorship`, named by the name it carries, else the collection's author line.
+    ///
+    /// - Parameters:
+    ///   - authorship: The headnote's authorship.
+    ///   - storedName: The name it was stamped with (`writerName`): `nil` where it was never stamped, ``unnamed`` where
+    ///     its file named nobody.
+    ///   - authorLine: The collection's author line, which names a headnote that was never stamped.
+    public init(authorship: SummaryAuthorship, storedName: String?, authorLine: String?) {
         switch authorship {
         case .aiGenerated:
-            return label()
-        case .aiEdited:
-            return String(localized: "export.aiAttribution.edited",
-                          defaultValue: "AI-generated summary, edited by you")
+            self = .appleIntelligence
         case .userWritten:
-            return nil
+            self = .person(name: Self.name(storedName: storedName, authorLine: authorLine))
+        case .aiEdited:
+            self = .personFromDraft(name: Self.name(storedName: storedName, authorLine: authorLine))
+        }
+    }
+
+    /// The writer's name: the stored one, trimmed, where it was stamped (``unnamed`` naming nobody), else the author
+    /// line, trimmed; `nil` where neither gives one.
+    public static func name(storedName: String?, authorLine: String?) -> String? {
+        if let storedName {
+            let name = storedName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return name.isEmpty ? nil : name
+        }
+        guard let line = authorLine?.trimmingCharacters(in: .whitespacesAndNewlines), !line.isEmpty else { return nil }
+        return line
+    }
+
+    /// The headnote's authorship, as the model and a collection file store it.
+    public var authorship: SummaryAuthorship {
+        switch self {
+        case .appleIntelligence: return .aiGenerated
+        case .person: return .userWritten
+        case .personFromDraft: return .aiEdited
+        }
+    }
+
+    /// The person's name, or `nil` for Apple Intelligence's headnote and one that names nobody.
+    public var name: String? {
+        switch self {
+        case .appleIntelligence: return nil
+        case .person(let name), .personFromDraft(let name): return name
         }
     }
 }
@@ -1519,10 +1623,25 @@ extension Array where Element == CollectionExportItem {
                 case .archivalSources:           out.formUnion([.frusText, .naraCatalog])
                 case .personsIndex:              out.formUnion([.frusText, .ohPeopleRegister])
                 case .thematicIndex:             out.insert(.yourReading)
+                // The app's account of what the collection's documents print (L58): it reads the volumes and the
+                // compiler's settings, and every source it names is one the items already add.
+                case .noteOnTheText:             break
                 }
             }
         }
         return out
+    }
+
+    /// Whether a document prints a line its compiler wrote (L58; #2005): a title of theirs, which the date line under
+    /// it goes with, or a headnote a person wrote or edited. The statement of sources then ends with the collection's
+    /// own sentence for them (`ProvenanceStatement.compilersLinesSentence`). A headnote Apple Intelligence wrote adds the
+    /// app's model instead (`provenanceSources`), and a note block the reader's own reading.
+    public var printsCompilersLines: Bool {
+        documents.contains { doc in
+            if doc.trimmedTitleOverride != nil { return true }
+            guard doc.includeHeadnote, let headnote = doc.headnoteText, !headnote.isEmpty else { return false }
+            return doc.headnoteAuthorship != .aiGenerated
+        }
     }
 
     /// The `.document` payloads, in order (heading/prose items dropped). Used where an

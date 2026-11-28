@@ -2911,6 +2911,9 @@ struct CollectionTests {
                       "summaryPromptIdOverride", "includeRelatedDocuments",
                       // Phase 6 generated-block key — likewise absent.
                       "generatedBlockType",
+                      // L58's keys — a collection's own facts, a document's date line and headnote, a
+                      // section's headnote default — likewise absent where nothing sets them.
+                      "citationStyle", "opening", "labels", "dateLine", "headnote", "headnoteDefault",
                       // …and selectedHighlightIds NEVER serializes, in any file.
                       "selectedHighlightIds"] {
             #expect(!json.contains("\"\(v2Key)\""), "write-minimum file must not carry '\(v2Key)'")
@@ -3092,7 +3095,9 @@ struct CollectionTests {
         // shape (five kinds, in order; a note recreated on the document; the excerpt's text; the
         // generated block's type; the title page), which is what the guide says each part becomes.
         // Decision 9 of the 2026-10-11 plan of record: a pin on language is a reminder, so an
-        // edit to the example moves this test with it, with the reason here.
+        // edit to the example moves this test with it, with the reason here. L58 (Guide v1.52): the
+        // document carries a headnote as its text, which the import makes a draft of its own, named by the
+        // run; and a Note on the Text follows the Sources & Archives block, so the entries are six.
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
         let guideURL = root.appendingPathComponent("Docs/Agentic-Analysis-Guide.md")
@@ -3118,8 +3123,8 @@ struct CollectionTests {
         try ctx.save()
 
         let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
-        try #require(entries.count == 5)
-        #expect(entries.map(\.entryKind) == [.heading, .prose, .document, .excerpt, .generated])
+        try #require(entries.count == 6)
+        #expect(entries.map(\.entryKind) == [.heading, .prose, .document, .excerpt, .generated, .generated])
         #expect(entries[1].text?.isEmpty == false, "the prose block carries the section's finding")
         #expect(entries[2].selectedNoteIds.count == 1,
                 "the document's one note is recreated as a research note on import")
@@ -3128,8 +3133,17 @@ struct CollectionTests {
                 "the excerpt names the document it quotes and carries the passage")
         #expect(entries[4].generatedBlockType == CollectionGeneratedBlockType.archivalSources.rawValue,
                 "the apparatus block is the one the bottom line's second paragraph rests on")
+        #expect(entries[5].generatedBlockType == CollectionGeneratedBlockType.noteOnTheText.rawValue,
+                "the Note on the Text closes the round, and says whose headnote it is")
         #expect(imported.authorLine == file.authorLine)
         #expect(imported.introductionText == file.introductionText)
+        // The headnote the file carries is a draft of the import's own, the run named as its writer.
+        let headnoteId = try #require(entries[2].headnoteSummaryId, "the document's headnote did not import")
+        let headnote = try #require(try ctx.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.id == headnoteId })).first)
+        #expect(headnote.isHeadnoteDraft && headnote.authorship == .userWritten)
+        #expect(headnote.writerName == "Agent run, round 2, 2026-10-14")
+        #expect(entries[2].includeHeadnote == true)
     }
 
     @Test("An agent may add a generator key: unknown top-level keys are free, and the app does not preserve them")
@@ -3365,11 +3379,18 @@ struct CollectionTests {
     @Test("Headnote provenance: the attribution label honors authorship, and the resolver threads it to the export document")
     @MainActor
     func headnoteProvenance() async throws {
-        // The attribution caption honors authorship (Composer redesign): AI keeps the label, an
-        // AI-edited headnote discloses the edit, a user-written one carries no AI attribution.
-        #expect(CollectionAIAttribution.headnoteLabel(authorship: .aiGenerated)?.contains("AI-generated") == true)
-        #expect(CollectionAIAttribution.headnoteLabel(authorship: .aiEdited)?.contains("edited by you") == true)
-        #expect(CollectionAIAttribution.headnoteLabel(authorship: .userWritten) == nil)
+        // The caption names the writer (L58; decision 194), where until L58 it was worded for the device's user
+        // ("edited by you", the third review's J8): Apple Intelligence keeps its name, an edit names the person and
+        // the model's draft, a person's own headnote names them, and one that names nobody carries no caption.
+        #expect(CollectionAIAttribution.headnoteLabel(writer: .appleIntelligence, label: "Headnote")?
+            .contains("Apple Intelligence") == true)
+        #expect(CollectionAIAttribution.headnoteLabel(writer: .personFromDraft(name: "Jane Doe"), label: "Headnote")
+                == "Headnote by Jane Doe, from a draft by Apple Intelligence")
+        #expect(CollectionAIAttribution.headnoteLabel(writer: .person(name: "Jane Doe"), label: "Headnote")
+                == "Headnote by Jane Doe")
+        #expect(CollectionAIAttribution.headnoteLabel(writer: .person(name: nil), label: "Headnote") == nil)
+        #expect(CollectionAIAttribution.headnoteLabel(writer: .personFromDraft(name: nil), label: "Headnote")?
+            .contains("you") == false, "never you (J8)")
 
         // The resolver carries the pointed summary's authorship onto the export document, so the
         // renderers can suppress the AI attribution for a user-written headnote.
@@ -3596,17 +3617,23 @@ struct CollectionTests {
     }
 
     /// Decision 139: each of the five apparatus blocks comes with at least two templates besides the
-    /// one that includes everything, so none is reached only with every option on. Written over
-    /// `allCases`, the template that includes everything found as the one carrying every block, so
+    /// one that includes everything, so none is reached only with every option on. Written over the
+    /// templates' `allCases`, the template that includes everything found as the one carrying every block, so
     /// that it compiles against any set of templates (the four before L25 fail it: their Bibliography
     /// and Thematic Index came only with Scholarly edition).
+    ///
+    /// **Over decision 139's five blocks, named, and not the block types' `allCases`** (L58; the third review's J36):
+    /// the Note on the Text is a block type and no template of decision 139's carries it, so over `allCases` this
+    /// turned red the moment the Note was added, and so will L52 to L54's blocks. Which suggested set carries the Note
+    /// is L44's (the design's §4.3); `generatedBlockTypeVocabulary` pins every type that exists.
     @Test("Each apparatus block comes with at least two templates besides the one that includes everything")
     func everyApparatusBlockInTwoTemplates() {
-        let everyBlock = Set(CollectionGeneratedBlockType.allCases)
+        let everyBlock: Set<CollectionGeneratedBlockType> =
+            [.bibliography, .chronology, .archivalSources, .personsIndex, .thematicIndex]
         let includesEverything = CollectionPreset.allCases.filter { Set($0.apparatusBlocks) == everyBlock }
         #expect(includesEverything.count == 1, "templates that carry every block: \(includesEverything.map(\.rawValue))")
         let others = CollectionPreset.allCases.filter { !includesEverything.contains($0) }
-        for block in CollectionGeneratedBlockType.allCases {
+        for block in everyBlock.sorted(by: { $0.rawValue < $1.rawValue }) {
             let carriers = others.filter { $0.apparatusBlocks.contains(block) }
             #expect(carriers.count >= 2, "\(block.rawValue) comes with \(carriers.map(\.rawValue)) besides everything")
         }
@@ -3928,7 +3955,10 @@ struct CollectionTests {
         #expect(file.composition.includeSourceNote == true)
         #expect(file.composition.footnoteStyle == "all")   // legacy raw still written
         #expect(file.entries.first?.includeHeadnote == true)
-        #expect(file.entries.first?.headnoteSummaryId == pickedSummaryId)
+        // L58 (decision 166): a headnote travels as its text, never as an id of the sender's library. The pick names
+        // no summary this store holds, so no text travels either, and the recipient's own summary may fill it.
+        #expect(file.entries.first?.headnoteSummaryId == nil)
+        #expect(file.entries.first?.headnote == nil)
 
         // encode → decode → apply reconstructs everything.
         let data = try NativeCollectionSerializer.encode(file)
@@ -3942,7 +3972,7 @@ struct CollectionTests {
         #expect(imported.footnoteStyle == "all")
         let importedEntry = try #require((imported.documentEntries ?? []).first)
         #expect(importedEntry.includeHeadnote == true)
-        #expect(importedEntry.headnoteSummaryId == pickedSummaryId)
+        #expect(importedEntry.headnoteSummaryId == nil, "no id travels (L58)")
 
         // A v1 file (no Phase 5 keys) leaves the defaults: nil pair, headnote at Default (nil).
         // Composer redesign widened includeHeadnote to optional, so an absent key now imports as
@@ -3983,11 +4013,14 @@ struct CollectionTests {
 
         d.includeHeadnote = true                           // a headnote request → v2
         #expect(makeFile().formatVersion == 2)
-        d.includeHeadnote = false
+        d.includeHeadnote = false                          // L58 (decision 193; J6): Off is written as Off → v2
+        #expect(makeFile().formatVersion == 2)
+        #expect(makeFile().entries.first?.includeHeadnote == false)
+        d.includeHeadnote = nil                            // Default omits the key → v1
         #expect(makeFile().formatVersion == 1)
 
-        d.headnoteSummaryId = UUID()                       // a pick alone → v2
-        #expect(makeFile().formatVersion == 2)
+        d.headnoteSummaryId = UUID()                       // L58: a pick alone writes no id (decision 166), and with
+        #expect(makeFile().formatVersion == 1)             // the headnote off nothing travels → still v1
         d.headnoteSummaryId = nil
         #expect(makeFile().formatVersion == 1)
 
@@ -4552,14 +4585,17 @@ struct CollectionTests {
     @Test("Generated block vocabulary: raw values are the frozen serialization strings; position hints and kind membership hold")
     func generatedBlockTypeVocabulary() {
         // The raw values are persisted (entry field + .fruscollection key) — renaming
-        // any of them is a data-format break, so they are pinned here.
+        // any of them is a data-format break, so they are pinned here. L58 adds the Note on the Text, whose string
+        // 1.0 keeps as an inert block (the file run of 2026-11-27).
         #expect(CollectionGeneratedBlockType.allCases.map(\.rawValue) ==
-                ["bibliography", "chronology", "archivalSources", "personsIndex", "thematicIndex"])
-        // Chronology opens the reader (front matter); everything else is back matter.
+                ["bibliography", "chronology", "archivalSources", "personsIndex", "thematicIndex", "noteOnTheText"])
+        // Chronology opens the reader (front matter); everything else is back matter, the Note added last.
         #expect(CollectionGeneratedBlockType.chronology.defaultPosition == .frontMatter)
         for type in CollectionGeneratedBlockType.allCases where type != .chronology {
             #expect(type.defaultPosition == .backMatter)
         }
+        // Every block but the Note is a list of the documents the seam resolves (J18).
+        #expect(CollectionGeneratedBlockType.allCases.filter { !$0.listsMembership } == [.noteOnTheText])
         // `.generated` is an authorable kind (unlike `.unrecognized`, which stays out).
         #expect(CollectionEntryKind.allCases.contains(.generated))
         #expect(!CollectionEntryKind.allCases.contains(.unrecognized))
@@ -4841,12 +4877,14 @@ struct CollectionTests {
         #expect(block.rows.map(\.indentLevel) == [0, 1, 1, 0, 1])
     }
 
-    @Test("Empty blocks: every type degrades to the single localized nothing-to-list row — never an empty section")
+    /// Over the lists the seam resolves (`listsMembership`), not every block type (L58; J18): the Note on the Text
+    /// prints nothing where it has nothing to say, never *Nothing to list* (`NoteOnTheTextTests` holds it).
+    @Test("Empty blocks: every list degrades to the single localized nothing-to-list row — never an empty section")
     @MainActor
     func generatedBlockEmptyStates() async {
         let fixture = FixtureBlockDataSource()
-        // Empty membership: all five types.
-        for type in CollectionGeneratedBlockType.allCases {
+        // Empty membership: all five lists.
+        for type in CollectionGeneratedBlockType.allCases where type.listsMembership {
             let block = await CollectionGeneratedBlocks.resolve(
                 type: type, documents: [], dataSource: fixture)
             #expect(block.rows.count == 1)

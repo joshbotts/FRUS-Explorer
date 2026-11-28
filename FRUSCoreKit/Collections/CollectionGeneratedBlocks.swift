@@ -135,6 +135,8 @@ public protocol CollectionGeneratedBlockDataSource {
 ///          `CollectionDocumentDiscovery.tagDocumentRefs` reads too
 ///   1.6 — 2026-10-28 (FRUS Explorer Light, S18d): `tagDocumentRefs` is public, unchanged, for the Tags tab of
 ///          a host's Add Documents
+///   1.7 — L58: the Note on the Text is a block type the seam does not resolve (the third review's J18): the
+///          assembly writes it from the resolved entries (`CollectionNoteOnTheText`), and asked here it lists nothing
 public enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
@@ -177,6 +179,11 @@ public enum CollectionGeneratedBlocks {
         case .thematicIndex:
             rows = await thematicIndexRows(documents: documents, numbers: numbers,
                                            dataSource: dataSource)
+        case .noteOnTheText:
+            // Not a list of the documents (the third review's J18): the assembly writes the Note from the resolved
+            // entries (`CollectionNoteOnTheText`) and never asks the seam for it. Asked here, with the membership
+            // alone, it has nothing to say.
+            rows = []
         }
         return CollectionGeneratedBlock(
             type: type,
@@ -735,5 +742,312 @@ public enum CollectionGeneratedBlocks {
                      defaultValue: "Document \(joined)")
             : String(localized: "collection.generated.persons.documents",
                      defaultValue: "Documents \(joined)")
+    }
+}
+
+// MARK: - CollectionNoteOnTheText
+
+/// The Note on the Text (L58; the Collections design's §3.6): the collection's statement of method, written from what
+/// its documents print, and printed where its row is, only when it has something to say.
+///
+/// **A rule over the resolved entries, outside the block seam** (the third review's J18). The seam gives a block the
+/// collection's documents alone and prints *Nothing to list* for an empty one; the Note needs each document's title,
+/// date line, depth and switches as the cascade resolves them (its own, its section's, the collection's) and who wrote
+/// its headnote, and prints nothing when nothing is left to say. The assembly gives it those for every document of
+/// the collection, never a capped preview's prefix, so the preview's Note is the export's; the collection's settings
+/// read the same rule for their line (``hasSomethingToSay``).
+///
+/// It says, each where it applies:
+/// - that titles, and the date lines under them, are the compiler's, and that under each the words *As published:*
+///   introduce the heading as the volume prints it;
+/// - what is left out: a document given as a summary or by its citation in place of its text, footnotes (their numbers
+///   remain in the text) and archival source notes;
+/// - who wrote the headnotes, by the names they carry (``CollectionHeadnoteWriter``);
+/// - that the quoted passages are excerpts, and how the app checks them;
+/// - which of the app's labels the compiler reworded (``CollectionWording/rewordedLabels``).
+///
+/// Each is said for the whole collection where it holds for every document, and otherwise with the documents named by
+/// their numbers in the contents list (#1993). **Its sentences are the owner's to choose** (the plan of record's L58):
+/// these are the row's proposal.
+///
+/// Version history:
+///   1.0 — L58: initial implementation
+public struct CollectionNoteOnTheText: Sendable, Equatable {
+
+    /// One document as the Note reads it: what the collection prints of it, through the cascade.
+    public struct Document: Sendable, Equatable {
+        /// Its number among the collection's documents, as the contents list numbers it (#1993).
+        public var number: Int
+        /// Whether a title of the compiler's leads it.
+        public var hasTitle: Bool
+        /// Whether a date line of the compiler's prints under its title, which it does only under a title (J41).
+        public var hasDateLine: Bool
+        /// How much of it prints.
+        public var bodyDepth: CollectionBodyDepth
+        /// Whether its footnotes print where its text does.
+        public var includesFootnotes: Bool
+        /// Whether its archival source note is set to print.
+        public var includesSourceNote: Bool
+        /// Who wrote the headnote it prints, or `nil` where it prints none.
+        public var headnote: CollectionHeadnoteWriter?
+
+        /// Creates a document's reading.
+        public init(number: Int, hasTitle: Bool = false, hasDateLine: Bool = false, bodyDepth: CollectionBodyDepth = .full,
+                    includesFootnotes: Bool = true, includesSourceNote: Bool = true,
+                    headnote: CollectionHeadnoteWriter? = nil) {
+            self.number = number
+            self.hasTitle = hasTitle
+            self.hasDateLine = hasTitle && hasDateLine
+            self.bodyDepth = bodyDepth
+            self.includesFootnotes = includesFootnotes
+            self.includesSourceNote = includesSourceNote
+            self.headnote = headnote
+        }
+
+        /// Whether its footnotes are left out: its text prints and its footnotes do not.
+        var leavesOutFootnotes: Bool { bodyDepth == .full && !includesFootnotes }
+
+        /// Whether its archival source note is left out. Where its text prints with its footnotes, the volume's source
+        /// note prints among them whatever the switch says (#1991), so it is left out only where neither prints it.
+        var leavesOutSourceNote: Bool { !includesSourceNote && !(bodyDepth == .full && includesFootnotes) }
+    }
+
+    /// The collection's documents, in order.
+    public var documents: [Document]
+    /// How many quoted passages the collection prints.
+    public var quotedPassageCount: Int
+    /// The collection's own words for the labels.
+    public var wording: CollectionWording
+
+    /// Creates the Note's reading of a collection.
+    public init(documents: [Document], quotedPassageCount: Int = 0, wording: CollectionWording = CollectionWording()) {
+        self.documents = documents
+        self.quotedPassageCount = quotedPassageCount
+        self.wording = wording
+    }
+
+    /// Whether the Note has anything to say: the line in the collection's settings offers one where the collection
+    /// has none and it would (the design's §3.6).
+    public var hasSomethingToSay: Bool { !paragraphs.isEmpty }
+
+    /// The Note as a block, titled `title`, a row for each paragraph; `nil` when it has nothing to say, and then it
+    /// prints nothing at all, not even its title.
+    public func block(title: String = CollectionGeneratedBlockType.noteOnTheText.displayName) -> CollectionGeneratedBlock? {
+        let paragraphs = self.paragraphs
+        guard !paragraphs.isEmpty else { return nil }
+        return CollectionGeneratedBlock(type: .noteOnTheText, title: title,
+                                        rows: paragraphs.map { CollectionGeneratedRow(text: $0) })
+    }
+
+    /// The Note's paragraphs, in order: the compiler's titles, what is left out, the headnotes, the quoted passages,
+    /// the reworded labels. Empty when it has nothing to say. `_…_` marks italics, as every format reads it.
+    public var paragraphs: [String] {
+        [titlesParagraph, leftOutParagraph, headnotesParagraph, quotedPassagesParagraph, labelsParagraph]
+            .compactMap { $0 }
+    }
+
+    // MARK: The paragraphs
+
+    /// The compiler's titles and the date lines under them.
+    private var titlesParagraph: String? {
+        let titled = documents.filter(\.hasTitle).map(\.number)
+        guard !titled.isEmpty else { return nil }
+        var sentences: [String] = []
+        if titled.count > 1, titled.count == documents.count {
+            sentences.append(String(localized: "collection.note.titles.all",
+                                    defaultValue: "Every document’s title is the compiler’s; under each, the words _As published:_ introduce the document’s heading as its volume prints it."))
+        } else if titled.count == 1 {
+            sentences.append(String(localized: "collection.note.titles.one",
+                                    defaultValue: "The title of \(Self.documentsPhrase(titled)) is the compiler’s; under it, the words _As published:_ introduce the document’s heading as its volume prints it."))
+        } else {
+            sentences.append(String(localized: "collection.note.titles.some",
+                                    defaultValue: "The titles of \(Self.documentsPhrase(titled)) are the compiler’s; under each, the words _As published:_ introduce the document’s heading as its volume prints it."))
+        }
+        let dated = documents.filter(\.hasDateLine).map(\.number)
+        if !dated.isEmpty {
+            if dated == titled {
+                sentences.append(titled.count == 1
+                    ? String(localized: "collection.note.dateLines.underIt",
+                             defaultValue: "So is the date line under it.")
+                    : String(localized: "collection.note.dateLines.underEach",
+                             defaultValue: "So is the date line under each title."))
+            } else if dated.count == 1 {
+                sentences.append(String(localized: "collection.note.dateLines.one",
+                                        defaultValue: "So is the date line under the title of \(Self.documentsPhrase(dated))."))
+            } else {
+                sentences.append(String(localized: "collection.note.dateLines.some",
+                                        defaultValue: "So are the date lines under the titles of \(Self.documentsPhrase(dated))."))
+            }
+        }
+        return sentences.joined(separator: " ")
+    }
+
+    /// What the collection leaves out of its documents: the text, where a summary or the citation stands in its place;
+    /// the footnotes; the archival source notes.
+    private var leftOutParagraph: String? {
+        var sentences: [String] = []
+        let all = documents.count
+        let summaries = documents.filter { $0.bodyDepth == .summaryOnly }.map(\.number)
+        if !summaries.isEmpty {
+            if summaries.count == all, all > 1 {
+                sentences.append(String(localized: "collection.note.summaries.all",
+                                        defaultValue: "Every document is given as a summary written by Apple Intelligence, in place of its text."))
+            } else if summaries.count == 1 {
+                sentences.append(String(localized: "collection.note.summaries.one",
+                                        defaultValue: "\(Self.capitalized(Self.documentsPhrase(summaries))) is given as a summary written by Apple Intelligence, in place of its text."))
+            } else {
+                sentences.append(String(localized: "collection.note.summaries.some",
+                                        defaultValue: "\(Self.capitalized(Self.documentsPhrase(summaries))) are given as summaries written by Apple Intelligence, in place of their text."))
+            }
+        }
+        let citations = documents.filter { $0.bodyDepth == .index }.map(\.number)
+        if !citations.isEmpty {
+            if citations.count == all, all > 1 {
+                sentences.append(String(localized: "collection.note.citations.all",
+                                        defaultValue: "Every document is given by its citation alone."))
+            } else if citations.count == 1 {
+                sentences.append(String(localized: "collection.note.citations.one",
+                                        defaultValue: "\(Self.capitalized(Self.documentsPhrase(citations))) is given by its citation alone."))
+            } else {
+                sentences.append(String(localized: "collection.note.citations.some",
+                                        defaultValue: "\(Self.capitalized(Self.documentsPhrase(citations))) are given by their citations alone."))
+            }
+        }
+        let footnotes = documents.filter(\.leavesOutFootnotes).map(\.number)
+        if !footnotes.isEmpty {
+            sentences.append(footnotes.count == all
+                ? String(localized: "collection.note.footnotes.all",
+                         defaultValue: "Footnotes are left out; their numbers remain in the text.")
+                : String(localized: "collection.note.footnotes.some",
+                         defaultValue: "Footnotes are left out of \(Self.documentsPhrase(footnotes)); their numbers remain in the text."))
+        }
+        let sourceNotes = documents.filter(\.leavesOutSourceNote).map(\.number)
+        if !sourceNotes.isEmpty {
+            if sourceNotes.count == all, all > 1 {
+                sentences.append(String(localized: "collection.note.sourceNotes.all",
+                                        defaultValue: "The archival source notes are left out."))
+            } else if sourceNotes.count == 1 {
+                sentences.append(String(localized: "collection.note.sourceNotes.one",
+                                        defaultValue: "The archival source note of \(Self.documentsPhrase(sourceNotes)) is left out."))
+            } else {
+                sentences.append(String(localized: "collection.note.sourceNotes.some",
+                                        defaultValue: "The archival source notes of \(Self.documentsPhrase(sourceNotes)) are left out."))
+            }
+        }
+        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+    }
+
+    /// Who wrote the headnotes: one sentence for each writer, in the order their first headnote prints; one sentence
+    /// for every headnote where a single writer wrote them all.
+    private var headnotesParagraph: String? {
+        var groups: [(writer: CollectionHeadnoteWriter, numbers: [Int])] = []
+        for document in documents {
+            guard let writer = document.headnote else { continue }
+            if let index = groups.firstIndex(where: { $0.writer == writer }) {
+                groups[index].numbers.append(document.number)
+            } else {
+                groups.append((writer, [document.number]))
+            }
+        }
+        guard !groups.isEmpty else { return nil }
+        return groups.map { group in
+            let wrote = Self.wrote(group.writer)
+            if groups.count == 1, group.numbers.count > 1 {
+                return String(localized: "collection.note.headnotes.all",
+                              defaultValue: "The headnotes were \(wrote).")
+            }
+            return group.numbers.count == 1
+                ? String(localized: "collection.note.headnotes.one",
+                         defaultValue: "The headnote to \(Self.documentsPhrase(group.numbers)) was \(wrote).")
+                : String(localized: "collection.note.headnotes.some",
+                         defaultValue: "The headnotes to \(Self.documentsPhrase(group.numbers)) were \(wrote).")
+        }.joined(separator: " ")
+    }
+
+    /// The words after "was" or "were" that say who wrote a headnote.
+    private static func wrote(_ writer: CollectionHeadnoteWriter) -> String {
+        switch writer {
+        case .appleIntelligence:
+            return String(localized: "collection.note.headnotes.byAppleIntelligence",
+                          defaultValue: "written by Apple Intelligence")
+        case .person(let name?):
+            return String(localized: "collection.note.headnotes.byPerson",
+                          defaultValue: "written by \(name)")
+        case .person(nil):
+            return String(localized: "collection.note.headnotes.byHand",
+                          defaultValue: "written by hand, not by Apple Intelligence")
+        case .personFromDraft(let name?):
+            return String(localized: "collection.note.headnotes.fromDraftByPerson",
+                          defaultValue: "drafted by Apple Intelligence and edited by \(name)")
+        case .personFromDraft(nil):
+            return String(localized: "collection.note.headnotes.fromDraftByHand",
+                          defaultValue: "drafted by Apple Intelligence and edited by hand")
+        }
+    }
+
+    /// The quoted passages, and how the app checks them (`ExcerptVerifier`). The count goes through `CountCopy`, whose
+    /// one form names no number: "The passage quoted…".
+    private var quotedPassagesParagraph: String? {
+        guard quotedPassageCount > 0 else { return nil }
+        return CountCopy.phrase(
+            quotedPassageCount,
+            one: String(localized: "collection.note.excerpts.one",
+                        defaultValue: "The passage quoted in this collection is an excerpt from the document cited under it, with any omission marked. FRUS Explorer looks for it in that document’s text, allowing for differences of spacing, quotation marks, dashes and capitals, and for the omissions marked, but not for any difference of wording."),
+            many: String(localized: "collection.note.excerpts.many",
+                         defaultValue: "The %@ passages quoted in this collection are excerpts from the documents cited under them, with any omission marked. FRUS Explorer looks for each in its document’s text, allowing for differences of spacing, quotation marks, dashes and capitals, and for the omissions marked, but not for any difference of wording."))
+    }
+
+    /// The labels the compiler reworded, each with the app's word it stands for.
+    private var labelsParagraph: String? {
+        let reworded = wording.rewordedLabels.compactMap { label -> String? in
+            guard let word = wording.ownWord(for: label) else { return nil }
+            return String(localized: "collection.note.labels.pair",
+                          defaultValue: "_\(word)_ for \(label.appWord)")
+        }
+        guard !reworded.isEmpty else { return nil }
+        let list = Self.joined(reworded)
+        return reworded.count == 1
+            ? String(localized: "collection.note.labels.one",
+                     defaultValue: "The compiler’s own word stands for the app’s in one label: \(list).")
+            : String(localized: "collection.note.labels.some",
+                     defaultValue: "The compiler’s own words stand for the app’s in these labels: \(list).")
+    }
+
+    // MARK: Naming documents
+
+    /// The documents named by their numbers in the contents list: "document 3", "documents 2 and 5", "documents 1–4
+    /// and 7". A run of three or more numbers is written as a range.
+    public static func documentsPhrase(_ numbers: [Int]) -> String {
+        let sorted = Array(Set(numbers)).sorted()
+        var parts: [String] = []
+        var index = 0
+        while index < sorted.count {
+            var end = index
+            while end + 1 < sorted.count, sorted[end + 1] == sorted[end] + 1 { end += 1 }
+            if end - index >= 2 {
+                parts.append("\(sorted[index])–\(sorted[end])")
+            } else {
+                parts.append(contentsOf: sorted[index...end].map(String.init))
+            }
+            index = end + 1
+        }
+        let list = joined(parts)
+        return sorted.count == 1
+            ? String(localized: "collection.note.document", defaultValue: "document \(list)")
+            : String(localized: "collection.note.documents", defaultValue: "documents \(list)")
+    }
+
+    /// Items joined as the Note writes a list: "a", "a and b", "a, b and c".
+    private static func joined(_ items: [String]) -> String {
+        guard let last = items.last else { return "" }
+        guard items.count > 1 else { return last }
+        let andWord = String(localized: "collection.note.and", defaultValue: "and")
+        return items.dropLast().joined(separator: ", ") + " \(andWord) " + last
+    }
+
+    /// A phrase with its first letter capitalized, to open a sentence: "Documents 2 and 5".
+    private static func capitalized(_ phrase: String) -> String {
+        guard let first = phrase.first else { return phrase }
+        return first.uppercased() + phrase.dropFirst()
     }
 }
