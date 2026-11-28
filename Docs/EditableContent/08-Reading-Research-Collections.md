@@ -894,7 +894,7 @@ One quotation cites a document that is no longer in its volume.
 ### Collections Export
 
 #### Native-format export explanation
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 797–798 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 819–820 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
 Shares an editable copy of this collection: its documents, settings, sections, prose and headnotes, each headnote named by who wrote it. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
@@ -904,7 +904,7 @@ Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim fro
 
 #### What the export will print — the export sheet's sentence (L35)
 <!-- L35 (2026-11-27; the third review's J9, decision 192): the first thing the export sheet says, on every platform, written from what the export counts of the collection's documents, where 1.0 read the collection's defaults ("Exports the full text of each document, with headnotes, …"). The sentence is put together from the pieces below: a lead that counts the documents and says how they print, then ", with" and a list of what prints with them, joined in the system's list form ("a, b, and c"). Every `%@` is a number the app formats. The reused key `collection.export.summary.wordCloud` is also 1.0's sentence's, in Models/Collection.swift, which the editor still shows; an edit here reaches both. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSentence | lines: 1185–1296 | keys: export.sentence.noDocuments, export.sentence.native.one %@, export.sentence.native.many %@, export.sentence.highlights, collection.export.summary.wordCloud, export.sentence.notes, export.sentence.with %1$@ %2$@, export.sentence.citations.one %@, export.sentence.citations.many %@, export.sentence.full.one %@, export.sentence.full.many %@, export.sentence.summaries.one %@, export.sentence.summaries.many %@, export.sentence.mixed.full %@, export.sentence.mixed.summaries.one %@, export.sentence.mixed.summaries.many %@, export.sentence.mixed.citations.one %@, export.sentence.mixed.citations.many %@, export.sentence.mixed %1$@ %2$@, export.sentence.headnote.one, export.sentence.headnote.none, export.sentence.headnotes %1$@ %2$@ | shared: iOS+macOS (single edit point) | same text also in: FRUSExplorer/Models/Collection.swift (collection.export.summary.wordCloud) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSentence | lines: 1292–1403 | keys: export.sentence.noDocuments, export.sentence.native.one %@, export.sentence.native.many %@, export.sentence.highlights, collection.export.summary.wordCloud, export.sentence.notes, export.sentence.with %1$@ %2$@, export.sentence.citations.one %@, export.sentence.citations.many %@, export.sentence.full.one %@, export.sentence.full.many %@, export.sentence.summaries.one %@, export.sentence.summaries.many %@, export.sentence.mixed.full %@, export.sentence.mixed.summaries.one %@, export.sentence.mixed.summaries.many %@, export.sentence.mixed.citations.one %@, export.sentence.mixed.citations.many %@, export.sentence.mixed %1$@ %2$@, export.sentence.headnote.one, export.sentence.headnote.none, export.sentence.headnotes %1$@ %2$@ | shared: iOS+macOS (single edit point) | same text also in: FRUSExplorer/Models/Collection.swift (collection.export.summary.wordCloud) -->
 
 **No documents:** This collection has no documents.
 
@@ -940,7 +940,7 @@ Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim fro
 
 #### Format — the export sheet's menu at the accessibility text sizes (L35)
 <!-- L35: on iPhone and iPad at the accessibility text sizes the export sheet chooses its format from a menu at its foot, beside this label, in place of the grid of cards. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.formatMenu, ExportSheetView.iOSExportBar | lines: 239–239, 568–568 | key: export.format.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.formatMenu, ExportSheetView.iOSExportBar | lines: 245–245, 590–590 | key: export.format.menu | shared: iOS only -->
 
 Format
 
@@ -1988,7 +1988,7 @@ Checking what reached Zotero…
 
 #### The collection's send row — a send to finish
 <!-- In place of "Send to Zotero Library" while this collection has a stopped send to the connected account. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroSendRow | lines: 160–161 | key: export.zotero.finish | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroSendRow | lines: 270–271 | key: export.zotero.finish | shared: iOS+macOS (single edit point) -->
 
 Finish Sending to Zotero Library
 
@@ -1997,7 +1997,7 @@ Finish Sending to Zotero Library
 #### The row's caption — when Zotero confirmed none of the documents
 <!-- The first sentence of the caption, when the stop came before Zotero confirmed any document: the
      collection was made, or a write's answer was lost. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 852–853 | key: export.zotero.stopped.none %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 1049–1050 | key: export.zotero.stopped.none %@ | shared: iOS+macOS (single edit point) -->
 
 A send on %@ stopped before Zotero confirmed any of its documents.
 
@@ -2007,14 +2007,14 @@ A send on %@ stopped before Zotero confirmed any of its documents.
 
 #### The row's caption — one document reached Zotero
 <!-- This form is for ONE document, so keep it singular. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 857–858 | key: export.zotero.stopped.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 1054–1055 | key: export.zotero.stopped.one | shared: iOS+macOS (single edit point) -->
 
 %1$@ document reached Zotero on %2$@, before the send stopped.
 
 <!-- END SOURCE: export.zotero.stopped.one -->
 
 #### The row's caption — two or more documents reached Zotero
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 859–860 | key: export.zotero.stopped.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 1056–1057 | key: export.zotero.stopped.many | shared: iOS+macOS (single edit point) -->
 
 %1$@ documents reached Zotero on %2$@, before the send stopped.
 
@@ -2022,7 +2022,7 @@ A send on %@ stopped before Zotero confirmed any of its documents.
 
 #### The row's caption — what Finish Sending does
 <!-- The caption's last sentence, after the count and, where it is known, why the send stopped. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 864–865 | key: export.zotero.finish.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 1061–1062 | key: export.zotero.finish.caption | shared: iOS+macOS (single edit point) -->
 
 Finish Sending sends the rest into the same Zotero collection, and nothing twice.
 
@@ -2031,14 +2031,14 @@ Finish Sending sends the rest into the same Zotero collection, and nothing twice
 #### The result of a finish — one document removed from the collection since
 <!-- Added to the "Sent to Zotero" alert's message when the collection lost documents between the stop and
      the finish: Zotero keeps what was already sent. Keep this form singular. -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 893–894 | key: export.zotero.result.leftInLibrary.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 1090–1091 | key: export.zotero.result.leftInLibrary.one | shared: iOS+macOS (single edit point) -->
 
 %@ document removed from this collection since the send stopped stays in your Zotero library.
 
 <!-- END SOURCE: export.zotero.result.leftInLibrary.one -->
 
 #### The result of a finish — two or more documents removed since
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 895–896 | key: export.zotero.result.leftInLibrary.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 1092–1093 | key: export.zotero.result.leftInLibrary.many | shared: iOS+macOS (single edit point) -->
 
 %@ documents removed from this collection since the send stopped stay in your Zotero library.
 
@@ -3621,14 +3621,14 @@ No headnote yet. Edit to write a key takeaway, or generate a document summary to
 <!-- END SOURCE: collection.inspector.headnote.empty -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 869–870 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 891–892 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.
 
 <!-- END SOURCE: export.zotero.send.caption.iosNoAccount -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 872–873 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 894–895 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.
 
