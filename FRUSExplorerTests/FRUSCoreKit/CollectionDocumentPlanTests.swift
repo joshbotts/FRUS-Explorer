@@ -730,3 +730,135 @@ struct CollectionDocumentCopyAnchorTests {
         #expect(CollectionItemHTMLRenderer.anchorIds(forKeys: []).isEmpty)
     }
 }
+
+// MARK: - CollectionTemplateStepRulesTests (L44)
+
+/// The two steps' rules over values (L44; the Collections design's §4.3): what step 1's row says of a collection's
+/// documents, the line a template's choice writes, step 2's shortcuts, and the one tap on step 2's row, which only adds.
+/// Decision 139's table, divided, is `CollectionTests.presetApply`'s, against the app's model.
+///
+/// Version history:
+///   1.0 — L44: initial implementation
+@Suite("The two steps' rules")
+struct CollectionTemplateStepRulesTests {
+
+    /// A new collection's seven (decision 159): 1.0's model defaults — the full text with footnotes and research notes,
+    /// no source note — with the volume's heading leading.
+    static let newCollection = CollectionDocumentSettings(opening: .volumeHeading, bodyDepth: .full, footnotes: true,
+                                                          sourceNote: false, notes: true, highlights: false,
+                                                          headnotes: false)
+
+    /// A collection's values with nothing set, as a file from before format version 7 gives them.
+    static func values(opening: String? = nil, footnoteStyle: String? = nil) -> CollectionExport {
+        CollectionExport(id: UUID(), name: "Values", projectIds: [], entries: [], footnoteStyle: footnoteStyle,
+                         opening: opening)
+    }
+
+    @Test("A collection's seven are read as its export reads them, an absent opening as the citation's")
+    func sevenReadAsTheExportReadsThem() {
+        let unset = CollectionDocumentSettings(composing: Self.values())
+        #expect(unset == CollectionDocumentSettings(opening: .citation, bodyDepth: .full, footnotes: true,
+                                                    sourceNote: false, notes: true, highlights: false, headnotes: false))
+        // The legacy footnote style, where the pair is unset: `sourceNoteOnly` is the source note without footnotes.
+        let legacy = CollectionDocumentSettings(composing: Self.values(opening: "volumeHeading",
+                                                                       footnoteStyle: "sourceNoteOnly"))
+        #expect(legacy.opening == .volumeHeading)
+        #expect(legacy.footnotes == false && legacy.sourceNote == true)
+    }
+
+    /// The third review's J26: a new collection equals no template and ties at two between *Full text as printed* and
+    /// *Summaries*; the tie goes to the one earlier in the grid, whose differences the row's line names.
+    @Test("A new collection is like Full text as printed, with two settings that differ (J26)")
+    func aNewCollectionIsLikeFullTextAsPrinted() throws {
+        #expect(CollectionPreset.matching(Self.newCollection) == nil)
+        #expect(Self.newCollection.differences(from: CollectionPreset.summaries.documents).count == 2,
+                "the tie J26 measured is gone: Summaries no longer differs from a new collection at two")
+        let nearest = CollectionPreset.nearest(to: Self.newCollection)
+        #expect(nearest.preset == .fullTextAsPrinted)
+        #expect(nearest.differences == [.sourceNote, .notes])
+        let state = CollectionDocumentsState(Self.newCollection)
+        #expect(state == .like(.fullTextAsPrinted, differences: [.sourceNote, .notes]))
+        #expect(state.summary == "Like Full text as printed · 2 differ")
+        #expect(state.differencesSentence(Self.newCollection)
+                == "Like Full text as printed, except Archival source note, Off and Research notes, On.")
+        #expect(CollectionPreset.suggestionOrder(for: Self.newCollection).first == .fullTextAsPrinted)
+    }
+
+    /// Decision 158: a collection that equals one of the four heading templates in 1.0 has no opening set, which reads as
+    /// the citation leading, so it reads *1 differs* until its Opening is changed (the design's §4.3).
+    @Test("A 1.0 collection that equals Full text as printed but for its opening reads 1 differs")
+    func aCollectionFromBeforeReadsOneDiffers() {
+        var settings = CollectionPreset.fullTextAsPrinted.documents
+        settings.opening = .citation
+        let state = CollectionDocumentsState(settings)
+        #expect(state == .like(.fullTextAsPrinted, differences: [.opening]))
+        #expect(state.summary == "Like Full text as printed · 1 differs")
+        #expect(CollectionDocumentsState(CollectionPreset.summaries.documents).summary == "Summaries")
+    }
+
+    @Test("A choice's line says what changed, old to new, or that nothing did")
+    func aChoicesLineSaysWhatChanged() {
+        #expect(Self.newCollection.changeSentence(to: CollectionPreset.fullTextAsPrinted.documents)
+                == "Changed Archival source note from Off to On and Research notes from On to Off.")
+        let summaries = CollectionPreset.summaries.documents
+        #expect(summaries.changeSentence(to: summaries)
+                == "Nothing changed: this collection’s documents already had these settings.")
+        #expect(CollectionPreset.citationsWithNotes.documents.changeSentence(to: CollectionPreset.summaries.documents)
+                == "Changed Opening from The citation leads to The volume’s heading leads and Body depth from Index / outline to Summary only.")
+    }
+
+    @Test("Step 2's shortcuts: Suggested for a template sets its set exactly, All every block and the cloud, None none")
+    func theShortcuts() {
+        let current = CollectionApparatusSettings(contentsStyle: .headerAndDateline, wordCloud: false,
+                                                  blocks: [.chronology])
+        #expect(CollectionApparatusShortcut.suggested(.fullTextAsPrinted).applied(to: current)
+                == CollectionPreset.fullTextAsPrinted.suggestedApparatus)
+        let all = CollectionApparatusShortcut.all.applied(to: current)
+        #expect(all.blocks == Set(CollectionGeneratedBlockType.allCases) && all.wordCloud)
+        #expect(all.contentsStyle == .headerAndDateline, "All changed the contents list's style")
+        let none = CollectionApparatusShortcut.none.applied(to: current)
+        #expect(none.blocks.isEmpty && !none.wordCloud && none.contentsStyle == .headerAndDateline)
+        #expect(CollectionApparatusShortcut.suggested(.summaries).title == "Suggested for Summaries")
+
+        let change = CollectionApparatusChange(from: current, to: CollectionPreset.fullTextAsPrinted.suggestedApparatus)
+        #expect(change.added == [.bibliography, .archivalSources, .noteOnTheText])
+        #expect(change.removed == [.chronology])
+        #expect(change.sentence == "Added Bibliography, Sources & Archives and Note on the Text. Removed Chronology. "
+                + "Contents list from Header & Dateline to Citation.")
+        #expect(CollectionApparatusChange(from: current, to: current).sentence
+                == "Nothing changed: this collection already had this apparatus.")
+    }
+
+    /// The third review's J14: the one tap on step 2's row only adds, so it takes away nothing the author placed; it
+    /// leaves the contents list's style, which a tap cannot add; and it is offered only where the documents are a
+    /// template's.
+    @Test("The one tap on step 2's row adds the suggested set and removes nothing (J14)")
+    func theOneTapOnlyAdds() throws {
+        let documents = CollectionPreset.fullTextWithAnnotations.documents
+        let apparatus = CollectionApparatusSettings(contentsStyle: .citation, wordCloud: true,
+                                                    blocks: [.bibliography])
+        let offer = try #require(CollectionApparatusSettings.offer(documents: documents, apparatus: apparatus))
+        #expect(offer.preset == .fullTextWithAnnotations)
+        #expect(offer.adding.blocks == [.bibliography, .chronology, .personsIndex, .noteOnTheText])
+        #expect(offer.adding.contentsStyle == .citation, "the one tap changed the contents list's style")
+        #expect(offer.adding.wordCloud, "the one tap turned the word cloud off")
+        let change = CollectionApparatusChange(from: apparatus, to: offer.adding)
+        #expect(change.removed.isEmpty)
+        #expect(change.addLabel == "Add Chronology, Persons Index and Note on the Text")
+
+        #expect(CollectionApparatusSettings.offer(documents: Self.newCollection, apparatus: apparatus) == nil,
+                "a collection whose documents are no template's was offered a set")
+        #expect(CollectionApparatusSettings.offer(documents: documents, apparatus: offer.adding) == nil,
+                "a collection with the whole set was offered it again")
+    }
+
+    @Test("A choice that follows says what it follows and what that is")
+    func aChoiceSaysWhatItFollows() {
+        #expect(CollectionSetting.follows(CollectionSetting.onOff(true), fromSection: true) == "Follow the section: On")
+        #expect(CollectionSetting.follows(CollectionSetting.onOff(false), fromSection: false)
+                == "Follow the collection: Off")
+        #expect(CollectionSetting.templateSettings == [.opening, .bodyDepth, .footnotes, .sourceNote, .notes,
+                                                       .highlights, .headnotes])
+        #expect(Set(CollectionSetting.allCases.map(\.displayName)).count == CollectionSetting.allCases.count)
+    }
+}

@@ -50,6 +50,9 @@ import SwiftData
 ///          `structuralDeleteButton`; every row type gained the optional closures
 ///   1.5 — #1477: the title field's "Section heading" prompt is drawn at the row's background
 ///          prominence (`CollectionChipStyle.prompt`), so it reads on a selected Mac row
+///   1.6 — L44 (the design's §4.2 and §5.2): the section's body depth, which stays on its row, is named *Body depth* as
+///          everywhere else (it read *Section body*), and its first choice says what it follows (*Follow the collection:
+///          Full document*), where it read *Default*; the section's sheet holds the section's seven
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
@@ -173,16 +176,16 @@ struct CollectionHeadingRow: View {
                              defaultValue: "Set export defaults for every document in this section"))
                 structuralDeleteButton(showsInlineDelete ? onDelete : nil, for: .heading)
             }
-            // Section body depth — applied to documents under this heading (Phase 3c).
-            Picker(selection: sectionDepth) {
-                Text(String(localized: "collection.section.bodyDepth.default", defaultValue: "Default"))
+            // Section body depth — applied to documents under this heading (Phase 3c). Its first choice follows the
+            // sections around this one, else the collection (L44), through the rule a section's sheet reads.
+            Picker(CollectionSetting.bodyDepth.displayName, selection: sectionDepth) {
+                Text(CollectionOwnSettings.followedWords(.bodyDepth, by: entry, promptName: { _ in "" }))
                     .tag(String?.none)
                 ForEach(depthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
-            } label: {
-                Text(String(localized: "collection.section.bodyDepth.label", defaultValue: "Section body"))
             }
             .pickerStyle(.menu)
             .font(.caption)
+            .accessibilityIdentifier("collection.section.bodyDepth.picker")
         }
         .padding(.vertical, 4)
         .contextMenu { sectionContextMenu }
@@ -525,6 +528,9 @@ extension View {
 /// Version history:
 ///   1.0 — Composer v2 §D: labeled Configure trigger replaces the info-glyph editor openers
 ///   1.1 — #1477: drawn at the row's background prominence (``CollectionChipStyle``), so it reads on a selected Mac row
+///   1.2 — L44 (#2006): its type is a text style, which follows the reader's text size, where it was fixed at 12 points,
+///          and on iPhone and iPad its hit area is 44 points each way (`minimumHitTarget()`), where it was the pill's own
+///          24, under the 28 Apple gives as the least; the pill is drawn as it was at the default size
 struct ConfigurePill: View {
     /// The pill's label — "Configure" on a document row, "Section defaults" on a heading row.
     var label: String = String(localized: "collection.entry.configure", defaultValue: "Configure")
@@ -537,12 +543,13 @@ struct ConfigurePill: View {
         let colors = CollectionChipStyle.colors(on: backgroundProminence)
         Button(action: action) {
             Label(label, systemImage: "slider.horizontal.3")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .labelStyle(.titleAndIcon)
                 .foregroundStyle(colors.foreground)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(colors.background, in: RoundedRectangle(cornerRadius: 8))
+                .minimumHitTarget()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)

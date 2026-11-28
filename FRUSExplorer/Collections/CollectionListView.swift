@@ -72,6 +72,8 @@ import UniformTypeIdentifiers
 ///   1.14 — L35: a row's menu opens with Export…; VoiceOver offers the menu's items as the row's actions (#2006),
 ///          from the menu's own builder; and a row opens anywhere along its width, where on an iPad it opened only
 ///          where its text was (R4's finding)
+///   1.15 — L44: Snapshot runs the sequence the Mac window and a smart collection's editor run too
+///          (`SmartCollectionSnapshot.createFromLinkedSearch`)
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -262,30 +264,9 @@ struct CollectionListView: View {
     /// Resolves a smart collection's saved search now and materializes the results into a new
     /// static collection (D8), then opens it. Non-destructive: the smart collection is untouched.
     private func snapshotSmartCollection(_ collection: Collection) async {
-        guard let searchId = collection.savedSearchId else { return }
-        guard let searchService = appState.searchService else {
-            snapshotError = String(localized: "export.smart.noSearchService.v2",
-                                   defaultValue: "Search is not ready yet. Try again in a moment.")
-            return
-        }
-        let descriptor = FetchDescriptor<SavedSearch>(predicate: #Predicate { $0.id == searchId })
-        guard let savedSearch = try? modelContext.fetch(descriptor).first else {
-            snapshotError = String(localized: "export.smart.missingSearch",
-                                   defaultValue: "The linked saved search could not be found. It may have been deleted.")
-            return
-        }
         do {
-            // The saved search's run is FRUSCoreKit's (FRUS Explorer Light, S18b), at the iOS search's ceiling.
-            let refs = try await SmartCollectionSnapshot.documentRefs(
-                parameters: savedSearch.searchParameters, searchService: searchService,
-                limit: SearchViewModel.searchHardLimit)
-                .map { (documentId: $0.documentId, volumeId: $0.volumeId) }
-            let snapshot = SmartCollectionSnapshot.create(from: collection, results: refs, into: modelContext)
-            if let pid = appState.activeProjectId, !snapshot.projectIds.contains(pid) {
-                snapshot.projectIds.append(pid)
-            }
-            try modelContext.save()
-            collectionToEdit = snapshot
+            collectionToEdit = try await SmartCollectionSnapshot.createFromLinkedSearch(of: collection, appState: appState,
+                                                                                      in: modelContext)
         } catch {
             snapshotError = error.localizedDescription
         }

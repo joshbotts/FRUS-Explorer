@@ -23,13 +23,13 @@ import Testing
 /// ## The bug this exists to stop happening a fourth time
 /// A collection's export options live in **three** parallel implementations:
 ///
-/// - `CollectionEditorView.frontMatterRows` — the iPhone drill-in, the iPad ⚙ sheet, and the
-///   macOS **Edit Collection** sheet.
+/// - `CollectionEditorView`'s settings — the iPhone drill-in and the iPad ⚙ sheet, whose step 2 holds the three since
+///   L44 (`settingsHost`, decision 170).
 /// - `MacCollectionManagerView.macCollectionSettingsForm` — the macOS **Collections window**
-///   (⌘⇧K), which is the surface a Mac user actually reaches.
-/// - `CollectionAttributesRows` — the iOS/iPad **document inspector**'s Collection section.
-///   (macOS suppresses it there deliberately, passing `showsCollectionSettings: false`, because
-///   the ⚙ popover owns those settings on that platform.)
+///   (⌘⇧K), which is the surface a Mac user actually reaches, its step 2 opening in place.
+/// - Until L44, `CollectionAttributesRows` — a heading's Section defaults sheet's copy, under other names. L44 took it out
+///   with the collection's other settings there (the design's §5.2), so two surfaces are left, each committing from
+///   its own binding.
 ///
 /// #617 added `includeMethodAppendix` to the first only. #620 caught the second — the owner went
 /// looking for the control to seed the CloudKit schema and could not find it. **The first version
@@ -58,6 +58,8 @@ import Testing
 ///   1.4 — MACCOL review, round 1: the write-back check accepts only the per-control commit. The Mac window's
 ///         `saveMetadata()` was the last surface to copy its mirrors onto the model (`collection.x = x`), all seven fields
 ///         on every edit, and MACCOL removed it; the docs no longer describe it as current
+///   1.5 — L44: two surfaces, since `CollectionAttributesRows` is gone with the section sheet's copy of the collection's
+///         settings; each surface's three switches are its step 2's
 @Suite("Collection export toggle parity")
 struct CollectionExportToggleParityTests {
 
@@ -80,8 +82,7 @@ struct CollectionExportToggleParityTests {
     /// neither, and asking it for a mirror's seed would be asserting a bug.
     private static let surfaces: [(path: String, mirrorsState: Bool)] = [
         ("FRUSExplorer/Collections/CollectionEditorView.swift", true),
-        ("FRUSExplorer/Collections/MacCollectionManagerView.swift", true),
-        ("FRUSExplorer/Collections/CollectionCompositionRows.swift", false)
+        ("FRUSExplorer/Collections/MacCollectionManagerView.swift", true)
     ]
 
     private static func source(_ path: String) throws -> String {
@@ -139,24 +140,9 @@ struct CollectionExportToggleParityTests {
         }
     }
 
-    /// A directly-bound surface must bind the MODEL, not a local copy — and, since MACCOL, save each switch as it is
-    /// made: `saving(\.x)`, whose setter writes `collection[keyPath:]` and saves, not `$x` (a stray `@State` there would
-    /// edit a value nothing ever reads back) and not `$collection.x` (which writes the model and leaves the save to
-    /// autosave, so a foreground kill could lose the switch). `SectionDefaultsSaveTests` switches each toggle in the
-    /// hosted rows; this pins that every toggle goes through the saving binding.
-    @Test("Directly-bound surfaces bind the model itself, and save each switch")
-    func directSurfacesBindTheModel() throws {
-        for (path, mirrorsState) in Self.surfaces where !mirrorsState {
-            let text = try Self.source(path)
-            for toggle in Self.toggles {
-                #expect(text.contains("saving(\\.\(toggle))"),
-                        "\(path) must bind `\(toggle)` through `saving(\\.\(toggle))`, which writes the model and saves")
-            }
-            let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-            #expect(collapsed.contains("set: { collection[keyPath: keyPath] = $0; save() }"),
-                    "\(path)'s saving(_:) does not write the collection and save in its setter")
-        }
-    }
+    // `directSurfacesBindTheModel` held the directly-bound surface, `CollectionAttributesRows`, to `saving(\.x)` (MACCOL).
+    // L44 removed that surface (a section's sheet holds nothing of the collection's), so no surface binds the model
+    // itself, and the test would loop over none; it went with the view.
 
     /// And seeded from the model when the surface opens, or the control shows `false` for a
     /// collection that has the option on. (Until MACCOL the Mac window's first edit to any other
@@ -187,9 +173,9 @@ struct CollectionExportToggleParityTests {
             let name = trimmed.dropFirst("var ".count).prefix { $0 != ":" }
             found.append(String(name))
         }
-        // `includeFootnotes` / `includeNotes` / `includeSourceNote` / `includeWordCloud` are
-        // composition defaults rendered by `CollectionCompositionRows`, which BOTH surfaces embed
-        // as one shared view — so they cannot diverge and are not this suite's business.
+        // `includeFootnotes` / `includeNotes` / `includeSourceNote` / `includeWordCloud` are the
+        // two steps' settings, drawn by `CollectionDocumentsStep` and `CollectionApparatusStep`, which
+        // BOTH surfaces embed as shared views (L44) — so they cannot diverge and are not this suite's business.
         let composition: Set<String> = ["includeFootnotes", "includeNotes", "includeSourceNote",
                                         "includeWordCloud"]
         let expected = Set(found).subtracting(composition)

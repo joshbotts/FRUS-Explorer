@@ -176,6 +176,12 @@ import UIKit
 ///   2026-11-28 — L58: the collection's settings, on the iPhone, in the iPad's sheet and in a document's settings, offer
 ///          the Note on the Text where it would say something (`CollectionCompositionRows.wantsNoteOnTheText`), its Add
 ///          putting the row at the end of the outline as the Apparatus menu does
+///   2026-11-28 — L44 (the design's §5.2, decision 153): Collection settings opens on ten controls, the two steps' rows
+///          among them (`CollectionSettingsSteps`), each step a screen pushed in the settings' own stack; the colophon,
+///          the project stamp and the query log are step 2's (decision 170); the Mac's New Collection form is a name and
+///          the two steps, each a menu; a smart collection's Contents sentence offers Create Static Snapshot, which
+///          opens the snapshot (the design's §4.5); a block from the Apparatus menu goes where step 2's ticks put it, the
+///          Note on the Text last (`CollectionApparatusRows`)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -241,6 +247,10 @@ struct CollectionEditorView: View {
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
     @State private var exportError: String?
+    /// A smart collection's static snapshot, opened above this editor once Create Static Snapshot has made it (L44).
+    @State private var snapshotToOpen: Collection?
+    /// Why Create Static Snapshot could not make one, while its alert shows (L44).
+    @State private var snapshotError: String?
 
     /// Bulk-loaded per-document display data (headers + ISO dates from the index), keyed
     /// `"volumeId/documentId"` — the same pane-level pattern as the macOS manager, so
@@ -397,10 +407,9 @@ struct CollectionEditorView: View {
         // (`committing`, #1415), and writes only itself (`CollectionEditorCommit`, #1413) — never from an `onChange`
         // here: on the iPhone, Collection settings is pushed OVER this view, and a covered, pushed view runs no
         // `onChange`, so an edit made there reached the model only when the editor came back, and never if it did not.
-        // Follow the model when a second writer changes what this view holds as one-time `@State` copies: a heading
-        // row's Section defaults sheet (`CollectionAttributesRows`) writing the description, subtitle, author line and
-        // front-matter flags directly on the model (#1413), and another iPad window or iCloud renaming the collection
-        // (#1359). The follow writes only these copies, never the model — so the field the reader edits next starts
+        // Follow the model when a second writer changes what this view holds as one-time `@State` copies: another
+        // iPad window or iCloud writing the name (#1359), the description, subtitle, author line or the three export
+        // switches, which until L44 a heading row's Section defaults sheet also wrote directly on the model (#1413). The follow writes only these copies, never the model — so the field the reader edits next starts
         // from the value the collection holds. (A `ViewModifier` so its `.onChange`s don't overflow the body's
         // type-checker.)
         .modifier(FrontMatterModelSync(
@@ -502,17 +511,15 @@ struct CollectionEditorView: View {
 
             Divider()
 
-            // Form content
+            // Form content. L44 (the design's §5.2): Add to Collection's New Collection form is a name and the two steps,
+            // each a menu. Everything else is set in the Collections window, where the new collection opens.
             Form {
                 nameSection
-                noteSection
-                frontMatterSection
-                compositionSection
-                smartCollectionSection
-                documentsSection
-                addDocumentsSection
-                if !sortedEntries.isEmpty || linkedSavedSearchId != nil {
-                    actionsSection
+                Section {
+                    CollectionDocumentsMenu(collection: collection)
+                    CollectionApparatusMenu(collection: collection, host: settingsHost)
+                } header: {
+                    Text(String(localized: "collection.settings.steps.header", defaultValue: "Template"))
                 }
             }
             .formStyle(.grouped)
@@ -531,7 +538,7 @@ struct CollectionEditorView: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 14)
         }
-        .frame(minWidth: 520, minHeight: 460)
+        .frame(minWidth: 460, minHeight: 260)
         .sheet(isPresented: $showAddDocuments) {
             CollectionAddDocumentsSheet(
                 allTags: allTags,
@@ -697,6 +704,20 @@ struct CollectionEditorView: View {
                 drillInInspector(entry)
             }
         }
+        // L44 (the design's §4.5): a smart collection's snapshot opens above its editor, so Back returns to the smart
+        // collection.
+        .navigationDestination(item: $snapshotToOpen) { snapshot in
+            CollectionEditorView(collection: snapshot, presentationStyle: .pushed)
+        }
+        .alert(
+            String(localized: "collection.snapshot.error.title", defaultValue: "Couldn’t Create Snapshot"),
+            isPresented: Binding(get: { snapshotError != nil }, set: { if !$0 { snapshotError = nil } }),
+            presenting: snapshotError
+        ) { _ in
+            Button(String(localized: "collection.editor.export.error.dismiss", defaultValue: "OK")) {}
+        } message: { message in
+            Text(message)
+        }
         // L19 (IPA-4): a reader opened from one entry's drill-in is not left for the next one's. L36: the entry
         // whose settings open is the preview's chosen row, whose document it brings into view.
         .onChange(of: inspectedEntryId) { _, id in inspectorReadingChain = []; previewPlace.choose(id) }
@@ -804,25 +825,14 @@ struct CollectionEditorView: View {
         }
     }
 
-    /// The pushed Collection Settings screen (iPhone drill-in): leads with the collection's name /
-    /// note and title-page front matter, then the default-template presets + the three grouped
-    /// composition sections, then the smart-collection link (#309 — matches the macOS manager and
-    /// the iPad ⚙ Collection sheet, both realigned to name-first ordering in the same change).
-    /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
-    /// preset grid for the wide iPad sheet) so its presets render as the compact chip row here.
+    /// The pushed Collection Settings screen (iPhone drill-in): Collection settings' ten controls
+    /// (`collectionSettingsSections`, L44), the name first (#309), as the iPad's ⚙ sheet and the Mac's popover have them.
     /// This screen COVERS the editor, which — pushed, as the Collections tab shows it — runs no `onChange` meanwhile,
-    /// so every field on it commits from its own binding as it is edited (`committing`, #1415), however it is left.
+    /// so every field on it commits from its own binding as it is edited (`committing`, #1415), however it is left; so
+    /// do step 2's three switches, which this editor's bindings commit.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
-            // #309: name + collection-wide metadata first, then the default-template presets and the
-            // three composition groups (Document content / Your annotations / Analysis & apparatus),
-            // then the smart-collection link — matching the macOS manager and iPad ⚙ sheet ordering.
-            nameSection
-            noteSection
-            frontMatterSection
-            CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
-                                      onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) })
-            smartCollectionSection
+            collectionSettingsSections
         }
         .navigationTitle(String(localized: "collection.editor.settings.title",
                                 defaultValue: "Collection settings"))
@@ -877,26 +887,18 @@ struct CollectionEditorView: View {
             if let entry = inspectedEntry {
                 // L19 (IPA-4): Open Document closes the sheet and reads the document in the editor's
                 // stack, where a row's long press reads it, rather than inside a form sheet.
-                entryInspectorContent(entry, documentOnly: true,
+                entryInspectorContent(entry,
                                       onOpenDocument: { openWhenInspectorCloses(entry) })
             }
         }
     }
 
-    /// The iPad ⚙ Collection settings sheet (Composer v2 §A): a dismissible form sheet holding the
-    /// collection's name/note, title-page front matter, presets + the three grouped composition
-    /// sections, and the smart-collection link — everything that lived in the old persistent
-    /// metadata/composition inspector column.
+    /// The iPad ⚙ Collection settings sheet (Composer v2 §A): a dismissible form sheet holding Collection settings' ten
+    /// controls (`collectionSettingsSections`, L44), each step a screen pushed in the sheet's own stack.
     private var iPadCollectionSettingsSheet: some View {
         NavigationStack {
             Form {
-                // #309: mirror the macOS manager's order — collection name + metadata first, then
-                // the default-template presets + the three composition groups, then the smart link.
-                nameSection
-                noteSection
-                frontMatterSection
-                compositionSection
-                smartCollectionSection
+                collectionSettingsSections
             }
             .formStyle(.grouped)
             .navigationTitle(String(localized: "collection.editor.settings.title",
@@ -1045,10 +1047,9 @@ struct CollectionEditorView: View {
                       defaultValue: "Author")
     }
 
-    /// Title-page and introduction fields (Authoring Phase 4), usable inside any
-    /// container (iPhone Details disclosure, iPad inspector, macOS sheet form). All
-    /// commit as they are edited (#1415); an empty field stores `nil`, keeping exports
-    /// byte-identical to pre-Phase-4 output until something is actually set.
+    /// Title-page and introduction fields (Authoring Phase 4): the subtitle, the author line and the introduction, which
+    /// with the name and the note are the title page's five (L44). All commit as they are edited (#1415); an empty field
+    /// stores `nil`, keeping exports byte-identical to pre-Phase-4 output until something is actually set.
     @ViewBuilder
     private var frontMatterRows: some View {
         TextField(
@@ -1076,43 +1077,10 @@ struct CollectionEditorView: View {
                 saveIntroduction(rtf: rtf, plain: plain)
             }
         }
-        Toggle(isOn: committing($includeColophon) {
-            CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection)
-        }) {
-            Text(String(localized: "collection.frontmatter.colophon.toggle",
-                        defaultValue: "Include colophon"))
-        }
-        .accessibilityIdentifier("collection.editor.colophon.toggle")
-        Toggle(isOn: committing($includeProjectProvenance) {
-            CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
-        }) {
-            Text(String(localized: "collection.frontmatter.projectProvenance.toggle",
-                        defaultValue: "Stamp active project on export"))
-        }
-        #if os(macOS)
-        .toggleStyle(.checkbox)
-        #endif
-        // M-2. The subtitle is not decoration: this is the one export toggle that puts the text
-        // of the researcher's searches into a document they may be about to publish, and the
-        // consequence has to be legible at the moment of the tap rather than in a manual.
-        Toggle(isOn: committing($includeMethodAppendix) {
-            CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
-        }) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
-                            defaultValue: "Append the query log"))
-                Text(String(localized: "collection.frontmatter.methodAppendix.subtitle",
-                            defaultValue: "Every search you ran under the active project, with its scope and result count."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        #if os(macOS)
-        .toggleStyle(.checkbox)
-        #endif
+        // L44 (decision 170): the colophon, the project stamp and the query log are step 2's, under its blocks.
     }
 
-    /// The front-matter rows as a titled form section (iPad inspector, macOS sheet form).
+    /// The front-matter rows as a titled form section (the iPhone's settings screen and the iPad's sheet).
     private var frontMatterSection: some View {
         Section {
             frontMatterRows
@@ -1140,18 +1108,36 @@ struct CollectionEditorView: View {
         try? modelContext.save()
     }
 
-    // MARK: - Composition Section
+    // MARK: - Collection settings (L44)
 
-    /// The persisted export-content settings (body depth, footnotes, notes, highlights, etc.),
-    /// as the three labeled Composer groups. `CollectionCompositionRows` owns its own Sections, so
-    /// this host places it directly rather than wrapping it in one Composition section.
-    private var compositionSection: some View {
-        // The iPad ⚙ Collection sheet is wide enough for the preset grid even though an iPadOS
-        // form sheet reports a compact size class — force the grid, whose cards give each of the
-        // six templates its full name and subtitle (L25), where the chip row gives a short name.
-        CollectionCompositionRows(collection: collection, onApplyPreset: { applyPreset($0) },
-                                  onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
-                                  presetsCompact: false)
+    /// Collection settings' ten controls (L44; the design's §5.2), on the iPhone's pushed screen and in the iPad's
+    /// sheet: the name; the two steps' rows, each opening its step as a screen pushed in the settings' own stack; the
+    /// note and the title page; *Citation style* and *Wording*; and the linked saved search. The name stays first, as
+    /// #309 put it on every platform.
+    @ViewBuilder
+    private var collectionSettingsSections: some View {
+        nameSection
+        CollectionSettingsSteps(collection: collection, host: settingsHost, presentation: .pushed)
+        noteSection
+        frontMatterSection
+        CollectionCitationsRows(collection: collection, presentation: .pushed)
+        smartCollectionSection
+    }
+
+    /// What the collection's settings need of this editor (L44): a row's name, its apparatus edits through its outline, and the
+    /// three export switches step 2 holds, each committed from its own binding as the settings' other fields are (#1415).
+    private var settingsHost: CollectionSettingsHost {
+        CollectionSettingsHost(
+            name: { CollectionOwnSettings.rowName($0, headers: documentHeaders) },
+            applyApparatus: { applyApparatus($0) },
+            undoApparatus: { undoApparatus($0) },
+            colophon: committing($includeColophon) { CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection) },
+            projectStamp: committing($includeProjectProvenance) {
+                CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
+            },
+            queryLog: committing($includeMethodAppendix) {
+                CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
+            })
     }
 
     // MARK: - Documents Section
@@ -1170,6 +1156,15 @@ struct CollectionEditorView: View {
                 Label(SmartCollectionRule.sentence, systemImage: "bolt.fill")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                // L44 (the design's §4.5): the way to a collection whose documents can be set one by one, where the
+                // reader meets the sentence, and not only in the Collections list.
+                Button {
+                    Task { await createSnapshot() }
+                } label: {
+                    Label(String(localized: "collection.snapshot.action", defaultValue: "Create Static Snapshot"),
+                          systemImage: "camera")
+                }
+                .accessibilityIdentifier("collection.editor.snapshot")
             }
             if sortedEntries.isEmpty {
                 if takesHandAddedEntries {
@@ -1915,41 +1910,39 @@ struct CollectionEditorView: View {
         reindexEntries()
     }
 
-    /// Inserts a generated apparatus entry (Authoring Phase 6) at the block type's
-    /// default position — front-matter types before the first entry, back-matter types
-    /// at the end. The entry stores only the block TYPE; it stays fully movable and
-    /// deletable like a prose block afterwards.
+    /// Inserts a generated apparatus entry (Authoring Phase 6) at the block type's usual place, through the rule step 2
+    /// ticks by (`CollectionApparatusRows.insert`, L44): a Chronology first, the others at the end, and the Note on the
+    /// Text last. The entry stores only the block TYPE; it stays fully movable and deletable like a prose block afterwards.
     private func addGeneratedEntry(type: CollectionGeneratedBlockType) {
-        let entry = CollectionEntry(
-            collectionId: collection.id,
-            documentId: "",
-            volumeId: "",
-            sortOrder: 0
-        )
-        entry.entryKind = .generated
-        entry.generatedBlockType = type.rawValue
-        entry.collection = collection
-        modelContext.insert(entry)
-        switch type.defaultPosition {
-        case .frontMatter: sortedEntries.insert(entry, at: 0)
-        case .backMatter:  sortedEntries.append(entry)
-        }
+        CollectionApparatusRows.insert(type, into: collection, outline: &sortedEntries, modelContext: modelContext)
         reindexEntries()
     }
 
-    /// Applies a one-tap composition preset (Composer redesign 4a): overwrites the collection's
-    /// composition fields, then inserts the preset's not-yet-present apparatus blocks through
-    /// `addGeneratedEntry` — so the `sortedEntries` outline mirror and `sortOrder` stay consistent
-    /// (a model-direct insert would reach the outline only on the next update, through
-    /// `CollectionEntriesModelSync`, and would skip the block type's default position).
-    /// Non-destructive: existing apparatus and document entries are kept.
-    private func applyPreset(_ preset: CollectionPreset) {
-        preset.applyFields(to: collection)
-        let present = Set(sortedEntries.compactMap {
-            $0.entryKind == .generated ? $0.generatedBlockType : nil
-        })
-        for block in preset.apparatusBlocks(notAlreadyIn: present) {
-            addGeneratedEntry(type: block)
+    /// Applies a whole apparatus from step 2 (L44): its shortcuts, its ticks, the one tap on its row and the Mac's New
+    /// Collection menu, through `CollectionApparatusRows`, so the outline mirror and `sortOrder` stay consistent (a
+    /// model-direct insert would reach the outline only on the next update, through `CollectionEntriesModelSync`, and
+    /// skip the block's usual place); then renumbers, normalizes and saves.
+    private func applyApparatus(_ target: CollectionApparatusSettings) -> CollectionApparatusRows.Undo {
+        let undo = CollectionApparatusRows.apply(target, to: collection, outline: &sortedEntries,
+                                                 modelContext: modelContext)
+        finishOutlineMutation()
+        return undo
+    }
+
+    /// Puts one of step 2's changes back (L44), then renumbers, normalizes and saves.
+    private func undoApparatus(_ undo: CollectionApparatusRows.Undo) {
+        CollectionApparatusRows.undo(undo, collection: collection, outline: &sortedEntries, modelContext: modelContext)
+        finishOutlineMutation()
+    }
+
+    /// Makes this smart collection's static snapshot and opens it above the editor (L44; the design's §4.5), through the
+    /// sequence the Collections list runs (`SmartCollectionSnapshot.createFromLinkedSearch`).
+    private func createSnapshot() async {
+        do {
+            snapshotToOpen = try await SmartCollectionSnapshot.createFromLinkedSearch(of: collection, appState: appState,
+                                                                                    in: modelContext)
+        } catch {
+            snapshotError = error.localizedDescription
         }
     }
 
@@ -2003,11 +1996,11 @@ struct CollectionEditorView: View {
     @ViewBuilder
     private func drillInInspector(_ entry: CollectionEntry) -> some View {
         #if os(iOS)
-        entryInspectorContent(entry, isPushed: true, documentOnly: true,
+        entryInspectorContent(entry, isPushed: true,
                               onOpenDocument: { inspectorReadingChain = [readerEntry(for: entry)] })
             .inPlaceReader($inspectorReadingChain)
         #else
-        entryInspectorContent(entry, isPushed: true, documentOnly: true)
+        entryInspectorContent(entry, isPushed: true)
         #endif
     }
 
@@ -2039,7 +2032,6 @@ struct CollectionEditorView: View {
     /// list in sync when a highlight is inserted as an excerpt.
     @ViewBuilder
     private func entryInspectorContent(_ entry: CollectionEntry, isPushed: Bool = false,
-                                       documentOnly: Bool = false,
                                        onOpenDocument: (() -> Void)? = nil) -> some View {
         CollectionEntryInspector(
             entry: entry,
@@ -2053,16 +2045,6 @@ struct CollectionEditorView: View {
                         entryId: entry.id)
                 }
             },
-            // Composer v2 §A/§C: the Document | Composition segment is gone — composition now lives in
-            // the ⚙ Collection sheet (iPad) / the top Collection Settings drill-in (iPhone). Both the
-            // iPad Configure sheet and the iPhone drill-in pass `documentOnly: true`, so this per-entry
-            // surface never re-shows the collection section.
-            showsCompositionSegment: false,
-            showsCollectionSettings: !documentOnly,
-            // Presets route apparatus through this host's entry-list management (4a).
-            onApplyPreset: { applyPreset($0) },
-            // L58: so does the Note on the Text's line in the collection's settings.
-            onAddNoteOnTheText: { addGeneratedEntry(type: .noteOnTheText) },
             // iPhone presents the inspector as a drill-in push (Composer redesign 4), so it omits
             // its own navigation stack + Done button.
             isPushed: isPushed,
@@ -2181,8 +2163,9 @@ struct CollectionEditorView: View {
 /// changes through the Manage Collections sheet's rename or iCloud. It only ever FOLLOWS: it writes
 /// the editor's copies and never the collection, so following a change never saves anything (#1413).
 ///
-/// - **The description, subtitle, author line and flags (#1413):** a heading row's Section defaults sheet
-///   (`CollectionAttributesRows`) writes all six directly on the model, the text as the reader types it, untrimmed.
+/// - **The description, subtitle, author line and flags (#1413):** another iPad window or iCloud. Until L44 a heading
+///   row's Section defaults sheet (`CollectionAttributesRows`) wrote all six directly on the model, the text as the
+///   reader typed it, untrimmed; since L44 that sheet holds the section's own settings and nothing of the collection's.
 /// - **The name (#1359):** another iPad window editing the same collection, or iCloud bringing a rename from another
 ///   device. Nothing on iOS renames a collection while its editor is open in the same window: the editor's own "Untitled
 ///   Collection" default is written only once the editor is dismissed (`NewCollectionSession`), never when a screen is
@@ -2233,7 +2216,7 @@ struct FrontMatterModelSync: ViewModifier {
                     collectionName = newValue
                 }
             }
-            // #1413: the three text fields a heading's Section defaults sheet writes.
+            // #1413: the three text fields another window or iCloud writes (a heading's Section defaults sheet did until L44).
             .onChange(of: collection.note) { _, newValue in
                 if !CollectionEditorCommit.fieldAgrees(collectionNote, withSaved: newValue) {
                     collectionNote = newValue ?? ""

@@ -673,20 +673,20 @@ struct NoteOnTheTextSettingsLineTests {
         entry.collection = collection
         context.insert(entry)
         try context.save()
-        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a document printed whole: nothing to say")
+        #expect(!CollectionApparatusStep.wantsNoteOnTheText(collection), "a document printed whole: nothing to say")
 
         // A headnote of Apple Intelligence's, found in the store: the Note would name its writer.
         entry.includeHeadnote = true
-        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a headnote with nothing stored prints none")
+        #expect(!CollectionApparatusStep.wantsNoteOnTheText(collection), "a headnote with nothing stored prints none")
         let summary = GeneratedSummary(documentId: "d1", volumeId: "frus1946v06", promptId: UUID(),
                                        responseText: "The model's summary.")
         context.insert(summary)
         try context.save()
-        #expect(CollectionCompositionRows.wantsNoteOnTheText(collection))
+        #expect(CollectionApparatusStep.wantsNoteOnTheText(collection))
         entry.includeHeadnote = nil
 
         entry.titleOverride = "The Long Telegram"
-        #expect(CollectionCompositionRows.wantsNoteOnTheText(collection), "a title of the compiler's")
+        #expect(CollectionApparatusStep.wantsNoteOnTheText(collection), "a title of the compiler's")
 
         let note = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "", sortOrder: 1)
         note.entryKind = .generated
@@ -694,12 +694,12 @@ struct NoteOnTheTextSettingsLineTests {
         note.collection = collection
         context.insert(note)
         try context.save()
-        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "the collection has its Note")
+        #expect(!CollectionApparatusStep.wantsNoteOnTheText(collection), "the collection has its Note")
 
         context.delete(note)
         collection.savedSearchId = UUID()
         try context.save()
-        #expect(!CollectionCompositionRows.wantsNoteOnTheText(collection), "a smart collection's settings run no search")
+        #expect(!CollectionApparatusStep.wantsNoteOnTheText(collection), "a smart collection's settings run no search")
         withExtendedLifetime(container) {}
     }
 }

@@ -19,6 +19,7 @@ import Foundation
 ///          inline `exportError` assignments in `ExportSheetView.runExport()`
 ///   1.1 — 2026-10-27 (FRUS Explorer Light, S18b): moved into FRUSCoreKit with the assembly that throws
 ///          `summaryPromptMissing`, public, so a host outside the app shows the app's messages
+///   1.2 — L44 (J11): `summaryPromptMissing` names the screen that holds the prompt
 public enum CollectionResolveError: Error, LocalizedError {
     /// The FTS5-backed `SearchService` was unavailable while resolving a smart collection.
     case searchServiceUnavailable
@@ -38,8 +39,10 @@ public enum CollectionResolveError: Error, LocalizedError {
             return String(localized: "export.smart.missingSearch",
                           defaultValue: "The linked saved search could not be found. It may have been deleted.")
         case .summaryPromptMissing:
+            // L44 (the third review's J11): it named a "Composition section" that no screen has had since the
+            // Composer's redesign; the prompt is under the collection settings' first step.
             return String(localized: "export.summaryNoPrompt",
-                          defaultValue: "Choose a summarization prompt in the collection’s Composition section to export summaries.")
+                          defaultValue: "Choose a summary prompt in the collection’s settings, under Documents, to export summaries.")
         }
     }
 }

@@ -89,6 +89,12 @@ import SwiftData
 ///   1.14 — L34 (R2b's finding): the headnote card falls back to the newest stored summary, through the rule the
 ///          export's headnote reads (`SummaryRecency.headnoteFallback`), where both took the oldest
 ///   1.15 — L58: `onAddNoteOnTheText`, passed on to the collection's settings for the Note on the Text's line
+///   1.16 — L44 (the design's §4.2 and §5.2; #2006): a section's sheet holds the section's seven and nothing of the
+///          collection's, so the Collection section, the Document | Composition segment, `showsCollectionSettings`,
+///          `onApplyPreset` and `onAddNoteOnTheText` are gone; a picker's first choice says what it follows and what that
+///          is (*Follow the section: On*, *Follow the collection: Off*), where it read *Default* over a caption
+///          *Default → On* that did not say who decided; each setting is named as everywhere else
+///          (`CollectionSetting`); each research note's and highlight's switch is named by its opening words
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -119,13 +125,6 @@ struct CollectionEntryInspector: View {
         let preview: String
     }
 
-    /// The inspector's top-level segment (Composer redesign 2b): the per-document surface or the
-    /// whole-collection composition. Selected by the `Document | Composition` segmented control.
-    private enum InspectorTab: Hashable {
-        case document
-        case composition
-    }
-
     /// The entry whose document is being inspected.
     let entry: CollectionEntry
 
@@ -146,29 +145,6 @@ struct CollectionEntryInspector: View {
     /// button stays (its `dismiss` closes the inspector column). Defaults to `false`
     /// — the iOS/iPad sheets and the shared heading-row sheet are unaffected.
     var isInspectorColumn: Bool = false
-
-    /// Whether to show the **Document | Composition** segmented control at the top of the inspector
-    /// (Composer redesign 2b). The iPad `.inspector` host passes `true` (regular width) so the
-    /// researcher can flip between this document's surface and the whole-collection composition; the
-    /// iPhone sheet, the Mac column, and the heading-row sheet keep the flat pinned layout (`false`),
-    /// pending their own host restructures (Phase 4). Ignored for a heading entry (no document).
-    var showsCompositionSegment: Bool = false
-
-    /// Whether the flat pinned layout includes the collection-level **Collection** settings section
-    /// (name / note / front matter / composition). `true` for the iPhone sheet and Mac column (the
-    /// pinned #188-E section); `false` for the Composer v2 iPad **Configure** sheet, which is
-    /// document-only because collection settings live in a separate ⚙ Collection sheet. Ignored when
-    /// the segmented control is shown.
-    var showsCollectionSettings: Bool = true
-
-    /// Applies a one-tap composition preset (4a), threaded from the host so apparatus insertion goes
-    /// through its entry-list management. Passed on to `CollectionCompositionRows`; when `nil` the
-    /// embedded composition shows no Presets section.
-    var onApplyPreset: ((CollectionPreset) -> Void)?
-
-    /// Adds a Note on the Text to the collection's outline (L58), threaded from the host as `onApplyPreset` is and
-    /// passed on to `CollectionCompositionRows`, whose line offers it; when `nil` the line is not shown.
-    var onAddNoteOnTheText: (() -> Void)?
 
     /// Whether this is presented as a **drill-in push** onto an existing navigation stack (iPhone,
     /// Composer redesign 4). When `true` the inspector omits its own `NavigationStack` and Done
@@ -205,10 +181,6 @@ struct CollectionEntryInspector: View {
     /// user-facing failure inline in the card (Composer redesign 2c-2c Regenerate).
     @State private var isRegenerating = false
     @State private var regenError: String?
-    /// The inspector's top-level segment when `showsCompositionSegment` (Composer redesign 2b):
-    /// this document's surface, or the whole-collection composition. View-state only, never
-    /// persisted; reset per entry because the inspector is recreated via `.id(entry.id)`.
-    @State private var inspectorTab: InspectorTab = .document
     @State private var noteTexts: [String] = []
     /// The document's research notes as include-toggle rows (D5).
     @State private var noteChoices: [NoteChoice] = []
@@ -237,29 +209,6 @@ struct CollectionEntryInspector: View {
                 : String(localized: "collection.inspector.title", defaultValue: "Document Details")
         }
         return name
-    }
-
-    /// The pinned collection-level attributes section (#188-E). Sourced from the entry's owning
-    /// collection (the SwiftData inverse relationship), so no call-site threading is needed.
-    /// Shows the collection's identity attributes and its export-composition defaults, both
-    /// edited live via `@Bindable` — reusing `CollectionAttributesRows` / `CollectionCompositionRows`.
-    @ViewBuilder
-    private var collectionSection: some View {
-        if let collection = entry.collection {
-            WrappingFooterSection {
-                CollectionAttributesRows(collection: collection)
-            } header: {
-                Text(String(localized: "collection.inspector.collection.header",
-                            defaultValue: "Collection"))
-            } footer: {
-                Text(String(localized: "collection.inspector.collection.footer",
-                            defaultValue: "These settings apply to the whole collection."))
-            }
-            // `CollectionCompositionRows` owns its three labeled Composer sections, so it is placed
-            // directly here rather than wrapped in a single "Export composition" section.
-            CollectionCompositionRows(collection: collection, onApplyPreset: onApplyPreset,
-                                      onAddNoteOnTheText: onAddNoteOnTheText)
-        }
     }
 
     var body: some View {
@@ -291,30 +240,14 @@ struct CollectionEntryInspector: View {
     /// The sectioned inspector list + its title, Done button (sheet/column only), and load task.
     private var inspectorList: some View {
         List {
-            if showsCompositionSegment && !isHeading {
-                // Composer redesign 2b (iPad): the top segmented control splits the pinned flat
-                // layout into this document's surface vs. the whole-collection composition.
-                segmentPickerRow
-                switch inspectorTab {
-                case .document:
-                    documentSections
-                case .composition:
-                    collectionSection
-                }
+            // L44: a row's settings are the row's alone. The collection's are behind the editor's ⚙, in two steps, and
+            // a section's sheet holds the section's seven (the design's §5.2), where it held 21, 15 of them the
+            // collection's under other names.
+            if isHeading {
+                headingIdentitySection
+                sectionDefaultsSection
             } else {
-                // Flat pinned layout (iPhone sheet, Mac column, heading rows): collection-level
-                // attributes stay reachable above the per-entry sections (#188-E) — unless the host
-                // owns them elsewhere (Composer v2 iPad: composition is its own ⚙ Collection sheet,
-                // so the per-row Configure sheet is document-only).
-                if showsCollectionSettings {
-                    collectionSection
-                }
-                if isHeading {
-                    headingIdentitySection
-                    sectionDefaultsSection
-                } else {
-                    documentSections
-                }
+                documentSections
             }
         }
         .navigationTitle(collectionDisplayTitle)
@@ -332,27 +265,7 @@ struct CollectionEntryInspector: View {
         .task { await load() }
     }
 
-    /// The `Document | Composition` segmented control pinned at the top of the inspector (Composer
-    /// redesign 2b). Styled as a clear-backed row so it reads as a top-level switch rather than a
-    /// boxed list cell.
-    @ViewBuilder private var segmentPickerRow: some View {
-        Picker(selection: $inspectorTab) {
-            Text(String(localized: "collection.inspector.tab.document", defaultValue: "Document"))
-                .tag(InspectorTab.document)
-            Text(String(localized: "collection.inspector.tab.composition", defaultValue: "Composition"))
-                .tag(InspectorTab.composition)
-        } label: {
-            Text(String(localized: "collection.inspector.tab.label", defaultValue: "Inspector view"))
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-    }
-
-    /// The per-document sections (identity → provenance), shared by the flat pinned layout and the
-    /// segmented `Document` tab. The loading placeholder stands in until `load()` resolves.
+    /// The per-document sections (identity → provenance). The loading placeholder stands in until `load()` resolves.
     @ViewBuilder private var documentSections: some View {
         identitySection
         if isLoading {
@@ -495,8 +408,11 @@ struct CollectionEntryInspector: View {
                         .toggleStyle(.switch)
                         .controlSize(.mini)
                         #endif
-                        .accessibilityLabel(String(localized: "collection.inspector.note.include",
-                                                   defaultValue: "Include this research note when notes apply"))
+                        // #2006: named by the note's opening words, so five notes are five switches VoiceOver can
+                        // tell apart. Until L44 every one was "Include this research note when notes apply".
+                        .accessibilityLabel(String(format: String(localized: "collection.inspector.note.include %@",
+                                                                  defaultValue: "Include the note “%@”"),
+                                                   Self.openingWords(choice.preview)))
                         Image(systemName: "note.text")
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
@@ -550,8 +466,13 @@ struct CollectionEntryInspector: View {
                     .toggleStyle(.switch)
                     .controlSize(.mini)
                     #endif
-                    .accessibilityLabel(String(localized: "collection.inspector.highlight.include",
-                                               defaultValue: "Include this passage when highlights apply"))
+                    // #2006: named by the passage's opening words, as each note's switch is, or by its colour where
+                    // it stored no words (a highlight made before Session 131).
+                    .accessibilityLabel(choice.capture.map {
+                        String(format: String(localized: "collection.inspector.highlight.include %@",
+                                              defaultValue: "Include the passage “%@”"), Self.openingWords($0.text))
+                    } ?? String(format: String(localized: "collection.inspector.highlight.includeColour %@",
+                                               defaultValue: "Include the %@ highlight"), choice.color.displayName))
                     Circle()
                         .fill(choice.color.swiftUIColor)
                         .frame(width: 10, height: 10)
@@ -618,104 +539,35 @@ struct CollectionEntryInspector: View {
         }
     }
 
-    // MARK: - Resolved-inheritance display (Composer redesign, idea #5)
+    // MARK: - What a choice follows (L44)
 
-    /// What a document entry's overrides resolve to *right now* — the section (nearest ancestor
-    /// heading) value, else the collection default — so each override at "Default" can show
-    /// "Default → On/Off" instead of a prose-only inheritance note. Reuses the existing ancestor
-    /// cascade (`CollectionOutline.sectionOverrideValues`) and the canonical `CollectionBodyDepth
-    /// .resolve`; the UI DISPLAYS the resolver's result, it does not reimplement resolution.
-    private struct ResolvedEntryDefaults {
-        let bodyDepth: CollectionBodyDepth
-        let highlights: Bool
-        let notes: Bool
-        let sourceNote: Bool
-        let footnotes: Bool
-        let related: Bool
-        let summaryPromptId: UUID?
-        let headnote: Bool
+    /// A choice's first item (the design's §4.2): what it follows and what that is, *Follow the section: On* or *Follow
+    /// the collection: Off*, read through the one rule the heading row's Body depth reads too
+    /// (`CollectionOwnSettings.followedWords`). Until L44 it read *Default*, over a caption *Default → On* that did not
+    /// say whether the section or the collection decided.
+    private func followText(_ setting: CollectionSetting) -> String {
+        CollectionOwnSettings.followedWords(setting, by: entry, promptName: promptName)
     }
 
-    /// The resolved defaults for the focused document entry, or `nil` for headings (whose own
-    /// values ARE the section default) and when the outline can't be read. Computed on the
-    /// MainActor view: reads `@Model` fields to build plain `[Value?]` arrays, then the pure
-    /// cascade resolves them.
-    private var resolvedEntryDefaults: ResolvedEntryDefaults? {
-        guard !isHeading, let collection = entry.collection else { return nil }
-        let ordered = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
-        guard let index = ordered.firstIndex(where: { $0.id == entry.id }) else { return nil }
-        let refs = ordered.map(CollectionOutline.StructuralRef.init)
-        // The nearest-ancestor-heading value for one override field at this entry's position.
-        func section<Value>(_ field: (CollectionEntry) -> Value?) -> Value? {
-            CollectionOutline.sectionOverrideValues(
-                refs, headingValues: ordered.map { $0.entryKind == .heading ? field($0) : nil }
-            )[index]
-        }
-        return ResolvedEntryDefaults(
-            bodyDepth: CollectionBodyDepth.resolve(entryOverride: nil,
-                                                   sectionOverride: section { $0.bodyDepthOverride },
-                                                   collectionDefault: collection.defaultBodyDepth),
-            highlights: section { $0.applyHighlightsOverride } ?? collection.applyHighlights,
-            notes: section { $0.includeNotesOverride } ?? collection.includeNotes,
-            sourceNote: section { $0.includeSourceNoteOverride } ?? collection.effectiveIncludeSourceNote,
-            footnotes: section { $0.includeFootnotesOverride } ?? collection.effectiveIncludeFootnotes,
-            related: section { $0.includeRelatedDocuments } ?? collection.defaultIncludeRelatedDocuments,
-            summaryPromptId: section { $0.summaryPromptIdOverride } ?? collection.summaryPromptId,
-            // A section's headnote default is the heading's own `headnoteDefault` (L43; J24), never its
-            // `includeHeadnote`, else the collection's.
-            headnote: section { $0.headnoteDefault } ?? collection.defaultIncludeHeadnote
-        )
-    }
-
-    /// "Default → On" / "Default → Off" for a resolved Bool override.
-    private func defaultResolves(_ value: Bool) -> String {
-        value
-            ? String(localized: "collection.inspector.override.resolvesOn", defaultValue: "Default → On")
-            : String(localized: "collection.inspector.override.resolvesOff", defaultValue: "Default → Off")
-    }
-
-    /// "Default → <value>" for a resolved non-Bool override (body depth, summary prompt).
-    private func defaultResolves(to text: String) -> String {
-        String(localized: "collection.inspector.override.resolvesTo",
-               defaultValue: "Default → \(text)")
-    }
-
-    /// The resolved summary-prompt name for the "Default → …" subtitle (or "None" when unset).
-    private func resolvedPromptName(_ id: UUID?) -> String {
-        guard let id, let choice = promptChoices.first(where: { $0.id == id }) else {
-            return String(localized: "collection.inspector.override.prompt.none", defaultValue: "None")
-        }
-        return choice.name
+    /// A prompt's name by its id, or *None* where no prompt has it.
+    private func promptName(_ id: UUID) -> String {
+        promptChoices.first(where: { $0.id == id })?.name
+            ?? String(localized: "collection.inspector.override.prompt.none", defaultValue: "None")
     }
 
     // MARK: - Export overrides (Authoring Phase 5)
 
-    /// A Default / On / Off picker bound to one optional-Bool override field.
-    /// "Default" (`nil`) inherits the section default, else the collection setting; when at Default,
-    /// an optional `subtitle` shows what it resolves to right now (Composer redesign, idea #5).
-    private func overridePicker(_ title: String, _ binding: Binding<Bool?>,
-                                subtitle: String? = nil) -> some View {
-        Picker(selection: binding) {
-            Text(String(localized: "collection.inspector.override.default",
-                        defaultValue: "Default"))
-                .tag(Bool?.none)
-            Text(String(localized: "collection.inspector.override.on",
-                        defaultValue: "On"))
-                .tag(Bool?.some(true))
-            Text(String(localized: "collection.inspector.override.off",
-                        defaultValue: "Off"))
-                .tag(Bool?.some(false))
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                if let subtitle, binding.wrappedValue == nil {
-                    Text(subtitle)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+    /// A three-way choice for one of a row's own switches: what it follows (*Follow the section: On*), *On* or *Off*.
+    /// The first leaves the row's value unset (`nil`), so it follows a later change above it; *On* and *Off* are set on
+    /// purpose and do not.
+    private func overridePicker(_ setting: CollectionSetting, _ binding: Binding<Bool?>) -> some View {
+        Picker(setting.displayName, selection: binding) {
+            Text(followText(setting)).tag(Bool?.none)
+            Text(CollectionSetting.onOff(true)).tag(Bool?.some(true))
+            Text(CollectionSetting.onOff(false)).tag(Bool?.some(false))
         }
         .pickerStyle(.menu)
+        .accessibilityIdentifier("collection.inspector.\(setting.rawValue).picker")
     }
 
     /// The shared override controls — the same six fields serve a document entry (its
@@ -724,58 +576,30 @@ struct CollectionEntryInspector: View {
     /// source note, and footnotes (PDF/DOCX gated since the 2026-07-03 owner decision)
     /// gate all three export formats and the preview.
     @ViewBuilder private var overrideControls: some View {
-        // Resolve the section/collection defaults once so each override at "Default" can show what
-        // it resolves to right now (Composer redesign idea #5). `nil` for headings.
-        let rd = resolvedEntryDefaults
-        overridePicker(String(localized: "collection.inspector.override.highlights",
-                              defaultValue: "Highlights"),
-                       Binding(get: { entry.applyHighlightsOverride },
-                               set: { entry.applyHighlightsOverride = $0 }),
-                       subtitle: rd.map { defaultResolves($0.highlights) })
-        overridePicker(String(localized: "collection.inspector.override.notes",
-                              defaultValue: "Research notes"),
-                       Binding(get: { entry.includeNotesOverride },
-                               set: { entry.includeNotesOverride = $0 }),
-                       subtitle: rd.map { defaultResolves($0.notes) })
-        overridePicker(String(localized: "collection.inspector.override.sourceNote",
-                              defaultValue: "Source note"),
-                       Binding(get: { entry.includeSourceNoteOverride },
-                               set: { entry.includeSourceNoteOverride = $0 }),
-                       subtitle: rd.map { defaultResolves($0.sourceNote) })
-        overridePicker(String(localized: "collection.inspector.override.footnotes",
-                              defaultValue: "Footnotes"),
-                       Binding(get: { entry.includeFootnotesOverride },
-                               set: { entry.includeFootnotesOverride = $0 }),
-                       subtitle: rd.map { defaultResolves($0.footnotes) })
+        overridePicker(.highlights, Binding(get: { entry.applyHighlightsOverride },
+                                            set: { entry.applyHighlightsOverride = $0 }))
+        overridePicker(.notes, Binding(get: { entry.includeNotesOverride },
+                                       set: { entry.includeNotesOverride = $0 }))
+        overridePicker(.sourceNote, Binding(get: { entry.includeSourceNoteOverride },
+                                            set: { entry.includeSourceNoteOverride = $0 }))
+        overridePicker(.footnotes, Binding(get: { entry.includeFootnotesOverride },
+                                           set: { entry.includeFootnotesOverride = $0 }))
 
-        Picker(selection: Binding(get: { entry.summaryPromptIdOverride },
+        Picker(CollectionSetting.summaryPrompt.displayName,
+               selection: Binding(get: { entry.summaryPromptIdOverride },
                                   set: { entry.summaryPromptIdOverride = $0 })) {
-            Text(String(localized: "collection.inspector.override.default",
-                        defaultValue: "Default"))
-                .tag(UUID?.none)
+            Text(followText(.summaryPrompt)).tag(UUID?.none)
             ForEach(promptChoices) { choice in
                 Text(choice.name).tag(UUID?.some(choice.id))
             }
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: "collection.inspector.override.prompt",
-                            defaultValue: "Summary prompt"))
-                if entry.summaryPromptIdOverride == nil, let rd {
-                    Text(defaultResolves(to: resolvedPromptName(rd.summaryPromptId)))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
         .pickerStyle(.menu)
+        .accessibilityIdentifier("collection.inspector.summaryPrompt.picker")
 
-        overridePicker(String(localized: "collection.inspector.override.related",
-                              defaultValue: "Related documents"),
-                       Binding(get: { entry.includeRelatedDocuments },
-                               set: { entry.includeRelatedDocuments = $0 }),
-                       subtitle: rd.map { defaultResolves($0.related) })
-        Text(String(localized: "collection.inspector.override.related.caption",
-                    defaultValue: "Adds a \u{201C}See also\u{201D} line listing cross-referenced documents that are also in this collection. Default follows the section, else the collection\u{2019}s See also."))
+        overridePicker(.seeAlso, Binding(get: { entry.includeRelatedDocuments },
+                                         set: { entry.includeRelatedDocuments = $0 }))
+        Text(String(localized: "collection.inspector.override.related.caption.v2",
+                    defaultValue: "Adds a \u{201C}See also\u{201D} line listing cross-referenced documents that are also in this collection."))
             .font(.caption2)
             .foregroundStyle(.secondary)
     }
@@ -802,22 +626,12 @@ struct CollectionEntryInspector: View {
     /// The body-depth Picker — the parent gate the rest of the overrides refine, so it
     /// leads both the document Export Overrides and the heading Section Defaults sections.
     private var bodyDepthPicker: some View {
-        Picker(selection: bodyDepthOverride) {
-            Text(String(localized: "collection.entry.bodyDepth.default",
-                        defaultValue: "Default")).tag(String?.none)
+        Picker(CollectionSetting.bodyDepth.displayName, selection: bodyDepthOverride) {
+            Text(followText(.bodyDepth)).tag(String?.none)
             ForEach(entryDepthOptions) { Text($0.displayName).tag(String?.some($0.rawValue)) }
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(String(localized: "collection.entry.bodyDepth.label",
-                            defaultValue: "Body depth"))
-                if entry.bodyDepthOverride == nil, let rd = resolvedEntryDefaults {
-                    Text(defaultResolves(to: rd.bodyDepth.displayName))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
         .pickerStyle(.menu)
+        .accessibilityIdentifier("collection.inspector.bodyDepth.picker")
     }
 
     /// The document entry's Export Overrides section.
@@ -826,29 +640,43 @@ struct CollectionEntryInspector: View {
                        defaultValue: "Export Overrides")) {
             bodyDepthPicker
             overrideControls
-            Text(String(localized: "collection.inspector.overrides.caption",
-                        defaultValue: "Default follows the section’s setting when its heading sets one, else the collection’s composition."))
+            Text(String(localized: "collection.inspector.overrides.caption.v2",
+                        defaultValue: "A setting that follows takes its section’s value where the section sets one, else the collection’s. On and Off are this document’s own."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
     }
 
-    /// The heading entry's Section Defaults variant: the same controls, applied to
-    /// every document the section owns unless a document sets its own override.
+    /// The heading entry's Section Defaults: the section's seven (the design's §5.2; decision 164), applied to every
+    /// document the section owns unless a document sets its own, and nothing of the collection's. Its title and its body
+    /// depth stay on its row.
     @ViewBuilder private var sectionDefaultsSection: some View {
         Section(String(localized: "collection.inspector.sectionDefaults",
                        defaultValue: "Section Defaults")) {
             overrideControls
             // L43: a section's headnote default (decision 164; J24), its own field and not the heading's
             // `includeHeadnote`, which headings of 2026-07-01 to 07-11 hold as an unseen `false`.
-            overridePicker(String(localized: "collection.inspector.sectionHeadnote", defaultValue: "Headnotes"),
-                           Binding(get: { entry.headnoteDefault }, set: { entry.headnoteDefault = $0 }))
-                .accessibilityIdentifier("collection.inspector.sectionHeadnote.picker")
-            Text(String(localized: "collection.inspector.sectionDefaults.caption",
-                        defaultValue: "Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition."))
+            Picker(CollectionSetting.headnotes.displayName,
+                   selection: Binding(get: { entry.headnoteDefault }, set: { entry.headnoteDefault = $0 })) {
+                Text(followText(.headnotes)).tag(Bool?.none)
+                Text(CollectionSetting.onOff(true)).tag(Bool?.some(true))
+                Text(CollectionSetting.onOff(false)).tag(Bool?.some(false))
+            }
+            .pickerStyle(.menu)
+            .accessibilityIdentifier("collection.inspector.sectionHeadnote.picker")
+            Text(String(localized: "collection.inspector.sectionDefaults.caption.v2",
+                        defaultValue: "Documents in this section follow these settings unless they set their own. A setting that follows takes the value of the section around this one, else the collection’s."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// The opening words a note's or a passage's switch is named by (#2006): its first eight words, with an ellipsis
+    /// where it goes on.
+    nonisolated static func openingWords(_ text: String) -> String {
+        let words = text.split(whereSeparator: { $0.isWhitespace || $0.isNewline })
+        let opening = words.prefix(8).joined(separator: " ")
+        return words.count > 8 ? opening + "…" : opening
     }
 
     // MARK: - Per-highlight selection (A8)
@@ -974,17 +802,12 @@ struct CollectionEntryInspector: View {
     /// "Automatic" = the resolver's fallback pick, preferring the collection's prompt).
     @ViewBuilder private var headnoteSection: some View {
         Section(String(localized: "collection.inspector.headnote", defaultValue: "Headnote")) {
-            // Now a Default/On/Off override (Composer redesign): Default inherits the collection's
-            // headnote default, shown as "Default → On/Off". The editable "key takeaway" card
-            // replaces this in a following phase.
-            let rd = resolvedEntryDefaults
-            overridePicker(String(localized: "collection.inspector.headnote.toggle",
-                                  defaultValue: "Show a summary above the document"),
-                           Binding(get: { entry.includeHeadnote },
-                                   set: { entry.includeHeadnote = $0 }),
-                           subtitle: rd.map { defaultResolves($0.headnote) })
+            // A three-way choice (Composer redesign; L44's words): what it follows, the section's headnote default (L43)
+            // else the collection's, or On or Off.
+            overridePicker(.headnotes, Binding(get: { entry.includeHeadnote },
+                                               set: { entry.includeHeadnote = $0 }))
 
-            if entry.includeHeadnote ?? rd?.headnote ?? false {
+            if entry.includeHeadnote ?? (CollectionOwnSettings.followed(.headnotes, by: entry).value as? Bool) ?? false {
                 headnoteCard
             }
         }
@@ -1016,7 +839,7 @@ struct CollectionEntryInspector: View {
             .filter { !$0.responseText.isEmpty }
         // Mirror the resolver's preferred-prompt precedence (entry override → section default →
         // collection default) so the card seeds and edits the SAME summary the export will use.
-        let promptId = entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId
+        let promptId = entry.summaryPromptIdOverride ?? (CollectionOwnSettings.followed(.summaryPrompt, by: entry).value as? UUID)
         return SummaryRecency.headnoteFallback(stored, preferredPromptId: promptId,
                                                promptId: { $0.promptId }, recency: { $0.recency })
     }
@@ -1294,7 +1117,7 @@ struct CollectionEntryInspector: View {
         // nil-date trap the macOS block did — `SortDescriptor(\.createdAt)` over an optional puts
         // NULL first, so a dateless standard row won the fallback.
         SummarizationPrompt.resolve(
-            preferredId: entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId,
+            preferredId: entry.summaryPromptIdOverride ?? (CollectionOwnSettings.followed(.summaryPrompt, by: entry).value as? UUID),
             in: modelContext).prompt
     }
 
