@@ -5321,7 +5321,7 @@ Row L56 of the plan of record from 2026-11-25 (decisions 184 to 186; #2012), on 
 
 **Merges since the last entry**
 - L35 merged as `604dd47d` (#2049), a squash onto `67a3372c` at 03:30:08 UTC on 2026-11-28, from its head `bc92b68c`, whose tree, `299e5dfa`, it keeps. It closed #2018. L36's entry, the one before this, was written before it merged, so this entry records it, as does the plan's L35 record.
-HEADMERGE
+- L36 merged as `433d1494` (#2050), a squash onto `604dd47d` at 04:18:44 UTC on 2026-11-28, from its head `c41532d0`, whose tree, `553acd71`, it keeps. It closed #1997 and #2004. Taken in at `fa7284d9`: the landing checks had run with that head merged, and `git diff 0c3e031f HEAD` is the records alone.
 
 **#2012, shown first** (decision 183)
 - A DEBUG seam opens Chronology on a range a test names (`UITestBrowseSeams.chronologyRange`, `FRUS_UI_TEST_CHRONOLOGY_RANGE`). The compact pickers are set a month at a time through their calendars, and the manifest's latest year is 64 years after the browse fixture's 1962.
