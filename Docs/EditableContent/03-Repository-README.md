@@ -40,7 +40,7 @@ Office's editorial work — all of it working offline once volumes are downloade
 It is an independent, private-capacity project, developed with [Claude Code](https://claude.ai/code),
 and is **not** an official product of the Office of the Historian or the U.S. Department of State.
 Its commentary is about research method and makes no interpretive claims about the history of U.S.
-foreign policy. Current build: **1861** (version 1.0).
+foreign policy. Current build: **1862** (version 1.1).
 
 ## Screenshots
 

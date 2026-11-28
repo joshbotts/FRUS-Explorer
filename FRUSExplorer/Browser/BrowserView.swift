@@ -132,6 +132,8 @@ import SwiftData
 ///          (`consumePendingAnnotationLayer`), on change and in the appear-time drain
 ///   2.22 — L37 (F11): the two-pane gate's note says that crossing it builds the reader anew,
 ///          and where the reader keeps its rail through that
+///   2.23 — L56: the Chronology sheet takes the shared container, since its range's save writes a
+///          working corpus
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -342,6 +344,9 @@ struct BrowserView: View {
         .sheet(isPresented: $showChronology) {
             ChronologyView(initialParameters: chronologyParameters)
                 .environment(appState)
+                // L56: the range's save writes a working corpus through `\.modelContext`. Re-injected
+                // as the analytics sheets above do, though a sheet inherits the container today.
+                .modelContainer(modelContext.container)
                 // #338 step 2: a sheet doesn't reliably inherit `\.sceneID` (review Finding 1), so
                 // publish it explicitly so ChronologyView's Word Cloud button targets THIS window.
                 .environment(\.sceneID, sceneID)

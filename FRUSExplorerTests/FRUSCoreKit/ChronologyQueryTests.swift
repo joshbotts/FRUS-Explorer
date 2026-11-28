@@ -25,6 +25,12 @@ import CryptoKit
 #else
 import Crypto
 #endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - Test Helpers
 
@@ -1619,6 +1625,359 @@ struct ChronologyMagnifierLabelTests {
                                                              locale: locale)["1962-10"]?.map(\.label) == ["16", "22", "28"])
             #expect(ChronologyGrouping.magnifierBarsByBucket(counts: dayCounts, parentPrefix: 10, volumeBreakdown: true,
                                                              locale: locale)["1962-10-22"]?.map(\.label) == ["frus1961-63v10"])
+        }
+    }
+}
+
+// MARK: - ChronologyRangeSaveTests (L56)
+
+/// Chronology's save of a range as a working corpus (decisions 184 and 185, L56): which documents it holds and of which
+/// kind, by the screen's own rules; the range it names over the record's budget, cut at the last whole day that fits;
+/// and what it says before the save and the name it saves under.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (L56): initial implementation
+@Suite("FRUSCoreKit — Chronology's save of a range as a working corpus (L56)")
+struct ChronologyRangeSaveTests {
+
+    /// The locale the words are pinned in.
+    private static let english = Locale(identifier: "en_US")
+
+    /// A document dated from `iso` to `isoMax`, in volume `v` unless another is named. The index stores a single day's
+    /// end as its start, as `ChronologyOverflowLoad.may1893` records.
+    private static func entry(_ doc: String, _ iso: String, _ isoMax: String? = nil,
+                              volume: String = "v") -> ChronologyRangeEntry {
+        ChronologyRangeEntry(volumeId: volume, documentId: doc, dateISO: iso, dateISOMax: isoMax ?? iso)
+    }
+
+    /// A load's rows as the save's read gives them: their keys and dates, in the load's order.
+    private static func entries(_ rows: [ChronologyRow]) -> [ChronologyRangeEntry] {
+        rows.map { ChronologyRangeEntry(volumeId: $0.volumeId, documentId: $0.documentId, dateISO: $0.dateISO,
+                                        dateISOMax: $0.dateISOMax) }
+    }
+
+    /// A save's three counts, inside, beyond and spanning, typed: an array literal compared inside `#expect` is
+    /// ambiguous, since `IndexPath` and `IndexSet` are written as one too.
+    private static func kinds(_ save: ChronologyRangeSave) -> [Int] {
+        [save.datedInside, save.extendingBeyond, save.spanning]
+    }
+
+    /// The save `plan` makes, or `nil` with the plan recorded as an issue.
+    private static func saved(_ plan: ChronologyRangeSave.Plan,
+                              sourceLocation: SourceLocation = #_sourceLocation) -> ChronologyRangeSave? {
+        guard case .saves(let save) = plan else {
+            Issue.record("The plan saves nothing: \(plan)", sourceLocation: sourceLocation)
+            return nil
+        }
+        return save
+    }
+
+    /// The first week of October 1962, both days included.
+    private static let weekStart = "1962-10-01"
+    private static let weekEnd = "1962-10-07"
+
+    /// Ten documents of the week: one that begins before it and ends inside it, a year-only one that reaches past both
+    /// ends, one that begins inside it and ends after it, a three-year editorial note, and six dated inside it on four
+    /// days. Their first days, in order: 1961-01-20, 1962-01-01, 1962-09-25, then the 1st twice, the 2nd, the 4th three
+    /// times and the 5th.
+    private static let week: [ChronologyRangeEntry] = [
+        entry("early", "1962-09-25", "1962-10-02"),
+        entry("year", "1962-01-01", "1962-12-31"),
+        entry("a1", "1962-10-01"), entry("a2", "1962-10-01"),
+        entry("b1", "1962-10-02"),
+        entry("c1", "1962-10-04"), entry("c2", "1962-10-04"), entry("c3", "1962-10-04"),
+        entry("late", "1962-10-05", "1962-10-09"),
+        entry("note", "1961-01-20", "1963-11-22"),
+    ]
+
+    // MARK: Kinds
+
+    @Test("Each document's kind is the one the screen's two rules give it, partition and then splitOverflow, over whole loads")
+    func eachKindIsTheScreens() {
+        var seen: [ChronologyRangeKind: Int] = [:]
+        for load in ChronologyOverflowLoad.all {
+            let (placed, spanning) = ChronologyGrouping.partition(load.rows)
+            let (inRange, overflow) = ChronologyGrouping.splitOverflow(placed, startISO: load.startISO, endISO: load.endISO)
+            for (rows, expected) in [(inRange, ChronologyRangeKind.datedInside), (overflow, .extendsBeyond),
+                                     (spanning, .spansMoreThanAYear)] {
+                for row in rows {
+                    let kind = ChronologyGrouping.kind(dateISO: row.dateISO, dateISOMax: row.dateISOMax,
+                                                       startISO: load.startISO, endISO: load.endISO)
+                    #expect(kind == expected, "\(load.name): \(row.id)")
+                    seen[kind, default: 0] += 1
+                }
+            }
+        }
+        #expect(ChronologyRangeKind.allCases.allSatisfy { (seen[$0] ?? 0) > 0 }, "the loads hold every kind: \(seen)")
+    }
+
+    @Test("Under the budget the save holds every document of the range, in the order read, counted by kind as the screen counts them")
+    func underTheBudgetTheWholeRange() throws {
+        for load in ChronologyOverflowLoad.all {
+            let save = try #require(Self.saved(ChronologyRangeSave.plan(
+                entries: Self.entries(load.rows), startISO: load.startISO, endISO: load.endISO)))
+            let (placed, spanning) = ChronologyGrouping.partition(load.rows)
+            let (inRange, overflow) = ChronologyGrouping.splitOverflow(placed, startISO: load.startISO, endISO: load.endISO)
+            #expect(save.startISO == load.startISO && save.endISO == load.endISO && !save.isCut, "\(load.name)")
+            #expect(save.documentKeys == load.rows.map { $0.id }, "\(load.name)")
+            #expect(save.loadedCount == load.rows.count, "\(load.name)")
+            let screens: [Int] = [inRange.count, overflow.count, spanning.count]
+            #expect(Self.kinds(save) == screens, "\(load.name)")
+            #expect(save.extendingBeyond == ChronologyGrouping.overflowCounts(overflow, startISO: load.startISO,
+                                                                              endISO: load.endISO).total,
+                    "the overflow chip's headline is the save's count of its kind: \(load.name)")
+            let corpus = save.workingCorpus(stamp: "Nov 27, 2026 at 10:41 AM", locale: Self.english)
+            #expect(!corpus.isTruncated && corpus.total == load.rows.count, "\(load.name)")
+        }
+    }
+
+    // MARK: Over the budget
+
+    @Test("Over the budget the save ends on the last whole day that fits, holds every document of that range, and counts each kind by it",
+          arguments: [
+              // (limit, the day the save ends on, what it keeps, inside, beyond, spanning)
+              (9, "1962-10-04", ["early", "year", "a1", "a2", "b1", "c1", "c2", "c3", "note"], 6, 2, 1),
+              (8, "1962-10-03", ["early", "year", "a1", "a2", "b1", "note"], 3, 2, 1),
+              (6, "1962-10-03", ["early", "year", "a1", "a2", "b1", "note"], 3, 2, 1),
+              (5, "1962-10-01", ["early", "year", "a1", "a2", "note"], 2, 2, 1),
+          ])
+    func overTheBudgetTheLastWholeDay(limit: Int, end: String, kept: [String],
+                                      inside: Int, beyond: Int, spanning: Int) throws {
+        let save = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: limit)))
+        #expect(save.endISO == end && save.isCut && save.loadedEndISO == Self.weekEnd)
+        #expect(save.documentKeys == Self.week.filter { kept.contains($0.documentId) }.map { $0.key },
+                "every document that begins on or before the last day, in the order read, and none after it")
+        #expect(save.count <= limit && save.loadedCount == Self.week.count)
+        let expected: [Int] = [inside, beyond, spanning]
+        #expect(Self.kinds(save) == expected)
+        let corpus = save.workingCorpus(stamp: "S", locale: Self.english)
+        #expect(!corpus.isTruncated && corpus.total == kept.count, "nothing is recorded as cut short")
+    }
+
+    @Test("At ten, the week's whole count, nothing is cut; the day a budget is crossed on is never split")
+    func aDayIsNeverSplit() throws {
+        let whole = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 10)))
+        #expect(!whole.isCut && whole.count == 10)
+        // Seven fit through the 4th's first document, but the 4th holds three: the save stops on the 3rd with six.
+        let seven = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 7)))
+        #expect(seven.endISO == "1962-10-03" && seven.count == 6)
+        #expect(!seven.documentKeys.contains { $0.hasPrefix("v/c") })
+    }
+
+    @Test("The cut is the same whatever order the documents are read in")
+    func theCutIgnoresTheOrderRead() throws {
+        let forward = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 6)))
+        let backward = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week.reversed(), startISO: Self.weekStart, endISO: Self.weekEnd, limit: 6)))
+        #expect(backward.endISO == forward.endISO)
+        #expect(backward.documentKeys == forward.documentKeys.reversed())
+        #expect(Self.kinds(backward) == Self.kinds(forward))
+    }
+
+    @Test("A range whose first day with documents is already over the budget is not saved, and the plan says which day and how many")
+    func aCrowdedFirstDayIsRefused() {
+        // Documents that begin before the range count toward its first day: five overlap the 1st.
+        #expect(ChronologyRangeSave.plan(entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 4)
+                == .firstDayOverLimit(day: "1962-10-01", count: 5))
+        #expect(ChronologyRangeSave.plan(entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 2)
+                == .firstDayOverLimit(day: "1962-10-01", count: 5))
+        // Where no document begins before the 3rd, the first day with documents is the 3rd.
+        let crowd = (1...4).map { Self.entry("x\($0)", "1962-10-03") } + [Self.entry("y", "1962-10-06")]
+        #expect(ChronologyRangeSave.plan(entries: crowd, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 3)
+                == .firstDayOverLimit(day: "1962-10-03", count: 4))
+        #expect(ChronologyRangeSave.plan(entries: [], startISO: Self.weekStart, endISO: Self.weekEnd) == .empty)
+    }
+
+    @Test("The days either side of a day cross months, years and a leap day")
+    func daysEitherSide() {
+        #expect(ChronologyRangeSave.dayBefore("1945-08-15") == "1945-08-14")
+        #expect(ChronologyRangeSave.dayBefore("1945-03-01") == "1945-02-28")
+        #expect(ChronologyRangeSave.dayBefore("1944-03-01") == "1944-02-29")
+        #expect(ChronologyRangeSave.dayBefore("1946-01-01") == "1945-12-31")
+        #expect(ChronologyRangeSave.dayAfter("1945-12-31") == "1946-01-01")
+        #expect(ChronologyRangeSave.dayAfter("1900-02-28") == "1900-03-01", "1900 was not a leap year")
+        #expect(ChronologyRangeSave.dayBefore("1962-10") == nil)
+    }
+
+    // MARK: Words
+
+    @Test("The corpus is named for the range's two days with the capture's stamp, and described by Chronology and its rule")
+    func namesAndDescribesTheCorpus() throws {
+        let save = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 6)))
+        let phrase = ChronologyRangeSave.rangePhrase(startISO: "1962-10-01", endISO: "1962-10-03", locale: Self.english)
+        #expect(phrase.contains("Oct 1") && phrase.hasSuffix("3, 1962"), "\(phrase)")
+        let corpus = save.workingCorpus(stamp: "Nov 27, 2026 at 10:41 AM", locale: Self.english)
+        #expect(corpus.name == "Chronology, \(phrase) — Nov 27, 2026 at 10:41 AM")
+        #expect(corpus.sourceDescription == "Chronology, \(phrase): every document whose dates overlap the range")
+        #expect(corpus.documentKeys == save.documentKeys)
+        #expect(ChronologyRangeSave.dayPhrase("1945-08-14", locale: Self.english) == "Aug 14, 1945")
+        let years = ChronologyRangeSave.rangePhrase(startISO: "1945-01-01", endISO: "1945-12-31", locale: Self.english)
+        #expect(years.contains("Jan 1") && years.contains("Dec 31") && years.hasSuffix("1945"), "\(years)")
+    }
+
+    @Test("The kinds are counted in one sentence, singular at one and grouped, a kind it holds none of left out")
+    func countsTheKinds() {
+        func save(_ inside: Int, _ beyond: Int, _ spanning: Int) -> ChronologyRangeSave {
+            ChronologyRangeSave(startISO: Self.weekStart, endISO: Self.weekEnd, loadedEndISO: Self.weekEnd,
+                                loadedCount: inside + beyond + spanning, documentKeys: [], datedInside: inside,
+                                extendingBeyond: beyond, spanning: spanning, limit: 7_500)
+        }
+        #expect(save(1, 0, 0).kindsSentence(locale: Self.english) == "1 is dated inside the range.")
+        #expect(save(6, 0, 0).kindsSentence(locale: Self.english) == "6 are dated inside the range.")
+        #expect(save(500, 25, 670).kindsSentence(locale: Self.english)
+                == "500 are dated inside the range, 25 extend beyond the range, and 670 span more than a year.")
+        #expect(save(0, 1, 1).kindsSentence(locale: Self.english)
+                == "1 extends beyond the range and 1 spans more than a year.")
+        #expect(save(7_183, 0, 281).kindsSentence(locale: Self.english)
+                == "7,183 are dated inside the range and 281 span more than a year.")
+    }
+
+    @Test("Before the save the question says, in order, where the budget cut the range, the kinds, and that the legend's filter does not narrow it")
+    func saysWhatTheSaveHolds() throws {
+        let cut = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd, limit: 6)))
+        let week = ChronologyRangeSave.rangePhrase(startISO: Self.weekStart, endISO: Self.weekEnd, locale: Self.english)
+        let cutLine = try #require(cut.cutSentence(locale: Self.english))
+        #expect(cutLine == "\(week) holds 10 documents, more than the 6 a working corpus keeps, so the save ends on "
+                + "Oct 3, 1962, the last whole day that fits. To save the rest, save again from Oct 4, 1962.")
+        #expect(cut.notes(legendFiltered: false, locale: Self.english)
+                == [cutLine, "3 are dated inside the range, 2 extend beyond the range, and 1 spans more than a year."])
+        #expect(cut.notes(legendFiltered: true, locale: Self.english).last
+                == "The legend’s filter narrows the list and not the save, which holds every volume’s documents.")
+        let whole = try #require(Self.saved(ChronologyRangeSave.plan(
+            entries: Self.week, startISO: Self.weekStart, endISO: Self.weekEnd)))
+        #expect(whole.cutSentence(locale: Self.english) == nil)
+        // Through L42's statement: the description and the coverage first, then these sentences.
+        let corpus = whole.workingCorpus(stamp: "S", locale: Self.english)
+        let coverage = WorkingCorpusResolver(indexedVolumeIds: ["v"]).resolve(documentKeys: corpus.documentKeys)
+        #expect(corpus.statement(coverage: coverage, notes: whole.notes(legendFiltered: false, locale: Self.english),
+                                 locale: Self.english)
+                == "Chronology, \(week): every document whose dates overlap the range.\n"
+                + "10 of 10 documents indexed on this device.\n"
+                + "6 are dated inside the range, 3 extend beyond the range, and 1 spans more than a year.")
+    }
+
+    @Test("What the screen says when there is nothing to ask about")
+    func saysWhyNothingIsSaved() {
+        #expect(ChronologyRangeSave.firstDayOverLimitSentence(day: "1953-01-01", count: 7_642, locale: Self.english)
+                == "The range cannot be saved: its first day with documents, Jan 1, 1953, holds 7,642 of them, more "
+                + "than the 7,500 a working corpus keeps.")
+        #expect(ChronologyRangeSave.nothingToSave == "The range holds no document, so there is nothing to save.")
+    }
+}
+
+// MARK: - ChronologyRangeReadTests (L56)
+
+/// The index's read of a range for Chronology's save (L56), `IndexingPipeline.documentDatesInDateRange(_:)`: every
+/// document the list's query takes, by its own conditions and its join, in date order, with no limit.
+///
+/// Version history:
+///   1.0 — 2026-11-27 (L56): initial implementation
+@Suite("FRUSCoreKit — Chronology's read of a range for its save (L56)")
+struct ChronologyRangeReadTests {
+
+    /// Two volumes: a day, a day shared by two documents, three days, a year, and a document of 1978.
+    private func seed(_ dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeChronPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeChronVolume(
+            to: volDir.appendingPathComponent("frus1969-76v01.xml"), volumeId: "frus1969-76v01",
+            documents: [
+                ("d1", "<dateline><date when=\"1969-02-15\">February 15, 1969</date></dateline><head>1. Memo</head><p>Body.</p>"),
+                ("d2", "<dateline><date when=\"1969-02-15\">February 15, 1969</date></dateline><head>2. Memo</head><p>Body.</p>"),
+                ("d3", "<dateline><date from=\"1969-03-03\" to=\"1969-03-05\">March 3–5, 1969</date></dateline><head>3. Meeting</head><p>Body.</p>"),
+                ("d4", "<dateline><date when=\"1969\">1969</date></dateline><head>4. Year only</head><p>Body.</p>"),
+            ])
+        try writeChronVolume(
+            to: volDir.appendingPathComponent("frus1977-80v01.xml"), volumeId: "frus1977-80v01",
+            documents: [
+                ("d1", "<dateline><date when=\"1978-05-05\">May 5, 1978</date></dateline><head>1. Later memo</head><p>Body.</p>"),
+            ])
+        try await pipeline.indexVolume("frus1969-76v01")
+        try await pipeline.indexVolume("frus1977-80v01")
+        return pipeline
+    }
+
+    /// Ranges that take each shape in: a year, a day inside the three days, a month, an open end at each side, and none.
+    private static let ranges = [
+        DateRange(earliest: "1969-01-01", latest: "1969-12-31"),
+        DateRange(earliest: "1969-03-04", latest: "1969-03-04"),
+        DateRange(earliest: "1969-02-01", latest: "1969-02-28"),
+        DateRange(earliest: nil, latest: "1969-02-15"),
+        DateRange(earliest: "1969-03-04", latest: nil),
+        DateRange(earliest: "1979-01-01", latest: "1979-12-31"),
+    ]
+
+    @Test("For each range it reads the documents the list's query lists, each with its dates, by first day")
+    func readsTheListsDocuments() async throws {
+        try await withChronTempDir { dir in
+            let pipeline = try await seed(dir)
+            for range in Self.ranges {
+                let listed = try await pipeline.documentsInDateRange(range, scopeVolumeIds: nil, ascending: true,
+                                                                     limit: 100_000)
+                let read = try await pipeline.documentDatesInDateRange(range)
+                #expect(read.count == listed.count, "\(range)")
+                #expect(Set(read.map { $0.key }) == Set(listed.map { $0.id }), "\(range)")
+                let listedDates = Dictionary(uniqueKeysWithValues: listed.map { ($0.id, [$0.dateISO, $0.dateISOMax]) })
+                #expect(read.allSatisfy { listedDates[$0.key] == [$0.dateISO, $0.dateISOMax] }, "\(range)")
+                #expect(zip(read, read.dropFirst()).allSatisfy { $0.dateISO <= $1.dateISO }, "by first day: \(range)")
+            }
+            let year = try await pipeline.documentDatesInDateRange(Self.ranges[0])
+            let firstDays: [String] = ["1969-01-01", "1969-02-15", "1969-02-15", "1969-03-03"]
+            #expect(year.map { $0.dateISO } == firstDays)
+            #expect(year.first?.key == "frus1969-76v01/d4" && year.last?.key == "frus1969-76v01/d3")
+        }
+    }
+
+    @Test("Its conditions and their binds are the list's, word for word")
+    func runsTheListsConditions() async throws {
+        try await withChronTempDir { dir in
+            let pipeline = try await seed(dir)
+            for range in Self.ranges {
+                let trace = StatementTraceForTesting()
+                await pipeline.setStatementTraceForTesting(trace)
+                _ = try await pipeline.documentsInDateRange(range, scopeVolumeIds: nil, ascending: true, limit: 5_000)
+                _ = try await pipeline.documentDatesInDateRange(range)
+                await pipeline.setStatementTraceForTesting(nil)
+                let statements = trace.statements
+                try #require(statements.count == 2, "\(statements)")
+                // The conditions, binds and all, since the trace records each statement as SQLite expands it. Both
+                // statements are multi-line literals, so ORDER BY begins a line.
+                func conditions(_ statement: String) -> String? {
+                    guard let whereClause = statement.range(of: "WHERE "),
+                          let order = statement.range(of: "ORDER BY") else { return nil }
+                    return statement[whereClause.upperBound..<order.lowerBound]
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                #expect(conditions(statements[0]) != nil)
+                #expect(conditions(statements[0]) == conditions(statements[1]), "\(range)")
+            }
+        }
+    }
+
+    @Test("A dated row whose document the index does not hold is not read, as the list does not list it; the keys-only read takes it")
+    func takesNoRowWithoutItsDocument() async throws {
+        try await withChronTempDir { dir in
+            let pipeline = try await seed(dir)
+            var db: OpaquePointer?
+            try #require(sqlite3_open(dir.appendingPathComponent("test.sqlite").path, &db) == SQLITE_OK)
+            defer { sqlite3_close(db) }
+            try #require(sqlite3_exec(db, """
+                INSERT INTO document_dates (volume_id, document_id, date_iso, date_iso_max)
+                VALUES ('frus1969-76v01', 'ghost', '1969-06-01', '1969-06-01')
+                """, nil, nil, nil) == SQLITE_OK)
+            let year = Self.ranges[0]
+            let keys = try await pipeline.documentKeysInDateRange(year, limitToVolumeIds: nil)
+            #expect(keys.contains("frus1969-76v01/ghost"), "the row is there to be read")
+            let read = try await pipeline.documentDatesInDateRange(year).map { $0.key }
+            #expect(!read.contains("frus1969-76v01/ghost"))
+            let listed = try await pipeline.documentsInDateRange(year, scopeVolumeIds: nil, ascending: true, limit: 5_000)
+            #expect(read == listed.map { $0.id })
         }
     }
 }

@@ -597,7 +597,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `PageSpanResolver.divisionsStartingOnPageSQL`, the query the reader's `PageRangeStore` runs for
 ///         a page link no document holds, and `SettledCrossReferenceTarget` keeps a page in Roman numerals
 ///         (`.romanPage`) as collected, as it keeps `.unresolved`; nothing the indexer stores changes
-///  4.71 — 2026-11-28 (plan of record row L63, decision ⟪L63-DECISION⟫): `ExternalCitation.anchorsOutsideThePacket`
+///  4.71 — 2026-11-27 (plan of record row L56): `documentDatesInDateRange(_:)`, every document of a range of
+///         dates as its key and its two dates, in date order and with no limit, for Chronology's save of a
+///         range; its conditions are the Chronology list's, one builder (`chronologyRangeConditions`) for both,
+///         and the list's statement is unchanged; nothing the indexer stores changes, so no index version
+///  4.72 — 2026-11-28 (plan of record row L63, decision ⟪L63-DECISION⟫): `ExternalCitation.anchorsOutsideThePacket`
 ///         names the Central Foreign Policy File alone, so the Archives Visit packet's pointed-at channel,
 ///         its counts and `externalCitationSparsity()` take a footnote's central-file class; nothing the
 ///         indexer stores changes
@@ -6294,10 +6298,16 @@ public actor IndexingPipeline {
                             readsUnindexedColumns: unindexedConditions > 0)
     }
 
-    // MARK: - Date Range Query (used by SearchService)
+    // MARK: - Date Range Query
 
     /// Returns a set of `"volumeId/documentId"` composite keys for documents whose
-    /// date range overlaps `range`. Used by `SearchService` for date filtering.
+    /// date range overlaps `range`.
+    ///
+    /// **Nothing in the app calls it; its callers are tests.** It said `SearchService` used it for
+    /// date filtering, which nothing does (L56, folded into that row on the owner's word of
+    /// 2026-11-28): Search's date filter is its own condition in `filterConditions(_:gateRowid:gateByKeyForParity:)`,
+    /// by the same overlap rule, and Chronology's reads are `documentsInDateRange` and
+    /// ``documentDatesInDateRange(_:)``, which join `document_cache` where this does not.
     ///
     /// Uses interval overlap semantics rather than point containment:
     ///   - `date_iso` (range start) must be ≤ the query's latest bound
@@ -6441,21 +6451,7 @@ public actor IndexingPipeline {
         limit: Int,
         userSource: SearchUserSource
     ) -> (sql: String, binds: [String]) {
-        var parts: [String] = ["dd.date_iso IS NOT NULL"]
-        var args: [String] = []
-        if let e = range.earliest {
-            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
-            args.append(e)
-        }
-        if let l = range.latest {
-            parts.append("dd.date_iso <= ?")
-            args.append(l)
-        }
-        if let vids = scopeVolumeIds, !vids.isEmpty {
-            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
-            parts.append("dd.volume_id IN (\(placeholders))")
-            args.append(contentsOf: vids)
-        }
+        let (parts, args) = chronologyRangeConditions(range, scopeVolumeIds: scopeVolumeIds)
 
         let order = ascending ? "ASC" : "DESC"
         switch userSource {
@@ -6492,6 +6488,80 @@ public actor IndexingPipeline {
                 """
             return (sql, [userId] + args)
         }
+    }
+
+    /// The conditions both of Chronology's reads of a range run on `document_dates` as `dd`, with their binds in
+    /// order: a document is in the range when its dates overlap it (``documentKeysInDateRange(_:limitToVolumeIds:)``
+    /// says why), one with no date is in none, and a scope, when one is given, keeps its volumes. One builder, so the
+    /// save's read (``documentDatesInDateRange(_:)``, L56) takes exactly the documents the list's does; the list's
+    /// statement is the text it was, which `ChronologyUserSourceTests`' pin holds.
+    private static func chronologyRangeConditions(
+        _ range: DateRange,
+        scopeVolumeIds: [String]?
+    ) -> (parts: [String], binds: [String]) {
+        var parts: [String] = ["dd.date_iso IS NOT NULL"]
+        var args: [String] = []
+        if let e = range.earliest {
+            parts.append("COALESCE(dd.date_iso_max, dd.date_iso) >= ?")
+            args.append(e)
+        }
+        if let l = range.latest {
+            parts.append("dd.date_iso <= ?")
+            args.append(l)
+        }
+        if let vids = scopeVolumeIds, !vids.isEmpty {
+            let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
+            parts.append("dd.volume_id IN (\(placeholders))")
+            args.append(contentsOf: vids)
+        }
+        return (parts, args)
+    }
+
+    /// Every document whose dates overlap `range`, as its key and its two dates, in date order (L56): the documents
+    /// the Chronology list's query takes, by its own conditions (`chronologyRangeConditions`) and its join to
+    /// `document_cache`, with none of its display fields and no limit. Chronology's save of a range reads it
+    /// (`ChronologyRangeSave`), since the list stops at `ChronologyGrouping.loadLimit` rows and a working corpus keeps
+    /// up to 7,500.
+    ///
+    /// Not ``documentKeysInDateRange(_:limitToVolumeIds:)``, the keys-only read above: it is unordered and does not
+    /// join `document_cache`, so it takes a dated row whose document the index does not hold, which the list never
+    /// shows. A full index at version 76 holds none (319,676 dated rows, each with its document, measured on
+    /// 2026-11-27), but nothing in a store pass rules one out.
+    ///
+    /// **Ordered by first day alone**, which the index on `date_iso` gives with no sort, and the join then reads
+    /// `document_cache` by its key's own index. Ordered as the list orders a day's, the read of the whole series
+    /// (319,164 documents) took 8.6 s on that index, its sort spilling to disk, where by first day alone it took 0.7 s;
+    /// 1945 took 0.12 s. The save needs no more: its rule reads first days, in any order.
+    ///
+    /// - Parameter range: The inclusive days; either end may be `nil`, open.
+    /// - Returns: The documents by first day, a day's in the index's order.
+    /// - Throws: `IndexingError` when the statement cannot be prepared.
+    public func documentDatesInDateRange(_ range: DateRange) throws -> [ChronologyRangeEntry] {
+        let (parts, binds) = Self.chronologyRangeConditions(range, scopeVolumeIds: nil)
+        let sql = """
+            SELECT dd.volume_id, dd.document_id, dd.date_iso, dd.date_iso_max
+            FROM document_dates dd
+            JOIN document_cache dc
+              ON dc.volume_id = dd.volume_id AND dc.document_id = dd.document_id
+            WHERE \(parts.joined(separator: " AND "))
+            ORDER BY dd.date_iso ASC
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        for (i, arg) in binds.enumerated() {
+            sqlite3_bind_text(stmt, Int32(i + 1), arg, -1, SQLITE_TRANSIENT_IP)
+        }
+
+        var entries: [ChronologyRangeEntry] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let vid = auxColumnString(stmt, 0),
+                  let did = auxColumnString(stmt, 1),
+                  let iso = auxColumnString(stmt, 2)
+            else { continue }
+            entries.append(ChronologyRangeEntry(volumeId: vid, documentId: did, dateISO: iso,
+                                                dateISOMax: auxColumnString(stmt, 3)))
+        }
+        return entries
     }
 
     /// `EXPLAIN QUERY PLAN` for the statement ``documentsInDateRange(_:scopeVolumeIds:ascending:limit:userSource:)``

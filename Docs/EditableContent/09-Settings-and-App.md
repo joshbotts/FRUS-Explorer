@@ -1646,14 +1646,14 @@ This file was made for a different version of the app, so it cannot be used with
 ### Menus, tooltips, and short labels
 
 #### Chronology, Corpus Analytics, Person Analytics, Cross-Ref…
-<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 507–508 | key: browse.analysisTools.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 512–513 | key: browse.analysisTools.help.v3 -->
 
 Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud
 
 <!-- END SOURCE: browse.analysisTools.help.v3 -->
 
 #### Corpus, Person, Cross-Reference, Archival, and Semantic a…
-<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 418–419 | key: mainwindow.tools.analytics.menu.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | lines: 423–424 | key: mainwindow.tools.analytics.menu.help.v3 -->
 
 Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, and Word Cloud
 
@@ -1669,7 +1669,7 @@ Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete 
 <!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
 #### Open Document
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1183–1184 | key: research.action.openDocument.v2 -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1199–1200 | key: research.action.openDocument.v2 -->
 
 Open Document
 
