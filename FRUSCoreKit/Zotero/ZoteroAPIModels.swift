@@ -219,14 +219,25 @@ public enum ZoteroAPIError: Error, LocalizedError, Sendable {
 
 /// Summary of a completed "send to Zotero" operation.
 ///
+/// A finish (`ZoteroAPIClient.send(…, resuming:)`) counts what it wrote, or found Zotero had taken, and not
+/// what the stopped send's progress already counted, so the two together count the whole send.
+///
 /// Version history:
 ///   1.0 — Zotero Web API integration (Phase 2)
 ///   1.1 — FRUS Explorer Light's S22c: in FRUSCoreKit, public, as a host's send reads it
+///   1.2 — L64 of the plan of record from 2026-11-25 (#1923): `itemsLeftInLibrary`, and a finish's counts
 public struct ZoteroSendResult: Sendable {
+    /// The items Zotero took: written by this send, or, by a finish, found written after a 412.
     public let addedItems: Int
+    /// The items Zotero refused in this send's answers.
     public let failedItems: Int
+    /// The notes Zotero took: written by this send, or, by a finish, counted as written after a 412.
     public let addedNotes: Int
+    /// The Zotero collection's key, for a send that makes one.
     public let collectionKey: String?
     /// Web URL of the destination collection/library, for a "View in Zotero" link.
     public let webURL: URL?
+    /// The items a stopped send wrote that its finish was not given, removed from the collection since the
+    /// stop: they stay in the library. 0 for a send that finishes no other.
+    public let itemsLeftInLibrary: Int
 }

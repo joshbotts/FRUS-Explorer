@@ -1498,6 +1498,9 @@ struct CitationPopoverView: View {
 ///   1.0 — Document Share/Export control split out from the citation popover
 ///   1.1 — L41 (#1925): while a send runs, the line under its row reads what the send last said
 ///          through its `status`, a wait on Zotero's word with its seconds included
+///   1.2 — L64 (#1923): a send that stops part-way is kept on this device; the alert says which part
+///          stopped and offers Finish Sending, and the row reads Finish Sending to Zotero Library, with
+///          what stopped in the line under it, until it is finished
 struct DocumentSharePopover: View {
     let entry: DocumentBrowserEntry
 
@@ -1513,6 +1516,14 @@ struct DocumentSharePopover: View {
     /// What the send in progress last said through its `status`: its step, or how long Zotero asked
     /// it to wait (#1925). Nil when no send runs.
     @State private var zoteroStatus: String?
+    /// This document's send to the connected Zotero account that stopped part-way, which the row and the
+    /// stop's alert offer to finish (#1923); nil when there is none.
+    @State private var stoppedZoteroSend: StoppedZoteroSend?
+
+    /// What this document's sends are kept under on this device (#1923).
+    private var zoteroSubject: ZoteroSendProgressStore.Subject {
+        .document(volumeId: entry.volumeId, documentId: entry.documentId)
+    }
 
     private var volumeEntry: VolumeManifestEntry? {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
@@ -1536,15 +1547,25 @@ struct DocumentSharePopover: View {
 
             if let vol = volumeEntry {
                 if ZoteroAccountStore.shared.isConnected {
-                    actionRow("Send to Zotero Library", systemImage: "books.vertical",
+                    actionRow(stoppedZoteroSend == nil
+                                ? "Send to Zotero Library"
+                                : String(localized: "document.share.finishZoteroLibrary.mac",
+                                         defaultValue: "Finish Sending to Zotero Library"),
+                              systemImage: "books.vertical",
                               busy: zoteroSending) {
                         Task { await sendToZoteroLibrary(vol: vol) }
                     }
-                    // While a send runs, the line under its row reads what the send last said.
+                    // While a send runs, the line under its row reads what the send last said; while one has
+                    // stopped part-way (#1923), what stopped.
                     if zoteroSending, let zoteroStatus {
                         Text(zoteroStatus)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                    } else if let stoppedZoteroSend {
+                        Text(stoppedZoteroSend.documentStopSentence)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text("Adds this document — with your tags and research notes — straight to your Zotero library.")
                             .font(.caption2)
@@ -1584,6 +1605,9 @@ struct DocumentSharePopover: View {
                 resolvedDocumentNumber = (try? await pipeline.documentNumber(
                     volumeId: entry.volumeId, documentId: entry.documentId)) ?? nil
             }
+            stoppedZoteroSend = ZoteroAccountStore.shared.userID.flatMap { userID in
+                ZoteroSendProgressStore.load(zoteroSubject, userID: userID)
+            }
         }
         .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
         .alert(
@@ -1591,6 +1615,12 @@ struct DocumentSharePopover: View {
             isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
             presenting: zoteroError
         ) { _ in
+            // #1923: a send that stopped part-way can be finished from here, or later from the row.
+            if stoppedZoteroSend != nil, let vol = volumeEntry {
+                Button(String(localized: "document.share.zotero.finishButton", defaultValue: "Finish Sending")) {
+                    Task { await sendToZoteroLibrary(vol: vol) }
+                }
+            }
             Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
         } message: { Text($0) }
     }
@@ -1637,7 +1667,9 @@ struct DocumentSharePopover: View {
     }
 
     private func zoteroResultMessage(_ result: ZoteroSendResult) -> String {
-        String(format: String(localized: "document.share.zotero.result %lld %lld",
+        // #1923: the finish of a send that stopped at the document's notes adds notes alone.
+        if let notesOnly = StoppedZoteroSend.notesOnlyMessage(result) { return notesOnly }
+        return String(format: String(localized: "document.share.zotero.result %lld %lld",
                               defaultValue: "Added %lld document and %lld notes to Zotero."),
                Int64(result.addedItems), Int64(result.addedNotes))
     }
@@ -1645,6 +1677,10 @@ struct DocumentSharePopover: View {
     // MARK: - Send
 
     /// Pushes the document into the user's Zotero library via the Web API (no collection).
+    ///
+    /// #1923: a send of this document that stopped part-way, which this device keeps, is finished rather
+    /// than sent again, so the document is not written twice; the send keeps its record as it goes. A stop
+    /// keeps it, and the alert says which part stopped.
     private func sendToZoteroLibrary(vol: VolumeManifestEntry) async {
         let store = ZoteroAccountStore.shared
         guard let apiKey = store.retrieveKey(), let userID = store.userID else {
@@ -1654,14 +1690,31 @@ struct DocumentSharePopover: View {
         zoteroSending = true
         zoteroStatus = nil
         defer { zoteroSending = false; zoteroStatus = nil }
+        let subject = zoteroSubject
+        let earlier = ZoteroSendProgressStore.load(subject, userID: userID)
         do {
             let result = try await ZoteroAPIClient().send(
                 items: [zoteroItem(vol: vol)], collectionName: nil,
-                apiKey: apiKey, userID: userID, username: store.username
-            ) { message in
-                Task { @MainActor in zoteroStatus = message }
-            }
+                apiKey: apiKey, userID: userID, username: store.username,
+                resuming: earlier?.progress,
+                status: { message in
+                    Task { @MainActor in zoteroStatus = message }
+                },
+                progress: { progress in
+                    ZoteroSendProgressStore.save(
+                        StoppedZoteroSend(progress: progress, reason: nil, recordedItemCount: 0), for: subject)
+                }
+            )
+            ZoteroSendProgressStore.remove(subject, userID: userID)
+            stoppedZoteroSend = nil
             zoteroResult = result
+        } catch let stopped as ZoteroSendStopped {
+            let record = StoppedZoteroSend(progress: stopped.progress, reason: stopped.errorDescription,
+                                           recordedItemCount: 0)
+            ZoteroSendProgressStore.save(record, for: subject)
+            stoppedZoteroSend = record
+            zoteroError = [stopped.errorDescription, record.documentStopSentence]
+                .compactMap { $0 }.joined(separator: " ")
         } catch {
             zoteroError = (error as? ZoteroAPIError)?.errorDescription ?? error.localizedDescription
         }

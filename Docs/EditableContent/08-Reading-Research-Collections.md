@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2454–2454 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2463–2463 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2455–2456 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2464–2465 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2764–2765 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2808–2809 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -894,7 +894,7 @@ One quotation cites a document that is no longer in its volume.
 ### Collections Export
 
 #### Native-format export explanation
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 600–601 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 622–623 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
 Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
@@ -1613,7 +1613,7 @@ Zotero is receiving too many requests right now. Try again in a moment.
      waits out a refusal (HTTP 429) and tries again: in a collection export sheet's progress line, under the
      Mac Share popover's Send to Zotero Library, and as the iOS Share menu's send row while the send runs.
      `%@` is the wait in whole seconds, rounded up. This form is for ONE second, so keep it singular. -->
-<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 370–371 | key: zotero.status.retry.one -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 664–665 | key: zotero.status.retry.one -->
 
 Zotero is busy: trying again in %@ second…
 
@@ -1621,7 +1621,7 @@ Zotero is busy: trying again in %@ second…
 
 #### A Zotero send waiting to try again — two or more seconds
 <!-- The same line for any other number of seconds, up to 60, the longest the app waits at once. -->
-<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 372–373 | key: zotero.status.retry.many -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.retryStatus(seconds:locale:) | lines: 666–667 | key: zotero.status.retry.many -->
 
 Zotero is busy: trying again in %@ seconds…
 
@@ -1632,7 +1632,7 @@ Zotero is busy: trying again in %@ seconds…
      the app to slow down (its `Backoff`), whether that send's last write asked or an earlier send's did: the
      pause is waited before the next request, from any send, and not after the write that asked for it. Shown
      where the line above is. `%@` is the wait in whole seconds, rounded up. Keep this form singular. -->
-<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 381–382 | key: zotero.status.backoff.one -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 675–676 | key: zotero.status.backoff.one -->
 
 Zotero asked for a pause: continuing in %@ second…
 
@@ -1640,11 +1640,143 @@ Zotero asked for a pause: continuing in %@ second…
 
 #### A Zotero send waiting out Zotero's pause — two or more seconds
 <!-- The same line for any other number of seconds, up to 60. -->
-<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 383–384 | key: zotero.status.backoff.many -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.backoffStatus(seconds:locale:) | lines: 677–678 | key: zotero.status.backoff.many -->
 
 Zotero asked for a pause: continuing in %@ seconds…
 
 <!-- END SOURCE: zotero.status.backoff.many -->
+
+### Finishing a Zotero send that stopped part-way (#1923)
+
+L64 of the plan of record from 2026-11-25, new 2026-11-28 (decision 219). A send to Zotero that stops
+part-way, because Zotero refuses it, the connection drops or the app ends first, is kept on the device for
+12 hours, and can be finished: the rest is sent, and nothing twice. These are what the collection's export
+sheet and a document's Share tile say of it. `%@` and `%1$@` are a count, grouped for the reader's locale;
+`%2$@` is the day and time the send stopped.
+
+#### What a finish says while it checks what a lost answer wrote
+<!-- When a send's answer from Zotero was lost, the finish sends that write again, Zotero refuses it as
+     already done, and the app reads what it made. Shown where the send's steps are shown. -->
+<!-- SOURCE: FRUSCoreKit/Zotero/ZoteroAPIClient.swift | ZoteroAPIClient.checkingStatus | lines: 708–708 | key: zotero.status.check -->
+
+Checking what reached Zotero…
+
+<!-- END SOURCE: zotero.status.check -->
+
+#### The collection's send row — a send to finish
+<!-- In place of "Send to Zotero Library" while this collection has a stopped send to the connected account. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroSendRow | lines: 160–161 | key: export.zotero.finish | shared: iOS+macOS (single edit point) -->
+
+Finish Sending to Zotero Library
+
+<!-- END SOURCE: export.zotero.finish -->
+
+#### The row's caption — when Zotero confirmed none of the documents
+<!-- The first sentence of the caption, when the stop came before Zotero confirmed any document: the
+     collection was made, or a write's answer was lost. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 852–853 | key: export.zotero.stopped.none %@ | shared: iOS+macOS (single edit point) -->
+
+A send on %@ stopped before Zotero confirmed any of its documents.
+
+*(Interpolated with the day and time the send stopped.)*
+
+<!-- END SOURCE: export.zotero.stopped.none %@ -->
+
+#### The row's caption — one document reached Zotero
+<!-- This form is for ONE document, so keep it singular. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 857–858 | key: export.zotero.stopped.one | shared: iOS+macOS (single edit point) -->
+
+%1$@ document reached Zotero on %2$@, before the send stopped.
+
+<!-- END SOURCE: export.zotero.stopped.one -->
+
+#### The row's caption — two or more documents reached Zotero
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 859–860 | key: export.zotero.stopped.many | shared: iOS+macOS (single edit point) -->
+
+%1$@ documents reached Zotero on %2$@, before the send stopped.
+
+<!-- END SOURCE: export.zotero.stopped.many -->
+
+#### The row's caption — what Finish Sending does
+<!-- The caption's last sentence, after the count and, where it is known, why the send stopped. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroStoppedCaption(_:locale:) | lines: 864–865 | key: export.zotero.finish.caption | shared: iOS+macOS (single edit point) -->
+
+Finish Sending sends the rest into the same Zotero collection, and nothing twice.
+
+<!-- END SOURCE: export.zotero.finish.caption -->
+
+#### The result of a finish — one document removed from the collection since
+<!-- Added to the "Sent to Zotero" alert's message when the collection lost documents between the stop and
+     the finish: Zotero keeps what was already sent. Keep this form singular. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 893–894 | key: export.zotero.result.leftInLibrary.one | shared: iOS+macOS (single edit point) -->
+
+%@ document removed from this collection since the send stopped stays in your Zotero library.
+
+<!-- END SOURCE: export.zotero.result.leftInLibrary.one -->
+
+#### The result of a finish — two or more documents removed since
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroResultMessage | lines: 895–896 | key: export.zotero.result.leftInLibrary.many | shared: iOS+macOS (single edit point) -->
+
+%@ documents removed from this collection since the send stopped stay in your Zotero library.
+
+<!-- END SOURCE: export.zotero.result.leftInLibrary.many -->
+
+#### A document's Share menu — a send to finish (iPhone and iPad)
+<!-- In place of "Send to Zotero Library…" while this document has a stopped send to the connected account. -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu.body | lines: 2409–2410 | key: document.share.finishZoteroLibrary | shared: iOS only -->
+
+Finish Sending to Zotero Library…
+
+<!-- END SOURCE: document.share.finishZoteroLibrary -->
+
+#### A document's Share popover — a send to finish (Mac)
+<!-- In place of "Send to Zotero Library" while this document has a stopped send to the connected account. -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | DocumentSharePopover.body | lines: 1552–1553 | key: document.share.finishZoteroLibrary.mac | shared: macOS only -->
+
+Finish Sending to Zotero Library
+
+<!-- END SOURCE: document.share.finishZoteroLibrary.mac -->
+
+#### The stop's alert — its button
+<!-- The alert "Couldn’t Send to Zotero" after a document's send stopped part-way, beside OK. -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu.body | lines: 2477–2477 | key: document.share.zotero.finishButton | shared: iOS+macOS (the same key in DocumentView.swift for iPhone and iPad and SupportingViews.swift for the Mac — edit both) -->
+
+Finish Sending
+
+<!-- END SOURCE: document.share.zotero.finishButton -->
+
+#### A document's stopped send — its notes did not all arrive
+<!-- After the reason, in the stop's alert, and on the Mac in the line under the row. The document went
+     first, so this is a stop at its notes. -->
+<!-- SOURCE: FRUSExplorer/Zotero/ZoteroSendProgressStore.swift | StoppedZoteroSend.documentStopSentence | lines: 33–34 | key: document.share.zotero.stopped.notes | shared: iOS+macOS (single edit point) -->
+
+The document is in your Zotero library, but not all of its notes are. Finish Sending adds the rest, and nothing twice.
+
+<!-- END SOURCE: document.share.zotero.stopped.notes -->
+
+#### A document's stopped send — the document itself may not have arrived
+<!-- The same place, for a stop whose answer from Zotero about the document was lost. -->
+<!-- SOURCE: FRUSExplorer/Zotero/ZoteroSendProgressStore.swift | StoppedZoteroSend.documentStopSentence | lines: 36–37 | key: document.share.zotero.stopped.item | shared: iOS+macOS (single edit point) -->
+
+The document may not have reached your Zotero library. Finish Sending checks, and adds what did not arrive, nothing twice.
+
+<!-- END SOURCE: document.share.zotero.stopped.item -->
+
+#### A document's finish that added notes alone — one note
+<!-- The "Sent to Zotero" alert's message after Finish Sending of a send that stopped at the document's
+     notes: the document was already in Zotero. Keep this form singular. -->
+<!-- SOURCE: FRUSExplorer/Zotero/ZoteroSendProgressStore.swift | StoppedZoteroSend.notesOnlyMessage(_:) | lines: 46–47 | key: document.share.zotero.result.notes.one | shared: iOS+macOS (single edit point) -->
+
+Added %@ note to Zotero.
+
+<!-- END SOURCE: document.share.zotero.result.notes.one -->
+
+#### A document's finish that added notes alone — two or more notes
+<!-- SOURCE: FRUSExplorer/Zotero/ZoteroSendProgressStore.swift | StoppedZoteroSend.notesOnlyMessage(_:) | lines: 48–49 | key: document.share.zotero.result.notes.many | shared: iOS+macOS (single edit point) -->
+
+Added %@ notes to Zotero.
+
+<!-- END SOURCE: document.share.zotero.result.notes.many -->
 
 ### A document with no printed title
 
@@ -3122,14 +3254,14 @@ No headnote yet. Edit to write a key takeaway, or generate a document summary to
 <!-- END SOURCE: collection.inspector.headnote.empty -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 672–673 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 694–695 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.
 
 <!-- END SOURCE: export.zotero.send.caption.iosNoAccount -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 675–676 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 697–698 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.
 
