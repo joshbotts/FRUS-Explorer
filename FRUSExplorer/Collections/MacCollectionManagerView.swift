@@ -903,6 +903,8 @@ private struct CollectionDetailPane: View {
     /// The preview's "Render All" cap lift, hoisted here so hiding/showing the pane
     /// doesn't reset it (one detail-pane session = one lift).
     @State private var previewRenderAll = false
+    /// The preview's place and chosen row (L36), hoisted with `previewRenderAll` so the pane keeps them.
+    @State private var previewPlace = CollectionPreviewPlace()
     @State private var noteCreateContext: NoteCreateContext? = nil
     /// Document headers loaded asynchronously from `document_cache`.
     /// Keyed by `"volumeId/documentId"`.
@@ -958,7 +960,7 @@ private struct CollectionDetailPane: View {
                 CollectionPreviewView(collection: collection,
                                       entries: sortedEntries,
                                       allNotes: allNotes,
-                                      renderAll: $previewRenderAll)
+                                      renderAll: $previewRenderAll, place: previewPlace)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -990,6 +992,9 @@ private struct CollectionDetailPane: View {
         // #1416: the outline follows entries another writer adds, removes or moves — a document window's Add to
         // Collection, iCloud — so the rows, the live preview and the export sheet all see them.
         .modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))
+        // L36: the selected row, and a row whose inspector opens, is the preview's chosen one.
+        .onChange(of: selectedEntryId) { _, id in previewPlace.choose(id) }
+        .onChange(of: inspectedEntryId) { _, id in previewPlace.choose(id) }
         // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {
             (documentHeaders, documentDates) =

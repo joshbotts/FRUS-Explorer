@@ -14,6 +14,7 @@ import PDFKit
 import CoreText
 import SQLite3
 import Vision
+import WebKit
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -13739,3 +13740,403 @@ struct CollectionEntryDeletionTests {
                 "the swipe deletes a row that holds the reader's work")
     }
 }
+
+// MARK: - The preview's refresh list (L36, J20, #1997)
+
+/// A model's stored properties, read from SwiftData's own metadata, and a change to each (L36, J20): what
+/// `CollectionPreviewRefreshListTests` walks.
+enum StoredPropertyWalk {
+
+    /// Each stored property of `Model`, by name with its key path, as the `@Model` macro lists them in
+    /// `schemaMetadata`. Read through `Mirror`, since `Schema.PropertyMetadata` keeps both private: an SDK
+    /// that renames them makes this empty, which the suite refuses rather than passing with nothing read.
+    static func properties<Model: PersistentModel>(_ type: Model.Type) -> [(name: String, keyPath: AnyKeyPath)] {
+        type.schemaMetadata.compactMap { metadata in
+            let children = Mirror(reflecting: metadata).children
+            guard let name = children.first(where: { $0.label == "name" })?.value as? String,
+                  let keyPath = children.first(where: { $0.label == "keypath" })?.value as? AnyKeyPath
+            else { return nil }
+            return (name, keyPath)
+        }
+    }
+
+    /// Gives `model`'s property at `keyPath` a value it did not have, or answers `false` for a type this
+    /// does not know (a relationship among them).
+    static func change<Model>(_ model: Model, at keyPath: AnyKeyPath) -> Bool {
+        func change<Value>(_ type: Value.Type, _ next: (Value) -> Value) -> Bool {
+            guard let path = keyPath as? ReferenceWritableKeyPath<Model, Value> else { return false }
+            model[keyPath: path] = next(model[keyPath: path])
+            return true
+        }
+        return change(String.self) { $0 + "·" }
+            || change(String?.self) { ($0 ?? "") + "·" }
+            || change(Bool.self) { !$0 }
+            || change(Bool?.self) { $0 == true ? false : true }
+            || change(Int.self) { $0 + 1 }
+            || change(Int?.self) { ($0 ?? 0) + 1 }
+            || change(UUID.self) { _ in UUID() }
+            || change(UUID?.self) { _ in UUID() }
+            || change([UUID].self) { $0 + [UUID()] }
+            || change(Data?.self) { ($0 ?? Data()) + [42] }
+            || change(Date?.self) { ($0 ?? Date(timeIntervalSince1970: 0)).addingTimeInterval(1) }
+    }
+}
+
+/// The preview re-resolves on every stored property its page draws (L36, #1997), and a test walks both
+/// models to hold it there (J20), so the settings L43 to L49 add cannot be left out of the list.
+///
+/// On `v2` at `97c4a8a9` the same walk, run against the view's own fingerprint, found four properties the
+/// page draws and the fingerprint did not hash: `CollectionEntry.titleOverride` and
+/// `Collection.defaultIncludeHeadnote` (the issue's two), `includeProjectProvenance` and
+/// `includeMethodAppendix` (the project stamp and the query log, which the issue thought the preview did
+/// not draw: since #1463 it builds its metadata with the export sheet's `forExport`).
+@MainActor
+@Suite("The preview re-resolves on every stored property its page draws (L36, J20, #1997)")
+struct CollectionPreviewRefreshListTests {
+
+    private typealias R = CollectionPreviewRefresh
+
+    /// A collection and one document entry of it, every other property at its default.
+    private static func fixture() -> (FRUSExplorer.Collection, CollectionEntry) {
+        let collection = FRUSExplorer.Collection(name: "The Long Telegram")
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d475", volumeId: "frus1946v06",
+                                    sortOrder: 0)
+        return (collection, entry)
+    }
+
+    private static func fingerprint(_ collection: FRUSExplorer.Collection, _ entries: [CollectionEntry],
+                                    project: R.ProjectKey = .noProject) -> Int {
+        R.fingerprint(collection: collection, entries: entries, project: project, documentCap: 20, refreshToken: 0)
+    }
+
+    @Test("Each stored property, changed alone, moves the fingerprint unless the list names it as not drawn, and one it names does not")
+    func everyStoredPropertyIsHashedOrNamed() {
+        let collectionProperties = StoredPropertyWalk.properties(FRUSExplorer.Collection.self)
+        let entryProperties = StoredPropertyWalk.properties(CollectionEntry.self)
+        // A walk that read nothing would pass with nothing checked.
+        #expect(collectionProperties.count >= 20, "the walk read \(collectionProperties.count) stored properties of Collection")
+        #expect(entryProperties.count >= 25, "the walk read \(entryProperties.count) stored properties of CollectionEntry")
+        // What the walk reads is the schema's own list of what is stored.
+        let schema = Schema([FRUSExplorer.Collection.self, CollectionEntry.self])
+        for (entity, walked) in [("Collection", collectionProperties), ("CollectionEntry", entryProperties)] {
+            let stored = Set(schema.entities.first { $0.name == entity }?.properties
+                .filter { !$0.isTransient }.map(\.name) ?? [])
+            #expect(Set(walked.map(\.name)) == stored, "the walk of \(entity) and its schema disagree")
+        }
+        // Every name the list gives is a stored property, so an exemption cannot outlive its property.
+        let unknown = Set(R.collectionPropertiesNotDrawn.keys).subtracting(collectionProperties.map(\.name))
+            .union(Set(R.entryPropertiesNotDrawn.keys).subtracting(entryProperties.map(\.name)))
+        #expect(unknown.isEmpty, "the list names as not drawn what neither model stores: \(unknown.sorted())")
+
+        var silent: [String] = [], drawnAfterAll: [String] = [], unknownType: [String] = []
+        func walk<Model>(_ model: String, _ properties: [(name: String, keyPath: AnyKeyPath)],
+                         notDrawn: [String: String],
+                         _ target: (FRUSExplorer.Collection, CollectionEntry) -> Model) {
+            for (name, keyPath) in properties {
+                let (collection, entry) = Self.fixture()
+                let before = Self.fingerprint(collection, [entry])
+                guard StoredPropertyWalk.change(target(collection, entry), at: keyPath) else {
+                    if notDrawn[name] == nil { unknownType.append("\(model).\(name)") }
+                    continue
+                }
+                let moved = Self.fingerprint(collection, [entry]) != before
+                if notDrawn[name] == nil, !moved { silent.append("\(model).\(name)") }
+                if notDrawn[name] != nil, moved { drawnAfterAll.append("\(model).\(name)") }
+            }
+        }
+        walk("Collection", collectionProperties, notDrawn: R.collectionPropertiesNotDrawn) { collection, _ in collection }
+        walk("CollectionEntry", entryProperties, notDrawn: R.entryPropertiesNotDrawn) { _, entry in entry }
+        #expect(silent.isEmpty, """
+            changed alone, these leave the preview's fingerprint where it was, so the page would not refresh: \
+            hash each in CollectionPreviewRefresh.fingerprint if the page draws it, or name it in the list of \
+            what it does not draw, with why: \(silent.joined(separator: ", "))
+            """)
+        #expect(drawnAfterAll.isEmpty, """
+            the list names these as not drawn, yet changing one moves the fingerprint: take each off the list, \
+            or out of the hash: \(drawnAfterAll.joined(separator: ", "))
+            """)
+        #expect(unknownType.isEmpty, """
+            the walk cannot change these, a type it does not know: teach StoredPropertyWalk.change(_:at:) \
+            their type, or name them in the list with why: \(unknownType.joined(separator: ", "))
+            """)
+    }
+
+    @Test("A title override, the Headnotes default, the project stamp and the query log each refresh the page (#1997)")
+    func theFourThatDidNot() {
+        let (collection, entry) = Self.fixture()
+        var last = Self.fingerprint(collection, [entry])
+        func moves(_ change: () -> Void) -> Bool {
+            change()
+            let now = Self.fingerprint(collection, [entry])
+            defer { last = now }
+            return now != last
+        }
+        #expect(moves { entry.titleOverride = "Kennan's Long Telegram" }, "an entry's title override")
+        #expect(moves { collection.defaultIncludeHeadnote = true }, "the Headnotes default, switched alone")
+        #expect(moves { collection.includeProjectProvenance = true }, "the project stamp's switch")
+        #expect(moves { collection.includeMethodAppendix = true }, "the query log's switch")
+    }
+
+    @Test("What the page names of the active project refreshes it while the page names it, and not otherwise")
+    func theActiveProject() {
+        let (collection, _) = Self.fixture()
+        let project = Project(name: "Origins of the Cold War", researchQuestion: "When did containment begin?")
+        func key(_ active: Project? = nil) -> R.ProjectKey { R.ProjectKey(collection: collection, activeProject: active ?? project) }
+        #expect(key() == R.ProjectKey.noProject, "a page with neither the stamp nor the appendix names no project")
+        collection.includeProjectProvenance = true
+        let stamped = key()
+        #expect(stamped.stampName == "Origins of the Cold War")
+        #expect(stamped.stampQuestion == "When did containment begin?")
+        project.name = "Containment"
+        #expect(key() != stamped, "a renamed project is a different stamp")
+        collection.includeProjectProvenance = false
+        collection.includeMethodAppendix = true
+        #expect(key().stampName == nil && key().appendixProjectId == project.id)
+        #expect(key(Project(name: "Another")) != key(), "another project's queries are another appendix")
+    }
+}
+
+// MARK: - The chosen row (L36, #2004)
+
+/// A row chosen in the outline is its own document's place on the page, past the cap too (L36): the
+/// preview's numbering over its entries is the renderer's over the page's documents.
+@MainActor
+@Suite("A row chosen in the outline is its own document's place on the page, past the cap too (L36, #2004)")
+struct CollectionPreviewRevealTests {
+
+    private typealias V = CollectionPreviewView
+
+    /// A document entry of `documentId` in `frus1946v06` at `sortOrder`.
+    private static func document(_ documentId: String, _ sortOrder: Int, volume: String = "frus1946v06") -> CollectionEntry {
+        CollectionEntry(collectionId: UUID(), documentId: documentId, volumeId: volume, sortOrder: sortOrder)
+    }
+
+    /// An entry of `kind` at `sortOrder`.
+    private static func entry(_ kind: CollectionEntryKind, _ sortOrder: Int, documentId: String = "",
+                              volume: String = "") -> CollectionEntry {
+        let entry = CollectionEntry(collectionId: UUID(), documentId: documentId, volumeId: volume, sortOrder: sortOrder)
+        entry.entryKind = kind
+        entry.text = kind == .heading ? "Part Two" : "A passage."
+        return entry
+    }
+
+    @Test("A document entered three times: each entry's anchor is its own copy's section on the page")
+    func eachCopyIsItsOwnPlace() throws {
+        let first = Self.document("d475", 0), other = Self.document("d1", 1), heading = Self.entry(.heading, 2)
+        let excerpt = Self.entry(.excerpt, 3, documentId: "d475", volume: "frus1946v06")
+        let second = Self.document("d475", 4), third = Self.document("d475", 5)
+        // Out of their order, as an outline that was dragged can hold them: the page reads by `sortOrder`.
+        let entries = [third, heading, first, excerpt, second, other]
+        let anchors = try [first, other, second, third].map { try #require(V.revealTarget(of: $0.id, in: entries)?.anchor) }
+        #expect(anchors == ["doc-frus1946v06-d475", "doc-frus1946v06-d1", "doc-frus1946v06-d475_2", "doc-frus1946v06-d475_3"])
+        // The page the renderer draws for those entries has a section of each, the anchors its own numbering.
+        let items: [CollectionExportItem] = entries.sorted { $0.sortOrder < $1.sortOrder }.compactMap { entry in
+            switch entry.entryKind {
+            case .document:
+                return .document(CollectionExportDocument(documentId: entry.documentId, volumeId: entry.volumeId,
+                                                          sortOrder: entry.sortOrder, title: entry.documentId,
+                                                          bodyText: "Text of \(entry.documentId)."))
+            case .heading: return .heading(entry.text ?? "", level: 1)
+            default: return nil
+            }
+        }
+        let html = CollectionItemHTMLRenderer().pageHTML(metadata: CollectionExportMetadata(name: "Copies", note: nil),
+                                                         items: items)
+        for anchor in anchors {
+            #expect(html.components(separatedBy: "<section id=\"\(anchor)\"").count == 2,
+                    "the page has no one section \(anchor)")
+        }
+        #expect(CollectionItemHTMLRenderer.anchorIds(forDocuments: items.documents) == anchors)
+    }
+
+    @Test("A document past the first 20 is the one the cap is raised to, and the capped entries then hold it")
+    func pastTheCap() throws {
+        var entries = (0..<30).map { Self.document("d\($0 + 1)", $0 * 2) }
+        entries.insert(Self.entry(.heading, 5), at: 3)
+        let chosen = entries.first { $0.documentId == "d23" }!
+        let target = try #require(V.revealTarget(of: chosen.id, in: entries))
+        #expect(target.ordinal == 23, "a heading is not counted, as capEntries counts")
+        #expect(!V.capEntries(entries, cap: V.initialDocumentCap).contains { $0.id == chosen.id })
+        #expect(V.capEntries(entries, cap: target.ordinal).contains { $0.id == chosen.id })
+        #expect(V.capEntries(entries, cap: target.ordinal).filter { $0.entryKind == .document }.count == 23)
+    }
+
+    @Test("A heading, an excerpt, a document with no ids and an entry not in the outline bring nothing into view")
+    func notADocument() {
+        let heading = Self.entry(.heading, 0), excerpt = Self.entry(.excerpt, 1, documentId: "d475", volume: "frus1946v06")
+        let blank = Self.document("", 2, volume: "")
+        let entries = [heading, excerpt, blank, Self.document("d475", 3)]
+        for entry in [heading, excerpt, blank] { #expect(V.revealTarget(of: entry.id, in: entries) == nil) }
+        #expect(V.revealTarget(of: UUID(), in: entries) == nil)
+        #expect(V.revealTarget(of: entries[3].id, in: entries)?.ordinal == 2, "the blank document still counts toward the cap")
+    }
+
+    @Test("Choosing numbers each choice, choosing nothing changes nothing, and a place is its own collection's")
+    func thePlace() {
+        let place = CollectionPreviewPlace()
+        let row = UUID()
+        place.choose(nil)
+        #expect(place.chosen == nil)
+        place.choose(row)
+        place.choose(row)
+        #expect(place.chosen == CollectionPreviewPlace.Choice(entryId: row, serial: 2), "choosing a row again chooses it again")
+        let collection = UUID()
+        place.record(.init(anchor: "doc-frus1946v06-d475", offset: 12, y: 3_400), in: collection)
+        #expect(place.mark(in: collection)?.anchor == "doc-frus1946v06-d475")
+        #expect(place.mark(in: UUID()) == nil, "another collection's page starts at its top")
+        let body: [String: Any] = ["anchor": NSNull(), "offset": 0, "y": 120.5]
+        #expect(CollectionPreviewPlace.Mark(messageBody: body)
+                == CollectionPreviewPlace.Mark(anchor: nil, offset: 0, y: 120.5))
+        #expect(CollectionPreviewPlace.Mark(messageBody: "a string") == nil)
+    }
+}
+
+#if os(iOS)
+// MARK: - The reader's place, in WebKit (L36)
+
+/// The preview's web view keeps the reader's place when a new page loads, and brings a chosen row's
+/// document into view, through the coordinator and the web view the preview builds (L36). In no window,
+/// as the reader's harness is: a scroll crosses two processes, so each reading waits for the page and
+/// the scroll view to agree (`env_wkwebview_harness_scroll_two_processes`).
+///
+/// On `v2` at `97c4a8a9`, the same reload through the preview's own load put the reader back at the
+/// page's top: the sixth document's section was 7,000 px and more below the view.
+@MainActor
+@Suite("The preview keeps the reader's place and brings a chosen row into view, in WebKit (L36)", .serialized)
+struct CollectionPreviewPlaceWebKitTests {
+
+    /// Documents 1 to `count` of `frus1946v06`, thirty paragraphs each, the first ten more when `grown`.
+    static func page(count: Int = 10, grown: Bool = false) -> String {
+        let items: [CollectionExportItem] = (1...count).map { n in
+            let paragraphs = (1...(n == 1 && grown ? 40 : 30)).map {
+                "Paragraph \($0) of document \(n), long enough to wrap across the column more than once, so that the page is tall."
+            }
+            return .document(CollectionExportDocument(
+                documentId: "d\(n)", volumeId: "frus1946v06", sortOrder: n, title: "Document \(n)",
+                bodyText: paragraphs.joined(separator: "\n\n"), citation: "FRUS 1946, vol. VI, Document \(n)."))
+        }
+        var renderer = CollectionItemHTMLRenderer()
+        renderer.showsSummaryPlaceholders = true
+        return renderer.pageHTML(metadata: CollectionExportMetadata(name: "Place", note: nil), items: items)
+    }
+
+    /// The preview's web view and coordinator over `place`, 390 by 600.
+    static func preview(_ place: CollectionPreviewPlace) -> (CollectionPreviewWebView.Coordinator, WKWebView) {
+        let coordinator = CollectionPreviewWebView.Coordinator(place: place)
+        let webView = CollectionPreviewWebView.makeWebView(coordinator: coordinator)
+        webView.frame = CGRect(x: 0, y: 0, width: 390, height: 600)
+        return (coordinator, webView)
+    }
+
+    /// Waits until `coordinator` has landed `count` times, thirty seconds at most.
+    static func landed(_ coordinator: CollectionPreviewWebView.Coordinator, _ count: Int) async throws {
+        for _ in 0..<600 where coordinator.landings < count { try await Task.sleep(for: .milliseconds(50)) }
+        try #require(coordinator.landings >= count, "the preview landed \(coordinator.landings) times of \(count)")
+    }
+
+    /// The page's scroll once it and the scroll view agree for three readings 50 ms apart.
+    static func settledScrollY(_ webView: WKWebView) async -> Double {
+        var agreeing = 0, last = -1.0
+        for _ in 0..<100 {
+            let page = ((try? await webView.evaluateJavaScript("window.scrollY")) as? Double) ?? -1
+            let view = Double(webView.scrollView.contentOffset.y + webView.scrollView.adjustedContentInset.top)
+            agreeing = abs(page - view) < 1 && abs(page - last) < 1 ? agreeing + 1 : 0
+            last = page
+            if agreeing >= 3 { break }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return last
+    }
+
+    /// How far `anchor`'s section begins below the top of the view, once the scroll has settled.
+    static func viewportTop(of anchor: String, in webView: WKWebView) async throws -> Double {
+        _ = await settledScrollY(webView)
+        let value = try await webView.evaluateJavaScript("document.getElementById('\(anchor)').getBoundingClientRect().top")
+        return try #require(value as? Double, "the page has no \(anchor)")
+    }
+
+    /// The place the page reports once the reader stops at `y`: scrolled in the scroll view, where a finger
+    /// scrolls, and the page's scroll event sent, as a reader's scroll sends it.
+    static func scroll(_ webView: WKWebView, to y: Double, into anchor: String, reportingTo place: CollectionPreviewPlace,
+                       in collectionId: UUID) async throws -> CollectionPreviewPlace.Mark {
+        webView.scrollView.setContentOffset(CGPoint(x: 0, y: y - webView.scrollView.adjustedContentInset.top), animated: false)
+        _ = await settledScrollY(webView)
+        _ = try await webView.evaluateJavaScript("window.dispatchEvent(new Event('scroll')); true")
+        for _ in 0..<200 where place.mark(in: collectionId)?.anchor != anchor { try await Task.sleep(for: .milliseconds(50)) }
+        return try #require(place.mark(in: collectionId), "the page reported no place")
+    }
+
+    /// Where `anchor`'s section begins on the page.
+    static func pageTop(of anchor: String, in webView: WKWebView) async throws -> Double {
+        let value = try await webView.evaluateJavaScript(
+            "document.getElementById('\(anchor)').getBoundingClientRect().top + window.scrollY")
+        return try #require(value as? Double, "the page has no \(anchor)")
+    }
+
+    @Test("A page loaded again, its text grown above the reader, lands them where they were in their document")
+    func keepsThePlace() async throws {
+        let place = CollectionPreviewPlace(), id = UUID()
+        let (coordinator, webView) = Self.preview(place)
+        coordinator.show(Self.page(), collectionId: id, reveal: nil, in: webView)
+        try await Self.landed(coordinator, 1)
+        let six = try await Self.pageTop(of: "doc-frus1946v06-d6", in: webView)
+        let mark = try await Self.scroll(webView, to: six + 40, into: "doc-frus1946v06-d6", reportingTo: place, in: id)
+        #expect(mark.anchor == "doc-frus1946v06-d6" && abs(mark.offset - 40) < 2, "the page reported \(mark)")
+        coordinator.show(Self.page(grown: true), collectionId: id, reveal: nil, in: webView)
+        try await Self.landed(coordinator, 2)
+        let top = try await Self.viewportTop(of: "doc-frus1946v06-d6", in: webView)
+        #expect(abs(top + 40) < 2, "after the page loaded again the sixth document begins \(top) from the view's top, where it began -40")
+        let grownSix = try await Self.pageTop(of: "doc-frus1946v06-d6", in: webView)
+        #expect(grownSix > six + 100, "the first document did not grow above the reader: \(six) then \(grownSix)")
+    }
+
+    @Test("A web view built again lands where the last one left the reader, and another collection's page at its top")
+    func aRebuiltPreviewLandsThere() async throws {
+        let place = CollectionPreviewPlace(), id = UUID()
+        place.record(.init(anchor: "doc-frus1946v06-d4", offset: 25, y: 0), in: id)
+        let (coordinator, webView) = Self.preview(place)
+        coordinator.show(Self.page(), collectionId: id, reveal: nil, in: webView)
+        try await Self.landed(coordinator, 1)
+        let top = try await Self.viewportTop(of: "doc-frus1946v06-d4", in: webView)
+        #expect(abs(top + 25) < 2, "the rebuilt preview put the fourth document \(top) from the view's top, not -25")
+        let (otherCoordinator, otherWebView) = Self.preview(place)
+        otherCoordinator.show(Self.page(), collectionId: UUID(), reveal: nil, in: otherWebView)
+        try await Self.landed(otherCoordinator, 1)
+        let otherScroll = await Self.settledScrollY(otherWebView)
+        #expect(otherScroll < 1, "another collection's page opened at another's place, \(otherScroll) down")
+    }
+
+    @Test("A chosen row's document comes into view, one the page lacks comes with the page that holds it, and a choice shown once is not shown again")
+    func aChosenRow() async throws {
+        let place = CollectionPreviewPlace(), id = UUID()
+        let (coordinator, webView) = Self.preview(place)
+        let ten = Self.page(), eleven = Self.page(count: 11)
+        coordinator.show(ten, collectionId: id, reveal: nil, in: webView)
+        try await Self.landed(coordinator, 1)
+        coordinator.show(ten, collectionId: id, reveal: .init(anchor: "doc-frus1946v06-d8", serial: 1), in: webView)
+        try await Self.landed(coordinator, 2)
+        let eighth = try await Self.viewportTop(of: "doc-frus1946v06-d8", in: webView)
+        #expect(abs(eighth) < 2, "the chosen eighth begins \(eighth) from the view's top")
+        #expect(place.revealedSerial == 1)
+        // The eleventh is past this page, as a row past the cap is until the page is rendered through it.
+        coordinator.show(ten, collectionId: id, reveal: .init(anchor: "doc-frus1946v06-d11", serial: 2), in: webView)
+        try await Self.landed(coordinator, 3)
+        #expect(place.revealedSerial == 1, "a document the page lacks was counted as shown")
+        let stillEighth = try await Self.viewportTop(of: "doc-frus1946v06-d8", in: webView)
+        #expect(abs(stillEighth) < 2, "the reader was moved off the eighth, which begins \(stillEighth) from the view's top")
+        coordinator.show(eleven, collectionId: id, reveal: .init(anchor: "doc-frus1946v06-d11", serial: 2), in: webView)
+        try await Self.landed(coordinator, 4)
+        let eleventh = try await Self.viewportTop(of: "doc-frus1946v06-d11", in: webView)
+        #expect(abs(eleventh) < 2, "the eleventh begins \(eleventh) from the view's top")
+        #expect(place.revealedSerial == 2)
+        // The reader scrolls on; a preview built again, with the same choice, keeps their place.
+        let three = try await Self.pageTop(of: "doc-frus1946v06-d3", in: webView)
+        _ = try await Self.scroll(webView, to: three, into: "doc-frus1946v06-d3", reportingTo: place, in: id)
+        let (rebuilt, rebuiltWebView) = Self.preview(place)
+        rebuilt.show(eleven, collectionId: id, reveal: .init(anchor: "doc-frus1946v06-d11", serial: 2), in: rebuiltWebView)
+        try await Self.landed(rebuilt, 1)
+        let third = try await Self.viewportTop(of: "doc-frus1946v06-d3", in: rebuiltWebView)
+        #expect(abs(third) < 2, "the rebuilt preview put the third document \(third) from the view's top: the old choice shown again?")
+    }
+}
+#endif
