@@ -858,6 +858,35 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
   - **The bump** by `CLAUDE.md`'s procedure, never `xcodegen generate`: version 1.1 (decision 150) and the build number the owner names, the README line and its mirror, both TestFlight notes within 4,000 characters, `fetch-llama-dsyms.sh` and `check_cloudkit_schema.py`, which should read no change, since no row before it adds a stored property.
   - **Both notes say** that a library re-indexes once at the first launch, and about how long, by L26's census; and that the Collections overhaul comes in a later build.
   - **No sitting.** T3 is R11's, when every screen that will change has changed.
+  - **Built on 2026-11-27 and 2026-11-28** on `claude/r8-early-build-3cb2bf`, by a session the orchestrator started ahead on the owner's "standby" and held until its word. From `v2` at `ebacf85a` (L37's merge): the bump (`6443b740`), both TestFlight notes (`75ce0605`) and the notes rewritten when the build grew (`e4acf79a`); `v2` taken in at `7524f53d` (`9afc3cf0`) and at `433d1494` (`eabd273a`), and L56's pull request head `1e0ebcf6` (`ada91ed4`); the owner's answers (`72227a86`); then the records.
+    - **The build grew while R8 waited** (decisions 226 to 228): from Waves 1 and 2 to Wave 3, L34, L35, L36, L62 and L56. Its number is the owner's, 1862 (decision 224).
+    - **The bump**, by `CLAUDE.md`'s procedure, with no `xcodegen generate`:
+      - `MARKETING_VERSION` 1.0 → 1.1 and `CURRENT_PROJECT_VERSION` 1861 → 1862, in `project.yml`'s three targets and the nine occurrences of each in `project.pbxproj`;
+      - the README's *Current build* line and its mirror, which still holds `README.md` whole;
+      - an Amendment-Log bullet.
+      Each merge of `v2` met the bump only in that log, whose rows' bullets go first.
+    - **Both TestFlight notes:** iOS 3,810 characters and Mac 3,833, by Python's `len()`, with no ⚙, ✕ or ⓘ.
+      - **The re-index:** a library re-indexes once at first launch, about 15 minutes for the whole series by L26's census (867 s on the iPad Pro 13-inch simulator; L27's run took 992 s).
+      - **The overhaul:** the build brings its first part (decision 227).
+      - **New since 1.0 (1861), a sentence each:**
+        - the three export formats in one order, and Export… from the lists (L34, L35);
+        - the graph's and Chronology's Save As (L42, L56);
+        - on the Mac, a document window titled by its volume and number (L38, decision 219);
+        - the post-1963 central files read (L26, decision 191);
+        - Zotero's waits said (L41).
+      - **Fixes:** every one in the one line (decision 225).
+      - **What to test:** taken from the rows' own checks.
+    - **The checklist,** with no UI suite (decision 229):
+      - **A clean `build-for-testing`** at `9afc3cf0` (`v2` at `7524f53d` and the bump), from an empty build folder, the iPhone 17 destination: succeeded, 1,238 compile lines. Its 7 warning lines are the two known residues alone: `GeneratedSummary`'s redundant conformance (4) and the AppIntents note (3).
+      - **The unit target on the iPhone 17 under iOS 27.2** there, with the TEI mirror and the app removed first: 8,441 tests in 1,019 suites in 810 s. 8,423 passed, none failed, 17 skipped (the semantic encoder's 15 and two render tools), and the one test with the six known issues.
+      - **At `72227a86`** (tree `b28f8c9d`: `v2` at `433d1494`, L56's head `1e0ebcf6` and the bump), in one `Scripts/heavy.sh` call: the clean `build-for-testing`, from an empty build folder, in 176 s, with the two known residues alone (7 warning lines); the unit target on the iPhone 17 under iOS 27.0, with the TEI mirror and the app removed first: 8,489 tests in 1,033 suites in 753 s, 8,471 passed, none failed, 17 skipped, and the one test with the six known issues; the `FRUSExplorerMac` build, Debug and unsigned, with the residues alone (5 lines); `swift build --target FRUSCoreKit`, no warning; `swift test`, 5,349 tests in 620 suites over 39 runs, none failed, its 12 warning lines six package test files' own, each printed twice, as at R5.
+      - **The unit target on the iPhone 17 under iOS 27.2 on the same products**, with these records in the tree: RESULT27.
+      - **Light checks:**
+        - `Scripts/check_repo_hygiene.py`: its six checks passed.
+        - The window-fronting audit on the merged tree, R5's figures: 83 `fronting(id:)` sites in 27 files, 2 `fronting(id:value:)`, 34 `openWindow(value:)` in 20 files and 0 bare `openWindow(id:)`; 20 scenes, each with a literal opener; 23 `openAuxWindow` sites in 10 files.
+        - The link check in report mode, on 2026-11-27: 20 OK, 3 owner-asserted, 0 dead, and the 3 published-source links OK.
+        - `./Scripts/check_cloudkit_schema.py`: PASS, 268 of 272 identifiers required, Production 310, as R5 read it. No row before R8 adds a stored property, and L35's change to `Collection.swift` adds none.
+    - **The archive is the owner's** (decision 230). After the merge, R8's worktree is put at the merge commit, detached, and both archive-only phases' caches are verified there: `./Scripts/check_cloudkit_schema.py` is run again and `fetch-llama-dsyms.sh` verifies the llama dSYMs. The owner archives `FRUSExplorer` and `FRUSExplorerMac` in Xcode from that worktree, in the `AppStore` configuration their schemes name; R8 holds the build lock for the archive on the owner's word. The upload, What to Test and the testing groups are the owner's; no export-compliance question comes, since both apps declare no non-exempt encryption.
 
 - **R9, the device pass of the early build,** on an iPhone, an iPad and the Mac. The owner's.
   - **The one re-index, 75 → 76,** at each device's first launch. On the iPad, Browse two-pane and the reader open while it runs: F1's band, or L27's log line.
