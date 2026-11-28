@@ -652,7 +652,7 @@ public final class DocxCollectionExporter: CollectionExporter {
         // The export's plan (L34): the contents rows and each document's lines, decided once for the three
         // formats. The contents list is the plan's rows, each linked to a bookmark at its entry.
         let plan = CollectionExportPlan(items: items, options: options)
-        body += styledPara("Contents", styleId: "Heading2")
+        body += styledPara(escaped(options.wording.text(for: .contents)), styleId: "Heading2")
         body += contentsXML(plan.contents)
 
         // Word-cloud overview on its own page after the contents — the position the PDF
@@ -740,6 +740,9 @@ public final class DocxCollectionExporter: CollectionExporter {
             case .title:
                 body += wParaXML(pPr: Self.paragraphProperties("Heading2", level: line.headingLevel, keepNext: true),
                                  runs: marked(markdownItalicRunXML(line.text, baseRPr: "<w:b/>")))
+            case .titleDateLine:
+                // The author's date line under their title (L43), in the volume's dateline's style.
+                body += styledPara(escaped(line.text), styleId: "Dateline")
             case .citation:
                 if let level = line.headingLevel {
                     body += wParaXML(pPr: Self.paragraphProperties("Heading2", level: level, keepNext: true),

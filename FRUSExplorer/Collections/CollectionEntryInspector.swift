@@ -397,8 +397,39 @@ struct CollectionEntryInspector: View {
                         set: { entry.titleOverride = $0.isEmpty ? nil : $0 }),
                     prompt: Text(derivedTitlePlaceholder)
                 )
+                .accessibilityIdentifier("collection.inspector.titleOverride.field")
                 Text(String(localized: "collection.inspector.titleOverride.caption",
                             defaultValue: "Overrides the document title in the table of contents and the export heading. Leave blank to use the derived title."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            dateLineField
+        }
+    }
+
+    /// The author's date line (L43; decision 163), under the title: offered once the document has a title, and still
+    /// shown where a date line was given and the title has since been cleared, with a line that says it does not print
+    /// (J41). Empty stores `nil`.
+    @ViewBuilder private var dateLineField: some View {
+        let hasTitle = !(entry.titleOverride?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        let hasDateLine = !(entry.dateLine?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        if hasTitle || hasDateLine {
+            VStack(alignment: .leading, spacing: 4) {
+                TextField(
+                    String(localized: "collection.inspector.dateLine", defaultValue: "Date line"),
+                    text: Binding(
+                        get: { entry.dateLine ?? "" },
+                        set: { entry.dateLine = $0.isEmpty ? nil : $0 }),
+                    prompt: Text(String(localized: "collection.inspector.dateLine.placeholder",
+                                        defaultValue: "Date line, such as Moscow, 22 February 1946"))
+                )
+                // Named for VoiceOver: a form's text field shows no title, and iOS 27 gives it none.
+                .accessibilityLabel(String(localized: "collection.inspector.dateLine", defaultValue: "Date line"))
+                .accessibilityIdentifier("collection.inspector.dateLine.field")
+                Text(hasTitle
+                     ? String(localized: "collection.inspector.dateLine.caption",
+                              defaultValue: "Prints under your title, above the words As published: and the volume’s own heading and dateline.")
+                     : String(localized: "collection.inspector.dateLine.withoutTitle",
+                              defaultValue: "Not printed: a date line prints only under a title of yours. Give the document a title to print it."))
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -622,11 +653,11 @@ struct CollectionEntryInspector: View {
             notes: section { $0.includeNotesOverride } ?? collection.includeNotes,
             sourceNote: section { $0.includeSourceNoteOverride } ?? collection.effectiveIncludeSourceNote,
             footnotes: section { $0.includeFootnotesOverride } ?? collection.effectiveIncludeFootnotes,
-            related: section { $0.includeRelatedDocuments } ?? false,
+            related: section { $0.includeRelatedDocuments } ?? collection.defaultIncludeRelatedDocuments,
             summaryPromptId: section { $0.summaryPromptIdOverride } ?? collection.summaryPromptId,
-            // Headnote has no heading-level section default in the Composer model — it resolves
-            // straight to the collection default.
-            headnote: collection.defaultIncludeHeadnote
+            // A section's headnote default is the heading's own `headnoteDefault` (L43; J24), never its
+            // `includeHeadnote`, else the collection's.
+            headnote: section { $0.headnoteDefault } ?? collection.defaultIncludeHeadnote
         )
     }
 
@@ -738,7 +769,7 @@ struct CollectionEntryInspector: View {
                                set: { entry.includeRelatedDocuments = $0 }),
                        subtitle: rd.map { defaultResolves($0.related) })
         Text(String(localized: "collection.inspector.override.related.caption",
-                    defaultValue: "Adds a \u{201C}See also\u{201D} line listing cross-referenced documents that are also in this collection. Off unless turned on here or on the section."))
+                    defaultValue: "Adds a \u{201C}See also\u{201D} line listing cross-referenced documents that are also in this collection. Default follows the section, else the collection\u{2019}s See also."))
             .font(.caption2)
             .foregroundStyle(.secondary)
     }
@@ -802,6 +833,11 @@ struct CollectionEntryInspector: View {
         Section(String(localized: "collection.inspector.sectionDefaults",
                        defaultValue: "Section Defaults")) {
             overrideControls
+            // L43: a section's headnote default (decision 164; J24), its own field and not the heading's
+            // `includeHeadnote`, which headings of 2026-07-01 to 07-11 hold as an unseen `false`.
+            overridePicker(String(localized: "collection.inspector.sectionHeadnote", defaultValue: "Headnotes"),
+                           Binding(get: { entry.headnoteDefault }, set: { entry.headnoteDefault = $0 }))
+                .accessibilityIdentifier("collection.inspector.sectionHeadnote.picker")
             Text(String(localized: "collection.inspector.sectionDefaults.caption",
                         defaultValue: "Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition."))
                 .font(.caption2)
@@ -1148,6 +1184,13 @@ struct CollectionEntryInspector: View {
         swapHeadnoteDraft(text: trimmed, authorship: authorship)
     }
 
+    /// The name a headnote the reader writes is stamped with (L43; decision 234): the collection's author line, trimmed,
+    /// which serves as the compiler's name; `nil` when it is empty.
+    nonisolated static func headnoteWriterName(authorLine: String?) -> String? {
+        guard let name = authorLine?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        return name
+    }
+
     /// The text Edit opens a headnote on: a structured summary's fields as *Label: text* paragraphs, so
     /// the reader edits prose and never the stored JSON, and any other summary's text as stored; empty
     /// with no summary. What Edit saves is plain text (`.general`), shown and exported as written.
@@ -1168,10 +1211,14 @@ struct CollectionEntryInspector: View {
            existing.isHeadnoteDraft {
             modelContext.delete(existing)
         }
+        // L43 (decisions 194 and 234): a headnote the reader writes or edits carries their name, the collection's author
+        // line as it reads now; one Apple Intelligence drafted carries none, and its export names the model.
         let draft = GeneratedSummary(documentId: entry.documentId, volumeId: entry.volumeId,
                                      promptId: Self.headnoteDraftPromptId, responseText: text,
                                      responseFormat: format,
-                                     authorship: authorship, isHeadnoteDraft: true)
+                                     authorship: authorship, isHeadnoteDraft: true,
+                                     writerName: authorship == .aiGenerated
+                                        ? nil : Self.headnoteWriterName(authorLine: entry.collection?.authorLine))
         modelContext.insert(draft)
         entry.headnoteSummaryId = draft.id
         try? modelContext.save()
@@ -1294,22 +1341,28 @@ struct CollectionEntryInspector: View {
     /// The citation the export's document heading falls back to — what the title-override
     /// placeholder shows — built exactly as `CollectionContentResolver` builds it: the manifest's
     /// volume metadata and the document's printed number (`CitableDocumentNumber` over what the
-    /// index stores, #1406), never the header or dateline.
+    /// index stores, #1406), in the collection's style (L43), a Chicago or Turabian note naming the
+    /// document by the heading and dateline the index stores, as every citation of it in an export does.
     ///
-    /// - Parameter pipeline: the index to read the printed number from; `nil`, or a document it
-    ///   does not hold, leaves only the id to go on, as for an unindexed volume in the export.
+    /// - Parameters:
+    ///   - pipeline: the index to read the printed number from; `nil`, or a document it
+    ///     does not hold, leaves only the id to go on, as for an unindexed volume in the export.
+    ///   - style: the collection's citation style; History at State, 1.0's, by default.
     static func exportCitation(
         documentId: String, volumeId: String, manifestEntry: VolumeManifestEntry,
-        pipeline: IndexingPipeline?
+        pipeline: IndexingPipeline?, style: CitationStyle = .historyAtState
     ) async -> String {
         let printed = (try? await pipeline?.documentNumber(volumeId: volumeId,
                                                            documentId: documentId)) ?? nil
+        let heading = style == .historyAtState ? nil
+            : (try? await pipeline?.documentHeadingsByKey([(volumeId: volumeId, documentId: documentId)]))?[
+                "\(volumeId)/\(documentId)"]
         let docMeta = FRUSDocumentMetadata(
             documentId: documentId,
             documentNumber: CitableDocumentNumber.resolve(printed: printed, documentId: documentId),
-            header: "", dateline: nil)
-        return HistoryAtStateCitationFormatter()
-            .format(document: docMeta, volume: FRUSVolumeMetadata(manifestEntry))
+            header: heading?.header ?? "", dateline: heading?.dateline)
+        return CitationItalics.underscored(
+            style.makeFormatter().format(document: docMeta, volume: FRUSVolumeMetadata(manifestEntry)))
     }
 
     /// Gathers the document's data from the app's existing stores. Fast SwiftData reads run
@@ -1331,14 +1384,14 @@ struct CollectionEntryInspector: View {
         let manifestEntry = appState.manifestStore.entry(forVolumeId: vid)
         volumeTitle = manifestEntry?.title ?? ""
 
-        // Resolve the history.state.gov citation exactly as `CollectionContentResolver`
-        // does (manifest volume metadata + document number; the formatter never reads the
-        // document header/dateline), so the override placeholder shows the true
-        // export-heading fallback. Empty when the volume is not in the manifest.
+        // Resolve the citation exactly as `CollectionContentResolver` does, in the collection's
+        // style (L43), so the override placeholder shows the true export-heading fallback. Empty
+        // when the volume is not in the manifest.
         if let manifestEntry {
             resolvedCitation = await Self.exportCitation(
                 documentId: did, volumeId: vid, manifestEntry: manifestEntry,
-                pipeline: appState.indexingPipeline)
+                pipeline: appState.indexingPipeline,
+                style: entry.collection?.citationStyle.flatMap(CitationStyle.init(rawValue:)) ?? .historyAtState)
         }
 
         let (docTags, docNotes) = ZoteroJSONExporter.fetchTagsAndNotes(

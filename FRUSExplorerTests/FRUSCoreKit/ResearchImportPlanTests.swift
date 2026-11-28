@@ -56,7 +56,7 @@ struct ResearchImportPlanTests {
 
     /// The fixture of `version`.
     private static func json(version: Int) throws -> String {
-        if version == ResearchDataEnvelope.currentFormatVersion { return ResearchDataFixtures.version7 }
+        if version == ResearchDataEnvelope.currentFormatVersion { return ResearchDataFixtures.version8 }
         return try #require(ResearchDataFixtures.earlierVersions.first { $0.version == version }?.json)
     }
 
@@ -125,7 +125,7 @@ struct ResearchImportPlanTests {
     /// Each version's file, planned into an empty library, adds every record it holds, and its
     /// report counts them by type, with the file's version and date.
     @Test("Into an empty library, a file of every version plans each of its records as added",
-          arguments: 1...7)
+          arguments: 1...8)
     func everyRecordIsAddedIntoAnEmptyLibrary(version: Int) throws {
         let file = try Self.file(version: version)
         let plan = Plan(file: file, library: ResearchLibrarySnapshot())
@@ -152,7 +152,7 @@ struct ResearchImportPlanTests {
 
     /// The same file imported again, into the library the first import left, plans every record
     /// as kept; and so does the file planned against the library an export of it describes.
-    @Test("A second import of the same file plans nothing: every record is kept", arguments: 1...7)
+    @Test("A second import of the same file plans nothing: every record is kept", arguments: 1...8)
     func aSecondImportPlansNothing(version: Int) throws {
         let file = try Self.file(version: version)
         let first = Plan(file: file, library: ResearchLibrarySnapshot())
@@ -175,12 +175,13 @@ struct ResearchImportPlanTests {
         #expect(againstAnExport.everyItem.allSatisfy { $0.action == .keep })
     }
 
-    /// A version-7 file says everything, so its records are added as the file writes them: a
-    /// collection without its entries and a plan without its documents and targets, which are
-    /// added as records of their own under their parent.
-    @Test("A version-7 file's records are added as the file writes them, each child under its parent")
-    func aVersion7FileIsAddedAsWritten() throws {
-        let envelope = try Self.envelope(version: 7)
+    /// A file of the current version, 8, says everything, so its records are added as the file
+    /// writes them: a collection without its entries and a plan without its documents and targets,
+    /// which are added as records of their own under their parent. (Version 7's file was the
+    /// current one until L43; what it cannot say is `version8FieldsSurviveAVersion7Copy`'s.)
+    @Test("A version-8 file's records are added as the file writes them, each child under its parent")
+    func aCurrentFileIsAddedAsWritten() throws {
+        let envelope = try Self.envelope(version: 8)
         let plan = Plan(file: try ResearchImportFile(envelope: envelope),
                         library: ResearchLibrarySnapshot())
         let collectionsWithoutEntries = envelope.collections.map { collection in
@@ -295,7 +296,10 @@ struct ResearchImportPlanTests {
         #expect(plan.collectionEntries.map { $0.action } == [.replace, .keep])
         #expect(plan.projects.map { $0.action } == [.replace])
         #expect(plan.report.fieldsNotCarried == [.noteFormatting, .collectionSettings,
-                                                 .collectionEntryContent, .projectFocus])
+                                                 .collectionEntryContent, .projectFocus,
+                                                 .collectionCitationStyle, .collectionOpening, .collectionWording,
+                                                 .collectionSeeAlso, .entryDateLine, .sectionHeadnoteDefault,
+                                                 .headnoteWriter])
         #expect(!plan.carries(.noteFormatting) && plan.carries(.summaryAuthorship))
         library.apply(plan)
 
@@ -481,6 +485,69 @@ struct ResearchImportPlanTests {
         #expect(plan.report.summariesWithoutAuthorship == (version < 5 ? 1 : 0))
     }
 
+    // MARK: - Version 8 (L43)
+
+    /// A newer copy from a version-7 file cannot say a collection's own facts, an entry's date line or section
+    /// headnote default, or a headnote's writer, so a replacement keeps the library's: an older file never blanks
+    /// what it could not say. A version-8 copy writes them all, a cleared one included.
+    @Test("A newer version-7 copy keeps the library's version-8 fields; a newer version-8 copy writes them")
+    func version8FieldsSurviveAVersion7Copy() throws {
+        var library = ImportTestLibrary()
+        library.apply(Plan(file: try Self.file(version: 8), library: ResearchLibrarySnapshot()))
+        let later = try Self.later()
+
+        var older = try Self.envelope(version: 7)
+        older.collections[0].lastModified = later
+        older.collections[0].name = "Renamed by an older file"
+        for index in older.collections[0].entries.indices { older.collections[0].entries[index].lastModified = later }
+        older.summaries[1].lastModified = later
+        let plan = Plan(file: try ResearchImportFile(envelope: older), library: library.snapshot)
+        #expect(plan.collections.map(\.action) == [.replace])
+        #expect(plan.report.fieldsNotCarried.suffix(7) == [.collectionCitationStyle, .collectionOpening,
+                                                          .collectionWording, .collectionSeeAlso, .entryDateLine,
+                                                          .sectionHeadnoteDefault, .headnoteWriter])
+        library.apply(plan)
+        let collection = try #require(library.collections[Self.id(6)])
+        #expect(collection.name == "Renamed by an older file", "what version 7 carries is written")
+        #expect(collection.citationStyle == "chicago" && collection.opening == "volumeHeading")
+        #expect(collection.labelsJSON?.contains("Commentary") == true)
+        #expect(collection.defaultIncludeRelatedDocuments == true)
+        #expect(library.collectionEntries[Self.id(7)]?.dateLine == "Paris, 27 January 1973")
+        #expect(library.collectionEntries[Self.id(8)]?.headnoteDefault == true)
+        #expect(library.summaries[Self.id(21)]?.writerName == "A. Researcher", "the same text keeps its writer")
+
+        // A version-7 copy with a new text cannot say who wrote it: the writer goes with the old text.
+        var rewritten = try Self.envelope(version: 7)
+        rewritten.summaries[1].lastModified = try Self.date("2026-12-01T00:00:00Z")
+        rewritten.summaries[1].responseText = "Another text."
+        library.apply(Plan(file: try ResearchImportFile(envelope: rewritten), library: library.snapshot))
+        #expect(library.summaries[Self.id(21)]?.writerName == nil)
+
+        // A newer version-8 copy says everything, a cleared field included.
+        var newer = try Self.envelope(version: 8)
+        newer.collections[0].lastModified = try Self.date("2026-12-02T00:00:00Z")
+        newer.collections[0].citationStyle = nil
+        newer.collections[0].defaultIncludeRelatedDocuments = false
+        library.apply(Plan(file: try ResearchImportFile(envelope: newer), library: library.snapshot))
+        #expect(library.collections[Self.id(6)]?.citationStyle == nil)
+        #expect(library.collections[Self.id(6)]?.defaultIncludeRelatedDocuments == false)
+    }
+
+    /// A new record from a file before version 8 takes the app's defaults for the fields version 8 added: no style,
+    /// opening or words of its own, See also off, no date line, no section headnote default and no writer.
+    @Test("A new record from a version-7 file takes the defaults for what version 8 added")
+    func aNewRecordFromVersion7TakesTheVersion8Defaults() throws {
+        let plan = Plan(file: try Self.file(version: 7), library: ResearchLibrarySnapshot())
+        let collection = try #require(plan.collections.first?.record)
+        #expect(collection.citationStyle == nil && collection.opening == nil && collection.labelsJSON == nil)
+        #expect(collection.defaultIncludeRelatedDocuments == false)
+        #expect(plan.collectionEntries.allSatisfy { $0.record.dateLine == nil && $0.record.headnoteDefault == nil })
+        #expect(plan.summaries.allSatisfy { $0.record.writerName == nil })
+        let fromVersion8 = Plan(file: try Self.file(version: 8), library: ResearchLibrarySnapshot())
+        #expect(fromVersion8.collections.first?.record.citationStyle == "chicago")
+        #expect(fromVersion8.summaries.last?.record.writerName == "A. Researcher")
+    }
+
     // MARK: - What an older file does not say
 
     /// Before version 7 the flag is read from the prompt every draft carries; from version 7 the
@@ -659,13 +726,13 @@ struct ResearchImportPlanTests {
     /// build's; a version no build wrote is refused; a file that is not an export fails to decode.
     @Test("A file of a later format version is refused, whether or not it decodes, and so is one of no version")
     func aLaterFormatVersionIsRefused() throws {
-        let version8 = ResearchDataFixtures.version7.replacingOccurrences(
-            of: "\"formatVersion\" : 7,", with: "\"formatVersion\" : 8,")
-        #expect(throws: ResearchImportFile.FormatError.newerFormatVersion(8)) {
-            try ResearchImportFile(data: Data(version8.utf8))
-        }
-        let laterShape = #"{ "formatVersion" : 9, "notes" : { "shape" : "of a later build" } }"#
+        let version9 = ResearchDataFixtures.version8.replacingOccurrences(
+            of: "\"formatVersion\" : 8,", with: "\"formatVersion\" : 9,")
         #expect(throws: ResearchImportFile.FormatError.newerFormatVersion(9)) {
+            try ResearchImportFile(data: Data(version9.utf8))
+        }
+        let laterShape = #"{ "formatVersion" : 10, "notes" : { "shape" : "of a later build" } }"#
+        #expect(throws: ResearchImportFile.FormatError.newerFormatVersion(10)) {
             try ResearchImportFile(data: Data(laterShape.utf8))
         }
         let version0 = ResearchDataFixtures.version1.replacingOccurrences(
@@ -676,7 +743,7 @@ struct ResearchImportPlanTests {
         #expect(throws: DecodingError.self) {
             try ResearchImportFile(data: Data("[]".utf8))
         }
-        #expect(ResearchImportFile.supportedFormatVersions == 1...7)
+        #expect(ResearchImportFile.supportedFormatVersions == 1...8)
     }
 
     /// The same record twice in one file is planned once: the newer copy in the first one's place,
@@ -748,7 +815,10 @@ struct ResearchImportPlanTests {
         #expect(Plan.ModelType.allCases.count == 23)
         let fieldModels = Plan.Fields.allCases.map(\.model)
         #expect(fieldModels == [.researchNote, .collection, .collectionEntry, .project,
-                                .searchHistoryEntry, .generatedSummary])
+                                .searchHistoryEntry, .generatedSummary,
+                                // Version 8's (L43).
+                                .collection, .collection, .collection, .collection,
+                                .collectionEntry, .collectionEntry, .generatedSummary])
     }
 }
 

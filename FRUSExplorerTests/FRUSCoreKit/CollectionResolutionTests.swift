@@ -1001,3 +1001,143 @@ struct SummaryRecencyTests {
                                                 recency: { $0.recency }) == nil)
     }
 }
+
+// MARK: - The new facts through the assembly (L43)
+
+/// A collection's own facts as the assembly resolves them (L43): its citation style in every place a citation
+/// prints, a section's headnote default, the collection's See also, and a document's date line.
+@Suite("L43: a collection's facts through the assembly")
+@MainActor
+struct CollectionFactsResolutionTests {
+
+    typealias Fixtures = CollectionResolutionFixtures
+
+    func assembly(_ collection: CollectionExport, store: FixtureContentStore) -> CollectionContentAssembly {
+        CollectionContentAssembly(collection: collection, notes: Fixtures.notes, source: store,
+                                  locale: Locale(identifier: "en_US"))
+    }
+
+    /// The design's §6 and decision 161: a collection in Chicago cites each document in the CMOS FAQ's note, named by
+    /// the heading and dateline the index stores, and one document is cited alike wherever it is cited: at its head,
+    /// in a passage's source line, on the See also line and in the Bibliography's rows. The italics the exporters
+    /// read are `_…_`.
+    @Test("A Chicago collection cites each document in the FAQ's note, alike in every place it is cited")
+    func chicagoEverywhere() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            var collection = Fixtures.staticCollection()
+            collection.citationStyle = CitationStyle.chicago.rawValue
+            let items = try await assembly(collection, store: store).resolve(
+                entries: Fixtures.entries(of: collection), introduction: nil, purpose: .preview)
+            let docs = items.documents
+            let d7 = try #require(docs.first { $0.documentId == "d7" })
+            let d8 = try #require(docs.first { $0.documentId == "d8" })
+
+            #expect(d7.citation == "The Embassy in France to the Department of State, telegram, Paris, October 22, 1962, "
+                    + "in _Foreign Relations of the United States, 1961–1963_, ed. David S. Patterson, vol. 11, "
+                    + "_Cuban Missile Crisis and Aftermath_, ed. Edward C. Keefer, Charles S. Sampson, and Louis J. Smith "
+                    + "(Government Printing Office, 1996), doc. 7.", "\(d7.citation)")
+            #expect(!d7.citation.contains("*"), "the exporters read one kind of italics")
+            #expect(d8.citation.hasPrefix("The President’s Special Assistant to President Kennedy, memorandum, "
+                                          + "Washington, October 23, 1962, in _Foreign Relations"), "\(d8.citation)")
+
+            // The same note wherever the document is cited.
+            let excerpt = items.compactMap { item -> CollectionExportExcerpt? in
+                if case .excerpt(let e) = item { return e } else { return nil }
+            }.first
+            #expect(excerpt?.citation == d7.citation)
+            #expect(d7.relatedDocumentCitations == [d8.citation])
+            let bibliography = try #require(items.compactMap { item -> CollectionGeneratedBlock? in
+                if case .generated(let b) = item, b.type == .bibliography { return b } else { return nil }
+            }.first)
+            #expect(bibliography.rows.map(\.text).contains(d7.citation), "\(bibliography.rows.map(\.text))")
+
+            // History at State, 1.0's, for a collection that names no style.
+            let plain = try await assembly(Fixtures.staticCollection(), store: store).resolve(
+                entries: Fixtures.entries(of: Fixtures.staticCollection()), introduction: nil, purpose: .preview)
+            #expect(plain.documents.first?.citation.hasPrefix("_Foreign Relations of the United States_, 1961–1963") == true)
+        }
+    }
+
+    /// Decision 164 and the third review's J24: a section's headnote default is the heading's own field, read before
+    /// the collection's; nested sections inherit it; and a heading's own `includeHeadnote`, which headings made under
+    /// the builds of 2026-07-01 to 07-11 hold as an unseen `false`, switches nothing off.
+    @Test("A section's headnote default governs its documents; a heading's own includeHeadnote does not (J24)")
+    func sectionHeadnoteDefault() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            func collection(defaultHeadnote: Bool, _ entries: [CollectionEntryExport]) -> CollectionExport {
+                CollectionExport(id: UUID(), name: "Headnotes", projectIds: [], entries: entries,
+                                 defaultIncludeHeadnote: defaultHeadnote, summaryPromptId: Fixtures.promptA)
+            }
+            func headnotes(_ collection: CollectionExport) async throws -> [Bool] {
+                try await assembly(collection, store: store)
+                    .resolveDocuments(entries: Fixtures.entries(of: collection), purpose: .preview)
+                    .map(\.includeHeadnote)
+            }
+            // On in the section, inherited by a sub-section; off where the collection's default is.
+            let sections = collection(defaultHeadnote: false, [
+                Fixtures.entry(0, kind: .heading, text: "On") { $0.headnoteDefault = true },
+                Fixtures.entry(1, kind: .document, document: "d8"),
+                Fixtures.entry(2, kind: .heading, text: "Inside", level: 2),
+                Fixtures.entry(3, kind: .document, document: "d8"),
+                Fixtures.entry(4, kind: .heading, text: "Off") { $0.headnoteDefault = false },
+                Fixtures.entry(5, kind: .document, document: "d8"),
+                Fixtures.entry(6, kind: .document, document: "d8") { $0.includeHeadnote = true },
+            ])
+            #expect(try await headnotes(sections) == [true, true, false, true], "the document's own setting wins")
+
+            // The legacy explicit false on a heading's includeHeadnote is not a section default.
+            let legacy = collection(defaultHeadnote: true, [
+                Fixtures.entry(0, kind: .heading, text: "Made on 2026-07-05") { $0.includeHeadnote = false },
+                Fixtures.entry(1, kind: .document, document: "d8"),
+            ])
+            #expect(try await headnotes(legacy) == [true])
+        }
+    }
+
+    /// Decision 164: See also for the collection prints where neither the document nor its section sets it, and a
+    /// section's Off still wins.
+    @Test("The collection's See also prints where neither a document nor its section sets it")
+    func collectionSeeAlso() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            func related(_ seeAlso: Bool, _ entries: [CollectionEntryExport]) async throws -> [Int] {
+                let collection = CollectionExport(id: UUID(), name: "See also", projectIds: [], entries: entries,
+                                                  defaultIncludeRelatedDocuments: seeAlso)
+                return try await assembly(collection, store: store)
+                    .resolveDocuments(entries: Fixtures.entries(of: collection), purpose: .preview)
+                    .map(\.relatedDocumentCitations.count)
+            }
+            let plain = [Fixtures.entry(0, kind: .document, document: "d7"),
+                         Fixtures.entry(1, kind: .document, document: "d8")]
+            #expect(try await related(false, plain) == [0, 0], "1.0's: off")
+            #expect(try await related(true, plain) == [1, 0], "d7 names d8; d8 names nothing")
+            let sectionOff = [Fixtures.entry(0, kind: .heading, text: "Off") { $0.includeRelatedDocuments = false },
+                              Fixtures.entry(1, kind: .document, document: "d7"),
+                              Fixtures.entry(2, kind: .document, document: "d8")]
+            #expect(try await related(true, sectionOff) == [0, 0])
+        }
+    }
+
+    /// Decision 163: an entry's date line reaches its document, which the plan prints under a title alone (J41).
+    @Test("An entry's date line reaches its document")
+    func dateLine() async throws {
+        try await withResolutionDirectory { dir in
+            let store = try await FixtureContentStore.make(in: dir)
+            let collection = CollectionExport(id: UUID(), name: "Date lines", projectIds: [], entries: [
+                Fixtures.entry(0, kind: .document, document: "d8") {
+                    $0.titleOverride = "The proclamation"
+                    $0.dateLine = "Washington, 23 October 1962"
+                },
+                Fixtures.entry(1, kind: .heading, text: "A heading's date line is no document's") {
+                    $0.dateLine = "Nowhere"
+                },
+            ])
+            let docs = try await assembly(collection, store: store)
+                .resolveDocuments(entries: Fixtures.entries(of: collection), purpose: .preview)
+            #expect(docs.map(\.dateLine) == ["Washington, 23 October 1962"])
+            #expect(docs.first?.printedDateLine == "Washington, 23 October 1962")
+        }
+    }
+}

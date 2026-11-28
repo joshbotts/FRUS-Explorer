@@ -38,7 +38,7 @@ struct ResearchDataImporterTests {
 
     /// The fixture of `version`.
     private static func json(version: Int) throws -> String {
-        if version == ResearchDataEnvelope.currentFormatVersion { return ResearchDataFixtures.version7 }
+        if version == ResearchDataEnvelope.currentFormatVersion { return ResearchDataFixtures.version8 }
         return try #require(ResearchDataFixtures.earlierVersions.first { $0.version == version }?.json)
     }
 
@@ -174,7 +174,7 @@ struct ResearchDataImporterTests {
     /// plan resolved, field for field: what the file's version carries as the file has it, and the
     /// rest as the app's defaults.
     @Test("A file of each format version imports into an empty library as the plan resolves it",
-          arguments: 1...7)
+          arguments: 1...8)
     func eachVersionImportsAsThePlanResolvesIt(version: Int) async throws {
         let container = try ModelContainer.makeTestContainer()
         let file = try Self.file(version: version)
@@ -244,7 +244,7 @@ struct ResearchDataImporterTests {
     // MARK: - A second import
 
     /// Imported twice, a file plans nothing the second time: every record is as new as its own.
-    @Test("A second import of the same file plans nothing", arguments: 1...7)
+    @Test("A second import of the same file plans nothing", arguments: 1...8)
     func aSecondImportPlansNothing(version: Int) async throws {
         let container = try ModelContainer.makeTestContainer()
         let file = try Self.file(version: version)
@@ -540,8 +540,8 @@ struct ResearchDataImporterTests {
     /// export, each in its own words.
     @Test("Each file the import cannot read is named for what it is")
     func eachProblemIsNamed() {
-        let newer = ResearchImportCopy.problem(ResearchImportFile.FormatError.newerFormatVersion(8))
-        #expect(newer.contains("8") && newer.contains("Update the app"))
+        let newer = ResearchImportCopy.problem(ResearchImportFile.FormatError.newerFormatVersion(9))
+        #expect(newer.contains("9") && newer.contains("Update the app"))
         let unknown = ResearchImportCopy.problem(ResearchImportFile.FormatError.unknownFormatVersion(0))
         #expect(unknown.contains("no version of FRUS Explorer"))
         let decoding = DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "not JSON"))
@@ -553,12 +553,16 @@ struct ResearchDataImporterTests {
     /// Each type's line gives its non-zero parts, and the whole file's every part.
     @Test("The report's counts read as the plan's")
     func theCountsReadAsThePlans() throws {
-        let plan = ResearchImportPlan(file: try Self.file(version: 7), library: ResearchLibrarySnapshot())
+        let plan = ResearchImportPlan(file: try Self.file(version: 8), library: ResearchLibrarySnapshot())
         let notes = plan.report.count(of: .researchNote)
         #expect(ResearchImportCopy.counts(notes) == "1 to add")
         #expect(ResearchImportCopy.counts(added: 3, replaced: 0, kept: 2)
                     == "3 to add, 0 to replace, and 2 already here")
-        #expect(ResearchImportCopy.olderFileFooter(plan.report) == nil, "a version-7 file carries all")
+        #expect(ResearchImportCopy.olderFileFooter(plan.report) == nil, "a version-8 file carries all")
+        // A version-7 file names what L43 added, and nothing earlier.
+        let seven = ResearchImportPlan(file: try Self.file(version: 7), library: ResearchLibrarySnapshot())
+        #expect(ResearchImportCopy.olderFileFooter(seven.report)?.contains("a collection’s citation style") == true)
+        #expect(ResearchImportCopy.olderFileFooter(seven.report)?.contains("a note’s formatting") == false)
         let older = ResearchImportPlan(file: try Self.file(version: 3), library: ResearchLibrarySnapshot())
         #expect(ResearchImportCopy.olderFileFooter(older.report)?.contains("a note’s formatting") == true)
         #expect(ResearchImportCopy.olderFileFooter(older.report)?.contains("Saved Searches") == true)

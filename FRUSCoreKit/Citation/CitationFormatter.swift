@@ -106,8 +106,8 @@ private func publicationYearString(from dateString: String) -> String {
 /// Lightweight metadata for a single FRUS document, used by citation formatters.
 ///
 /// Constructed from a `DocumentBrowserEntry` when the user requests a citation.
-/// Dateline is carried for future citation styles; the history.state.gov style
-/// does not include the dateline in the formatted output.
+/// The heading and the dateline open a Chicago or Turabian note (``FRUSNoteHead``, L43); the
+/// history.state.gov style reads neither.
 public struct FRUSDocumentMetadata: Sendable {
     public let documentId: String
     public let documentNumber: String?
@@ -516,84 +516,444 @@ public struct HistoryAtStateCitationFormatter: CitationFormatter {
 
 // MARK: - ChicagoCitationFormatter
 
-/// Formats FRUS citations per the Chicago Manual of Style (notes-bibliography),
-/// using the full volume title.
+/// Formats a FRUS document as a note in the *Chicago Manual of Style*'s notes-bibliography style, the form the
+/// manual's own answer on citing a FRUS document gives (L43; decision 161, which the owner adopted on 2026-11-27
+/// from *Chicago Manual of Style Online*, faq0443, 18th edition, 14.13 and 14.22).
 ///
 /// ## Format
 /// ```
-/// *Full volume title*, edited by Name (City: Publisher, Year), Document N.
+/// Sender to Recipient, type, Place, Date, in *Series, Years*, ed. General Editor, vol. N, *Volume Title*,
+/// ed. Editors (Publisher, Year), doc. N.
 /// ```
+/// For `frus1969-76v21` d190 that is "The President’s Assistant for National Security Affairs (Kissinger) to
+/// President Nixon, memorandum, Washington, December 18, 1970, in *Foreign Relations of the United States,
+/// 1969–1976*, ed. Adam Howard, vol. 21, *Chile, 1969–1973*, ed. James McElveen and James Siekmeier (…, 2014),
+/// doc. 190." The FAQ's note names the correspondents in full ("Henry Kissinger to Richard Nixon"); this one names
+/// them as the editors' heading does, which is what the app can read (``FRUSNoteHead``).
 ///
-/// If no document number is available (editorial notes, pre-1955 volumes), the
-/// citation ends after the publication parenthetical instead of leaking the TEI
-/// `xml:id` — mirrors `HistoryAtStateCitationFormatter`'s no-document-number
-/// handling (Session 2026-06-09 fix).
+/// - **The document first**, from its heading and dateline (``FRUSNoteHead``); a document whose heading the caller
+///   does not have begins at the volume.
+/// - **The volume** as ``FRUSVolumeTitle`` divides its title, with the series' general editor and the volume's own
+///   editors, each "ed." as the FAQ gives them, every editor named.
+/// - **No place of publication**: the 18th edition leaves it out. Turabian keeps it (``TurabianCitationFormatter``).
+/// - **The publisher** is `FRUSVolumeMetadata.publisher`, which the app reads from the year. The FAQ's is the one on the
+///   title page, and the TEI's `<publisher>` names another for 34 of the 553 volumes (L43's measurement): the Printing
+///   Office for 14 of 2014 to 2017, the Department of State or the Office of the Historian for 20 more. The manifest
+///   does not carry it; the plan offers the fix to its row L54.
+/// - **"doc. N"** with history.state.gov's number (decision 197), and none for a document the volume does not
+///   number, as before.
+/// - **The address the FAQ ends with is not part of the string**: each caller adds it where it adds it for every
+///   style, as the share sheet and an export's address line do.
 ///
-/// Relocated from the macOS citation popover (`CitationPopoverView`) in
-/// Session 153 so the style is available everywhere a citation is formatted.
+/// Version history:
+///   1.0 — Session 153: relocated from the macOS citation popover (`CitationPopoverView`) so the style is
+///          available everywhere a citation is formatted
+///   2.0 — L43 (decision 161): the FAQ's note in place of "*Full volume title*, edited by Name (City: Publisher,
+///          Year), Document N.", which had a note's shape and named no document
 public struct ChicagoCitationFormatter: CitationFormatter {
 
+    /// Creates the formatter.
     public init() {}
 
+    /// The note for `document` in `volume`.
     public func format(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata) -> String {
-        var result = "*\(volume.title)*"
-
-        if !volume.editors.isEmpty {
-            result += ", edited by \(joinedNameList(volume.editors))"
-        }
-
-        let year = publicationYearString(from: volume.publicationDate)
-        result += " (\(volume.publicationPlace): \(volume.publisher), \(year))"
-
-        if let number = document.documentNumber {
-            result += ", Document \(number)."
-        } else {
-            result += "."
-        }
-
-        return result
+        FRUSNoteCitation.note(document: document, volume: volume, includesPlaceOfPublication: false)
     }
 }
 
 // MARK: - TurabianCitationFormatter
 
-/// Formats FRUS citations per Turabian (student edition of Chicago), using the
-/// full volume title.
+/// Formats a FRUS document as a note in Turabian's notes-bibliography style (*A Manual for Writers*, 9th edition):
+/// Chicago's note (``ChicagoCitationFormatter``), with the place of publication, which Turabian's 9th edition keeps
+/// in every book's note and Chicago's 18th leaves out (L43; decision 161, from Turabian's own quick guide).
 ///
 /// ## Format
 /// ```
-/// *Full volume title*. Edited by Name. City: Publisher, Year. Document N.
+/// Sender to Recipient, type, Place, Date, in *Series, Years*, ed. General Editor, vol. N, *Volume Title*,
+/// ed. Editors (Washington, D.C.: Publisher, Year), doc. N.
 /// ```
 ///
-/// If no document number is available (editorial notes, pre-1955 volumes), the
-/// citation ends after the publication sentence instead of leaking the TEI
-/// `xml:id` — mirrors `HistoryAtStateCitationFormatter`'s no-document-number
-/// handling (Session 2026-06-09 fix).
-///
-/// Relocated from the macOS citation popover (`CitationPopoverView`) in
-/// Session 153 so the style is available everywhere a citation is formatted.
+/// Version history:
+///   1.0 — Session 153: relocated from the macOS citation popover (`CitationPopoverView`)
+///   2.0 — L43 (decision 161): a note, as Chicago's is, in place of "*Full volume title*. Edited by Name. City:
+///          Publisher, Year. Document N.", a bibliography entry's shape that ran its sentences together wherever
+///          a line joined two citations
 public struct TurabianCitationFormatter: CitationFormatter {
 
+    /// Creates the formatter.
     public init() {}
 
+    /// The note for `document` in `volume`.
     public func format(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata) -> String {
-        var result = "*\(volume.title)*"
-
-        if !volume.editors.isEmpty {
-            result += ". Edited by \(joinedNameList(volume.editors))"
-        }
-
-        let year = publicationYearString(from: volume.publicationDate)
-        result += ". \(volume.publicationPlace): \(volume.publisher), \(year)"
-
-        if let number = document.documentNumber {
-            result += ". Document \(number)."
-        } else {
-            result += "."
-        }
-
-        return result
+        FRUSNoteCitation.note(document: document, volume: volume, includesPlaceOfPublication: true)
     }
+}
+
+// MARK: - FRUSNoteCitation
+
+/// The note Chicago and Turabian share (L43): the document, then "in" the volume. See
+/// ``ChicagoCitationFormatter`` for the form and its source.
+enum FRUSNoteCitation {
+
+    /// The note for `document` in `volume`.
+    ///
+    /// - Parameters:
+    ///   - document: The document cited: its heading and dateline name it, and its number is the locator.
+    ///   - volume: The volume it is in.
+    ///   - includesPlaceOfPublication: Whether the publication facts name the place, as Turabian's do.
+    /// - Returns: The note, with `*…*` around the series and the volume's title, ending in one period.
+    static func note(document: FRUSDocumentMetadata, volume: FRUSVolumeMetadata,
+                     includesPlaceOfPublication: Bool) -> String {
+        let title = FRUSVolumeTitle(title: volume.title)
+        var parts = ["*\(title.series)*"]
+        if let generalEditor = volume.generalEditor?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !generalEditor.isEmpty {
+            parts.append("ed. \(generalEditor)")
+        }
+        if let locator = title.locator { parts.append(locator) }
+        if let volumeTitle = title.volumeTitle { parts.append("*\(volumeTitle)*") }
+        if !volume.editors.isEmpty { parts.append("ed. \(joinedNameList(volume.editors))") }
+        var text = parts.joined(separator: ", ")
+        let year = publicationYearString(from: volume.publicationDate)
+        let facts = includesPlaceOfPublication
+            ? "\(volume.publicationPlace): \(volume.publisher), \(year)"
+            : "\(volume.publisher), \(year)"
+        text += " (\(facts))"
+        if let number = document.documentNumber { text += ", doc. \(number)" }
+        text += "."
+        guard let head = FRUSNoteHead.head(header: document.header, dateline: document.dateline) else { return text }
+        return "\(head), in \(text)"
+    }
+}
+
+// MARK: - FRUSNoteHead
+
+/// The opening of a note in Chicago or Turabian: the document, named by its correspondents, its type, and its
+/// place and date (L43; CMOS 14.13: "letters and other correspondence found in published collections are usually
+/// cited by the names of the correspondents (sender first), the date of the correspondence (plus a place if
+/// relevant), and the information for the collection").
+///
+/// It reads what the volume prints, the heading and the dateline, and adds no words of its own:
+/// - **A heading of the form "Type From Sender to Recipient"** ("Telegram From the Embassy in Chile to the Department
+///   of State") is turned into the FAQ's order: "The Embassy in Chile to the Department of State, telegram". The type
+///   is one to four capitalized words before " From " (or " from "), in lower case but for an acronym; the rest must
+///   name a recipient after " to " and hold no second " From ", so "Extract From a Letter From X to Y" stays as
+///   printed.
+/// - **Any other heading reads as printed**: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+///   which already names sender and recipient in that order, "Memorandum of Conversation", "Editorial Note".
+/// - **The volume's own number** before a heading ("1.", "No. 98.") is left out
+///   (`DocumentHeadingReading.splitNumber(_:)`), and so is one period ending it ("Mr. White to Mr. Fish.").
+/// - **The place and date** are the dateline's words up to its first full date ("Santiago, March 25, 1969" from
+///   "Santiago, March 25, 1969, 1700Z."; "Moscow, February 22, 1946" from "Moscow, February 22, 1946—9 p.m.
+///   [Received …]"), without a weekday; a dateline with no full date gives none.
+///
+/// Measured over the 321,749 documents a full library indexes (2026-11-27): 47,925 headings take the FAQ's order,
+/// the commonest types "telegram" (20,083), "memorandum" (19,161) and "letter" (3,916); 211,276 already read
+/// "Sender to Recipient"; 61,445 read as printed otherwise. 295,614 datelines give a place and date, 5,287 give
+/// none (an undated document, "June 1955", a date with no year), and 19,745 documents have no dateline.
+///
+/// The short form L49 builds reads the same two lines.
+///
+/// Version history:
+///   1.0 — L43 (decision 161): initial implementation
+public enum FRUSNoteHead {
+
+    /// The note's opening, "The Embassy in Chile to the Department of State, telegram, Santiago, March 25, 1969",
+    /// or `nil` where the heading names nothing.
+    ///
+    /// - Parameters:
+    ///   - header: The document's heading, as the index stores it or as the one reading prints it.
+    ///   - dateline: The document's dateline, or `nil`.
+    public static func head(header: String, dateline: String?) -> String? {
+        guard let description = description(ofHeading: header) else { return nil }
+        guard let placeAndDate = placeAndDate(dateline: dateline) else { return description }
+        return "\(description), \(placeAndDate)"
+    }
+
+    /// What the note calls the document: its heading, in the FAQ's order where the heading reads "Type From Sender
+    /// to Recipient", else as printed. `nil` for an empty heading.
+    ///
+    /// - Parameter header: The document's heading.
+    public static func description(ofHeading header: String) -> String? {
+        var words = DocumentHeadingReading.splitNumber(header).words
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        // One closing mark comes off, as the note's own comma follows: a colon, a semicolon or a comma always, a
+        // period unless it ends an abbreviation with a period inside it ("U.S.").
+        if let mark = words.last, ":;,".contains(mark) {
+            words.removeLast()
+        } else if words.hasSuffix("."), let last = words.split(separator: " ").last,
+                  last.filter({ $0 == "." }).count == 1 {
+            words.removeLast()
+        }
+        guard !words.isEmpty else { return nil }
+        let range = NSRange(words.startIndex..., in: words)
+        if let typed = typedHeading?.firstMatch(in: words, range: range),
+           let typeRange = Range(typed.range(at: 1), in: words),
+           let restRange = Range(typed.range(at: 2), in: words) {
+            let rest = String(words[restRange])
+            if !rest.contains(" From ") {
+                let type = words[typeRange].split(separator: " ").map { word in
+                    word.count > 1 && word.allSatisfy({ $0.isUppercase }) ? String(word) : word.lowercased()
+                }.joined(separator: " ")
+                return rest.prefix(1).uppercased() + rest.dropFirst() + ", " + type
+            }
+        }
+        return words
+    }
+
+    /// The dateline's place and date, up to its first full date: "Santiago, March 25, 1969". `nil` for no dateline,
+    /// or one with no full date.
+    ///
+    /// - Parameter dateline: The document's dateline.
+    public static func placeAndDate(dateline: String?) -> String? {
+        guard let dateline else { return nil }
+        let text = dateline.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard let fullDate, let match = fullDate.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let dateRange = Range(match.range, in: text) else { return nil }
+        let date = String(text[dateRange])
+        var place = String(text[..<dateRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+        if place.hasSuffix(",") { place.removeLast() }
+        if let weekday = weekdays.first(where: { place.hasSuffix($0) }) {
+            place = String(place.dropLast(weekday.count)).trimmingCharacters(in: .whitespaces)
+            if place.hasSuffix(",") { place.removeLast() }
+        }
+        if place.hasSuffix(",]") { place = String(place.dropLast(2)) + "]" }
+        place = place.trimmingCharacters(in: .whitespaces)
+        return place.isEmpty ? date : "\(place), \(date)"
+    }
+
+    /// "Type From Sender to Recipient": one to four capitalized words (an acronym among them), " From " or " from ",
+    /// then the rest, which names a recipient after " to ".
+    private static let typedHeading = try? NSRegularExpression(
+        pattern: #"^((?:[A-Z][\p{L}’'\-]*)(?: [A-Z][\p{L}’'\-]*){0,3}) [Ff]rom (.+ to .+)$"#)
+
+    /// A full date, "March 25, 1969", "September 12th, 1873" or "28th January, 1947".
+    private static let fullDate = try? NSRegularExpression(pattern: #"""
+        (?:(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4})|(?:\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December),?\s+\d{4})
+        """#)
+
+    /// The weekdays a dateline may name before its date, which a note leaves out.
+    private static let weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+}
+
+// MARK: - FRUSVolumeTitle
+
+/// A volume's title, divided as a note in Chicago or Turabian cites it (L43, decision 161): the series with its
+/// years, in italics; the volume's number, which a note gives in arabic figures ("vol. 21"), with a part ("pt. 1");
+/// and the volume's own title, in italics. The *Chicago Manual of Style*'s answer on citing FRUS cites
+/// `frus1969-76v21` "in *Foreign Relations of the United States, 1969–1976*, ed. Adam Howard, vol. 21, *Chile,
+/// 1969–1973*".
+///
+/// It reads the one title the manifest carries (`VolumeManifestEntry.title`, the TEI's complete title). The TEI's
+/// title statement also holds the parts apart (`<title type="series">`, `"volume-number"`, `"volume"`), which the
+/// manifest does not carry, so the title is read by its form:
+/// - **The series** is the title's opening series name: "Foreign Relations of the United States" (with "Diplomatic
+///   Papers" where the title has it), "Papers Relating to the Foreign Relations of the United States" or "Papers
+///   Relating to Foreign Affairs", with the years that follow it ("1969–1976", "1946").
+/// - **The volume's number** follows "Volume" or "Volumes": "XXI", "E–1", "VII, VIII, IX", "X/XI/XII", each Roman
+///   numeral in arabic figures. "Microfiche Supplement" after it goes with it.
+/// - **A part** ("Part 1", "Part II") goes with the number, and in the 1870s titles the words before it go with the
+///   series ("…, Transmitted to Congress, With the Annual Message of the President, December 1, 1873").
+/// - **The volume's title** is the rest: what follows the number ("Chile, 1969–1973"), or what lies between the
+///   years and a number that ends the title ("Eastern Europe, The Soviet Union").
+/// - **A title with no volume number is a book of its own**, cited whole, with its part where it ends in one.
+///
+/// Measured on 2026-11-27 against the TEI's own parts in the corpus clone, for the 553 catalogue volumes: the volume
+/// title read here is the TEI's for 515. Of the other 38, 30 titles have no volume number and are cited whole, the
+/// 1860s parts and the 1894 and 1902 appendices among them; five are the 1872 Treaty of Washington volumes, whose
+/// TEI title does not appear in their complete title; two are Japan, 1931–1941, whose TEI puts "Japan, 1931–1941"
+/// in the volume number; and one, `frus1941v03`, capitalizes "The Near East" where its TEI does not.
+///
+/// Version history:
+///   1.0 — L43 (decision 161): initial implementation
+public struct FRUSVolumeTitle: Sendable, Equatable {
+
+    /// The series with its years, the note's first italic title: "Foreign Relations of the United States,
+    /// 1969–1976". The whole title where the title has no volume number.
+    public let series: String
+    /// The volume's number as a note gives it: "21", "E–1", "7, 8, 9". `nil` where the title has none.
+    public let volumeNumber: String?
+    /// Whether the title names more than one volume ("Volumes VII, VIII, IX"), which a note gives as "vols.".
+    public let isSeveralVolumes: Bool
+    /// The part, in arabic figures: "1". `nil` where the title names none.
+    public let part: String?
+    /// Whether the title names its part before its volume ("Part II, Volume I"), as the 1870s titles do.
+    public let partComesFirst: Bool
+    /// Whether "Microfiche Supplement" follows the volume's number.
+    public let isMicroficheSupplement: Bool
+    /// The volume's own title, the note's second italic title: "Chile, 1969–1973". `nil` where it has none.
+    public let volumeTitle: String?
+
+    /// The note's locator for the volume: "vol. 21", "vols. 7, 8, 9", "vol. 19, pt. 1", "pt. 2, vol. 1", "vol. 3,
+    /// Microfiche Supplement", or "pt. 1" for a book in parts. `nil` where the title names neither.
+    public var locator: String? {
+        var pieces: [String] = []
+        if let volumeNumber { pieces.append((isSeveralVolumes ? "vols. " : "vol. ") + volumeNumber) }
+        if let part {
+            if partComesFirst { pieces.insert("pt. \(part)", at: 0) } else { pieces.append("pt. \(part)") }
+        }
+        if isMicroficheSupplement { pieces.append("Microfiche Supplement") }
+        return pieces.isEmpty ? nil : pieces.joined(separator: ", ")
+    }
+
+    /// Divides `title`, as the type's note says.
+    ///
+    /// - Parameter title: The volume's complete title.
+    public init(title: String) {
+        let text = title.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard let prefix = Self.seriesNames.first(where: { text.hasPrefix($0) }) else {
+            self.init(series: text)
+            return
+        }
+        let rest = String(text.dropFirst(prefix.count))
+        guard let number = Self.volumeNumberPattern?.firstMatch(in: rest, range: NSRange(rest.startIndex..., in: rest)),
+              let matched = Range(number.range, in: rest),
+              let wordRange = Range(number.range(at: 1), in: rest),
+              let numberRange = Range(number.range(at: 2), in: rest) else {
+            // A book of its own: cited whole, with its part where the title ends in one.
+            if let part = Self.match(Self.trailingPart, in: text) {
+                self.init(series: String(text[..<part.whole.lowerBound]), part: Self.arabic(String(text[part.group])))
+            } else {
+                self.init(series: text)
+            }
+            return
+        }
+        let isSeveral = rest[wordRange] == "Volumes"
+        let numbers = Self.arabicList(String(rest[numberRange]))
+        var before = String(rest[..<matched.lowerBound])
+        var after = String(rest[matched.upperBound...])
+        after = after.replacingOccurrences(of: #"^[,:]\s*"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        var part: String?
+        var partFirst = false
+        if let leading = Self.match(Self.leadingPart, in: after) {
+            part = Self.arabic(String(after[leading.group]))
+            after = String(after[leading.whole.upperBound...]).trimmingCharacters(in: .whitespaces)
+        }
+        var supplement = false
+        if after.hasPrefix("Microfiche Supplement") {
+            supplement = true
+            after = after.replacingOccurrences(of: #"^Microfiche Supplement,?\s*"#, with: "", options: .regularExpression)
+                .trimmingCharacters(in: .whitespaces)
+        }
+        var series = prefix
+        if let years = Self.match(Self.leadingYears, in: before) {
+            series += ", " + before[years.group]
+            before = String(before[years.whole.upperBound...])
+        }
+        var middle = before.replacingOccurrences(of: #"^,\s*"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        if let inner = Self.match(Self.innerPart, in: middle) {
+            part = Self.arabic(String(middle[inner.group]))
+            partFirst = true
+            let lead = middle[..<inner.whole.lowerBound].trimmingCharacters(in: .whitespaces)
+            middle = String(middle[inner.whole.upperBound...]).trimmingCharacters(in: .whitespaces)
+            if !lead.isEmpty { series += ", " + lead }
+        }
+        let volumeTitle: String?
+        switch (middle.isEmpty, after.isEmpty) {
+        case (false, false): volumeTitle = middle + ", " + after
+        case (true, false): volumeTitle = after
+        case (false, true): volumeTitle = middle
+        case (true, true): volumeTitle = nil
+        }
+        self.init(series: series, volumeNumber: numbers, isSeveralVolumes: isSeveral, part: part,
+                  partComesFirst: partFirst, isMicroficheSupplement: supplement, volumeTitle: volumeTitle)
+    }
+
+    /// Creates a title from its parts.
+    private init(series: String, volumeNumber: String? = nil, isSeveralVolumes: Bool = false, part: String? = nil,
+                 partComesFirst: Bool = false, isMicroficheSupplement: Bool = false, volumeTitle: String? = nil) {
+        self.series = series
+        self.volumeNumber = volumeNumber
+        self.isSeveralVolumes = isSeveralVolumes
+        self.part = part
+        self.partComesFirst = partComesFirst
+        self.isMicroficheSupplement = isMicroficheSupplement
+        self.volumeTitle = volumeTitle
+    }
+
+    // MARK: The forms read
+
+    /// The series names a title opens with, longest first, so that "…, Diplomatic Papers" is read whole.
+    private static let seriesNames = [
+        "Papers Relating to the Foreign Relations of the United States",
+        "Foreign Relations of the United States, Diplomatic Papers",
+        "Foreign Relations of the United States",
+        "Papers Relating to Foreign Affairs",
+    ]
+
+    /// ", Volume XXI", ", Volumes VII, VIII, IX", ", Volume E–1", before a comma, a colon or the end.
+    private static let volumeNumberPattern = try? NSRegularExpression(
+        pattern: #",?\s*(Volumes?)\s+((?:[IVXLC]+|[A-Z]–\d+)(?:(?:, ?|/)[IVXLC]+)*)(?=[,:]|$)"#)
+
+    /// ", Part I" ending a title with no volume number.
+    private static let trailingPart = try? NSRegularExpression(pattern: #",\s*Part\s+([IVXLC]+|\d+)$"#)
+
+    /// "Part 1, " opening the words after a volume's number.
+    private static let leadingPart = try? NSRegularExpression(pattern: #"^Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
+
+    /// "Part II" among the words between the series and the number, as the 1870s titles have it.
+    private static let innerPart = try? NSRegularExpression(pattern: #"(?:^|,\s*)Part\s+([IVXLC]+|\d+)(?:,\s*|$)"#)
+
+    /// ", 1969–1976" or ", 1946" right after the series name.
+    private static let leadingYears = try? NSRegularExpression(pattern: #"^,\s*(\d{4}(?:–\d{4})?)(?=,|$)"#)
+
+    /// The first match of `pattern` in `text`: its whole range and its first group's.
+    private static func match(_ pattern: NSRegularExpression?, in text: String)
+        -> (whole: Range<String.Index>, group: Range<String.Index>)? {
+        guard let pattern, let found = pattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let whole = Range(found.range, in: text), let group = Range(found.range(at: 1), in: text) else { return nil }
+        return (whole, group)
+    }
+
+    /// Each Roman numeral of a list ("VII, VIII, IX", "X/XI/XII") in arabic figures, separators kept.
+    private static func arabicList(_ list: String) -> String {
+        var out = ""
+        var token = ""
+        for character in list {
+            if character == "," || character == "/" || character == " " {
+                out += arabic(token) + String(character)
+                token = ""
+            } else {
+                token.append(character)
+            }
+        }
+        return out + arabic(token)
+    }
+
+    /// `numeral` in arabic figures where it is a Roman numeral ("XXI" → "21"), else as it is ("E–1", "2").
+    static func arabic(_ numeral: String) -> String {
+        let values: [Character: Int] = ["I": 1, "V": 5, "X": 10, "L": 50, "C": 100]
+        guard !numeral.isEmpty, numeral.allSatisfy({ values[$0] != nil }) else { return numeral }
+        var total = 0
+        let digits = numeral.compactMap { values[$0] }
+        for (index, value) in digits.enumerated() {
+            if index + 1 < digits.count, value < digits[index + 1] { total -= value } else { total += value }
+        }
+        return String(total)
+    }
+}
+
+// MARK: - CitationItalics
+
+/// A formatted citation's italics as a collection's exporters read them (L43): `_…_`. History at State marks its
+/// series name `_…_`, and Chicago and Turabian mark their titles `*…*`, so the assembly that hands exporters a
+/// citation in the collection's style hands them one kind of italics (the Collections design's §6).
+///
+/// Version history:
+///   1.0 — L43: initial implementation
+public enum CitationItalics {
+
+    /// `citation` with each `*…*` span marked `_…_`.
+    public static func underscored(_ citation: String) -> String {
+        guard let asterisked else { return citation }
+        return asterisked.stringByReplacingMatches(in: citation, range: NSRange(citation.startIndex..., in: citation),
+                                                   withTemplate: "_$1_")
+    }
+
+    /// A `*…*` span on one line.
+    private static let asterisked = try? NSRegularExpression(pattern: #"\*([^*\n]+)\*"#)
 }
 
 // MARK: - CitationPlainText
@@ -629,7 +989,7 @@ public enum CitationPlainText {
 /// Prepares a formatted citation to be continued rather than stood alone (#1392).
 ///
 /// All three formatters above end every citation they return with a period — "…, Document 41."
-/// with a printed number (". Document 41." in Turabian), "…, 1984)." (or "…, 1984." in Turabian)
+/// with a printed number ("…, doc. 41." in a Chicago or Turabian note, since L43), "…, 1984)."
 /// without one — which is right for a citation standing on its own, and `CitationFormatterTests`
 /// pins it. A caller that CONTINUES the line has to take that period off and supply its own
 /// punctuation, or it prints "Document 41., footnote 3". Its callers:

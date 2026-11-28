@@ -816,6 +816,12 @@ enum CollectionPreviewRefresh {
         hasher.combine(collection.includeNotes)
         hasher.combine(collection.defaultIncludeHeadnote)
         hasher.combine(collection.summaryPromptId)
+        // The collection's own facts (L43): every citation's style, which line leads a document, the labels'
+        // words, and the See also every document takes by default.
+        hasher.combine(collection.citationStyle)
+        hasher.combine(collection.opening)
+        hasher.combine(collection.labelsJSON)
+        hasher.combine(collection.defaultIncludeRelatedDocuments)
         for entry in entries {
             hasher.combine(entry.id)
             hasher.combine(entry.kind)
@@ -846,6 +852,9 @@ enum CollectionPreviewRefresh {
             hasher.combine(entry.selectedHighlightIds)
             hasher.combine(entry.includeRelatedDocuments)
             hasher.combine(entry.generatedBlockType)
+            // A document's date line under its title, and a section heading's Headnotes default (L43).
+            hasher.combine(entry.dateLine)
+            hasher.combine(entry.headnoteDefault)
         }
         hasher.combine(documentCap)
         hasher.combine(refreshToken)

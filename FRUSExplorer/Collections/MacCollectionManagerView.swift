@@ -610,6 +610,9 @@ private struct NewCollectionSheet: View {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let c = Collection(name: trimmed)
+        // L43 (decisions 159 and 160): a new collection opens on the volume's heading, in the style chosen in
+        // Settings ▸ Display.
+        c.applyNewCollectionDefaults(citationStyle: .current)
         if let pid = appState.activeProjectId { c.projectIds = [pid] }
         modelContext.insert(c)
         try? modelContext.save()

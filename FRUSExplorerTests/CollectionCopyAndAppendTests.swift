@@ -143,6 +143,11 @@ struct CollectionDuplicateSettingsTests {
         collection.includeWordCloud = true
         collection.defaultIncludeHeadnote = true
         collection.summaryPromptId = UUID()
+        // L43: the collection's own facts.
+        collection.citationStyle = CitationStyle.turabian.rawValue
+        collection.opening = CollectionDocumentPlan.Opening.volumeHeading.rawValue
+        collection.labelsJSON = #"{"contents":"Documents","marginalia":"A later build's"}"#
+        collection.defaultIncludeRelatedDocuments = true
         context.insert(collection)
         let kinds: [CollectionEntryKind] = [.heading, .document, .prose, .excerpt, .generated]
         for (index, kind) in kinds.enumerated() {
@@ -169,6 +174,9 @@ struct CollectionDuplicateSettingsTests {
             entry.excerptRenderingVersion = "v1"
             entry.excerptColorTag = "green"
             entry.generatedBlockType = kind == .generated ? CollectionGeneratedBlockType.chronology.rawValue : nil
+            // L43: an entry's own facts.
+            entry.dateLine = "Moscow, 22 February 1946"
+            entry.headnoteDefault = false
             context.insert(entry)
         }
         return collection
@@ -428,5 +436,137 @@ struct CollectionAppendBeforeBackMatterTests {
             #expect(late.isEmpty, "\(late) sit at or after a block at \(blocks): added \(added.map { ($0.documentId, $0.sortOrder) })")
         }
         withExtendedLifetime((containerA, containerB)) {}
+    }
+}
+
+// MARK: - CollectionFactsCopyTests (L43)
+
+/// What a copy of a collection carries of L43's facts, and the walk over the schema that holds every stored property
+/// of a collection and its entries to the values Duplicate and Create Static Snapshot are compared by (the plan's L43
+/// brief; the third review's J39). `CollectionDuplicateSettingsTests` and `SmartCollectionSnapshotInsertTests` compare
+/// copies by those values, with every setting changed, the new facts among them.
+///
+/// Version history:
+///   1.0 — L43: initial implementation
+@Suite("L43: a collection's facts in copies, a new collection's, and a headnote's writer", .serialized)
+@MainActor
+struct CollectionFactsCopyTests {
+
+    /// The stored properties of `type` the schema mirrors, by their Swift names.
+    static func storedProperties(of type: any PersistentModel.Type) -> Set<String> {
+        let prefix = "CD_\(type)."
+        return Set(CloudKitSchemaInventory.mirroredIdentifiers(of: Schema([type]))
+            .filter { $0.hasPrefix(prefix) }
+            .map { String($0.dropFirst(prefix.count + 3)) })
+    }
+
+    /// The fields a value carries, by their Swift names.
+    static func fields(of value: Any) -> Set<String> {
+        Set(Mirror(reflecting: value).children.compactMap(\.label))
+    }
+
+    /// Every stored property of a collection and its entries is a field of the values the copies are compared by, but
+    /// for the ones the walk names, each with its reason. A property added to a model and not to its values fails
+    /// here, so it cannot be dropped by Duplicate or the snapshot unnoticed.
+    @Test("Every stored property of a collection and its entries is carried by the values a copy is compared by")
+    func schemaWalk() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = CollectionDuplicateSettingsTests.everySetting(in: context)
+        let entry = try #require(collection.documentEntries?.first)
+
+        // A collection's entries are its relationship, `documentEntries`, which the values carry as `entries`.
+        let collectionLeftOut = Self.storedProperties(of: Collection.self)
+            .subtracting(Self.fields(of: CollectionExport(collection)))
+        #expect(collectionLeftOut == ["documentEntries"], "\(collectionLeftOut.sorted())")
+        // An entry's parent, which every copy makes new: the relationship and the parent's id.
+        let entryLeftOut = Self.storedProperties(of: CollectionEntry.self)
+            .subtracting(Self.fields(of: CollectionEntryExport(entry)))
+        #expect(entryLeftOut == ["collection", "collectionId"], "\(entryLeftOut.sorted())")
+        // And L43's seven are in the schema the walk reads.
+        #expect(Self.storedProperties(of: Collection.self).isSuperset(
+            of: ["citationStyle", "opening", "labelsJSON", "defaultIncludeRelatedDocuments"]))
+        #expect(Self.storedProperties(of: CollectionEntry.self).isSuperset(of: ["dateLine", "headnoteDefault"]))
+        #expect(Self.storedProperties(of: GeneratedSummary.self).contains("writerName"))
+
+        // What a copy makes new, and what a snapshot must not copy (J39): its saved-search link first, which would
+        // make the snapshot the smart collection again. Duplicate keeps it, as a copy of a smart collection is one.
+        let duplicate = collection.duplicate(in: context)
+        #expect(duplicate.savedSearchId == collection.savedSearchId)
+        let snapshot = SmartCollectionSnapshot.create(from: collection, results: [], into: context)
+        #expect(snapshot.savedSearchId == nil)
+        #expect(snapshot.citationStyle == collection.citationStyle && snapshot.opening == collection.opening)
+        #expect(snapshot.labelsJSON == collection.labelsJSON, "a later build's word travels too")
+        withExtendedLifetime(container) {}
+    }
+
+    /// Decisions 159 and 160: a collection the reader makes opens on the volume's heading, in the style chosen in
+    /// Settings ▸ Display; both are written, so CloudKit makes both fields from the first one made.
+    @Test("A new collection opens on the volume's heading, in the style chosen in Settings")
+    func newCollectionDefaults() {
+        let collection = Collection(name: "New")
+        #expect(collection.citationStyle == nil && collection.opening == nil, "1.0's collection names neither")
+        collection.applyNewCollectionDefaults(citationStyle: .turabian)
+        #expect(collection.citationStyle == "turabian")
+        #expect(collection.opening == CollectionDocumentPlan.Opening.volumeHeading.rawValue)
+        let options = CollectionExportOptions(composing: collection)
+        #expect(options.volumeHeadingLeads && options.citationStyle == .turabian)
+    }
+
+    /// Decisions 194 and 234: a headnote the reader writes carries the collection's author line, trimmed, as its
+    /// writer's name, and a copy of the draft keeps it.
+    @Test("A headnote carries its writer's name, the author line, and a copy of the draft keeps it")
+    func headnoteWriter() throws {
+        #expect(CollectionEntryInspector.headnoteWriterName(authorLine: "  Jane Doe ") == "Jane Doe")
+        #expect(CollectionEntryInspector.headnoteWriterName(authorLine: "  ") == nil)
+        #expect(CollectionEntryInspector.headnoteWriterName(authorLine: nil) == nil)
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Headnotes")
+        context.insert(collection)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "frus1946v06", sortOrder: 0)
+        entry.collection = collection
+        context.insert(entry)
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "frus1946v06",
+                                     promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                     responseText: "Kennan's answer.", authorship: .userWritten,
+                                     isHeadnoteDraft: true, writerName: "Jane Doe")
+        context.insert(draft)
+        entry.headnoteSummaryId = draft.id
+        try context.save()
+
+        let copy = collection.duplicate(in: context)
+        try context.save()
+        let copiedId = try #require(copy.documentEntries?.first?.headnoteSummaryId)
+        #expect(copiedId != draft.id)
+        let copied = try #require(try context.fetch(FetchDescriptor<GeneratedSummary>(
+            predicate: #Predicate { $0.id == copiedId })).first)
+        #expect(copied.writerName == "Jane Doe" && copied.isHeadnoteDraft)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The third review's J45: the research export carries a collection's headnote drafts whatever the AI-summaries
+    /// switch says, since a draft is the author's own headnote; the switch governs the AI's summaries alone.
+    @Test("The research export carries headnote drafts with the AI-summaries switch off (J45)")
+    func exportCarriesHeadnoteDrafts() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let draft = GeneratedSummary(documentId: "d1", volumeId: "frus1946v06",
+                                     promptId: GeneratedSummaryExport.headnoteDraftPromptId,
+                                     responseText: "My headnote.", authorship: .userWritten,
+                                     isHeadnoteDraft: true, writerName: "Jane Doe")
+        let summary = GeneratedSummary(documentId: "d1", volumeId: "frus1946v06", promptId: UUID(),
+                                       responseText: "The model's summary.")
+        context.insert(draft)
+        context.insert(summary)
+        try context.save()
+
+        let off = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: false)
+        #expect(off.summaries.map(\.id) == [draft.id], "the switch left the author's headnote out")
+        #expect(off.summaries.first?.writerName == "Jane Doe")
+        let on = try ResearchDataExporter.makeEnvelope(modelContext: context, includeGeneratedSummaries: true)
+        #expect(Set(on.summaries.map(\.id)) == [draft.id, summary.id])
+        withExtendedLifetime(container) {}
     }
 }

@@ -237,6 +237,46 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    // MARK: - The collection's own facts (L43)
+
+    /// The style every citation in the collection's exports prints in, a `CitationStyle` raw value (`"historyAtState"`,
+    /// `"chicago"`, `"turabian"`): at a document's head, in a contents row, in a passage's source line, on the *See also*
+    /// line and in the apparatus blocks (L43; the Collections design's §6). `nil`, which every collection made before
+    /// L43 holds, and a value this build does not know, read as History at State, so such a collection prints as it
+    /// did. A new collection takes the style chosen in Settings ▸ Display (decision 160; ``applyNewCollectionDefaults(citationStyle:)``).
+    ///
+    /// A build that knows this field sends it with every save of the record, a `nil` included, and a `nil` erases the
+    /// value another device set (L43's prep run, 2026-11-27). A device updated from 1.0 holds `nil` until iCloud
+    /// re-sends the record, which it did at the first launch both times it was tried online; R12 tries the update
+    /// opened offline (decision 231).
+    var citationStyle: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Which line leads a document that has no title of the author's, a `CollectionDocumentPlan.Opening` raw value:
+    /// `"citation"`, as 1.0 opens every document, or `"volumeHeading"`, the volume's heading with the citation a small
+    /// line above it (L43; the design's §3.3). `nil`, which every collection made before L43 holds, reads as the citation
+    /// leading, so such a collection prints as it did. A new collection opens on the volume's heading (decision 159).
+    var opening: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// The collection's own words for the labels its exports print over the author's material and the apparatus, as
+    /// one JSON object from a label's name to its text (`CollectionWording`): *Contents*, *Headnote*, *Summary*,
+    /// *Research Note*, *See also* and the five blocks' titles (L43; the design's §5.2 and §7.3). `nil` reads as the
+    /// app's words. It is read and written as a plain map, so a build that does not know a label's name carries it
+    /// through an edit of another (`CollectionWording.updating(_:with:)`).
+    var labelsJSON: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// Whether a document's *See also* line, which lists the documents it cites that are also in the collection, prints
+    /// for documents that do not set it and whose section does not (L43; decision 164's sixth candidate, "See also for
+    /// the collection"). `false`, 1.0's behaviour for every collection, by default.
+    var defaultIncludeRelatedDocuments: Bool = false {
+        didSet { lastModified = .now }
+    }
+
     /// A plain-language sentence of what this collection's settings export (Composer redesign 5), e.g. "Exports an AI
     /// summary of each document, with headnotes, your notes, and footnotes.": the *collection defaults*, which a document's
     /// override can differ from. It captions the iPhone editor's Collection settings row where no template matches; until
@@ -391,6 +431,9 @@ import SwiftData
 ///          `.fruscollection`; a non-empty value promotes the file to `formatVersion 2`
 ///          while untouched entries stay byte-identical. No `minimumReaderVersion` bump —
 ///          a v1 reader ignoring the key degrades to the derived title
+///   1.14 — L43: `dateLine`, the author's date line under a title (decision 163), and `headnoteDefault`, a section's
+///          headnote default, read on headings only (decision 164; the third review's J24). Both optional and `nil`
+///          on every existing entry, which prints as before
 @Model final class CollectionEntry {
 
     // MARK: - Identity
@@ -436,6 +479,15 @@ import SwiftData
     /// files** — a non-empty value makes an entry a v2 feature (the serializer emits
     /// `formatVersion 2`); an entry without one keeps the file byte-identical to pre-M3.
     var titleOverride: String? {
+        didSet { lastModified = .now }
+    }
+
+    /// The author's date line for a document they have given a title (L43; decision 163): "Moscow, 22 February 1946",
+    /// printed under the title, above the citation and the words *As published:*. It is the author's, beside the
+    /// volume's own dateline, which still prints. It prints only under a title that prints (J41): a document whose
+    /// title is cleared keeps its date line, which the inspector shows, and no export prints it until a title is given
+    /// again. `nil` (every existing entry) prints none. Document entries only.
+    var dateLine: String? {
         didSet { lastModified = .now }
     }
 
@@ -582,6 +634,18 @@ import SwiftData
     /// `includeHeadnote == true` falls back to a stored summary for the document
     /// (preferring one generated with the collection's `summaryPromptId`).
     var headnoteSummaryId: UUID? {
+        didSet { lastModified = .now }
+    }
+
+    /// A section's headnote default (L43; decision 164; the third review's J24), **read on headings only**: the value a
+    /// document in the section whose `includeHeadnote` is `nil` (Default) takes, before the collection's
+    /// `defaultIncludeHeadnote`. `nil` follows the enclosing section, else the collection.
+    ///
+    /// It is a field of its own, and not `includeHeadnote` read on a heading, because headings made under the builds of
+    /// 2026-07-01 to 07-11, and their copies, hold an explicit `includeHeadnote == false` that no screen ever showed, and
+    /// no pass can tell it from a value set on purpose: read as a section's default it would switch headnotes off under
+    /// a collection that has them on.
+    var headnoteDefault: Bool? {
         didSet { lastModified = .now }
     }
 
@@ -787,6 +851,24 @@ extension Collection {
     }
 }
 
+// MARK: - A new collection's facts (L43)
+
+extension Collection {
+    /// Gives a collection the reader has just made what a new collection starts with (L43): the volume's heading leading
+    /// each document (decision 159), and the citation style chosen in Settings ▸ Display (decision 160). 1.0's other
+    /// settings stay as the model's defaults give them. A collection that arrives any other way, by Duplicate, from a
+    /// collection file, from a research export or as a smart collection's snapshot, keeps what it carries; one made
+    /// before L43, or by 1.0, carries neither, and reads as the citation leading in History at State.
+    ///
+    /// Both values are written, so CloudKit makes both fields from the first collection a reader makes.
+    ///
+    /// - Parameter citationStyle: The style chosen in Settings ▸ Display (`CitationStyle.current`).
+    func applyNewCollectionDefaults(citationStyle: CitationStyle) {
+        opening = CollectionDocumentPlan.Opening.volumeHeading.rawValue
+        self.citationStyle = citationStyle.rawValue
+    }
+}
+
 // MARK: - Duplication (#300)
 
 extension Collection {
@@ -832,6 +914,12 @@ extension Collection {
         copy.defaultIncludeHeadnote = defaultIncludeHeadnote
         copy.summaryPromptId = summaryPromptId
 
+        // The collection's own facts (L43)
+        copy.citationStyle = citationStyle
+        copy.opening = opening
+        copy.labelsJSON = labelsJSON
+        copy.defaultIncludeRelatedDocuments = defaultIncludeRelatedDocuments
+
         context.insert(copy)
 
         // Deep-copy every entry in order, preserving all per-entry overrides.
@@ -845,6 +933,8 @@ extension Collection {
                 selectedNoteIds: entry.selectedNoteIds)
             e.collection = copy
             e.titleOverride = entry.titleOverride
+            e.dateLine = entry.dateLine
+            e.headnoteDefault = entry.headnoteDefault
             e.level = entry.level
             e.kind = entry.kind
             e.text = entry.text
@@ -1121,7 +1211,9 @@ extension CollectionEntryExport {
             selectedHighlightIds: entry.selectedHighlightIds,
             includeRelatedDocuments: entry.includeRelatedDocuments,
             includeHeadnote: entry.includeHeadnote,
-            headnoteSummaryId: entry.headnoteSummaryId
+            headnoteSummaryId: entry.headnoteSummaryId,
+            dateLine: entry.dateLine,
+            headnoteDefault: entry.headnoteDefault
         )
     }
 }
@@ -1157,7 +1249,11 @@ extension CollectionExport {
             includeNotes: collection.includeNotes,
             includeWordCloud: collection.includeWordCloud,
             defaultIncludeHeadnote: collection.defaultIncludeHeadnote,
-            summaryPromptId: collection.summaryPromptId
+            summaryPromptId: collection.summaryPromptId,
+            citationStyle: collection.citationStyle,
+            opening: collection.opening,
+            labelsJSON: collection.labelsJSON,
+            defaultIncludeRelatedDocuments: collection.defaultIncludeRelatedDocuments
         )
     }
 

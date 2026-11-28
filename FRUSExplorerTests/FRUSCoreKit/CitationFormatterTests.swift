@@ -258,160 +258,303 @@ struct CitationFormatterTests {
 
 // MARK: - ChicagoCitationFormatterTests
 
+/// Chicago's note, as the *Chicago Manual of Style*'s own answer on citing a FRUS document gives it (L43, decision
+/// 161; *Chicago Manual of Style Online*, faq0443, 18th edition, 14.13 and 14.22): the document first, then "in" the
+/// series and its general editor, "vol. N", the volume's title and editors, the publisher and year, "doc. N".
 struct ChicagoCitationFormatterTests {
 
     private let formatter = ChicagoCitationFormatter()
 
-    @Test("Standard citation with two editors uses 'edited by' and full title")
-    func standardCitation() {
+    /// The FAQ's own example, `frus1969-76v21` d190, read from the manifest's values and the index's heading and
+    /// dateline. From "in" on it is the FAQ's note character for character, with the publisher the FAQ reads from
+    /// the volume's title page (the app's year rule would print the Publishing Office for 2014). Before "in", the
+    /// FAQ names the correspondents in full ("Henry Kissinger to Richard Nixon, memorandum"); the note names them as
+    /// the editors' heading does. The address the FAQ ends with is the caller's to add.
+    @Test("The FAQ's example: the document first, then in the series, vol. 21, its title and editors, doc. 190")
+    func faqExample() {
         let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
-            editors: ["Louis J. Smith", "David H. Herschler"],
-            publicationDate: "1972"
-        )
-        let doc = makeDocument(documentNumber: "1")
+            title: "Foreign Relations of the United States, 1969–1976, Volume XXI, Chile, 1969–1973",
+            editors: ["James McElveen", "James Siekmeier"], generalEditor: "Adam Howard", publicationDate: "2014")
+        let document = makeDocument(
+            documentNumber: "190",
+            header: "190. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon",
+            dateline: "Washington, December 18, 1970.")
 
-        let result = formatter.format(document: doc, volume: volume)
-
-        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*, edited by Louis J. Smith and David H. Herschler (Washington: Government Printing Office, 1972), Document 1.")
+        #expect(formatter.format(document: document, volume: volume)
+                == "The President’s Assistant for National Security Affairs (Kissinger) to President Nixon, memorandum, "
+                + "Washington, December 18, 1970, in *Foreign Relations of the United States, 1969–1976*, ed. Adam Howard, "
+                + "vol. 21, *Chile, 1969–1973*, ed. James McElveen and James Siekmeier (Government Printing Office, 2014), "
+                + "doc. 190.")
     }
 
-    @Test("Three editors use Oxford comma format with 'edited by'")
-    func multipleEditors() {
+    /// The Long Telegram, `frus1946v06` d475: a heading that already names sender and recipient, a dateline with its
+    /// hour and receipt left out, and a volume whose number ends its title.
+    @Test("frus1946v06 d475: the heading as printed, the dateline to its date, vol. 6 and the volume's own title")
+    func longTelegram() {
         let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972",
-            editors: ["Daniel J. Lawler", "Erin R. Mahan", "Adam M. Howard"],
-            publicationDate: "2010"
-        )
-        let doc = makeDocument(documentNumber: "75")
+            title: "Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI",
+            editors: ["Rogers P. Churchill", "William Slany"], generalEditor: "S. Everett Gleason",
+            publicationDate: "1969")
+        let document = makeDocument(
+            documentNumber: "475", header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+            dateline: "Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]")
 
-        let result = formatter.format(document: doc, volume: volume)
-
-        #expect(result.contains("edited by Daniel J. Lawler, Erin R. Mahan, and Adam M. Howard"))
-        #expect(result.hasSuffix("Document 75."))
+        #expect(formatter.format(document: document, volume: volume)
+                == "The Chargé in the Soviet Union (Kennan) to the Secretary of State, Moscow, February 22, 1946, in "
+                + "*Foreign Relations of the United States, 1946*, ed. S. Everett Gleason, vol. 6, *Eastern Europe, The "
+                + "Soviet Union*, ed. Rogers P. Churchill and William Slany (Government Printing Office, 1969), doc. 475.")
     }
 
-    @Test("Single editor uses 'edited by' without 'ed./eds.' prefix")
-    func singleEditor() {
-        let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1977–1980, Volume I, Foundations of Foreign Policy",
-            editors: ["Kristin L. Ahlberg"],
-            publicationDate: "2014"
-        )
-        let doc = makeDocument(documentNumber: "12")
-
-        let result = formatter.format(document: doc, volume: volume)
-
-        #expect(result.contains("edited by Kristin L. Ahlberg"))
-        #expect(!result.contains("ed."))
-    }
-
-    @Test("Editorial note without document number omits 'Document N' and ends with period")
+    /// A document the volume does not number ends at the publication facts, and a heading with no dateline names the
+    /// document alone: no locator is invented, and no id leaks into the note.
+    @Test("An unnumbered editorial note ends at the publication facts and names no id")
     func editorialNote() {
         let volume = makeVolume(
             title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
-            editors: ["Louis J. Smith", "David H. Herschler"],
-            publicationDate: "1972"
-        )
-        let doc = FRUSDocumentMetadata(
-            documentId: "edn-01",
-            documentNumber: nil,
-            header: "Editorial Note",
-            dateline: nil
-        )
+            editors: ["Louis J. Smith", "David H. Herschler"], publicationDate: "1972")
+        let document = FRUSDocumentMetadata(documentId: "edn-01", documentNumber: nil, header: "Editorial Note", dateline: nil)
 
-        let result = formatter.format(document: doc, volume: volume)
+        let result = formatter.format(document: document, volume: volume)
 
-        #expect(!result.contains("Document"))
+        #expect(!result.contains("doc."))
         #expect(!result.contains("edn-01"))
-        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*, edited by Louis J. Smith and David H. Herschler (Washington: Government Printing Office, 1972).")
+        #expect(result == "Editorial Note, in *Foreign Relations of the United States, 1969–1976*, vol. 1, *Foundations of "
+                + "Foreign Policy, 1969–1972*, ed. Louis J. Smith and David H. Herschler (Government Printing Office, 1972).")
     }
 
-    @Test("No editors omits 'edited by' clause")
-    func noEditors() {
+    /// Where the caller has no heading for the document (its volume not indexed here), the note begins at the volume.
+    @Test("With no heading, the note begins at the volume")
+    func noHeading() {
         let volume = makeVolume(
-            title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, 1870",
-            editors: [],
-            publicationDate: "1871"
-        )
-        let doc = makeDocument(documentNumber: "3")
+            title: "Foreign Relations of the United States, 1981–1988, Volume XI, START I",
+            editors: ["James Graham Wilson"], generalEditor: "Kathleen B. Rasmussen", publicationDate: "2021",
+            publisher: "United States Government Publishing Office")
+        let document = makeDocument(documentNumber: "1", header: "", dateline: nil)
 
-        let result = formatter.format(document: doc, volume: volume)
+        #expect(formatter.format(document: document, volume: volume)
+                == "*Foreign Relations of the United States, 1981–1988*, ed. Kathleen B. Rasmussen, vol. 11, *START I*, "
+                + "ed. James Graham Wilson (United States Government Publishing Office, 2021), doc. 1.")
+    }
 
-        #expect(!result.contains("edited by"))
-        #expect(result.hasPrefix("*Papers Relating to the Foreign Relations of the United States"))
+    /// A volume whose title names no volume number is a book of its own, cited whole; every editor is named, the
+    /// seven of `frus1937v01` among them, since neither source the owner checked answers "et al." (decision 161).
+    @Test("A title with no volume number is cited whole; every editor is named")
+    func bookAndManyEditors() {
+        let book = makeVolume(
+            title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 7, 1874",
+            editors: [], publicationDate: "1874")
+        let letter = makeDocument(documentNumber: "2", header: "Mr. Campbell to Mr. Fish.",
+                                  dateline: "United States Northern Boundary Commission, Washington, December 2, 1873.")
+        #expect(formatter.format(document: letter, volume: book)
+                == "Mr. Campbell to Mr. Fish, United States Northern Boundary Commission, Washington, December 2, 1873, in "
+                + "*Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual "
+                + "Message of the President, December 7, 1874* (Government Printing Office, 1874), doc. 2.")
+
+        let seven = makeVolume(
+            title: "Foreign Relations of the United States, Diplomatic Papers, 1937, General, Volume I",
+            editors: ["Matilda F. Axton", "Rogers P. Churchill", "N. O. Sappington", "John G. Reid",
+                      "Francis C. Prescott", "Louis E. Gates", "Shirley L. Phillips"],
+            generalEditor: "Gustave A. Nuermberger", publicationDate: "1954")
+        #expect(formatter.format(document: makeDocument(header: "", dateline: nil), volume: seven)
+                == "*Foreign Relations of the United States, Diplomatic Papers, 1937*, ed. Gustave A. Nuermberger, vol. 1, "
+                + "*General*, ed. Matilda F. Axton, Rogers P. Churchill, N. O. Sappington, John G. Reid, Francis C. "
+                + "Prescott, Louis E. Gates, and Shirley L. Phillips (Government Printing Office, 1954), doc. 1.")
     }
 }
 
 // MARK: - TurabianCitationFormatterTests
 
+/// Turabian's note: Chicago's, with the place of publication, which Turabian's 9th edition keeps and Chicago's 18th
+/// leaves out (L43, decision 161, from Turabian's own quick guide).
 struct TurabianCitationFormatterTests {
 
     private let formatter = TurabianCitationFormatter()
 
-    @Test("Standard citation with two editors uses period-delimited sentences")
-    func standardCitation() {
+    @Test("Turabian's note is Chicago's with the place of publication")
+    func longTelegram() {
         let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
-            editors: ["Louis J. Smith", "David H. Herschler"],
-            publicationDate: "1972"
-        )
-        let doc = makeDocument(documentNumber: "1")
+            title: "Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI",
+            editors: ["Rogers P. Churchill", "William Slany"], generalEditor: "S. Everett Gleason",
+            publicationDate: "1969", publicationPlace: "Washington, D.C.")
+        let document = makeDocument(
+            documentNumber: "475", header: "The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+            dateline: "Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]")
 
-        let result = formatter.format(document: doc, volume: volume)
-
-        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*. Edited by Louis J. Smith and David H. Herschler. Washington: Government Printing Office, 1972. Document 1.")
+        let turabian = formatter.format(document: document, volume: volume)
+        #expect(turabian
+                == "The Chargé in the Soviet Union (Kennan) to the Secretary of State, Moscow, February 22, 1946, in "
+                + "*Foreign Relations of the United States, 1946*, ed. S. Everett Gleason, vol. 6, *Eastern Europe, The "
+                + "Soviet Union*, ed. Rogers P. Churchill and William Slany (Washington, D.C.: Government Printing Office, "
+                + "1969), doc. 475.")
+        #expect(turabian == ChicagoCitationFormatter().format(document: document, volume: volume)
+                .replacingOccurrences(of: "(Government", with: "(Washington, D.C.: Government"))
     }
 
-    @Test("Three editors use Oxford comma format with 'Edited by'")
-    func multipleEditors() {
-        let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972",
-            editors: ["Daniel J. Lawler", "Erin R. Mahan", "Adam M. Howard"],
-            publicationDate: "2010"
-        )
-        let doc = makeDocument(documentNumber: "75")
+    /// The *See also* line takes one period off each citation and joins them with "; " (#1392). Turabian's
+    /// bibliography-shaped form ran three sentences into each other there (the desk check's §7); a note joins cleanly.
+    @Test("Two Turabian notes join on one See also line with no sentence run into another")
+    func joinsCleanly() {
+        let volume = makeVolume(title: "Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI",
+                                editors: ["Rogers P. Churchill"], publicationDate: "1969")
+        let joined = ["473", "475"].map { formatter.format(document: makeDocument(documentNumber: $0, header: "", dateline: nil),
+                                                           volume: volume) }
+            .map(CitationPunctuation.withoutTerminalPeriod).joined(separator: "; ") + "."
+        #expect(joined.contains("doc. 473; *Foreign Relations of the United States, 1946*"), "\(joined)")
+        #expect(!joined.contains("1969). "), "\(joined)")
+        #expect(joined.hasSuffix("doc. 475."))
+    }
+}
 
-        let result = formatter.format(document: doc, volume: volume)
+// MARK: - FRUSVolumeTitleTests
 
-        #expect(result.contains("Edited by Daniel J. Lawler, Erin R. Mahan, and Adam M. Howard"))
-        #expect(result.hasSuffix("Document 75."))
+/// How a note divides a volume's title (L43): the series with its years, the volume's number in arabic figures with
+/// its part, and the volume's own title.
+struct FRUSVolumeTitleTests {
+
+    /// Real titles of every shape, each divided as the TEI's own title statement divides it, but for the series,
+    /// which takes the years the TEI keeps in the complete title alone.
+    @Test("Real titles divide into series, volume number, part and volume title",
+          arguments: [
+            ("Foreign Relations of the United States, 1969–1976, Volume XXI, Chile, 1969–1973",
+             "Foreign Relations of the United States, 1969–1976", "vol. 21", "Chile, 1969–1973"),
+            ("Foreign Relations of the United States, 1946, Eastern Europe, The Soviet Union, Volume VI",
+             "Foreign Relations of the United States, 1946", "vol. 6", "Eastern Europe, The Soviet Union"),
+            ("Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II",
+             "Foreign Relations of the United States, Diplomatic Papers", "vol. 2",
+             "The Conference of Berlin (The Potsdam Conference), 1945"),
+            ("Foreign Relations of the United States, 1969–1976, Volume XIX, Part 1, Korea, 1969–1972",
+             "Foreign Relations of the United States, 1969–1976", "vol. 19, pt. 1", "Korea, 1969–1972"),
+            ("Foreign Relations of the United States, 1969–1976, Volume E–1, Documents on Global Issues, 1969–1972",
+             "Foreign Relations of the United States, 1969–1976", "vol. E–1", "Documents on Global Issues, 1969–1972"),
+            ("Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Policy; Foreign Economic Policy",
+             "Foreign Relations of the United States, 1961–1963", "vols. 7, 8, 9",
+             "Arms Control; National Security Policy; Foreign Economic Policy"),
+            ("Foreign Relations of the United States, 1955–1957, Volume III, Microfiche Supplement, China",
+             "Foreign Relations of the United States, 1955–1957", "vol. 3, Microfiche Supplement", "China"),
+            ("Foreign Relations of the United States, 1961–1963, Volume XXIII: Southeast Asia",
+             "Foreign Relations of the United States, 1961–1963", "vol. 23", "Southeast Asia"),
+            ("Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 1, 1873, Part I, General Correspondence; and Papers Relating to Naturalization and Expatriation, Volume I",
+             "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 1, 1873",
+             "pt. 1, vol. 1", "General Correspondence; and Papers Relating to Naturalization and Expatriation"),
+          ] as [(String, String, String, String)])
+    func divides(title: String, series: String, locator: String, volumeTitle: String) {
+        let divided = FRUSVolumeTitle(title: title)
+        #expect(divided.series == series)
+        #expect(divided.locator == locator)
+        #expect(divided.volumeTitle == volumeTitle)
     }
 
-    @Test("Editorial note without document number omits 'Document N' and ends after publication sentence")
-    func editorialNote() {
-        let volume = makeVolume(
-            title: "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972",
-            editors: ["Louis J. Smith", "David H. Herschler"],
-            publicationDate: "1972"
-        )
-        let doc = FRUSDocumentMetadata(
-            documentId: "edn-01",
-            documentNumber: nil,
-            header: "Editorial Note",
-            dateline: nil
-        )
-
-        let result = formatter.format(document: doc, volume: volume)
-
-        #expect(!result.contains("Document"))
-        #expect(!result.contains("edn-01"))
-        #expect(result == "*Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972*. Edited by Louis J. Smith and David H. Herschler. Washington: Government Printing Office, 1972.")
+    /// A title with no volume number is a book, cited whole, with its part where it ends in one.
+    @Test("A title with no volume number is a book, with its part")
+    func books() {
+        let parts = FRUSVolumeTitle(title: "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the First Session Thirty-eighth Congress, Part I")
+        #expect(parts.series == "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the First Session Thirty-eighth Congress")
+        #expect(parts.locator == "pt. 1")
+        #expect(parts.volumeTitle == nil)
+        let whole = FRUSVolumeTitle(title: "Message of the President of the United States to the Two Houses of Congress, at the Commencement of the Second Session of the Thirty-seventh Congress")
+        #expect(whole.series.hasPrefix("Message of the President"))
+        #expect(whole.locator == nil)
+        #expect(whole.volumeTitle == nil)
     }
 
-    @Test("No editors omits 'Edited by' sentence")
-    func noEditors() {
-        let volume = makeVolume(
-            title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, 1870",
-            editors: [],
-            publicationDate: "1871"
-        )
-        let doc = makeDocument(documentNumber: "3")
+    /// Every title the manifest carries divides, its series the title's own opening words, and the counts are the
+    /// ones measured when the rule was written (2026-11-27), against the TEI's own parts for each volume: a change to
+    /// the rule or to the manifest's titles moves them, and the type's note should then be measured again.
+    @Test("Every manifest title divides, with the counts measured against the TEI")
+    func everyManifestTitle() throws {
+        let titles = try testManifestEntries().map { $0.title.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+        let divided = titles.map(FRUSVolumeTitle.init(title:))
+        for (title, parts) in zip(titles, divided) {
+            #expect(title.hasPrefix(parts.series), "\(title)")
+        }
+        #expect(titles.count == 553)
+        #expect(divided.count { $0.volumeNumber != nil } == 456)
+        #expect(divided.count { $0.volumeTitle != nil } == 420)
+        #expect(divided.count { $0.part != nil } == 97)
+        #expect(divided.count { $0.isSeveralVolumes } == 2)
+        #expect(divided.count { $0.isMicroficheSupplement } == 4)
+    }
+}
 
-        let result = formatter.format(document: doc, volume: volume)
+// MARK: - FRUSNoteHeadTests
 
-        #expect(!result.contains("Edited by"))
-        #expect(result.hasPrefix("*Papers Relating to the Foreign Relations of the United States"))
+/// The note's opening (L43): the document by its correspondents and type, then its place and date, read from what
+/// the volume prints.
+struct FRUSNoteHeadTests {
+
+    @Test("A heading of the form Type From Sender to Recipient takes the FAQ's order",
+          arguments: [
+            ("4. Telegram From the Embassy in Chile to the Department of State",
+             "The Embassy in Chile to the Department of State, telegram"),
+            ("Memorandum From Secretary of State Rogers to President Nixon",
+             "Secretary of State Rogers to President Nixon, memorandum"),
+            ("Telegram From the Mission to the United Nations to the Department of State",
+             "The Mission to the United Nations to the Department of State, telegram"),
+            ("Backchannel Message From the Ambassador to Vietnam (Bunker) to the President’s Assistant for National Security Affairs (Kissinger)",
+             "The Ambassador to Vietnam (Bunker) to the President’s Assistant for National Security Affairs (Kissinger), backchannel message"),
+            ("Aide-Mémoire From the Soviet Government to the Government of the United States",
+             "The Soviet Government to the Government of the United States, aide-mémoire"),
+            ("CIA Information Report From the Station in Saigon to the Agency",
+             "The Station in Saigon to the Agency, CIA information report"),
+          ] as [(String, String)])
+    func typed(heading: String, description: String) {
+        #expect(FRUSNoteHead.description(ofHeading: heading) == description)
+    }
+
+    @Test("Any other heading reads as printed, without the volume's number or one closing period",
+          arguments: [
+            ("The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+             "The Chargé in the Soviet Union (Kennan) to the Secretary of State"),
+            ("No. 3. Mr. White to Mr. Fish.", "Mr. White to Mr. Fish"),
+            ("2. Memorandum of Conversation", "Memorandum of Conversation"),
+            ("5. Editorial Note", "Editorial Note"),
+            ("Extract From a Letter From the Ambassador to the Secretary of State",
+             "Extract From a Letter From the Ambassador to the Secretary of State"),
+            ("Memorandum From the Ambassador to the U.S.", "The Ambassador to the U.S., memorandum"),
+            ("No. 1. BY THE PRESIDENT OF THE UNITED STATES OF AMERICA:", "BY THE PRESIDENT OF THE UNITED STATES OF AMERICA"),
+          ] as [(String, String)])
+    func asPrinted(heading: String, description: String) {
+        #expect(FRUSNoteHead.description(ofHeading: heading) == description)
+    }
+
+    @Test("A heading of the volume's number alone names nothing")
+    func empty() {
+        #expect(FRUSNoteHead.description(ofHeading: "") == nil)
+        #expect(FRUSNoteHead.description(ofHeading: "12.") == nil)
+        #expect(FRUSNoteHead.head(header: "", dateline: "Washington, May 5, 1962.") == nil)
+    }
+
+    @Test("The dateline gives its place and date, up to its first full date",
+          arguments: [
+            ("Santiago, March 25, 1969, 1700Z.", "Santiago, March 25, 1969"),
+            ("Moscow, February 22, 1946—9 p.m. [Received February 22—3:52 p.m.]", "Moscow, February 22, 1946"),
+            ("Washington, Monday, January 5, 1961.", "Washington, January 5, 1961"),
+            ("London, 28th January, 1947.", "London, 28th January, 1947"),
+            ("United States Legation, Buenos Ayres, September 12th, 1873. (Received October 20.)",
+             "United States Legation, Buenos Ayres, September 12th, 1873"),
+            ("[Washington,] March 3, 1961.", "[Washington], March 3, 1961"),
+            ("February 22, 1946", "February 22, 1946"),
+            ("Berlin, February 16, 1954—2 p.m. Dulles was in Berlin for the quadripartite meeting.",
+             "Berlin, February 16, 1954"),
+          ] as [(String, String)])
+    func placeAndDate(dateline: String, expected: String) {
+        #expect(FRUSNoteHead.placeAndDate(dateline: dateline) == expected)
+    }
+
+    @Test("A dateline with no full date gives none")
+    func noDate() {
+        #expect(FRUSNoteHead.placeAndDate(dateline: nil) == nil)
+        #expect(FRUSNoteHead.placeAndDate(dateline: "Washington, undated.") == nil)
+        #expect(FRUSNoteHead.placeAndDate(dateline: "Washington, June 1955.") == nil)
+        #expect(FRUSNoteHead.placeAndDate(dateline: "St. Petersburg, December 18, 11 p.m.") == nil)
+        #expect(FRUSNoteHead.head(header: "Editorial Note", dateline: "undated") == "Editorial Note")
+    }
+
+    @Test("Chicago and Turabian italics become the exporters' underscores")
+    func italics() {
+        #expect(CitationItalics.underscored("in *Foreign Relations*, vol. 6, *Eastern Europe*, doc. 1.")
+                == "in _Foreign Relations_, vol. 6, _Eastern Europe_, doc. 1.")
+        #expect(CitationItalics.underscored("_Foreign Relations_, 1946") == "_Foreign Relations_, 1946")
     }
 }
 
@@ -556,12 +699,13 @@ struct CitationPlainTextTests {
                 let document = makeDocument(documentNumber: number)
                 for style in CitationStyle.allCases {
                     let citation = style.makeFormatter().format(document: document, volume: volume)
-                    // The history.state.gov style italicizes the series name, the other two the title.
-                    let italic = style == .historyAtState ? series : volume.title
+                    // The history.state.gov style italicizes the series name; Chicago's and Turabian's notes
+                    // italicize the series with its years and the volume's own title, each apart (L43).
+                    let italic = style == .historyAtState ? series : FRUSVolumeTitle(title: volume.title).series
                     let marker = style == .historyAtState ? "_" : "*"
                     #expect(citation.contains(marker + italic + marker), "\(style): \(citation)")
                     #expect(CitationPlainText.plain(citation)
-                            == citation.replacingOccurrences(of: marker + italic + marker, with: italic),
+                            == citation.replacingOccurrences(of: marker, with: ""),
                             "\(style) \(number == nil ? "without" : "with") a number: \(citation)")
                     checked += 1
                 }
@@ -575,10 +719,12 @@ struct CitationPlainTextTests {
         let title = "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II"
         #expect(CitationPlainText.plain(HistoryAtStateCitationFormatter().format(document: document, volume: potsdam))
                 == "\(title), ed. Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+        let note = "Memorandum of Conversation, Washington, January 20, 1969, in Foreign Relations of the United States, "
+            + "Diplomatic Papers, vol. 2, The Conference of Berlin (The Potsdam Conference), 1945, ed. Richardson Dougall"
         #expect(CitationPlainText.plain(ChicagoCitationFormatter().format(document: document, volume: potsdam))
-                == "\(title), edited by Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+                == "\(note) (Government Printing Office, 1960), doc. 710.")
         #expect(CitationPlainText.plain(TurabianCitationFormatter().format(document: document, volume: potsdam))
-                == "\(title). Edited by Richardson Dougall. Washington: Government Printing Office, 1960. Document 710.")
+                == "\(note) (Washington: Government Printing Office, 1960), doc. 710.")
     }
 }
 

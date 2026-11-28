@@ -2238,3 +2238,202 @@ func documentRowText(in app: XCUIApplication) -> XCUIElement {
     app.staticTexts.matching(NSPredicate(format: "label ENDSWITH %@ OR label ENDSWITH %@",
                                          "UI Test Document One", "Document d1")).firstMatch
 }
+
+// MARK: - CollectionFactsAccessibilityTests (L43)
+
+/// Each control L43 adds speaks its name and its value (the design's §9 accessibility table, lane 3): what VoiceOver reads
+/// for an element is its label and its value, which XCUI reads back.
+///
+/// - **A new collection's settings:** *Opening*, which a new collection sets to the volume's heading leading (decision
+///   159); *Citation style*, in the style Settings ▸ Display holds, History at State in the UI-test store (decision 160);
+///   *See also*, off; and *Wording*'s ten fields, each named "Contents, printed as" and valued with the word it prints.
+/// - **A section's sheet:** *Headnotes*, at Default.
+/// - **A document's settings:** *Date line*, offered once the document has a title, and not before (decision 163).
+///
+/// **Run it on iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`**: the iPhone pushes Collection settings and a
+/// document's settings, the iPad presents both as sheets, and each is different code. The document's fixture is
+/// `FRUS_UI_TEST_SEED_PROJECT`'s collection, which holds `d1` of `FRUS_UI_TEST_SEED_VOLUME`'s volume.
+///
+/// Version history:
+///   1.0 — L43: initial implementation
+@MainActor
+final class CollectionFactsAccessibilityTests: XCTestCase {
+
+    /// `UITestProjectSeeder.collectionName`.
+    private static let collectionName = "UI Test Unattached Collection"
+    /// The settings screen's (iPhone) and sheet's (iPad) navigation title.
+    private static let settingsTitle = "Collection settings"
+    /// The editor's title before a new collection has a name.
+    private static let newTitle = "New Collection"
+    /// See `CollectionEditorTitleTests.patience`.
+    private static let patience: TimeInterval = 30
+    /// The ten labels of the collection's Wording, by the name the stored map gives each, with the word the app prints.
+    private static let wording: [(key: String, word: String)] = [
+        ("contents", "Contents"), ("headnote", "Headnote"), ("summary", "Summary"), ("researchNote", "Research Note"),
+        ("seeAlso", "See also:"), ("bibliography", "Bibliography"), ("chronology", "Chronology"),
+        ("archivalSources", "Sources & Archives"), ("personsIndex", "Persons Index"), ("thematicIndex", "Thematic Index"),
+    ]
+
+    var app: XCUIApplication!
+
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDown() async throws {
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+        try await super.tearDown()
+    }
+
+    /// A new collection's Opening, Citation style, See also and Wording speak their names and values, and a section's
+    /// Headnotes default does.
+    func testTheCollectionsNewControlsSpeakTheirNameAndValue() throws {
+        launch(seedingProject: false)
+        let create = app.buttons["Create new collection"].firstMatch
+        XCTAssertTrue(create.waitForExistence(timeout: Self.patience), "The Collections tab offers no New Collection")
+        create.tap()
+        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: Self.patience),
+                      "The new collection's editor did not open")
+
+        // A section heading, whose sheet holds the section's Headnotes default.
+        CollectionEditorAddMenu.open(in: app)
+        let heading = app.buttons["Add Section Heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: Self.patience), "The Add menu has no Add Section Heading")
+        heading.tap()
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: Self.patience), "Add Section Heading added no heading row")
+        pill.tap()
+        let headnotes = reveal("collection.inspector.sectionHeadnote.picker", what: "Headnotes", under: nil)
+        assertSpeaks(headnotes, name: "Headnotes", value: "Default", what: "A section's Headnotes default")
+        attachScreenshot("A section's sheet")
+        let done = app.navigationBars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The section's sheet has no Done")
+        done.tap()
+
+        // Collection settings: the ⚙ button's sheet on the iPad, the pushed screen on the iPhone.
+        let button = element("collection.editor.settings.button")
+        let row = element("collection.editor.settings.row")
+        XCTAssertTrue(waitUntil { button.exists || row.exists }, "The editor offers no way into Collection settings")
+        (button.exists ? button : row).tap()
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
+                      "Collection settings did not open")
+
+        let opening = reveal("composition.opening.picker", what: "Opening", under: Self.settingsTitle)
+        assertSpeaks(opening, name: "Opening", value: "The volume’s heading leads",
+                     what: "A new collection's Opening (decision 159)")
+        let seeAlso = reveal("composition.seeAlso.toggle", what: "See also", under: Self.settingsTitle)
+        XCTAssertTrue(seeAlso.label.hasPrefix("See also"), "See also is named \"\(seeAlso.label)\"")
+        XCTAssertEqual(seeAlso.value as? String, "0", "See also does not speak Off for a new collection")
+        attachScreenshot("Document content")
+
+        let style = reveal("composition.citationStyle.picker", what: "Citation style", under: Self.settingsTitle)
+        assertSpeaks(style, name: "Citation style", value: "History at State",
+                     what: "A new collection's Citation style, Settings ▸ Display's (decision 160)")
+        let wording = reveal("composition.wording.group", what: "Wording", under: Self.settingsTitle)
+        XCTAssertTrue(wording.label.contains("Wording"), "Wording is named \"\(wording.label)\"")
+        wording.tap()
+        for (key, word) in Self.wording {
+            // By its identifier, or by the name VoiceOver reads, which is what this test is about.
+            let field = reveal(app.textFields.matching(NSPredicate(format: "identifier == %@ OR label == %@",
+                                                                   "composition.wording.field.\(key)",
+                                                                   "\(word), printed as")).firstMatch,
+                               what: "Wording's \(word)", under: Self.settingsTitle)
+            XCTAssertEqual(field.label, "\(word), printed as", "Wording's \(key) field is named \"\(field.label)\"")
+            XCTAssertEqual(field.value as? String, word, "Wording's \(key) field does not speak the word it prints")
+        }
+        attachScreenshot("Citations & wording")
+    }
+
+    /// A document's Date line is offered once it has a title, and speaks its name and the line typed into it.
+    func testTheDocumentsDateLineSpeaksItsNameAndValue() throws {
+        launch(seedingProject: true)
+        let collection = app.collectionViews.staticTexts[Self.collectionName].firstMatch
+        XCTAssertTrue(collection.waitForExistence(timeout: Self.patience), "The seeded collection is not listed")
+        collection.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionName].waitForExistence(timeout: Self.patience),
+                      "The seeded collection's editor did not open")
+        let row = documentRowText(in: app)
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "The seeded document's row is not in Contents")
+        row.tap()
+        // By identifier: a form's text field shows no title, and iOS 27 names it by its placeholder alone.
+        let title = element("collection.inspector.titleOverride.field")
+        XCTAssertTrue(title.waitForExistence(timeout: Self.patience), "The document's settings have no Title override")
+        let dateLine = element("collection.inspector.dateLine.field")
+        XCTAssertFalse(dateLine.exists, "A date line is offered before the document has a title (decision 163)")
+
+        title.tap()
+        title.typeText("The first letter")
+        XCTAssertTrue(dateLine.waitForExistence(timeout: Self.patience), "A title did not bring the Date line")
+        XCTAssertEqual(dateLine.label, "Date line", "The date line is named \"\(dateLine.label)\"")
+        dateLine.tap()
+        dateLine.typeText("Washington, 26 January 1961")
+        XCTAssertTrue(waitUntil { (dateLine.value as? String) == "Washington, 26 January 1961" },
+                      "The date line does not speak what was typed: \(dateLine.value ?? "nil")")
+        attachScreenshot("A document's date line")
+    }
+
+    // MARK: - Helpers
+
+    private func launch(seedingProject: Bool) {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        if seedingProject {
+            app.launchEnvironment["FRUS_UI_TEST_SEED_PROJECT"] = "1"
+            app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        }
+        app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
+        app.launch()
+        XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped, "Could not open the Collections tab")
+    }
+
+    /// What VoiceOver reads for `element` — its label, then its value — holds `name` and `value`.
+    private func assertSpeaks(_ element: XCUIElement, name: String, value: String, what: String) {
+        let spoken = [element.label, (element.value as? String) ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")
+        XCTAssertTrue(spoken.contains(name) && spoken.contains(value), "\(what) speaks \"\(spoken)\"")
+    }
+
+    /// The element `identifier` names, dragged up into view, under the bar titled `bar` where one is given (so a drag
+    /// on a sheet never lands on the window around it), else at the window's leading edge.
+    private func reveal(_ identifier: String, what: String, under bar: String?) -> XCUIElement {
+        reveal(element(identifier), what: "\(what) (\(identifier))", under: bar)
+    }
+
+    /// `target`, dragged up into view as `reveal(_:what:under:)` drags.
+    private func reveal(_ target: XCUIElement, what: String, under bar: String?) -> XCUIElement {
+        let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+        let top = bar.map { app.navigationBars[$0].frame } ?? app.navigationBars.firstMatch.frame
+        var drags = 0
+        while !(target.exists && target.isHittable) && drags < 14 {
+            let x = top.minX + 24
+            let start = origin.withOffset(CGVector(dx: x, dy: top.maxY + 360))
+            let end = origin.withOffset(CGVector(dx: x, dy: top.maxY + 60))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0.3)
+            drags += 1
+        }
+        XCTAssertTrue(target.exists, "\(what) is not on screen, after \(drags) drag(s)")
+        return target
+    }
+
+    private func element(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any)[identifier].firstMatch
+    }
+
+    private func waitUntil(_ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(Self.patience)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}

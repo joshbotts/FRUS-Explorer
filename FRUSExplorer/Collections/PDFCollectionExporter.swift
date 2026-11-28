@@ -264,7 +264,8 @@ final class PDFCollectionExporter: CollectionExporter {
         // Cover page — the table of contents reflects the composed structure (numbered documents plus
         // authored section headings), and runs on over as many pages as it needs (#1984).
         ctx.beginPDFPage(nil)
-        drawCoverPage(ctx: ctx, collection: collection, rows: plan.contents, pageNumber: &pageNumber)
+        drawCoverPage(ctx: ctx, collection: collection, rows: plan.contents,
+                      contentsHeading: options.wording.text(for: .contents), pageNumber: &pageNumber)
         drawPageNumber(ctx: ctx, number: pageNumber)
         ctx.endPDFPage()
         pageNumber += 1
@@ -582,6 +583,7 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx: CGContext,
         collection: CollectionExportMetadata,
         rows: [CollectionContentsRow],
+        contentsHeading: String,
         pageNumber: inout Int
     ) {
         let H = Self.pageHeight
@@ -641,8 +643,8 @@ final class PDFCollectionExporter: CollectionExporter {
         drawHRule(ctx: ctx, y: y, gray: 0.4, thickness: 0.5)
         y -= 20
 
-        // Contents header
-        draw("Contents", in: ctx,
+        // Contents header, in the collection's own word for it (L43)
+        draw(contentsHeading, in: ctx,
              rect: CGRect(x: M, y: y - 16, width: cw, height: 16),
              fontSize: 13, bold: true)
         y -= 30
@@ -714,12 +716,16 @@ final class PDFCollectionExporter: CollectionExporter {
 
         // The lines above the text: a title of the author's or the citation at the heading's size, the
         // citation as a smaller line under a title or above the volume's heading, and the address.
-        let headRoles: Set<CollectionDocumentPlan.Role> = [.title, .citation, .address]
+        let headRoles: Set<CollectionDocumentPlan.Role> = [.title, .titleDateLine, .citation, .address]
         for line in plan.lines where headRoles.contains(line.role) {
             let attr: NSMutableAttributedString
             switch line.role {
             case .address:
                 attr = NSMutableAttributedString(string: line.text, attributes: makeAttrs(fontSize: 8, bold: false, gray: 0.45))
+            case .titleDateLine:
+                // The author's date line under their title (L43), as the volume's dateline is drawn.
+                attr = NSMutableAttributedString(string: line.text,
+                                                 attributes: makeStyledAttrs(fontSize: 10, bold: false, italic: true, gray: 0))
             default:
                 attr = NSMutableAttributedString(attributedString: line.headingLevel != nil
                     ? noteAttributedString(line.text, fontSize: 13, gray: 0.0, bold: true)
@@ -808,7 +814,7 @@ final class PDFCollectionExporter: CollectionExporter {
                 // noteAttributedString renders _text_ as italic.
                 note.append(noteAttributedString(line.text, fontSize: 10.5, gray: 0.1))
                 append(note, role: .researchNote)
-            case .title, .citation, .address:
+            case .title, .titleDateLine, .citation, .address:
                 break
             }
         }
