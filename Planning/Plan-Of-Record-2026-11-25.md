@@ -888,6 +888,7 @@ The design (`Collections-Customization-Design-2026-11-25.md`, its third form as 
       - `swift test`: 5,332 tests in 605 suites over 39 runs, none failed. Its build, from empty in this worktree, printed six warnings, all in package code this row does not touch: `VolumeSubjectProfilesGeneratorCore`, `CorpusStructureSweepGeneratorCore` and its tests, `DecimalClassLabelGeneratorTests` and `ProvenanceFlowIndexGeneratorCore`.
       - The `FRUSExplorerMac` build: succeeded, with the known residue alone.
       - `Scripts/check_repo_hygiene.py`: six checks passed.
+    - **Merged** as #2048, `67a3372c`, a squash onto `7524f53d` (the CI fix #2042) at 01:34:22 UTC on 2026-11-28, from its head `e38b7343`, whose tree, `2b684046`, it keeps. It closed #1946 and #1931. Recorded by L35, the next row.
     - **Owed to T3:** `macos/toolbar`, `document`, `research-strip`, `cite-popover` and `topic-index`, and the store frames made from `research-strip` and `cite-popover` (§3, T3).
     - **Found, offered and not taken** (decision 183): two, in §5 under *Found by L38, unfiled*.
 
