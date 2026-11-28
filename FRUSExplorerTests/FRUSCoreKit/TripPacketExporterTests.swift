@@ -1097,7 +1097,8 @@ struct TripPacketExporterTests {
     func coverageReportStatesRefsReach() {
         let text = exporter().export()
         #expect(text.contains("## What this packet covers"))
-        #expect(text.contains("Footnote references were scanned on 53 documents; 2 carry"))
+        #expect(text.contains("Footnote references were scanned on 53 documents; 2 carry at least one reference "
+                              + "to a lot file, library collection or central-file class."))
         #expect(text.contains("a short list is expected and not a failure to look"))
     }
 
@@ -1120,9 +1121,15 @@ struct TripPacketExporterTests {
         let text = exporter(model: model).export()
         #expect(text.contains("that is the filing practice, not a gap"), """
             #784 measured the pre-war decades at 0/0/2 references at the shipped scope: lot \
-            files and libraries are post-war practice, and the report owes that sentence \
-            wherever the emptiness would otherwise read as a failed scan.
+            files and libraries are post-war practice, and since L63 took in the class, 3,680 of the \
+            182,497 documents dated before 1946 carry a reference the channel takes (2.0%). The report \
+            owes that sentence wherever the emptiness would otherwise read as a failed scan.
             """)
+        // The packet no longer says it covers a footnote's class through the documents' own notes:
+        // since L63 it reads the footnote's class itself.
+        #expect(text.contains("lot files and presidential libraries are a post-war practice, and earlier "
+                              + "footnotes seldom cite a central file by its number."))
+        #expect(!text.contains("already covers through the documents' own source notes"))
     }
 
     /// The folded chapters' homeless facts all land in the report: the substitute

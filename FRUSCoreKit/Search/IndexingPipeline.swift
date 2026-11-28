@@ -601,6 +601,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         dates as its key and its two dates, in date order and with no limit, for Chronology's save of a
 ///         range; its conditions are the Chronology list's, one builder (`chronologyRangeConditions`) for both,
 ///         and the list's statement is unchanged; nothing the indexer stores changes, so no index version
+///  4.72 — 2026-11-28 (plan of record row L63, decision 235): `ExternalCitation.anchorsOutsideThePacket`
+///         names the Central Foreign Policy File alone, so the Archives Visit packet's pointed-at channel,
+///         its counts and `externalCitationSparsity()` take a footnote's central-file class; nothing the
+///         indexer stores changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -10818,11 +10822,11 @@ public actor IndexingPipeline {
     }
 
     /// The live index's pointed-at sparsity (Archive Visits Phase 4): how many indexed
-    /// documents carry at least one lot or library footnote citation, over every indexed
-    /// document.
+    /// documents carry at least one lot, library or central-file class footnote citation, over
+    /// every indexed document.
     ///
-    /// The corpus-wide figure (#784: references at the shipped lot+library scope sit on a
-    /// small minority of documents, ≲6%) is an artifact claim about the WHOLE series; this is
+    /// The corpus-wide figure (35,749 of 321,749 documents on a full index at version 76 since L63
+    /// took in the class; 13,781 at the lot+library scope before it) is a claim about the WHOLE series; this is
     /// the same measurement over the index this device actually holds, so a sparsity caption
     /// can state a measured local fact instead of asserting the corpus. The filter matches
     /// the packet's own channel rule exactly — the anchors `ExternalCitation.anchorsOutsideThePacket`
@@ -15380,16 +15384,18 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// `centralForeignPolicyFile` row (decision 191). A proper name, like a row's repository.
     public static let centralForeignPolicyFileName = "Central Foreign Policy File"
 
-    /// The anchors the Archives Visit packet's pointed-at channel leaves out: the central-file class,
-    /// deferred by #784's own scope, and from index version 76 the Central Foreign Policy File
-    /// (decision 191), whose rows name no collection and would all key to one "Department of State"
-    /// target. `TripPacketBuilder`, the plan editor's per-seed counts and
-    /// `IndexingPipeline.externalCitationSparsity()` read the channel through this one list, so the
-    /// packet, its counts and its sparsity caption describe the same citations.
-    public static let anchorsOutsideThePacket = ["centralFileClass", "centralForeignPolicyFile"]
+    /// The anchors the Archives Visit packet's pointed-at channel leaves out: from index version 76 the
+    /// Central Foreign Policy File (decision 191), whose rows name no collection and would all key to
+    /// one "Department of State" target. The central-file class, deferred by #784's own scope, was left
+    /// out too until L63 (decision 235), and is a target now, keyed as a source note's class is.
+    /// `TripPacketBuilder`, the plan editor's per-seed counts, Source Explorer's Add to Archives Visit
+    /// (`SourceExplorerResolution.packetPointers`) and `IndexingPipeline.externalCitationSparsity()` read
+    /// the channel through this one list, so the packet, its counts and its sparsity caption describe
+    /// the same citations.
+    public static let anchorsOutsideThePacket = ["centralForeignPolicyFile"]
 
-    /// Whether the Archives Visit packet's pointed-at channel takes this citation: a lot or a
-    /// library one (``anchorsOutsideThePacket``).
+    /// Whether the Archives Visit packet's pointed-at channel takes this citation: a lot, a library or
+    /// a central-file class one (``anchorsOutsideThePacket``).
     public var isInPacketChannel: Bool { !Self.anchorsOutsideThePacket.contains(anchor) }
 
     /// Creates a citation.

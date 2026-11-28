@@ -113,6 +113,8 @@ import SourceNoteKit
 ///          a target another stored row is shown on
 ///   2.9 — 2026-11-23 (FRUS Explorer Light, S30a): moved into FRUSCoreKit, public, with its memberwise
 ///          initialiser spelt out so a host can make one; nothing it writes changes
+///   2.10 — 2026-11-28 (L63, decision 235): the coverage report's footnote line counts a central-file class
+///          reference, and the pre-1946 explainer says earlier footnotes seldom cite a file by its number
 public struct TripPacketExporter {
 
     /// The packet to render.
@@ -700,12 +702,12 @@ public struct TripPacketExporter {
                        + "document\(refs.documentsScanned == 1 ? "" : "s"); "
                        + "\(refs.documentsWithReferences) "
                        + (refs.documentsWithReferences == 1 ? "carries" : "carry")
-                       + " at least one reference to a lot file or library collection.")
+                       + " at least one reference to a lot file, library collection or central-file class.")
             if refs.documentsWithReferences == 0, model.seededSpanPredates1946 {
                 out.append("For records before 1946 that is the filing practice, not a gap: "
                            + "lot files and presidential libraries are a post-war practice, "
-                           + "and earlier footnotes cite central decimal files — which this "
-                           + "packet already covers through the documents' own source notes.")
+                           + "and earlier footnotes seldom cite a central file by its "
+                           + "number.")
             } else {
                 out.append("References of this kind exist on a small minority of FRUS "
                            + "documents, so a short list is expected and not a failure to look.")

@@ -188,6 +188,9 @@ public struct TripPacketTopicSentence: Equatable, Sendable {
 ///   2.8 — 2026-11-24 (FRUS Explorer Light, S30b): `Group.DocumentRef`, `RefSeeding` and `CitedLots` with its
 ///          `Part` have their memberwise initialisers spelt out, public, for a host that builds a model's
 ///          parts of its own; unchanged
+///   2.9 — 2026-11-28 (L63): the pointed-at channel takes a footnote's central-file class, so a class
+///          only footnotes cite is a target of its own, with its filing system's category
+///          (`Target.classCategory(_:)`) and the label a source note's class carries (`Target.classLabel(_:)`)
 public struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -470,6 +473,35 @@ public struct TripPacketModel: Equatable, Sendable {
         public var recordsLine: String? {
             TripPacketModel.recordsLine(resolution: resolution, seriesYears: seriesYears)
         }
+
+        /// What a central-file class target is called, in either channel (`TripPacketBuilder`'s
+        /// `targetKey(for:category:parsed:)` and `referenceKey(for:)`), so a class a source note names
+        /// and one a footnote cites read alike: `Subject-Numeric File POL 27 VIET S`, `Central Decimal
+        /// File 611.51`. By the FORM of the designator, never the document's year: a letter-led
+        /// designator is subject-numeric whatever year its document carries.
+        ///
+        /// - Parameter decimalClass: The class, as the target's key holds it after `class|`.
+        /// - Returns: The label.
+        public static func classLabel(_ decimalClass: String) -> String {
+            isSubjectNumeric(decimalClass)
+                ? "Subject-Numeric File \(decimalClass)"
+                : "Central Decimal File \(decimalClass)"
+        }
+
+        /// The filing system a class names, by the same test as ``classLabel(_:)``: the category of a
+        /// class target that only footnotes cite (L63), which no source note gives one. A class a source
+        /// note names takes the note's.
+        ///
+        /// - Parameter decimalClass: The class, as the target's key holds it after `class|`.
+        /// - Returns: The Subject-Numeric File's category, or the Central Decimal File's.
+        public static func classCategory(_ decimalClass: String) -> SourceProvenanceCategory {
+            isSubjectNumeric(decimalClass) ? .subjectNumericFile : .centralDecimalFile
+        }
+
+        /// Whether a class is a subject-numeric designator: it opens with a letter.
+        private static func isSubjectNumeric(_ decimalClass: String) -> Bool {
+            decimalClass.first?.isLetter == true
+        }
     }
 
     /// The groups, most-cited first — the DRAWN-FROM channel as built, kept for the
@@ -485,9 +517,10 @@ public struct TripPacketModel: Equatable, Sendable {
     /// report's denominators; per-seeding markers come from ``MandatorySubstitutes/matchesByDocument``.
     public let substitutes: MandatorySubstitutes
     /// The coverage report's refs line: how many seeded documents the pointed-at channel found
-    /// references on, over how many it scanned (references exist on ~4% of documents —
-    /// measured 2026-08-26 over the full 552-volume index, 13,750 of 316,839
-    /// corpus-wide, and a thin channel must read as sparse data, not as a failed scan).
+    /// references on, over how many it scanned (references exist on ~11% of documents —
+    /// measured 2026-11-28 over a full index at version 76, 35,749 of 321,749, where the lot
+    /// and library rows alone, the channel before L63 took in the class, are on 13,781 — and
+    /// a thin channel must read as sparse data, not as a failed scan).
     public struct ReferenceCoverage: Equatable, Sendable {
         public let documentsWithReferences: Int
         public let documentsScanned: Int
@@ -502,8 +535,11 @@ public struct TripPacketModel: Equatable, Sendable {
     /// Whether every seeded document with a known year predates 1946 — the coverage report's
     /// empty-refs explainer. Lot files and presidential libraries are a post-war filing
     /// practice (measured for #784: the pre-war decades yield 0/0/2 references at the shipped
-    /// scope), so an empty pointed-at channel on a pre-1946 reading list is the filing
-    /// practice, not a failed scan — and only this flag lets the report say which.
+    /// scope), and footnotes before 1946 seldom cite a central-file class (L63, over a full
+    /// index at version 76: 3,680 of the 182,497 documents dated before 1946 carry a lot,
+    /// library or class reference, and 69 a lot or library one), so an empty pointed-at
+    /// channel on a pre-1946 reading list is the filing practice, not a failed scan — and only
+    /// this flag lets the report say which.
     public let seededSpanPredates1946: Bool
     /// The inquiry's topic sentence.
     public var topicSentence: TripPacketTopicSentence
@@ -671,12 +707,17 @@ public struct TripPacketModel: Equatable, Sendable {
             }
             // A pointed-at-only target: FRUS cites it and never printed from it — the
             // "beyond FRUS" case the channel exists for. Lots resolve through the same
-            // offline route the drawn-from channel uses.
+            // offline route the drawn-from channel uses. A class takes its filing system's
+            // category (L63), so it is served, cited and told apart as a central file is; a
+            // library or a collection is filed as a library, as before.
             let resolution = reference.form == .lotFile
                 ? reference.lotAsPrinted.flatMap { lotResolution($0) }
                 : nil
-            let category: SourceProvenanceCategory? =
-                reference.form == .lotFile ? .lotFile : .presidentialLibrary
+            let category: SourceProvenanceCategory? = switch reference.form {
+            case .lotFile: .lotFile
+            case .decimalClass: Target.classCategory(String(reference.key.dropFirst("class|".count)))
+            default: .presidentialLibrary
+            }
             targetIndexByKey[reference.key] = targets.count
             targets.append(Target(
                 key: reference.key, form: reference.form, label: reference.label,
