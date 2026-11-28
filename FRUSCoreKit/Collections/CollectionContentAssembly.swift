@@ -146,7 +146,9 @@ public protocol CollectionContentDataSource {
 
     /// The summaries the `.summaryOnly` documents of an export print under `promptId`, keyed
     /// `"volumeId/documentId"`: a stored one where there is one, else one generated, or the reason none
-    /// can be — the app throws `ExportError.renderingFailed` when Apple Intelligence is unavailable.
+    /// can be. A stored summary prints on any device; where a document has none and Apple Intelligence
+    /// cannot write one here, the app throws `CollectionSummaryExportError.summariesNeedAppleIntelligence`
+    /// (#2018, L35), which says how many documents lack one and why.
     /// `bodyTexts` holds each document's plain body, keyed the same way. Asked only for `.export`.
     ///
     /// Each answer is the summary's record, whose text and format the document prints (a structured
