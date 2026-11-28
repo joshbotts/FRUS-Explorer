@@ -69,7 +69,7 @@ import AppKit
 ///   1.8 — L21 (UI review MAC-1, #1921): the window is titled with the open document's head
 ///          (`MacDocumentTitle.windowTitle`), and its centre is the standalone window's
 ///          `MacDocumentPrincipalTitle` in place of the raw `volumeId/documentId`
-///   1.9 — L38 (F2, decision 213): the window is titled with the volume's tag and the document's
+///   1.9 — L38 (F2, decision 219): the window is titled with the volume's tag and the document's
 ///          number (`MacDocumentTitle.windowTitle(for:volume:)`), and its centre is the head
 @MainActor
 struct MainWindowView: View {

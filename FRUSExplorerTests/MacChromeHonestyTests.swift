@@ -154,7 +154,7 @@ struct MacChromeHonestyTests {
 
     // MARK: - MAC-1 · the main window's title and centre (L21, #1921)
 
-    /// F2 (L38, decision 213): the title is where the document is, the centre what it is. L21's
+    /// F2 (L38, decision 219): the title is where the document is, the centre what it is. L21's
     /// test here held the title to the head; the owner chose this layout over it after R6 found the
     /// head cut in almost every window (at 1,200 pt, "The Chargé in the Soviet Union (Kenn…").
     @Test("a document window is titled with its volume's tag and its number, and its centre is the head (F2)")

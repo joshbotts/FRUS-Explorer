@@ -193,6 +193,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          launch's read of the indexed set
 ///   4.27 — L20 (#1920, HCD-3): `downloadFailures` and `recordDownloadOutcome(_:outcome:)`, each volume's
 ///          last failed download, in memory, for its page's notice with Retry
+///   4.28 — L40 (D1, decision 179): `AuxWindowGate`, the one answer every gate between a window and a
+///          sheet reads: `\.supportsMultipleWindows`, except on a phone idiom, where it is false
 
 // MARK: - CloudKitSyncState
 
@@ -4027,6 +4029,54 @@ struct AuxWindowClose: DynamicProperty {
         return AuxWindowCloseAction(dismiss: { dismiss() }, isPresented: isPresented, window: window)
     }
 }
+
+#if os(iOS)
+/// Whether an auxiliary surface opens in a window of its own or as a sheet: the one answer every gate
+/// between the two reads (D1; L40, decision 179).
+///
+/// The analytics, the semantic map, Archival Neighbors, the Research rail's tools and Open in New
+/// Window open as windows where windows open, and as sheets, or not at all, where they do not. Each
+/// gate used to read `\.supportsMultipleWindows` itself, and the iPhone Duo is the one iPhone whose
+/// scenes support multiple windows, folded or unfolded. There every such surface opened as a
+/// full-screen window, and a window closed with Done kept its scene session, so the next launch read
+/// "2 Views Open" (R6b, `Planning/iPhone-Duo-Assessment-2026-11-19.md`). The owner's answer: on a
+/// phone idiom the gate answers as a phone, so the Duo presents these surfaces as sheets, as every
+/// other iPhone does. An iPad, whose flag is true and truthful in every multitasking mode (W-2d), is
+/// unchanged.
+///
+/// **A gate reads this, never `\.supportsMultipleWindows`:** `WindowTargetingTests` fails on any
+/// other reader of that value under `FRUSExplorer/`. It is a property wrapper, as ``AuxWindowClose``
+/// is, so that the flag cannot be read without the idiom beside it.
+///
+/// The idiom is `UIDevice`'s, as the app's other idiom branches read it: SwiftUI's environment
+/// carries none, and the Duo is the phone idiom in both postures (R6b), so a fold changes nothing
+/// here. A size class would: the Duo's inner screen is regular width.
+@MainActor
+@propertyWrapper
+struct AuxWindowGate: DynamicProperty {
+    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+
+    /// Reads `\.supportsMultipleWindows` at the declaring view's position.
+    init() {}
+
+    /// `true` where the surface opens in a window of its own, `false` where it is a sheet.
+    var wrappedValue: Bool {
+        Self.opensWindows(supportsMultipleWindows: supportsMultipleWindows,
+                          idiom: UIDevice.current.userInterfaceIdiom)
+    }
+
+    /// The rule, over values, so a test can ask it about a device it does not run on: a window where
+    /// the scene supports more than one, except on a phone.
+    ///
+    /// - Parameters:
+    ///   - supportsMultipleWindows: The scene's `\.supportsMultipleWindows`.
+    ///   - idiom: The device's interface idiom.
+    /// - Returns: Whether the surface opens in a window of its own.
+    nonisolated static func opensWindows(supportsMultipleWindows: Bool, idiom: UIUserInterfaceIdiom) -> Bool {
+        supportsMultipleWindows && idiom != .phone
+    }
+}
+#endif
 
 #if os(iOS)
 /// #338 aux-window origin: drains the launching window's scene from the transient `AppState` hand-off

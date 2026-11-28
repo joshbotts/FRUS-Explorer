@@ -54,7 +54,7 @@ import Foundation
 /// ``windowTitle(for:volume:)`` and draw their centre through `MacDocumentPrincipalTitle`, so the
 /// two cannot drift apart again.
 ///
-/// ## The title is the volume and number, the centre the head, since L38 (F2, decision 213)
+/// ## The title is the volume and number, the centre the head, since L38 (F2, decision 219)
 /// L21 titled the windows with the document's head and put the volume and number in the centre.
 /// The title bar's room is what the toolbar leaves, and AppKit cut the head in almost every window
 /// (R6's F2). Measured in the check copy with `frus1946v06` d475 open: at the main window's default
@@ -72,7 +72,7 @@ import Foundation
 ///          Unnumbered (d710a-1)", where it read "… · Doc [Unnumbered document following …]"
 ///   1.2 — L21 (MAC-1): the title both document windows set, the head, and
 ///          ``principalNumber(stored:documentId:)``, the number the centre names
-///   1.3 — L38 (F2, decision 213): the title is the volume's tag and the number
+///   1.3 — L38 (F2, decision 219): the title is the volume's tag and the number
 ///          (``windowTitle(for:volume:)``), and the centre the head (``headTitle(header:documentId:)``)
 enum MacDocumentTitle {
 

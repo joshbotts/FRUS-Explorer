@@ -45,6 +45,8 @@ import Foundation
 ///   1.1 — FRUS Explorer Light: moved into the kit with its items, for the web edition's BibTeX and
 ///          RIS, which render them; `fetchTagsAndNotes`, which reads SwiftData, stays in the app, in
 ///          `ZoteroJSONExporter+App.swift`
+///   1.2 — L34 (decision 165): an item's title names the document's number once, the volume's own number
+///          that opens its heading read by its form and left out (#2002)
 public struct ZoteroJSONExporter: Sendable {
 
     public init() {}
@@ -139,6 +141,15 @@ public struct ZoteroJSONExporter: Sendable {
 
     /// Builds a Zotero `bookSection` item for a single FRUS document.
     ///
+    /// **The title takes the one reading of the heading** (L34; decision 165): "Document 1: Letter From
+    /// President Carter…", the document's number once. The volume's own number that opens the heading is
+    /// read by its form (`DocumentHeadingReading.splitNumber(_:)`) and left out, since the title names the
+    /// number history.state.gov cites (decision 197); until L34 the record read "Document 1: 1. Letter
+    /// From…" (#2002), and a collection's ended in "[1]" where the heading called a numbered note (#1992).
+    /// A heading that is its number alone, and a record that names no number of history.state.gov's, keep
+    /// the heading as it stands. The "Document date:" line is the dateline the caller read, which a
+    /// collection reads through the same reading (decision 198).
+    ///
     /// - Parameters:
     ///   - document: Metadata for the specific document being cited.
     ///   - volume: Metadata for the containing volume.
@@ -156,8 +167,16 @@ public struct ZoteroJSONExporter: Sendable {
         tags: [String] = [],
         notes: [String] = []
     ) -> Item {
-        let header = document.header.isEmpty ? document.documentId : document.header
-        let title = document.documentNumber.map { "Document \($0): \(header)" } ?? header
+        let whole = document.header.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title: String
+        if let number = document.documentNumber {
+            let words = DocumentHeadingReading.splitNumber(whole).words
+            let heading = words.isEmpty ? whole : words
+            title = "Document \(number): \(heading.isEmpty ? document.documentId : heading)"
+        } else {
+            // No number of history.state.gov's to name: the heading's own, where it prints one, stays.
+            title = whole.isEmpty ? document.documentId : whole
+        }
 
         var extraLines: [String] = []
         if isEditorialNote {

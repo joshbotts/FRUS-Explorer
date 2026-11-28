@@ -257,6 +257,9 @@ enum DocumentSheet: Identifiable {
 ///   3.18 — L37 (F11): *Open Documents In* is applied when a document opens and not when its reader is built again by
 ///          a layout that changed with width (``ReaderRebuildLedger``, `railSetting(for:isPhone:isBuiltAgain:)`), so a
 ///          window resized across Browse's two-pane width keeps the rail as the reader left it
+///   3.19 — L39 (F7): a page link whose page names no document opens the division that begins on it
+///          (the Index a Contents line links to), and a page numbered in Roman numerals
+///          (`.romanPage`, the Preface's) opens what `PageLink` finds on it; both did nothing
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -406,12 +409,12 @@ struct DocumentView: View {
     //
     // External (non-FRUS) cross-reference URLs now go straight to `UIApplication.shared.open`
     // in `handleCrossRefTap`.
-    /// `true` only when the platform can actually open a second window — Stage
-    /// Manager on iPad; never on iPhone or a non-Stage-Manager iPad. Gates the
-    /// "Open in New Window" affordance so it isn't offered where `openWindow`
+    /// `true` only where a second window opens: an iPad with windows, never a phone, the
+    /// iPhone Duo included (``AuxWindowGate``). The rail's tools open as windows there and as
+    /// sheets elsewhere, and "Open in New Window" is offered only there, never where `openWindow`
     /// would silently no-op. `sizeClass == .regular` is true on *all* iPads and
     /// is therefore the wrong proxy for multi-window capability.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    @AuxWindowGate private var opensAuxWindows
 
     /// `true` on iPhone — the rail presents as a bottom sheet there; iPad (and any regular-width
     /// idiom) gets the trailing column. Uses `userInterfaceIdiom`, not `sizeClass`, because an
@@ -709,7 +712,7 @@ struct DocumentView: View {
     ///   menu offers no Print item. A menu entry wired to nothing is worse than no entry.
     /// - `openInNewWindow` — `openWindow(value:)` silently does nothing on iPhone and on any
     ///   iPad without Stage Manager, which is why the rail's own "Open in New Window" is gated
-    ///   on `supportsMultipleWindows`. The menu applies the same gate.
+    ///   on ``AuxWindowGate``. The menu applies the same gate.
     /// - `findNext` / `findPrevious` — `UIFindInteraction` owns next/previous itself, inside
     ///   the find bar it presents. Declaring ⌘G against it would be a second owner of a key
     ///   the system already binds.
@@ -750,7 +753,7 @@ struct DocumentView: View {
             highlightSelection: { color in createHighlight(color: color) },
             toggleResearchPanel: { toggleRail() },
             openInNewWindow: {
-                guard supportsMultipleWindows else { return }
+                guard opensAuxWindows else { return }
                 var id = DocumentWindowID(entry: entry)
                 id.header = vm.documentTitle ?? entry.header
                 openWindow(value: id)
@@ -1254,7 +1257,7 @@ struct DocumentView: View {
         // marking it invalidated on every document open, burning the id for every existing user.
         // That is why the tip was deleted rather than re-anchored. Phase 1 adds its replacement
         // under a new type; when it lands, its `.invalidate` belongs here.
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(GraphWindowRequest(entry: entry), from: sceneID, using: openWindow)
         } else {
             activeSheet = .crossReferenceGraph
@@ -1271,7 +1274,7 @@ struct DocumentView: View {
     /// not, and #752/M-31 is the bug that cost (see `openRailTool`).
     private func openWordCloud() {
         let scope = WordCloudScope.document(volumeId: entry.volumeId, documentId: entry.documentId)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(scope, from: sceneID, using: openWindow)
         } else {
             activeSheet = .wordCloud(scope)
@@ -1279,7 +1282,7 @@ struct DocumentView: View {
     }
 
     private func openSourceExplorer(vm: DocumentViewModel) {
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(SourceExplorerRequest(
                 rawSourceNote: vm.sourceNote ?? "",
                 documentYear: Self.extractYear(from: entry.dateline),
@@ -1301,7 +1304,7 @@ struct DocumentView: View {
         let request = SemanticMapRequest(
             volumeIDs: nil, scopeLabel: nil, lensRawValue: SemanticMapLens.cluster.rawValue,
             focusDocumentKey: "\(entry.volumeId)/\(entry.documentId)")
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(request, from: sceneID, using: openWindow)
         } else {
             activeSheet = .semanticMap(request)
@@ -1318,7 +1321,7 @@ struct DocumentView: View {
             anchorYear: Self.extractYear(from: entry.dateline),
             weights: relatedWeights,
             scope: .allIndexed)
-        if supportsMultipleWindows {
+        if opensAuxWindows {
             appState.openAuxWindow(request, from: sceneID, using: openWindow)
         } else {
             activeSheet = .relatedDocuments(request)
@@ -1396,6 +1399,9 @@ struct DocumentView: View {
 
         case .page(let volumeId, let page):
             resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId, citing: citing)
+
+        case .romanPage(let volumeId, let page):
+            resolveRomanPageReference(page: page, volumeId: volumeId ?? entry.volumeId)
 
         case .volume(let volumeId):
             openCrossRefVolume(volumeId)
@@ -1534,10 +1540,12 @@ struct DocumentView: View {
     /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
     /// reference's edge against. Where it goes is `PageLink`'s (#1766), which the Mac's reader asks
-    /// too: a volume on the device answers from its page index, as before, and from the bundled page
-    /// map where that names nothing; a volume that is not answers from the map, and the document
-    /// opens as a link to it does, offering the download; a page of it the map does not list opens
-    /// the volume's page in Browse, which names it.
+    /// too: a volume on the device answers from its page index, as before, then, where that names no
+    /// document, from the division that begins on the page (F7, L39: the Index a Contents line links
+    /// to, opened by its id as Browse opens it), and from the bundled page map where neither names
+    /// anything; a volume that is not answers from the map, and the document opens as a link to it
+    /// does, offering the download; a page of it the map does not list opens the volume's page in
+    /// Browse, which names it.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
         // When the app cannot yet tell what is on the device, the page index answers, as before #1766.
         let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
@@ -1555,6 +1563,33 @@ struct DocumentView: View {
                 case nil:
                     #if DEBUG
                     print("[DocumentView] Page ref: p. \(page) of \(volumeId) names no document in the page index")
+                    #endif
+                }
+            }
+        }
+    }
+
+    /// Opens what a page of a volume's front matter, numbered in Roman numerals, holds (F7, L39): a
+    /// volume's Contents links its Preface, its Sources and its lists of abbreviations and persons that
+    /// way (`#pg_III`), which the grammar read as nothing until L39. Where it goes is `PageLink`'s,
+    /// which the Mac's reader asks too: a document that begins on the page, else the section that
+    /// begins on it, opened by its id as Browse opens the Preface, else the section the page is printed
+    /// in; a volume not on the device opens its page in Browse, which names no page for it.
+    private func resolveRomanPageReference(page: Int, volumeId: String) {
+        let onDevice = appState.downloadManager?.isVolumeDownloaded(volumeId) ?? true
+        let store = appState.pageRangeStore
+        Task {
+            let destination = await PageLink.destination(romanPage: page, volumeId: volumeId,
+                                                         onDevice: onDevice, store: store)
+            await MainActor.run {
+                switch destination {
+                case .document(let volumeId, let documentId)?:
+                    navigateToCrossRef(documentId: documentId, volumeId: volumeId)
+                case .volume(let volumeId, let page)?:
+                    openCrossRefVolume(volumeId, followedPage: page)
+                case nil:
+                    #if DEBUG
+                    print("[DocumentView] Page ref: roman p. \(page) of \(volumeId) names nothing in the page index")
                     #endif
                 }
             }

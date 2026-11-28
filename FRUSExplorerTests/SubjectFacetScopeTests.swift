@@ -1502,7 +1502,7 @@ struct SubjectDataCaptionTests {
 
 // MARK: - SubjectSheetDoorOrderTests
 
-/// A subject's sheet puts its two doors above *Covering volumes* (L38, #1931, decision 214).
+/// A subject's sheet puts its two doors above *Covering volumes* (L38, #1931, decision 220).
 ///
 /// #1931 read the Mac's sheet as drawing no *All «area» subjects* door. In the check copy of `v2`
 /// the door was built and drawn: its accessibility element was there, enabled, under

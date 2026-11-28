@@ -575,7 +575,7 @@ struct SubjectIndexView: View {
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
 ///   1.1 — 2026-11-15: #1905 (L15) — the footer ends with the caption; *Find documents on this subject*, *All «area» subjects*
-///   1.2 — L38 (#1931, decision 214): the two doors stand above *Covering volumes*, where the Mac's
+///   1.2 — L38 (#1931, decision 220): the two doors stand above *Covering volumes*, where the Mac's
 ///          list cannot leave the area door under the Done bar
 struct SubjectDetailSheet: View {
 
@@ -626,7 +626,7 @@ struct SubjectDetailSheet: View {
                 }
 
                 // The two doors stand above the covering volumes, not after them (L38, #1931,
-                // decision 214). On the Mac the list measures a row only as it comes on screen, so
+                // decision 220). On the Mac the list measures a row only as it comes on screen, so
                 // its first end falls short by what the unmeasured rows below the fold add: with
                 // Berlin crisis's six volumes, 51 pt, which left *All Cold War subjects* under the
                 // sheet's Done bar until a second scroll. Here both show when the sheet opens, and

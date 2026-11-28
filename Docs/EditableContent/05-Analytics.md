@@ -22,7 +22,7 @@ What the graph shows
 
 <!-- END SOURCE: graph.info.what.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1571–1572 | key: graph.info.what.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1692–1693 | key: graph.info.what.body -->
 
 Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
@@ -36,7 +36,7 @@ Edge context
 
 <!-- END SOURCE: graph.info.edges.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1577–1578 | key: graph.info.edges.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1698–1699 | key: graph.info.edges.body -->
 
 Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.
 
@@ -50,7 +50,7 @@ Timeline and Network layouts
 
 <!-- END SOURCE: graph.info.timeline.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1583–1584 | key: graph.info.timeline.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1704–1705 | key: graph.info.timeline.body -->
 
 Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. A cited page number sits at the dates of the documents printed on it. The app places and labels a document or page in a volume you have not downloaded at the dates it can access from its existing data, often only its enclosing volume’s span. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
 
@@ -64,7 +64,7 @@ Neighborhood degree
 
 <!-- END SOURCE: graph.info.degree.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1589–1590 | key: graph.info.degree.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1710–1711 | key: graph.info.degree.body -->
 
 1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
@@ -78,7 +78,7 @@ Navigating the graph
 
 <!-- END SOURCE: graph.info.interact.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1554–1555 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1675–1676 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
 
 <!-- Repointed from graph.info.interact.body after the 2026-08-23 docs pass bumped the key to
      .v2 (the teal-node and three-citation-kinds paragraphs) but left this in-place block on the
@@ -102,7 +102,7 @@ This graph draws three kinds of archival citation: State Department lot files, c
      confirmed on 2026-09-30 — “Tap” for “Click”, and “or open it” for “or open it in the main window”,
      since on iOS that menu item opens the document over the graph; its other two are the ones you
      wrote in the #1481 slot. -->
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1557–1558 | key: graph.info.interact.body.ios | shared: iOS -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1678–1679 | key: graph.info.interact.body.ios | shared: iOS -->
 
 Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.
 
@@ -122,13 +122,13 @@ This graph draws three kinds of archival citation: State Department lot files, c
      or right-click menu (the graph’s List view on iPhone, the side panel on iPad and the Mac),
      which does the same thing; until review round 1 that row read “Open in Main Window” on iPhone
      and iPad too. -->
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1535–1535 | key: graph.contextMenu.openDocument | shared: macOS -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1656–1656 | key: graph.contextMenu.openDocument | shared: macOS -->
 
 Open in Main Window
 
 <!-- END SOURCE: graph.contextMenu.openDocument -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1537–1537 | key: graph.contextMenu.openDocument.ios | shared: iOS -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1658–1658 | key: graph.contextMenu.openDocument.ios | shared: iOS -->
 
 View Document
 
@@ -142,13 +142,299 @@ Undownloaded volumes
 
 <!-- END SOURCE: graph.info.undownloaded.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1600–1601 | key: graph.info.undownloaded.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1721–1722 | key: graph.info.undownloaded.body -->
 
 A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.
 
 Using bundled series-wide cross-reference data, the app displays documents that cite this one even when their volumes are not on your device. They carry a dashed border and appear without titles or footnote text until you download their volumes; an orange banner at the top of the graph counts them. The 2nd- and 3rd-degree neighbors come only from volumes you have indexed, so download and index more volumes to fill in those links.
 
 <!-- END SOURCE: graph.info.undownloaded.body -->
+
+---
+
+### Cross-Reference Graph — Save As (#1990)
+
+*The graph’s two saves, added by row L42 of the plan of record from 2026-11-25 (2026-11-27): a **Save As** menu in the graph’s toolbar and in a bar under its reference list, whose **Working Corpus…** asks before it saves every document the graph holds as drawn as a working corpus, and whose **Archives Visit…** opens the Add to Archives Visit picker over the same documents with a line of its own. The question’s message is the corpus’s description, the coverage line every corpus shows (“142 of 267 documents indexed on this device”), and the lines below; the picker’s line follows its own “Adding 143 documents: archival sources + unprinted references — ”. A corpus’s name and description are stored with it, so a change here reaches the next save, not one already made.*
+
+#### `graph.save.menu`
+
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.saveAsName | lines: 1644–1644 | key: graph.save.menu -->
+
+Save As
+
+<!-- END SOURCE: graph.save.menu -->
+
+*The menu’s name, in the graph’s toolbar and in the bar under the reference list; VoiceOver reads it, and an iPad’s toolbar overflow shows it.*
+
+#### `graph.save.menu.help`
+
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.saveMenu | lines: 409–410 | key: graph.save.menu.help -->
+
+Save the graph’s documents as a working corpus, or add them to an Archives Visit
+
+<!-- END SOURCE: graph.save.menu.help -->
+
+*The Save As menu’s tooltip on the Mac, and its VoiceOver hint.*
+
+#### `graph.save.corpus`
+
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | GraphSaveMenuItems | lines: 2344–2344 | key: graph.save.corpus -->
+
+Working Corpus…
+
+<!-- END SOURCE: graph.save.corpus -->
+
+*The menu’s first item.*
+
+#### `graph.save.visit`
+
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | GraphSaveMenuItems | lines: 2348–2348 | key: graph.save.visit -->
+
+Archives Visit…
+
+<!-- END SOURCE: graph.save.visit -->
+
+*The menu’s second item, which opens the Add to Archives Visit picker.*
+
+#### `workingCorpus.capture.confirm.title`
+
+<!-- SOURCE: FRUSExplorer/Search/SaveWorkingCorpusSheet.swift | WorkingCorpusSaveModifier | lines: 272–272 | key: workingCorpus.capture.confirm.title -->
+
+Save as Working Corpus?
+
+<!-- END SOURCE: workingCorpus.capture.confirm.title -->
+
+*The question before a working corpus is saved from the graph (and, after L56, from Chronology). Its message is the source description, the coverage line, the line below when the save keeps fewer than it holds, and the cited-pages line.*
+
+#### `workingCorpus.capture.truncated %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/Models/WorkingCorpusResolver.swift | WorkingCorpusCapture.truncationLine(locale:) | lines: 402–403 | key: workingCorpus.capture.truncated %@ %@ -->
+
+Saving the first %1$@ of %2$@.
+
+<!-- END SOURCE: workingCorpus.capture.truncated %@ %@ -->
+
+*In the question, when a capture holds more than a working corpus keeps (7,500 documents). No graph the records name comes near it.*
+
+#### `workingCorpus.capture.saved %@`
+
+<!-- SOURCE: FRUSCoreKit/Models/WorkingCorpusResolver.swift | WorkingCorpusCapture.outcome(savedName:) | lines: 438–439 | key: workingCorpus.capture.saved %@ -->
+
+Saved as the working corpus “%@”
+
+<!-- END SOURCE: workingCorpus.capture.saved %@ -->
+
+*The toast after the save; VoiceOver hears it. `%@` is the corpus’s name.*
+
+#### `workingCorpus.capture.failed`
+
+<!-- SOURCE: FRUSCoreKit/Models/WorkingCorpusResolver.swift | WorkingCorpusCapture.outcome(savedName:) | lines: 435–436 | key: workingCorpus.capture.failed -->
+
+The working corpus could not be saved.
+
+<!-- END SOURCE: workingCorpus.capture.failed -->
+
+*The toast when the save fails.*
+
+#### `graph.save.subject %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.subject(documentLabel:) | lines: 1460–1460 | key: graph.save.subject %@ -->
+
+Cross-references of %@
+
+<!-- END SOURCE: graph.save.subject %@ -->
+
+*What a corpus’s name begins with, before ` — ` and the moment of the save, and the name the picker’s New row gives a visit. `%@` is the graph’s document, its volume and number: *frus1952-54v02p1, Doc. 16*.*
+
+#### `graph.save.source %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.sourceDescription(documentLabel:) | lines: 1470–1471 | key: graph.save.source %@ %@ -->
+
+Cross-reference graph of %1$@, at %2$@
+
+<!-- END SOURCE: graph.save.source %@ %@ -->
+
+*The corpus’s description, which the corpora lists and the exports show, and the question’s first line. `%1$@` is the graph’s document, `%2$@` its depth, one of the three below.*
+
+#### `graph.save.source.dated %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.dated(_:) | lines: 1478–1479 | key: graph.save.source.dated %@ %@ -->
+
+%1$@, dated %2$@
+
+<!-- END SOURCE: graph.save.source.dated %@ %@ -->
+
+*The description, or the picker’s line, when a date range is brushed on the timeline: `%1$@` the words above, `%2$@` the range’s two days.*
+
+#### `graph.save.depth.one`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1434–1434 | key: graph.save.depth.one -->
+
+one hop
+
+<!-- END SOURCE: graph.save.depth.one -->
+
+*The depth, in the description and the picker’s line.*
+
+#### `graph.save.depth.two`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1435–1435 | key: graph.save.depth.two -->
+
+two hops
+
+<!-- END SOURCE: graph.save.depth.two -->
+
+*As above.*
+
+#### `graph.save.depth.three`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1436–1436 | key: graph.save.depth.three -->
+
+three hops
+
+<!-- END SOURCE: graph.save.depth.three -->
+
+*As above.*
+
+#### `graph.save.depth.n.one`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1437–1437 | key: graph.save.depth.n.one -->
+
+%@ hop
+
+<!-- END SOURCE: graph.save.depth.n.one -->
+
+*A depth the graph does not offer today, written as a count.*
+
+#### `graph.save.depth.n.many`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.depthPhrase | lines: 1438–1438 | key: graph.save.depth.n.many -->
+
+%@ hops
+
+<!-- END SOURCE: graph.save.depth.n.many -->
+
+*As above.*
+
+#### `graph.save.empty`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.nothingToSave | lines: 1501–1502 | key: graph.save.empty -->
+
+The graph holds no document within the brushed dates, so there is nothing to save.
+
+<!-- END SOURCE: graph.save.empty -->
+
+*The toast when a brushed range takes in no document, dated or undated, so neither save has anything to take.*
+
+#### `graph.save.pages.one %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1514–1515 | key: graph.save.pages.one %@ -->
+
+The graph’s %@ cited page is not a document and is left out.
+
+<!-- END SOURCE: graph.save.pages.one %@ -->
+
+*The question’s last line when the graph holds a cited page node, which opens nothing and is no document.*
+
+#### `graph.save.pages.many %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.pagesNote(locale:) | lines: 1516–1517 | key: graph.save.pages.many %@ -->
+
+The graph’s %@ cited pages are not documents and are left out.
+
+<!-- END SOURCE: graph.save.pages.many %@ -->
+
+*As above, for more than one.*
+
+#### `graph.save.visit.source %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1546–1547 | key: graph.save.visit.source %@ %@ -->
+
+from the cross-reference graph of %1$@, at %2$@
+
+<!-- END SOURCE: graph.save.visit.source %@ %@ -->
+
+*The picker’s line begins with it, after the picker’s own “Adding 143 documents: archival sources + unprinted references — ”, so it starts in lower case.*
+
+#### `graph.save.visit.whole %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1562–1563 | key: graph.save.visit.whole %@ -->
+
+On this device a visit of these documents lists %@
+
+<!-- END SOURCE: graph.save.visit.whole %@ -->
+
+*The line’s second sentence when every document is in a volume this device has indexed. `%@` is the count of targets below.*
+
+#### `graph.save.visit.partial %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1557–1558 | key: graph.save.visit.partial %@ %@ -->
+
+On this device a visit of these documents lists %1$@, from the %2$@ indexed here
+
+<!-- END SOURCE: graph.save.visit.partial %@ %@ -->
+
+*The second sentence otherwise: `%1$@` the targets, `%2$@` the documents in volumes indexed here, the only ones a visit reads.*
+
+#### `graph.save.visit.targets.one %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1552–1552 | key: graph.save.visit.targets.one %@ -->
+
+%@ target
+
+<!-- END SOURCE: graph.save.visit.targets.one %@ -->
+
+*The count in the second sentence.*
+
+#### `graph.save.visit.targets.many %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1553–1553 | key: graph.save.visit.targets.many %@ -->
+
+%@ targets
+
+<!-- END SOURCE: graph.save.visit.targets.many %@ -->
+
+*As above.*
+
+#### `graph.save.visit.classes.one %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1570–1571 | key: graph.save.visit.classes.one %@ %@ -->
+
+A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ class
+
+<!-- END SOURCE: graph.save.visit.classes.one %@ %@ -->
+
+*The line’s last sentence, where the graph draws a central-file class: a visit’s footnote channel leaves the class out (#784’s scope), so a class is a target only where a document’s own source note names it. `%1$@` is the graph’s classes, `%2$@` how many of them are targets.*
+
+#### `graph.save.visit.classes.many %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitBasis(documentLabel:preview:locale:) | lines: 1572–1573 | key: graph.save.visit.classes.many %@ %@ -->
+
+A footnote’s central-file class is a target only where a document’s own source note names it: %2$@ of the graph’s %1$@ classes
+
+<!-- END SOURCE: graph.save.visit.classes.many %@ %@ -->
+
+*As above, for more than one class.*
+
+#### `graph.save.visit.added.one %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1601–1602 | key: graph.save.visit.added.one %@ %@ -->
+
+Added %1$@ document to “%2$@”
+
+<!-- END SOURCE: graph.save.visit.added.one %@ %@ -->
+
+*The toast after the add; VoiceOver hears it. `%2$@` is the visit’s name.*
+
+#### `graph.save.visit.added.many %@ %@`
+
+<!-- SOURCE: FRUSCoreKit/CrossReference/CrossReferenceGraphDisplay.swift | CrossReferenceGraphCapture.visitOutcome(documentCount:planName:locale:) | lines: 1603–1604 | key: graph.save.visit.added.many %@ %@ -->
+
+Added %1$@ documents to “%2$@”
+
+<!-- END SOURCE: graph.save.visit.added.many %@ %@ -->
+
+*As above, for more than one document.*
 
 ---
 

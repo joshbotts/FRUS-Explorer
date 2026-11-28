@@ -78,6 +78,8 @@ import XCTest
 ///         the standalone document window closes back to that window
 ///   1.2 — #1694: the walk to the fixture document opens the fixture's subseries by name; the
 ///         launcher's mark is still any subseries row
+///   1.3 — L40 (D1, decision 179): `testAWindowClosedWithDoneIsNotBackAtTheNextLaunch`, the iPad check:
+///         after Done, a quit and a relaunch, the app switcher holds the main window alone
 @MainActor
 final class AuxWindowCloseTests: XCTestCase {
 
@@ -157,6 +159,46 @@ final class AuxWindowCloseTests: XCTestCase {
     /// The semantic map's window (`semanticMapScene`) — one of the four surfaces #1368 observed.
     func testSemanticAnalyticsDoneReturnsToTheMainWindow() throws {
         try openAndClose("Semantic Analytics")
+    }
+
+    // MARK: - After the next launch (L40, decision 179)
+
+    /// L40's iPad check (decision 179): Cross-Reference Analytics closed with Done, the app quit and
+    /// launched again, and the app's windows counted where the reader sees them, in the app switcher.
+    ///
+    /// On the iPhone Duo, before L40, a window closed this way stayed one of the app's windows: the
+    /// next launch read "2 Views Open", and the views switcher drew it (D1). It was never connected
+    /// again, only listed, so the count is the switcher's and not the element tree's. Measured on an
+    /// iPad Pro 13-inch (M5) under iOS 27.2 in Windowed Apps, the iPad keeps the closed window's scene
+    /// in the background until the app quits, and the next launch's switcher holds the main window
+    /// alone. The screenshots it keeps show what the reader would see at each step.
+    func testAWindowClosedWithDoneIsNotBackAtTheNextLaunch() throws {
+        try openAndClose("Cross-Reference Analytics")
+        // Its own heading: no other surface draws it, and its window shows no title to match.
+        let analyticsContent = app.staticTexts.matching(NSPredicate(format: "label == 'Most-Referenced Documents'"))
+        Thread.sleep(forTimeInterval: 3)
+        keepScreenshot("1 after Done")
+        print("[AuxWindowCloseTests] after Done: \(app.windows.count) app windows, \(analyticsContent.count) analytics headings")
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(waitUntilAnyHittable(browseTabItems, timeout: 30), "No main window after the relaunch.\n\(tree())")
+        Thread.sleep(forTimeInterval: 4)
+        keepScreenshot("2 after the relaunch")
+        let headingsAfterRelaunch = analyticsContent.count
+        let cards = appSwitcherCards()
+        keepScreenshot("3 the app switcher")
+        print("[AuxWindowCloseTests] after the relaunch: \(app.windows.count) app windows, "
+              + "\(headingsAfterRelaunch) analytics headings, \(cards) app switcher cards")
+        XCUIDevice.shared.press(.home)
+        XCTAssertEqual(headingsAfterRelaunch, 0, """
+            Cross-Reference Analytics, closed with Done before the app quit, is a window again after \
+            the relaunch.\n\(tree())
+            """)
+        XCTAssertEqual(cards, 1, """
+            After the relaunch the app switcher holds \(cards) of the app's windows where the main window \
+            alone was open: Cross-Reference Analytics, closed with Done, is still one of them, as on the \
+            iPhone Duo before L40 (D1).
+            """)
     }
 
     // MARK: - A hand-off that closes the window
@@ -518,6 +560,29 @@ final class AuxWindowCloseTests: XCTestCase {
             if element.exists, element.isHittable { return true }
         }
         return element.exists && element.isHittable
+    }
+
+    /// Keeps a screenshot of the whole screen in the result bundle, named.
+    private func keepScreenshot(_ name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    /// Shows iPadOS's app switcher (a slow swipe up from the bottom edge, held in the middle) and
+    /// returns how many of the app's windows it holds. Each is a SpringBoard card whose identifier
+    /// is `card:<bundle identifier>:sceneID:<scene>` (measured on iOS 27.2); the tree is printed too.
+    private func appSwitcherCards() -> Int {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let bottom = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.999))
+        let middle = springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+        bottom.press(forDuration: 0.05, thenDragTo: middle, withVelocity: .slow, thenHoldForDuration: 1.2)
+        let cards = springboard.otherElements.matching(NSPredicate(
+            format: "identifier BEGINSWITH %@", "card:bottsywattsy.FRUS-Explorer:"))
+        _ = cards.firstMatch.waitForExistence(timeout: 10)
+        print("[AuxWindowCloseTests] the app switcher's tree:\n\(springboard.debugDescription)")
+        return cards.count
     }
 
     /// The element tree, for a failure message that says what WAS on screen.
