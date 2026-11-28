@@ -314,11 +314,11 @@ struct ExportSheetView: View {
             iOSExportBody
             #endif
         }
-        .task {
-            loadStoppedZoteroSend()
-            await verifyExcerpts()
-        }
+        .task { await verifyExcerpts() }
         .task { await countWhatWillPrint() }
+        // #1923: a send of this collection to Zotero that stopped part-way, which this device keeps, makes the
+        // send row Finish Sending. A task of its own, so the quotation check stays mounted as its scan reads it.
+        .task { loadStoppedZoteroSend() }
     }
 
     /// Counts what the export will print, for the sentence (L35): the export's own reading of the collection, which
