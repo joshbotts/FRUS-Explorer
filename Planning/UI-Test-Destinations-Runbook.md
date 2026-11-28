@@ -1653,6 +1653,56 @@ Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExp
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
+**`ChronologyRangeHandOffTests` and `ChronologyRangeSaveTests` (#2012, L56, in `ChronologyRangeTests.swift`) run on an
+iPhone and an iPad, and nothing skips.** Both open Chronology from Browse's Analysis Tools on 1 January to 31 March 1962
+over the browse fixture (`FRUS_UI_TEST_SEED_VOLUME=frus1961-63v06`, six documents dated 1 January to 1 March 1962). A
+DEBUG seam names the range (`FRUS_UI_TEST_CHRONOLOGY_RANGE`, `UITestBrowseSeams.chronologyRange`), since the screen's
+compact pickers are set a month at a time through their calendars and the manifest's latest year is 64 years on. On an
+iPhone Chronology is a sheet over Browse, on an iPad a window. The mark that the range loaded is the range bar's *Search in
+this range*, which is in the tree at every text size, where the list's first row is not at the largest.
+- *The hand-offs.* `testSearchInThisRangeHandsSearchTheDaysTheScreenShows` runs the app in Tokyo's zone (`TZ=Asia/Tokyo`)
+  and requires Search's *Narrowed by* chip, *Remove the 1962-01-01 to 1962-03-31 filter*, after *Search in this range*.
+  `testSearchInThisRangeNamesTheLoadedRangeAfterThePickersMove` runs it in New York's, moves From to the 5th through its
+  calendar without Show (L57's route: a tap fixed at the picker's place closes the calendar), and requires the same chip.
+- *The save.* `testTheRangeTheScreenShowsIsSavedAsAWorkingCorpus` requires Done in the bar at the default size, opens the
+  toolbar's This Range menu and its *Save as Working Corpus…*, reads the question (the range, the coverage line, the kinds
+  adding up to it), saves, reads the toast, waits for it to go, closes Chronology, and finds the corpus in Browse ▸
+  Working Corpora by the toast's name and the question's count. The counts are read from the screen, not pinned, since a
+  simulator can hold real volumes of 1962. `testTheSaveIsReachableAtTheLargestTextSize` launches at AX5
+  (`UICTContentSizeCategoryAccessibilityXXXL`), keeps screenshots, and reaches the save through the bar's More.
+- **The while-indexing guide.** A fresh install's first launch indexed the fixture as a queue and opened the guide over
+  Browse as Analysis Tools opened, which took the menu with it (the control's first run, below). The fixture taps through
+  the guide's Next and Start exploring when it opens, waiting 8 s for it at each launch.
+- **Done in the bar.** With *Save as Working Corpus…* as a sixth item of its own, the bar on the iPhone 17 at the default
+  size held Hide chart, Oldest first, Chart colors, Word Cloud for this range, the save and More, and More held Done and
+  About Chronology (the UI's hierarchy at "Chronology has no Done"). The row gathered the range's actions into one menu,
+  and the save's test holds Done in the bar.
+- **On the iPad, run the save test under iOS 27.2.** Under 27.0, in five runs of five on fresh boots, `backboardd` aborted
+  in Metal (`-[MTLTextureDescriptorInternal validateWithDevice:]` under `CA::OGL::FlattenNode::retain_surface`, #1620's
+  frames) as Done closed Chronology's window after the save, and the test "crashed"; waiting for the toast to go first
+  changed nothing. The window closes cleanly with no save, by Done or by a hand-off, so the other three pass under 27.0.
+  Under 27.2 all four pass. Run each test alone on a fresh boot, as L57 found. The toast is matched by its words and never
+  read, since it goes by itself after 2.6 s: on the iPad it had gone before its label was read.
+
+**The control** (the code before the fix, this row's own iPhone 17, `2D57EC59`, iOS 27.0, 2026-11-27): the pickers' test
+failed at the chip, *Remove the 1962-01-05 to 1962-03-31 filter* (164 s); the Tokyo test failed first at Analysis Tools on
+the fresh install (the guide), and alone on the same build at the chip, *Remove the 1961-12-31 to 1962-03-30 filter*
+(135 s): #2012 seen in the app for the first time.
+
+Measured on 2026-11-27 under iOS 27.0, with the fix, on this row's own simulators (iPhone 17 `2D57EC59`, iPad Pro
+13-inch (M5) `63364553`, Windowed Apps, and `5CFBEB26` under 27.2): **iPhone 17: 4 tests, 4 passed** (the hand-offs 76
+and 119 s, the save 124 s, AX5 59 s; the save again after its last steps changed, 144 s). **iPad, each test alone on a
+fresh boot: under 27.2, 4 passed** (Tokyo 337 s, the pickers 201 s, AX5 151 s, the save 184 s; the save's first run on
+the fresh simulator stopped in the runner, "crashed while preparing to run tests" in `XCTWaiter`'s stall handling, and
+passed alone after); **under 27.0, 3 passed** (Tokyo 99 s, the pickers 133 s, AX5 119 s) **and the save test aborted
+`backboardd` at Done in five runs of five**.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/ChronologyRangeHandOffTests -only-testing FRUSExplorerUITests/ChronologyRangeSaveTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`SearchWithinResultsTests` (#1577 lane 4) runs on an iPhone and an iPad, and nothing skips on either.** It drives Search Within These Results end to end through lane 3's Meaning seam (`FRUS_UI_TEST_SEED_MEANING`; the `MeaningResultsSeamTests` entry above says what the seam answers and why): the near question's Meaning list of the fixture's three documents with vectors, Two, One and Three at 100, 32 and 3 percent, and the fixture's phrase, `"Synthetic UI-test content"`, which lists all six of its documents, the three with no vectors among them. Six tests, each reading the screen and not the model:
 - *Words in a Meaning list.* More ▸ Find Words in These Matches holds the three. The row that names the base reads "Searching within 3 closest matches to “…”" to VoiceOver (it shows "Within …"), the Keywords | Meaning control has gone, the field's prompt is "Words to find in these matches…", and the three stay listed until words are typed. "Two OR Three" then lists Two and Three, in the list's order, at 100 and 3 percent, under "2 of your 3 closest matches contain these words".
 - *A keyword list ranked by a question.* Sort ▸ Closest to a Question… holds the six, and the near question lists Two, One and Three first at 100, 32 and 3 percent, under "6 results · 3 ranked · 3 not ranked", with the line "3 results not ranked by meaning" below the last of them and a row with no vector under the line (on a phone the list is dragged up a third to draw it).
