@@ -741,7 +741,7 @@ struct CollectionResolutionTests {
         }
     }
 
-    /// The dump's SHA-256, 5,031 bytes, taken on macOS 27.2 in SwiftPM by L49 (2026-11-28).
+    /// The dump's SHA-256, 5,031 bytes, taken on macOS 27.2 in SwiftPM and matched in Xcode by L49 (2026-11-28).
     ///
     /// Re-taken by L49, because a collection names one of its documents again by the short form ("Wherever a document
     /// repeats"), and the dump prints each document's new `shortCitation`. The 630 bytes fewer are those lines alone:

@@ -5819,6 +5819,9 @@ struct CollectionExportParityTests {
     /// editor list prints "William F. Sanford, Jr., and" — which is why the assertions name the
     /// join and never refuse ".," outright. The citing document comes LAST so that in the PDF,
     /// whose text cannot be cut at a paragraph, the line runs to the end of the text.
+    ///
+    /// Since L49 the line names each document by its short form, which ends in its period as the full citation does,
+    /// so the join is held as before.
     @Test("See also joins real citations with one period, in HTML, DOCX and PDF (#1392)")
     func seeAlsoJoinsRealCitationsOnce() async throws {
         let dir = FileManager.default.temporaryDirectory
@@ -5860,13 +5863,12 @@ struct CollectionExportParityTests {
             if case .document(let doc) = item, doc.documentId == "d1" { return doc }
             return nil
         }.first)
-        // The teeth: the related citations are the formatter's, each ending in its period. Were
+        // The teeth: the related citations are the short forms (L49), each ending in its period. Were
         // they the `volumeId/documentId` fallback there would be nothing to double.
         let related = citing.relatedDocumentCitations
         try #require(related.count == 2, "expected two See-also citations, got \(related)")
-        #expect(related[0].hasSuffix(", Document 3."), "got \(related[0])")
-        #expect(related[1].hasSuffix(", Document 7."), "got \(related[1])")
-        #expect(related.allSatisfy { $0.hasPrefix("_Foreign Relations of the United States_") })
+        #expect(related == ["_FRUS_, 1952–1954, vol. I, pt. 1, doc. 3.", "_FRUS_, 1952–1954, vol. II, pt. 1, doc. 7."],
+                "got \(related)")
 
         let html = try String(contentsOf: try await HTMLCollectionExporter().export(
             metadata: Self.metadata, items: items), encoding: .utf8)
@@ -5886,10 +5888,10 @@ struct CollectionExportParityTests {
                                    "the PDF has no See-also line")
             .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
         for (format, line) in [("HTML", htmlLine), ("DOCX", docxLine), ("PDF", pdfLine)] {
-            #expect(line.contains("Document 3; "), "\(format): the first citation must end at \"; \": \(line)")
+            #expect(line.contains("doc. 3; "), "\(format): the first citation must end at \"; \": \(line)")
             #expect(!line.contains(".;"), "\(format): a citation's period doubled before \"; \": \(line)")
-            #expect(line.contains("Document 7."), "\(format): the line must end in a period: \(line)")
-            #expect(!line.contains("Document 7.."), "\(format): the closing period doubled: \(line)")
+            #expect(line.contains("doc. 7."), "\(format): the line must end in a period: \(line)")
+            #expect(!line.contains("doc. 7.."), "\(format): the closing period doubled: \(line)")
         }
     }
 
