@@ -5548,6 +5548,13 @@ Row L63 of the plan of record from 2026-11-25 (decision 235), a row the owner ad
 - On it, 28 types (`-only-testing:FRUSExplorerTests/…`): the EditableContent, coding-standards and both boundary gates, the packet's and the plan's kit suites as Xcode compiles them, and the app's Archives Visit suites with the entry-point parity scan: 425 tests passed, in 203 s.
 - `Scripts/check_repo_hygiene.py`: its six checks passed.
 
+**The landing checks,** run before the head on the orchestrator's word, while L43's pull request was in CI: on the merge `e7215c2f` (tree `6899a7e8`), with `v2` at `ed2c1231` and L43's head `57c2dcb3` taken in, in one `Scripts/heavy.sh` job from 06:09 to 06:32 UTC.
+- `build-for-testing` on the iPhone 17: the two known residues and no other warning (165 s).
+- **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the TEI mirror set): 8,515 tests in 1,038 suites, 8,497 passed and none failed, with 17 skipped and the one test with the six known issues, in 830 s. The app's uninstall found the device shut down, so nothing was removed first.
+- `swift build --target FRUSCoreKit` (9 s), no warning, and **the full `swift test`**: 39 test runs, one per test target, 5,371 tests in 624 suites, none failed (213 s), with the two older warnings at `ProvenanceFlowMeasurement.swift:154`.
+- **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning (44 s).
+- ⟪at the head⟫
+
 **Offered, not taken** (decision 183; §5, *Found by L63*)
 - **A class spelled two ways is two targets.** Both channels' class keys keep the case and the hyphen the volume printed (`740.00119-EW` and `740.00119EW`, `891.01A` and `891.01a`). The source notes alone spell 247 classes two ways, and a whole volume's visit split 130 classes in 90 volumes before L63; with the footnotes' classes, 196 in 107 (66 more). A fold would join them, but a stored row keeps the spelling it was minted under, and `ArchiveVisitTargetKeys.sameTarget(stored:derived:)` joins two class keys only where spaces, or a hyphen against a space, separate them. Not filed: the owner's word decides.
 
