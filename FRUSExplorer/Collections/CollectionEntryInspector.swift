@@ -86,6 +86,8 @@ import SwiftData
 ///   1.12 — L19 (#1919, IPA-4): **Open Document** at the head of a document's identity, where a host passes
 ///          `onOpenDocument` (the iPhone drill-in and the iPad Configure sheet)
 ///   1.13 — L20 (#1920, HCD-5): Regenerate's unavailable error says why (`AppleIntelligenceAvailability`)
+///   1.14 — L34 (R2b's finding): the headnote card falls back to the newest stored summary, through the rule the
+///          export's headnote reads (`SummaryRecency.headnoteFallback`), where both took the oldest
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -954,8 +956,10 @@ struct CollectionEntryInspector: View {
     private static let headnoteDraftPromptId = GeneratedSummaryExport.headnoteDraftPromptId
 
     /// The `GeneratedSummary` backing this entry's headnote: the explicit pick (including a
-    /// dedicated draft, fetched by id), else the resolver's fallback (the collection prompt's
-    /// summary, else the first non-empty non-draft) — mirroring `CollectionContentResolver`.
+    /// dedicated draft, fetched by id), else the assembly's fallback (the collection prompt's newest
+    /// summary, else the newest non-empty non-draft), through the one rule both read
+    /// (`SummaryRecency.headnoteFallback`), so the card shows and edits the summary the export prints.
+    /// Until L34 both took the first the store returned, the oldest, where the rail shows the newest.
     private var currentHeadnoteSummary: GeneratedSummary? {
         let vid = entry.volumeId
         let did = entry.documentId
@@ -971,7 +975,8 @@ struct CollectionEntryInspector: View {
         // Mirror the resolver's preferred-prompt precedence (entry override → section default →
         // collection default) so the card seeds and edits the SAME summary the export will use.
         let promptId = entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId
-        return promptId.flatMap { pid in stored.first { $0.promptId == pid } } ?? stored.first
+        return SummaryRecency.headnoteFallback(stored, preferredPromptId: promptId,
+                                               promptId: { $0.promptId }, recency: { $0.recency })
     }
 
     /// The editable "key takeaway" headnote card (Composer redesign): the resolved abstract that

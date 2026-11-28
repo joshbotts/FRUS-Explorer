@@ -101,7 +101,7 @@ struct ArchivalAnalyticsView: View {
     @Environment(\.sceneID) private var sceneID
     @Environment(\.openWindow) private var openWindow
     #if os(iOS)
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    @AuxWindowGate private var opensAuxWindows
     #endif
 
     /// The active mode.
@@ -1839,7 +1839,7 @@ struct ArchivalAnalyticsView: View {
     private func openNeighbors(for record: AuthorityCollectionRecord) {
         let request = ArchivalNeighborsRequest(collectionRecord: record)
         #if os(iOS)
-        guard supportsMultipleWindows else {
+        guard opensAuxWindows else {
             neighborsTarget = ArchivalLibraryNeighborsTarget(record: record)
             return
         }
@@ -1860,7 +1860,7 @@ struct ArchivalAnalyticsView: View {
     private func openClassNeighbors(_ classKey: String) {
         let request = ArchivalNeighborsRequest.decimalClass(classKey)
         #if os(iOS)
-        guard supportsMultipleWindows else {
+        guard opensAuxWindows else {
             classNeighborsTarget = ArchivalClassNeighborsTarget(classKey: classKey)
             return
         }

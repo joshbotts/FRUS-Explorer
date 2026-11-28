@@ -610,6 +610,26 @@ Windowed Apps: all eleven fail under that mutant), and the document-window case 
 install and no launch argument sets it, so check it before reading a green run as a guard against
 the drop.
 
+**Its relaunch case, `testAWindowClosedWithDoneIsNotBackAtTheNextLaunch` (L40, decision 179), is the iPad's check of
+D1** (`Planning/iPhone-Duo-Assessment-2026-11-19.md`): on the iPhone Duo before L40 a window closed with Done stayed one
+of the app's windows, and the next launch read *2 Views Open*. The case opens Cross-Reference Analytics, taps Done,
+quits, launches again, then shows iPadOS's app switcher and counts the app's cards there: SpringBoard names each
+`card:<bundle identifier>:sceneID:<scene>`. **The count is the switcher's, not the element tree's.** On the Duo the
+closed window was never connected again, only listed, so a check of the tree would have passed the defect. Measured
+on 2026-11-27, each on a simulator made for the run:
+- **iPad Pro 13-inch (M5), iOS 27.2, Windowed Apps (its default):** passed (139 s): one card after the relaunch, and
+  no analytics in the tree. An earlier form, which counted no cards, drew the same switcher (235 s), and SpringBoard's
+  log never named the closed window's scene after the quit. Until the quit that scene stayed connected in the
+  background: 3 s after Done the tree still held its heading.
+- **The same, with Done made to front its launcher and leave its own window open:** failed on two cards, with no
+  analytics in the tree.
+- **iOS 27.0, Windowed Apps:** could not run. `backboardd` aborted on the Metal texture assertion below
+  (`MTLSimDevice newTextureWithDescriptor`), on the iPad Pro 13-inch at the app's first launch, before any window of its
+  own, and on the iPad Pro 11-inch (M5) as the analytics window opened. So on 27.0 the assertion is not the restored
+  windows' alone.
+
+It takes about four minutes on a fresh simulator, so pass `-maximum-test-execution-time-allowance 600`.
+
 **On 2026-11-16 its four rail cases could not be read on the iPad Pro 13-inch (M5) under 27.0, in Windowed Apps.** Each
 window a case opened aborted the simulator's `backboardd` on a Metal texture assertion (`MTLSimDevice`), which killed
 the test runner, on `v2`'s code as on L19's: seven reports between 11:50 and 12:43. The app then restored five window
@@ -1020,6 +1040,84 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CollectionRowDeleteTests \
   -only-testing FRUSExplorerUITests/CollectionInspectorOpenDocumentTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
+**`CollectionListExportTests` (L35, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, and neither
+test skips.** It seeds `UITestProjectSeeder`'s collection, one document (`FRUS_UI_TEST_SEED_PROJECT=1`).
+`testTheRowsMenuExportOpensTheSheet` touches and holds the row, chooses **Export…** and requires the export sheet, whose
+sentence counts the collection's one document. `testARowOpensAnywhereAlongItsWidth` taps the row's line at 85% of the
+window's width, past its text, and requires the collection's editor (its Collection settings row on the iPhone, its
+Collection button on the iPad). **On the code before L35** both fail, on both devices: the row's menu held Rename,
+Duplicate, Word Cloud and Delete; and the tap opened nothing, at x 341 past text ending at 258 on the iPhone 17 and at x
+877 past 267 on the iPad Pro 13-inch (M5) (R4 had seen it on the iPad). **Measured on L35's code, iOS 27.0:** 2 of 2 on the
+iPhone 17 (40 and 32 s) and on the iPad Pro 13-inch (M5) (45 and 55 s).
+
+**`CollectionExportSheetFitTests` (L35, J9, in `CollectionEditorTitleTests.swift`) is iPhone-only and wants two widths**:
+an iPhone 17 (402 pt) and an iPhone SE (3rd generation) (375 pt). It self-skips at iPad width, where the sheet is a form
+sheet. Each of its three tests (the default size, AX3 and AX5) launches with `FRUS_UI_TEST_SEED_PROJECT=export`, which
+adds *UI Test Export Collection*: six documents of the fixture volume, two in full, two as summaries and two as
+citations, headnotes on with four stored, one summary not stored, a note and a highlight that print, and the word cloud
+on. It names Apple Intelligence off (`FRUS_UI_TEST_APPLE_INTELLIGENCE=notEnabled`, read in DEBUG by
+`AppleIntelligenceAvailability.forExport`), so the sheet also says what this device lacks. The test opens the sheet from
+the row's menu, waits for the sentence to be counted, and reads every frame from one snapshot: at every size the
+sentence whole between the navigation bar and the bar at the sheet's foot (`collection.export.bar`), and the line of
+what the device lacks under it, whole above the bar at the default size and begun at least a line (40 pt) above it at
+AX3 and AX5; at the default size the chosen card, PDF, above the bar; at AX3 and AX5 the format's menu inside the bar,
+which the sheet draws only at an accessibility size, so the size took effect; and Export inside the bar and the window,
+and hittable. Every run prints a `[L35 fit]` line and keeps a screenshot. **The sentence and the line under it are
+drawn no larger than AX1** (decision 221), which is what keeps the sentence whole above the bar at AX5.
+**On the code before L35** each test fails at its first step, the row's menu having no Export…; 1.0's sheet itself,
+opened through the editor's Export… by a probe not kept, fit at the default size on the iPhone 17 (Export at y 709–773
+of 874), had Export below the screen at AX3 (the six cards to y 860), and on the iPhone SE had Export below the screen at
+the default size already (the Zotero row at y 521–542 of 667). **As L35 was built first, at the reader's size** (iOS 27.0,
+3 of 3 on the iPhone 17 (`80CF0F18`) and on the iPhone SE (3rd generation) (`0D979960`) under the suite's rule then,
+which required the sentence begun, not whole, at AX3 and AX5): at the default size the sentence ended at y 279 and the
+line of what the device lacks at 412 on the iPhone 17, above the PDF card (459–517) and the bar (765); on the SE at 237
+and 371, above the card (418–476) and the bar (592). At AX3 the bar, with the format's menu and Export, started at 694 on
+the iPhone 17 and 522 on the SE, and the sentence ran to 564 and 568, under the SE's bar; at AX5 it ran to 858 and 876,
+under both, and on the SE the form had not built the line's row. **Measured with the cap, iOS 27.0:** 3 of 3 on the iPhone 17 and on the iPhone SE, 63 to 112 s a test. The default size
+measures as above. AX3 and AX5 measure the same, both drawn at AX1: the sentence ends at y 356 on the iPhone 17 and 346
+on the SE, above their bars (694 and 522), and the line of what the device lacks ends at 609 on the iPhone 17 and on the
+SE runs from 346 to 600, under the bar from 522.
+**The line is one element** (`.accessibilityElement(children: .combine)`): without it the identifier named the
+Label's icon alone, a 23-point square.
+
+**`CollectionListRowActionsTests` (L35, #2006, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad under
+iOS 27, alone, on a simulator shut down before it,** as `SearchResultVoiceOverTests`' cases (its entry above): under
+Xcode 27.2 VoiceOver stays on once its speech has been read. It seeds the unattached collection and the smart one
+(`FRUS_UI_TEST_SEED_SAVED_SEARCH=linked`), does every tap first, then turns VoiceOver on, moves to each row and flicks up
+through its actions until VoiceOver's own *Activate Default*. It requires, Delete set aside, Export…, Rename, Duplicate
+and Word Cloud in that order, and Create Static Snapshot after them on the smart one; and Delete among them, which is the
+row's swipe and which VoiceOver offers of itself. The service cannot make VoiceOver do an action, so
+`CollectionListRowActionWiringTests` (unit) holds each action to the menu's own builder. **On the code before L35** it
+fails at the first row: VoiceOver read its actions as Delete, Delete, and nothing of the menu. **Measured on L35's code,
+iOS 27.0:** 1 of 1 on the iPhone 17 (140 s) and on the iPad Pro 13-inch (M5) (150 s), each alone on a simulator shut down
+before it. VoiceOver read Delete, Delete, Export…, Rename, Duplicate and Word Cloud, and on the smart row Create Static
+Snapshot after them: the two Deletes are the system's, from the swipe, as on 1.0.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionListExportTests \
+  -only-testing FRUSExplorerUITests/CollectionExportSheetFitTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,id=0D979960-6C3D-45F3-8422-2EB0727F6C9D" \
+  -only-testing FRUSExplorerUITests/CollectionExportSheetFitTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600
+
+# Shut the iPhone 17 down first (Simulator, or `xcrun simctl shutdown <its UDID>`), then run this alone:
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionListRowActionsTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600
 ```
 
 **`CollectionListSwipeDeleteTests` (R6a, F10, in `CollectionEditorTitleTests.swift`) runs on an iPhone and an iPad, under

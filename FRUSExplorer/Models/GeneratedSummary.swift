@@ -59,6 +59,8 @@ import SwiftData
 ///          pass, which Import from JSON runs too; no stored property changed
 ///   1.8 — L29 (#1999): `duplicateHeadnoteDraft(id:to:in:)`, Duplicate's copy of a draft by its id, which a
 ///          collection file's import makes too; no stored property changed
+///   1.9 — L34: `ranksAbove(_:_:)` is FRUSCoreKit's `SummaryRecency` over this record's `recency`, the rule a
+///          collection's headnote and summary now take as well; no stored property changed
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -387,11 +389,16 @@ extension GeneratedSummary {
     /// repointing a duplicate prompt, `ProjectAdminService.merge` rewriting a project id). So a
     /// prompt de-duplication could silently reorder a reader's carousel while search went on
     /// naming a different summary as the newest. `createdAt` is never stamped.
+    ///
+    /// Since L34 the rule is FRUSCoreKit's `SummaryRecency`, over values, which a collection's headnote,
+    /// the entry inspector's card and a document printed at summary depth read too, where each took the
+    /// first record the store returned, which is the oldest.
     static func ranksAbove(_ a: GeneratedSummary, _ b: GeneratedSummary) -> Bool {
-        let ca = a.createdAt ?? .distantPast, cb = b.createdAt ?? .distantPast
-        if ca != cb { return ca > cb }
-        let la = a.lastModified ?? .distantPast, lb = b.lastModified ?? .distantPast
-        if la != lb { return la > lb }
-        return a.id.uuidString < b.id.uuidString
+        a.recency.ranksAbove(b.recency)
+    }
+
+    /// This summary's place in the newest-first order (`SummaryRecency`).
+    var recency: SummaryRecency {
+        SummaryRecency(createdAt: createdAt, lastModified: lastModified, id: id)
     }
 }

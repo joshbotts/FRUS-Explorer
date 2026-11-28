@@ -175,7 +175,7 @@ struct CrossReferenceGraphView: View {
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
     #if os(iOS)
-    /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
+    /// Gates the neighbors window on iOS (``AuxWindowGate``): false on every phone (the sheet stays the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
     /// a Full Screen Apps-mode iPad reports true and gives a full-screen window. **The #241
     /// review finding is PROBED, not owed** (W-2d/F-18, 2026-08-27, iPad Pro 13-inch simulator,
@@ -184,8 +184,8 @@ struct CrossReferenceGraphView: View {
     /// whether a scene can open, so no extra fallback is owed here. The measurement is stated
     /// once, in `FRUSExplorerApp`'s scene table; it drove the standalone document scene rather
     /// than this one, but both cross the same environment value and the same `openWindow`. The
-    /// sheet stays for iPhone, where the flag is false and `openWindow` really is a no-op.
-    @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
+    /// sheet stays for every phone: an iPhone's flag is false, and the iPhone Duo's true is overruled.
+    @AuxWindowGate private var opensAuxWindows
     #endif
 
     @State private var vm: CrossReferenceGraphViewModel
@@ -1061,7 +1061,7 @@ struct CrossReferenceGraphView: View {
                 // Manager) — it survives row navigation and sits beside the graph, which
                 // is the point. Sheet only where windows are unavailable.
                 #if os(iOS)
-                guard supportsMultipleWindows else {
+                guard opensAuxWindows else {
                     archivalNeighborsTarget = ArchivalNeighborsDocKey(
                         volumeId:     meta.volumeId,
                         documentId:   meta.documentId,

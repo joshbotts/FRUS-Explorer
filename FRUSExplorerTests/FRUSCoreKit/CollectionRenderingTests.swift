@@ -131,6 +131,24 @@ enum CollectionRenderingFixtures {
             notes: [ZoteroJSONExporter.Note(note: note)])
     }
 
+    /// A document's citation record as the assembly builds it, through `ZoteroJSONExporter.makeItem` (L34), so
+    /// that the BibTeX and RIS pins hold the record's title rule (decision 165) and its date line (198): the
+    /// fixture's records were written by hand until L34 and held neither. The access date, the day it is
+    /// built, is left out, as the hand-written records left it.
+    static func record(header: String, number: String, dateline: String?, volume: String, document: String,
+                       note: String) -> ZoteroJSONExporter.Item {
+        var item = ZoteroJSONExporter.makeItem(
+            document: FRUSDocumentMetadata(documentId: document, documentNumber: number, header: header, dateline: dateline),
+            volume: FRUSVolumeMetadata(
+                title: "Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath",
+                editors: ["Edward C. Keefer"], generalEditor: nil, publicationDate: "1996", publicationPlace: "Washington",
+                publisher: "United States Government Printing Office"),
+            year: "1996", url: "https://history.state.gov/historicaldocuments/\(volume)/\(document)",
+            isEditorialNote: false, tags: ["Quarantine"], notes: [note])
+        item.accessDate = nil
+        return item
+    }
+
     /// The everything collection: every item kind, at every body depth, with every per-document
     /// override, under the full publication frame, its word cloud and its figures.
     static func everything() async throws -> (metadata: CollectionExportMetadata, items: [CollectionExportItem],
@@ -168,8 +186,9 @@ enum CollectionRenderingFixtures {
                 includeHeadnote: true, headnoteText: "The Embassy reports the Foreign Minister's view.",
                 headnoteAuthorship: .aiGenerated,
                 relatedDocumentCitations: ["Foreign Relations of the United States, 1961–1963, _Volume XI_, Document 8."],
-                zoteroItem: zoteroItem("Telegram From the Embassy in France", volume: volume, document: "d7",
-                                       note: "Compare the Paris reading."))),
+                zoteroItem: record(header: "7. Telegram From the Embassy in France", number: "7",
+                                   dateline: "Paris, October 22, 1962, 5 p.m.", volume: volume, document: "d7",
+                                   note: "Compare the Paris reading."))),
             .heading("Section A", level: 2),
             .excerpt(CollectionExportExcerpt(
                 text: "First paragraph of the quotation.\n\nSecond paragraph, \"quoted\" <verbatim> & kept.",
@@ -184,8 +203,8 @@ enum CollectionRenderingFixtures {
                 historyStateGovURL: "https://history.state.gov/historicaldocuments/\(volume)/d8",
                 renderModel: memorandum, header: "8. Memorandum", summaryText: "Bundy reports.\n\nThe text is agreed.",
                 includeHeadnote: true, headnoteText: "An edited headnote.", headnoteAuthorship: .aiEdited,
-                zoteroItem: zoteroItem("Memorandum From the President’s Special Assistant", volume: volume,
-                                       document: "d8", note: "On the proclamation."))),
+                zoteroItem: record(header: "8. Memorandum", number: "8", dateline: nil, volume: volume,
+                                   document: "d8", note: "On the proclamation."))),
             .document(CollectionExportDocument(
                 documentId: "d9", volumeId: volume, sortOrder: 3, bodyDepth: .index,
                 title: "Cuban Missile Crisis — d9", bodyText: "Not printed at index depth.",
@@ -198,11 +217,15 @@ enum CollectionRenderingFixtures {
                 noteTexts: ["Not printed: the override turns notes off."],
                 citation: "Foreign Relations of the United States, 1958–1960, Volume VI, Document 10.",
                 historyStateGovURL: "https://history.state.gov/historicaldocuments/frus1958-60v06/d10",
+                header: "10. Despatch From the Embassy in Cuba to the Department of State",
+                dateline: "Havana, January 2, 1959.",
                 includeHeadnote: true, headnoteText: "A headnote written by hand.",
                 headnoteAuthorship: .userWritten, includeNotesOverride: false,
                 // Since L29 (#2000) the notes-off document has a record too, whose note BibTeX and RIS leave out.
-                zoteroItem: zoteroItem("The Havana despatch", volume: "frus1958-60v06", document: "d10",
-                                       note: "Not sent: the override turns notes off."))),
+                // Its record is titled from the volume's heading, never from the author's title (L34).
+                zoteroItem: record(header: "10. Despatch From the Embassy in Cuba to the Department of State", number: "10",
+                                   dateline: "Havana, January 2, 1959.", volume: "frus1958-60v06", document: "d10",
+                                   note: "Not sent: the override turns notes off."))),
             .document(CollectionExportDocument(
                 documentId: "d7", volumeId: "frus1961-63v11b", sortOrder: 5, bodyDepth: .full,
                 title: "Cuban Missile Crisis — d7 again", bodyText: flat,
@@ -295,6 +318,24 @@ enum CollectionRenderingFixtures {
 /// out, both matched their 2026-10-25 pins (1,061 and 810 bytes), so no byte of the records already
 /// pinned moved. The page and the package read no Zotero item, so their pins hold.
 ///
+/// Re-taken by L34 for all seven, because the exporters draw one plan of each document's lines
+/// (`CollectionExportPlan`, the design's §3.8), and the fixture's records are built as the assembly builds
+/// them:
+/// - **The three pages** (47,670 to 49,089 bytes, 32,009 to 33,044, 30,872 to 32,446): the contents list
+///   numbers the documents alone, in a list that keeps its role (#1993); a document opens as its plan has
+///   it, a title of the author's over the citation as a line and *As published:* inside the volume's
+///   heading (#1998, J46); each heading takes its level in the collection's outline (J32); a call whose
+///   note does not print is the volume's number as text (#2007), and the source note prints once (#1991);
+///   and the layer's rules for the rows, the levels and the *As published:* words.
+/// - **The two packages** (38,622 to 42,856 bytes, 14,952 to 16,110): the contents list is the plan's
+///   rows, each linked to its entry, where it was one `TOC` field over the heading styles; a note's mark is
+///   the volume's number (#2001); and the section styles are one outline level down (J32).
+/// - **BibTeX and RIS** (1,529 to 1,603 bytes, 1,163 to 1,248): the records are built through
+///   `ZoteroJSONExporter.makeItem`, so their titles name the number once (decision 165), "Document 7:
+///   Telegram From the Embassy in France", which the old rule would print "Document 7: 7. Telegram…", and
+///   they carry their *Document date:* line (198). `d10`'s record is titled from the volume's heading,
+///   never from the author's title.
+///
 /// Version history:
 ///   1.0 — 2026-10-25 (FRUS Explorer Light, S18a): initial implementation
 ///   1.1 — 2026-10-31: `structuredSummaryFields`; the page and the package re-pinned for `d11`
@@ -317,6 +358,8 @@ enum CollectionRenderingFixtures {
 ///   1.6 — L29 (#2000): the BibTeX and RIS pins re-taken, because the everything collection's `d10`, the
 ///          document whose override turns its notes off, gained a Zotero item with a note: its record now
 ///          prints, without the note. The page and the package read no Zotero item, so their pins hold
+///   1.7 — L34: all seven pins re-taken, for the one plan the exporters draw, and the records built through
+///          `ZoteroJSONExporter.makeItem` (`record(…)`), where they were written by hand
 @Suite("A collection renders the same HTML, Word, BibTeX and RIS from the same values")
 struct CollectionRenderingPinTests {
 
@@ -324,13 +367,13 @@ struct CollectionRenderingPinTests {
 
     /// Each output's SHA-256 and byte count.
     static let pins: [String: (sha256: String, bytes: Int)] = [
-        "everything.html": ("3d194da032ba7e316166f760b71557b8b8886e009ec3b5e6166c36a63651dca2", 47_670),
-        "everything.docx": ("93c70b760ebc3b07076c052dcac71e64adb2119aa408df746b71286aaeb1943b", 38_622),
-        "everything.bib": ("75a10d49fdb5c3a7b266ca6cdc7f02ca5644462e96b459c8e7ab51b92036afc7", 1_529),
-        "everything.ris": ("c02c50f3080a7a18039dfc545f672767edb536ec284a675f815b61ae92da4f93", 1_163),
-        "plain.html": ("6988a6cfebc4f096c5a911546007a661c6300ec713fedfc05cab4fe71471573b", 32_009),
-        "plain.docx": ("f2e01009a8d85ecfd56b42fc60e1b54b8df41a0ed4ed795d79fa3e3d2b6acea9", 14_952),
-        "preview.html": ("a6f7f2c0b9f748bcf0a843cb2d136c984009d326c8af446138c1a12d9ece127b", 30_872),
+        "everything.html": ("3c3bc44d083af902246db2fb1714b9a591589723ed5962e0f383e4e707454a54", 49_089),
+        "everything.docx": ("a7208e3bf6eee6cc86d38289e6efd14e7dde85cb0cac84e2ba79ca02cae3299c", 42_856),
+        "everything.bib": ("89e6a475b67d7f9c3bce812c6dea70b17c0a03e911d93239eeb009932b255fd9", 1_603),
+        "everything.ris": ("7f1ea461453a301c8238c2cdaecbccc72fbfee73af058bb8215048dd110cacb5", 1_248),
+        "plain.html": ("f45391c865a2dd79b24add68257de40ee04b90933accd537f5d9bb24729ca8ac", 33_044),
+        "plain.docx": ("23505fe9c678856168b967306a85972184d44d1c805225457e853ad89d328561", 16_110),
+        "preview.html": ("1447de6a8fcd2a120bedd93690d43e437930da0c51510fc1fb2af9a67aab29b4", 32_446),
     ]
 
     static func expectPin(_ name: String, _ data: Data, sourceLocation: SourceLocation = #_sourceLocation) {
