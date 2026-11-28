@@ -6294,10 +6294,16 @@ public actor IndexingPipeline {
                             readsUnindexedColumns: unindexedConditions > 0)
     }
 
-    // MARK: - Date Range Query (used by SearchService)
+    // MARK: - Date Range Query
 
     /// Returns a set of `"volumeId/documentId"` composite keys for documents whose
-    /// date range overlaps `range`. Used by `SearchService` for date filtering.
+    /// date range overlaps `range`.
+    ///
+    /// **Nothing in the app calls it; its callers are tests.** It said `SearchService` used it for
+    /// date filtering, which nothing does (L56, folded into that row on the owner's word of
+    /// 2026-11-28): Search's date filter is its own condition in `filterConditions(_:gateRowid:gateByKeyForParity:)`,
+    /// by the same overlap rule, and Chronology's reads are `documentsInDateRange` and
+    /// ``documentDatesInDateRange(_:)``, which join `document_cache` where this does not.
     ///
     /// Uses interval overlap semantics rather than point containment:
     ///   - `date_iso` (range start) must be ≤ the query's latest bound
