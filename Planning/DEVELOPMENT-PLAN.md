@@ -5161,3 +5161,67 @@ Row L62 of the plan of record from 2026-11-25 (#2033; decisions 213 and 218), a 
 - **The unit target** on the iPhone 17 under iOS 27.0 (`-only-testing:FRUSExplorerTests`, the app removed first, the TEI mirror set): 8,440 tests in 1,019 suites, 8,422 passed and none failed, with 17 skipped and the one test with the six known issues, in 842 s.
 - `swift build --target FRUSCoreKit` (10 s), and **the full `swift test`**: 39 test runs, one per test target, 5,332 tests, none failed (196 s), the row's two kit suites among them.
 - **The Mac build** (`FRUSExplorerMac`): it succeeded, with the two known residues and no other warning, and compiled the four changed files (41 s).
+
+## Session 2026-11-28 — L64, a stopped Zotero send can be finished: the stop carries how far it got, a finish writes nothing twice and settles a lost answer by Zotero's 412, and the app keeps the progress on the device for 12 hours and offers Finish Sending
+
+Row L64 of the plan of record from 2026-11-25 (#1923; decision 219), a short row the owner chose on 2026-11-28 ("A, as a short row in 1.1", the owner's answer in the orchestration session, asked there). Option A of L41's proposal (the group's notes, `L41-1923-resume-proposal.md`). Started by "Development session orchestration" on `claude/l64-zotero-resume-d59e18`, from `v2` at `d9b86ae2` (L62's merge, #2041). Kit and app code and their tests: package input, so `swift build --target FRUSCoreKit` and `swift test` are owed. No stored property, so no CloudKit change, and no index version. Commits: `f1f84fc5` (the defect shown first), `28c42c22` (the fix, its tests and its EditableContent blocks) and a records commit.
+
+**Shown first** (decision 183)
+- **The stand-in.** A new kit suite, `ZoteroSendResumeTests` (compiled twice), runs every send through a Zotero stand-in. It keeps one library per test, under a user id of the test's own, and keeps what each write made. It honours a write token as Zotero's Web API v3 documents it (*Write Requests*, read 2026-11-28): the token of a request that succeeded is cached for 12 hours, a second request under it is refused with a 412, and the token of one that failed is not stored. A test names the writes it wants refused, answered with the answer lost, or dropped before they arrive. Its reads list a collection's items, the library's newest, and the account's collections.
+- **Three tests ran against `v2`'s client,** with the kit untouched. Each finished a stopped send the only way a caller then could, by sending again. 3 tests, 7 issues (`swift test --filter ZoteroSendResumeTests`, through `Scripts/heavy.sh`, the package built from empty, 00:25 to 00:28 UTC):
+  - a collection's send that Zotero refused with a 503 at its second batch left 2 Zotero collections and 110 items, 50 of them twice;
+  - a batch whose answer was lost left 2 collections and 100 items, 50 of them twice;
+  - a document's send whose notes Zotero refused left the document in Zotero twice.
+
+**The kit** (`FRUSCoreKit/Zotero/`, shared code)
+- **`ZoteroSendProgress`** (new file `ZoteroSendProgress.swift`, public, `Codable`) is how far a send got.
+  - It holds the Zotero collection's key, and each item Zotero took with its key and the SHA-256 of each note written under it.
+  - An item is known by its URL, or its title where it has none, and its place among the send's items of that URL. So a document entered twice in a collection is two items.
+  - It also holds the write in flight, with its `Zotero-Write-Token` and when it was first sent. `expiresAt` is 12 hours after that send, or after the progress's last change when none is in flight. Zotero's memory of a token runs from the request's success, which comes later.
+- **`ZoteroSendStopped`** (public) carries a stop's `cause`, the `ZoteroAPIError` or `CancellationError`, and its `progress`, and says the cause's sentence. The send throws it once Zotero may have taken part of the send. A stop before that, such as the first write refused, throws its error alone, as it did. `ZoteroAPIError` gains no case, so FRUS Explorer Light's exhaustive switch over it compiles as before.
+- **What is in flight.** A write is recorded, and handed to the host, before its request first leaves.
+  - A 4xx answer, `invalidKey` and `rateLimited` among them, wrote nothing, so a refused write is no write in flight.
+  - A lost connection, a 5xx, an answer the client could not read, or a cancelled request may each follow a write Zotero took. The write stays in flight.
+- **A finish** (`send(…, resuming:)`) settles the write in flight before it writes anything else, so a progress holds one at most.
+  - The write is sent again under its own token. After Zotero's 412 the client reads what the write made: the Zotero collection's items by URL; the library's 100 newest by date added, for a send with no collection; or, for the collection's own write, the account's collections by name, the newest with no items yet. The collection is made anew when none is.
+  - A notes write's notes are counted as written, with no read: no later write needs a note's key.
+  - Then the items not taken, fifty at a time and numbered among the send's (*Uploading items 51–60…*), and the notes not written under the items taken, by their text, so a note added since is sent.
+  - A collection edited since sends what was added and leaves what was removed, which `ZoteroSendResult.itemsLeftInLibrary` counts.
+  - A progress for another account is not resumed: the send starts afresh there.
+- **`progress:`** hands the host the progress before each write leaves, after each answer is read, and at the stop. So a send the app did not live to see end can be finished from the last one kept.
+- **One request loop, `exchange`,** now sends the reads with the writes, with #1916's and L41's waits unchanged. A new status, *Checking what reached Zotero…* (`zotero.status.check`).
+- **Found by reading, before the fix's first run** (and not run against it): a first draft settled the write in flight inside its own step, so a finish of a send stopped at its notes, of a collection that had gained a document since, wrote that document first. That write would have recorded no write in flight of its own, and a refusal of it would have cleared the notes write's record. The finish now settles the write in flight before anything else; `theWriteInFlightIsSettledFirst` holds it.
+- `Planning/FRUSCoreKit-Runbook.md` records the new public API (*L64 (#1923)*).
+
+**The app**
+- **`FRUSExplorer/Zotero/ZoteroSendProgressStore.swift`** (new) keeps a `StoppedZoteroSend` (the progress, its reason, and how many of its documents the export history counts).
+  - It is one JSON file per stopped send under `{Application Support}/FRUSExplorer/ZoteroSends/`, named by the collection's id or the document's, and the Zotero account.
+  - A file is read only before its `expiresAt`, removed when the send finishes, and every file is removed by `ZoteroAccountStore.disconnect()`. Nothing reaches iCloud (decision 219).
+  - Each send writes its file as it goes, from the client's `progress`.
+- **The collection's export sheet** (`CollectionExportSheet.swift`):
+  - A stop records the documents that reached Zotero in the export history at once (`zotero-api`, the count no row holds yet). It shows the cause, and offers no RIS file, which would bring the documents already sent into Zotero twice.
+  - The send row then reads *Finish Sending to Zotero Library*, saying how many documents reached Zotero, when, and why.
+  - A finish records the rest, so the rows add up to the whole send, a send the app did not live to see end included (`StoppedZoteroSend.afterStop`, `historyCount(finishing:with:)`). Its result says how many documents removed since the stop stay in Zotero.
+- **The Share tiles** (`DocumentView.swift`'s menu on iPhone and iPad, `SupportingViews.swift`'s popover on the Mac):
+  - The stop's alert says how far the send got, and offers *Finish Sending*.
+  - The row reads *Finish Sending to Zotero Library…* until the send is finished. On the Mac the line under the row says what stopped.
+  - A finish that added notes alone says *Added 2 notes to Zotero.*, where the tile's sentence would read *Added 0 document and 2 notes*. They record no history, as before.
+- **Details the proposal left open,** as built and proposed in the ready message: the group's notes, `L64-open-details.md`.
+
+**Tests**
+- **`ZoteroSendResumeTests`** (the kit's), 21 tests over the stand-in: the defect's three, now each finished from the stop's progress; what a stop carries; a refusal at 403, 400 and 429 (no write in flight, a new token); a stop before Zotero took anything (its error alone); the host's progress as the send goes; a changed collection; a note gained since; the lost collection, notes and document writes; a deleted collection made anew; a finish whose read fails, and a second that ends it; the write in flight settled first; a document entered twice; another account's progress; a cancelled send; the value's JSON and its 12 hours; a note's digest; an item's identity.
+- **`ZoteroSendProgressStoreTests`** (the app's), 8: the file kept, read and dropped; an empty progress not kept; the 12 hours; Disconnect and the file names; the history's rows adding up, a send the app did not see end included; the two stop sentences, the notes-alone sentence and the collection row's caption.
+- No test waits: the client's sleep returns at once, and the suites' limits are for a hang alone.
+
+**Docs**
+- Both manuals: the Share tile's send (11.2) and the collection's (12.10 on iOS, 12.9 on the Mac).
+- EditableContent: 15 blocks for the new strings in `08-Reading-Research-Collections.md`, *Finishing a Zotero send that stopped part-way (#1923)*, and 11 ranges re-pointed, with a bullet in the Amendment-Log.
+- The plan of record: decision 219, the row in §1's two tables, §1a, the counts, the brief and its record.
+
+**Checked on the branch,** through `Scripts/heavy.sh`
+- `swift build --target FRUSCoreKit`, no warning; `swift test --filter Zotero`, 77 tests in 9 suites passed (00:53 to 00:55 UTC).
+- `build-for-testing` on the iPhone 17 under iOS 27.0, from empty: the two known residues alone (3 min 9 s).
+- 54 suites of the unit target there: 434 tests passed (208 s). They are this row's two suites, the Zotero and history suites, and the source and copy scans that read the changed files, `EditableContentKeyTests`, `CodingStandardsAuditTests` and both boundary scans among them.
+- The `FRUSExplorerMac` build: the residues alone.
+- `Scripts/check_repo_hygiene.py`: its six checks passed.
+- A script mirroring `EditableContentKeyTests`' rule read all 1,385 ranged blocks: each holds its key.
